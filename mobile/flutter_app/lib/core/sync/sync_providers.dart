@@ -16,7 +16,6 @@ import '../location/geolocator_device_location_provider.dart';
 import '../location/location_consent_providers.dart';
 import '../location/location_consent_store.dart';
 import '../network/api_contracts.dart';
-import '../network/http_client.dart';
 import '../../features/work_orders/data/work_order_local_store.dart';
 import '../../features/work_orders/data/work_order_conflict_resolution_service.dart';
 import '../../features/expenses/data/expense_repository.dart';
@@ -32,6 +31,7 @@ import 'sync_replay_service.dart';
 import 'expense_receipt_sync.dart';
 import 'inventory_sync_replay_service.dart';
 import 'sync_user_scope.dart';
+import '../auth/session_http_client.dart';
 
 final syncActionStoreProvider = Provider<SyncActionStore>(
   (ref) => DriftSyncActionStore(ref.watch(appDatabaseProvider)),
@@ -119,21 +119,7 @@ final fieldLocationApiProvider = Provider<FieldLocationApi>((ref) {
     return const PendingFieldLocationApi();
   }
 
-  return DioFieldLocationApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioFieldLocationApi(sessionHttpClient(ref, config));
 });
 
 final fieldLocationSyncServiceProvider = Provider<FieldLocationSyncService>(
@@ -157,21 +143,7 @@ final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>((ref) {
     return const PendingBackendExpenseSyncBatchApi();
   }
 
-  return DioExpenseSyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioExpenseSyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final syncReplayServiceProvider = Provider<SyncReplayService>((ref) {
@@ -198,21 +170,7 @@ final workOrderSyncBatchApiProvider = Provider<WorkOrderSyncBatchApi>((ref) {
     return const PendingBackendWorkOrderSyncBatchApi();
   }
 
-  return DioWorkOrderSyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioWorkOrderSyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
@@ -232,21 +190,7 @@ final inventorySyncBatchApiProvider = Provider<InventorySyncBatchApi>((ref) {
     return const PendingBackendInventorySyncBatchApi();
   }
 
-  return DioInventorySyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioInventorySyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final inventorySyncReplayServiceProvider = Provider<InventorySyncReplayService>(
@@ -313,21 +257,7 @@ final checklistSyncBatchApiProvider = Provider<ChecklistSyncBatchApi>((ref) {
     return const PendingBackendChecklistSyncBatchApi();
   }
 
-  return DioChecklistSyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioChecklistSyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final checklistSyncReplayServiceProvider = Provider<ChecklistSyncReplayService>(
@@ -349,21 +279,7 @@ final evidenceSyncBatchApiProvider = Provider<EvidenceSyncBatchApi>((ref) {
     return const PendingEvidenceSyncBatchApi();
   }
 
-  return DioEvidenceSyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioEvidenceSyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final evidenceSyncReplayServiceProvider = Provider<EvidenceSyncReplayService>((
@@ -417,21 +333,7 @@ final evidenceUploadApiProvider = Provider<EvidenceUploadApi>((ref) {
     return const PendingEvidenceUploadApi();
   }
 
-  return DioEvidenceUploadApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioEvidenceUploadApi(sessionHttpClient(ref, config));
 });
 
 // B-RDV-COMPROVANTE — API e replay multipart do comprovante de despesa.
@@ -443,21 +345,7 @@ final expenseReceiptUploadApiProvider = Provider<ExpenseReceiptUploadApi>((
     return const PendingExpenseReceiptUploadApi();
   }
 
-  return DioExpenseReceiptUploadApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioExpenseReceiptUploadApi(sessionHttpClient(ref, config));
 });
 
 final expenseReceiptSyncServiceProvider = Provider<ExpenseReceiptSyncService>(

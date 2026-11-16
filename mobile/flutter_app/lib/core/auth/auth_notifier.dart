@@ -4,12 +4,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../features/auth/auth_models.dart';
 import '../config/app_config.dart';
+import '../network/api_error.dart';
 import '../network/http_client.dart';
 import '../telemetry/telemetry_capture_service.dart';
 import '../telemetry/telemetry_event.dart';
 import '../telemetry/telemetry_providers.dart';
 import 'auth_repository.dart';
 import 'auth_token_storage.dart';
+import 'session_renewal.dart';
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 
@@ -32,9 +34,34 @@ final authStateProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
   AuthNotifier.new,
 );
 
+/// B-APP-SESSAO-RENOVA (D3): o relato de uma falha LOCAL da sessão (a
+/// renovação ilegível, o armazenamento que lança). Só o TIPO do erro sai daqui:
+/// nunca token, mensagem nem caminho. Os testes trocam o relator.
+final authFailureReporterProvider = Provider<void Function(String errorType)>((
+  ref,
+) {
+  return (errorType) => debugPrint('Sessão: falha local ($errorType).');
+});
+
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  /// A renovação em voo: os 401 que chegam enquanto ela corre esperam a mesma.
+  Future<SessionRenewalOutcome>? _inFlight;
+
+  /// B-APP-SESSAO-RENOVA (D3b): a época da sessão. Cada pedido leva a época em
+  /// que saiu; um pedido de outra época nunca usa o token desta.
+  int _epoch = 0;
+
+  int get epoch => _epoch;
+
+  /// O token de acesso da sessão autenticada de agora, para o interceptador.
+  String? get liveAccessToken {
+    final current = state.asData?.value;
+    if (current == null || !current.isAuthenticated) return null;
+    return current.session?.tokens.accessToken;
+  }
+
   @override
   Future<AuthState> build() async {
     final repo = ref.watch(authRepositoryProvider);
@@ -45,16 +72,24 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
 
     if (restored.isExpired) {
+      // D7: só a recusa do servidor expira. Sem rede, ou com falha local, a
+      // sessão fica (o técnico trabalha offline e renova no 1º pedido online).
       try {
         final refreshed = await repo.refresh();
         await repo.commitRefreshed(refreshed);
         return AuthState(status: AuthStatus.authenticated, session: refreshed);
-      } catch (_) {
-        await repo.clearSession();
-        return const AuthState(
+      } on ApiUnauthorizedError {
+        await _clearDevice(repo);
+        return AuthState(
           status: AuthStatus.expired,
-          safeError: 'Sua sessao expirou. Faca login novamente.',
+          safeError: kSessionExpiredMessage,
+          expiredOwnerSub: restored.user.sub,
         );
+      } catch (error) {
+        if (error is! ApiError) _reportLocalFailure(error);
+        // dart format off
+        return AuthState(status: AuthStatus.offlineCached, session: restored); // abrir sem rede: a sessão fica
+        // dart format on
       }
     }
 
@@ -180,22 +215,99 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
-  Future<void> tryRefresh() async {
+  /// B-APP-SESSAO-RENOVA (D3) — a porta: um 401 de pedido comum pede a
+  /// renovação aqui. Uma renovação por vez no app inteiro; um 401 atrasado, com
+  /// o token já trocado, repete com o atual sem renovar de novo.
+  Future<SessionRenewalOutcome> renewAfterUnauthorized(
+    String? failedAccessToken,
+    int requestEpoch,
+  ) {
+    final current = liveAccessToken;
+    if (current == null) return Future.value(const SessionSuperseded());
+    // dart format off
+    if (failedAccessToken != null && current != failedAccessToken) { // outro pedido já renovou
+      // dart format on
+      return Future.value(SessionRenewed(current));
+    }
+    final inFlight = _inFlight;
+    if (inFlight != null) return inFlight; // uma renovação por vez
+    final renewal = _renew();
+    _inFlight = renewal;
+    return renewal.whenComplete(() {
+      if (identical(_inFlight, renewal)) _inFlight = null;
+    });
+  }
+
+  /// O pedido repetido também levou 401: o servidor não aceita mais a sessão.
+  Future<void> expireSession(int requestEpoch) async {
+    await _expire();
+  }
+
+  Future<SessionRenewalOutcome> _renew() async {
+    final repo = ref.read(authRepositoryProvider);
+    final AuthSession fresh;
+    try {
+      fresh = await repo.refresh();
+    } on ApiUnauthorizedError {
+      return _expire();
+    } on ApiError {
+      return const SessionUnreachable();
+    } catch (error) {
+      _reportLocalFailure(error);
+      // dart format off
+      return const SessionRenewalFailed(); // falha local: a sessão fica
+      // dart format on
+    }
+    await repo.commitRefreshed(fresh);
+    state = AsyncData(
+      AuthState(status: AuthStatus.authenticated, session: fresh),
+    );
+    return SessionRenewed(fresh.tokens.accessToken);
+  }
+
+  /// A única transição de "sessão morta": só a recusa do servidor chega aqui.
+  /// Não chama `/auth/logout`: o servidor já recusou.
+  Future<SessionRenewalOutcome> _expire() async {
+    final sub = state.asData?.value.session?.user.sub;
+    _epoch++;
+    _inFlight = null;
     final repo = ref.read(authRepositoryProvider);
     try {
-      final session = await repo.refresh();
-      await repo.commitRefreshed(session);
-      state = AsyncValue.data(
-        AuthState(status: AuthStatus.authenticated, session: session),
-      );
-    } catch (_) {
       await repo.clearSession();
-      state = const AsyncValue.data(
-        AuthState(
-          status: AuthStatus.expired,
-          safeError: 'Sua sessao expirou. Faca login novamente.',
-        ),
-      );
+    } catch (error) {
+      _reportLocalFailure(error);
+    }
+    try {
+      // dart format off
+        await ref.read(authTokenStorageProvider).clearBootstrap(); // expirou: o cache morre com a sessão
+      // dart format on
+    } catch (error) {
+      _reportLocalFailure(error);
+    }
+    state = AsyncData(
+      AuthState(
+        status: AuthStatus.expired,
+        safeError: kSessionExpiredMessage,
+        expiredOwnerSub: sub,
+      ),
+    );
+    return const SessionDead();
+  }
+
+  Future<void> _clearDevice(AuthRepository repo) async {
+    try {
+      await repo.clearSession();
+      await ref.read(authTokenStorageProvider).clearBootstrap();
+    } catch (error) {
+      _reportLocalFailure(error);
+    }
+  }
+
+  void _reportLocalFailure(Object error) {
+    try {
+      ref.read(authFailureReporterProvider)(error.runtimeType.toString());
+    } catch (_) {
+      // O relato nunca derruba a sessão.
     }
   }
 }

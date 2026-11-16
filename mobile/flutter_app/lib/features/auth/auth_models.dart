@@ -97,10 +97,15 @@ class AuthState extends Equatable {
     this.session,
     this.safeError,
     this.safeNotice,
+    this.expiredOwnerSub,
   });
 
   final AuthStatus status;
   final AuthSession? session;
+
+  /// B-APP-SESSAO-RENOVA (D8): na sessão que expirou, o usuário dono dela. A
+  /// fila de sincronização continua dele até o novo login.
+  final String? expiredOwnerSub;
 
   // Safe human-readable message — never contains tokens, passwords, or paths
   final String? safeError;
@@ -130,9 +135,16 @@ class AuthState extends Equatable {
       session: clearSession ? null : (session ?? this.session),
       safeError: clearError ? null : (safeError ?? this.safeError),
       safeNotice: clearNotice ? null : (safeNotice ?? this.safeNotice),
+      expiredOwnerSub: expiredOwnerSub,
     );
   }
 
   @override
-  List<Object?> get props => [status, session, safeError, safeNotice];
+  List<Object?> get props => [
+    status,
+    session,
+    safeError,
+    safeNotice,
+    expiredOwnerSub,
+  ];
 }

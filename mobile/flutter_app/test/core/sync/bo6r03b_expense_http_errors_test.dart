@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_contracts.dart';
+import 'package:erp_techsolutions_mobile/core/auth/session_renewal.dart';
 import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
@@ -92,8 +93,18 @@ ResponseBody _processed(List<Map<String, Object?>> actions) => _jsonBody({
 SyncReplayService _service(SyncQueueRepository queue, _FakeAdapter adapter) {
   final dio = createAuthenticatedHttpClient(
     const ApiConfig(baseUrl: 'https://test.local', accessToken: 'tok-teste'),
-    onRefresh: () async => null,
-    onClearSession: () async {},
+    // B-APP-SESSAO-RENOVA (D4): a fábrica recebe a porta; o dublê é o mesmo de antes.
+    renew: (failed, epoch) async {
+      final token = await Future<String?>.value(null);
+      if (token == null) {
+        await Future<void>.value();
+        return const SessionDead();
+      }
+      return SessionRenewed(token);
+    },
+    expire: (epoch) => Future<void>.value(),
+    currentAccessToken: () => null,
+    currentEpoch: () => 0,
   );
   dio.httpClientAdapter = adapter;
   return SyncReplayService(
