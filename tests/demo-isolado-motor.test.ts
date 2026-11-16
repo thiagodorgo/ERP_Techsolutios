@@ -1140,3 +1140,55 @@ test("SC7 verificador morde sem consentimento", async () => {
     d.limpar();
   }
 });
+
+// Conserto da J-581 (DP-581-01/N1, N2 = ROT-01, ROT-02): a regua, o id do aceite e a sessao das leituras.
+test("SC8 o aceite caiu (503) e a titular revogou um perfil que nunca foi ligado: a 2a execucao sai 5 e nao liga (DP-581-01)", async () => {
+  const api = criarApi({ aceite503UmaVez: true });
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 1);
+    assert.equal(perfilDaTecnica(api).trackingConsent, false, "o perfil nunca foi ligado");
+    assert.equal(await comoUsuario(api, EMAIL_TECNICA, "POST", "/mobile/location-consent/revoke", {}), 200);
+    // So a decisao da titular separa este caso do da retomada (SC5): nao ha `consent_granted` nem mudanca de cadastro.
+    assert.deepEqual(api.colecoes.auditoria.map((e) => e.action), ["operator_profile.created", "field_location.consent_revoked"]);
+    const antes = api.chamadas.length;
+    const r2 = await rodarMotor(api, d.argv());
+    assert.equal(r2.codigo, 5, r2.saida);
+    assert.match(r2.saida, MSG_TRILHA);
+    assert.equal(posts(api.chamadas.slice(antes), "/mobile/location-consent").length, 0, "aceite depois da revogacao da titular");
+    assert.equal(perfilDaTecnica(api).trackingConsent, false);
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC9 o client_action_id do aceite e deterministico: o mesmo nas 2 execucoes (ROT-01)", async () => {
+  const api = criarApi({ aceite503UmaVez: true });
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 1);
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    const ids = posts(api.chamadas, "/mobile/location-consent").map((x) => x.corpo?.client_action_id);
+    assert.equal(ids.length, 2, "o aceite que caiu e o da retomada");
+    assert.match(String(ids[0]), UUID_RE);
+    assert.equal(ids[1], ids[0], "a retomada e a mesma decisao: o mesmo client_action_id");
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC10 a trilha e o perfil por id sao lidos pela sessao do admin (ROT-02)", async () => {
+  const api = criarApi();
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    const trilha = api.chamadas.filter((x) => x.metodo === "GET" && x.caminho.startsWith("/audit-events"));
+    assert.equal(trilha.length, 5, "as 5 leituras da trilha");
+    assert.ok(trilha.every((x) => x.ator === fixture.admin.email), "trilha lida por outra sessao");
+    const porId = api.chamadas.filter((x) => x.metodo === "GET" && /^\/operator-profiles\/[0-9a-f-]{36}$/i.test(x.caminho));
+    assert.equal(porId.length, 1, "1 leitura do perfil por id");
+    assert.equal(porId[0].ator, fixture.admin.email, "perfil por id lido por outra sessao");
+  } finally {
+    d.limpar();
+  }
+});
