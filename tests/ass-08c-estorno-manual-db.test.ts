@@ -68,7 +68,7 @@ if (!connectionString) {
     return { tenantId, statementId };
   }
 
-  const lines = (statementId: string) => q(`SELECT kind, status, skip_reason, idempotency_key FROM billing_outbox WHERE statement_id = $1::uuid ORDER BY created_at, idempotency_key`, statementId);
+  const lines = (statementId: string) => q(`SELECT kind, status, skip_reason, idempotency_key, last_error FROM billing_outbox WHERE statement_id = $1::uuid ORDER BY created_at, idempotency_key`, statementId);
   const cancelLines = async (statementId: string) => (await lines(statementId)).filter((row) => row.kind === "invoice_cancel");
   const refsOf = (statementId: string) => q(`SELECT tenant_id, provider FROM billing_statement_refs WHERE statement_id = $1::uuid`, statementId);
   const statementRow = async (statementId: string) => (await q(`SELECT status, paid_at, paid_amount::text AS paid, total_amount::text AS total FROM subscription_statements WHERE id = $1::uuid`, statementId))[0];
@@ -89,9 +89,9 @@ if (!connectionString) {
     });
   }
 
-  function focusPort() {
+  function focusPort(server: any = H.focus) {
     return new H.m.focusAdapter.FocusNfeInvoiceAdapter(
-      new H.m.http.BillingHttpClient({ provider: "focusnfe", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${H.focus.baseUrl}/v2` }),
+      new H.m.http.BillingHttpClient({ provider: "focusnfe", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${server.baseUrl}/v2` }),
       async (kind: string) => (kind === "api_token" ? "TOK-f" : "WHK-f"),
     );
   }
@@ -105,14 +105,18 @@ if (!connectionString) {
   });
 
   /** Uma rodada do despacho real, recortada à organização do caso, com o falso Focus como a porta de nota ligada. */
-  async function dispatch(tenantId: string) {
+  async function dispatch(tenantId: string, server: any = H.focus) {
     const c = H.role.client;
     return H.m.dispatcher.runDispatchOutbox({
       repo: new H.m.outboxPrisma.PrismaOutboxRepository(c, { tenantIds: [tenantId] }),
       ports: {},
       resolveCustomer: async () => ({ ok: true as const, customerId: "cus_em" }),
-      invoices: new H.m.invoiceDispatch.InvoiceOutboxHandler({ ports: { focusnfe: focusPort() }, invoices: new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(c), statements: new H.m.runtime.PrismaStatementRepository(c), resolveIssueContext: issueContext }),
+      invoices: new H.m.invoiceDispatch.InvoiceOutboxHandler({ ports: { focusnfe: focusPort(server) }, invoices: new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(c), statements: new H.m.runtime.PrismaStatementRepository(c), resolveIssueContext: issueContext }),
     });
+  }
+
+  async function setInvoiceEnabled(enabled: boolean): Promise<void> {
+    await H.db.$executeRawUnsafe(`UPDATE billing_provider_configs SET enabled = $1, enabled_environment = CASE WHEN $1 THEN 'sandbox' ELSE NULL END, updated_at = now() WHERE provider = 'focusnfe'`, enabled);
   }
 
   /** O webhook da nota (`ref = <id>:<seq>`) pelo reconcile real; devolve a linha do evento. */
@@ -284,5 +288,72 @@ if (!connectionString) {
     assert.deepEqual(await refsOf(f.statementId), refsBefore, "0 índice novo");
     assert.deepEqual(await invoicesOf(f.statementId), []);
     assert.equal(result.invoice, "none");
+  });
+
+  // ============================================================== F9b · a recusa do cancelamento, a confirmação, o cancelamento em curso, a nota desligada
+  test("EM3: o Focus falso RECUSA o cancelamento (erro_cancelamento) → o estorno continua gravado, a linha vai a NEEDS_REVIEW invoice_cancel_error, a nota volta a authorized, o backlog mostra live_on_unpaid", async () => {
+    const f = await seedClosed("em3");
+    const [paymentId] = await paidWithAuthorizedInvoice(f, [10_000]);
+    const result = await reverse(paymentId!, f, true);
+    assert.deepEqual((await cancelLines(f.statementId)).map((row) => row.status), ["PENDING"]);
+    assert.equal(result.invoice, "cancel_requested");
+    // O despacho do cancelamento contra um Focus falso que responde `erro_cancelamento` em 200 (o cuidado 2).
+    const refusing = await startFocusNfeFake("cancel_error_in_200");
+    try {
+      await dispatch(f.tenantId, refusing);
+      assert.equal(refusing.recorded.filter((r: { method: string }) => r.method === "DELETE").length, 1, "o DELETE foi tentado");
+    } finally {
+      await refusing.close();
+    }
+    assert.equal((await paymentRow(paymentId!)).reversed, "100.00", "o estorno continua gravado");
+    assert.equal((await statementRow(f.statementId)).status, "closed");
+    assert.deepEqual((await cancelLines(f.statementId)).map((row) => [row.status, row.last_error]), [["NEEDS_REVIEW", "invoice_cancel_error"]]);
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "authorized"]], "a nota volta a authorized");
+    assert.equal(await backlogOf(f.statementId), "live_on_unpaid");
+  });
+
+  test("EM5: nota viva e estorno TOTAL SEM confirmInvoiceCancel → 422 invoice_cancel_confirmation_required, NADA gravado (o pagamento continua não estornado, 0 linha nova, 0 trilha)", async () => {
+    const f = await seedClosed("em5");
+    const [paymentId] = await paidWithAuthorizedInvoice(f, [10_000]);
+    const linesBefore = await lines(f.statementId);
+    await assert.rejects(reverse(paymentId!, f), (error: any) => error?.statusCode === 422 && error?.reason === "invoice_cancel_confirmation_required");
+    await assert.rejects(reverse(paymentId!, f, false), (error: any) => error?.statusCode === 422 && error?.reason === "invoice_cancel_confirmation_required", "false também não confirma");
+    assert.equal((await paymentRow(paymentId!)).reversed, "0.00", "o pagamento continua não estornado");
+    assert.equal((await statementRow(f.statementId)).status, "paid");
+    assert.deepEqual(await lines(f.statementId), linesBefore, "0 linha nova");
+    assert.deepEqual(await reversalTrails(f.statementId), [], "0 trilha");
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "authorized"]]);
+  });
+
+  test("EM6: nota cancel_pending → o estorno total passa SEM confirmação, 0 invoice_cancel novo, invoice = cancel_in_progress", async () => {
+    const f = await seedClosed("em6");
+    const [paymentId] = await paidWithAuthorizedInvoice(f, [10_000]);
+    const [nota] = await q(`SELECT id FROM subscription_statement_invoices WHERE statement_id = $1::uuid`, f.statementId);
+    await new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(H.role.client).markCancelPending(f.tenantId, nota.id, { reason: "payment_reversed", code: H.m.invoiceDispatch.INVOICE_CANCEL_CODE_OTHERS }, new Date());
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => row.status), ["cancel_pending"], "pré-condição: o cancelamento já está em curso");
+    const result = await reverse(paymentId!, f);
+    assert.equal((await paymentRow(paymentId!)).reversed, "100.00", "o estorno passou");
+    assert.deepEqual(await cancelLines(f.statementId), [], "0 invoice_cancel novo");
+    assert.equal(result.invoice, "cancel_in_progress");
+  });
+
+  test("EM7 (guarda): nota DESLIGADA — a intenção nasce PENDING provider_disabled; o estorno total → 0 invoice_cancel (não há nota viva), invoice = none, a linha fica; religar → o despacho a manda a NEEDS_REVIEW statement_not_paid", async () => {
+    const f = await seedClosed("em7");
+    await setInvoiceEnabled(false);
+    try {
+      const paymentId = (await payManual(f, 10_000)).payment.id;
+      assert.deepEqual((await lines(f.statementId)).filter((row) => row.kind === "invoice_issue").map((row) => [row.status, row.skip_reason]), [["PENDING", "provider_disabled"]]);
+      const result = await reverse(paymentId, f);
+      assert.deepEqual(await cancelLines(f.statementId), [], "0 invoice_cancel");
+      assert.deepEqual((await lines(f.statementId)).filter((row) => row.kind === "invoice_issue").map((row) => [row.status, row.skip_reason]), [["PENDING", "provider_disabled"]], "a linha fica");
+      assert.equal(result.invoice, "none");
+    } finally {
+      await setInvoiceEnabled(true);
+    }
+    const posts = callsOn("POST", f.statementId);
+    await dispatch(f.tenantId);
+    assert.equal(callsOn("POST", f.statementId), posts, "0 POST: o demonstrativo não está pago");
+    assert.deepEqual((await lines(f.statementId)).filter((row) => row.kind === "invoice_issue").map((row) => [row.status, row.last_error]), [["NEEDS_REVIEW", "statement_not_paid"]], "o comportamento da 08b no caminho do provedor, declarado");
+    assert.deepEqual(await invoicesOf(f.statementId), []);
   });
 }
