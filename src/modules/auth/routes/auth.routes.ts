@@ -18,7 +18,7 @@ import {
   attachAuthenticatedActor,
   getAuthenticatedActor,
 } from "../middleware/authenticated-actor.middleware.js";
-import type { AuthSessionService } from "../services/auth-session.service.js";
+import type { AuthSessionService, RenewalBinding } from "../services/auth-session.service.js";
 import {
   getIdentityLinkService,
   resetUnavailableError,
@@ -85,6 +85,9 @@ type LoginRequestBody = {
 type RefreshRequestBody = {
   readonly refreshToken?: unknown;
   readonly refresh_token?: unknown;
+  // B-APP-SESSAO-RENOVA (S5) — a prova de posse do reenvio: o 1º envio leva o compromisso, os reenvios a prova.
+  readonly renewalCommit?: unknown;
+  readonly renewalProof?: unknown;
 };
 
 const uuidPattern =
@@ -368,7 +371,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         return;
       }
 
-      const refreshResult = await (await resolveSessionService()).refreshSession(refreshToken);
+      const refreshResult = await (await resolveSessionService()).refreshSession(refreshToken, parseRenewalBinding(request.body)); // a prova do reenvio, se veio
 
       if (!refreshResult.ok) {
         response.status(401).json({
@@ -715,6 +718,14 @@ function parseRefreshTokenRequestBody(body: unknown): string {
 
 function isBasicEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// B-APP-SESSAO-RENOVA (S5) — só o formato de 32 bytes em base64url (43 caracteres) conta; qualquer outra coisa é
+// ignorada, como se não viesse.
+function parseRenewalBinding(body: unknown): RenewalBinding {
+  const input = isRecord(body) ? (body as RefreshRequestBody) : {};
+  const valid = (value: unknown) => (typeof value === "string" && /^[A-Za-z0-9_-]{43}$/.test(value) ? value : undefined); // 32 bytes em base64url; o resto é ignorado
+  return { commit: valid(input.renewalCommit), proof: valid(input.renewalProof) };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

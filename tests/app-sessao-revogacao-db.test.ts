@@ -12,6 +12,7 @@ import "dotenv/config";
 // [SV2c] o "Sair" de uma sessão já revogada responde 200 e não revoga de novo.
 // [SV4]…[SV5c], [SV7] o reenvio e a corrida recebem o MESMO sucessor (S4); a troca é condicional.
 // [SV14], [SV14b] a borda exata das janelas, em milissegundos, com relógio controlado (`Date.now`).
+// [SV11]…[SV11c], [SV16], [SV17] a rota passa a prova de posse ao serviço (S5).
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import type { Server } from "node:http";
@@ -292,6 +293,87 @@ if (!connectionString) {
       const retry = await refresh(s.refreshToken);
       assert.equal(retry.status, 401);
       assert.equal(tok(retry), undefined);
+    });
+
+    it("[SV11] pela rota: o 1º envio com o compromisso se perde; o reenvio com a prova recebe o mesmo R1", async () => {
+      const s = await newSession();
+      const p = par();
+      const lost = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      assert.equal(lost.status, 200);
+      const retry = await refresh(s.refreshToken, { renewalProof: p.proof });
+      assert.equal(retry.status, 200);
+      assert.equal(tok(retry), tok(lost));
+      assert.equal(await revoked(s.sessionId), false);
+      assert.equal((await refresh(tok(retry) as string, { renewalCommit: par().commit })).status, 200, "o R1 renova");
+    });
+
+    it("[SV11b] pela rota: o reenvio com prova 10,6 s depois recebe o mesmo R1; sem prova, no mesmo tempo, não", async () => {
+      const s = await newSession();
+      const p = par();
+      const T0 = realNow();
+      try {
+        fake = T0;
+        const lost = await refresh(s.refreshToken, { renewalCommit: p.commit });
+        assert.equal(lost.status, 200);
+        fake = T0 + 10_600;
+        const withProof = await refresh(s.refreshToken, { renewalProof: p.proof });
+        assert.equal(withProof.status, 200, "com prova, dentro dos 60 s");
+        assert.equal(tok(withProof), tok(lost));
+        const withoutProof = await refresh(s.refreshToken);
+        assert.equal(tok(withoutProof), undefined, "sem prova, fora dos 10 s: não dá token");
+        assert.notEqual(withoutProof.status, 200);
+      } finally {
+        fake = null;
+      }
+    });
+
+    it("[SV11c] o 1º envio nunca chegou: o reenvio com prova troca, e o seguinte com a mesma prova recebe o mesmo R1", async () => {
+      const s = await newSession();
+      const p = par();
+      const first = await refresh(s.refreshToken, { renewalProof: p.proof });
+      assert.equal(first.status, 200);
+      const again = await refresh(s.refreshToken, { renewalProof: p.proof });
+      assert.equal(again.status, 200);
+      assert.equal(tok(again), tok(first));
+      assert.equal(await revoked(s.sessionId), false);
+    });
+
+    it("[SV16] o 1º envio preso na trava da linha e o reenvio com prova 1,2 s depois: 200 e 200, o mesmo R1", async () => {
+      const s = await newSession();
+      const p = par();
+      await warmPool();
+      let first: Promise<Http> | undefined;
+      let second: Promise<Http> | undefined;
+      await admin.$transaction(
+        async (tx) => {
+          await tx.$queryRaw`SELECT id FROM auth_sessions WHERE id = ${s.sessionId}::uuid FOR UPDATE`;
+          first = direct(s.refreshToken, { commit: p.commit });
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          second = direct(s.refreshToken, { proof: p.proof });
+          for (let i = 0; ; i++) {
+            const waiting = await tx.$queryRaw<{ n: bigint }[]>`
+              SELECT count(*)::bigint AS n FROM pg_stat_activity
+              WHERE usename = ${role.roleName} AND wait_event_type = 'Lock'`;
+            if (Number(waiting[0].n) >= 2) break;
+            assert.ok(i < 300, "os dois envios não chegaram a esperar a trava");
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+        },
+        { timeout: 60_000, maxWait: 10_000 },
+      );
+      const [a, b] = await Promise.all([first as Promise<Http>, second as Promise<Http>]);
+      assert.deepEqual([a.status, b.status], [200, 200]);
+      assert.equal(tok(a), tok(b));
+      assert.equal(await revoked(s.sessionId), false);
+    });
+
+    it("[SV17] a prova fora do formato é ignorada: numa troca sem vínculo, dentro da corrida, 200 e o mesmo R1", async () => {
+      const s = await newSession();
+      const r1 = await refresh(s.refreshToken);
+      assert.equal(r1.status, 200);
+      const odd = await refresh(s.refreshToken, { renewalProof: "A".repeat(4000) });
+      assert.equal(odd.status, 200);
+      assert.equal(tok(odd), tok(r1));
     });
 
     // A borda exata (v3.3 §4.2): troca em T0; reenvio em T0 + W·1000 + d, d ∈ {−1, 0, +1} ms. T0 cai no meio de um
