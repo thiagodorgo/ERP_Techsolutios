@@ -128,3 +128,18 @@ test("[C2b] o \"Sair\" diz a verdade: falha interna 503, sem token 400, sucesso 
     await close(server);
   }
 });
+
+test("[C3] as janelas do reenvio: 60 s com prova, 10 s sem prova", async () => {
+  process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? "dev-only-refresh-change-me";
+  const service = await import("../src/modules/auth/services/auth-session.service.js");
+  assert.equal(service.REFRESH_REPLAY_WINDOW_SECONDS, 60);
+  assert.equal(service.REFRESH_RACE_WINDOW_SECONDS, 10);
+});
+
+test("[C5] o vetor fixo da prova de posse (o mesmo do [T11i] do app)", async () => {
+  const service = await import("../src/modules/auth/services/auth-session.service.js");
+  assert.equal(
+    service.proofCommit("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"),
+    "Yw3NKWbEM2aRElRIu7JbT_QSpJxzLbLIq8G4WBvXEN0",
+  );
+});
