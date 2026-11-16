@@ -6,7 +6,7 @@
 ## Medições (apensadas em ordem)
 
 ### E0 — terreno (16:03-16:12)
-- `git worktree add --detach C:/Users/.../.claude/worktrees/j-bsan304a-c1 fbda96b0` → `HEAD is now at fbda96b0`; `rev-parse HEAD` = `fbda96b016ac…`; `status --porcelain` = 0 linhas.
+- `git worktree add --detach C:/.../.claude/worktrees/j-bsan304a-c1 fbda96b0` → `HEAD is now at fbda96b0`; `rev-parse HEAD` = `fbda96b016ac…`; `status --porcelain` = 0 linhas.
 - `npm ci` próprio (sem junction) → `added 326 packages in 2m`, ec=0.
 - Portas: `netsh … excludedportrange` — faixas 56500-56899 e 56907+ excluídas; **56441/56442 fora** das faixas e livres no `netstat`.
 - Contêineres MEUS: `j-bsan304a-c1-pg` (`postgres:16`, PostgreSQL 16.14, `127.0.0.1:56441`) e `j-bsan304a-c1-redis` (`redis:7-alpine`, `127.0.0.1:56442`, PONG).
@@ -123,7 +123,7 @@
 
 ### E17 — limpeza (pelo MEU nome completo)
 - `docker rm -f j-bsan304a-c1-pg j-bsan304a-c1-redis` → removidos; `docker ps -a | grep ^j-bsan304a-c1` → 0.
-- `git worktree remove --force C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-bsan304a-c1` → ec=0; diretório e `.git/worktrees/j-bsan304a-c1` ausentes.
+- `git worktree remove --force ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-bsan304a-c1` → ec=0; diretório e `.git/worktrees/j-bsan304a-c1` ausentes.
 - 40 arquivos `_c1-*` do scratchpad apagados. `bsan304a` = `fbda96b0`, status 0. Nada alheio tocado (`j-bsan304a-c2*`, `j-b04a-*`, `j-b11-c3`, `bsan301-*`, `dev-bsan301-c2-*`, `erp-postgres-alt`, `pastrack-*`).
 
 ## Veredito: APROVADO — 0 bloqueia · 1 ajuste (C1-A1) · 2 notas (C1-N1, C1-N2)

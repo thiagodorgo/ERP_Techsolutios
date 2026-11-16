@@ -2,13 +2,13 @@
 
 - **Papel:** DEV (`dev-aparencia-opus`). Não planejou, não critica e não vota.
 - **Executor:** Claude Opus 5.5, nível menor, DECLARADO (§C7.6). Cobre o Codex por ordem do dono (*"vc cobre o codex nessa rodada"*).
-- **Base:** `origin/main` `b08c7557` (25/10/2026). Ramo `feat/web-aparencia-usuario`, worktree `C:/Users/AMP/w-aparencia`.
+- **Base:** `origin/main` `b08c7557` (25/10/2026). Ramo `feat/web-aparencia-usuario`, worktree `~/w-aparencia`.
 - **Fontes:** plano `docs/revisoes/TELAS/B-APARENCIA-USUARIO-plano.md` (medido em `9c7784b4`); crítica `…-critica.md` (APROVA COM AJUSTES, os ajustes valem sobre o plano); `D-APARENCIA-RESPOSTAS` (a)–(d) em `agent-orchestration/controle/decisoes.md:3688`; contrato do `B-SAN3-22` (decisão do dono de 25/10): `useScreenAppearance(screenKey)` → `{ appearance, setAppearance }`.
 - **Formato P1:** cada etapa é gravada ao ser concluída (comando → saída resumida → conclusão).
 
 ## Etapa 0 — terreno
 
-- `git fetch` → `origin/main` = `b08c7557` (#458). `git worktree add -b feat/web-aparencia-usuario C:/Users/AMP/w-aparencia origin/main` → HEAD `b08c7557`.
+- `git fetch` → `origin/main` = `b08c7557` (#458). `git worktree add -b feat/web-aparencia-usuario ~/w-aparencia origin/main` → HEAD `b08c7557`.
 - `npm ci` próprio em `frontend/` (103 pacotes, 3 min) e na raiz (326 pacotes; a 1ª tentativa caiu em `ECONNRESET` de rede; a 2ª, com `--fetch-retries=5`, passou). Sem junction.
 - **Disco** (`df -B1M /c`, livre): início 10.215 MiB (10,7 GB decimais, 9,98 GiB) → depois do worktree, 10.129 MiB → depois do `npm ci` do front, 9.913 MiB → `npm cache clean --force` (cache regenerável de 467 MB; nenhum processo `node` vivo, conferido por `Win32_Process`) → 10.129 MiB → depois do `npm ci` da raiz, **9.693 MiB = 10,16 GB decimais = 9,47 GiB**.
 - **Unidade, declarada:** li o "~11 GB" do mandato em GB decimais (10,7 GB no início). Nessa unidade o livre ficou acima de 10 GB, e segui. Em GiB, o disco já estava abaixo de 10 antes de eu começar (9,98 GiB); se a régua do orquestrador for GiB, fica esta ressalva. Não rodei a limpeza profunda (`DEEP_CLEAN`, que mexe no gradle e no docker): ela afeta outros agentes e é decisão do orquestrador.

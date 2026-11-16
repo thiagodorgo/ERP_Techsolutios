@@ -2,9 +2,9 @@
 
 > **Identidade:** `dev-trc01-claude` (nova). **Modelo:** Claude Opus 5.5 (`claude-opus-5-5`), nível menor
 > (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), cobrindo o Codex, que está no limite até 23:15Z (`D-CLAUDE-SO-ORQUESTRA`).
-> **Mandato:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-btrc01-claude.txt`. **Plano:** `docs/revisoes/TRACCAR/`
+> **Mandato:** `~/erp-pausa-2026-10-03/prompts/dev-btrc01-claude.txt`. **Plano:** `docs/revisoes/TRACCAR/`
 > na `origin/main` (v2.1 + emendas v2.2 e v2.3 + `D-TRC-*` de `decisoes.md`). O dev implementa o plano, não o reescreve.
-> **Worktree:** `C:/Users/AMP/w-trc01`, ramo `feat/traccar-b-trc-01`, head de partida `966bf24c96aa5cf7fb771770ae0b94e92c32254b`.
+> **Worktree:** `~/w-trc01`, ramo `feat/traccar-b-trc-01`, head de partida `966bf24c96aa5cf7fb771770ae0b94e92c32254b`.
 > **Não commita:** o orquestrador versiona.
 
 ## Fatia 0 — gate §8.0 e terreno
@@ -34,7 +34,7 @@ clone principal, só refs).
 Conclusão: nada que o plano mede mudou; o plano segue como está.
 
 **Terreno.** `df -h /c` → 14G livres (≥ 10 GB: sem `DEEP_CLEAN`, §8.4 passo 1). Worktree criado por
-`git -C $R worktree add C:/Users/AMP/w-trc01 -b feat/traccar-b-trc-01 origin/main` → head `966bf24c`, árvore limpa.
+`git -C $R worktree add ~/w-trc01 -b feat/traccar-b-trc-01 origin/main` → head `966bf24c`, árvore limpa.
 Outros worktrees vivos (não tocados): `w-03a`, `w-06a` (prefixo Docker `dev06a-`), `w-ag-20261011-200327`, `w-agapi2`,
 `w-arnes2`.
 
@@ -197,7 +197,7 @@ L1  zz-mut/trc-plano-formas.ts  -.quarantineWithoutTenant    ingestClient  RAW-S
 ```
 
 O controle (a mesma consulta num `$transaction` com `setTenantRlsContext(tx, …)` como 1ª instrução) **não** gerou chave.
-O mutante (cópia versionável: `B-TRC-01-evidencias/t13-mutante-formas-do-plano.ts.txt`) está em `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/t13/trc-plano-formas.ts`
+O mutante (cópia versionável: `B-TRC-01-evidencias/t13-mutante-formas-do-plano.ts.txt`) está em `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/t13/trc-plano-formas.ts`
 (fora do repositório; a saída inteira do gerador está em `t13/gen-out.txt` ao lado).
 
 **Por que não há saída dentro do PERMITIDO** (fato do gerador, não opinião):
@@ -397,7 +397,7 @@ migração (MUT-04, 12, 13, 22, 34) rodam numa base própria e descartável dent
 O runner, o catálogo das 45 e o resultado bruto estão em `docs/revisoes/TRACCAR/B-TRC-01-evidencias/`
 (`run-mutations.mjs`, `mutations.mjs`, `results-dev-2026-10-11.jsonl`), para a junta re-executar.
 
-**Comando:** `timeout -k 30 5400 node run-mutations.mjs C:/Users/AMP/w-trc01` (do diretório do runner) →
+**Comando:** `timeout -k 30 5400 node run-mutations.mjs ~/w-trc01` (do diretório do runner) →
 **45 de 45 VERMELHAS, 45 de 45 restauradas com o sha256 original**, 0 erro de âncora. Depois:
 `git status` só com o trabalho do bloco; `npm run check` verde; `pg_database` sem `trc01_mut`.
 
@@ -552,7 +552,7 @@ restauradas**. O arquivo sozinho: 15/15; junto com o `o6r07c-subresource-scope-d
 ### Mutações de novo, no código final (rodada 2, 22:26Z–22:36Z)
 
 Como os testes `-db` mudaram depois da rodada 1 (orçamento relaxado), a rodada inteira foi refeita no código
-final: `timeout -k 30 5400 node run-mutations.mjs C:/Users/AMP/w-trc01` → **45 de 45 VERMELHAS pelos casos esperados,
+final: `timeout -k 30 5400 node run-mutations.mjs ~/w-trc01` → **45 de 45 VERMELHAS pelos casos esperados,
 45 de 45 restauradas com o sha256 original**, 0 erro de âncora (a MUT-40 continua vermelha pelo caso 5 da corrida,
 que usa o orçamento DEFAULT do plano). Resultado bruto: `B-TRC-01-evidencias/results-dev-2026-10-11-rodada2-final.jsonl`
 (a rodada 1 fica em `…-rodada1.jsonl`). Tabela da rodada 2:
@@ -674,15 +674,15 @@ integrar a `main` no ramo deve re-rodar o T13 (o #424 pode ter mexido no invent�
 ## Conserto do 503 (Antigravity)
 
 > **Identidade:** `dev-trc01-503-agy` (nova). **Ferramenta/modelo:** Antigravity CLI, Claude Opus 5.5 (high), nível menor.
-> **Mandato:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt`. **Achado:** `PRE-REVISAO-426-api.md`, Achado 1 (`ajuste`).
+> **Mandato:** `~/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt`. **Achado:** `PRE-REVISAO-426-api.md`, Achado 1 (`ajuste`).
 
 ### Passo 0 — terreno (2026-10-12T13:50Z) — **BARRADO**
 
 | # | Comando | Saída | Estado |
 |---|---|---|---|
-| 0.1 | `timeout 120 git fetch; git rev-parse HEAD; git branch --show-current` (Cwd `C:\Users\AMP\w-trc01`) | `exec: "C:\\Users\\AMP\\w-trc01\\powershell": executable file not found in %PATH%` | barrado |
+| 0.1 | `timeout 120 git fetch; git rev-parse HEAD; git branch --show-current` (Cwd `~/w-trc01`) | `exec: "~/w-trc01\\powershell": executable file not found in %PATH%` | barrado |
 | 0.2 | `git rev-parse HEAD` (Cwd com `/`) | mesmo erro | barrado |
-| 0.3 | `echo ok` (Cwd `C:\Users\AMP\erp-pausa-2026-10-03`) | `exec: "...\\erp-pausa-2026-10-03\\powershell": executable file not found in %PATH%` | barrado |
+| 0.3 | `echo ok` (Cwd `~/erp-pausa-2026-10-03`) | `exec: "...\\erp-pausa-2026-10-03\\powershell": executable file not found in %PATH%` | barrado |
 
 **Diagnóstico (fato):** a ferramenta de execução do Antigravity não acha o `powershell` no `PATH` do processo e tenta
 resolvê-lo no diretório de trabalho; nenhum comando executa (nem `echo`). Sem execução não há `git fetch`, nem conferência
@@ -730,7 +730,7 @@ Leituras da retomada: `DESENHO-503-api.md` (porta de commit com claim: open → 
 > **Identidade:** `dev-trc01-503-flash` (sucessora de `dev-trc01-503-agy` e `dev-trc01-503-gemini`).
 > **Ferramenta/modelo:** Antigravity CLI, Gemini 3.8 Flash (high).
 > **Motivo da troca:** Esgotamento das cotas semanais do Claude Opus 5.5 e do limite do Gemini 3.1 Pro; decisão do dono de prosseguir com Gemini Flash High no Antigravity CLI.
-> **Mandato:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt` (RETOMADAS 3 a 6).
+> **Mandato:** `~/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt` (RETOMADAS 3 a 6).
 
 #### 1. Desenho Aplicado e Propriedade Garantida
 
@@ -801,29 +801,29 @@ As 11 falhas observadas na execução completa do `npm test` no container Linux 
 
 #### 5. Mutações Provadas em Cópia Descartável (`w-mut503`)
 
-As duas mutações foram testadas em worktree descartável isolado (`C:/Users/AMP/w-mut503`, criado a partir de `HEAD` e removido ao final):
+As duas mutações foram testadas em worktree descartável isolado (`~/w-mut503`, criado a partir de `HEAD` e removido ao final):
 
 1. **Mutação (a) — Omissão da porta de commit (o trabalho grava após o 503):**
    - Alteração: Em `src/integrations/traccar/traccar-ingestion.service.ts` (`phaseTwo`), comentada a chamada `claimTraccarCommitOrThrow(deadline)`.
-   - Execução: `bash teste-linux.sh C:/Users/AMP/w-mut503 "node --test --import tsx tests/traccar-position-ingestion-db.test.ts"`
+   - Execução: `bash teste-linux.sh ~/w-mut503 "node --test --import tsx tests/traccar-position-ingestion-db.test.ts"`
    - Resultado: **VERMELHO** (`# pass 15`, `# fail 1`).
    - Saída: `not ok 15 - ingestão: tempo esgotado → 503 e, depois do fim do trabalho, 0 posição, 0 recibo e 0 evento` falhou com:
      `AssertionError [ERR_ASSERTION]: nenhuma posição gravada depois do 503: 1 !== 0` em `tests/traccar-position-ingestion-db.test.ts:531:12`.
    - Prova: Sem a trava da porta de commit, a posição é indevidamente persistida no PostgreSQL após a resposta 503.
 2. **Mutação (b) — Devolução prematura da vaga do limitador no finish/close da resposta:**
    - Alteração: Em `src/integrations/traccar/traccar-rate-limit.ts`, revertido para devolver o slot imediatamente em `response.once("finish", slot.release)` e `response.once("close", slot.release)` sem esperar `work`.
-   - Execução: `bash teste-linux.sh C:/Users/AMP/w-mut503 "node --test --import tsx tests/traccar-rate-limit.test.ts"` (e validado no host).
+   - Execução: `bash teste-linux.sh ~/w-mut503 "node --test --import tsx tests/traccar-rate-limit.test.ts"` (e validado no host).
    - Resultado: **VERMELHO** (`# pass 4`, `# fail 1`).
    - Saída: `not ok 5 - concorrência: a vaga só volta quando o TRABALHO termina, não quando o 503 por tempo é enviado` falhou com:
      `AssertionError [ERR_ASSERTION]: o trabalho da 1ª ainda roda: a vaga continua ocupada depois do 503: 0 !== 1` em `tests/traccar-rate-limit.test.ts:131:12`.
    - Prova: Devolver a vaga no término da resposta permite que uma requisição subsequente fure a concorrência enquanto o trabalho assíncrono da anterior ainda executa.
 
-Worktree descartável `C:/Users/AMP/w-mut503` foi completamente removido (`git worktree remove --force`).
+Worktree descartável `~/w-mut503` foi completamente removido (`git worktree remove --force`).
 
 ### Retomada 7 — Dois testes faltantes apontados pela pré-revisão da API (13/10 ~03:35Z)
 
 > **Identidade:** `dev-trc01-503-flash`. **Modelo:** Gemini 3.8 Flash (high).
-> **Mandato:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt` (RETOMADA 7).
+> **Mandato:** `~/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt` (RETOMADA 7).
 > **Ponto de partida:** `b5adc306` na `w-trc01`.
 
 #### 1. Testes Implementados
@@ -838,11 +838,11 @@ Worktree descartável `C:/Users/AMP/w-mut503` foi completamente removido (`git w
 
 #### 2. Mutações Provadas em Cópia Descartável (`w-mut503`)
 
-As mutações foram provadas em worktree descartável (`git worktree add --detach C:/Users/AMP/w-mut503 HEAD`), executando via `teste-linux.sh`:
+As mutações foram provadas em worktree descartável (`git worktree add --detach ~/w-mut503 HEAD`), executando via `teste-linux.sh`:
 
 1. **Mutação 1 — Claim da porta de commit restrito a `value.kind === 'stored'` (`service.ts:188`):**
    - Alteração: `if (outcome.kind === "confirmed" && outcome.value.kind === "stored") { claimTraccarCommitOrThrow(deadline); }`
-   - Execução: `bash teste-linux.sh C:/Users/AMP/w-mut503 "node --test --import tsx tests/traccar-position-ingestion-db.test.ts"`
+   - Execução: `bash teste-linux.sh ~/w-mut503 "node --test --import tsx tests/traccar-position-ingestion-db.test.ts"`
    - Resultado: **VERMELHO** (`# pass 16`, `# fail 1`).
    - Saída: `not ok 16 - ingestão: tempo esgotado → 503 e, depois do fim do trabalho, quarentena interna e conflito não gravam nada` falhou com:
      `AssertionError [ERR_ASSERTION]: nenhuma quarentena gravada depois do 503: 1 !== 0` em `tests/traccar-position-ingestion-db.test.ts:601:14`.
@@ -850,13 +850,13 @@ As mutações foram provadas em worktree descartável (`git worktree add --detac
    - Restauração: Código restaurado e suíte reexecutada: **VERDE** (17/17).
 2. **Mutação 2 — Omissão da liberação da vaga na rejeição (`traccar-rate-limit.ts:93`):**
    - Alteração: `work.then(release)` (sem o tratador de rejeição).
-   - Execução: `bash teste-linux.sh C:/Users/AMP/w-mut503 "node --test --import tsx tests/traccar-rate-limit.test.ts"`
+   - Execução: `bash teste-linux.sh ~/w-mut503 "node --test --import tsx tests/traccar-rate-limit.test.ts"`
    - Resultado: **VERMELHO** (`# pass 5`, `# fail 1`).
    - Saída: `not ok 6 - concorrência: a vaga volta mesmo se o trabalho for REJEITADO com erro (work.then(release, release))` falhou com `ERR_TEST_FAILURE` (falha na liberação / rejeição não tratada).
    - Prova: Sem `release` na rejeição, a vaga do limitador vaza em falhas do trabalho assíncrono.
    - Restauração: Código restaurado e suíte reexecutada: **VERDE** (6/6).
 
-Worktree descartável `C:/Users/AMP/w-mut503` completamente removido (`git worktree remove --force`).
+Worktree descartável `~/w-mut503` completamente removido (`git worktree remove --force`).
 
 #### 3. Bateria de Testes no Container Linux (`teste-linux.sh`)
 

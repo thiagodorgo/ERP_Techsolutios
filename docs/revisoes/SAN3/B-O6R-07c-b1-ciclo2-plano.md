@@ -4,7 +4,7 @@
 - **Modelo:** **Fable 5.1 (`claude-fable-5-1`)**, o do frontmatter (`D-PLANEJADOR-MODELO-FABLE`); sem fallback. Autoridade: CLAUDE.md §C7.4 e §C7.6 (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`).
 - **Data:** 2026-10-17. **Bloco:** `B-O6R-07c-b1` (PR #440, ramo `fix/o6r07cb1-despacho-atribui`), último P0 `Ω6R-SEC-002`. Bloco de PERMISSÃO: inspetor + 3 cadeiras, unanimidade com veto; **o ciclo 2 é o último em que achado não grave reprova** (§C7 item 8(2)).
 - **Objeto julgado no ciclo 1:** `b198fe358b41186b2598ab258ccb735da8c04cbc`; ata `agent-orchestration/omega/juntas/J-B-O6R-07c-b1-ciclo1.md` no head `5939a30d` (REPROVADO 1×2: C1 e C3 reprovam, C2 aprova). Base do bloco (merge-base com `origin/main`): `4fe7524e`. `origin/main` no momento desta auditoria: `2a49b015`.
-- **Onde medi (§A7):** worktree detached PRÓPRIO `C:/Users/AMP/w-plan07cb1` em `5939a30d` (o `src/` é o do objeto `b198fe35`: os commits `34b8ae73`, `b198fe35` e `5939a30d` tocam só corpos, carimbo da migração e registro), `npm ci` próprio (0 symlink), `npm run db:generate` com URL fictícia, `npm run check` ec 0. Sem Postgres, sem Docker, sem base viva, sem porta. Scratch só em `…/scratchpad/plan07cb1/`. Worktree removido no fim.
+- **Onde medi (§A7):** worktree detached PRÓPRIO `~/w-plan07cb1` em `5939a30d` (o `src/` é o do objeto `b198fe35`: os commits `34b8ae73`, `b198fe35` e `5939a30d` tocam só corpos, carimbo da migração e registro), `npm ci` próprio (0 symlink), `npm run db:generate` com URL fictícia, `npm run check` ec 0. Sem Postgres, sem Docker, sem base viva, sem porta. Scratch só em `…/scratchpad/plan07cb1/`. Worktree removido no fim.
 - **Insumos lidos:** a ata; `c1-voto.json`, `c1-opus-evidencia.md`, `c2-voto.json`, `c2-opus-evidencia.md`, `c3-voto.json`, `c3-evidencia.md`, `insp-07cb1-parecer.md`; a emenda `docs/revisoes/SAN3/B-O6R-07c-b-emenda-2026-10-15.md`, as seções 07c-b do `B-O6R-07c-plano.md`, a crítica `B-O6R-07c-b1-critica.md` (na `origin/main`), o relatório `B-O6R-07c-b1-dev.md`; `decisoes.md` na `origin/main` (3654–3725); o código do objeto por arquivo:linha.
 
 ## Resumo executivo
@@ -24,7 +24,7 @@
 
 | comando | saída | veredito |
 |---|---|---|
-| `git worktree add --detach C:/Users/AMP/w-plan07cb1 5939a30d` · `npm ci --no-audit --no-fund` · `DATABASE_URL=postgresql://x:y@127.0.0.1:1/nada npm run db:generate` · `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory npm run check` | ec 0/0/0/0; `find node_modules -maxdepth 1 -type l` = 0 | terreno próprio limpo |
+| `git worktree add --detach ~/w-plan07cb1 5939a30d` · `npm ci --no-audit --no-fund` · `DATABASE_URL=postgresql://x:y@127.0.0.1:1/nada npm run db:generate` · `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory npm run check` | ec 0/0/0/0; `find node_modules -maxdepth 1 -type l` = 0 | terreno próprio limpo |
 | `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory node --test --import tsx --test-reporter=tap tests/o6r07c-b-scope.test.ts` | `# tests 41 · pass 41 · fail 0` | baseline do bloco em memória: **41** |
 | `node --import tsx tests/helpers/o6r07c-census.ts gravar <scratch>/regen.json` (N=1) + comparador node sobre `tests/fixtures/o6r07c-classificacao-vias.json` | 468 = 468 chaves, só-fixture 0, só-regen 0, **3 diferenças**: `PAR …/evidence-actions · evidence.work_order_{observation,photo,signature}` fixture `EVIDENCIA-OS·ESCOPO` × regen `OS·SEM-ALCANCE`; resumo do gerador `EVIDENCIA-OS·ESCOPO=1 · OS·SEM-ALCANCE=18` (o commitado tem 4 e 15) | **C3-A2 reproduzido** |
 | sonda PRÓPRIA `<scratch>/plan07cb1/sonda.mts` (md5 `942a9a8057138a56c606734da06546ed`; app real `createApp` + `MemoryCoreSaasAdapter`, HTTP em `listen(0)`, permissões do catálogo pelo `x-role`) | tabela abaixo | A1, A3, C3-A1 reproduzidos |
@@ -308,4 +308,4 @@ Permissão → inspetor de terreno + **3 cadeiras, unanimidade com veto**, ciclo
 - Este arquivo, copiado para `docs/revisoes/SAN3/B-O6R-07c-b1-ciclo2-auditoria-e-plano.md` no PR do ciclo 2 (é insumo do inspetor e das cadeiras).
 
 ### Limpeza desta auditoria
-Worktree `C:/Users/AMP/w-plan07cb1` removido por `git worktree remove --force`; `regen.json`, as sondas e os logs ficam só na subpasta `plan07cb1/` do scratchpad da sessão (efêmera). Nada foi escrito no repositório nem nos worktrees de terceiros; nenhum container criado; base viva intocada.
+Worktree `~/w-plan07cb1` removido por `git worktree remove --force`; `regen.json`, as sondas e os logs ficam só na subpasta `plan07cb1/` do scratchpad da sessão (efêmera). Nada foi escrito no repositório nem nos worktrees de terceiros; nenhum container criado; base viva intocada.

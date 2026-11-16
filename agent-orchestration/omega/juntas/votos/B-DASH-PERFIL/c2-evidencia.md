@@ -11,12 +11,12 @@ P3: o caído não deixou evidência registrada; nada a re-executar dele — part
 - `gh pr view 446` → OPEN, headRefOid = objeto. `gh api .../commits/<O>/check-runs` → 14 runs, 14 `completed success`.
 - Inspetor (`insp-dash-parecer.md`): **LIBERADO**, nomeia C2 `jdash-c2-gemini` e declara "Claude Opus é reserva declarada". Sou essa reserva.
 - `docker ps -a` → só `erp-postgres`, `erp-redis` (ignorados); 0 trabalhos `tl*-`/`j*-` alheios → posso subir 1.
-- Nota de terreno: o worktree `C:/Users/AMP/w-dash` está em `a594b09a` (≠ objeto); não o uso para medir — leio o objeto por `git show`/worktree detached próprio.
-- Worktree próprio: `C:/Users/AMP/w-jdash-c2-opus` (satisfaz o prefixo do corpo `w-jdash-c2-` e o do orquestrador `w-jdash-c2`), detached no objeto, `npm ci` próprio, zero junction. Containers com prefixo `jdash-c2-`. Proibidas: base viva, portas 5432, 6379, 3000, 5173, 5050, 8899.
+- Nota de terreno: o worktree `~/w-dash` está em `a594b09a` (≠ objeto); não o uso para medir — leio o objeto por `git show`/worktree detached próprio.
+- Worktree próprio: `~/w-jdash-c2-opus` (satisfaz o prefixo do corpo `w-jdash-c2-` e o do orquestrador `w-jdash-c2`), detached no objeto, `npm ci` próprio, zero junction. Containers com prefixo `jdash-c2-`. Proibidas: base viva, portas 5432, 6379, 3000, 5173, 5050, 8899.
 
 ## Terreno (04:55Z)
-- `git worktree add --detach C:/Users/AMP/w-jdash-c2-opus 849bf840…` → `HEAD is now at 849bf840`. `npm ci` (raiz) ec=0 · `npm --prefix frontend ci` ec=0 (timeout implícito do harness 10 min). Zero junction (diretórios `node_modules` reais, criados pelo `npm ci`).
-- Sondas e mutações SÓ dentro do worktree descartável (pasta `.jdash-c2-probe/` e `frontend/.jdash-c2-probe/`), removidas com o worktree no teardown. Nenhuma edição na árvore `C:/Users/AMP/w-dash` além dos meus 2 arquivos.
+- `git worktree add --detach ~/w-jdash-c2-opus 849bf840…` → `HEAD is now at 849bf840`. `npm ci` (raiz) ec=0 · `npm --prefix frontend ci` ec=0 (timeout implícito do harness 10 min). Zero junction (diretórios `node_modules` reais, criados pelo `npm ci`).
+- Sondas e mutações SÓ dentro do worktree descartável (pasta `.jdash-c2-probe/` e `frontend/.jdash-c2-probe/`), removidas com o worktree no teardown. Nenhuma edição na árvore `~/w-dash` além dos meus 2 arquivos.
 - Nota de nomes: a ferramenta `teste-linux.sh` nomeia containers `tl<epoch><pid>-*` (não `jdash-c2-`); o orquestrador mandou usá-la "normalmente". Ela remove pelo nome no `trap EXIT`. Registro aqui para o teardown.
 
 ## Leitura do diff do bloco (`git diff B..O -- frontend/src src`)
@@ -43,7 +43,7 @@ Superfície da minha cadeira: `context/repository.ts` (troca passa a usar `d.per
 
 ## Item 1 — parte ponta a ponta com servidor e banco reais — 05:20Z
 - Sonda própria `.jdash-c2-probe/switch-e2e-db.test.ts`: `createApp(new PrismaCoreSaasService())` REAL em porta efêmera dentro do container; 2 organizações (A papel `manager`, B papel `finance`, mesmo e-mail), login REAL pelo `loginWithJwt` do frontend, vínculo explícito por `POST /auth/identity-links` (201), `POST /auth/active-tenant` cru e depois o `switchTenantContext` REAL do frontend contra o servidor, ida A→B e volta B→A. Teardown por `cleanupIdentityFixture` no `finally`.
-- cmd: `timeout 900 bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-jdash-c2-opus "node --test --import tsx .jdash-c2-probe/switch-e2e-db.test.ts"`
+- cmd: `timeout 900 bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-jdash-c2-opus "node --test --import tsx .jdash-c2-probe/switch-e2e-db.test.ts"`
   - 1ª execução: `npm ci` do container caiu com `ECONNRESET` (rede, ec=3) — ambiente, nada medido. 2ª execução: **ec=0, 1/1 pass**.
   - saída: `E2E backend: |B|=61 dashboard:read=false` (resposta crua == `resolvePermissionsForRoles(["finance"])` por conjunto); `E2E frontend: A→B |perm|=62 landing=/finance ; B→A |perm|=145 landing=/dashboard`; 0 permissão só-da-origem sobrevive nos dois sentidos.
   - containers após: só `erp-postgres`, `erp-redis` (o `tl*` foi removido pelo nome pela ferramenta). Nenhuma porta publicada; base viva e 5432/6379/3000/5173/5050/8899 do host intocadas.
@@ -73,6 +73,6 @@ Superfície da minha cadeira: `context/repository.ts` (troca passa a usar `d.per
 ## Teardown — 05:34Z (`date -u`)
 - Hashes dos 6 arquivos mutados == antes (`diff` contra `hashes-antes.txt` vazio); `git status --porcelain --untracked-files=no` = 0 linhas.
 - Vite próprio (127.0.0.1:5291) parado (TaskStop + `Stop-Process` do PID 26500 que escutava a 5291); `netstat` 5291 LISTEN = 0.
-- `git worktree remove --force C:/Users/AMP/w-jdash-c2-opus` ec=0; diretório ausente. Sondas foram junto com o worktree.
-- Docker: meus 2 containers `tl*` (execuções do E2E) removidos pela ferramenta. Os `tl17923874008469-*` presentes são da C3 (montam `C:/Users/AMP/w-jdash-c3`, iniciados 05:23Z) — não tocados. `erp-*` intocados. Sem `prune`.
-- Logs temporários `C:/Users/AMP/jdash-c2-opus-{npmci,vite}.log` apagados. Nenhum commit, nenhum push.
+- `git worktree remove --force ~/w-jdash-c2-opus` ec=0; diretório ausente. Sondas foram junto com o worktree.
+- Docker: meus 2 containers `tl*` (execuções do E2E) removidos pela ferramenta. Os `tl17923874008469-*` presentes são da C3 (montam `~/w-jdash-c3`, iniciados 05:23Z) — não tocados. `erp-*` intocados. Sem `prune`.
+- Logs temporários `~/jdash-c2-opus-{npmci,vite}.log` apagados. Nenhum commit, nenhum push.

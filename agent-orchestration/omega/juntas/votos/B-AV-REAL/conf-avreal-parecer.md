@@ -6,7 +6,7 @@
 - Verificador: `conf-avreal-sol` — Codex GPT-5.6 Sol, nível menor declarado, identidade nova.
 - Independência: o verificador não escreveu nem consertou código deste bloco.
 - Objeto medido: head do PR #477 `1181537e1a5a0cae3f862abd36cb77a55d38a126`.
-- Worktree próprio: `C:/Users/thiag/w-confav`, detached no objeto, com `npm ci` próprio e sem junction.
+- Worktree próprio: `~/w-confav`, detached no objeto, com `npm ci` próprio e sem junction.
 - Base de comparação de `src/`: `2746eb60`.
 
 Comando de trava: `gh pr view 477 --json headRefOid --jq .headRefOid`; saída inicial e final: `1181537e1a5a0cae3f862abd36cb77a55d38a126`. O objeto não mudou durante a conferência.

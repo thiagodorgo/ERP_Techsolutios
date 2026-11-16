@@ -8,7 +8,7 @@
   "base": "aadaa6d51be950e152ca6a6f15327bc9989039de",
   "foco": "diff x plano, escopo, KPI (C3.5), o C7.1-bis espelhado em CLAUDE.md e AGENTS.md mais os dois corpos do inspetor, e o registro",
   "corpo_aplicado": "O corpo que apliquei E o do head julgado: md5 EOL-neutro 804d89f01d920ed72c23e5e24c062501, identico em 3a0ea095, na raiz da sessao, no worktree san300 e no meu worktree. A ressalva R1 do inspetor nao alcanca esta cadeira.",
-  "terreno": "Worktree detached proprio em C:/c/Users/AMP/w-j-sanb1-c3 @ 3a0ea095, caminho curto, sem junction, criado e removido por mim. Nenhum conteiner subido; a base viva nao recebeu um comando. Residuo de outra sessao (R4/R5) reportado pelo inspetor e NAO varrido por mim.",
+  "terreno": "Worktree detached proprio em C:~/w-j-sanb1-c3 @ 3a0ea095, caminho curto, sem junction, criado e removido por mim. Nenhum conteiner subido; a base viva nao recebeu um comando. Residuo de outra sessao (R4/R5) reportado pelo inspetor e NAO varrido por mim.",
   "veredito": "APROVADO",
   "resumo": "O diff entrega exatamente os cinco itens que o plano-mestre declara para este bloco, em 14 arquivos, todos no escopo permitido, com o escopo proibido vazio por pathspec explicito e os quatro workflows de deploy byte-identicos a base. O KPI cumpre o C3.5 na forma da autoria, as metricas de trilha sao carregadas com nota datada e so blocks_completed se move; o espelhamento CLAUDE.md/AGENTS.md e byte-identico por md5 e o indice de pendencias e saida verificada do gerador. Nenhum achado bloqueia: dois ajustes de registro e cinco notas.",
   "achados": [

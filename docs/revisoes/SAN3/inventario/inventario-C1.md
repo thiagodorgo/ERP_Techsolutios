@@ -1,6 +1,6 @@
 # Inventário — balde C (DIFERIDO-LEVE), linhas 1–38
 
-- worktree (SOMENTE LEITURA): `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` · branch `main`
+- worktree (SOMENTE LEITURA): `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` · branch `main`
 - head medido: `15ef3fbed57e217b66e6b307f9ae96502777fd09` (`15ef3fbe`, 2026-09-11 05:10:50 -0300, "fix(cloud-usage): unidade faturável na transação e resumo somado no banco (B-O6R-06) (#385)"); `git status --porcelain` vazio (sem mutação viva)
 - fonte: `agent-orchestration/controle/pendencias-indice.md` §"ABERTAS · balde C — DIFERIDO-LEVE" (l.230), linhas 234–271 da tabela (P-004 … P-Ω4-2A-COBERTURA); texto de cada entrada em `pendencias.md` pela coluna `linha`
 - data da medição: 2026-09-11

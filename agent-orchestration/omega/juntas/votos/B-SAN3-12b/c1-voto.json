@@ -76,5 +76,5 @@
   "D-5: contagem por conta em vez da barra, declarada com razão de dado — nota",
   "C2: a cadeia de permissão do Técnico de Campo e o menu (não julgados aqui)"
  ],
- "teardown": "Vite morto pelo PID (taskkill //PID 23756 //T //F; filho 17916; :47913 sem LISTEN) · processos com j12b-c1-wt = 0 · worktree removido por git worktree remove --force (ec 0, caminho ausente) · mutações e o checkout do head-base restaurados (status vazio, hash-object = blob a cada uma) · sondas, logs e capturas só em C:/Users/AMP/erp-pausa-2026-10-03/j12b-c1/ · nenhum docker · w-san312b só com c1-evidencia.md e c1-voto.json · disco no fim 10,82 GiB"
+ "teardown": "Vite morto pelo PID (taskkill //PID 23756 //T //F; filho 17916; :47913 sem LISTEN) · processos com j12b-c1-wt = 0 · worktree removido por git worktree remove --force (ec 0, caminho ausente) · mutações e o checkout do head-base restaurados (status vazio, hash-object = blob a cada uma) · sondas, logs e capturas só em ~/erp-pausa-2026-10-03/j12b-c1/ · nenhum docker · w-san312b só com c1-evidencia.md e c1-voto.json · disco no fim 10,82 GiB"
 }

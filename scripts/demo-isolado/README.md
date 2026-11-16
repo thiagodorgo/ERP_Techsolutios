@@ -72,6 +72,12 @@ relativas (`vencimento_relativo_dias`), calculadas no fuso `America/Sao_Paulo`; 
   o binário dela); ela não abre na tela.
 - Uma OS com serviço precisa de tarifa publicada para esse serviço (`tabelas`).
 - O passo `on_site` do app confere os 2 últimos caracteres de `placa_atendida`.
+- Cada `localizacoes[].usuario` ganha, na ET6 e antes da posição, o perfil de operador e o consentimento de rastreio,
+  porque o produto recusa a posição sem os dois (422). O perfil nasce pelo administrador, só com o vínculo (`user_id`):
+  sem dado pessoal e sem consentimento. O consentimento se liga pela rota do app (`POST /api/v1/mobile/location-consent`),
+  com a sessão da própria pessoa e a versão do texto do app. O motor nunca liga pelo cadastro e nunca revoga. Se o
+  consentimento lido estiver desligado e a trilha (`GET /api/v1/audit-events`) mostrar decisão ou mudança no perfil
+  depois da criação, ou não puder ser lida, o motor para com o código 5: ele não religa o que alguém desligou.
 
 ## Matriz
 

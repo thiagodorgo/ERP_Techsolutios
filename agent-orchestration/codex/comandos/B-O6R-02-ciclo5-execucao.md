@@ -54,7 +54,7 @@ O passo 3 do preflight §3.3 checava HEAD e deveria checar origin/main; o bloco 
 ## Preflight corrigido — reexecução após ruling
 
 - comando: `pwd`; `git rev-parse --abbrev-ref HEAD`; `git rev-parse --short HEAD`; `git fetch origin --prune`; `git rev-parse --short origin/main`; `git rev-list --left-right --count origin/main...HEAD`; `git show origin/main:AGENTS.md | grep -c 'D-TETO-DOIS-CICLOS'`; `git cat-file -e origin/main:agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md`; `git status --porcelain`
-- saída: worktree `/c/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/agent-af6ea607f3ddf8efd`; branch `feat/o6r-b02-financial-uow`; head `12c3825`; `origin/main=f895dd2`; divergência `10/35`; marcador em `origin/main=2`; obituário em `origin/main` com `ec=0`; status contém somente `?? agent-orchestration/codex/comandos/B-O6R-02-ciclo5-execucao.md`, criado por determinação do ruling antes desta reexecução
+- saída: worktree `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/agent-af6ea607f3ddf8efd`; branch `feat/o6r-b02-financial-uow`; head `12c3825`; `origin/main=f895dd2`; divergência `10/35`; marcador em `origin/main=2`; obituário em `origin/main` com `ec=0`; status contém somente `?? agent-orchestration/codex/comandos/B-O6R-02-ciclo5-execucao.md`, criado por determinação do ruling antes desta reexecução
 - parcial: OK — checks corrigidos verdes; o único item no status é a evidência incremental exigida pelo próprio ruling; head julgado permaneceu `12c3825`
 
 ## Leitura obrigatória do §4
@@ -291,7 +291,7 @@ resto do ruling permanece como está.
 - comando: `git --version`
 - saída: `git version 2.53.0.windows.2`
 - comando: diretório de execução medido pelo shell
-- saída: `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\agent-af6ea607f3ddf8efd`
+- saída: `~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\agent-af6ea607f3ddf8efd`
 - parcial: OK — coincide com o terreno fixado pelo ruling
 
 ### P1.3 — primeira simulação

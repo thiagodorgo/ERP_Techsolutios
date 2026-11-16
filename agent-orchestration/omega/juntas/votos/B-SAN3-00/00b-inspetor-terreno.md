@@ -7,7 +7,7 @@
 
 - **Papel:** `inspetor-de-terreno-da-junta` (nao voto, nao conserto, nao julgo o merito)
 - **Modelo:** `claude-opus-5[1m]` (substituindo `fable` — ver nota acima)
-- **Corpo aplicado:** `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/inspetor-de-terreno-da-junta.md` (lido integralmente)
+- **Corpo aplicado:** `~/Documents/GitHub/ERP_Techsolutios/.claude/agents/inspetor-de-terreno-da-junta.md` (lido integralmente)
 - **Mandato:** `.../scratchpad/prompt-inspetor-B-SAN3-00.md`
 - **Briefing conferido:** `.../scratchpad/BRIEFING-B-SAN3-00.md`
 - **Data/hora do inicio:** 2026-09-21
@@ -31,7 +31,7 @@
 
 ## 0. Corpo aplicado — divergência medida no MEU próprio corpo (item 3.3 do corpo do head)
 
-O mandato me mandou ler o corpo em `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/inspetor-de-terreno-da-junta.md`
+O mandato me mandou ler o corpo em `~/Documents/GitHub/ERP_Techsolutios/.claude/agents/inspetor-de-terreno-da-junta.md`
 (árvore principal, `demo/investidor@d1fab3bc`). Medi esse corpo contra o corpo **no head julgado**:
 
 ```
@@ -67,7 +67,7 @@ O head do PR #392 **é** o objeto nomeado pelo briefing, e a árvore do dev **n�
 (nem untracked, nem ignorado fora de `node_modules`). Base: `merge-base 7822deaf origin/main` =
 `aadaa6d51be950e152ca6a6f15327bc9989039de` = `origin/main` — a branch **não** divergiu da base declarada.
 
-**Checkout independente do objeto:** criei worktree detached meu em `C:/Users/AMP/w-insp-san300` (caminho
+**Checkout independente do objeto:** criei worktree detached meu em `~/w-insp-san300` (caminho
 curto) e `git status --porcelain -uall` saiu **vazio** também lá — o `.gitignore` novo não produz sujeira
 em árvore recém-criada.
 
@@ -93,7 +93,7 @@ M  docs/revisoes/SAN3/PLANO_SAN3.md
 
 ### 1.2 Plano de isolamento declarado — **VERDE**
 O briefing §0 declara, por escrito: worktree **detached próprio por cadeira**, em **caminho curto**
-(`C:/Users/AMP/w-j-san300-<cadeira>`), com a razão medida (dentro do scratchpad o Windows falha com
+(`~/w-j-san300-<cadeira>`), com a razão medida (dentro do scratchpad o Windows falha com
 `Filename too long`); **`npm ci` próprio**; **sem junction** (§C7.1-ter(c)); contêineres próprios com
 `DATABASE_URL`/`REDIS_URL` explícitas se subir banco; **5432 é de outro projeto**, faixa 58284–58483
 excluída pelo Windows, e **a base viva (`erp-postgres`/`erp-redis`) nunca é alvo**; remoção do que criar
@@ -120,7 +120,7 @@ Nenhum `*probe*` na árvore julgada; os dois diretórios `especialistas/` foram 
 
 **Resíduo de OUTRAS sessões (reporto — não varro, §remoção só por identificador do meu bloco):**
 - worktrees vivos alheios: `b04a` (`738ff531`), `b11` (`43557a17`), `gov-descuido` (`497d360d`),
-  `gov-elenco` (`15ef3fbe`), `sanb1` (`3a0ea095` — é a junta paralela do `B-SAN3-B1`), `C:/Users/AMP/w-s1`
+  `gov-elenco` (`15ef3fbe`), `sanb1` (`3a0ea095` — é a junta paralela do `B-SAN3-B1`), `~/w-s1`
   (`27eae4b0`);
 - **árvore principal** (`demo/investidor@d1fab3bc`) com **4 arquivos ` M` REAIS** — não são fantasma de
   `autocrlf`: `git diff --numstat` dá `+86/−0` em `critico-c5-adversarial.md` e `+96/−4` em
@@ -226,7 +226,7 @@ nesta sessao. Divergiu **so o meu proprio corpo** (§0).
 ### 4.1 Espelho Codex — **VERDE no objeto julgado**
 ```
 cd .../worktrees/san300       ; node scripts/sync-agent-agents.mjs --check -> "OK - 23 agentes, espelho consistente."  ec=0
-cd C:/Users/AMP/w-insp-san300 ; node scripts/sync-agent-agents.mjs --check -> "OK - 23 agentes, espelho consistente."  ec=0
+cd ~/w-insp-san300 ; node scripts/sync-agent-agents.mjs --check -> "OK - 23 agentes, espelho consistente."  ec=0
 ```
 **Recursividade conferida** (o item que ja falhou por guard raso): o fonte do script diz, na l.66,
 *"Recursivo DE PROPOSITO: o listing raso ja deixou especialistas/ fora"*, e a contagem por `git ls-tree -r`
@@ -282,7 +282,7 @@ actions/checkout@v4, actions/setup-node@v4" e `notice` "ubuntu-latest migrara pa
 
 ## 6. Baseline honesto — medido AGORA, isolado, ANTES de qualquer cadeira — **VERDE**
 
-Forma: worktree **detached meu** em `C:/Users/AMP/w-insp-san300` (caminho curto), em `7822deaf`, arvore
+Forma: worktree **detached meu** em `~/w-insp-san300` (caminho curto), em `7822deaf`, arvore
 limpa, `npm ci` **proprio** (sem junction), `DATABASE_URL` **so no env** e apontando para porta
 **inexistente** (59998) — **a base viva nao recebeu um comando** e **nenhum conteiner foi criado por mim**.
 ```
@@ -461,16 +461,16 @@ transcricao fiel. Isso e o merito — C1, C2 e C3.
 | 7.3 | P5 | conferido, com alerta de contagem |
 | 8 | Afirmacoes a re-verificar | 8 blocos nomeados (a)-(h) |
 
-**Atualizacao do P5, medida depois da limpeza:** apareceu o worktree `C:/Users/AMP/w-j-sanb1-c1`
+**Atualizacao do P5, medida depois da limpeza:** apareceu o worktree `~/w-j-sanb1-c1`
 (detached @ `3a0ea095`) — a junta paralela do **`B-SAN3-B1`** **ja disparou a cadeira C1**. Com ela viva,
 **o teto de 2 em paralelo ja esta ocupado**: esta junta comeca disparando **uma cadeira por vez** ate o B1
 liberar assento.
 
 ## 10. Limpeza (§C5) — o que eu criei e o que confirmei ter derrubado
 
-- **Criei:** um worktree detached meu, `C:/Users/AMP/w-insp-san300` (caminho curto), com `npm ci` proprio
+- **Criei:** um worktree detached meu, `~/w-insp-san300` (caminho curto), com `npm ci` proprio
   (326 pacotes) e client Prisma gerado.
-- **Derrubei, pelo nome:** `git -C <repo> worktree remove --force C:/Users/AMP/w-insp-san300` -> **ec=0**;
+- **Derrubei, pelo nome:** `git -C <repo> worktree remove --force ~/w-insp-san300` -> **ec=0**;
   `ls` do caminho -> *No such file or directory*; `git worktree list` mostra os **8** worktrees restantes,
   **todos alheios e intactos** (`b04a`, `b11`, `gov-descuido`, `gov-elenco`, `san300`, `sanb1`,
   `w-j-sanb1-c1`, `w-s1`). **Nunca** rodei `git worktree prune`, `git clean`, `stash`, `checkout` ou `reset`

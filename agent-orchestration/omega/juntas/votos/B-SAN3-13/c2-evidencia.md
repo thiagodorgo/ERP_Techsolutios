@@ -1,19 +1,19 @@
 papel: cadeira C2 | identidade: jurado-san313-c2-opus | executor: subagente Claude Code (lançado como general-purpose, corpo do blob) | corpo: jurado-san313-c2-app-nunca-perde | modelo: Claude Opus 5.5 (claude-opus-5-5; nível menor DECLARADO; substituição: sucede jurado-san313-c2-sol, Codex caído por limite 18:29Z, ordem do dono) | objeto: ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d | mandato_md5: 09dc3a4c8d695e2377946d3c65d20ad8 (CR retirado; arquivo já LF, md5 cru igual) | corpo_md5: 637aecf020d024a7e5c36a6ea5531d66 (EOL-neutro do blob ed4e229e:.claude/...c2-app-nunca-perde.md; recebido: 637aecf020d024a7e5c36a6ea5531d66, carregado do próprio blob por git show) | corpo carregado × blob: IDENTICO
 
 - flutter: Flutter 3.41.6 (stable, db50e20168) · Dart 3.11.4 (a CI usa outra versão; o dev cita 3.47.5 — formatação é da C3)
-- livre em C: 11G (piso do dono: 7 GB) · memória de commit livre 12,53 GB · SCRATCH: C:/Users/AMP/erp-pausa-2026-10-03/j13-c2/
+- livre em C: 11G (piso do dono: 7 GB) · memória de commit livre 12,53 GB · SCRATCH: ~/erp-pausa-2026-10-03/j13-c2/
 - monocultura declarada: o dev (dev-san313-opus) rodou em Claude Opus, como esta cadeira; toda conclusão abaixo sai de execução própria.
 - independência: não li c1-* nem c3-*; os caido-sol-c2-* são esqueleto sem medição e não são insumo (00-quedas.md).
 - legalidade: insp-san313-parecer.md (inspetor-san313-opus) = LIBERADO COM RESSALVA, me nomeia (jurado-san313-c2-opus, linha 23) e o worktree j13-c2-wt (linha 46); R1–R6 lidas. Objeto pelas duas fontes e check-runs: medidos no mandato (14 total, 0 não-verdes, 0 pendentes; flutter SUCCESS ×2) — re-medidos ao fim.
 
 ## Terreno
-- `git -C .../ERP_Techsolutios worktree add --detach C:/Users/AMP/j13-c2-wt ed4e229e` → ec 0, HEAD ed4e229e; `.git` presente; `.env` ausente; sem junction (node_modules não criado).
-- `cd C:/Users/AMP/j13-c2-wt/mobile/flutter_app && timeout -k 15 900 flutter pub get` → ec 0, `Got dependencies!`.
+- `git -C .../ERP_Techsolutios worktree add --detach ~/j13-c2-wt ed4e229e` → ec 0, HEAD ed4e229e; `.git` presente; `.env` ausente; sem junction (node_modules não criado).
+- `cd ~/j13-c2-wt/mobile/flutter_app && timeout -k 15 900 flutter pub get` → ec 0, `Got dependencies!`.
 - Banco: Drift em memória dos testes; nenhum container, nenhum Postgres/Redis, nenhuma API remota.
 
 ## Medições comuns (item 1, 2 e 3)
 - `flutter test bsan313_os_purga_reconcilia_test.dart bsan313_minhas_os_escopo_test.dart bsan313_home_lista_e1_test.dart --reporter expanded` (objeto, worktree j13-c2-wt) → ec 0, `+29: All tests passed!` (log `j13-c2/t-bloco.log`; nomes: F8, F9-F11/F19, F12, F20, F21/F25, R10, F17, F5, F13/F14 keepMine, F13/F14 useServer, F15, F6, F7, F18, F2-F4, F22, F22b, F16, F21 Drift, F24, F26, F26b, F27, F27b).
-- Sonda própria `test/features/zz_j13c2_sonda_test.dart` (md5 acima no log do comando; cópia verbatim em `C:/Users/AMP/erp-pausa-2026-10-03/j13-c2/zz_j13c2_sonda_test.dart.copia`), `flutter test ... --reporter expanded` → ec 0, 9/9; saídas `J13C2 S*` (log `j13-c2/sonda1.log`).
+- Sonda própria `test/features/zz_j13c2_sonda_test.dart` (md5 acima no log do comando; cópia verbatim em `~/erp-pausa-2026-10-03/j13-c2/zz_j13c2_sonda_test.dart.copia`), `flutter test ... --reporter expanded` → ec 0, 9/9; saídas `J13C2 S*` (log `j13-c2/sonda1.log`).
 - Leituras com comando (`grep -n` no objeto, `tr -d '\r'`): `enum SyncStatus { local, pending, syncing, failed, conflict, synced }` (sync_models.dart:3); `SyncActionFactory.create` nasce `status: SyncStatus.pending` (sync_action_factory.dart:29); nenhuma ação nasce `local` (`grep -rn SyncStatus.local lib` só acha UI e o default da LINHA em work_order_models.dart:322). A fila não tem caminho de remoção de ação (sync_queue_repository.dart: só enqueue/pending/actions/update; `DELETE FROM sync_actions` só no `clearAll`, sem chamador em `lib`).
 
 ## Item 1 — retenção por família
@@ -70,7 +70,7 @@ Restauro: `git checkout ed4e229e -- mobile/flutter_app`; sondas apagadas; `statu
 ## Teardown e objeto no fim
 - Sondas `zz_j13c2_*` apagadas do worktree (contagem 0 em test/features e em tests/); SQLite `j13-c2-*`: nenhum criado (0); nenhum container `j13-c2*` (0); `git status --porcelain` do worktree = 0 linhas antes da remoção.
 - Processos com `j13-c2-wt` na linha de comando: 4 contando a própria consulta (os powershell/bash que a executavam); excluídos powershell/bash, 0 depois da remoção.
-- `git -C …/ERP_Techsolutios worktree remove --force C:/Users/AMP/j13-c2-wt` → ec 0, diretório removido (node_modules, build/ e .dart_tool/ saíram com ele). Livre em C: 11G.
+- `git -C …/ERP_Techsolutios worktree remove --force ~/j13-c2-wt` → ec 0, diretório removido (node_modules, build/ e .dart_tool/ saíram com ele). Livre em C: 11G.
 - Objeto no fim: `git ls-remote origin refs/heads/fix/mobile-minhas-os` = `gh pr view 460` headRefOid = ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d (OPEN, draft=false, MERGEABLE); check-runs `14 | 0 não-verdes | 0 pendentes`, `flutter` = success,success.
 - Escritas em w-san313: só `c2-evidencia.md` e `c2-voto.json`. Nada commitado.
 

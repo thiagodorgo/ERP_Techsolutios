@@ -40,6 +40,6 @@
     "C2-opus-02 (enabledModules por mapa estático) — dono B-SAN3-06a, registrada no ciclo 1",
     "Observação sem achado (K3): sem landing, a sessão já trocou para a organização nova e a tela fica na seleção com erro, sem navegar e sem laço; as permissões são as da sessão nova (estreitas) — não libera nada medido"
   ],
-  "teardown": "4 arquivos mutados restaurados com git hash-object = git rev-parse faad24ce:<arq> (8ab79873, 68a4804f, e34d4cbd, b7882890); worktree C:/Users/AMP/w-jdash2-c2-a removido por git worktree remove --force (ec 0; 0 na lista); sondas zz-jdash2-c2-* removidas com ele; zero contêiner/rede/porta/Vite; nenhum processo deixado; árvore w-dash só com c2-evidencia.md e c2-voto.json; sem commit",
+  "teardown": "4 arquivos mutados restaurados com git hash-object = git rev-parse faad24ce:<arq> (8ab79873, 68a4804f, e34d4cbd, b7882890); worktree ~/w-jdash2-c2-a removido por git worktree remove --force (ec 0; 0 na lista); sondas zz-jdash2-c2-* removidas com ele; zero contêiner/rede/porta/Vite; nenhum processo deixado; árvore w-dash só com c2-evidencia.md e c2-voto.json; sem commit",
   "veredito": "VOTO: REPROVADO — a navegação pós-seleção pela landing-route, mudança do bloco em ContextSelectionPage.tsx:55 (a6b91ce9), não é presa por teste executado: M3b sobrevive a 1335/1335 + 4/4, e o adiamento registrado se apoia em \"falta de arnês de interação\", refutada por execução (arnês sem dependência desde 3e40a256, que deixa M3b vermelho) | escopo: dentro-do-bloco, não grave, ciclo 2 (§C7 item 8(2)). Itens 1 e 2 APROVADOS sem achado."
 }

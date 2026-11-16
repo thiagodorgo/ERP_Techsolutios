@@ -10,7 +10,7 @@
 - `gh api repos/thiagodorgo/ERP_Techsolutios/commits/5b628b88…/check-runs --jq '.total_count, (.check_runs[]|[.name,.status,.conclusion]|@tsv)'` → **total_count 16**, todos `completed/success` (docker×2, frontend×2, backend×2, backend-postgres×2, authority-portal×2, owner-portal×2, flutter×2, antivirus×2; último concluído 02:40:53 UTC). Nenhum queued/cancelled.
 - Veredito parcial: **VERDE**.
 ## 2. Worktree do dev w-san303 sem mutação viva
-- `git -C C:/Users/thiag/w-san303 status --porcelain` → vazio (ec=0). `git rev-parse HEAD` → `5b628b886520bcbece0228eec9d47c965a32b577`, ramo `fix/cloud-billing-exato`.
+- `git -C ~/w-san303 status --porcelain` → vazio (ec=0). `git rev-parse HEAD` → `5b628b886520bcbece0228eec9d47c965a32b577`, ramo `fix/cloud-billing-exato`.
 - Conferência EOL-neutra dos 20 primeiros arquivos centrais do diff (`src/**`, `tests/**`): `git show HEAD:<f> | tr -d '
 ' | md5sum` × `tr -d '
 ' < <f> | md5sum` → 20/20 iguais.
@@ -29,7 +29,7 @@
 ## 4. Inelegibilidade por nome
 - Fonte primeira (3.1-bis): `git show origin/main:agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md | grep -c <nome>` → 0 para cada um dos três nomes (nem SEPULTADA nem RESERVADA). Ausência lá não absolve; grep segue:
 - `git grep -c -E 'jurado-j484-c[123]-opus' origin/main` → ec=1 (nenhuma ocorrência); o mesmo no objeto `5b628b88` → ec=1.
-- `grep -rlE 'jurado-j484-c[123]-opus' C:/Users/thiag/erp-pausa-2026-10-03` (revisoes, planos, prompts, ferramentas; excluído este parecer) → nenhuma ocorrência.
+- `grep -rlE 'jurado-j484-c[123]-opus' ~/erp-pausa-2026-10-03` (revisoes, planos, prompts, ferramentas; excluído este parecer) → nenhuma ocorrência.
 - `git show 5b628b88:docs/revisoes/SAN3/B-SAN3-03-dev.md | grep -c <nome>` → 0 para os três.
 - Papéis já ocupados neste bloco (para conferência): achador `prerev-san303-sol`; críticos `crit-san303-e2-sol`, `crit-san303-e2b-sol` (e `crit-emenda-san303` da emenda 1); planejador/autor da emenda: orquestrador Claude Opus 5.5 (papel de topo); devs `dev-san303-sol`, `dev-san303-opus`, `dev-san303-e2-sol`, `dev-san303-e2-astra`, `dev-san303-e2-sol2`. Nenhum coincide com `jurado-j484-c1-opus`, `-c2-opus`, `-c3-opus`. Não há ciclo anterior de junta deste PR (`ls agent-orchestration/omega/juntas/votos/ | grep 484` vazio).
 - Nota de cruzamento (§C7 item 11(1), sem bloqueio): o código vigente foi escrito por último em Codex (Sol/Astra); cadeiras em Claude Opus cruzam com o dev. O autor da emenda 2 é Claude Opus (o orquestrador); as cadeiras são identidades distintas dele.
@@ -37,16 +37,16 @@
 '`) objeto = sessão (cbbed450…, 6bce03cc…, ae0a0461…). Objeto contém `origin/main` (`merge-base --is-ancestor` ok).
 - Veredito parcial: **VERDE**.
 ## 5. Isolamento planejado (worktrees e Postgres por cadeira)
-- Plano declarado por escrito no mandato do orquestrador a este inspetor: cada cadeira com worktree próprio `C:/Users/thiag/w-j484-c1|c2|c3` e Postgres descartável próprio `j484-c1-pg:55481`, `j484-c2-pg:55482`, `j484-c3-pg:55483`; demo (`erp-postgres`, `erp-redis`, 3000, 5173, árvore principal) fora de alcance.
+- Plano declarado por escrito no mandato do orquestrador a este inspetor: cada cadeira com worktree próprio `~/w-j484-c1|c2|c3` e Postgres descartável próprio `j484-c1-pg:55481`, `j484-c2-pg:55482`, `j484-c3-pg:55483`; demo (`erp-postgres`, `erp-redis`, 3000, 5173, árvore principal) fora de alcance.
 - `docker ps -a --format '{{.Names}}'| grep -E '^j484-c[123]-pg$'` → ec=1 (nomes livres). Containers existentes: só `erp-postgres` (5432) e `erp-redis` (6379), ambos da demo, healthy.
 - `netstat -ano | grep -E ':5548[123]'` → ec=1 (portas livres).
-- `ls -d C:/Users/thiag/w-j484-c1 c2 c3` → nenhum existe; `git worktree list` → só main, w-demofix, w-demoint, w-demolib, w-demoop, w-reg0211b, w-san303, w-san321 (nenhum `w-j484-*`).
+- `ls -d ~/w-j484-c1 c2 c3` → nenhum existe; `git worktree list` → só main, w-demofix, w-demoint, w-demolib, w-demoop, w-reg0211b, w-san303, w-san321 (nenhum `w-j484-*`).
 - Imagem `postgres:16` presente localmente (`docker image ls postgres`), Docker respondendo.
 - Resíduo de jurado anterior (1.3): nenhum container `jur-*`/`crit-*`/`*-pg` órfão; árvore do dev limpa (item 2). Untracked na árvore principal (`.history-memo/`, `TEMPLATE-J-ata.md`, `votos/B-SAN3-06a/`) é de outra trilha e inerte para esta junta.
 - **Ressalva R3:** ainda não existe briefing escrito das cadeiras (`ls revisoes/j484`, `prompts/` sem `jurado-j484*`). O orquestrador tem de copiar no mandato de CADA cadeira, por escrito: o worktree e o container/porta dela; `npm ci` próprio (sem junction de `node_modules`, §C7.1-ter(c)); `erp-postgres`/`erp-redis`/3000/5173/árvore principal proibidos; derrubar o próprio container e remover o worktree só por `git worktree remove --force` no fim. Mandato sem isso não está coberto por este LIBERADO.
 - Veredito parcial: **VERDE com ressalva R3**.
 ## 6. Fatia S0 (espelho Codex) no objeto
-- `git worktree add --detach C:/Users/thiag/w-insp484 5b628b88…` → HEAD `5b628b886520bcbece0228eec9d47c965a32b577`.
+- `git worktree add --detach ~/w-insp484 5b628b88…` → HEAD `5b628b886520bcbece0228eec9d47c965a32b577`.
 - `node scripts/sync-agent-agents.mjs --check > revisoes/j484/inspetor-s0.log 2>&1; ec=$?` → **ec=0**, `[agents-sync] OK — 95 agentes, espelho consistente.` (o script é recursivo e só usa `node:fs`/`node:path`).
 - Baseline honesto (4.2), mesmo worktree, árvore limpa: `npm ci --include=dev` ec=0 (node_modules próprio, sem junction); `DATABASE_URL='postgresql://insp:insp@127.0.0.1:1/insp' npm run db:generate` ec=0 (URL fictícia em porta morta, só para o config do Prisma; nenhuma conexão); `npm run check > inspetor-check.log 2>&1; ec=$?` → **ec=0** (`tsc -p tsconfig.json --noEmit` sem erro). Observação: sem o `db:generate` o check dá ec=2 por cliente Prisma não gerado; é passo de ambiente, o mesmo que o CI faz antes do check (`ci.yml`: "Generate Prisma Client" → "TypeScript check").
 - Veredito parcial: **VERDE**.
@@ -70,7 +70,7 @@
 - **R6** — composição nomeada: dinheiro/rateio, isolamento entre organizações, banco real.
 
 ## Limpeza
-Criei e removi o worktree `C:/Users/thiag/w-insp484` (`git worktree remove --force`, ec=0, caminho ausente e fora do `git worktree list`). Não criei nenhum container. Não toquei em `erp-postgres`/`erp-redis`/3000/5173/árvore principal (só leitura de `git` nela). Ficam os logs de medição: `revisoes/j484/inspetor-s0.log`, `inspetor-npmci.log`, `inspetor-generate.log`, `inspetor-check.log`.
+Criei e removi o worktree `~/w-insp484` (`git worktree remove --force`, ec=0, caminho ausente e fora do `git worktree list`). Não criei nenhum container. Não toquei em `erp-postgres`/`erp-redis`/3000/5173/árvore principal (só leitura de `git` nela). Ficam os logs de medição: `revisoes/j484/inspetor-s0.log`, `inspetor-npmci.log`, `inspetor-generate.log`, `inspetor-check.log`.
 
 ## Veredito
 Os 8 itens passaram na medição (objeto = head do PR com 16/16 check-runs concluídos em success; worktree do dev limpo e no objeto; insumos presentes; nomes elegíveis; portas e nomes livres; S0 e `npm run check` verdes no objeto; 13,8 GB de memória de commit e 302 GB de disco; plano P3 declarado). As ressalvas R1–R6 vão em destaque no briefing; mandato de cadeira sem elas não está coberto por este parecer.

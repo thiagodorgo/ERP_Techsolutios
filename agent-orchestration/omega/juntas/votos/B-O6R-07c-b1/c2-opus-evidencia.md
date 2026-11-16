@@ -3,7 +3,7 @@ papel: C2 | identidade: jurado-07cb1-c2-opus (corpo jurado-07cb1-c2-mobile-e-con
 # Evidência C2 (Opus, sucessor) — junta B-O6R-07c-b1 (PR #440, ciclo 1)
 
 - objeto: b198fe358b41186b2598ab258ccb735da8c04cbc · B = 4fe7524ecbcc68b3e69336453cc774ed5937cb1c · origin/main no início: 2a49b0159c83a6019a63b4d2af4d119fe7410972 (andou após 79599143; o #441 já mergeado)
-- SCRATCH: C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c2o-07cb1
+- SCRATCH: ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c2o-07cb1
 - uname: MINGW64_NT-10.0-22631 x86_64 Msys · node v20.19.5 · livre em C: 8.8G (97%) às 09:54Z
 - ambiente da sonda: env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory (declarado por comando; nada exportado)
 - P3 (sucessão): o arquivo c2-evidencia.md do caído tem 2 linhas (cabeçalho e objeto), NENHUM comando registrado → nada a re-executar; tudo medido do zero.
@@ -14,7 +14,7 @@ papel: C2 | identidade: jurado-07cb1-c2-opus (corpo jurado-07cb1-c2-mobile-e-con
 - cmd: `git ls-remote origin refs/heads/fix/o6r07cb1-despacho-atribui` → b198fe35…; `gh pr view 440 --json headRefOid,…` → headRefOid b198fe35…, OPEN, isDraft=false, MERGEABLE → **coincidem**.
 - cmd: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<O>/check-runs?per_page=100` → total 14 | não-verdes 0 | pendentes 0; flutter:completed/success (2×).
 - cmd: `git merge-base origin/main <O>` = 4fe7524e; `git log --merges B..O` → vazio; `git diff --name-only B O -- mobile/` → 0 linhas (mobile/ vazio no diff do bloco); src/ → 13 arquivos (checklists ×2, field-dispatch ×3, mobile ×4, work-orders ×4).
-- parecer do inspetor: insp-07cb1-parecer.md, instância inspetor-07cb1-opus, 03:30–03:40Z, **LIBERADO COM RESSALVA**; nomeia a cadeira C2 (corpo .claude fc06a7d5…, .agents 3d45cc3b…), worktree C:/Users/AMP/w-j07cb1c2 (ou sufixo); o executor nomeado era Gemini — a substituição por Opus vem do disparo do orquestrador (sucessão P3, R4) com worktree C:/Users/AMP/w-j07cb1c2o.
+- parecer do inspetor: insp-07cb1-parecer.md, instância inspetor-07cb1-opus, 03:30–03:40Z, **LIBERADO COM RESSALVA**; nomeia a cadeira C2 (corpo .claude fc06a7d5…, .agents 3d45cc3b…), worktree ~/w-j07cb1c2 (ou sufixo); o executor nomeado era Gemini — a substituição por Opus vem do disparo do orquestrador (sucessão P3, R4) com worktree ~/w-j07cb1c2o.
 - decisões (cmd: `git show <ref>:agent-orchestration/controle/decisoes.md | grep -n`): objeto → D2-07c 3171,3425,3655 · D1-07c 3166,3424,3654 · D-07CB-EMENDA-RECOMENDACOES 3658 · D-07CB1-TRAVA-ATE-B2 ausente; 79599143 e origin/main → D2-07c 3655 · D1-07c 3654 · EMENDA 3658,3719 · TRAVA-ATE-B2 3709,3719 · D-INICIO-ATENDIMENTO-CONFIRMADO 3719 · D-GEMINI-PRO-API-TETO 3715,3723 · D-BRACOS-E-DOCKER-17-10 3716. (R1: origin/docs/registro-17-10 apagada; lido 79599143/origin/main.)
 - âncoras do CLAUDE.md (objeto | origin/main, `grep -c`): §6 1|1 · "## A7." 1|1 · C7.1-bis 2|2 · C7.1-ter 3|3 · C7.4-bis 6|6 · 6-bis 3|3 · "P3 — Perda" 1|1 · "P7 — Pausa" 1|1 · GOVERNANÇA PROPORCIONAL 1|1 · "Teto de 2 ciclos" 2|2 · KPI congelado 2|2 · "apagado só em" 1|1.
 - inelegibilidade: `jurado-07cb1-c2-opus` → 0 no OBITUÁRIO (origin/main), 0 em `git grep` no objeto; não é planejador, dev, crítico, achador, cadeira do 07c-a, porteiro, inspetor, fábrica nem orquestrador.
@@ -23,9 +23,9 @@ papel: C2 | identidade: jurado-07cb1-c2-opus (corpo jurado-07cb1-c2-mobile-e-con
 
 ## Terreno
 
-- worktree próprio: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j07cb1c2o b198fe35…` → ec=0; `test -e …/.git` ok; HEAD = objeto. `npm ci --no-audit --no-fund` ec=0 (326 pacotes, sem junction). `DATABASE_URL=postgresql://x:y@127.0.0.1:1/none npm run db:generate` ec=0 (R7). `git status --porcelain` = 0.
+- worktree próprio: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j07cb1c2o b198fe35…` → ec=0; `test -e …/.git` ok; HEAD = objeto. `npm ci --no-audit --no-fund` ec=0 (326 pacotes, sem junction). `DATABASE_URL=postgresql://x:y@127.0.0.1:1/none npm run db:generate` ec=0 (R7). `git status --porcelain` = 0.
 - Docker: `docker ps` grupos tl/j = 0 no início; NÃO subi container (sonda em memória). Base viva e portas do dono intocadas.
-- Sonda (verbatim no SCRATCH/sonda; md5): lib.mts 3b5dcaed…, acoes.mts 1f252916…, apprule.mts 97d76d5e…, item1.mts 374ca3f6…; executada por `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory timeout 300 node --import tsx <SCRATCH>/sonda/item1.mts C:/Users/AMP/w-j07cb1c2o <out.json> <tag>` com cwd no meu worktree. createApp(MemoryCoreSaasAdapter) do objeto em listen(0); ator por cabeçalhos x-tenant-id/x-user-id/x-role (o modo memória resolve as permissões pelo catálogo do papel, `src/modules/core-saas/permissions/catalog.ts`). Nenhum helper de tests/ importado. Storage da execução em os.tmpdir()/j07cb1-c2o-<tag>-*, apagado ao fim de cada execução.
+- Sonda (verbatim no SCRATCH/sonda; md5): lib.mts 3b5dcaed…, acoes.mts 1f252916…, apprule.mts 97d76d5e…, item1.mts 374ca3f6…; executada por `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory timeout 300 node --import tsx <SCRATCH>/sonda/item1.mts ~/w-j07cb1c2o <out.json> <tag>` com cwd no meu worktree. createApp(MemoryCoreSaasAdapter) do objeto em listen(0); ator por cabeçalhos x-tenant-id/x-user-id/x-role (o modo memória resolve as permissões pelo catálogo do papel, `src/modules/core-saas/permissions/catalog.ts`). Nenhum helper de tests/ importado. Storage da execução em os.tmpdir()/j07cb1-c2o-<tag>-*, apagado ao fim de cada execução.
 - Semente (org A): tecA field_technician despachado à osA (201, run provisionada) e depois **reatribuído** a tecC (PATCH reassign 200); tecW (perfil pW) atribuído à osW pela rota web `POST /work-orders/:id/assign {operatorId: pW}` (200) e depois a OS passa a pW2 pela MESMA rota (200) — ex-técnico **sem** despacho; run da osW criada por tenant_admin (`POST /mobile/checklist-runs`, 201). tecB técnico ATUAL da osB. tecT `technician`, nunca técnico. tecC técnico atual da osA. osN despachada só ao tecC. osA2 = OS atual do tecA. Org B: tecZ despachado à osZ e reatribuído a tecZ2. Trabalho offline GERADO antes da troca, ENVIADO depois.
 
 ## Item 1 — contrato de conflito nas 4 famílias e destino no app
@@ -67,7 +67,7 @@ papel: C2 | identidade: jurado-07cb1-c2-opus (corpo jurado-07cb1-c2-mobile-e-con
 
 ## Item 2 — upload pela OS do recibo; 409 no app; evidência field_* com work_order_id
 
-- cmd: `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory timeout 300 node --import tsx <SCRATCH>/sonda/item2.mts C:/Users/AMP/w-j07cb1c2o <out> obj|base` (item2.mts 5204 B); base pela mesma troca/restauro do item 1 (13/13 iguais a B; 13/13 restaurados ao objeto; porcelain 0). ec=0 nas duas.
+- cmd: `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory timeout 300 node --import tsx <SCRATCH>/sonda/item2.mts ~/w-j07cb1c2o <out> obj|base` (item2.mts 5204 B); base pela mesma troca/restauro do item 1 (13/13 iguais a B; 13/13 restaurados ao objeto; porcelain 0). ec=0 nas duas.
 - (a) objeto: tecA, técnico da osU (despacho), registra 4 fotos `evidence.work_order_photo` (4 accepted, recibo com scope `work_order`). Controle "antes da troca": upload U0 → **201 stored**, storage 0→1. Troca (reassign 200). Depois:
 
 | forma | objeto | base |
@@ -85,7 +85,7 @@ papel: C2 | identidade: jurado-07cb1-c2-opus (corpo jurado-07cb1-c2-mobile-e-con
 
 ## Item 3 — idempotência: client_action_id, estado, "manter a minha", reinício, S-KM-RESTART
 
-- cmd: `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory timeout 300 node --import tsx <SCRATCH>/sonda/item3.mts C:/Users/AMP/w-j07cb1c2o <out> obj|base` (item3.mts md5 cd14d50b…; item3b.mts 60a6d551…); base pela mesma troca/restauro (13/13 = B; 13/13 restaurados = objeto; porcelain 0). ec=0. "reset" = `resetMobile{Checklist,Evidence,WorkOrder}SyncRuntimeForTests` (os 3 `Map` de recibo; o domínio em memória fica, como o banco num reinício).
+- cmd: `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory timeout 300 node --import tsx <SCRATCH>/sonda/item3.mts ~/w-j07cb1c2o <out> obj|base` (item3.mts md5 cd14d50b…; item3b.mts 60a6d551…); base pela mesma troca/restauro (13/13 = B; 13/13 restaurados = objeto; porcelain 0). ec=0. "reset" = `resetMobile{Checklist,Evidence,WorkOrder}SyncRuntimeForTests` (os 3 `Map` de recibo; o domínio em memória fica, como o banco num reinício).
 - (a) tecA (despachado à osK) manda K1 resposta, K3 evidência obs., K4 km, K2 conclusão → 4/4 accepted; troca (reassign 200).
 
 | momento | K1 resposta (cid durável) | K2 conclusão (estado) | K3 evidência (Map) | K4 km (Map) |
@@ -564,6 +564,6 @@ try {
 
 - objeto no fim: `git ls-remote` = b198fe35… = `gh pr view 440` headRefOid (OPEN) → igual; origin/main no fim 2a49b015 (= início).
 - residual R5 (ex-técnico só de despacho reatribuído antes do deploy → `rejected`): declarado no relatório do dev (B-O6R-07c-b1-dev.md:67, :167 "pendência nova sugerida"); `git grep` em `agent-orchestration/controle/` no objeto e na origin/main: não registrado como pendência. Não medível em memória (exige estado anterior ao deploy + backfill, matéria da C3). Fica em pendências aceitas, sem N.
-- limpeza: 13 arquivos de src/ trocados 3× e restaurados 3× (hash-object = blob do objeto 13/13; porcelain 0); storage de cada execução apagado (0 diretórios j07cb1-c2o-* no tmp); 0 processos com `w-j07cb1c2o`; `git worktree remove --force C:/Users/AMP/w-j07cb1c2o` ec=0, diretório e registro ausentes; 0 containers `j07cb1-c2*` (nunca subi); subpasta do scratch `c2o-07cb1` removida (só ela); base viva intocada; em w-07cb1 escrevi só c2-opus-evidencia.md e c2-voto.json; livre em C: 8.6G.
+- limpeza: 13 arquivos de src/ trocados 3× e restaurados 3× (hash-object = blob do objeto 13/13; porcelain 0); storage de cada execução apagado (0 diretórios j07cb1-c2o-* no tmp); 0 processos com `w-j07cb1c2o`; `git worktree remove --force ~/w-j07cb1c2o` ec=0, diretório e registro ausentes; 0 containers `j07cb1-c2*` (nunca subi); subpasta do scratch `c2o-07cb1` removida (só ela); base viva intocada; em w-07cb1 escrevi só c2-opus-evidencia.md e c2-voto.json; livre em C: 8.6G.
 - quedas/pausa: nenhuma.
 - **VOTO: APROVADO** (detalhe em c2-voto.json).

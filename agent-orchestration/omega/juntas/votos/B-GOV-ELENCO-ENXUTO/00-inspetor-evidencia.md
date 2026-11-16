@@ -5,7 +5,7 @@
 `D-FALLBACK-MODELO-FABLE-OPUS`. O `model: fable` do frontmatter do papel **permanece** — o fallback é
 decisão do invocador, não alteração de contrato.
 **Forma:** Windows 11 · Git Bash · `node v20.19.5` · `core.autocrlf=true` (local; global vazio).
-**Worktree:** `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`
+**Worktree:** `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`
 
 ---
 
@@ -318,8 +318,8 @@ enxergam, e rodei o auditor com `cd` + **caminho RELATIVO** (`node scripts/audit
 modo que a tradução de caminho POSIX→Windows nunca entra em jogo:
 
 ```
-ISO=/c/Users/AMP/AppData/Local/Temp/claude/<sessao>/scratchpad/iso-inspetor    (script do head, 668 linhas)
-PRE=/c/Users/AMP/AppData/Local/Temp/claude/<sessao>/scratchpad/iso-pre         (script PRE-CORTE, 664 linhas)
+ISO=~/AppData/Local/Temp/claude/<sessao>/scratchpad/iso-inspetor    (script do head, 668 linhas)
+PRE=~/AppData/Local/Temp/claude/<sessao>/scratchpad/iso-pre         (script PRE-CORTE, 664 linhas)
 ```
 
 **Prova de que o Windows resolve o caminho:** o `node` (binário Windows) leu a cópia e reportou

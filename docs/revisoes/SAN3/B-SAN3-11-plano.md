@@ -1066,7 +1066,7 @@ quem planeja = esta errata; quem desenvolve = identidade nova (§15.11).
 
 Cada item da tabela foi **medido por** esta instância, com o comando colado (coluna 2) e a saída resumida (coluna 3); nada abaixo é
 herdado do parecer do inspetor — M3 é a linha dele, citada como relatório de quem achou, e as demais são a re-medição.
-Terreno: worktrees detached próprios `C:/Users/AMP/w-pl11` (CRLF, `autocrlf=true`) e `C:/Users/AMP/w-pl11lf` (`git -c core.autocrlf=false
+Terreno: worktrees detached próprios `~/w-pl11` (CRLF, `autocrlf=true`) e `~/w-pl11lf` (`git -c core.autocrlf=false
 worktree add`, CR em disco = 0), ambos em `5f6aaf56`, `npm ci` próprio em `frontend/` (sem junction), Node v20.19.5 (`C:\nvm4w\nodejs\node.exe`,
 o mesmo `process.execPath` do runner). Tudo com `timeout` externo e `ec` por variável; removidos ao fim com 0 processo vivo.
 
@@ -1232,8 +1232,8 @@ CP=1`; `EOL` pode continuar 2 (a regex de T14 sobre texto normalizado e a do ger
 ### 15.8 Bateria da correção — nos DOIS terrenos, `timeout` externo, `ec` por variável
 
 Terrenos do dev (caminhos curtos, sem junction, removidos ao fim por `git worktree remove --force` com 0 processo vivo):
-`C:/Users/AMP/w-dev11` (checkout **CRLF**: `core.autocrlf=true`; conferir `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0)
-e `C:/Users/AMP/w-dev11lf` (`git -c core.autocrlf=false worktree add --detach …`; conferir `= 0`). `npm ci --no-audit --no-fund` próprio
+`~/w-dev11` (checkout **CRLF**: `core.autocrlf=true`; conferir `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0)
+e `~/w-dev11lf` (`git -c core.autocrlf=false worktree add --detach …`; conferir `= 0`). `npm ci --no-audit --no-fund` próprio
 em `frontend/` nos dois; na raiz, uma vez, `npm ci --ignore-scripts` para os guards do KPI (o `prisma generate` **não** é necessário para
 eles; se rodar `npm run check` da raiz, exporte uma `DATABASE_URL` fictícia só nesse comando — armadilha medida pelo inspetor, 4.2-raiz).
 
@@ -1526,7 +1526,7 @@ na forma que o gerador lê (E9/A26), e devolve o dev ao caminho: merge do ramo �
 T13/T14 ficam (T13: `DossiePrintDocument.tsx:<n> … NÃO`; T14: `DESCARTADAS pelo adapter (1)`). As cópias de T20–T22 copiam o mesmo que T13/T14 (`src/modules/impound/impound.checklist-link.dto.ts`, `frontend/src/**`, `package.json`); o gerador roda com `TS_ROOT=<frontend real>` — o `tsconfig.json` e o `typescript` vêm dali (medido na cópia sem `node_modules`: ec=0, 5,1 s).
 
 ### 16.6 Bateria do ciclo 2 — nos DOIS terrenos, `timeout` externo, `ec` por variável, nunca `tail -f`
-Terrenos do dev: `C:/Users/AMP/w-dev11c2` (CRLF; `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0 colado) e `C:/Users/AMP/w-dev11c2lf` (`git -c core.autocrlf=false worktree add --detach`; CR = 0 colado; checkouts sempre com `-c core.autocrlf=false`). `npm ci --no-audit --no-fund` em `frontend/` nos dois; raiz uma vez `npm ci --ignore-scripts` (guards do KPI; Playwright se quiser antecipar A27/A28). Sem junction. Removidos ao fim com **0 processo vivo** — contagem por `Get-CimInstance Win32_Process` via **`C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe`** (o `powershell` não está no PATH do Git Bash desta máquina — medido pelo planejador). Base viva nunca alvo. Mutações só por arquivo de spec + helper com âncora única e prova (bytes/CR antes→depois); conteúdo com barra invertida dupla **nunca por heredoc** (o transporte colapsa a dupla em simples — medido pelo planejador em 04:10Z) e comandos longos em partes ≤ 7 KB.
+Terrenos do dev: `~/w-dev11c2` (CRLF; `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0 colado) e `~/w-dev11c2lf` (`git -c core.autocrlf=false worktree add --detach`; CR = 0 colado; checkouts sempre com `-c core.autocrlf=false`). `npm ci --no-audit --no-fund` em `frontend/` nos dois; raiz uma vez `npm ci --ignore-scripts` (guards do KPI; Playwright se quiser antecipar A27/A28). Sem junction. Removidos ao fim com **0 processo vivo** — contagem por `Get-CimInstance Win32_Process` via **`C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe`** (o `powershell` não está no PATH do Git Bash desta máquina — medido pelo planejador). Base viva nunca alvo. Mutações só por arquivo de spec + helper com âncora única e prova (bytes/CR antes→depois); conteúdo com barra invertida dupla **nunca por heredoc** (o transporte colapsa a dupla em simples — medido pelo planejador em 04:10Z) e comandos longos em partes ≤ 7 KB.
 Em **cada** terreno:
 ```
 npm --prefix frontend run check ; ec=$?                                                                                 # 0
@@ -1787,7 +1787,7 @@ process.exitCode = total === 0 ? 0 : 1;
 
 ```
 
-**Saída no head `653532f7`** (`TS_ROOT=C:/Users/AMP/w-plc2lf/frontend node censo-v2.mjs .`, terreno LF, exit 0; a linha `# L3 arquivos varridos (26): …` elidida — igual à do Apêndice A):
+**Saída no head `653532f7`** (`TS_ROOT=~/w-plc2lf/frontend node censo-v2.mjs .`, terreno LF, exit 0; a linha `# L3 arquivos varridos (26): …` elidida — igual à do Apêndice A):
 
 ```
 # L0 DTO emite (12): id, templateId, templateName, templateVersion, status, relatedEntityType, relatedEntityId, startedAt, completedAt, reopenedFromRunId, supersededByRunId, currentRunId
@@ -1812,7 +1812,7 @@ frontend\src\modules\patios\processes\pages\ProcessoDossiePage.tsx:142 | runs={c
 
 ## §16-bis — Emenda ao ciclo 2 (2026-10-03): A17′, A18′ e A25 reescritos como PROPRIEDADE para o objeto do ciclo 2; o texto do T22 corrigido; os intervalos medidos sem o ruído do merge
 
-**Autoria:** `planejador-mestre`, identidade `planejador-ciclo2-b-san3-11` (a da §16), em **Opus 5.5 por substituição declarada** (§C7.6-bis — papel: planejador-mestre · modelo que rodou: Opus 5.5 · por que o Fable faltou: decisão do dono de 2026-10-03, fonte §A1.1, "Fable agora só em blocos que toquem em dinheiro até segunda ordem"; o B-SAN3-11 não toca dinheiro). Mandato `00-mandatos/planejador-ciclo2-bis.md` (md5 EOL-neutro `80c06834a1940fdab8a0751f32fe8563`, versionado em `d1c1a519`). Trilha (comando · saída · hora UTC de cada item): `PLANO-C2bis-B-SAN3-11.md`, itens M0–M6. Medido no worktree próprio `C:/Users/AMP/w-plc2b` (detached em `a73fb35f`, CRLF, `npm ci` próprio em `frontend/`, sem junction, criado com `core.autocrlf` = `true` conferido) e nos blobs de `5f6aaf56`, `92cfc05e`, `defa502e`, `653532f7`, `feb0d838` e `a73fb35f`. Insumos lidos como relato — o DEV-C2-401 (D2 §1, §3 parte C, §4 e a retomada) e o relatório da fábrica (FABRICA-401-c2) —; tudo o que vai abaixo foi re-medido.
+**Autoria:** `planejador-mestre`, identidade `planejador-ciclo2-b-san3-11` (a da §16), em **Opus 5.5 por substituição declarada** (§C7.6-bis — papel: planejador-mestre · modelo que rodou: Opus 5.5 · por que o Fable faltou: decisão do dono de 2026-10-03, fonte §A1.1, "Fable agora só em blocos que toquem em dinheiro até segunda ordem"; o B-SAN3-11 não toca dinheiro). Mandato `00-mandatos/planejador-ciclo2-bis.md` (md5 EOL-neutro `80c06834a1940fdab8a0751f32fe8563`, versionado em `d1c1a519`). Trilha (comando · saída · hora UTC de cada item): `PLANO-C2bis-B-SAN3-11.md`, itens M0–M6. Medido no worktree próprio `~/w-plc2b` (detached em `a73fb35f`, CRLF, `npm ci` próprio em `frontend/`, sem junction, criado com `core.autocrlf` = `true` conferido) e nos blobs de `5f6aaf56`, `92cfc05e`, `defa502e`, `653532f7`, `feb0d838` e `a73fb35f`. Insumos lidos como relato — o DEV-C2-401 (D2 §1, §3 parte C, §4 e a retomada) e o relatório da fábrica (FABRICA-401-c2) —; tudo o que vai abaixo foi re-medido.
 
 **Natureza:** emenda de RÉGUA, sem código. A §16.5 manteve A17′, A18′ e A25 "como estão", mas o ciclo 2 mudou justamente o que eles contam: T20–T22 entram no mesmo arnês, o gerador vira o v2 do Apêndice E, o E13 muda o arquivo de teste. Lidos ao pé da letra sobre o objeto do ciclo 2, o **A17′ falha com o código certo** (6, não 3), o **A18′ passa por coincidência de número** (a `:42` é outra linha de outro gerador) e o **A25 não pode passar por construção** — e, no intervalo dele, é vermelho por causa dos merges que a §15.10 mandou fazer. É a classe do C2-01/C2-02 do lado da régua: critério que reconhece uma FORMA (um número, um número de linha, um intervalo two-dot) em vez de enunciar a propriedade. **Nenhuma decisão da §16 muda; nada do produto muda; o dev não refaz código nem teste.**
 
@@ -2085,7 +2085,7 @@ for (const [name, text] of Object.entries(forms)) {
 ### 17.1 Proveniência, objeto medido e separação de papéis
 
 **Medido por esta identidade, sem herdar o dossiê como fato.** O worktree próprio
-`C:/Users/AMP/w-pl11c3` foi criado detached em
+`~/w-pl11c3` foi criado detached em
 `05510bf16f3cc058509728610c694be0c6e4f227`, com `core.autocrlf=true`, árvore limpa e
 `npm ci --no-audit --no-fund` próprio na raiz (`326` pacotes; sem junction/symlink). Em
 2026-10-04, `git rev-parse HEAD`, `git ls-remote`/`gh pr view 401` e a ref
@@ -2315,8 +2315,8 @@ restaurada e limpa. O baseline funcional original permanece **N=12**; a meta é 
 T23–T26, o arquivo do bloco vai `24→28`; somado aos 12 testes preexistentes do painel,
 **M=40≥24**, sem contar regressões adjacentes.
 
-O dev mede em `C:/Users/AMP/w-dev11c3` (checkout CRLF) e
-`C:/Users/AMP/w-dev11c3lf` (`git -c core.autocrlf=false worktree add --detach`, LF), cada um
+O dev mede em `~/w-dev11c3` (checkout CRLF) e
+`~/w-dev11c3lf` (`git -c core.autocrlf=false worktree add --detach`, LF), cada um
 com `npm ci --no-audit --no-fund` próprio na raiz e em `frontend/`, sem junction. Todo comando
 tem timeout externo, `ec` capturado; nunca `tail -f`; a base viva 5432/6379 não é alvo. Em
 **cada** terreno:

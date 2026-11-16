@@ -28,11 +28,11 @@ Queda não relança a mesma identidade: o sucessor reexecuta todos os comandos r
 
 ## Terreno próprio
 
-- Worktree exclusivo: prefixo `C:/Users/AMP/w-jdash-c2-`; `npm ci` próprio.
+- Worktree exclusivo: prefixo `~/w-jdash-c2-`; `npm ci` próprio.
 - Memória por padrão, sem `DATABASE_URL`. Base viva proibida.
 - Máximo 2 trabalhos Docker. Seus nomes começam `jdash-c2-`.
 - Todo comando tem timeout registrado. Mutações em cópia descartável; restaure e prove.
-- Nunca edite a árvore principal `C:/Users/AMP/w-dash`.
+- Nunca edite a árvore principal `~/w-dash`.
 
 ## P1–P7 — mandato resiliente
 

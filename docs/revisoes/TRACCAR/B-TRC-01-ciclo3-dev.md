@@ -5,16 +5,16 @@
 > ocupado e o Gemini e o Argon estão sem limite (`D-IAS-EXTERNAS-PRIMEIRO`).
 > **Papel:** DEV do ciclo 3; não achou o (c′)-P1 (achou a cadeira (c′), `jurado-trc01c2-c-opus`), não planejou
 > (`planejador-trc01-ciclo3`, Fable), não vota. Implementa o plano; não o reescreve.
-> **Plano (lei do ciclo):** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo3-auditoria-e-plano.md` §3.
+> **Plano (lei do ciclo):** `~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo3-auditoria-e-plano.md` §3.
 > **Ordem do dono:** *"ataque so a c"* — só o (c′)-P1; nada do §4 do plano entra no código.
-> **Worktree:** `C:/Users/AMP/w-trc01` · **Ramo:** `feat/traccar-b-trc-01` · **PR:** #426 · **Head de partida:** `e6b4a33a`
+> **Worktree:** `~/w-trc01` · **Ramo:** `feat/traccar-b-trc-01` · **PR:** #426 · **Head de partida:** `e6b4a33a`
 > **KPI:** congelado (§C7 item 8(5)); `Kpis/*` fora do escopo. Sem migração: `prisma/**` e `migrations/**` intocados.
 
 ## Evidência incremental (P1 — gravada após cada passo)
 
 ### Passo 0 — pré-voo
 
-- **Comando:** `git -C C:/Users/AMP/w-trc01 fetch origin`; `git rev-parse HEAD origin/feat/traccar-b-trc-01`; `git status --short`
+- **Comando:** `git -C ~/w-trc01 fetch origin`; `git rev-parse HEAD origin/feat/traccar-b-trc-01`; `git status --short`
   nos arquivos-alvo; `file` dos arquivos-alvo; `git config core.autocrlf`.
 - **Saída resumida:** HEAD = remoto = `e6b4a33a773e6a0bf8a4d5166517d033fbb0e5a2`; arquivos-alvo limpos; 55 linhas de `git status`
   (os ~53 ` M` só de fim de linha + 3 untracked pré-existentes `.npmtest-503.log`, `check_md5.cjs`, `check_md5.js` — não tocados);
@@ -61,7 +61,7 @@
 
 ### Passo 4 — rodada A (verde) no container, `w-trc01` — 11:40Z→~12:00Z
 
-- **Comando:** `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-trc01 'set +e; cd /w; node --test
+- **Comando:** `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-trc01 'set +e; cd /w; node --test
   --import tsx --test-reporter=tap $(ls tests/traccar-*.test.ts) …; node --test … $(ls tests/field-dispatch*.test.ts
   tests/work-order*.test.ts) …; npm test …'` (Postgres 16 + Redis 7 próprios, `npm ci` + `migrate deploy` dentro do container; grupos
   de outros no Docker antes de subir: 0). Log: `<scratchpad>/dev-trc01-c3/run-A-verde.log`.
@@ -80,18 +80,18 @@
 
 ### Passo 5 — topologia no Windows (onde há `docker compose`)
 
-- **Comando:** `node --test --import tsx --test-reporter=tap tests/traccar-dev-topology.test.ts` em `C:/Users/AMP/w-trc01`
+- **Comando:** `node --test --import tsx --test-reporter=tap tests/traccar-dev-topology.test.ts` em `~/w-trc01`
   (só `docker compose … config`, sem subir container). Log: `<scratchpad>/dev-trc01-c3/topology.tap`.
 - **Saída resumida:** **12/12**, fail 0, skipped 0.
 - **Veredito parcial:** VERDE. Logo, Traccar = 123 (container) + 9 (os 9 de topologia que caíram lá, verdes aqui) → **132/132**,
   skipped 0, sobre o mesmo src.
 
-### Passo 6 — rodada B (vermelho-controle + mutações) no container, cópia descartável `C:/Users/AMP/w-trc01-mut3`
+### Passo 6 — rodada B (vermelho-controle + mutações) no container, cópia descartável `~/w-trc01-mut3`
 
-- **Comando:** `git -C C:/Users/AMP/w-trc01 worktree add --detach C:/Users/AMP/w-trc01-mut3 HEAD`; cópia byte a byte dos 6 arquivos do
+- **Comando:** `git -C ~/w-trc01 worktree add --detach ~/w-trc01-mut3 HEAD`; cópia byte a byte dos 6 arquivos do
   meu diff (`cmp` igual nos 6); `.c3/objeto/<3 src>` = `git show 2043c584:<caminho>`; runner `.c3/run-mut.mjs` (âncora única EOL-consciente,
   `tsc`, TAP, restauro por bytes, `git hash-object` = `git rev-parse HEAD:<arquivo>` no retrato do container); `teste-linux.sh
-  C:/Users/AMP/w-trc01-mut3 'set +e; cd /w; node .c3/run-mut.mjs all'`. `npm ci` próprio = o do container (nenhum `node_modules` no
+  ~/w-trc01-mut3 'set +e; cd /w; node .c3/run-mut.mjs all'`. `npm ci` próprio = o do container (nenhum `node_modules` no
   `w-trc01-mut3`, nenhuma junction). Log: `<scratchpad>/dev-trc01-c3/run-B-mut.log`.
 - **Saída resumida** (suítes: `traccar-position-ingestion-db` 22 + `traccar-operator-at-fix-time` 5 = 27):
 
@@ -116,7 +116,7 @@
 
 ### Passo 7 — rodada B2 (M-C3, M-C4, MUT-43) no container, `w-trc01-mut3`, runner corrigido — terminou 11:57Z
 
-- **Comando:** `teste-linux.sh C:/Users/AMP/w-trc01-mut3 'set +e; cd /w; node .c3/run-mut.mjs M-C3,M-C4,MUT-43'`; mutação de migração
+- **Comando:** `teste-linux.sh ~/w-trc01-mut3 'set +e; cd /w; node .c3/run-mut.mjs M-C3,M-C4,MUT-43'`; mutação de migração
   numa base `trc01_mut` própria dentro do Postgres do container (`CREATE DATABASE` por `pg.Client`, `prisma migrate deploy`, `DROP … WITH
   (FORCE)` no `finally`). Log: `<scratchpad>/dev-trc01-c3/run-B2-mut.log`.
 - **Saída resumida:**
@@ -133,7 +133,7 @@
 
 ### Passo 8 — rodada A2 (verde) sobre a árvore FINAL, `w-trc01` — terminou ~12:01Z
 
-- **Comando:** `teste-linux.sh C:/Users/AMP/w-trc01 'set +e; cd /w; node --test --import tsx --test-reporter=tap $(ls tests/traccar-*.test.ts)
+- **Comando:** `teste-linux.sh ~/w-trc01 'set +e; cd /w; node --test --import tsx --test-reporter=tap $(ls tests/traccar-*.test.ts)
   …; npm test …'` (lista inteira de `not ok` dos dois). Sem aviso do `tar` desta vez. Log: `<scratchpad>/dev-trc01-c3/run-A2-verde.log`.
 - **Saída resumida:**
   - Traccar, 15 suítes: **132 tests, pass 123, fail 9, skipped 0**; os 9 `not ok` = #7–#14 e #16 de `traccar-dev-topology` (os mesmos da
@@ -169,7 +169,7 @@
 
 ### Passo 11 — limpeza (§C5)
 
-- **Comando:** `git worktree remove --force C:/Users/AMP/w-trc01-mut3` + `prune` (antes: `cmp` dos 6 arquivos igual ao `w-trc01` e nenhum
+- **Comando:** `git worktree remove --force ~/w-trc01-mut3` + `prune` (antes: `cmp` dos 6 arquivos igual ao `w-trc01` e nenhum
   container montando o worktree); `docker ps -a` e `docker network ls` filtrando `tl*`; `git status --short`.
 - **Saída resumida:** worktree removido (`ls` não acha; `worktree list` sem ele); containers `tl*` = 0, redes `tl*` = 0 (o `teste-linux.sh`
   removeu pelo nome; `erp-postgres`/`erp-redis`, base viva, nunca tocados); `w-trc01`: só os ` M` de EOL pré-existentes, os 3 untracked

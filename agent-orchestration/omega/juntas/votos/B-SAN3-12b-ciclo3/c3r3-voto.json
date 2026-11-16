@@ -104,7 +104,7 @@
     "Na retomada P3 foram reexecutados por amostragem os comandos de check-runs e registro/escopo; os testes pesados já estavam fechados na evidência anterior."
   ],
   "teardown": {
-    "worktree": "C:/Users/AMP/j12b-c3-c3r3-wt ausente no disco e no registro de git worktree",
+    "worktree": "~/j12b-c3-c3r3-wt ausente no disco e no registro de git worktree",
     "processos": "0 processos estranhos referindo o caminho do worktree",
     "containers": "nenhum container criado na retomada; Docker permaneceu desligado e não foi invocado",
     "mutacoes": "restauradas por hash na execução anterior; status rastreado final 0",

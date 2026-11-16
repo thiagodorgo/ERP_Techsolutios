@@ -24,7 +24,7 @@
 - Corpos das 3 cadeiras IDENTICOS (blob `.claude` × `.agents`, EOL-neutro), mas AUSENTES no `.claude/agents` da sessão → ressalva 1.
 
 ## Item 3 de 3 — isolamento e plano de perda — VERDE (ressalvas 2 e 3)
-- Worktrees exclusivos nomeados nos mandatos e livres agora: `C:/Users/AMP/j12b-c3-c1r3-wt`, `C:/Users/AMP/j12b-c3-c2rev3-wt`, `C:/Users/AMP/j12b-c3-c3r3-wt` (nenhum `j12b*` existe; nenhum worktree de jurado dos ciclos 1/2 sobrando). Cada um com `npm ci` próprio e zero junction (0 junction/symlink medido em w-san312b e w-trc02).
+- Worktrees exclusivos nomeados nos mandatos e livres agora: `~/j12b-c3-c1r3-wt`, `~/j12b-c3-c2rev3-wt`, `~/j12b-c3-c3r3-wt` (nenhum `j12b*` existe; nenhum worktree de jurado dos ciclos 1/2 sobrando). Cada um com `npm ci` próprio e zero junction (0 junction/symlink medido em w-san312b e w-trc02).
 - Nenhuma base viva: C1 sem banco; C2 com backend em memória e REDIS_URL para porta fechada; C3 com a CI (`backend`, `backend-postgres`, 2 runs verdes) como régua. Portas altas em 127.0.0.1.
 - Diretório de saída do ciclo 3: só os mandatos e os 2 arquivos deste inspetor.
 - Mandatos com P1/P2/P3/P4/P7, voto-esqueleto com `arquivos_medidos`, sucessor de identidade nova que re-executa o registrado.
@@ -60,6 +60,6 @@ Se a C1 acabar antes de 05:31Z, o braço Claude pode pegar a C3 (Opus, declarado
 
 Se a C1 e a C2 correrem ao mesmo tempo, cada uma usa uma porta alta diferente, declarada na própria evidência.
 
-**Limpeza:** criei o worktree `C:/Users/AMP/j12b3-insp-wt` (S0) e o removi com `git worktree remove --force` (diretório ausente; `git worktree list` sem ele). Nos arquivos temporários do scratchpad, apaguei só os que criei. Não usei Docker, banco nem npm, e não fiz commit. Fora do diretório do ciclo 3, w-san312b e w-trc02 não foram alterados (porcelain 0 rastreado).
+**Limpeza:** criei o worktree `~/j12b3-insp-wt` (S0) e o removi com `git worktree remove --force` (diretório ausente; `git worktree list` sem ele). Nos arquivos temporários do scratchpad, apaguei só os que criei. Não usei Docker, banco nem npm, e não fiz commit. Fora do diretório do ciclo 3, w-san312b e w-trc02 não foram alterados (porcelain 0 rastreado).
 
 Fechado em: 2026-10-28T04:36:28Z

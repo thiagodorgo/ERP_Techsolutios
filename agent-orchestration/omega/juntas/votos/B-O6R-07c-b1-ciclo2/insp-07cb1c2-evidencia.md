@@ -16,7 +16,7 @@
 
 ### 1.1 Head e árvore
 
-- Comandos: `git -C C:/Users/AMP/w-i07cb1c2 rev-parse HEAD`; `git -C ... status --porcelain=v1`; `gh pr view 440 --repo thiagodorgo/ERP_Techsolutios --json headRefOid,...`; inspeção de `node_modules` por `Get-Item`.
+- Comandos: `git -C ~/w-i07cb1c2 rev-parse HEAD`; `git -C ... status --porcelain=v1`; `gh pr view 440 --repo thiagodorgo/ERP_Techsolutios --json headRefOid,...`; inspeção de `node_modules` por `Get-Item`.
 - Saída resumida: worktree detached em `7ff1e0039c07b22b84acf8007eef6835560e823a`; status vazio; PR #440 aberto e `headRefOid` idêntico; `node_modules` ausente, portanto não há junction. O worktree de desenvolvimento aponta ao mesmo SHA. Nele, `status` lista falsos positivos em `.agents/agents/**`, mas `git diff --numstat`, `git diff --ignore-space-at-eol --stat` e `git diff --check` sobre esse conjunto são vazios; a única adição real é o diretório de briefing/saída não commitado, explicitamente informado pelo convocante. Nenhum arquivo de produto aparece como mutação viva.
 - Veredito parcial: **VERDE** — objeto correto e árvore de medição limpa; a conferência EOL-neutra dos corpos fica registrada no item 3.3.
 
@@ -69,7 +69,7 @@
 
 ### 3.3 Corpos carregados × objeto
 
-- Comandos: para os seis caminhos, `git show <objeto>:<corpo> | tr -d '\r' | md5sum` e `tr -d '\r' < C:/Users/AMP/w-07cb1/<corpo> | md5sum`; busca das cláusulas citadas no `CLAUDE.md` do objeto.
+- Comandos: para os seis caminhos, `git show <objeto>:<corpo> | tr -d '\r' | md5sum` e `tr -d '\r' < ~/w-07cb1/<corpo> | md5sum`; busca das cláusulas citadas no `CLAUDE.md` do objeto.
 - Saída resumida: C1 `.claude` `4817...fd9f`, `.agents` `0d99...c817`; C2 `35e9...7784` / `de71...ddae`; C3 `44db...d2a1` / `8959...d642`. Os seis hashes igualam os valores publicados **e** os arquivos do diretório de carregamento `w-07cb1`. As normas de inspeção, escopo/calibração, separação, P1–P7 e governança proporcional existem na ref julgada.
 - Veredito parcial: **VERDE** — nenhum drift EOL-neutro; as alterações aparentes de `.agents/**` no `status` são artefato sem diff e não mudam os corpos.
 
@@ -77,7 +77,7 @@
 
 ### 4.1 Fatia S0
 
-- Comando: `node C:/Users/AMP/w-i07cb1c2/scripts/sync-agent-agents.mjs --check`; status da árvore após a execução.
+- Comando: `node ~/w-i07cb1c2/scripts/sync-agent-agents.mjs --check`; status da árvore após a execução.
 - Saída resumida: `[agents-sync] OK — 61 agentes, espelho consistente.`; `ec=0`; árvore continua limpa.
 - Veredito parcial: **VERDE** — S0 recursivo executado no objeto.
 
@@ -103,7 +103,7 @@
 
 ## Limpeza
 
-- Comandos: confirmação final de head/status; filtro de containers `jur-*`/`crit-*`/`j07cb1c2-*`; resolução do caminho exato; `git worktree remove --force C:/Users/AMP/w-i07cb1c2`; conferência de existência/lista e espaço livre.
+- Comandos: confirmação final de head/status; filtro de containers `jur-*`/`crit-*`/`j07cb1c2-*`; resolução do caminho exato; `git worktree remove --force ~/w-i07cb1c2`; conferência de existência/lista e espaço livre.
 - Saída resumida: head final correto, status vazio, zero container de jurado; worktree removido (`target_exists=False`), sem entrada residual; espaço livre final `10,75 GB` (> 10 GB exigidos antes das cadeiras).
 - Veredito parcial: **VERDE** — nenhum artefato criado pelo inspetor permaneceu; a base viva não foi tocada.
 

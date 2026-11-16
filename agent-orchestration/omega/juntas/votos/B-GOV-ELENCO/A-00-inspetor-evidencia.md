@@ -3,7 +3,7 @@
 **Papel:** `inspetor-de-terreno-da-junta` (gate de start, não vota mérito, não conserta — §C7.4-bis).
 **Modelo que rodou:** **Opus** (`claude-opus-5[1m]`), NÃO Fable — ver seção "Modelo" do parecer
 `A-00-inspetor.md` (`D-FALLBACK-MODELO-FABLE-OPUS`, primeira aplicação real).
-**Worktree:** `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` (sempre por
+**Worktree:** `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` (sempre por
 caminho absoluto; a árvore principal `demo/investidor` NÃO foi tocada).
 **Forma de medição:** Bash (Git Bash) no worktree · `node v20.19.5` · `core.autocrlf=true` · exit code por
 variável, nunca por pipe. Data: 2026-09-08.

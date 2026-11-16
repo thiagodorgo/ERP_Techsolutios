@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { writeFileSync } from "node:fs";
 
-const WT = "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b04a";
+const WT = "~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b04a";
 const OUT = process.env.PROBE_OUT!;
 const ONLY = (process.env.PROBE_ONLY ?? "").split(",").filter(Boolean);
 const imp = (p: string) => import(pathToFileURL(`${WT}/${p}`).href);

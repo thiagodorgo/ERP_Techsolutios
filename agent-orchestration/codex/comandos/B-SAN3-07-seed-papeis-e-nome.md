@@ -8,7 +8,7 @@
   §C7 item 11(2), e o artefato do verificador declara que não houve cruzamento (emenda 1, item 8).
 - **Nível:** junta completa (§C7 item 10(1)): o bloco muda permissão. Unanimidade de 3 + `coordenador-de-acessos`
   (`PLANO_SAN3.md`, linha do `B-SAN3-07`, achado C1-A5).
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/plano-B-SAN3-07.md` (autor `plano-B-SAN3-07-api`, Claude Opus 5.5
+- **Plano:** `~/erp-pausa-2026-10-03/planos/plano-B-SAN3-07.md` (autor `plano-B-SAN3-07-api`, Claude Opus 5.5
   pela API), com a **Emenda 1** no fim, que prevalece. Crítica: `revisoes/crit-07-plano.json` (`crit-07-cl`, APROVADO COM
   AJUSTES).
 - **Relatório do dev:** `docs/revisoes/SAN3/B-SAN3-07-dev.md`.

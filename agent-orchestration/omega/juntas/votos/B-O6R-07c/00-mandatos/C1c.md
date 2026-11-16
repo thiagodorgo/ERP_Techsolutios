@@ -34,9 +34,9 @@ O papel e a cadeira C1 da junta do bloco B-O6R-07c-a (PR 414), identidade jurado
   (.claude/agents/especialistas/jurado-07ca-c1-escopo-por-objeto.md no head do PR), disparado como general-purpose limitado por escrito a Read, Grep, Glob e Bash;
   roda no Claude Code em Opus 5.5, no nivel menor por decisao do dono de 2026-10-10 (topo so no plano e em toda reprovacao de
   junta), declarado no artefato; se o md5 EOL-neutro do corpo recebido divergir do publicado no disparo, a cadeira nao vota;
-  declara na 1a linha da evidencia o papel, o modelo, o mandato_md5 deste arquivo e o md5 do corpo derruba com: `head -1 C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-evidencia.md | grep -ic 'mandato_md5'` (novo)
+  declara na 1a linha da evidencia o papel, o modelo, o mandato_md5 deste arquivo e o md5 do corpo derruba com: `head -1 ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-evidencia.md | grep -ic 'mandato_md5'` (novo)
 
-A legalidade e conferida antes do merito: o parecer do inspetor (C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md) diz LIBERADO ou LIBERADO COM
+A legalidade e conferida antes do merito: o parecer do inspetor (~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md) diz LIBERADO ou LIBERADO COM
   RESSALVA; o objeto e o head do PR 414 resolvido de novo por git e por gh, com os check-runs concluidos, e o delta desde o objeto
   do inspetor e so registro (o merge da main, o parecer e o registro do bloco); a regua e a do CLAUDE.md da ref, secao C7 item 8: bloco de permissao, unanimidade de 3 com veto,
   teto de 2 ciclos; o 07c-b NAO e deste PR e cobra-lo e reprovacao por construcao; o diretorio desta junta e
@@ -44,23 +44,23 @@ A legalidade e conferida antes do merito: o parecer do inspetor (C:/Users/AMP/w-
   quedas ficam em 00-quedas.md, escritas pelo orquestrador; depois do parecer a main de agora (PR 415, 7 arquivos de
   registro) foi integrada por merge, e com ela entram no objeto a regra de modelo D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO,
   a tensao do coordenador, as perguntas D1 a D3 do 07c e a pendencia do dano; ninguem roda ferramenta no worktree do dev
-  derruba com: `grep -ic 'LIBERADO' C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-evidencia.md` (novo)
+  derruba com: `grep -ic 'LIBERADO' ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-evidencia.md` (novo)
 
 O merito, por EXECUCAO, sem diluir (linha C1 da secao 07c-a.7 do plano): G-NEG, G-POS e G-WIDE por sonda PROPRIA no head (o
   tecnico nao atribuido recebe recusa nas 10 vias, o atribuido passa, gestor e operador passam); a matriz RBAC_MATRIX.md nas linhas
   45 e 66 contra o catalogo e contra o comportamento, a moderacao de comentario e o 404 entre organizacoes; e a km pelo sync, com a
-  semantica de status do 07a e o S-KM-RESTART derruba com: `grep -ic 'G-NEG' C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-evidencia.md` (novo)
+  semantica de status do 07a e o S-KM-RESTART derruba com: `grep -ic 'G-NEG' ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-evidencia.md` (novo)
 
 As regras da casa: unanimidade de 3 com veto; todo achado com gravidade (bloqueia, ajuste, nota) e escopo (dentro-do-bloco,
   ou pre-existente com evidencia de data ou origem, sem a qual conta como dentro-do-bloco); nao consigo medir e REPROVADO; a
   cadeira nao propoe correcao e nao le o voto das outras; KPI nao se cobra; as falhas conhecidas do T15 do PR 405 e do A10 do
-  o6r06 sao pre-existentes; escreve so C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-evidencia.md e C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-voto.json, o voto
-  nascendo como esqueleto com cada item EM APURACAO e gravado ao ser medido derruba com: `grep -ic '"escopo"' C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-voto.json` (novo)
+  o6r06 sao pre-existentes; escreve so ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-evidencia.md e ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-voto.json, o voto
+  nascendo como esqueleto com cada item EM APURACAO e gravado ao ser medido derruba com: `grep -ic '"escopo"' ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/07ca-C1-voto.json` (novo)
 
-O terreno: worktree proprio detached C:/Users/AMP/w-ciclo1-07ca-c1, npm ci proprio sem junction; banco so em container Linux proprio com
+O terreno: worktree proprio detached ~/w-ciclo1-07ca-c1, npm ci proprio sem junction; banco so em container Linux proprio com
   prefixo j07ca-c1-, sem porta publicada, removido pelo nome e nunca prune; a base viva e as portas do servidor do dono nunca sao alvo;
   nenhuma senha real em evidencia ou voto; nunca tail -f; timeout em tudo; evidencia incremental com hora (P1); PAUSA grava a
-  secao PAUSA e para (P7); ao fim, worktree e containers removidos pelo nome derruba com: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree list | grep -ic 'w-ciclo1-07ca-c1'`
+  secao PAUSA e para (P7); ao fim, worktree e containers removidos pelo nome derruba com: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree list | grep -ic 'w-ciclo1-07ca-c1'`
 
 ## MEDIDO
 
@@ -68,7 +68,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-19: refs do PR #414 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/00-mandatos/C1c.md
+PRE-VOO OK — ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/00-mandatos/C1c.md
 ec=0
 head=d72552634202aafd712a4bde25fe2134285b88c6
 utc=2026-10-10T16:59:54Z

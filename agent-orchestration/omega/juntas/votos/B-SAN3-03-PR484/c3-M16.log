@@ -28,20 +28,20 @@ ok 5 - T-STO-db-5 · canário recusa groupBy de arquivo que devolve organizaçã
 not ok 6 - T-API-db-1 · conta por organização, janela e ator sob RLS
   ---
   duration_ms: 195.0692
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-derived-basis-db.test.ts:1:2797'
+  location: '~/w-j484-c3\\tests\\san3-03-derived-basis-db.test.ts:1:2797'
   failureType: 'testCodeFailure'
   error: 'tenant_context_leak: audit_logs returned rows for another organization under the current context.'
   code: 'CLOUD_COST_ALLOCATION_CONTEXT_LEAK'
   name: 'CloudCostAllocationError'
   stack: |-
-    assertRowsBelongToTenant (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:496:11)
-    <anonymous> (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:409:9)
+    assertRowsBelongToTenant (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:496:11)
+    <anonymous> (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:409:9)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    async client.$transaction.timeout (C:\Users\thiag\w-j484-c3\src\database\rls.ts:62:28)
-    async Proxy._transactionWithCallback (C:\Users\thiag\w-j484-c3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:810:18)
-    async PrismaCloudCostAllocationRepository.sumUsageBasis (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:300:5)
-    async <anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-derived-basis-db.test.ts:67:18)
-    async withFixture (C:\Users\thiag\w-j484-c3\tests\san3-03-derived-basis-db.test.ts:128:5)
+    async client.$transaction.timeout (~/w-j484-c3\src\database\rls.ts:62:28)
+    async Proxy._transactionWithCallback (~/w-j484-c3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:810:18)
+    async PrismaCloudCostAllocationRepository.sumUsageBasis (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:300:5)
+    async <anonymous> (~/w-j484-c3\tests\san3-03-derived-basis-db.test.ts:67:18)
+    async withFixture (~/w-j484-c3\tests\san3-03-derived-basis-db.test.ts:128:5)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...
@@ -59,20 +59,20 @@ ok 8 - T-API-db-3 · ato da plataforma no cliente pesa na plataforma sob papel s
 not ok 9 - T-API-db-3b · ato próprio da plataforma soma ao ato dela no cliente, em qualquer ordem
   ---
   duration_ms: 224.2151
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-derived-basis-db.test.ts:1:5497'
+  location: '~/w-j484-c3\\tests\\san3-03-derived-basis-db.test.ts:1:5497'
   failureType: 'testCodeFailure'
   error: 'tenant_context_leak: audit_logs returned rows for another organization under the current context.'
   code: 'CLOUD_COST_ALLOCATION_CONTEXT_LEAK'
   name: 'CloudCostAllocationError'
   stack: |-
-    assertRowsBelongToTenant (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:496:11)
-    <anonymous> (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:430:9)
+    assertRowsBelongToTenant (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:496:11)
+    <anonymous> (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:430:9)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    async client.$transaction.timeout (C:\Users\thiag\w-j484-c3\src\database\rls.ts:62:28)
-    async Proxy._transactionWithCallback (C:\Users\thiag\w-j484-c3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:810:18)
-    async PrismaCloudCostAllocationRepository.sumUsageBasis (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:300:5)
-    async <anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-derived-basis-db.test.ts:116:21)
-    async withFixture (C:\Users\thiag\w-j484-c3\tests\san3-03-derived-basis-db.test.ts:128:5)
+    async client.$transaction.timeout (~/w-j484-c3\src\database\rls.ts:62:28)
+    async Proxy._transactionWithCallback (~/w-j484-c3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:810:18)
+    async PrismaCloudCostAllocationRepository.sumUsageBasis (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:300:5)
+    async <anonymous> (~/w-j484-c3\tests\san3-03-derived-basis-db.test.ts:116:21)
+    async withFixture (~/w-j484-c3\tests\san3-03-derived-basis-db.test.ts:128:5)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...

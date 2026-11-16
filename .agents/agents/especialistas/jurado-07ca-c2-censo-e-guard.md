@@ -34,7 +34,7 @@ censo e o guard**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, substituição declarada pelo §C7.6-bis), **sem executar nada**
-do que está aqui: a fábrica não tem `Bash`. O que ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-07ca` em
+do que está aqui: a fábrica não tem `Bash`. O que ele diz sobre o ramo foi **lido** no disco de `~/w-07ca` em
 2026-10-10. A ref local e a de rastreio do ramo estavam em `054dada26ce6d225f344604d512b1c0f3a72e6a4`, lidas nos arquivos
 de ref e não por `git`. O reflog local dá a esse commit a mensagem "merge origin/main: Merge made by the 'ort' strategy",
 **depois** do último commit do desenvolvedor (`d4cd35e3`). Os arquivo:linha abaixo vêm do plano (medidos em `c1cfdabe`) ou do
@@ -226,17 +226,17 @@ passar, é achado contra este corpo ou contra a régua, declarado antes do vered
   - Logo abaixo, registre: o objeto, `B`, `origin/main` no início, `$SCRATCH`, `uname -a`, `node -v`, a versão do
     `typescript` do `node_modules`, `git --version`, o espaço livre em `C:` e o ambiente.
 - **Arquivos de saída:** os que o seu mandato nomear. O padrão deste corpo é
-  `C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c-a/C2-evidencia.md` e `…/C2-voto.json`. Nunca grave no
+  `~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c-a/C2-evidencia.md` e `…/C2-voto.json`. Nunca grave no
   seu worktree de medição. As quedas são do **orquestrador** (P6).
 - **Saída colada: LF, sem espaço no fim de linha** (`sed -E 's/[[:space:]]+$//'`). No fim, `grep -cE '[[:space:]]+$'` = **0**
   nos seus dois arquivos (publique). As saídas longas do guard ficam em arquivo em `$SCRATCH`, e na evidência entram só as
   linhas de violação e as contagens.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** `C:/Users/AMP/w-j07cac2` (ou o que o mandato nomear), criado por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j07cac2 <objeto>`. **Prove**
-  `test -e C:/Users/AMP/w-j07cac2/.git`. Se o caminho existir, é resíduo alheio: reporte e use o sufixo `b`. Instale com
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** `~/w-j07cac2` (ou o que o mandato nomear), criado por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j07cac2 <objeto>`. **Prove**
+  `test -e ~/w-j07cac2/.git`. Se o caminho existir, é resíduo alheio: reporte e use o sufixo `b`. Instale com
   `npm ci --no-audit --no-fund` **próprio** e rode `prisma generate` com uma `DATABASE_URL` **fictícia só naquela linha**
   (o gerador não conecta; o dev fez assim, passo 1). **Junction ou symlink de `node_modules` entre worktrees é PROIBIDO.**
-- **Árvores intocáveis.** `C:/Users/AMP/w-07ca` é a árvore do **desenvolvedor**: a sua **única** escrita lá são os seus dois
+- **Árvores intocáveis.** `~/w-07ca` é a árvore do **desenvolvedor**: a sua **única** escrita lá são os seus dois
   arquivos de saída. Os worktrees de outros agentes você não toca.
 - **Banco e portas.** Este mandato não precisa de banco. Se você subir algum container, use o prefixo `j07ca-c2-`, uma rede
   própria e **nenhuma porta publicada**. `erp-postgres` (5432), `erp-redis` (6379), `erp-postgres-alt` (55432) e as portas do
@@ -261,7 +261,7 @@ passar, é achado contra este corpo ou contra a régua, declarado antes do vered
   resolvedor de `/attachments`) só existem no seu worktree, e a restauração é provada do mesmo jeito.
 - **Remoção só do que você criou.** Antes de remover o worktree, conte os processos vivos com o caminho na linha de comando:
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-j07cac2*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`.
-  Depois, `git worktree remove --force C:/Users/AMP/w-j07cac2`.
+  Depois, `git worktree remove --force ~/w-j07cac2`.
 - **Saída para arquivo e exit por variável:** `cmd > "$LOG" 2>&1; ec=$?`. **Nunca `| tail`.** **Caminho absoluto sempre.**
 - **Evidência e voto em arquivo, por `Bash`.** Você não tem `Write`, por desenho (§C7.4-bis). Um script com barra invertida
   dupla **nunca** vai por heredoc: grave-o em arquivo e publique o md5. Comandos longos vão em partes de até 7 KB.
@@ -574,7 +574,7 @@ Voto (JSON):
  ],
  "criterios_que_nao_puderam_falhar": [ "T sem mutação vermelha · controle que NÃO acusou — achado contra este corpo, declarado antes do veredito · critério que não pode PASSAR por construção — achado contra a régua" ],
  "pendencias_que_aceito": [ "o que é da C1/C3 (nomeie a cadeira) · o 07c-b · riscos residuais declarados na C.2 · o que este corpo declara reprovação por construção" ],
- "teardown": "toda mutação restaurada (hash-object = blob do objeto) e git status --porcelain vazio no meu worktree · injeções e geradores próprios de $SCRATCH apagados · worktree C:/Users/AMP/w-j07cac2 removido por `git worktree remove --force`, com 0 processos vivos com o caminho antes · containers j07ca-c2-* (se houve) removidos, contagem 0 · base viva nunca tocada · w-07ca só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
+ "teardown": "toda mutação restaurada (hash-object = blob do objeto) e git status --porcelain vazio no meu worktree · injeções e geradores próprios de $SCRATCH apagados · worktree ~/w-j07cac2 removido por `git worktree remove --force`, com 0 processos vivos com o caminho antes · containers j07ca-c2-* (se houve) removidos, contagem 0 · base viva nunca tocada · w-07ca só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
 }
 ```
 

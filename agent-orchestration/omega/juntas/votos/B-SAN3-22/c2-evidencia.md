@@ -1,7 +1,7 @@
 papel: cadeira C2 | identidade: jurado-san322-c2-opus | executor: subagente genérico Claude Code (corpo lido do blob do objeto) | corpo: jurado-san322-c2-contrato-classificador-consumidores | modelo: Claude Opus 5.5 (claude-opus-5-5) (nível menor, §C7.6; substituição: nenhuma — declarado no disparo "cobre o Codex, sem limite até 14:18Z") | objeto: 44d9cbb3874e45340ca43c934364c3d0103c53b8 | mandato_md5: 013bd679edeef870f2cd3c6e9329a487 (tr -d '\r' | md5sum; declarado no disparo: não declarado) | corpo carregado × blob do objeto: IDENTICO (o corpo foi carregado por `git show 44d9cbb3:.claude/agents/especialistas/jurado-san322-c2-contrato-classificador-consumidores.md`, i.e. o próprio blob; md5 EOL-neutro .claude c47dcb091fc35ed6b02719a8badf0a51 · .agents 706119df2161757621a73dd7e4d74b39 — diferem só pelo bloco Codex, pré-voo/inspetor mediram IDENTICO descontado)
 
 - origin/main no início: c9a2d036c1aaff21df92817525d7f9c92cbbe272 (= merge-base atual com o objeto)
-- $SCRATCH: C:/Users/AMP/erp-pausa-2026-10-03/j22-c2/ · node v20.19.5 · livre em C: 12G (≥ 7 GB) · memória de commit livre 13,06 GB (≥ 4 GB) · trabalhos Docker fora de erp-*: 0 antes de subir (teto 2)
+- $SCRATCH: ~/erp-pausa-2026-10-03/j22-c2/ · node v20.19.5 · livre em C: 12G (≥ 7 GB) · memória de commit livre 13,06 GB (≥ 4 GB) · trabalhos Docker fora de erp-*: 0 antes de subir (teto 2)
 - variáveis: REDIS_URL=redis://127.0.0.1:47932 (prefixo de todo node/npm); DATABASE_URL fictícia só no prisma generate
 - Insumos lidos (A RE-VERIFICAR, nunca fato): mandato cadeira-c2.md; parecer insp-san322-parecer.md; corpo do blob; plano e relatório do dev no objeto; críticas/revisões da pasta revisoes/ (ressalva 5) só como roteiro. NÃO li c1-* nem c3-*.
 
@@ -13,11 +13,11 @@ papel: cadeira C2 | identidade: jurado-san322-c2-opus | executor: subagente gen�
 - check-runs (gh api commits/<objeto>/check-runs): total=14 · não-verdes=0 · pendentes=0 · backend success ×2 · backend-postgres success ×2 · frontend success ×2.
 
 ## Terreno
-- worktree `C:/Users/AMP/j22-c2-wt` detached no objeto (`git worktree add --detach`), `.git` presente, `.env` ausente; `npm ci --no-audit --no-fund` próprio ec=0 (326 pacotes); `npx prisma generate` com DATABASE_URL fictícia ec=0; `node_modules` atributo `Directory` (sem junction/ReparsePoint). Frontend: o CE-37 importa `frontend/src/modules/checklists/checklist-editor.model.ts`, cujos imports são só `import type` e `./checklist.constants` (local) — sem pacote externo → `npm --prefix frontend ci` NÃO necessário (declarado).
+- worktree `~/j22-c2-wt` detached no objeto (`git worktree add --detach`), `.git` presente, `.env` ausente; `npm ci --no-audit --no-fund` próprio ec=0 (326 pacotes); `npx prisma generate` com DATABASE_URL fictícia ec=0; `node_modules` atributo `Directory` (sem junction/ReparsePoint). Frontend: o CE-37 importa `frontend/src/modules/checklists/checklist-editor.model.ts`, cujos imports são só `import type` e `./checklist.constants` (local) — sem pacote externo → `npm --prefix frontend ci` NÃO necessário (declarado).
 - Redis 7 `j22-c2-redis` (redis:7-alpine) em 127.0.0.1:47932 (porta fora de excludedportrange, nenhum container nela), PONG. Sem Postgres (itens em memória). Base viva (erp-postgres/erp-redis, 5432/6379) nunca tocada.
 
 ## Item 1 — classificador fail-closed, normalizações, CE-37, D-W1 (FECHADO)
-Sondas em `C:/Users/AMP/erp-pausa-2026-10-03/j22-c2/` (copiadas para `<wt>/tests/zz-j22c2-*` só para rodar; apagadas no teardown): `zz-j22c2-gen.test.ts` md5 563387cd51e6c7ed0306317d9ec8e81d · `zz-j22c2-hostil.test.ts` md5 27e56258e21f2ef36e4e46eaa1f5fdf2 · `mut.mjs` (âncora única, EOL-consciente, conta=1 ou sai 3).
+Sondas em `~/erp-pausa-2026-10-03/j22-c2/` (copiadas para `<wt>/tests/zz-j22c2-*` só para rodar; apagadas no teardown): `zz-j22c2-gen.test.ts` md5 563387cd51e6c7ed0306317d9ec8e81d · `zz-j22c2-hostil.test.ts` md5 27e56258e21f2ef36e4e46eaa1f5fdf2 · `mut.mjs` (âncora única, EOL-consciente, conta=1 ou sai 3).
 
 **(a) testes do bloco ×3** — `REDIS_URL=redis://127.0.0.1:47932 timeout -k 15 600 node --test --import tsx tests/checklist-template-change.test.ts tests/checklist-editor-classifier-parity.test.ts` → run1/2/3: tests 49 | pass 49 | fail 0 | skipped 0 (ec=0 ×3). Casos: 18 CE-37 (5 × {publicado, legado, do editor} + seção vazia do meio + ajuda ausente×vazia + obrigatório desligado) · 21 CE-18 por chave/propriedade (16 chaves de config incl. futuraChave, required, type, validationRules, visibilityRules) + 5 CE-18 compostos · 2 CE-18c · E3b-01(a)(c)(d). Veredito parcial: verde, N estável.
 
@@ -119,7 +119,7 @@ Veredito parcial item 3: **C2-06 (E3-03: CE-13 não fica vermelho sem o marcador
 ## Teardown e fim
 - sondas `tests/zz-j22c2-*` apagadas do worktree; `git status --porcelain` vazio; mutações e checkouts de base todos restaurados (hash-object = blob a cada passo).
 - `docker rm -f -v j22-c2-redis` → contagem `j22-c2-` = 0. Base viva (`erp-*`, 5432/6379) nunca tocada.
-- processos com `j22-c2-wt` na linha de comando: só a própria consulta (bash/powershell da medição) → 0 próprios; `git worktree remove --force C:/Users/AMP/j22-c2-wt` ec=0; `worktree list | grep -c j22-c2` = 0.
+- processos com `j22-c2-wt` na linha de comando: só a própria consulta (bash/powershell da medição) → 0 próprios; `git worktree remove --force ~/j22-c2-wt` ec=0; `worktree list | grep -c j22-c2` = 0.
 - objeto no fim: ls-remote = gh pr view 464 = 44d9cbb3874e45340ca43c934364c3d0103c53b8 (não andou); origin/main e merge-base no fim = c9a2d036c1aaff21df92817525d7f9c92cbbe272. Livre em C: 12G.
 - §A7: âncoras citadas medidas no blob do objeto (`git show 44d9cbb3:<arquivo> | tr -d '\r' | grep -c -F`): plano — E3-20, E3-03, E3b-12, "toda requisição mutante tocada tem o status afirmado 2xx", "render`-sem-viva", "se não ficar, o guard ganha o caso antes do merge", E3b.4, E3b.5, E3.5, Ratificação 12:30Z, E3b-01/02/03, E3-21: N=1 cada; CLAUDE.md — D-JUNTA-SO-CADEIRA-VERMELHA 1, D-JUNTA-ESCOPO-E-CALIBRACAO 1, D-GOV-PROPORCIONAL 3, 4-bis SEPARAÇÃO 1, P7 1, P8 1, D-MEDIR-NA-REF-ALVO 1, paradas irredutíveis 1, 6-bis 1.
 - Únicas escritas em w-san322: `c2-evidencia.md` e `c2-voto.json`. Não commitei.

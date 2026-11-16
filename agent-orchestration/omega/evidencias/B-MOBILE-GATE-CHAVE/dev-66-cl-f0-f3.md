@@ -1,7 +1,7 @@
 # B-MOBILE-GATE-CHAVE — evidência do dev (F0 a F3)
 
 - **Executor:** `dev-66-cl`, Claude Opus 5.5, identidade de dev declarada (§C7 11(6)). Sem cruzamento entre casas (§C7 11(2)), por ordem do dono de 13/11.
-- **Base:** `origin/main` `d2737339` (14/11 00:46 SP, a mesma da abertura). Worktree `C:/Users/thiag/w-gate66`, ramo `fix/mobile-gate-chave`, `npm ci` próprio, sem junction.
+- **Base:** `origin/main` `d2737339` (14/11 00:46 SP, a mesma da abertura). Worktree `~/w-gate66`, ramo `fix/mobile-gate-chave`, `npm ci` próprio, sem junction.
 - **Fora daqui:** a prova com perfil real (`perfil-real-{antes,depois}.md`) é da identidade `dev-66-perfil-cl`.
 - **Diário completo, com cada comando:** `erp-pausa-2026-10-03/revisoes/b-mobile-gate-chave/dev-66-cl.md` (fora do repositório); logs de cada mutação em `dev-66-cl-ev/mut/`.
 

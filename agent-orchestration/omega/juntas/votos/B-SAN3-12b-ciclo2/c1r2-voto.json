@@ -78,7 +78,7 @@
   {
    "id": "C1r2-01",
    "defeito": "Os valores em dinheiro dos indicadores não cabem no cartão e ficam encobertos. Com os números da própria opção A, em 1280×720 o texto de 5 dos 6 indicadores passa 25 a 37 px da borda do cartão e o cartão vizinho pinta por cima (lê-se 'R$ 126.958,6', 'R$ 167.692,3', 'R$ 56.999,5', 'R$ 56.330,0', 'R$ 30.520,0'); em 1366×768, 11 a 23 px; em 1440×900, os de 6 dígitos passam 10 px. Sem ellipsis nem title. Na opção A os mesmos valores cabem (15,5–18 px, ellipsis, 39–60 px de folga).",
-   "evidencia": "$S/zz-j12bc1r2-kpiclip.mjs → $S/kpiclip-obj.json (sobra por cartão; scrollWidth 175/163 > clientWidth 122 em 1280); capturas $S/cap-obj-kpi-1280.png, cap-obj-kpi-1366.png, cap-obj-kpi-1440.png; ciclo 1 igual em $S/kpiclip-ctlC1.json; FinanceiroViewA.tsx:212 gridTemplateColumns repeat(6, minmax(0, 1fr)); app.css:3176-3177 .pat-kpi__value 27px ($S = C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c1r2)",
+   "evidencia": "$S/zz-j12bc1r2-kpiclip.mjs → $S/kpiclip-obj.json (sobra por cartão; scrollWidth 175/163 > clientWidth 122 em 1280); capturas $S/cap-obj-kpi-1280.png, cap-obj-kpi-1366.png, cap-obj-kpi-1440.png; ciclo 1 igual em $S/kpiclip-ctlC1.json; FinanceiroViewA.tsx:212 gridTemplateColumns repeat(6, minmax(0, 1fr)); app.css:3176-3177 .pat-kpi__value 27px ($S = ~/erp-pausa-2026-10-03/j12b2-c1r2)",
    "gravidade": "bloqueia",
    "escopo": "dentro-do-bloco (a grade de 6 colunas nasce no bloco: git log -S 'repeat(6, minmax(0, 1fr))' → c022182d 2026-10-26, só no ramo; FinanceiroViewA.tsx é arquivo novo do bloco; o 27 px é da biblioteca, 9f12ea99 2026-06-09, mas a composição que corta é do bloco)",
    "classe": "não grave",
@@ -213,5 +213,5 @@
    "resultado": "C1r2-01 e C1r2-02 idênticos no ciclo 1; restauro hash = blob"
   }
  ],
- "teardown": "Vite morto pelo PID (taskkill 18544 + filho 27996; netstat 48121 só TIME_WAIT); processos com j12b-c2-c1r2-wt = 0; worktree removido por git worktree remove --force (ec 0, caminho ausente, 0 na worktree list); mutações e checkouts do ciclo 1 restaurados (status vazio, hash-object = blob em cada um); sondas, logs e capturas só em C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c1r2/; nenhum docker; em w-san312b só c1r2-evidencia.md e c1r2-voto.json; nada commitado; disco no fim 13G livres"
+ "teardown": "Vite morto pelo PID (taskkill 18544 + filho 27996; netstat 48121 só TIME_WAIT); processos com j12b-c2-c1r2-wt = 0; worktree removido por git worktree remove --force (ec 0, caminho ausente, 0 na worktree list); mutações e checkouts do ciclo 1 restaurados (status vazio, hash-object = blob em cada um); sondas, logs e capturas só em ~/erp-pausa-2026-10-03/j12b2-c1r2/; nenhum docker; em w-san312b só c1r2-evidencia.md e c1r2-voto.json; nada commitado; disco no fim 13G livres"
 }

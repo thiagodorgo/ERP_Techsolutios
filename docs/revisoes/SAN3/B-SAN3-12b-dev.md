@@ -1,7 +1,7 @@
 # B-SAN3-12b — relatório do DEV
 
 > Papel: `dev-san312b-sol` (DEV). Modelo declarado: Codex GPT-5.6 Sol, esforço medium, nível menor. Não planejou, não criticou e não vota.
-> Worktree: `C:/Users/AMP/w-san312b`. Ramo: `feat/web-financeiro-baixa-e-contas`.
+> Worktree: `~/w-san312b`. Ramo: `feat/web-financeiro-baixa-e-contas`.
 
 ## P1 — evidência incremental
 
@@ -54,7 +54,7 @@
 
 ### E5 — ratificação do orquestrador e retomada
 
-- Fonte: seção `Ratificação do orquestrador (2026-10-26 14:35Z)` apensa ao fim de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`.
+- Fonte: seção `Ratificação do orquestrador (2026-10-26 14:35Z)` apensa ao fim de `~/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`.
 - Saída resumida: o orquestrador ratificou por escrito que `frontend/src/modules/finance/entries/finance-errors.ts` entra no PERMITIDO do §7.2 e que o F4 usa a lista fechada de **32** itens, igual ao §4.1 e ao `API_CONTRACTS.md`.
 - Veredito parcial: as duas premissas falsas da E4 estão resolvidas antes do código; a retomada segue pelo vermelho-controle, sem reabrir decisões do dono.
 
@@ -78,7 +78,7 @@
 
 ### E7 — ratificação do orquestrador para o F8 e retomada 2
 
-- Fonte: seção `Ratificação do orquestrador (2026-10-26 14:40Z)` no fim de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`.
+- Fonte: seção `Ratificação do orquestrador (2026-10-26 14:40Z)` no fim de `~/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`.
 - Decisão transcrita: o F8 passa a ser uma trava por inventário congelado das 8 ocorrências preexistentes medidas na `origin/main` `c9a2d036`; o inventário é vazio em `accounts/**`, `entries/**` e `pages/**`; ocorrência nova ou entrada morta reprova.
 - Pendência obrigatória deste PR: abrir `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE`, BAIXA e preexistente; 7 ocorrências ficam com o bloco das telas de comissões e 1 em `titles/` com `B-SAN3-24`; fechamento quando o inventário ficar vazio.
 - Veredito parcial: a premissa falsa de E6 está resolvida pelo próprio plano. A retomada segue sem nova decisão de produto e sem tocar os caminhos proibidos.
@@ -196,7 +196,7 @@ um a um. Nada de `reset --hard`, `stash` ou `clean`.
   ainda pode compensar. A pendência `P-SAN3-12-CHEQUE-DESVINCULADO-CAIXA-SEM-TITULO` (dono `B-SAN3-24`) já cobre o resto.
 - **D-7 — `422 title_has_pending_cheque.details` não chega ao front.** O `ApiError` de `services/api/client.ts` (fora do §7.2) lê só
   `code`/`reason`. O bloco do cheque (F6) lê os cheques por `GET /cheques?title_id=` (rota do §4.1), que dá número, banco, valor e situação.
-- **D-8 — Node 22 (corrigido no ciclo 2, E2/R13(c)).** Node 22.14.0 está instalado (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`); o
+- **D-8 — Node 22 (corrigido no ciclo 2, E2/R13(c)).** Node 22.14.0 está instalado (`~/AppData/Local/nvm/v22.14.0/node.exe`); o
   `test:smoke` foi executado nas duas versões por caminho absoluto no PATH do comando, nunca `nvm use`; a CI roda Node 20. TAP do head da
   FATIA 8 (RETOMADA 8): Node `v20.19.5` → `tests 1475 · pass 1475 · fail 0 · skipped 0`; Node `v22.14.0` → `tests 1475 · pass 1475 · fail 0 ·
   skipped 0`. *Texto do ciclo 1, superado:* "Node 22 indisponível nesta máquina (`node --version` → `v20.19.5`; sem nvm). O `test:smoke`
@@ -296,7 +296,7 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 
 ### Próximo comando exato
 
-`"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
+`"C:/Program Files/Git/bin/bash.exe" -lc "cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
 
 ## RETOMADA 2
 
@@ -329,7 +329,7 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 
 ### Próximo comando exato
 
-`"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
+`"C:/Program Files/Git/bin/bash.exe" -lc "cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
 
 ## RETOMADA 3
 
@@ -360,7 +360,7 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 
 ### Próximo comando exato
 
-`"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
+`"C:/Program Files/Git/bin/bash.exe" -lc "cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
 
 ## RETOMADA 4
 
@@ -405,7 +405,7 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 
 ### Próximo comando exato
 
-`"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
+`"C:/Program Files/Git/bin/bash.exe" -lc "cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
 
 ## RETOMADA 5
 
@@ -441,7 +441,7 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 
 ### Próximo comando exato
 
-`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+`cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
 
 ## RETOMADA 6
 
@@ -477,7 +477,7 @@ Hashes verdes (antes e depois das mutações): `BaixaForm.tsx` `ecc2a7f3…`, `F
 
 ### Próximo comando exato
 
-`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+`cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
 
 ## RETOMADA 7
 
@@ -516,7 +516,7 @@ Hashes verdes conferidos antes e depois: `BaixaForm.tsx` `4ec00001…`, `Finance
 
 ### Próximo comando exato
 
-`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+`cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
 
 ## RETOMADA 8
 
@@ -526,7 +526,7 @@ Hashes verdes conferidos antes e depois: `BaixaForm.tsx` `4ec00001…`, `Finance
 
 ### R13 — registro
 
-- **(a)** Apensadas **verbatim** ao fim de `docs/revisoes/SAN3/B-SAN3-12-plano.md` as linhas 939–1119 da cópia do orquestrador (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`): as duas seções "Ratificação do orquestrador" (14:35Z, com os 2 itens; 14:40Z) e a Emenda E2 inteira (E2.1–E2.7). Conferência: a E2 da cópia é idêntica à do parecer `R-B-SAN3-12b-ciclo1.md` (`diff` vazio). Medição: `grep -c "^## Ratificação do orquestrador"` → **2**; `grep -c "Emenda E2"` → **2** (≥ 1). **Divergência de transcrição declarada:** o comando literal da R13 (`git grep -c "Ratificação do orquestrador" <head> -- docs/revisoes/SAN3/B-SAN3-12-plano.md` = 2) dá **3** no head, porque a própria E2, apensa verbatim, cita essa expressão no critério da R13 (l.1202 do plano versionado). As seções de ratificação são 2 (l.1072 e l.1079); a mutação da R13 (tirar uma ratificação) leva o `grep -c "^## Ratificação do orquestrador"` de 2 para 1 e o comando literal de 3 para 2. A frase de `pendencias.md` (l.11925, "ratificação … no fim do plano") passa a ser verdadeira.
+- **(a)** Apensadas **verbatim** ao fim de `docs/revisoes/SAN3/B-SAN3-12-plano.md` as linhas 939–1119 da cópia do orquestrador (`~/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`): as duas seções "Ratificação do orquestrador" (14:35Z, com os 2 itens; 14:40Z) e a Emenda E2 inteira (E2.1–E2.7). Conferência: a E2 da cópia é idêntica à do parecer `R-B-SAN3-12b-ciclo1.md` (`diff` vazio). Medição: `grep -c "^## Ratificação do orquestrador"` → **2**; `grep -c "Emenda E2"` → **2** (≥ 1). **Divergência de transcrição declarada:** o comando literal da R13 (`git grep -c "Ratificação do orquestrador" <head> -- docs/revisoes/SAN3/B-SAN3-12-plano.md` = 2) dá **3** no head, porque a própria E2, apensa verbatim, cita essa expressão no critério da R13 (l.1202 do plano versionado). As seções de ratificação são 2 (l.1072 e l.1079); a mutação da R13 (tirar uma ratificação) leva o `grep -c "^## Ratificação do orquestrador"` de 2 para 1 e o comando literal de 3 para 2. A frase de `pendencias.md` (l.11925, "ratificação … no fim do plano") passa a ser verdadeira.
 - **(b)** Seção nova no fim do plano versionado, "Transcrições da E2 no plano versionado (R13(b))", sem editar o corpo v3: §4.1 + `POST /cheques/:chequeId/cancel`; §10 — a C3 também julga F20–F22; F4 = 32.
 - **(c)** D-8 deste relatório corrigido no lugar (o texto do ciclo 1 fica citado como superado), com os dois TAP abaixo.
 - **(d)** 4 pendências da E2.4 abertas em `agent-orchestration/controle/pendencias.md`, cada uma com status, escopo com evidência, dono e encerramento: `P-SAN3-12B-BUSCA-TABELA-TITULOS` (dono `B-SAN3-12c`), `P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO` (pré-existente: `git blame frontend/src/guards/PermissionGuard.tsx:29` → `98b4bee34` 2026-06-06; dono `B-SAN3-06a`, alternativa `B-SAN3-24`), `P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO` (pré-existente: `git blame …/financial-summary.adapter.ts:113` → `08d009492` 2026-07-18; dono `B-SAN3-12c`), `P-SAN3-12-CE4-BRACO1-NA-CI` (dono `B-SAN3-12c` + ferramentas de processo). `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO` e `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE` já existiam (1 cabeçalho cada) e ficam inalteradas (a R12 mediu N = 0 forma nova pré-existente, ver RETOMADA 7). Índice: `python -I agent-orchestration/controle/gerar-indice-pendencias.py` → `670 cabeçalhos / 659 IDs | ABERTA 508 · FECHADA 158 · SEM-STATUS 4`; regerado de novo → sha256 igual (`8a4b84a1db93e5c2…`), logo o versionado é o que o gerador produz da fonte deste commit (R7).
@@ -543,7 +543,7 @@ Hashes verdes conferidos antes e depois: `BaixaForm.tsx` `4ec00001…`, `Finance
 | `cd frontend && node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx` | `112 · 112 · 0 · 0` (antes do ajuste de caso: `110`) | verde |
 | por arquivo, os 9 do bloco | `finance-page-live` 33 · `finance-baixa.smoke` 9 · `finance-contas-extrato.smoke` 8 · `finance-conciliacao.smoke` 5 · `finance-no-money-reduce.guard` 4 · `finance-redirects` 3 · `financial-accounts.adapter` 6 · `financial-entries.adapter` 11 · `dense-expandable-row` 5 = **84** (baseline do ciclo 1: 67; meta da E2 ≥ 84 — **atingida**, 17 casos novos) | verde |
 | `npm --prefix frontend run test:smoke` em Node `v20.19.5` | `1475 · 1475 · 0 · 0` (fatia 1: 1458; + 17 casos novos) | verde |
-| `PATH="/c/Users/AMP/AppData/Local/nvm/v22.14.0:$PATH" npm --prefix frontend run test:smoke` (o `node --version` do comando e o de dentro de `frontend/` → `v22.14.0`; nunca `nvm use`) | `1475 · 1475 · 0 · 0` | verde |
+| `PATH="~/AppData/Local/nvm/v22.14.0:$PATH" npm --prefix frontend run test:smoke` (o `node --version` do comando e o de dentro de `frontend/` → `v22.14.0`; nunca `nvm use`) | `1475 · 1475 · 0 · 0` | verde |
 | `npm --prefix frontend run build` | `✓ built in 58.85s`, exit 0 | verde |
 | raiz `npm run check` · `npm run lint` · `npm run build` | exit 0 · 0 · 0 | verde |
 | **CE-4 `-db` (F18), braço 1:** Postgres 16 descartável `dev12b-f8-pg` em `127.0.0.1:55821`; `npx prisma migrate deploy` → "All migrations have been successfully applied."; `CORE_SAAS_PERSISTENCE=prisma npm run db:provision-rbac` → "912 criada(s) … CONVERGIDO"; `CORE_SAAS_PERSISTENCE=prisma node --test --import tsx tests/b-san3-12-ce4-db.test.ts` | `2 · 2 · 0 · 0` (base PROVISIONADA) | verde |
@@ -566,7 +566,7 @@ Hashes verdes conferidos antes e depois: `BaixaForm.tsx` `4ec00001…`, `Finance
 
 ### Próximo comando exato
 
-`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+`cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
 
 ## RETOMADA 9
 
@@ -642,7 +642,7 @@ Notas: R4-M2 é a mesma forma da F14 do ciclo 1 (a view chama `useFinancialSumma
 
 ### Próximo comando exato
 
-`gh api repos/{owner}/{repo}/commits/$(git -C C:/Users/AMP/w-san312b rev-parse HEAD)/check-runs --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'`
+`gh api repos/{owner}/{repo}/commits/$(git -C ~/w-san312b rev-parse HEAD)/check-runs --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'`
 
 ## RETOMADA 10
 
@@ -672,7 +672,7 @@ Notas: R4-M2 é a mesma forma da F14 do ciclo 1 (a view chama `useFinancialSumma
 
 ### Próximo comando exato
 
-`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+`cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
 
 ## RETOMADA 11
 
@@ -687,7 +687,7 @@ Notas: R4-M2 é a mesma forma da F14 do ciclo 1 (a view chama `useFinancialSumma
 - R-E3-2(a): `scanFinance` procura o TOKEN `REDUCE_TOKEN = /\.\s*reduce\s*(?:<[^<>()]*>\s*)?\(/g` e registra uma chave para cada um; o receptor (`receiverStart`) anda para trás sobre identificadores, `.`/`?.`, chamadas e índices balanceados e um parêntese de agrupamento, com espaço e quebra de linha entre os elos, e para em palavra-chave (`return (x)` → `(x)`) e em `...spread`. Chave = `arquivo::expressão-sem-espaços`, como antes. As 8 chaves do inventário saem **idênticas** (impressas pelo `scanFinance()` do head: as mesmas 8 strings de `FROZEN_INVENTORY`; o caso F8 do inventário continua verde).
 - R-E3-2(b): `reduceTokens()` conta o token no código sem comentários, sem olhar o receptor; caso novo `F8/E3: todo token .reduce( … — 6 no módulo, 0 em accounts/, entries/ e pages/` (`FROZEN_REDUCE_TOKENS = 6`; mensagem do F8 "o dinheiro vem do servidor").
 - R-E3-2(c): controle positivo novo com 7 formas em diretório temporário — `items.filter((e) => e.ok).reduce(`, `return (rows ?? []).reduce(`, `Object.values(m).reduce(`, `(list ?? []).reduce(`, `arr[0].reduce(`, `items?.reduce(`, `items\n  .filter(Boolean)\n  .reduce<number>(` — e um `.reduce(` comentado que não conta; `scanFinance` nas duas réguas devolve as 7 chaves esperadas e `reduceTokens` conta 7 (uma chave por token, nenhuma perdida).
-- Guard no head: Node v20.19.5 → `tests 6 · pass 6 · fail 0 · skipped 0`; Node 22 por caminho absoluto (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`) → `tests 6 · pass 6 · fail 0 · skipped 0`. Meta da E3: +2 casos (4 → 6).
+- Guard no head: Node v20.19.5 → `tests 6 · pass 6 · fail 0 · skipped 0`; Node 22 por caminho absoluto (`~/AppData/Local/nvm/v22.14.0/node.exe`) → `tests 6 · pass 6 · fail 0 · skipped 0`. Meta da E3: +2 casos (4 → 6).
 - R-E3-2(d): `git grep -n -E "reduce\(|\+= *[a-zA-Z.]*amount" -- frontend/src/modules/finance` → **8** = inventário. `npm --prefix frontend run check` → rc 0. `git diff --check` → vazio.
 - **Elaboração do dev, declarada:** o token aceita argumento de tipo antes do `(` (`.reduce<number>(`), que é a mesma chamada e que a regex `\.reduce\(` da letra da E3 não veria; o produto tem 0 ocorrências dessa forma, logo a contagem 6/0 não muda. **Resíduo declarado (fora do token da E3, não coberto):** `.reduceRight(`, `["reduce"](` e `.reduce.call(`; o andar para trás conta parênteses sem olhar strings (um `")"` dentro de string na cadeia muda a chave, não a contagem). Medido: 0 ocorrência das três formas no módulo (`git grep -n -E 'reduceRight|\["reduce"\]|\.reduce\.call' -- frontend/src/modules/finance` → 0).
 
@@ -710,7 +710,7 @@ O guard do objeto rodou como cópia temporária em `frontend/tests/zz-f8-objeto-
 
 ### Próximo comando exato
 
-`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+`cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
 
 ## RETOMADA 12
 
@@ -738,7 +738,7 @@ O guard do objeto rodou como cópia temporária em `frontend/tests/zz-f8-objeto-
 - R-E3-4(a): `.pat-ab-table th.dense-col-right, .pat-ab-row td.dense-col-right { text-align: right; }`, `.pat-ab-table th.dense-col-tabular, .pat-ab-row td.dense-col-tabular { font-variant-numeric: tabular-nums; }`, `.pat-ab-table th.dense-col-right .dense-sort-btn { justify-content: flex-end; }` (especificidade 0,2,1 sobre `.pat-ab-table thead th` 0,1,2 e `.pat-ab-row td` 0,1,1). `DenseTable.tsx`/`DenseExpandableRow.tsx` intocados. Sonda no navegador (`scratchpad/f3sonda/table-probe.mjs`, saída `table-probe-out.txt`, 1280×720, tabela `.pat-ab-table` com as classes que o `DenseTable` emite): objeto → `th VALOR align=left nums=normal`, `td R$ 1.500,00 align=start nums=normal`; head → `th VALOR`/`SALDO EM ABERTO` e os 2 `td` `align=right nums=tabular-nums`; `DOCUMENTO` inalterado (`left`/`start`); `td` com 41 px de altura (40 + borda, ≤ 42).
 - R-E3-5: `TECH` = `/\b(tenant|tenants|role|roles|reconciled|unreconcile|payment_method|client_action_id|scope|scopes|rbac|permission|permissions)\b|\/api\/|\/financial-|\/cheques\//i`; o F17 continua verde no head (0 ofensor); controle positivo novo: `label="Scope"`, `"Sem permission"` e `"Perfil sem RBAC"` acusam, `"Sem permissão"` não.
 - R-E3-6(b): l.504 → `className="pat-btn"`; `git grep -n "pat-btn--secondary" -- frontend/src` → **0**.
-- Testes no head (de `frontend/`): `node --test --import tsx tests/finance-contas-extrato.smoke.test.tsx tests/pattern-css-guard.test.ts` → Node v20.19.5 `tests 16 · pass 16 · fail 0 · skipped 0`; Node 22 (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`, caminho absoluto) `tests 16 · pass 16 · fail 0 · skipped 0`. A linha de arquivos da R-E3-7 (`tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx tests/pattern-css-guard.test.ts`, Node 20) → `tests 122 · pass 122 · fail 0 · skipped 0` (a conferência contra a meta M ≥ 119 e a baseline N = 112 é da bateria da fatia 4, que mede a mesma linha no objeto). `npm --prefix frontend run check` → rc 0. `git diff --check` → vazio.
+- Testes no head (de `frontend/`): `node --test --import tsx tests/finance-contas-extrato.smoke.test.tsx tests/pattern-css-guard.test.ts` → Node v20.19.5 `tests 16 · pass 16 · fail 0 · skipped 0`; Node 22 (`~/AppData/Local/nvm/v22.14.0/node.exe`, caminho absoluto) `tests 16 · pass 16 · fail 0 · skipped 0`. A linha de arquivos da R-E3-7 (`tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx tests/pattern-css-guard.test.ts`, Node 20) → `tests 122 · pass 122 · fail 0 · skipped 0` (a conferência contra a meta M ≥ 119 e a baseline N = 112 é da bateria da fatia 4, que mede a mesma linha no objeto). `npm --prefix frontend run check` → rc 0. `git diff --check` → vazio.
 
 ### Mutações (roteiro `scratchpad/f3sonda/mut.sh` + `mutar.py`: troca exata com âncora única, roda `finance-contas-extrato.smoke.test.tsx`, restaura os bytes e confere o sha256)
 
@@ -757,7 +757,7 @@ O guard do objeto rodou como cópia temporária em `frontend/tests/zz-f8-objeto-
 
 ### Próximo comando exato
 
-`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+`cd ~/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
 
 ## Ciclo 3 (dev-san312b-ciclo3-sol)
 
@@ -786,7 +786,7 @@ O guard do objeto rodou como cópia temporária em `frontend/tests/zz-f8-objeto-
 
 ### Feito — comando → saída
 
-- R-E3-6(c): o trecho da E3 extraído do parecer (`R-B-SAN3-12b-ciclo2.md` l.50–137, sem CR, 88 linhas) é idêntico ao trecho do plano externo (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`, de `## Emenda E3` ao fim: `diff` vazio). Apensado ao plano versionado depois de `---`, em CRLF como a árvore → `tail` desde `## Emenda E3`, sem CR, `diff` com o trecho do parecer → vazio. `grep -c "Emenda E3"` → 3 (no objeto `e77a5ac1` → 0).
+- R-E3-6(c): o trecho da E3 extraído do parecer (`R-B-SAN3-12b-ciclo2.md` l.50–137, sem CR, 88 linhas) é idêntico ao trecho do plano externo (`~/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`, de `## Emenda E3` ao fim: `diff` vazio). Apensado ao plano versionado depois de `---`, em CRLF como a árvore → `tail` desde `## Emenda E3`, sem CR, `diff` com o trecho do parecer → vazio. `grep -c "Emenda E3"` → 3 (no objeto `e77a5ac1` → 0).
 - R-E3-6(d): 5 seções novas ao fim de `pendencias.md`, com status, escopo, dono, bloqueia, origem e encerramento da E3.4: `P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE`, `P-SAN3-12B-KPI-PRESSED-COM-CONTA`, `P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO`, `P-SAN3-12B-PAGER-ROTULO-FILTRADO` (BAIXA, dono `B-SAN3-12c`) e `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` (MÉDIA, leitura do dev declarada na própria seção: a E3.4 não fixa a severidade; dono: o bloco de ferramentas de processo). As 6 já abertas da E3.4 seguem inalteradas. `python -I agent-orchestration/controle/gerar-indice-pendencias.py` → `675 cabecalhos / 664 IDs | {'FECHADA': 160, 'ABERTA': 511, 'SEM-STATUS': 4}`; as 5 entram no índice com `aberta = sim`. `^## P-`: 670 (objeto) → 675 (+5, só as da E3.4; a R-E3-1(d) era sobre o restauro, que não criou nem matou cabeçalho).
 - R-E3-1 de novo, sobre o índice do git desta fatia: `tres-vias.sh :` → `pendencias.md` `A=15 B=2 comm-23=0 comm-12=0`; `B-SAN3-12-plano.md` `A=0 B=0 0/0`; `B-SAN3-12b-dev.md` `comm-23=2 comm-12=0` (as 2 linhas da D-8 antiga, reescritas de propósito em `bb4f0680`; o mesmo desconto nominal da RETOMADA 10).
 
@@ -796,7 +796,7 @@ O guard do objeto rodou como cópia temporária em `frontend/tests/zz-f8-objeto-
 |---|---|
 | `npm --prefix frontend run check` | rc 0 |
 | linha de arquivos da R-E3-7 (de `frontend/`), Node v20.19.5 | `tests 122 · pass 122 · fail 0 · skipped 0` |
-| a mesma, Node 22 (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`) | `tests 122 · pass 122 · fail 0 · skipped 0` |
+| a mesma, Node 22 (`~/AppData/Local/nvm/v22.14.0/node.exe`) | `tests 122 · pass 122 · fail 0 · skipped 0` |
 | a mesma no objeto (os 2 arquivos de teste que a E3 mudou trocados pelas cópias de `e77a5ac1`, temporárias e apagadas) | `tests 115 · pass 115` |
 | `npm --prefix frontend run test:smoke`, Node v20.19.5 | `tests 1482 · pass 1482 · fail 0 · skipped 0` (03:40:55Z–03:45:04Z) |
 | `npm --prefix frontend run test:smoke`, Node v22.14.0 (o diretório do Node 22 na frente do `PATH`, sem `nvm use`) | `tests 1482 · pass 1482 · fail 0 · skipped 0` (03:45:12Z–03:49:09Z) |
@@ -867,4 +867,4 @@ Roteiros: `scratchpad/mutar.py` (o do ciclo 2) com `scratchpad/f4/muts.py` (5 no
 
 ### Próximo comando exato
 
-`gh api repos/{owner}/{repo}/commits/$(git -C C:/Users/AMP/w-san312b rev-parse HEAD)/check-runs --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'`
+`gh api repos/{owner}/{repo}/commits/$(git -C ~/w-san312b rev-parse HEAD)/check-runs --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'`

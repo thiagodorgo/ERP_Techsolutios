@@ -5,7 +5,7 @@
   "objeto": "5b628b886520bcbece0228eec9d47c965a32b577",
   "base": "49ddd0f8b9efa8724923ec99fa546cce907288cc",
   "voto": "APROVADO",
-  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c3-evidencia.md",
+  "evidencia": "~/erp-pausa-2026-10-03/revisoes/j484/c3-evidencia.md",
   "itens": {
     "1-suite": "VERDE — 0 sumiu/skip/caiu (CI 4346→4360, bpg 493=493; local 285→299, 4 falhas setsid iguais base/objeto); vermelho-controle 11/24 na base",
     "2-escopo": "VERDE — 12/12 arquivos no §4; proibido vazio (PR inteiro: só a linha take autorizada pela emenda 1); diff --check vazio; 90/90 âncoras =1, 0 mutante vivo",
@@ -17,7 +17,7 @@
       "id": "C3-01",
       "gravidade": "não grave",
       "escopo": "dentro-do-bloco (RETOMADA 16 nasceu em d4e0e819, 02/11 23:07 -03, neste bloco)",
-      "comando": "cd C:/Users/thiag/w-j484-c3 && for f in $(cat C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c3-bateria-arquivos.txt); do node --test --import tsx --test-reporter=tap $f | grep -E \"^# (tests|fail) \"; done  (resultado em revisoes/j484/c3-bateria-por-arquivo.txt); e git show 5b628b88:docs/revisoes/SAN3/B-SAN3-03-dev.md | sed -n \"/^## RETOMADA 16/,/^## RETOMADA 17/p\"",
+      "comando": "cd ~/w-j484-c3 && for f in $(cat ~/erp-pausa-2026-10-03/revisoes/j484/c3-bateria-arquivos.txt); do node --test --import tsx --test-reporter=tap $f | grep -E \"^# (tests|fail) \"; done  (resultado em revisoes/j484/c3-bateria-por-arquivo.txt); e git show 5b628b88:docs/revisoes/SAN3/B-SAN3-03-dev.md | sed -n \"/^## RETOMADA 16/,/^## RETOMADA 17/p\"",
       "saida": "O relatório publica a bateria dirigida como 256/256 com o comando \"tests/san3-03-*.test.ts tests/cloud-cost-allocation*.test.ts tests/cloud-charge-*.test.ts tests/cloud-usage*.test.ts mais as regressões o6r06-*, san3-05-*, jobs e charging nomeadas no comando\", sem lista literal e sem log; o comando do bloco não nomeia regressões. Os globs escritos somam 299 testes no objeto (4 falham no Windows por setsid). 256 = 242 da pré-revisão + 14 novos é coerente, mas não se reproduz pela letra.",
       "motivo": "Contagem de execução publicada sem o comando literal que a produz: o próximo verificador não consegue reexecutar o mesmo denominador (§C7.7 P3, item 11(3)). Não muda dinheiro, isolamento nem dado; as outras contagens do relatório (CI, 72 mutações, índice, M28) foram reproduzidas."
     }

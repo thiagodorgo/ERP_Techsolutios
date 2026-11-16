@@ -19,7 +19,7 @@
  "o_que_executei": [
   {
    "comando": "timeout 300 node --test --test-reporter=tap --import tsx tests/san3-09-bootstrap-platform-admin.test.ts",
-   "forma": "cwd C:/Users/AMP/w-j9c2c3 (detached d3eace58, CRLF), node v20.19.5, typescript 5.9.3, sem env extra",
+   "forma": "cwd ~/w-j9c2c3 (detached d3eace58, CRLF), node v20.19.5, typescript 5.9.3, sem env extra",
    "resultado": "ec=0, 26/26"
   },
   {
@@ -146,5 +146,5 @@
   "reprovação por construção do §15.4 (não cobrei): Kpis/* números; T2 no Windows (P-SAN3-09-DB-TEST-SO-LINUX, dono B-ARNES-2); FALHOU vazio (P-SAN3-09-FALHOU-SEM-CAUSA, dono B-SAN3-10); semântica da trava e .env do operador; import(new Function(...)) e cargas fora da AST; suíte inteira fora da CI",
   "R-2 do inspetor: o ramo não integrou a main depois de 8ee10bd2; o head que mergear será outro (2 arquivos de registro em conflito) — approved_head e delta até o merge são da ata"
  ],
- "teardown": "processos vivos com w-j9c2c3 na linha de comando = 0 antes da remoção · worktree C:/Users/AMP/w-j9c2c3 removido por git worktree remove --force (ec=0; node_modules dentro), test -e = removido, worktree list = 0 · mutações do script, do teste e de src/database/rls.ts restauradas com hash-object = blob (4ebe9574…, d57fb182…, f8bd0fae…) e status --porcelain 0 antes da remoção · sondas e cópias em $SCRATCH/c3 apagadas (1,9 MB) · base viva nunca tocada · nenhum container criado (filtro j9c2c3 = 0); volumes órfãos e containers dev05c2-* alheios não tocados · w-nuv09 só com os meus dois arquivos de saída (+ 30 ' M .agents/**' fantasmas pré-existentes, diff --ignore-cr-at-eol = 0) · disco C: 11G → 12G livres"
+ "teardown": "processos vivos com w-j9c2c3 na linha de comando = 0 antes da remoção · worktree ~/w-j9c2c3 removido por git worktree remove --force (ec=0; node_modules dentro), test -e = removido, worktree list = 0 · mutações do script, do teste e de src/database/rls.ts restauradas com hash-object = blob (4ebe9574…, d57fb182…, f8bd0fae…) e status --porcelain 0 antes da remoção · sondas e cópias em $SCRATCH/c3 apagadas (1,9 MB) · base viva nunca tocada · nenhum container criado (filtro j9c2c3 = 0); volumes órfãos e containers dev05c2-* alheios não tocados · w-nuv09 só com os meus dois arquivos de saída (+ 30 ' M .agents/**' fantasmas pré-existentes, diff --ignore-cr-at-eol = 0) · disco C: 11G → 12G livres"
 }

@@ -87,10 +87,10 @@ achado contra este corpo**, declarado antes do veredito.
 - **Primeira linha de todo Bash:** `export MSYS_NO_PATHCONV=1`. **Com ele ligado, `git.exe`, `node.exe` e
   `python.exe` recusam caminho `/c/…`** — use sempre `C:/…`.
 - **Worktree PRÓPRIO, detached, em caminho CURTO:**
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-stc3 <objeto>`,
-  e **prove** que o diretório existe (`test -e C:/Users/AMP/w-stc3/.git`). No scratchpad o `worktree add`
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-stc3 <objeto>`,
+  e **prove** que o diretório existe (`test -e ~/w-stc3/.git`). No scratchpad o `worktree add`
   falha com *Filename too long* e **não cria o diretório** — e a falha silenciosa já fez comando rodar na
-  árvore principal. Se `C:/Users/AMP/w-stc3` **já existir**, é resíduo alheio: reporte e use `w-stc3b`.
+  árvore principal. Se `~/w-stc3` **já existir**, é resíduo alheio: reporte e use `w-stc3b`.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** no seu worktree (os guards do painel rodam com `tsx`).
   **Junction/symlink de `node_modules` entre worktrees é PROIBIDA** — em 26/08 a remoção de um worktree
   apagou o `node_modules` de outro por dentro de uma junction. `npx prisma generate` só se algum comando seu
@@ -100,7 +100,7 @@ achado contra este corpo**, declarado antes do veredito.
   5432/6379 e da faixa 58284–58483, **provada ligada** (`docker port <nome>` e conexão de teste a ela),
   derrubado no fim pelo nome, declarando o que criou e o que derrubou. Nada de `DELETE` por curinga.
 - **PROIBIDO:** `git stash`, `git clean`, `git checkout`/`git reset` de coisa que você não criou,
-  `git worktree prune`, `rm -rf` de worktree, e **qualquer escrita no `C:/Users/AMP/w-teto`** (worktree do
+  `git worktree prune`, `rm -rf` de worktree, e **qualquer escrita no `~/w-teto`** (worktree do
   orquestrador — você pode **observá-lo** só por leitura, `git -C … status --porcelain`, e reportar). Outros
   worktrees (`w-mandato`, `b04a`, `b11`, `gov-*`…) são de outros blocos/sessões: **resíduo alheio se
   reporta, não se varre**. Remoção só por identificador de **bloco**, e só do que **você** criou.
@@ -252,7 +252,7 @@ mentindo no head que vai mergear.
    nos dois lados. **Arquivo que era uniforme e ficou misto** = EOL misto introduzido pelo bloco;
 3. **Artefato solto:** nenhum arquivo do diff fora do §5 com cara de rascunho (`*.txt` de resultado,
    `*.tap`, `*.log`, `*probe*`, `results*`);
-4. **O worktree do orquestrador, só observado:** `git -C C:/Users/AMP/w-teto status --porcelain` — reporte o
+4. **O worktree do orquestrador, só observado:** `git -C ~/w-teto status --porcelain` — reporte o
    que houver; **não** toque. Discrimine ` M` real × fantasma por `hash-object` antes de chamar qualquer
    coisa de mutação.
 
@@ -329,7 +329,7 @@ pathspec.
  ],
  "criterios_que_nao_puderam_falhar": [ "item cujo vermelho-controle NÃO acusou — achado contra este corpo, declarado antes do veredito" ],
  "pendencias_que_aceito": [ "o que é da C1/C2 (nomeie a cadeira) · o que o plano já declarou · achados pre-existentes com bloco dono" ],
- "teardown": "worktree(s) C:/Users/AMP/w-stc3* removido(s) por `git worktree remove --force` (só os meus) · mutações restauradas com hash-object = blob · containers descartáveis derrubados (quantos criou, quantos derrubou) · cópias de $SCRATCH descartadas · base viva nunca tocada · w-teto só observado · resíduo ALHEIO apenas reportado"
+ "teardown": "worktree(s) ~/w-stc3* removido(s) por `git worktree remove --force` (só os meus) · mutações restauradas com hash-object = blob · containers descartáveis derrubados (quantos criou, quantos derrubou) · cópias de $SCRATCH descartadas · base viva nunca tocada · w-teto só observado · resíduo ALHEIO apenas reportado"
 }
 ```
 

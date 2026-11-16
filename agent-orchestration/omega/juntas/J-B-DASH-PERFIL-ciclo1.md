@@ -2,7 +2,7 @@
 
 - **Objeto:** `849bf840f2bdecae87b82a17b26adf505d8a2a8e` (head do PR com a `main` integrada e os corpos das 3 cadeiras nos dois espelhos; CI 14/14 verde).
 - **Régua:** bloco de PERMISSÃO — junta completa, unanimidade de 3 com veto; ciclo 1: todo `bloqueia` dentro do bloco reprova (§C7 item 8(2)).
-- **Plano e emenda:** `docs/revisoes/TELAS/B-DASH-PERFIL-plano.md` e `-critica.md`; emenda de 18/10 (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-emenda-2026-10-18.md`, `D-EMENDA-ANTES-DO-CODIGO`).
+- **Plano e emenda:** `docs/revisoes/TELAS/B-DASH-PERFIL-plano.md` e `-critica.md`; emenda de 18/10 (`~/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-emenda-2026-10-18.md`, `D-EMENDA-ANTES-DO-CODIGO`).
 - **Corpos das cadeiras:** fábrica `fabrica-dash-gemini` (Gemini 3.1 Pro), revisados pelo orquestrador; md5 conferidos pelo inspetor e por cada cadeira.
 - **Mandatos:** forma A, pré-voo 4/4 OK (`redator-dash-cdx`, Codex).
 - **Inspetor de terreno:** `inspetor-dash-cdx` (Codex GPT-5.6 Sol) — **LIBERADO** (`votos/B-DASH-PERFIL/insp-dash-parecer.md`).

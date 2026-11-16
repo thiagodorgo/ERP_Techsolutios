@@ -31,7 +31,7 @@ Você também **não** julga o legado, o namespace, a identidade da prova, o con
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor, declarado), **sem executar nada** do que está aqui:
 a fábrica não tem `Bash`.
-- **Onde e quando leu.** No disco de `C:/Users/AMP/w-03a`, em 2026-10-11.
+- **Onde e quando leu.** No disco de `~/w-03a`, em 2026-10-11.
 - **A ref.** A ref local e a de rastreio do ramo estavam em `6798a76ffd6ab4e33dcd5cb50e43309354191941`. A fábrica as leu nos
   arquivos de ref, não por `git`.
 - **O reflog local**, lido pela fábrica:
@@ -252,7 +252,7 @@ achado contra este corpo ou contra a régua, declarado antes do veredito. Item c
   - Nunca escreva `a && b` numa linha seguida de outra linha que dependa dele.
   - **Nunca use `tail -f`, `watch` ou leitura sem fim.** O seu sinal de vida é o arquivo de evidência crescendo.
   - **Opcional:** a suíte num container Linux próprio, para separar as falhas de ambiente do Windows. Se usar a receita
-    `C:/Users/AMP/erp-terreno/receita-pg16.sh`, copie para `$SCRATCH`, adapte o prefixo para `j03a-c3-` e publique o `diff` e o
+    `~/erp-terreno/receita-pg16.sh`, copie para `$SCRATCH`, adapte o prefixo para `j03a-c3-` e publique o `diff` e o
     md5. A forma da baseline e a do objeto têm de ser **a mesma**.
 - **Ambiente declarado por comando, nunca exportado.** A forma do job `backend` do CI, lida no blob de `.github/workflows/ci.yml`,
   é `CORE_SAAS_PERSISTENCE=memory DATABASE_URL=<o seu> REDIS_URL=<o seu> timeout 2400 <o comando que o npm test roda>`. Leia o
@@ -273,26 +273,26 @@ achado contra este corpo ou contra a régua, declarado antes do veredito. Item c
     - as duas portas e a prova de que estão livres;
     - o ambiente, **nunca** valores de segredo.
 - **Arquivos de saída:** os que o seu mandato nomear. O padrão deste corpo é
-  `C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/C3-evidencia.md` e `…/C3-voto.json`.
+  `~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/C3-evidencia.md` e `…/C3-voto.json`.
   - Os TAP inteiros ficam em `$SCRATCH`, nunca no repositório. A evidência traz o resumo, as linhas `not ok` e o md5 de cada TAP.
   - As quedas vão para `votos/B-O6R-03a/00-quedas.md` pelo **orquestrador** (P6).
 - **Saída colada na evidência: LF, sem espaço no fim de linha.** Use `sed -E 's/[[:space:]]+$//'`. Antes da mensagem final,
   `grep -cE '[[:space:]]+$'` nos seus dois arquivos tem de dar **0** (publique o número).
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** `C:/Users/AMP/w-j03a-c3` (ou o que o mandato nomear).
-  - Crie por `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j03a-c3 <objeto>`.
-  - **Prove** `test -e C:/Users/AMP/w-j03a-c3/.git`. Se o caminho já existir, é resíduo alheio: reporte e use o sufixo `b`.
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** `~/w-j03a-c3` (ou o que o mandato nomear).
+  - Crie por `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j03a-c3 <objeto>`.
+  - **Prove** `test -e ~/w-j03a-c3/.git`. Se o caminho já existir, é resíduo alheio: reporte e use o sufixo `b`.
   - Instale com `timeout 900 npm ci --no-audit --no-fund` **próprio**, e gere o cliente Prisma com `DATABASE_URL` só no ambiente
     daquele comando.
   - **Junction ou symlink de `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)). Prove a ausência com
-    `cmd //c dir //AL C:\\Users\\AMP\\w-j03a-c3`.
-  - **A baseline em `B` roda no SEU worktree**, por `git -C C:/Users/AMP/w-j03a-c3 checkout --detach B`. É o único `checkout`
+    `cmd //c dir //AL ~/w-j03a-c3`.
+  - **A baseline em `B` roda no SEU worktree**, por `git -C ~/w-j03a-c3 checkout --detach B`. É o único `checkout`
     permitido, porque o worktree é seu.
     - Antes, prove que o bloco não mexeu nas dependências nem no schema: `git diff --name-only B <objeto> -- package.json
       package-lock.json prisma` tem de ser vazio. Se não for, rode `npm ci` e `prisma generate` de novo, e declare.
     - Depois da baseline, volte com `git -C … checkout --detach <objeto>`, e prove `git rev-parse HEAD` = objeto e
       `git status --porcelain` vazio.
 - **Árvores intocáveis.**
-  - `C:/Users/AMP/w-03a` é a árvore do dev e do orquestrador. A sua **única** escrita lá são os seus dois arquivos de saída.
+  - `~/w-03a` é a árvore do dev e do orquestrador. A sua **única** escrita lá são os seus dois arquivos de saída.
   - Os worktrees de outros agentes (`w-j03a-c1`, `w-j03a-c2`, `w-traccar` e qualquer `w-*` que não seja o seu) você não toca.
 - **Postgres e Redis descartáveis, SEUS:**
   - **Containers:** `j03a-c3-pg` (`postgres:16`) e `j03a-c3-redis` (`redis:7`), cada um com `--publish 127.0.0.1:<porta>:<porta
@@ -331,7 +331,7 @@ achado contra este corpo ou contra a régua, declarado antes do veredito. Item c
   - **Build:** o seu `dist/` (se você rodou `npm run build`), pelo caminho exato, dentro do seu worktree.
   - **Worktree:** antes de removê-lo, conte os processos vivos com o caminho na linha de comando:
     `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-j03a-c3*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`
-    (aspas **simples** por fora). Depois, `git worktree remove --force C:/Users/AMP/w-j03a-c3`.
+    (aspas **simples** por fora). Depois, `git worktree remove --force ~/w-j03a-c3`.
   - **Nunca `prune`.**
 - **Saída para arquivo e exit por variável:** `cmd > "$LOG" 2>&1; ec=$?`. **Nunca `| tail`.** **Caminho absoluto sempre.**
 - **Evidência e voto em arquivo, por `Bash`.** Você não tem `Write`, por desenho (§C7.4-bis). Script com barra invertida dupla
@@ -705,7 +705,7 @@ Voto (JSON):
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou — achado contra este corpo, declarado antes do veredito · critério que não pode PASSAR por construção — achado contra a régua" ],
  "pendencias_que_aceito": [ "o que é da C1/C2 (nomeie a cadeira) · falhas de ambiente pre-existentes com N e causa · o 03b e as P-O6R-B03-* abertas · o que este corpo declara reprovação por construção" ],
- "teardown": "worktree de volta ao objeto (HEAD = objeto) e git status --porcelain vazio · arquivos mutados restaurados (hash-object = blob) · dist/ meu removido · containers j03a-c3-pg e j03a-c3-redis removidos por nome com -v (contagem j03a-c3- = 0) · 0 processos com w-j03a-c3 na linha de comando · worktree C:/Users/AMP/w-j03a-c3 removido por `git worktree remove --force` · TAPs, sondas e cópias de $SCRATCH apagados · base viva (erp-postgres/erp-redis) nunca tocada · w-03a só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
+ "teardown": "worktree de volta ao objeto (HEAD = objeto) e git status --porcelain vazio · arquivos mutados restaurados (hash-object = blob) · dist/ meu removido · containers j03a-c3-pg e j03a-c3-redis removidos por nome com -v (contagem j03a-c3- = 0) · 0 processos com w-j03a-c3 na linha de comando · worktree ~/w-j03a-c3 removido por `git worktree remove --force` · TAPs, sondas e cópias de $SCRATCH apagados · base viva (erp-postgres/erp-redis) nunca tocada · w-03a só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
 }
 ```
 

@@ -4,7 +4,7 @@
 - Identidade: `jurado-j488-c1-sol`
 - Modelo: `Codex GPT-5.6 Sol` (nível menor declarado)
 - Objeto: `ea6d4aef54181a0dc4030ec56e174e378aec5e12`
-- Worktree: `C:/Users/thiag/w-j488-c1`
+- Worktree: `~/w-j488-c1`
 - Postgres descartável: `j488-c1-pg` em `127.0.0.1:55491`
 
 ## Item 1 — Identidade do dinheiro no banco

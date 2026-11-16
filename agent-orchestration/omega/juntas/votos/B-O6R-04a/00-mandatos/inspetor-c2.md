@@ -38,7 +38,7 @@ O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed),
   (PR 389, consistencia do estoque), rodando no Claude Code em Fable, porque o bloco toca dinheiro e dado (decisao do dono de 2026-10-08:
   Fable so em bloco que toca dinheiro); esgotado o Fable, cai para Opus DECLARADO no parecer; esgotado o Opus, PARA (secao C7.6-bis).
   Usa o corpo de origin/main e declara na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo;
-  ele nao julga merito derruba com: `head -1 C:/Users/AMP/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md | grep -ic 'mandato_md5'` (novo)
+  ele nao julga merito derruba com: `head -1 ~/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md | grep -ic 'mandato_md5'` (novo)
 
 O objeto e o head do PR 389 resolvido pelo proprio inspetor por git e por gh, e so e objeto com os check-runs CONCLUIDOS, inclusive o
   job docker (ausencia, pendente ou cancelado bloqueia; vermelho e insumo do voto); a main de 2026-10-10 (o merge do PR 413) esta dentro
@@ -47,18 +47,18 @@ O objeto e o head do PR 389 resolvido pelo proprio inspetor por git e por gh, e 
   os quatro corpos jurado-o6r04a-c2-* rastreados no head nos dois espelhos, com a errata 1 e a errata 2, e S0 verde
   (node scripts/sync-agent-agents.mjs --check); corpo carregado e corpo julgado conferidos de forma EOL-neutra; a C3 e o agente-ci-doutor;
   a inelegibilidade por nome do Passo 3 conferida; um worktree e um container Linux descartavel por cadeira, com prefixo proprio, nunca
-  a base viva; disco medido e de pelo menos 10 GB antes de cada jurado derruba com: `grep -ic 'check-run' C:/Users/AMP/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md` (novo)
+  a base viva; disco medido e de pelo menos 10 GB antes de cada jurado derruba com: `grep -ic 'check-run' ~/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md` (novo)
 
 Os insumos sao lidos como roteiro e nao como fato: o relatorio do dev de integracao (agent-orchestration/omega/juntas/votos/B-O6R-04a/00-dev-integracao.md,
   com as secoes da integracao 1 e da integracao 2), a ata do ciclo 1 RECONSTITUIDA e declarada como tal
   (agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md), e as decisoes do orquestrador das emendas 6 e 7 (D6, D7 e D8 da
   integracao 2: o aceite do D3, o T15 do PR 405 como pre-existente e o conserto da ferramenta do drill); a regua do ciclo 2 e COMPLETA,
   com unanimidade de 3 (secao C7 item 8 do CLAUDE.md da ref); plano de perda (queda relanca a mesma identidade; suplentes de C1 e C2
-  rastreados) e de PAUSA (P7); nenhum segredo real no tabuleiro derruba com: `grep -ic 'Emenda 7' C:/Users/AMP/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md` (novo)
+  rastreados) e de PAUSA (P7); nenhum segredo real no tabuleiro derruba com: `grep -ic 'Emenda 7' ~/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md` (novo)
 
 O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; a evidencia e incremental com hora em
-  C:/Users/AMP/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-evidencia.md (novo) e o parecer em
-  C:/Users/AMP/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md (novo), que o orquestrador versiona; worktree
-  proprio detached C:/Users/AMP/w-insp389 (novo), removido pelo nome; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout no que
+  ~/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-evidencia.md (novo) e o parecer em
+  ~/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md (novo), que o orquestrador versiona; worktree
+  proprio detached ~/w-insp389 (novo), removido pelo nome; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout no que
   executa; a base viva e as portas do servidor do dono nunca sao alvo; nada escrito no repositorio fora da evidencia e do parecer; PAUSA
-  grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md` (novo)
+  grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md` (novo)

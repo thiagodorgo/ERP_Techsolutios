@@ -14,7 +14,7 @@
 
 ## Terreno
 
-- Worktree próprio `C:/Users/thiag/w-15a`, ramo `fix/mobile-estoque-real-do-tecnico`, criado de `origin/main` =
+- Worktree próprio `~/w-15a`, ramo `fix/mobile-estoque-real-do-tecnico`, criado de `origin/main` =
   `da12fec6058876490649017e62b6e8c0e647a292` (#541) às 10:51 de 11/11. `npm ci` próprio (sem junction),
   `prisma generate`.
 - `gh pr view 534 --json state` às 10:52: **OPEN**. Pela trava do plano (A-06), a **F4** (banco do aparelho,
@@ -224,7 +224,7 @@ limpo depois de cada uma. Roteiro e saídas TAP fora do repositório (`erp-pausa
 
 - Removidos: `frontend/dist/` e `dist/` do worktree (build), os 3 containers do CI local `ci-dev15a-*` (pelo rótulo), as
   bases de drill que a rodada local deixou no `dev15a-pg` (nenhuma sobrou), os processos `node` da rodada parada.
-  **Mantidos, por ordem do mandato:** o worktree `C:/Users/thiag/w-15a` e os containers `dev15a-pg` (55525) e
+  **Mantidos, por ordem do mandato:** o worktree `~/w-15a` e os containers `dev15a-pg` (55525) e
   `dev15a-redis` (56525), para a F4.
 
 ## O QUE FALTA (para o orquestrador)
@@ -304,7 +304,7 @@ M-A10..M-A18, M-A17b, M-A20, M-A25' e M-A26, todas medidas no teste-dono com ver
 
 **Identidade:** `fix-548-cdx`, Codex GPT-5.6 Sol, dev declarado deste conserto; não é o `prerev-548-cdx`, não escreveu o plano nem o 15a (`dev-15a-cl` e `dp-548`).
 
-- **2026-11-12T04:32:10-03:00 — terreno:** em `C:/Users/thiag/w-15a`, HEAD `bfdeb155fba22e1a03396882c4904b4f3320a863`, branch `fix/mobile-estoque-real-do-tecnico`, `git status --porcelain` vazio. A consulta global de processos Windows não encontrou nenhum `node`, `dart` ou `flutter`; logo nenhum tinha cwd no worktree. Terreno LIBERADO.
+- **2026-11-12T04:32:10-03:00 — terreno:** em `~/w-15a`, HEAD `bfdeb155fba22e1a03396882c4904b4f3320a863`, branch `fix/mobile-estoque-real-do-tecnico`, `git status --porcelain` vazio. A consulta global de processos Windows não encontrou nenhum `node`, `dart` ou `flutter`; logo nenhum tinha cwd no worktree. Terreno LIBERADO.
 - **2026-11-12T04:32:39-03:00 — fontes e contrato:** lidos integralmente `CLAUDE.md`, `PROJECT_MEMORY.md` e as skills `ts-frontend-full` e `saas-multi-tenant`; lidas as Emendas 1 (N-11), 2 e 2.1 do plano, `prerev-548.json`, `prerev-548-evidencia.md` (§3 e §8), o diário anterior e as entradas relacionadas da trilha operacional. A Emenda 2.1 prevalece: 200 remoto fica `fresh`, 403 fica `forbidden`, 503/rede fica `failed`; em sessão demo remota o cache salvo não é lido, gravado nem apagado.
 - **2026-11-12T04:33:45-03:00 — E2.2/E2.1 A1–A3:** `loadTechnicianStock` passou a impedir `save` e `clear` quando `_isDemoSession`; a leitura já estava suprimida. O novo T-A5b cobre (a) 200 `fresh` sem gravação, (b) 403 sem apagar, (c) 503/rede em `failed` sem cache e (d) entrada existente + 503 com `cached == null`. Teste focado: `+1 -0`, verde.
 - **2026-11-12T04:34:33-03:00 — M-N11a:** `not ok - M-N11a: save incondicional no 200 foi detectado por T-A5b(a)`; vermelho `Expected: null`, `Actual: TechnicianStockCacheEntry`. Mutação revertida; `git diff --exit-code` vazio às 04:34:44.
@@ -313,16 +313,16 @@ M-A10..M-A18, M-A17b, M-A20, M-A25' e M-A26, todas medidas no teste-dono com ver
 - **2026-11-12T04:36:42-03:00 — E2.3:** `decisoes.md` medido no blob do HEAD com 4.981 CR; materializado com `git -c core.autocrlf=false checkout HEAD -- ...` e normalizado mecanicamente para LF, sem `git archive`. Worktree após a conversão: zero CR; o aceite final será repetido no commit pós-merge.
 - **2026-11-12T04:37:07-03:00 — E2.5:** aberta `P-APP-FORMAT-BSAN313`, BAIXA, pré-existente na `main`, fora do diff do PR #548, sem bloco dono definido e não bloqueante para o 15a. O índice foi gerado duas vezes; a segunda execução produziu o mesmo diff (880 cabeçalhos / 869 IDs).
 - **2026-11-12T04:38:56-03:00 — E2.4:** `git fetch origin` confirmou `origin/main=fd51409c492a1c5e8ae38de79af412fb3608652e`. O merge conflitou apenas nos quatro caminhos previstos (`decisoes.md`, `pendencias.md`, índice e `frontend/package.json`); registros resolvidos por união e smoke com `dispatch-create-idempotency` + `bsan315-contagem-fechamento`. Índice gerado duas vezes sem mudança na segunda (923 cabeçalhos / 912 IDs). `comm -23`: zero cabeçalho perdido contra ambos os lados nos dois registros. Foram conferidos 69 blobs exclusivos da main sob `src/`, `prisma/`, `tests/`, `.github/` e `frontend/src/`: zero divergência. `decisoes.md` no índice: zero CR; zero marcador de conflito.
-- **2026-11-12T04:40:41-03:00 — Postgres próprio:** o `initdb` literal criou WIN1252; foi parado e removido após validar o alvo exato, e o mesmo `C:/Users/thiag/pg-fix548` foi recriado com `--encoding=UTF8 --locale=C`, somente em `127.0.0.1:55564`, banco `fix548` em UTC. Resultado: 133 migrações e seed (12 papéis) concluídos.
+- **2026-11-12T04:40:41-03:00 — Postgres próprio:** o `initdb` literal criou WIN1252; foi parado e removido após validar o alvo exato, e o mesmo `~/pg-fix548` foi recriado com `--encoding=UTF8 --locale=C`, somente em `127.0.0.1:55564`, banco `fix548` em UTC. Resultado: 133 migrações e seed (12 papéis) concluídos.
 - **2026-11-12T04:41:51-03:00 — Flutter:** `flutter pub get` verde; 15 arquivos Dart alterados pelo PR, `dart format --output=none --set-exit-if-changed` com zero mudança; `flutter analyze` sem issues; suíte integral **`+1169 -0`**, `All tests passed!`.
 - **2026-11-12T04:42:45-03:00 — BLOQUEIO de integração:** os dois testes localizados por `ls tests | grep -iE 'bsan315'` terminaram `15 tests · pass 13 · fail 2 · skipped 0`. T-DB0 confirmou o papel `NOSUPERUSER NOBYPASSRLS`; falharam T-DB2b e T-B3 porque a main trouxe o gate do `B-SAN3-18` e a rota nova responde `403 route_module_unclassified`. A única correção medida exige alterar `src/modules/navigation/route-modules.ts` e o censo/fixture do 18, arquivos exclusivos da main e fora das Emendas 2/2.1; também quebraria o aceite de blob idêntico à main. Pela `D-EMENDA-ANTES-DO-CODIGO` e pela ordem de parar em conflito de código, não houve expansão improvisada, bateria restante nem push. O merge já estava commitado quando o conflito semântico apareceu; `git merge --abort` já não é aplicável. Head nesse ponto: `d9d4616ed843f674aafeeb17ecedafd22ea881a8`.
-- **2026-11-12T04:43:26-03:00 — limpeza:** PostgreSQL parado com `pg_ctl ... stop -m fast`; `realpath` conferido; removidos somente `C:/Users/thiag/pg-fix548` e `C:/Users/thiag/pg-fix548.log`. `w-15a` preservado; nenhum `git worktree prune` executado.
+- **2026-11-12T04:43:26-03:00 — limpeza:** PostgreSQL parado com `pg_ctl ... stop -m fast`; `realpath` conferido; removidos somente `~/pg-fix548` e `~/pg-fix548.log`. `w-15a` preservado; nenhum `git worktree prune` executado.
 
 ## Continuação (fix-548b)
 
 **Identidade:** `fix-548b-dp`, DeepSeek Pro (pelo Codex CLI), dev declarado desta continuação; sucessor do `fix-548-cdx`. Não achou nada neste bloco, não escreveu o plano nem as emendas, e não revisou as emendas. Fonte: `plano-B-SAN3-15-v2.md` (Emenda 3, com a 3.1 prevalecendo; valem as Emendas 2/2.1 já entregues).
 
-- **2026-11-12T07:30-03:00 — terreno:** em `C:/Users/thiag/w-15a`, HEAD `abec4832e31a46b22704f8ee81d94a8c1f54ca52`, branch `fix/mobile-estoque-real-do-tecnico`, `git status --porcelain` vazio; nenhum processo `node`/`dart`/`flutter` ativo. Terreno LIBERADO.
+- **2026-11-12T07:30-03:00 — terreno:** em `~/w-15a`, HEAD `abec4832e31a46b22704f8ee81d94a8c1f54ca52`, branch `fix/mobile-estoque-real-do-tecnico`, `git status --porcelain` vazio; nenhum processo `node`/`dart`/`flutter` ativo. Terreno LIBERADO.
 - **2026-11-12T07:32-03:00 — fontes:** lidos inteiros o diário `revisoes/fix-548-cdx.md` e o plano (Emendas 3 e 3.1 no fim). A 3.1 prevalece (A1: a M-E3a nomeia também o T-B3; A2: o T-MOD1 confere `status===403` e `reason==='module_not_enabled'`, com o usuário de posse de `inventory.read`).
 - **2026-11-12T07:34-03:00 — E3.1:** linha `{ pattern: "/mobile/technician/stock", modules: ["inventory"] },` em `src/modules/navigation/route-modules.ts`, logo depois de `/mobile/inventory` (nada mais no arquivo).
 - **2026-11-12T07:35-03:00 — E3.2:** `node --import tsx scripts/san3-18-censo-modulos.mjs --gravar tests/fixtures/san3-18-route-modules.json` → 445 rotas, sem classe 0; o diff do instantâneo é exatamente 1 chave: `"GET /api/v1/mobile/technician/stock": "{inventory}"`.
@@ -341,7 +341,7 @@ M-A10..M-A18, M-A17b, M-A20, M-A25' e M-A26, todas medidas no teste-dono com ver
 
 **Identidade:** `fix-548c-dp`, DeepSeek Pro (pelo Codex CLI), dev declarado deste conserto. Não é a C3 da J-548 (`j548-c3-dp`), não escreveu o plano, não julgou o bloco. Fonte: `erp-pausa-2026-10-03/revisoes/j548/J-548-ata.md` (triagem) e `c3-voto.json`. Fluxo rápido §C7 10(3)4.
 
-- **2026-11-12T09:51:56-03:00 — terreno:** em `C:/Users/thiag/w-15a`, HEAD `a429a13a1ce70cacca871f686ea52a310cfb28b3` == `origin/fix/mobile-estoque-real-do-tecnico`, `git status --porcelain` vazio; nenhum processo `node`/`dart`/`flutter` com cwd em `w-15a`. Terreno LIBERADO.
+- **2026-11-12T09:51:56-03:00 — terreno:** em `~/w-15a`, HEAD `a429a13a1ce70cacca871f686ea52a310cfb28b3` == `origin/fix/mobile-estoque-real-do-tecnico`, `git status --porcelain` vazio; nenhum processo `node`/`dart`/`flutter` com cwd em `w-15a`. Terreno LIBERADO.
 - **2026-11-12T09:52:40-03:00 — C3-02 (acentos):** `grep -nE "servico|peca|pecas" lib/features/prestador/ui/technician_stock_screen.dart` antes = linhas 78, 246, 259, 297 e 298; depois do `sed` = vazio (exit 1). Os 5 textos viraram "serviço", "peça", "peças". A única asserção de teste que confere esses literais é `b119_prestador_flow_test.dart:221` (`Adicionar ao servico` → `Adicionar ao serviço`); nenhuma outra asserção mudou (varredura `grep -rnE "Adicionar ao servico|Buscar peca|Nenhuma peca encontrada|Selecione as pecas|adicionado\(s\) ao servico" test/` = vazio).
 - **2026-11-12T09:53:20-03:00 — C3-01, vermelho-controle:** escrito o T-A11 em `test/features/prestador/bsan315_estoque_real_test.dart` ANTES do botão. `flutter test --plain-name "T-A11"` → `00:00 +0 -1: ... T-A11 ... [E]`, `TestFailure: Expected: exactly one matching candidate · Actual: _TextWidgetFinder:<Found 0 widgets with text "Tentar de novo": []>`, na linha 616. Vermelho genuíno.
 - **2026-11-12T09:54:10-03:00 — C3-01, o botão:** no ramo `hasCached`, o mesmo `OutlinedButton(key: 'stock-retry', onPressed: () => _retry(repo), child: Text('Tentar de novo'))` do ramo sem lista; `_buildList` ganha o parâmetro opcional `Widget? action`, renderizado logo abaixo do banner. Nenhum componente novo. T-A11 verde: `00:01 +1: All tests passed!` (conta as chamadas: `expect(calls, before + 1)`).

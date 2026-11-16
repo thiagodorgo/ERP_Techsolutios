@@ -51,7 +51,7 @@ adiante (item 1, C10): a checagem C10 é *inerte* neste head — nunca dispara, 
 ## ITEM 1 — FALSO-NEGATIVO: cada checagem pega o defeito que promete?
 
 **Onde mutei (§7):** cópia isolada e própria em
-`C:\Users\AMP\AppData\Local\Temp\claude\...\scratchpad\c3-base` (pristina) e `\c3-work` (descartável,
+`~/AppData\Local\Temp\claude\...\scratchpad\c3-base` (pristina) e `\c3-work` (descartável,
 recriada por `cp -r` a cada teste). Receita do §7 do briefing, rodada **a partir do worktree**
 (`cp scripts/audit-agents-skills.mjs` + `cp -r .claude .agents`). **Nada foi mutado no worktree.**
 Baseline da minha cópia: `[audit] OK — nenhum achado. ec=0`. Cada teste parte da cópia pristina — o

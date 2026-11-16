@@ -49,7 +49,7 @@ papel: C3 | identidade: jurado-07ca-c3-regressao-escopo | modelo: Claude Opus 5.
 - veredito parcial: régua = 80 suítes (superconjunto da regra; o "44" do plano não é reproduzível pela regra escrita → nota sobre o plano, não defeito do bloco).
 
 ### 1.T — terreno (17:45Z–17:55Z)
-- worktree próprio: `git -C <repo> worktree add --detach C:/Users/AMP/w-ciclo1-07ca-c3 4ca2be43` → ec 0; `test -e .git` ok; HEAD 4ca2be43; porcelain 0 (caminho estava livre)
+- worktree próprio: `git -C <repo> worktree add --detach ~/w-ciclo1-07ca-c3 4ca2be43` → ec 0; `test -e .git` ok; HEAD 4ca2be43; porcelain 0 (caminho estava livre)
 - rede `j07ca-c3-net`; containers `j07ca-c3-pg` (postgres:16, PG 16.14), `j07ca-c3-redis` (redis:7), `j07ca-c3-node` (erp-junta-node20-pg16:local, Node v20.20.2, npm 10.8.2, psql 16.14, Linux 6.18.33.2-microsoft-standard-WSL2 x86_64). `docker ps` → ports só "5432/tcp", "6379/tcp" expostos na rede, **nenhum publicado no host**. Base viva (`erp-postgres`, `erp-redis`) não tocada.
 - senha do cluster: 48 hex aleatórios por execução, em arquivo do $SCRATCH, entra por `docker run/exec -e NOME` sem valor (atribuição como prefixo do comando, nada exportado). Ressalva honesta: numa conferência de vazamento usei `grep -c "<senha>"` no host — a senha descartável passou 1x pelo argv de um `grep` MSYS local; não é segredo real, morre com o container, e nos logs deu 0 ocorrência.
 - ajuste de terreno (não do produto), declarado: `apt-get install git` no container (git 2.47.3) porque o guard chama `git ls-files src` (tests/helpers/o6r07c-census.ts:224 no objeto).
@@ -243,7 +243,7 @@ papel: C3 | identidade: jurado-07ca-c3-regressao-escopo | modelo: Claude Opus 5.
 ## Fim — objeto re-resolvido e limpeza (18:00:16Z)
 - 17:58:07Z: `git ls-remote` do ramo = `gh pr view 414` headRefOid = 4ca2be43c3b4b32b9bed670f02d78145620cdc2e (OPEN, rascunho) — **igual ao do início**; `git fetch origin main` → origin/main = 9b611468 — igual ao do início.
 - containers `j07ca-c3-node`, `j07ca-c3-pg`, `j07ca-c3-redis`: `docker rm -f -v <nome>` ec 0 ×3; rede `j07ca-c3-net` removida ec 0; contagem `^j07ca-c3-` containers 0 · redes 0. `erp-postgres`/`erp-redis` seguem "Up 18 hours (healthy)", nunca tocados. Nenhuma imagem removida.
-- worktree `C:/Users/AMP/w-ciclo1-07ca-c3`: porcelain 0; processos vivos com o caminho na linha de comando = 0 (Get-CimInstance Win32_Process); `git worktree remove --force` ec 0; diretório não existe; `git worktree list | grep -ic w-ciclo1-07ca-c3` = 0.
+- worktree `~/w-ciclo1-07ca-c3`: porcelain 0; processos vivos com o caminho na linha de comando = 0 (Get-CimInstance Win32_Process); `git worktree remove --force` ec 0; diretório não existe; `git worktree list | grep -ic w-ciclo1-07ca-c3` = 0.
 - as suítes rodaram no container (árvore em /work/obj, destruída com ele): nenhum `storage/checklist-attachments/<uuid>/` nem temporário `o6r07c-*` meu no host.
 - $SCRATCH: senha descartável apagada; cópia de `tests/` de c1cfdabe, TAPs, logs da CI e cópias de registro apagados; ficam só os 7 scripts (md5 nesta evidência) para re-execução (P3). (Uma 1ª tentativa de limpeza com `rm $S/*` foi barrada pela checagem de segurança do harness por expansão de variável; refeita com caminho relativo dentro do diretório do scratch.)
 - disco C: 17G livres no fim.

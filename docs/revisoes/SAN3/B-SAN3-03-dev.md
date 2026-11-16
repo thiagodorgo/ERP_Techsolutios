@@ -3,7 +3,7 @@
 - **Identidade:** `dev-san303-sol`
 - **Modelo:** Codex GPT-5.6 Sol, nível menor declarado
 - **Papel:** desenvolvimento; não planejou e não revisou
-- **Branch/worktree:** `fix/cloud-billing-exato` · `C:/Users/thiag/w-san303`
+- **Branch/worktree:** `fix/cloud-billing-exato` · `~/w-san303`
 - **Base medida:** `origin/main@0fda595a9cb37d2d75abd45ef23eacc5dc56fea8`
 - **Plano:** `B-SAN3-03-plano.md` + Emenda 1 (prevalece), conferida por `conf-emenda-san303.md` e
   `rev-san303b.md`
@@ -61,7 +61,7 @@
 
 - **Emenda aplicada:** a autorização expressa do orquestrador para PostgreSQL descartável na F0 foi
   incorporada ao comando do bloco; a ref lida foi
-  `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-03-emenda-1.md`.
+  `~/erp-pausa-2026-10-03/planos/B-SAN3-03-emenda-1.md`.
 - **Pré-condições:** 24 GB livres em disco e 10,93 GB de memória de commit livre; porta `55432` livre.
   Os containers vivos `erp-postgres`/`erp-redis` e as portas proibidas não foram tocados.
 - `docker run -d --name pg-san303 -p 127.0.0.1:55432:5432 ... postgres:16` — **exit 0**; container
@@ -471,7 +471,7 @@ PRONTO PARA PRÉ-REVISÃO
   `189064e8c571d5cde2cdd467e06f518a50db971f`. C1 já enviada. Disco: 304 GB livres; memória de commit livre: 16,92 GiB.
 - **C1 reexecutada:** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/san3-03-summary.test.ts tests/cloud-cost-allocation-routes.test.ts`
   — **exit 0**, TAP **10 testes, 10 pass, 0 fail, 0 skip**. Saída integral:
-  `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-astra-c1-recheck.log`.
+  `~/erp-pausa-2026-10-03/revisoes/dev-san303-e2-astra-c1-recheck.log`.
   A prova anterior de vermelho-controle e mutações permanece na RETOMADA 10; não foi reexecutada nesta retomada.
 - **C2 parcial medida:** leitura integral de `cloud-cost-allocation.engine.ts`,
   `san3-03-system-org-db.test.ts` e `san3-03-tenant-tag.test.ts`; nenhuma edição nesses arquivos
@@ -493,14 +493,14 @@ PRONTO PARA PRÉ-REVISÃO
   essas mutações e a ordem de parar antes de tocar fora do escopo precisam ser conciliadas pelo autor
   da emenda; não presumi exceção para alteração temporária.
 - **Evidência:** leitura do driver externo por
-  `sed -n '1,170p' C:/Users/thiag/erp-pausa-2026-10-03/revisoes/prerev-san303-mutations.mjs`
+  `sed -n '1,170p' ~/erp-pausa-2026-10-03/revisoes/prerev-san303-mutations.mjs`
   (exit 0); declarações de `memoryRepo`/`cloudChargeRepo` e corpo de M17-b;
   §4/§5/§6 da emenda 2 lidos no arquivo externo fornecido.
 - **Head:** `189064e8c571d5cde2cdd467e06f518a50db971f`; C1 pushada e testes próprios reexecutados verdes.
 - **Falta:** concluir e validar C2, C3, C4, bateria §6, check-runs e resumos TAP de backend/backend-postgres.
 - **Próximo passo:** o orquestrador/autor concilia o escopo das mutações obrigatórias na emenda.
   Depois, o próximo comando de retomada é
-  `git -C C:/Users/thiag/w-san303 status --short`, seguido da releitura da emenda ajustada.
+  `git -C ~/w-san303 status --short`, seguido da releitura da emenda ajustada.
 - **Arquivos parciais preservados:** `src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts`,
   `tests/san3-03-system-org-db.test.ts` e `tests/san3-03-tenant-tag.test.ts` (novo).
   Este relatório recebeu apenas o registro acima; não houve commit/push nesta retomada.
@@ -541,11 +541,11 @@ PRONTO PARA PRÉ-REVISÃO
   `dev-san303-e2-astra`. Não achou nem planejou o conserto. Verificador previsto: Claude.
 - **Head medido:** `cbbae32ac1a4bedfe02c714a3932060c18908383`; árvore limpa antes das mutações. C1 e C2 estão
   commitadas localmente, mas o remoto ainda está em `189064e8c571d5cde2cdd467e06f518a50db971f`.
-- **Vermelho-controle C2 medido:** `node C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs RED49`
+- **Vermelho-controle C2 medido:** `node ~/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs RED49`
   — driver exit 0, mutante exit 1 por `AssertionError`; T-TAG-1/2/5/7/8/9/10/13 e T-TAG-db ficaram
   vermelhos; `restored=true`; `git status --porcelain=VAZIO`.
 - **Mutações C2 executadas nesta retomada:** comando `node
-  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs M48 M49 M50 M51 M52 M53
+  ~/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs M48 M49 M50 M51 M52 M53
   M53-b M53-c M55 M55-b M55-c M22 M17-b` — **exit 1**. Pela ordem literal do driver, M17-b, M22′,
   M48, M49′, M50, M51 e M52 tiveram todas as âncoras `=1`, mutante exit 1 por asserção e
   `restored=true`, com `git status --porcelain=VAZIO` após cada caso.
@@ -558,7 +558,7 @@ PRONTO PARA PRÉ-REVISÃO
   ajustar/emendar o driver literal antes da retomada.
 - **Falta:** M53/M53-b/M53-c, M55/M55-b/M55-c; fechar C2 com relatório/commit/push; C3, C4, bateria §6 e CI.
 - **Próximo comando exato após correção autorizada do driver:** `node
-  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs M53 M53-b M53-c M55 M55-b M55-c`.
+  ~/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs M53 M53-b M53-c M55 M55-b M55-c`.
 - **Arquivos meio-escritos:** somente este relatório recebeu o registro da pausa; código e testes estão
   restaurados no head. O Postgres descartável `devsan303e2-pg` foi removido; nenhum serviço/porta da demo foi tocado.
 
@@ -596,7 +596,7 @@ PRONTO PARA PRÉ-REVISÃO
 - **Feito:** C2 completa contra §§7–8, incluindo tag ambígua, desconhecida, normalização e caminho DB.
 - **Falta:** C3, C4, bateria §6, CI e leitura TAP dos jobs `backend`/`backend-postgres`.
 - **Próximo comando exato:** `node
-  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs`.
+  ~/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs`.
 - **Arquivos meio-escritos:** nenhum; o container próprio permanece vivo apenas para a bateria final.
 
 ## RETOMADA 14
@@ -604,10 +604,10 @@ PRONTO PARA PRÉ-REVISÃO
 - **Executor:** `dev-san303-e2-sol2`, Codex GPT-5.6 Sol, nível menor declarado.
 - **Head inicial:** `9e443ac0224c278000789fe9c58ce01eca97ad3b`, igual ao remoto; C2 enviada.
 - **C3 — M28, prova exigida:** `node
-  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs` — **exit 0**,
+  ~/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs` — **exit 0**,
   `checked=3000003`, `divergences=0`, `first=null`.
 - **Regime superior da prova corrigida (§8):** `node
-  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/crit-san303-e2-m28-upper.mjs` — **exit 0**,
+  ~/erp-pausa-2026-10-03/revisoes/crit-san303-e2-m28-upper.mjs` — **exit 0**,
   `checked=5000000`, `divergences=0`, `first=null`.
 - **Resultado C3:** **8.000.003 entradas, 0 divergência**. A igualdade verificada é
   `Number(x.toFixed(6)) === x`, conforme a prova corrigida em dois regimes; a M28 permanece excluída por

@@ -6,7 +6,7 @@
 > Não muda requisito, contrato, teste do bloco nem regra do Traccar. **v2 + v2.1 + esta v2.2 = plano vigente**; onde esta emenda fala, vale ela;
 > onde não fala, vale a v2.1 e, abaixo, a v2. **Variante vigente: Q1 = NÃO** (decisão do dono de 19/10, repassada pelo orquestrador — ver §2 fato 14).
 > **Data:** 2026-10-19. **Refs medidas (§A7):** head do dev = **`6a87c3dab4a3155de75415438e6740384e4725ae`** (`feat/traccar-b-trc-02`, worktree
-> `C:/Users/AMP/w-trc02`, SÓ LEITURA); `origin/main` = **`2ecfb333aed0a0efcc1f171148473aad2921be66`** (#449). Os pedidos estão em
+> `~/w-trc02`, SÓ LEITURA); `origin/main` = **`2ecfb333aed0a0efcc1f171148473aad2921be66`** (#449). Os pedidos estão em
 > `docs/revisoes/TRACCAR/B-TRC-02-dev.md` (commit `65861398`, l.285-293; no head, l.293-304 e 343).
 > **Onde medi:** `git show <ref>:<caminho>`, `git grep … <ref>`, `git diff origin/main..HEAD`, `git show c1485c94` no worktree do dev — leitura só.
 > **Nada executado contra banco, Docker ou portas; nada editado em repositório algum; nenhum commit; sem `tail -f`.** As mutações de §6 são
@@ -28,7 +28,7 @@
 ---
 ## 2. Premissas medidas (comando → saída), head `6a87c3da` × `origin/main` `2ecfb333`
 
-Tudo abaixo foi medido nesta rodada, no worktree do dev (`C:/Users/AMP/w-trc02`), por `git show`/`git grep`/`git diff` contra as duas refs.
+Tudo abaixo foi medido nesta rodada, no worktree do dev (`~/w-trc02`), por `git show`/`git grep`/`git diff` contra as duas refs.
 Nas células, `¦` é o pipe do shell. **Nada veio do disco da sessão.**
 
 | # | Fato | Comando → saída resumida |

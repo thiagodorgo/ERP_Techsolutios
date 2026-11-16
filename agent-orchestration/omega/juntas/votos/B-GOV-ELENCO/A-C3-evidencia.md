@@ -1,7 +1,7 @@
 # A-C3 — `coordenador-de-acessos` — evidência executada (fatia A, ciclo 2, `B-GOV-ELENCO`)
 
 **Cadeira:** `A-C3` · **Mandato:** separação de poderes e cadeia de autorização (SoD).
-**Worktree julgado:** `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`
+**Worktree julgado:** `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`
 **Regra de isolamento:** worktree somente-leitura, exceto os meus dois arquivos em `votos/B-GOV-ELENCO/`.
 Toda mutação em cópia isolada (`mktemp -d` + `cp`), removida ao final.
 

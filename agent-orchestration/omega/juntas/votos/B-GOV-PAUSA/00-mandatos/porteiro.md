@@ -59,7 +59,7 @@ Pre-voo deste mandato no head do ramo de registro, com o pre-voo do ramo do B-GO
 ```
 COLAGEM    l.6-22: refs do PR #397 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-reg397/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/00-mandatos/porteiro.md
+PRE-VOO OK — ~/w-reg397/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/00-mandatos/porteiro.md
 ec=0
 head=bc1ae0ed41a8f643ba26f22389835a3b5e66b4cf
 utc=2026-10-01T20:51:55Z

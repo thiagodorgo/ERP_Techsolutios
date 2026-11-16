@@ -2,11 +2,11 @@
 
 - **Dev:** `dev-san3-07-cl`, Claude Opus 5.5, subagente da sessão, identidade nova (nível menor, declarado). Cobre o Codex,
   com exceção declarada: o Codex 1 está sem cota semanal até 16/11 e o Codex 2 está ocupado. Não planejei nem critiquei.
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/plano-B-SAN3-07.md` (autor `plano-B-SAN3-07-api`, Claude Opus 5.5
+- **Plano:** `~/erp-pausa-2026-10-03/planos/plano-B-SAN3-07.md` (autor `plano-B-SAN3-07-api`, Claude Opus 5.5
   pela API), com a Emenda 1 (orquestrador, 11/11 03:01), que prevalece. Crítica `crit-07-cl` (Claude Opus 5.5 da sessão),
   APROVADO COM AJUSTES: `revisoes/crit-07-plano.json` e `-evidencia.md`.
 - **Verificador:** de outra casa, a cargo do orquestrador (emenda 1, item 8). Este diário não verifica a si mesmo.
-- **Terreno:** worktree `C:/Users/thiag/w-san307`, ramo `fix/seed-papeis-legados` a partir de `origin/main` = `07898adf`
+- **Terreno:** worktree `~/w-san307`, ramo `fix/seed-papeis-legados` a partir de `origin/main` = `07898adf`
   (`git rev-parse origin/main`, 11/11 03:02 SP). `npm ci` próprio, sem junction. Postgres 16.15 descartável `san307-pg`
   em `127.0.0.1:55498`.
 - **Horas:** de `date`, em São Paulo.
@@ -173,7 +173,7 @@ bloco, o mesmo env:
 | `o6r06-allocation-basis-rls-db` | 10/10 |
 | `persistent-rbac-middleware` | 2/2 |
 | `traccar-event-ingestion-db` | 21/21 |
-| `traccar-event-migration-drill-db` | 6/6 casos; o 7º "teste" é o encerramento do arquivo: `EBUSY: resource busy or locked, rmdir 'C:\Users\thiag\AppData\Local\Temp\trc02-mdrill-tXDb3N'`, trava de arquivo do Windows ao apagar a pasta temporária do drill |
+| `traccar-event-migration-drill-db` | 6/6 casos; o 7º "teste" é o encerramento do arquivo: `EBUSY: resource busy or locked, rmdir '~/AppData\Local\Temp\trc02-mdrill-tXDb3N'`, trava de arquivo do Windows ao apagar a pasta temporária do drill |
 | `traccar-event-sample-db` | 13/13 |
 | `traccar-idempotency-db` | 9/9 |
 | `traccar-position-ingestion-db` | 22/22 |

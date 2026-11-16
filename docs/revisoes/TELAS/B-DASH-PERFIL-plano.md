@@ -197,12 +197,12 @@ node scripts/sync-agent-skills.mjs --check
 
 ### Container Linux descartável
 
-Usar `C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh` com worktree exclusivo. O script cria Postgres/Redis próprios sem portas publicadas, copia read-only, migra banco descartável e remove pelo nome; não toca serviços vivos.
+Usar `~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh` com worktree exclusivo. O script cria Postgres/Redis próprios sem portas publicadas, copia read-only, migra banco descartável e remove pelo nome; não toca serviços vivos.
 
 ```bash
-bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/<worktree-b-dash-perfil> "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"
-bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/<worktree-b-dash-perfil> "npm test"
-bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/<worktree-b-dash-perfil> "npm --prefix frontend ci --no-audit --no-fund && npm --prefix frontend run check && npm --prefix frontend run test:smoke && npm --prefix frontend run build"
+bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/<worktree-b-dash-perfil> "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"
+bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/<worktree-b-dash-perfil> "npm test"
+bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/<worktree-b-dash-perfil> "npm --prefix frontend ci --no-audit --no-fund && npm --prefix frontend run check && npm --prefix frontend run test:smoke && npm --prefix frontend run build"
 ```
 
 Registrar SO/Node/SHA, comandos, exit code, arquivos/casos/pass/fail/skip, nomes descartáveis e zero porta publicada. Limpar só artefatos do worktree; nunca prune.

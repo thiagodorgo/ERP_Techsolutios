@@ -1,7 +1,7 @@
 # C2 `guardiao-fail-closed` — evidencia incremental (P1)
 
 **Head medido:** `918f5a01dff71db4f6a5d32f44d62b6cd33c88a3`
-**Worktree:** `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`
+**Worktree:** `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`
 **Pergunta unica da cadeira:** quando alguem acrescentar o proximo membro a enumeracao e esquecer de
 classifica-lo, o sistema NEGA ou PERMITE?
 

@@ -44,12 +44,12 @@
 - `git status --porcelain`: 55 ` M`, `git diff --ignore-cr-at-eol --name-only | wc -l` = 0 → os 55 são só fim de linha (autocrlf), conteúdo = objeto.
 - md5 EOL-neutro blob × disco dos 5 arquivos de código/teste do delta h2→objeto (`field-dispatch-prisma.repository.ts`, `field-dispatch.repository.ts`, `field-dispatch.types.ts`, `traccar-operator-at-fix-time.test.ts`, `traccar-position-ingestion-db.test.ts`): 5/5 IGUAL.
 - Não rastreados: `.npmtest-503.log` (12/10, 2 MB), `check_md5.cjs` e `check_md5.js` (18/10 00:07, 962 B, script de md5 git×disco, inerte), os 4 mandatos + `00-quedas.md` + esta evidência + `agent-orchestration/omega/reprovacoes/R-B-TRC-01-ciclo2.md`. Nenhum arquivo de código mutado.
-- Processo vivo: `Get-CimInstance Win32_Process` com linha de comando contendo `w-trc01|w-jc3|w-jc2` → NENHUM. O único `codex exec` vivo (PID 19912, gpt-5.6-sol) roda com `-C C:\Users\AMP\Documents\GitHub\ERP_Techsolutios` (a outra junta), não em `w-trc01`.
+- Processo vivo: `Get-CimInstance Win32_Process` com linha de comando contendo `w-trc01|w-jc3|w-jc2` → NENHUM. O único `codex exec` vivo (PID 19912, gpt-5.6-sol) roda com `-C ~/Documents\GitHub\ERP_Techsolutios` (a outra junta), não em `w-trc01`.
 - Veredito parcial: VERDE. Soltos alheios = ressalva inerte (R-2), reportados e não varridos.
 
 ## Item 1.3 — resíduos (19:2xZ)
-- Comando: `git worktree list --porcelain` · `ls -d C:/Users/AMP/w-jc*` · `docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Ports}}"` · `git -C w-jc2-b{,3} status --porcelain` · `dir /AL` (junction/symlink).
-- Saída: `C:/Users/AMP/w-jc2-b` e `C:/Users/AMP/w-jc2-b3` **SÃO worktrees registrados** (detached em `2043c584…` = h2 do ciclo 2) — **diverge do fato do orquestrador** ("existem no disco, mas não como worktrees"); o próprio mandato do inspetor (l.115–121) já os listava como worktrees. Árvores limpas (porcelain 0, sem não rastreados), `node_modules` como diretório real, `dir /AL` não acha junction nem symlink. Resíduo INERTE (sem mutação, sem privilégio). Não apagados (ordem do orquestrador; quem inspeciona não arruma).
+- Comando: `git worktree list --porcelain` · `ls -d ~/w-jc*` · `docker ps -a --format "{{.Names}}\t{{.Status}}\t{{.Ports}}"` · `git -C w-jc2-b{,3} status --porcelain` · `dir /AL` (junction/symlink).
+- Saída: `~/w-jc2-b` e `~/w-jc2-b3` **SÃO worktrees registrados** (detached em `2043c584…` = h2 do ciclo 2) — **diverge do fato do orquestrador** ("existem no disco, mas não como worktrees"); o próprio mandato do inspetor (l.115–121) já os listava como worktrees. Árvores limpas (porcelain 0, sem não rastreados), `node_modules` como diretório real, `dir /AL` não acha junction nem symlink. Resíduo INERTE (sem mutação, sem privilégio). Não apagados (ordem do orquestrador; quem inspeciona não arruma).
 - Docker `ps -a`: só `erp-postgres` e `erp-redis` (base viva, Up 16 h). **Nenhum container órfão** `jur-*`/`crit-*`/`jtrc01c*`. Também **nenhum `j07cb1c2-*` de pé neste instante** — o orquestrador disse que a outra junta tem containers vivos; medido agora: 0 trabalhos com container. A conta "2 no limite" deve ser re-medida por prefixo antes de cada subida (a regra já manda).
 - Worktrees vivos da outra junta (`w-07cb1`, `w-j07cb1c2-c1-cdx`, `w-j07cb1c2-c3`) e alheios (`w-agapi2`, `w-dash`, `w-planos`): não são resíduo desta junta, não são alvo.
 - Arquivos `jur-probe*`/`*-probe.ts` em `w-trc01`: nenhum (lista de não rastreados no item 1.1).
@@ -105,7 +105,7 @@
 - Normas de ORQUESTRAÇÃO citadas nos mandatos e ausentes da ref julgada: `D-IAS-EXTERNAS-PRIMEIRO` e "no máximo 2 trabalhos com container" (estão na `origin/main` `decisoes.md` l.3739/l.3737, não no objeto). Não são régua de mérito; regem executor e terreno, são decisão do dono (§A1.1) e são mais restritivas — aplicam-se à orquestração, não ao voto. Registrado, não bloqueia.
 - Veredito parcial: VERDE COM RESSALVA (R-7).
 
-## Item 4.1 — fatia S0, espelho Codex (worktree próprio `C:/Users/AMP/w-jc3-insp`, detached no objeto, porcelain 0)
+## Item 4.1 — fatia S0, espelho Codex (worktree próprio `~/w-jc3-insp`, detached no objeto, porcelain 0)
 - Comando: `timeout 120 node scripts/sync-agent-agents.mjs --check; echo ec=$?` + `git ls-tree -r --name-only HEAD .claude/agents` × `.agents/agents` (recursivo, inclui `especialistas/`).
 - Saída: `[agents-sync] OK — 64 agentes, espelho consistente.` ec=0. `.claude/agents` 64 · `.agents/agents` 65 (a diferença é só `README.md`, o protocolo de emulação Codex); `especialistas/` 41 × 41.
 - Veredito parcial: VERDE.
@@ -124,7 +124,7 @@
 - Saída: mandato do inspetor l.214–218: queda → linha no `00-quedas.md` desta junta pelo orquestrador (P6); sucessor com identidade NOVA com sufixo, re-executa o que a evidência registrou (P3); voto perdido nunca conta; a junta não fecha com menos de 3 votos; executor sem cota (Codex no limite, Opus esgotado) para e registra onde está, sem descer degrau (§C7.6-bis). Os 3 mandatos das cadeiras trazem o modelo do §C7.7 com a linha [P3] (1 ocorrência cada). `00-quedas.md` existe com o cabeçalho P6.
 - Veredito parcial: VERDE.
 
-## Item 4.2 — baseline honesto (worktree próprio `C:/Users/AMP/w-jc3-insp`, detached no objeto, porcelain 0)
+## Item 4.2 — baseline honesto (worktree próprio `~/w-jc3-insp`, detached no objeto, porcelain 0)
 - Passada 1 (FORMA INCOMPLETA, minha): `npm ci --no-audit --no-fund` (ec=0, 326 pacotes, 19:22→19:25Z) seguido direto de `npm run check > check.txt 2>&1; ec=$?` → **ec=2**, 266 `error TS`, dos quais 178 são `TS2305: Module '"@prisma/client"' has no exported member …`. Causa: o Prisma Client não foi gerado. A CI (`ci.yml` l.79–106, job `backend`) roda `npm ci` → `sync-agent-agents --check` → `npm run db:generate` → `migrate deploy` → `npm run check`; eu pulei o `db:generate`. **É artefato da minha execução, não do objeto.** Fica registrado, não apagado.
 - Passada 2 (FORMA DA CI, sem banco): `DATABASE_URL='postgresql://inerte:inerte@127.0.0.1:1/inerte' npm run db:generate` (a URL só satisfaz o `prisma.config`; o generate não conecta; porta 1 sem servidor; nunca a base viva) → ec=0, "Generated Prisma Client (v7.8.0)"; depois `npm run check > check2.txt 2>&1; ec=$?` → **ec=0, 0 `error TS`** (19:27:35Z). `git status --porcelain` = 0 depois (o generate só escreve em `node_modules`).
 - CI do objeto, que é insumo (item 4.3): `backend` e `backend-postgres` `completed|success` (2× cada).
@@ -132,6 +132,6 @@
 - Veredito parcial: VERDE.
 
 ## Limpeza e terreno no fim (19:28Z)
-- Processos com `w-jc3-insp` na linha de comando = 0 → `git worktree remove --force C:/Users/AMP/w-jc3-insp` ec=0; diretório ausente; `worktree list | grep -c w-jc3-insp` = 0. Subpasta `scratchpad/insp-trc01c3` (npmci/check/check2/gen.txt) removida. Nenhum container criado por mim. Nada mais em `w-trc01` além da evidência e do parecer.
+- Processos com `w-jc3-insp` na linha de comando = 0 → `git worktree remove --force ~/w-jc3-insp` ec=0; diretório ausente; `worktree list | grep -c w-jc3-insp` = 0. Subpasta `scratchpad/insp-trc01c3` (npmci/check/check2/gen.txt) removida. Nenhum container criado por mim. Nada mais em `w-trc01` além da evidência e do parecer.
 - Docker às 19:28Z: `j07cb1c2-c2-runner`, `j07cb1c2-c2-pg` (1 grupo de trabalho da OUTRA junta) + `erp-postgres`, `erp-redis` (base viva). → Agora: 1 de 2 vagas ocupada; cabe UMA cadeira do Traccar com container por vez enquanto o grupo `j07cb1c2` viver. (Às 19:2xZ eram 0 grupos; o estado muda e se conta por prefixo antes de cada subida.)
 - Disco: 9,7 GB livres.

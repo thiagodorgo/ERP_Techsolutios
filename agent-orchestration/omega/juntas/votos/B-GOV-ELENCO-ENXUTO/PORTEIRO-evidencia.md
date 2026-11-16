@@ -1,7 +1,7 @@
 # PORTEIRO PÓS-MERGE #381 — caderno de evidência (append-only)
 
 Papel: `porteiro-pos-merge` · Bloco: `B-GOV-ELENCO-ENXUTO` · PR #381 · merge `90d30f8a`
-Árvore de trabalho: `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` (main @ 90d30f8a)
+Árvore de trabalho: `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` (main @ 90d30f8a)
 
 ## Modelo (§C7.6-bis, D-FALLBACK-MODELO-FABLE-OPUS)
 - Papel: `porteiro-pos-merge` — frontmatter declara `model: fable` e ele PERMANECE (não foi editado).
@@ -36,7 +36,7 @@ $ gh pr view 381 --json number,state,mergedAt,mergeCommit,headRefName,baseRefNam
 base declarada `fe2748c8` é de fato o pai (`origin/main~1`). A árvore de trabalho está limpa
 (`git status --porcelain` vazio) — nada de mutação viva contaminando as medições abaixo.
 
-Nota de terreno: a árvore principal (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios`) está em
+Nota de terreno: a árvore principal (`~/Documents/GitHub/ERP_Techsolutios`) está em
 `demo/investidor`, atrás da main e suja de outra sessão. **Não foi lida nem tocada** para nenhuma
 medição deste parecer, salvo o item explicitamente pedido sobre a P-GOV-INSPETOR-33-SEM-NORMA.
 

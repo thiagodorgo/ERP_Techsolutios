@@ -4,7 +4,7 @@
 - **Exceção declarada:** cubro o Codex. O Codex 1 está sem cota semanal até 16/11 e o Codex 2 está ocupado.
 - **Autor do plano e das emendas:** Claude Opus 5.5 pela API (`replano-B-O6R-09-api`, `emenda-B-O6R-09-api`). **Críticas:** Claude da sessão (`crit-09-r2-cl`, `crit-09-em1-cl`).
 - **Fontes, em ordem de prevalência:** decisões do dono (`D-PORTAO-7-RECOMENDACOES-1011`, `D-PORTAO-3-RECOMENDACOES-1111`) → ajustes da crítica r2 (R2-02 a R2-11) → emenda 1 (+ crítica `crit-09-em1`) → plano v2.
-- **Terreno:** worktree `C:/Users/thiag/w-o6r09`, ramo `fix/dispatch-atomic-timeline`, a partir de `origin/main` `07898adf92bf1191e071b3c40945046a0a189f9b`. `npm ci` e `npm --prefix frontend ci` próprios, sem junction. Postgres 16 descartável `o6r09-pg` em `127.0.0.1:55499`.
+- **Terreno:** worktree `~/w-o6r09`, ramo `fix/dispatch-atomic-timeline`, a partir de `origin/main` `07898adf92bf1191e071b3c40945046a0a189f9b`. `npm ci` e `npm --prefix frontend ci` próprios, sem junction. Postgres 16 descartável `o6r09-pg` em `127.0.0.1:55499`.
 - Toda hora abaixo vem de `date` (horário de São Paulo).
 
 ## Linha do tempo
@@ -320,7 +320,7 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
   abertura, `MERGEABLE`). O merge fica preso às duas pendências que são do orquestrador:
   `P-B-O6R-09-RATCHET-T13-NOVA-CHAVE` (a parada D-W2) e `P-B-O6R-09-TRAVA-PRISMA-REGISTRO` (R2-09).
 - Limpeza (§C5): os containers `o6r09-pg` e `o6r09-redis` foram removidos (`docker rm -f`), e `dist/` e `frontend/dist/`
-  apagados. O worktree `C:/Users/thiag/w-o6r09` fica, com o `node_modules` próprio, para o conserto depois da decisão do
+  apagados. O worktree `~/w-o6r09` fica, com o `node_modules` próprio, para o conserto depois da decisão do
   ratchet. Não usei `git worktree prune` nem `docker system prune`, e não toquei em outro worktree nem em outro container.
 
 ## Emenda 2 (decisão do orquestrador sobre a parada D-W2), retomada às 05:13 SP
@@ -345,7 +345,7 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
   nomeou a opção; a (a) é a única que cabe no que foi ordenado e no estado medido (o #537 tem a migração; o B-O6R-12 não
   tem ramo remoto nem PR). A emenda do R6 do plano do 12 segue com o orquestrador, porque é fora do repositório.
   - `P-B-O6R-09-RATCHET-T13-NOVA-CHAVE` e `P-B-O6R-09-TRAVA-PRISMA-REGISTRO` passam a FECHADA;
-  - índice regenerado com `py` (Python 3.13.14, `C:/Users/thiag/AppData/Local/Programs/Python/Python313/python.exe`). A
+  - índice regenerado com `py` (Python 3.13.14, `~/AppData/Local/Programs/Python/Python313/python.exe`). A
     falta de Python registrada na fatia 4 era só o alias `python3` do Windows;
   - fora a renumeração das linhas, o diff do índice é só as 9 entradas do bloco e os placares;
   - troquei "crítica r2" por "revisão r2 do plano" em 2 pendências minhas: o classificador lê a palavra "crítica" como
@@ -753,12 +753,12 @@ Postgres 16 descartável (`o6r09-pg`, `max_connections` padrão, migrado e semea
 ## Emenda 4.2 (dp-fix-537)
 
 - **Identidade:** `dp-fix-537`, DeepSeek Pro (DP), dev da Emenda 4.2. Quem achou: C3 (`j537-c3-dp`); quem planejou: o orquestrador. Quem confere: Claude, identidade nova.
-- **Terreno:** worktree `C:/Users/thiag/w-o6r09`, ramo `fix/dispatch-atomic-timeline`, head de partida `afbbb04d`, limpo, sem processo. Banco sem Docker: `C:/Users/thiag/pg-dpfix537`, `127.0.0.1:55555`, migrado (133 migrações) e semeado. Nada em `src/`; PERMITIDO respeitado.
+- **Terreno:** worktree `~/w-o6r09`, ramo `fix/dispatch-atomic-timeline`, head de partida `afbbb04d`, limpo, sem processo. Banco sem Docker: `~/pg-dpfix537`, `127.0.0.1:55555`, migrado (133 migrações) e semeado. Nada em `src/`; PERMITIDO respeitado.
 
 ### Vermelho-controle (o comando da C3)
 
 - Reproduzido na rodada 1 do loop de 30 baterias (as 10 suítes-base, sem o fix — o 40P01 escondido via `git stash`): `# tests 74 · # pass 73 · # fail 1`, `not ok 21 - [P3 · corrida (ii)]`, `AggregateError: o DROP do arnês falhou`, em `dropHarnessObjects` (`pg-barrier.ts:327`) chamado do `comTrava` de `b-o6r-09-dispatch-idempotency-db.test.ts:229`. TAP: `dpfix537-sondas/redhead/base-r1.tap:103`.
-- Log do Postgres (`C:/Users/thiag/pg-dpfix537.log`): `Process 25136: DROP TRIGGER IF EXISTS b_o6r_09_trv_3ec0408a0b5f4228 ON field_dispatch_events` × `Process 30468: DROP TRIGGER IF EXISTS b_o6r_09_inj_964234cc37624517 ON field_dispatch_events` → `ERROR: deadlock detected` (40P01); em seguida `cannot drop function b_o6r_09_trv_3ec0408a0b5f4228() because other objects depend on it`. Resíduo: o par trigger/função `b_o6r_09_trv_3ec0408a0b5f4228`.
+- Log do Postgres (`~/pg-dpfix537.log`): `Process 25136: DROP TRIGGER IF EXISTS b_o6r_09_trv_3ec0408a0b5f4228 ON field_dispatch_events` × `Process 30468: DROP TRIGGER IF EXISTS b_o6r_09_inj_964234cc37624517 ON field_dispatch_events` → `ERROR: deadlock detected` (40P01); em seguida `cannot drop function b_o6r_09_trv_3ec0408a0b5f4228() because other objects depend on it`. Resíduo: o par trigger/função `b_o6r_09_trv_3ec0408a0b5f4228`.
 
 ### E42.3 (teste novo) → E42.1 + E42.2
 

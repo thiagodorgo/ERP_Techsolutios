@@ -16,7 +16,7 @@
 
 | Item | Valor conferido por execução |
 |---|---|
-| Worktree | `c:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\san2-r` |
+| Worktree | `~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\san2-r` |
 | Branch | `fix/san2-4b-corrigir-arnes` |
 | HEAD na abertura | `f6631d0e2e972e725cd34fc153c0b6f91f472e87` (= C1+C2 commitadas) |
 | `git status --short` na abertura | **VAZIO** — árvore limpa, sem mutação viva |

@@ -1,12 +1,12 @@
 // C2 da junta J484 (jurado-j484-c2-opus) — sonda própria da rota HTTP real /summary.
-// Fica FORA do worktree; importa o app do worktree por caminho absoluto (WT, default C:/Users/thiag/w-j484-c2).
+// Fica FORA do worktree; importa o app do worktree por caminho absoluto (WT, default ~/w-j484-c2).
 // Saída: uma linha "C2PROBE <json>" por caso, mais asserções do contrato pedido no mandato.
 import assert from "node:assert/strict";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
-const WT = (process.env.C2_WT ?? "C:/Users/thiag/w-j484-c2").replace(/\\/g, "/");
+const WT = (process.env.C2_WT ?? "~/w-j484-c2").replace(/\\/g, "/");
 const src = (p: string) => `file:///${WT}/src/${p}`;
 
 const periodStart = new Date("2026-06-01T00:00:00.000Z");

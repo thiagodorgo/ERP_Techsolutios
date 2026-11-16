@@ -3,7 +3,7 @@
   "cadeira": "C1 — atomicidade (K1), item apagado/alterado durante o faturamento (K2), corrida de dois faturamentos e ordem advisory → row lock",
   "modelo": "Claude Opus (claude-opus-5-5), nível MENOR declarado (§C7.6)",
   "objeto": "8e6a6c29b8a0aced5bf3968383aa9ef247019f46 (ls-remote = gh pr view 448 headRefOid, OPEN); B = merge-base = 2ecfb333aed0a0efcc1f171148473aad2921be66; origin/main início = 2ecfb333 (fim: sem nova busca — o objeto não andou: 14/14 check-runs no mesmo SHA)",
-  "legalidade": "inspetor LIBERADO COM RESSALVA (2026-10-20T01:52Z) nomeando jurado-san302-c1-opus; corpo do blob IDENTICO nos 2 espelhos (EOL-neutro); 14/14 check-runs success no objeto; worktree próprio C:/Users/AMP/w-jsan302-c1 (detached no objeto, sem node_modules no Windows, npm ci próprio no contêiner); clusters próprios tl179246253526570, tl179246297929975 e o da subida 3; papel do serviço rolsuper=false rolbypassrls=false lido pela própria conexão",
+  "legalidade": "inspetor LIBERADO COM RESSALVA (2026-10-20T01:52Z) nomeando jurado-san302-c1-opus; corpo do blob IDENTICO nos 2 espelhos (EOL-neutro); 14/14 check-runs success no objeto; worktree próprio ~/w-jsan302-c1 (detached no objeto, sem node_modules no Windows, npm ci próprio no contêiner); clusters próprios tl179246253526570, tl179246297929975 e o da subida 3; papel do serviço rolsuper=false rolbypassrls=false lido pela própria conexão",
   "quorum": "unanimidade de 3 com veto; bloco de dinheiro; ciclo 1",
   "voto": "APROVADO",
   "itens": {
@@ -30,7 +30,7 @@
     "P-SAN3-02-DEADLOCK-RESIDUAL (residual de escritores fora do bloco; o ciclo fatura×zero medido sem 40P01 em Seq e Index)"
   ],
   "insumos_A_RE-VERIFICAR": "plano v2 + Anexos A/B/C, críticas r1/r2, relatório do dev, parecer do DBA, revisão independente — roteiro, não prova",
-  "teardown": "gatilhos/funções jsan302_c1 = 0 e tenants/papéis = 0 em cada subida; contêineres tl179246253526570, tl179246297929975 e da subida 3 removidos com volumes e rede pela ferramenta (0 restante); mutações só na cópia do contêiner com HASHCHECK 12/12 após cada uma e no fim; worktree C:/Users/AMP/w-jsan302-c1 removido por git worktree remove --force; base viva e portas proibidas intocadas; nada commitado",
+  "teardown": "gatilhos/funções jsan302_c1 = 0 e tenants/papéis = 0 em cada subida; contêineres tl179246253526570, tl179246297929975 e da subida 3 removidos com volumes e rede pela ferramenta (0 restante); mutações só na cópia do contêiner com HASHCHECK 12/12 após cada uma e no fim; worktree ~/w-jsan302-c1 removido por git worktree remove --force; base viva e portas proibidas intocadas; nada commitado",
   "notas": [
     "Divergência corpo×plano (§A2, registrada no mandato): T-A4 julgado no alvo do plano v2 (201 complementar), não no 409 da l.127 do corpo.",
     "O pré-check fora da unidade lê pelo cliente default da aplicação; toda ESCRITA de dinheiro passa pelo papel sem bypass (provado por usename em pg_stat_activity/pg_locks). Nota, não achado.",

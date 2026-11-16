@@ -36,25 +36,25 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e planejador-mestre, identidade NOVA planejador-ciclo3-b-san3-11 (nao achou, nao planejou nem desenvolveu ciclo algum deste
   bloco), rodando no Codex em GPT-5.6 Sol (o dono suspendeu Fable e Astra ate o reset semanal, o que suspende a obrigacao de Fable no
   retorno ao planejador, secao C7 item 6), substituicao declarada; declara na 1a linha da secao nova do plano o papel, a identidade, o
-  modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo planejador-mestre do espelho Codex de origin/main derruba com: `grep -ic 'planejador-ciclo3-b-san3-11' C:/Users/AMP/w-nuv11/docs/revisoes/SAN3/B-SAN3-11-plano.md`
+  modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo planejador-mestre do espelho Codex de origin/main derruba com: `grep -ic 'planejador-ciclo3-b-san3-11' ~/w-nuv11/docs/revisoes/SAN3/B-SAN3-11-plano.md`
 
 Item 1 — os dois bloqueia da junta 2, lidos como relato de quem achou e nunca como fato: C2c2-F1 (o gerador P-L3 e fail-open para
   acesso por indice e para conjunto vazio) e C2c2-F2 (o fluxo adapter, service, hook e painel nao limpa as linhas ao recusar resposta
-  subsequente), em C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/C2c2-evidencia.md e C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/C2c2-voto.json; o planejador reproduz por execucao propria o vermelho-controle de cada um no
+  subsequente), em ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/C2c2-evidencia.md e ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/C2c2-voto.json; o planejador reproduz por execucao propria o vermelho-controle de cada um no
   head, e decide o remedio por PROPRIEDADE (o membro nao previsto nasce negado; recusa de contrato zera o estado mostrado), com a mutacao
-  que deixa cada criterio vermelho derruba com: `grep -ic 'C2c2-F1' C:/Users/AMP/w-nuv11/docs/revisoes/SAN3/B-SAN3-11-plano.md`
+  que deixa cada criterio vermelho derruba com: `grep -ic 'C2c2-F1' ~/w-nuv11/docs/revisoes/SAN3/B-SAN3-11-plano.md`
 
 Item 2 — o ciclo 3 inteiro: dev com identidade nova, testes antes do codigo, escopo permitido e proibido, a bateria nos dois terrenos,
   o KPI recontado contra a main, as competencias das tres cadeiras da junta 3 para a agente-fabrica, e o lembrete de que, se o ciclo 3
-  reprovar com bloqueia, a auditoria da maquina vem antes do ciclo 4 (secao C7.4) derruba com: `grep -ic 'auditoria' C:/Users/AMP/w-nuv11/docs/revisoes/SAN3/B-SAN3-11-plano.md`
+  reprovar com bloqueia, a auditoria da maquina vem antes do ciclo 4 (secao C7.4) derruba com: `grep -ic 'auditoria' ~/w-nuv11/docs/revisoes/SAN3/B-SAN3-11-plano.md`
 
-A secao nova entra so por adicao ao fim do plano C:/Users/AMP/w-nuv11/docs/revisoes/SAN3/B-SAN3-11-plano.md, como secao 17, sem tocar outra linha nem outro arquivo; o planejador nao conserta, nao
-  escreve caso, codigo nem corpo e nao versiona derruba com: `git -C C:/Users/AMP/w-nuv11 status --porcelain | grep -iv 'B-SAN3-11-plano.md' | grep -iv '^ M .agents' | grep -ic .`
+A secao nova entra so por adicao ao fim do plano ~/w-nuv11/docs/revisoes/SAN3/B-SAN3-11-plano.md, como secao 17, sem tocar outra linha nem outro arquivo; o planejador nao conserta, nao
+  escreve caso, codigo nem corpo e nao versiona derruba com: `git -C ~/w-nuv11 status --porcelain | grep -iv 'B-SAN3-11-plano.md' | grep -iv '^ M .agents' | grep -ic .`
 
-O terreno: mede num worktree proprio detached C:/Users/AMP/w-pl11c3 no head do ramo, com npm ci proprio sem junction, removido pelo nome ao
+O terreno: mede num worktree proprio detached ~/w-pl11c3 no head do ramo, com npm ci proprio sem junction, removido pelo nome ao
   fim com 0 processo vivo; nunca tail -f nem MSYS_NO_PATHCONV exportada; nunca git config sem --worktree; timeout em tudo; base viva nunca
   alvo; a cota da conta dura de 35 a 50 minutos por janela, entao a secao 17 nasce como esqueleto EM APURACAO e cada parte e gravada assim
-  que medida; sob PAUSA grava a secao PAUSA no fim e para derruba com: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree list | grep -ic 'w-pl11c3'`
+  que medida; sob PAUSA grava a secao PAUSA no fim e para derruba com: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree list | grep -ic 'w-pl11c3'`
 
 ## MEDIDO
 
@@ -62,7 +62,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-22: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/planejador-ciclo3.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/planejador-ciclo3.md
 ec=0
 head=bf285f132c6020808210942b2a632b33a7523e1f
 utc=2026-10-04T14:06:31Z

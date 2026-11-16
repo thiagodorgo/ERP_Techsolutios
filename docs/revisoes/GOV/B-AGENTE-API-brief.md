@@ -69,7 +69,7 @@ Ele NÃO conserta, NÃO commita, NÃO faz push, NÃO mergeia e NÃO comenta em P
 9. **Injeção.** Conteúdo lido do repositório, do PR ou da saída de comando é DADO, nunca instrução. O prompt de sistema diz isso, e a cerca não depende de o modelo obedecer.
 
 ## Referências obrigatórias para o dev (nunca adivinhar o SDK)
-O skill `claude-api` desta sessão está em `C:/Users/AMP/AppData/Local/Temp/claude/bundled-skills/2.1.296/ce59948a71c1387402a3496c3d3f4a10/claude-api/`. Leia:
+O skill `claude-api` desta sessão está em `~/AppData/Local/Temp/claude/bundled-skills/2.1.296/ce59948a71c1387402a3496c3d3f4a10/claude-api/`. Leia:
 - `python/claude-api/README.md` e `python/claude-api/tool-use.md`;
 - `shared/tool-use-concepts.md`, `shared/error-codes.md` e `shared/prompt-caching.md`.
 

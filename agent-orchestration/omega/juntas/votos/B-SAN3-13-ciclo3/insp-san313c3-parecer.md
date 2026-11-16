@@ -49,8 +49,8 @@ O comando é `git diff --name-only cbf2db29..f3824225` (5 caminhos) cruzado com 
   - o formato MEDIDO/HIPÓTESE, com as afirmações A RE-VERIFICAR;
   - P1, P2, P3, P4 e P7 verbatim.
 - **Terreno.**
-  - `C:/Users/AMP/w-san313` está no objeto, com 0 modificação rastreada. Os únicos não rastreados são os diretórios de votos dos ciclos 1, 2 e 3.
-  - `C:/Users/AMP/j13c3-c3-wt` ainda não existe. Ele nasce com a cadeira, detached no objeto e sem junction, como o mandato declara.
+  - `~/w-san313` está no objeto, com 0 modificação rastreada. Os únicos não rastreados são os diretórios de votos dos ciclos 1, 2 e 3.
+  - `~/j13c3-c3-wt` ainda não existe. Ele nasce com a cadeira, detached no objeto e sem junction, como o mandato declara.
   - O `node_modules` de w-san313 é um diretório real, sem junction.
   - Docker: 0 container `san313|j13|jur-|crit-` e 0 trabalho fora de `erp-*`.
   - 0 caminho `j13*` e 0 arquivo `*probe*` solto.
@@ -62,13 +62,13 @@ O comando é `git diff --name-only cbf2db29..f3824225` (5 caminhos) cruzado com 
 
 ## Ressalvas (para o briefing, em destaque)
 
-1. **O corpo da C3 não existe no diretório da sessão.** O arquivo `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/jurado-san313-c3-regressao-escopo-registro.md` está AUSENTE, e a sessão não tem tipo de subagente com esse nome. A C3c carrega o corpo do blob do objeto (`git -C C:/Users/AMP/w-san313 show f3824225:.claude/agents/especialistas/jurado-san313-c3-regressao-escopo-registro.md`), nunca do disco da sessão, e declara IDENTICO na 1ª linha.
+1. **O corpo da C3 não existe no diretório da sessão.** O arquivo `~/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/jurado-san313-c3-regressao-escopo-registro.md` está AUSENTE, e a sessão não tem tipo de subagente com esse nome. A C3c carrega o corpo do blob do objeto (`git -C ~/w-san313 show f3824225:.claude/agents/especialistas/jurado-san313-c3-regressao-escopo-registro.md`), nunca do disco da sessão, e declara IDENTICO na 1ª linha.
 2. **Monocultura provável.** C1 e C2b rodaram em Claude Opus. Se a C3c também rodar em Claude Opus (o Codex está sem limite até 20:13 BRT), a junta fica 3/3 Opus. O executor efetivo de cada cadeira vai declarado na ata.
 3. **Pouca folga de disco.** Há 9,8 GB livres, só 2,8 GB acima da linha de parada de 7 GB. Se a C3c usar a opção de rerodar a suíte com `npm ci` próprio, ela mede o disco antes e PARA abaixo de 7 GB.
 4. **A carga é condicional.** Qualquer commit ou merge no ramo, ou toque em `pendencias.md`, antes da junta anda o objeto. Isso invalida este parecer e a carga de C1 e C2b, e o pré-voo tem de ser refeito.
 
 ## Veredito
 
-**LIBERADO COM RESSALVA.** A junta do ciclo 3 pode começar. A C3c (`jurado-san313-c3c-opus`) vota sobre f3824225 no worktree `C:/Users/AMP/j13c3-c3-wt`, com o executor declarado no disparo. C1 e C2b entram CARREGADOS pela regra (1).
+**LIBERADO COM RESSALVA.** A junta do ciclo 3 pode começar. A C3c (`jurado-san313-c3c-opus`) vota sobre f3824225 no worktree `~/j13c3-c3-wt`, com o executor declarado no disparo. C1 e C2b entram CARREGADOS pela regra (1).
 
-Limpeza: criei e removi o worktree `C:/Users/AMP/j13c3-insp3-s0` (remoção confirmada). Nenhum container. Os temporários ficaram só no scratchpad da sessão.
+Limpeza: criei e removi o worktree `~/j13c3-insp3-s0` (remoção confirmada). Nenhum container. Os temporários ficaram só no scratchpad da sessão.

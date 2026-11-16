@@ -21,7 +21,7 @@ Ref medida: `40c3651f066278654e2c71df4c3b38e1d90994c8` (origin/main). Itens EM A
 - Veredito parcial: promessa × diff confere.
 
 ## Item 3 — contagens reexecutadas (EM APURAÇÃO)
-- `git worktree add --detach C:/Users/AMP/w-porteiro440 40c3651f` → HEAD 40c3651f. OK.
+- `git worktree add --detach ~/w-porteiro440 40c3651f` → HEAD 40c3651f. OK.
 - `npm ci` (2 tentativas) → exit 134, `FATAL ERROR ... JavaScript heap out of memory` com heap de ~80 MB ("external memory pressure"). Medido: Win32_OperatingSystem FreePhysMB=4266, **FreeVirtualMemory=386 MB** (commit da máquina esgotado; vmmemWSL 4,2 GB). Ambiente, não código. Nova tentativa adiante.
 
 ## Item 3-bis — KPI congelado
@@ -39,7 +39,7 @@ Ref medida: `40c3651f066278654e2c71df4c3b38e1d90994c8` (origin/main). Itens EM A
 - Bloqueio do próximo alvo (merge do B-TRC-01 #426 e PR de registro): bloqueantes de B-TRC-01 em pendencias.md (P-TRC-FORMA-QUATRO-OU-SETE, P-TRC-AWS-FLY-PRAZO, P-TRC-CONVIVENCIA-APP, P-TRC-PLANO-V22) todas FECHADA; P-TRC-VINCULO-POSSE/LGPD/AWS-ESTUDO declaram "não bloqueia o B-TRC-01". Nenhuma das pendências do #440 cita B-TRC ou o PR de registro em "bloqueia".
 - Veredito parcial: nada BLOQUEIA o próximo alvo; dívida de registro (8 pendências + R-…-1.md + ata "já registradas" incorreta) viaja para o PR de registro.
 
-## Item 3 — contagens reexecutadas (worktree detached C:/Users/AMP/w-porteiro440 @ 40c3651f, npm ci próprio)
+## Item 3 — contagens reexecutadas (worktree detached ~/w-porteiro440 @ 40c3651f, npm ci próprio)
 - `npm ci` (3ª tentativa, FreeVirtMB=4404) → exit 0, 326 pacotes. `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npx prisma generate` → 0 (sem DATABASE_URL o config do prisma falha — P-AGENTE-CHECK-SEM-GENERATE, já registrada).
 - `npm run check` → exit 0 (tsc --noEmit limpo).
 - `REDIS_URL=redis://127.0.0.1:1 node --test --import tsx` nos 3 arquivos juntos → 246 testes, 244 pass, 2 fail: ambas em san3-05 (subteste 33 + pai T13), `FATAL ERROR ... heap out of memory` no processo-filho do gerador (~650 MB, commit da máquina pressionado). Re-rodado só o san3-05: 33/35, falha agora no subteste 34, também OOM — a falha migra de subteste = ambiente.
@@ -67,7 +67,7 @@ Ref medida: `40c3651f066278654e2c71df4c3b38e1d90994c8` (origin/main). Itens EM A
 
 ## Item 6 — limpeza §C5 (só reporte)
 - `git ls-remote --heads origin fix/o6r07cb1-despacho-atribui` → **1 (branch remota do PR #440 MERGED NÃO apagada)**.
-- Branch local `fix/o6r07cb1-despacho-atribui` existe, presa ao worktree `C:/Users/AMP/w-07cb1` (do orquestrador; não toquei). Demais locais: chore/agente-api-2 (#419 OPEN), docs/planos-api-2026-10-11 (sem PR), feat/traccar-b-trc-01 (#426 OPEN), fix/dash-perfil (sem remota, sem PR).
+- Branch local `fix/o6r07cb1-despacho-atribui` existe, presa ao worktree `~/w-07cb1` (do orquestrador; não toquei). Demais locais: chore/agente-api-2 (#419 OPEN), docs/planos-api-2026-10-11 (sem PR), feat/traccar-b-trc-01 (#426 OPEN), fix/dash-perfil (sem remota, sem PR).
 - `git status --porcelain | grep '^ D'` → vazio na árvore principal e no w-07cb1. w-07cb1 tem 55 ` M` que somem com `diff --ignore-cr-at-eol` (fantasmas autocrlf) + o meu arquivo de evidência untracked.
 - Worktrees vivos: w-07cb1, w-agapi2, w-dash, w-j07cb1c2-c2 (detached 7ff1e003, sobra de jurado do ciclo 2 — a ata diz "worktrees removidos"), w-jc3-a, w-planos, w-trc01.
 - Disco: `df -h /c` → 27 GB livres (>10 GB; DEEP_CLEAN não necessário).
@@ -75,4 +75,4 @@ Ref medida: `40c3651f066278654e2c71df4c3b38e1d90994c8` (origin/main). Itens EM A
 - Veredito parcial: limpeza pós-merge INCOMPLETA (branch remota + worktree w-j07cb1c2-c2 remanescente).
 
 ## Teardown do porteiro
-- `git worktree remove --force C:/Users/AMP/w-porteiro440` → 0; diretório inexistente; container porteiro440-pg removido; logs próprios do scratchpad apagados. Nada rastreado tocado; sem commit, sem push.
+- `git worktree remove --force ~/w-porteiro440` → 0; diretório inexistente; container porteiro440-pg removido; logs próprios do scratchpad apagados. Nada rastreado tocado; sem commit, sem push.

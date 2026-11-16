@@ -6,15 +6,15 @@ Sucessão P3: a identidade anterior não deixou comando registrado nem conclusã
 
 ## Legalidade e leituras obrigatórias
 
-- comando: `MSYS_NO_PATHCONV=1 git -C C:/Users/AMP/w-trc01 show 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91:.claude/agents/especialistas/jurado-trc01-a-rls-e-banco.md | tr -d '\r' | md5sum`
+- comando: `MSYS_NO_PATHCONV=1 git -C ~/w-trc01 show 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91:.claude/agents/especialistas/jurado-trc01-a-rls-e-banco.md | tr -d '\r' | md5sum`
   saída resumida: `725c583fc448803e57251e33bb05ba07`; corpo lido integralmente do mesmo blob em faixas de linhas.
   veredito parcial: `R-CORPO atendida`; a cadeira pode prosseguir.
 
-- comando: `md5sum C:/Users/AMP/w-trc01/.../00-mandatos/cadeira-a.md` e `tr -d '\r' < ... | md5sum`; leitura integral por `sed`.
+- comando: `md5sum ~/w-trc01/.../00-mandatos/cadeira-a.md` e `tr -d '\r' < ... | md5sum`; leitura integral por `sed`.
   saída resumida: cru `da17d197c18015c148710cda5ab10771`; EOL-neutro `0353fc6a4bda90dbb876ed6ff2aa958c`; 74 linhas; PRE-VOO OK no texto.
   veredito parcial: mandato íntegro; diferença entre hashes é somente CRLF e coincide com as duas formas medidas.
 
-- comando: `sed` integral de `C:/Users/AMP/w-trc01/CLAUDE.md` (803 linhas), `PROJECT_MEMORY.md` (234 linhas), `insp-trc01-parecer.md` (43 linhas), e das skills/referências `backend-review-ts-prisma` e `saas-multi-tenant`.
+- comando: `sed` integral de `~/w-trc01/CLAUDE.md` (803 linhas), `PROJECT_MEMORY.md` (234 linhas), `insp-trc01-parecer.md` (43 linhas), e das skills/referências `backend-review-ts-prisma` e `saas-multi-tenant`.
   saída resumida: contrato canônico e memória lidos; parecer `LIBERADO COM RESSALVA`, objeto declarado `5abdf83b...`, ciclo 1, CI 14/14; R-DBA externa e ainda ausente.
   veredito parcial: legalidade documental apta, condicionada à resolução própria de objeto/CI/identidade e à medição integral dos três itens.
 
@@ -26,9 +26,9 @@ Sucessão P3: a identidade anterior não deixou comando registrado nem conclusã
   saída resumida: processo `df` morto após timeout; `ec=137`.
   veredito parcial: segunda falha do `df /c`; medir espaço por forma equivalente e registrar a divergência antes do worktree.
 
-- comando: PowerShell `Get-PSDrive -Name C` e `Test-Path` para `C:\Users\AMP\w-jtrc-a`/`w-jtrc-a2`.
+- comando: PowerShell `Get-PSDrive -Name C` e `Test-Path` para `~/w-jtrc-a`/`w-jtrc-a2`.
   saída resumida: `C:` livre `10,76 GB`, usado `226,76 GB`; `w-jtrc-a=True`, `w-jtrc-a2=False`.
-  veredito parcial: piso de 10 GB atendido por margem de 0,76 GB; `w-jtrc-a` é resíduo alheio/da instância caída e não será tocado; esta identidade usará `C:/Users/AMP/w-jtrc-a2`.
+  veredito parcial: piso de 10 GB atendido por margem de 0,76 GB; `w-jtrc-a` é resíduo alheio/da instância caída e não será tocado; esta identidade usará `~/w-jtrc-a2`.
 
 - comando: `git ls-remote origin refs/heads/feat/traccar-b-trc-01`; `gh pr view 426 --json headRefOid,baseRefName,state,isDraft,mergeable`; `rev-parse origin/main`; `merge-base`; `git diff --name-only e38b47... 5abdf83...`.
   saída resumida: Git remoto e GitHub convergem em `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`; PR aberto, não draft, mergeable; `origin/main=d81c971a1b445f97d14862f87bc0ca2f31e75595`; merge-base `9566d55bd719ce7d7a545281c57923a25f883ed3`; delta do pai contém somente os quatro mandatos.
@@ -46,15 +46,15 @@ Sucessão P3: a identidade anterior não deixou comando registrado nem conclusã
   saída resumida: `1` no objeto e `1` na main.
   veredito parcial: C7.4-bis existe nas duas refs; legalidade normativa fechada.
 
-- comando: `git worktree add --detach C:/Users/AMP/w-jtrc-a2 5abdf83...`; provas de `.git`, ausência de `.env`, HEAD e status.
+- comando: `git worktree add --detach ~/w-jtrc-a2 5abdf83...`; provas de `.git`, ausência de `.env`, HEAD e status.
   saída resumida: `add_ec=0`, `.git` existe, `.env` ausente, HEAD exato `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`, status vazio.
   veredito parcial: terreno próprio detached criado sem tocar o resíduo `w-jtrc-a`; pronto para dependências próprias.
 
-- comando: em `C:/Users/AMP/w-jtrc-a2`, `timeout -k 15 900 npm ci --no-audit --no-fund; ec=$?`.
+- comando: em `~/w-jtrc-a2`, `timeout -k 15 900 npm ci --no-audit --no-fund; ec=$?`.
   saída resumida: 326 pacotes instalados em 4 min; aviso `EBADENGINE` transitivo (`@prisma/streams-local`, Node >=22) sem falha; `npm_ci_ec=0`.
   veredito parcial: dependências próprias instaladas, sem junction/symlink compartilhado.
 
-- comando: PowerShell `Get-PSDrive C` e `Get-Item C:\Users\AMP\w-jtrc-a2\node_modules` (atributos/link/target).
+- comando: PowerShell `Get-PSDrive C` e `Get-Item ~/w-jtrc-a2\node_modules` (atributos/link/target).
   saída resumida: `10,25 GB` livres; `node_modules` é `Directory`, sem `LinkType` e sem `Target`.
   veredito parcial: piso ainda atendido e proibição de junction/symlink comprovada.
 
@@ -86,8 +86,8 @@ Sucessão P3: a identidade anterior não deixou comando registrado nem conclusã
   saída resumida: nenhuma exclusão correspondente, nenhum listener e nenhum container com o novo prefixo.
   veredito parcial: portas e nomes exclusivos aptos.
 
-- comando: `mktemp -d C:/Users/AMP/AppData/Local/Temp/jtrc01-a2-XXXXXX`.
-  saída resumida: scratch `C:/Users/AMP/AppData/Local/Temp/jtrc01-a2-EM6Pp8`, `ec=0`.
+- comando: `mktemp -d ~/AppData/Local/Temp/jtrc01-a2-XXXXXX`.
+  saída resumida: scratch `~/AppData/Local/Temp/jtrc01-a2-EM6Pp8`, `ec=0`.
   veredito parcial: scratch exclusivo criado para logs/sondas/senha temporária; será removido no teardown.
 
 - comando: gerar senha aleatória em arquivo do scratch; `docker run` Postgres 16/Redis 7 com nomes `jtrc01-a-cdx2-*` e binds explícitos; `pg_isready`; `docker port`.
@@ -118,7 +118,7 @@ Sucessão P3: a identidade anterior não deixou comando registrado nem conclusã
   saída resumida: execução direta no objeto: `L0 ENABLE=108 FORCE=108 acessores=108`, `OPS=17`, 793 arquivos, 0 erros sintáticos; inventário `62 chaves`, sha1 `5755edd...`; as seis chaves K1–K6 aparecem exatamente nas formas previstas.
   veredito parcial: inventário do objeto medido; o `111` não é o argv direto e será medido com o argv virtual exato do subteste, conforme o corpo.
 
-- comando: `git worktree add --detach C:/Users/AMP/w-jtrc-a2-base 9566d55...`; provas de HEAD, ausência de `.env` e status.
+- comando: `git worktree add --detach ~/w-jtrc-a2-base 9566d55...`; provas de HEAD, ausência de `.env` e status.
   saída resumida: `ec=0`, HEAD exato da merge-base, `.env` ausente, status vazio.
   veredito parcial: worktree-base próprio criado somente para comparação do gerador/catálogo, sem dependências compartilhadas.
 
@@ -130,7 +130,7 @@ Sucessão P3: a identidade anterior não deixou comando registrado nem conclusã
   saída resumida: `# erro: OPS não derivado do client gerado (N=0)`.
   veredito parcial: a base precisa de dependências/client próprios; não é falha do objeto nem resultado do inventário.
 
-- comando: `timeout -k 15 900 bash .../teste-linux.sh C:/Users/AMP/w-jtrc-a2-base "node scripts/san3-05-acessos-de-plataforma.mjs ." > t13-base-linux.log`.
+- comando: `timeout -k 15 900 bash .../teste-linux.sh ~/w-jtrc-a2-base "node scripts/san3-05-acessos-de-plataforma.mjs ." > t13-base-linux.log`.
   saída resumida: runner Linux isolado terminou `ec=0` em ~3 min.
   veredito parcial: execução-base válida produzida com dependências próprias; ler o resumo do log antes de comparar.
 
@@ -300,7 +300,7 @@ Sucessão P3: a identidade anterior não deixou comando registrado nem conclusã
 
 ### Item 1 — terreno cdx3
 
-- comando: verificação de caminhos/portas; `git worktree add --detach C:/Users/AMP/w-jtrc-a3 OBJ`; provas de `.git`, ausência de `.env`, status; `timeout -k 15 900 npm ci --no-audit --no-fund`.
+- comando: verificação de caminhos/portas; `git worktree add --detach ~/w-jtrc-a3 OBJ`; provas de `.git`, ausência de `.env`, status; `timeout -k 15 900 npm ci --no-audit --no-fund`.
   saída resumida: caminhos a3/a4 ausentes, portas 47463/47473 sem listener ou container correspondente; worktree criado no head exato, `.git` presente, `.env` ausente, status vazio; `npm_ci_ec=0` com dependências próprias.
   veredito parcial: terreno novo e isolado pronto; nenhum worktree/container cdx2 ou da outra junta foi tocado.
 
@@ -376,6 +376,6 @@ Sucessão P3: a identidade anterior não deixou comando registrado nem conclusã
 
 ## Teardown e resolução final
 
-- comando: remover os dois containers exatos `jtrc01-a-cdx3-*` com volumes; confirmar processos do worktree=0; `git worktree remove --force C:/Users/AMP/w-jtrc-a3`; medir ocorrência da senha sem imprimi-la; apagar scratch validado; resolver head/PR/main e disco.
+- comando: remover os dois containers exatos `jtrc01-a-cdx3-*` com volumes; confirmar processos do worktree=0; `git worktree remove --force ~/w-jtrc-a3`; medir ocorrência da senha sem imprimi-la; apagar scratch validado; resolver head/PR/main e disco.
   saída resumida: senha em evidência/logs `0`; containers cdx3 após remoção `0`; worktree ausente; scratch/senha ausentes; migração restaurada antes da remoção; PR/head final `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`; `origin/main=4fe7524ecbcc68b3e69336453cc774ed5937cb1c`; C: livre `10,70 GB`; em `w-trc01`, as únicas saídas cdx3 são estes dois arquivos untracked.
   veredito parcial: limpeza cdx3 concluída; resíduos de identidades anteriores/outras juntas não foram alvo; base viva e portas proibidas nunca foram tocadas.

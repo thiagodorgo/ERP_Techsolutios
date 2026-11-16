@@ -17,7 +17,7 @@
 - Promessas do corpo × diff: cópias do plano ciclo 3, emendas 1/2/3/4, evidências da emenda 4, conf-emenda4, comando v2, diário `00-dev.md`, `PLANO_SAN3.md` (12 linhas), `analysis_options.yaml` (R5), os 2 testes do conserto (`bo6r11_resgate_antes_do_primeiro_servico_test.dart`, `bo6r11_diagnostico_sem_codigo_cru_test.dart`) → todos presentes no stat. O corpo diz "48 caminhos" (medido antes do conserto); o squash tem 50 = 48 + os 2 testes do conserto declarados na seção do conserto. Cópia da emenda 3 fora da lista literal declarada (A-03).
 - Veredito parcial: promessa = entrega; nada PROIBIDO; árvore do squash = head aprovado.
 ## 2. Contagens reexecutadas — CONFERE
-- `git worktree add --detach C:/Users/thiag/w-port483 7c89c73b` → HEAD `7c89c73b64d78ace…`.
+- `git worktree add --detach ~/w-port483 7c89c73b` → HEAD `7c89c73b64d78ace…`.
 - `cd mobile/flutter_app && flutter pub get` → EXIT 0 · `flutter analyze` → `No issues found! (ran in 9.6s)`, EXIT 0 · `flutter test --reporter compact` (uma vez) → **`+974: All tests passed!`**, EXIT 0, zero `-N`. Worktree sem arquivo rastreado sujo depois (`git -C w-port483 status --porcelain` vazio). Sem `flutter run`, sem `-d`, sem Docker.
 - Check-runs do SHA `7c89c73b` (`gh api …/commits/7c89c73b…/check-runs --paginate`), 1ª leitura: flutter, frontend, authority-portal, owner-portal, antivirus = success; deploy = skipped; backend e backend-postgres = **in_progress** (releitura ao fechar, abaixo).
 - Log do job flutter na main (`gh api repos/…/actions/jobs/125421835772/logs`): `Formatted 215 files (0 changed)`, `No issues found!`, **`+974: All tests passed!`** — bate com a reexecução local e com o `+974` do corpo (969 + 5 do conserto).
@@ -43,7 +43,7 @@
 - #484: `gh pr view 484 --json mergeable,mergeStateStatus` → 1ª leitura `UNKNOWN`; releitura → **`CONFLICTING` / `DIRTY`**. `git merge-tree --write-tree origin/main fb3d2575` → conflito só em `agent-orchestration/codex/log-execucao.md` e `agent-orchestration/controle/pendencias.md` (registro; ambos os ramos apensam a partir da mesma base `600c5040`); `PLANO_SAN3.md` auto-mescla; nenhum conflito em `src/`.
 - **RESSALVA R2:** o #484 deixou de ser mergeável sobre a nova main. Antes de inspetor/junta do B-SAN3-03, integrar `origin/main` por merge (nunca rebase/force), mantendo os dois lados nos registros e regerando o índice de pendências pelo gerador; o objeto julgado passa a ser o head integrado, com check-runs concluídos.
 ## Fechamento
-- `git worktree remove --force C:/Users/thiag/w-port483` → exit 0. `git worktree list` final: principal + `w-prsan303`/`w-san303` (B-SAN3-03); um `w-triD` em `7c89c73b` apareceu e sumiu durante a medição (de outra sessão, não deste bloco). `git status --porcelain` final: só os 3 untracked permitidos.
+- `git worktree remove --force ~/w-port483` → exit 0. `git worktree list` final: principal + `w-prsan303`/`w-san303` (B-SAN3-03); um `w-triD` em `7c89c73b` apareceu e sumiu durante a medição (de outra sessão, não deste bloco). `git status --porcelain` final: só os 3 untracked permitidos.
 - Sem commit, sem push, sem edição de arquivo rastreado.
 
 ## Veredito

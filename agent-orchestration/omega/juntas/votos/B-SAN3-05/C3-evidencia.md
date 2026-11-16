@@ -15,7 +15,7 @@ papel=C3 junta 1 B-SAN3-05 (PR 405) | identidade=guardiao-fail-closed | modelo=O
 - veredito parcial: LEGAL — objeto = 5ab037a3 (head do PR, 7/7 check-runs concluidos e verdes), inspetor LIBERADO COM RESSALVA.
 
 ## 22:43Z — terreno proprio
-- cmd: `git worktree add --detach C:/Users/AMP/w-j05c3 5ab037a3...` -> HEAD 5ab037a3, status 0; `npm ci` -> added 326, ec=0; `fsutil reparsepoint query node_modules` -> nao e ponto de nova analise (sem junction); `DATABASE_URL=<inalcancavel> npx prisma generate` ec=0. Node v20.19.5 (linha 20, forma do §8).
+- cmd: `git worktree add --detach ~/w-j05c3 5ab037a3...` -> HEAD 5ab037a3, status 0; `npm ci` -> added 326, ec=0; `fsutil reparsepoint query node_modules` -> nao e ponto de nova analise (sem junction); `DATABASE_URL=<inalcancavel> npx prisma generate` ec=0. Node v20.19.5 (linha 20, forma do §8).
 
 ## 22:46Z — Item C3(1) RATCHET — parte A: gerador do head, congelado, diff contra as 53 do origin/main
 - cmd: `tr -d '\r' < scripts/san3-05-acessos-de-plataforma.mjs | md5sum` -> 81d9259571391eded68255391a99fb61 (= Apendice A, §2.2(c)/§14). 353 linhas.
@@ -130,8 +130,8 @@ papel=C3 junta 1 B-SAN3-05 (PR 405) | identidade=guardiao-fail-closed | modelo=O
 - veredito parcial C3(3): **VERDE** — os 6 sitios herdam contexto (5 por leitura com linha, 2 deles medidos por sonda), o runner e withTenantRls em toda construcao de producao, os 2 jobs somam sob o papel. Nenhum achado `dentro-do-bloco`; 1 nota pre-existente (default `work()` de 2026-06-07) e 1 nota de texto do plano (§0.4).
 
 ## 23:22Z — limpeza e transparencia
-- Containers/redes/volumes: as 2 rodadas (c3j05-26edaf, c3j05b-…) derrubaram tudo no trap (`TEARDOWN: containers=0 redes=0 volume=removido(…) arvore=removida ec=0` nas duas); `docker ps -a | grep -c c3j05` -> 0; `docker network ls | grep -c c3j05` -> 0; `ls -d C:/Users/AMP/t-c3j05*` -> 0. Base viva (erp-postgres 5432, erp-redis 6379) nunca recebeu comando; nenhuma porta publicada no host.
-- Worktree: `git worktree remove --force C:/Users/AMP/w-j05c3` (da arvore principal) -> ec=0; `ls` -> inexistente; `git worktree list | grep -ic w-j05c3` -> 0. Antes: status 0 (todas as mutacoes de arvore revertidas e conferidas); processos com `w-j05c3`/`c3j05` no CommandLine: so o proprio shell da sonda (0 meus vivos).
+- Containers/redes/volumes: as 2 rodadas (c3j05-26edaf, c3j05b-…) derrubaram tudo no trap (`TEARDOWN: containers=0 redes=0 volume=removido(…) arvore=removida ec=0` nas duas); `docker ps -a | grep -c c3j05` -> 0; `docker network ls | grep -c c3j05` -> 0; `ls -d ~/t-c3j05*` -> 0. Base viva (erp-postgres 5432, erp-redis 6379) nunca recebeu comando; nenhuma porta publicada no host.
+- Worktree: `git worktree remove --force ~/w-j05c3` (da arvore principal) -> ec=0; `ls` -> inexistente; `git worktree list | grep -ic w-j05c3` -> 0. Antes: status 0 (todas as mutacoes de arvore revertidas e conferidas); processos com `w-j05c3`/`c3j05` no CommandLine: so o proprio shell da sonda (0 meus vivos).
 - Scratchpad: removidos pelo nome `scratchpad/c3/` (20 MB: formas, runners, logs, TAPs) e `scratchpad/c3-npmci.log`, `c3-gen.log`. Nada de outra sessao tocado. Disco 7,8 GB livres no fim (8,0 no inicio).
 - Transparencia: ao gravar o item 3 reexecutei por engano o script de atualizacao do voto do item 2, que duplicou C3-F3/C3-F1b e o trecho "Forma propria nº2"; reparado no mesmo minuto por script que remove as duplicatas por id (antes `C3-F1,C3-F2,C3-F3,C3-F1b,C3-F3,C3-F1b` -> depois `C3-F1,C3-F2,C3-F3,C3-F1b`). Nenhum conteudo medido mudou. Nao commitei; escrevi so C3-evidencia.md e C3-voto.json.
 

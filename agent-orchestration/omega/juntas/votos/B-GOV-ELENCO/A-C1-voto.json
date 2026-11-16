@@ -96,7 +96,7 @@
     "autocrlf": "true (global, sem override local nem de sistema)",
     "so": "Windows 11 Pro 10.0.22631",
     "shell": "Git Bash POSIX",
-    "worktree": "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco",
+    "worktree": "~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco",
     "arvore_principal_lida": false,
     "arvore_limpa_no_inicio": true,
     "N_execucoes_por_estado": 1,

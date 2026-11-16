@@ -147,7 +147,7 @@
     "redis://127.0.0.1:56444 (j-bsan304a-c2-redis)",
     "http://127.0.0.1:56447/api/v1 (API do objeto) · http://127.0.0.1:56448/api/v1 (API do head-base)"
   ],
-  "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-04a/C2-coordenador-de-acessos-evidencia.md",
+  "evidencia": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-04a/C2-coordenador-de-acessos-evidencia.md",
   "limpeza": {
     "containers": "docker rm -f j-bsan304a-c2-pg j-bsan304a-c2-redis -> removidos (0 com esse nome em docker ps -a); com eles as bases i2_prov, i2_seed, i2_base e as c2_* da 1a instancia",
     "api_desta_instancia": "as 2 APIs que subi (:56447 objeto, :56448/:56449 base) encerradas por taskkill /T das arvores que eu criei (PIDs 10576->18588, 22356->10092)",

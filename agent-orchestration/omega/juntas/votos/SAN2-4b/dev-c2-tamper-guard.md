@@ -15,7 +15,7 @@
 
 | Item | Valor conferido por execução |
 |---|---|
-| Worktree | `c:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\san2-r` |
+| Worktree | `~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\san2-r` |
 | Branch | `fix/san2-4b-corrigir-arnes` |
 | HEAD na abertura | `fca131adf84820503f57cd2383876222aa091cf7` (**nenhum commit** foi feito pela C1 — por mandato) |
 | `git status --short` na abertura | ` M src/modules/authority/authority-password.ts` (a **C1**, do antecessor) · `?? …/votos/SAN2-4b/` · `?? …/planos/SAN2-4b-plano.md` |

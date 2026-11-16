@@ -16,7 +16,7 @@ papel: dev de KPI e registro do B-SAN3-09 (PR 400) | identidade: dev-kpi-b-san3-
 - precedente de forma (kpis-history.md da main l.2715, #390 pre-merge): npm test com Postgres+Redis DESCARTAVEIS proprios, prisma migrate deploy, value=pass, total=tests (inclui skip).
 
 ## 16:13Z — terreno
-- worktree: `git worktree add --detach C:/Users/AMP/w-k400 01f1da3b49b3...` → HEAD 01f1da3b, status limpo.
+- worktree: `git worktree add --detach ~/w-k400 01f1da3b49b3...` → HEAD 01f1da3b, status limpo.
 - `npm ci --no-audit --no-fund` proprio → "added 326 packages", ec=0; `dir /AL node_modules` → 0 junction/symlink.
 - porta livre provada: `netstat -ano | grep :55409` e `:55410` → 0 linhas antes de subir.
 - Postgres descartavel: container `dev-kpi-k400-pg` (postgres:16, PostgreSQL 16.14) em 127.0.0.1:55409, banco novo `erp_k400`; Redis descartavel: `dev-kpi-k400-redis` (redis:7) em 127.0.0.1:55410 (PONG). Base viva erp-postgres 5432 / erp-redis 6379 nao recebeu comando.
@@ -82,11 +82,11 @@ papel: dev de KPI e registro do B-SAN3-09 (PR 400) | identidade: dev-kpi-b-san3-
 - `git diff --cached --check` em linha propria (trava `|| exit 1`) → ec=0; commit local em Conventional Commits, sem linha de atribuicao: **033739b6a6ed24d05112d656b8ad00eb2532066f** `chore(kpi): B-SAN3-09 — recontagem do KPI contra a main integrada (8ee10bd2)` (pai 01f1da3b). md5 dos 4 blobs do commit == md5 dos arquivos sobre os quais a suite/guards rodaram (app.js c4b6adec…, history.json 1d356695…, history.md 39836d0c…, latest.json 52bc4fe2…).
 - campos finais: blocks_completed **171** (= main 170 + 1); backend_tests **3086/3088** (execucao real); frontend_smoke_tests 1214/1214 CARREGADO com nota (§C3.3, `git diff --name-only origin/main...HEAD -- frontend mobile` vazio); flutter_tests 864/864 CARREGADO com nota; mvp_demo 99 / mvp_vendavel 88 intocados (§C3.4, item 43 so fecha com o ato do dono); release.pr 400, merge_commit/approved_head **null** (§C3.5); history 167 = 166 da main + B-SAN3-09 por ultimo; linha/secao `## 2026-10-04 — B-SAN3-09 (PR #400, recontado no pré-merge)` no kpis-history.md (l.3059).
 - backfill_note (verdadeira contra o history da main real): nenhum backfill devido — a ultima entrada da origin/main 8ee10bd2 e a do #402 com merge_commit 3e40a256… e approved_head cdf370dc…, pagos pelo #403 (f03b883f).
-- NAO empurrado (o orquestrador empurra). Worktree C:/Users/AMP/w-k400 de pe, detached em 033739b6, status limpo.
+- NAO empurrado (o orquestrador empurra). Worktree ~/w-k400 de pe, detached em 033739b6, status limpo.
 
 ## 16:49Z — limpeza e fechamento
 - removidos: containers dev-kpi-k400-node, dev-kpi-k400-pg, dev-kpi-k400-redis (`docker rm -f`), rede k400-net, imagem node:20-bookworm-slim; `docker ps -a | grep -c k400` → 0; erp-postgres/erp-redis intactos (Up 7 days). Processos com w-k400 na linha de comando: 0.
-- mantido: worktree C:/Users/AMP/w-k400 (detached 033739b6, node_modules proprio 414 MB) ate o orquestrador empurrar; depois remover pelo nome com 0 processo vivo.
+- mantido: worktree ~/w-k400 (detached 033739b6, node_modules proprio 414 MB) ate o orquestrador empurrar; depois remover pelo nome com 0 processo vivo.
 - disco: 7.2G livre no inicio → 4.7G agora. Parte e o node_modules do w-k400 (0,4 GB); o resto e provavelmente o docker_data.vhdx, que cresceu com a imagem e o `npm ci` dentro do container e NAO encolhe com `docker image rm` (armadilha documentada em docs/limpeza-de-disco.md; compactar exige `wsl --shutdown`, fora do meu mandato porque derruba erp-postgres/erp-redis e a matriz w-e5). Nao medi o vhdx diretamente — hipotese.
 - ACHADO para o orquestrador (nao corrigido — fora de Kpis/**; escopo dentro-do-bloco, gravidade a classificar pela junta, provavelmente nota): `tests/san3-09-bootstrap-platform-admin-db.test.ts` so executa em Linux — l.75-77/352-354/515-517 rodam `node --import tsx/esm node_modules/.bin/prisma` (no Windows e o shim sh do npm → SyntaxError) e l.121/359/522 `spawnSync("npm", …)` sem shell (status null no Windows). Na CI (ubuntu) passa 11/11; no Windows do dono o T2 falha no 1o subteste e a suite cai para 3079 testes.
 - tambem notado: `release.block`/`title` mantidos do ramo; `recent` (as_of 2026-09-20) e demais secoes iguais as da main — nenhuma dimensao nova no painel.

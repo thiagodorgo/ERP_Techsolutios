@@ -16,7 +16,7 @@
 ## Execução (gerado pelo script)
 
 - id: 20261010-214853Z-revisar-pr-416 · início 2026-10-10T21:48:54Z · fim 2026-10-10T21:49:51Z
-- worktree: C:\Users\AMP\w-ag-20261010-214853 · removido: True · npm ci: False
+- worktree: ~/w-ag-20261010-214853 · removido: True · npm ci: False
 - agente 2026.10.10 · SDK anthropic 1.13.0
 
 ## Conta e cobrança (gerado pelo script)

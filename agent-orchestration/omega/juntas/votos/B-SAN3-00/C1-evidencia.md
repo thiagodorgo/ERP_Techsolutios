@@ -1,7 +1,7 @@
 # C1 — `validador-mestre` — evidência executada (junta do `B-SAN3-00`, PR #392, objeto `7822deaf`)
 
 - **Modelo:** `claude-opus-5[1m]` · **corpo aplicado:** lido da ref julgada (`git show 7822deaf:.claude/agents/validador-mestre.md`), md5 EOL-neutro `804d89f01d920ed72c23e5e24c062501`, idêntico ao corpo da sessão.
-- **Worktree próprio:** `C:/Users/AMP/w-j-san300-c1` (detached @ `7822deaf`, caminho curto **conferido na saída de `git worktree list`** — não saiu o prefixo anômalo `C:/c/`). Sem junction, sem `npm ci`, **sem contêiner**, base viva sem um comando.
+- **Worktree próprio:** `~/w-j-san300-c1` (detached @ `7822deaf`, caminho curto **conferido na saída de `git worktree list`** — não saiu o prefixo anômalo `C:/c/`). Sem junction, sem `npm ci`, **sem contêiner**, base viva sem um comando.
 - **Forma:** git-bash com `export MSYS_NO_PATHCONV=1`, exit code por variável, conteúdo lido por `git show <ref>:<caminho>` e comparado por **md5 EOL-neutro** (a árvore é `i/lf w/crlf` sob `core.autocrlf=true`; `diff` cru mente).
 - **VEREDITO: REPROVADO** — 2 `bloqueia`, 3 `ajuste`, 3 `nota`.
 
@@ -228,7 +228,7 @@ decisão do dono — classificação correta. `pendencias.md` abre `P-SAN3-00-RE
 
 ## E9. Limpeza (§C5) e resíduo alheio
 
-- **Criei:** um worktree detached, `C:/Users/AMP/w-j-san300-c1` (caminho curto **conferido**). Sem `npm ci`, **sem
+- **Criei:** um worktree detached, `~/w-j-san300-c1` (caminho curto **conferido**). Sem `npm ci`, **sem
   contêiner**, sem junction. A base viva **não recebeu um comando**.
 - **Não escrevi** na árvore principal, nem no worktree do dev (`san300` segue em `7822deaf`), nem em worktree alheio.
   A única mutação foi no **meu** `.gitignore`, provada nos dois sentidos e restaurada.
