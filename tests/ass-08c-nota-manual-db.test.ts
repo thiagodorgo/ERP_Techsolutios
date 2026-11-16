@@ -476,6 +476,39 @@ if (!connectionString) {
     assert.deepEqual((await issueLines(f.statementId)).map((row) => row.status), ["SENT"]);
   });
 
+  // ============================================================== F9a · o seq seguinte no caminho MANUAL (Emenda 3, item 3)
+  test("RE1-man: baixa manual que quita (seq 1, nota autorizada), estorno manual TOTAL com confirmação (nota cancelada), nova baixa manual → 1 invoice_issue seq 2 VIVA → despacho → 1 POST com ref = <id>:2", async () => {
+    const f = await seedClosed("re1man");
+    const manual = async () => (await H.m.runtime.createPrismaStatementRuntime()).service;
+    const first = await (await manual()).recordManualPayment({ tenantId: f.tenantId, statementId: f.statementId, amountCents: 10_000, method: "pix", note: null, actorId: "usr_platform", now: new Date() });
+    assert.deepEqual((await issueLines(f.statementId)).map((row) => row.idempotency_key), [`invoice_issue:${f.statementId}:1`], "a 1ª época: seq 1");
+    await dispatch(f.tenantId);
+    assert.equal((await invoiceWebhook(f.statementId, 1)).event.status, "processed");
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "authorized"]], "nota 1 autorizada");
+    // Estorno manual TOTAL, com a confirmação do cuidado 1: a linha NOTA-ESTORNO do serviço grava o `invoice_cancel`; o despacho cancela e o
+    // webhook conclui.
+    const reversed = await (await manual()).reverseManualPayment({ tenantId: f.tenantId, paymentId: first.payment.id, reason: "lançado errado", actorId: "usr_platform", now: new Date(), confirmInvoiceCancel: true });
+    assert.equal((await statementRow(f.statementId)).status, "closed");
+    await dispatch(f.tenantId);
+    await invoiceWebhook(f.statementId, 1);
+    // A nova baixa manual que quita: a época nova, o seq seguinte.
+    await (await manual()).recordManualPayment({ tenantId: f.tenantId, statementId: f.statementId, amountCents: 10_000, method: "pix", note: null, actorId: "usr_platform", now: new Date() });
+    assert.equal((await statementRow(f.statementId)).status, "paid");
+    assert.deepEqual(
+      (await issueLines(f.statementId)).map((row) => [row.idempotency_key, row.status, row.skip_reason]),
+      [
+        [`invoice_issue:${f.statementId}:1`, "SENT", null],
+        [`invoice_issue:${f.statementId}:2`, "PENDING", null],
+      ],
+      "1 invoice_issue seq 2 VIVA, ao lado da seq 1 terminal",
+    );
+    const before = postsWithRef(`${f.statementId}:2`);
+    await dispatch(f.tenantId);
+    assert.equal(postsWithRef(`${f.statementId}:2`) - before, 1, "1 POST com ref = <id>:2");
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "cancelled"], [2, "pending"]], "a nota da 2ª época (a 1ª cancelada)");
+    assert.equal(reversed.invoice, "cancel_requested");
+  });
+
   // ============================================================== F8 · o poll da nota POR ORGANIZAÇÃO
   /** As dependências dos polls sobre os repositórios Prisma do papel, recortadas às organizações do caso. */
   function pollDeps(tenantIds: readonly string[], now: Date) {

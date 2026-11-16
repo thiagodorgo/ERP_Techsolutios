@@ -18,7 +18,7 @@ import { INVOICE_BACKFILL_CUTOFF } from "../invoices/invoice-intent-rules.js";
 import { eagerPlan, refechamentoPlan, reopenLiveCheck } from "./statement-charge-lines.js";
 import type { StatementResolveOptions, StatementVersionPin } from "./statement.inputs.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
-import { writeInvoiceIssueIntentInTx, type InvoiceIntents } from "./statement-settlement.service.js";
+import { describeLiveInvoiceInTx, writeInvoiceCancelIntentInTx, writeInvoiceIssueIntentInTx, type InvoiceIntents } from "./statement-settlement.service.js";
 import {
   StatementError,
   type CreditReason,
@@ -76,6 +76,9 @@ export type InvoiceIntentsResolver = { resolve(): Promise<InvoiceIntents> };
 
 /** B-ASS-08c1c (plano §4.0 item 5): o 4º parâmetro do serviço, um OBJETO de opções. O 08c2 acrescenta `invoiceIntents`: sem ele
  * (os testes que constroem o serviço sem canal), nenhuma intenção de nota é gravada pelo serviço. */
+/** B-ASS-08c2 (Emenda 1 §2.2): o que o estorno manual fez com a nota viva (o `data.invoice` da rota). */
+export type ManualReversalInvoice = "cancel_requested" | "cancel_in_progress" | "kept_partial_reversal" | "none";
+
 export type StatementChannel = { readonly closingCharge?: ClosingChargeResolver; readonly invoiceIntents?: InvoiceIntentsResolver };
 
 export type CloseOutcome =
@@ -366,9 +369,21 @@ export class StatementService {
     return result;
   }
 
-  /** Estorno manual (regra 11): só `source = manual`; motivo obrigatório; `paid` volta a `closed`. */
-  async reverseManualPayment(input: { readonly tenantId: string; readonly paymentId: string; readonly reason: string; readonly actorId: string; readonly now: Date }) {
+  /** Estorno manual (regra 11): só `source = manual`; motivo obrigatório; `paid` volta a `closed`. B-ASS-08c2 (Emenda 1 §2.2,
+   * o §4.7 novo): a nota viva é decidida só pelo que SOBROU pago depois do estorno, sem guard de status do demonstrativo. Devolveu
+   * tudo → a intenção de cancelar a nota no MESMO `tx` (com a confirmação do cuidado 1; sem ela, 422 e o estorno desfaz);
+   * devolveu só uma parte → nenhuma intenção, a nota fica (o backlog a mostra como `live_on_unpaid`). */
+  async reverseManualPayment(input: {
+    readonly tenantId: string;
+    readonly paymentId: string;
+    readonly reason: string;
+    readonly actorId: string;
+    readonly now: Date;
+    readonly confirmInvoiceCancel?: boolean;
+  }): Promise<{ statement: SubscriptionStatement; payment: StatementPayment; invoice: ManualReversalInvoice }> {
     const reason = requireReason(input.reason, "reason");
+    // B-ASS-08c2 (§4.7): para onde vai a intenção de nota, ANTES da transação (nunca rede nem cofre dentro dela).
+    const intents = await this.channel.invoiceIntents?.resolve();
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
       const payment = await tx.lockPayment(input.paymentId);
       if (!payment) throw new StatementError(404, "payment_not_found", "Payment not found.");
@@ -395,14 +410,26 @@ export class StatementService {
         status: statement.status === "paid" && paidCents < statement.totalCents ? "closed" : statement.status,
         paidAt: paidCents >= statement.totalCents ? statement.paidAt : null,
       });
+      // Sem `intents` (o serviço sem canal), nada é lido nem gravado.
+      let invoice: ManualReversalInvoice = "none";
+      if (intents) {
+        const devolveuTudo = savedStatement.paidCents === 0; // [NOTA-PARCIAL]
+        if (devolveuTudo) {
+          const outcome = await writeInvoiceCancelIntentInTx(tx, intents, { statementId: savedStatement.id, tenantId: input.tenantId, now: input.now, confirm: input.confirmInvoiceCancel === true }); // [NOTA-ESTORNO]
+          if (outcome.kind === "confirmation_required") throw new StatementError(422, "invoice_cancel_confirmation_required", "The live invoice will be cancelled; confirm to proceed."); // [NOTA-CONFIRMA]
+          invoice = outcome.kind === "enqueued" ? "cancel_requested" : outcome.kind === "in_progress" ? "cancel_in_progress" : "none";
+        } else {
+          invoice = await describeLiveInvoiceInTx(tx, savedStatement.id);
+        }
+      }
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
         action: "subscription_statement.payment_reversed",
         entityId: savedStatement.id,
-        metadata: { paymentId: savedPayment.id, status: savedStatement.status },
+        metadata: { paymentId: savedPayment.id, status: savedStatement.status, invoice },
       });
-      return { statement: savedStatement, payment: savedPayment };
+      return { statement: savedStatement, payment: savedPayment, invoice };
     });
     return result;
   }
