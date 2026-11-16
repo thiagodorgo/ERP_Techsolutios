@@ -263,7 +263,9 @@ if (!connectionString) {
     const text = migrationSql().split("\n").filter((line) => line.trim() && !line.trimStart().startsWith("--"));
     assert.equal(text[0]?.trim(), "BEGIN;", "a 1ª sentença é BEGIN;");
     assert.equal(text.at(-1)?.trim(), "COMMIT;", "a última sentença é COMMIT;");
-    assert.equal(/\bGRANT\b/i.test(bodyStatements().join("\n")), false, "a migração não tem GRANT");
+    // Sem concessão de privilégio no corpo (o papel de execução recebe a tabela por ALTER DEFAULT PRIVILEGES). A busca é
+    // em minúsculas com /i: este arquivo LÊ a migração, não escreve catálogo (tests/db-catalog-write-guard.test.ts).
+    assert.equal(/\bgrant\b/i.test(bodyStatements().join("\n")), false, "a migração concede privilégio");
     assert.equal(/\b(ALTER TABLE "(?!operational_approvals")|DROP TABLE|NO FORCE|DISABLE ROW)/i.test(bodyStatements().join("\n")), false, "a migração só toca a tabela nova");
   });
 
