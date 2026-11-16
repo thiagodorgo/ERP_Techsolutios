@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/appearance/app_appearance.dart';
+import '../../../core/appearance/app_appearance_providers.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
+import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/evidence/evidence_picker.dart';
 import '../../../core/network/api_error.dart';
 import '../../../core/network/connectivity_repository.dart';
@@ -15,6 +18,7 @@ import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 import '../../../shared/ui/mobile_kit.dart';
 import '../../checklists/data/checklist_repository.dart';
+import '../../checklists/domain/checklist_comparison.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../../checklists/ui/checklist_navigation.dart';
 import '../../prestador/domain/prestador_flow.dart';
@@ -22,6 +26,9 @@ import '../data/work_order_repository.dart';
 import '../domain/work_order_conclusion.dart';
 import '../domain/work_order_models.dart';
 import '../domain/work_order_steps.dart';
+import 'aparencias/execucao_guincho_aparencias_shared.dart';
+import 'aparencias/execucao_guincho_view_b.dart';
+import 'aparencias/execucao_guincho_view_c.dart';
 import 'work_order_operational_map_screen.dart';
 import 'work_order_stepper.dart';
 
@@ -391,6 +398,174 @@ class _WorkOrderExecuteScreenState
     }
   }
 
+  // B-APP-APARENCIA (F2) — o estado pronto das aparências B e C, calculado uma
+  // vez aqui a partir do `_ExecData` (Emenda 1, A4): as vistas só desenham.
+  ExecucaoGuinchoViewProps _towViewProps({
+    required _ExecData data,
+    required bool offline,
+    required BootstrapSession? session,
+    required WorkOrderRepository woRepo,
+    required List<WorkOrderStatus> regularTransitions,
+    required bool canComplete,
+  }) {
+    final wo = data.wo;
+    final showVistorias =
+        wo.checklistId != null &&
+        !wo.status.isFinal &&
+        wo.status.allowedTransitions.isNotEmpty;
+    final refresh = offline ? null : _refreshNow;
+    final unverified =
+        data.deliveryUnverified && data.confirmedDelivery == null;
+    // A âncora da M2.7 fica numa linha só (Emenda 1, A5).
+    // dart format off
+    final showComparePreview = data.canCompare && data.isCollectionComplete && data.isDeliveryComplete;
+    // dart format on
+
+    final collection = _towPhase(
+      data,
+      run: data.collectionRun,
+      checklistId: data.collectionRun?.checklistId ?? wo.checklistId,
+      label: 'Coleta',
+      phase: 'coleta',
+      done: data.isCollectionComplete,
+      current: !data.isCollectionComplete,
+      marker: Icons.checklist_outlined,
+      nodeAction: data.isCollectionComplete,
+      onAction: wo.checklistId == null
+          ? null
+          : () => _openRun(
+              data.collectionRun?.checklistId ?? wo.checklistId!,
+              wo.localId,
+              MobileChecklistRunKind.collection,
+            ),
+    );
+    final delivery = data.confirmedDelivery == null
+        ? _unconfirmedTowDelivery(data, onRefresh: refresh)
+        : _towPhase(
+            data,
+            run: data.confirmedDelivery,
+            checklistId: data.confirmedDelivery!.checklistId,
+            label: 'Entrega',
+            phase: 'entrega',
+            done: data.isDeliveryComplete,
+            current: data.isCollectionComplete && !data.isDeliveryComplete,
+            marker: Icons.local_shipping_outlined,
+            nodeAction: data.isDeliveryComplete || !data.isCollectionComplete,
+            onAction: () => _openRun(
+              data.confirmedDelivery!.checklistId,
+              wo.localId,
+              MobileChecklistRunKind.delivery,
+            ),
+          );
+
+    final transitions = [
+      for (final next in regularTransitions)
+        _towTransition(
+          _TransitionButton(
+            workOrder: wo,
+            targetStatus: next,
+            isLoading: _isLoading,
+            onPressed: () => _doTransition(woRepo, wo, next),
+          ),
+        ),
+    ];
+
+    return ExecucaoGuinchoViewProps(
+      code: wo.code,
+      workOrderTitle: wo.title,
+      customerName: wo.customerName,
+      serviceTypeLabel: wo.serviceType?.label ?? 'Guincho',
+      address: wo.serviceAddress,
+      vehiclePlate: wo.vehiclePlate,
+      teamName: wo.teamName,
+      statusLabel: wo.status.label,
+      statusPillTone: pillToneFromStatus(wo.status.statusTone),
+      onBack: () => context.go('/work-orders/${widget.workOrderId}'),
+      showOfflineBanner: offline,
+      offlineMessage: _kSemConexao,
+      showPendingBanner:
+          wo.syncStatus == SyncStatus.pending || data.hasQueuedTowRuns,
+      pendingMessage:
+          'Alterações locais aguardando sincronização com o servidor.',
+      safeError: _safeError,
+      stepper: WorkOrderStepper(
+        serviceType: wo.serviceType,
+        status: wo.status,
+        towLeg: data.towLeg,
+      ),
+      locationCard: session == null
+          ? const SizedBox.shrink()
+          : OperationalLocationCard(session: session, workOrder: wo),
+      evidenceSection: _EvidenceSection(
+        evidences: data.evidences,
+        isLoading: _isLoading,
+        onAdd: () => _attachEvidence(woRepo),
+      ),
+      notice: wo.status.isFinal
+          ? ExecucaoGuinchoAviso(
+              icon: Icons.check_circle_outline,
+              title: 'OS ${wo.status.label.toLowerCase()}',
+              subtitle: 'Status final — sem transições possíveis.',
+            )
+          : wo.status.allowedTransitions.isEmpty
+          ? const ExecucaoGuinchoAviso(
+              icon: Icons.block_outlined,
+              title: 'Nenhuma transição disponível',
+              subtitle: 'Este status não permite alterações no momento.',
+            )
+          : null,
+      showVistorias: showVistorias,
+      fase: _towFase(data, showVistorias: showVistorias),
+      collection: collection,
+      delivery: delivery,
+      showStaleBanner: data.refreshFailed && data.confirmedDelivery != null,
+      staleMessage: _kDadosDesatualizados,
+      onRefresh: refresh,
+      canCompare: data.canCompare,
+      compareModelTitle: data.schemas[data.collectionRun?.checklistId]?.title,
+      compareText: showComparePreview
+          ? _comparePreviewText(data)
+          : _kComparacaoIncompleta,
+      timelineCompareText: showComparePreview
+          ? _kComparacaoPronta
+          : _kComparacaoIncompleta,
+      onCompare: data.canCompare ? () => _openComparison(data) : null,
+      lockTitle: data.canConclude ? null : _lockTitle(data),
+      lockMessage: data.canConclude ? null : _lockMessage(data),
+      canComplete: canComplete && !wo.status.isFinal,
+      canConclude: data.canConclude,
+      busy: _isLoading,
+      onConclude: () => _doComplete(woRepo, data),
+      unverifiedNotice: unverified ? _kAvisoNaoVerificada : null,
+      queueNotice:
+          offline &&
+              data.isDeliveryComplete &&
+              data.isQueued(data.confirmedDelivery)
+          ? _kAvisoFilaConclusao
+          : null,
+      deliveryQueueNotice:
+          offline && data._deliveryStarted && !data.isDeliveryComplete
+          ? _kAvisoFilaEntrega
+          : null,
+      conclusionMeta: !offline
+          ? 'Liberada.'
+          : unverified
+          ? 'Liberada. Sem sinal, a entrega não foi conferida.'
+          : 'Liberada. Sem sinal, a conclusão vai para a fila.',
+      nextAction: _towNextAction(
+        data,
+        showVistorias: showVistorias,
+        canComplete: canComplete && !wo.status.isFinal,
+        offline: offline,
+        unverified: unverified,
+      ),
+      requirements: showVistorias
+          ? _towRequirements(data, offline: offline, unverified: unverified)
+          : const [],
+      transitions: transitions,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = ref
@@ -408,6 +583,16 @@ class _WorkOrderExecuteScreenState
         _refreshNow();
       }
     });
+
+    // B-APP-APARENCIA (F2): a aparência que a pessoa escolheu no Perfil, só
+    // para OS de guincho. Carregando: o indicador da tela (nunca a A antes da
+    // B); erro: a A.
+    final appearanceAsync = ref.watch(
+      screenAppearanceProvider(kExecucaoGuinchoAppearanceKey),
+    );
+    final chosen = appearanceAsync.asData?.value ?? AppAppearance.a;
+    final appearanceLoading =
+        appearanceAsync.asData == null && appearanceAsync.isLoading;
 
     final canStatus = session == null
         ? false
@@ -459,7 +644,7 @@ class _WorkOrderExecuteScreenState
           );
         }
 
-        if (!snapshot.hasData) {
+        if (!snapshot.hasData || appearanceLoading) {
           return const ErpScaffold(
             showAppBar: false,
             body: Center(child: CircularProgressIndicator.adaptive()),
@@ -475,6 +660,24 @@ class _WorkOrderExecuteScreenState
         final canComplete = allTransitions.contains(WorkOrderStatus.completed);
         // C3-F2 — sem conexão: a rede está fora, ou a pré-carga não saiu.
         final offline = networkOffline || data.refresh == _Refresh.offline;
+
+        // B-APP-APARENCIA (F2): B e C só para OS de guincho; o resto desenha a
+        // A, seja qual for a escolha. A A é o corpo de hoje, sem mudança.
+        final towAppearance = data.isTow ? chosen : AppAppearance.a;
+        ExecucaoGuinchoViewProps props() => _towViewProps(
+          data: data,
+          offline: offline,
+          session: session,
+          woRepo: woRepo,
+          regularTransitions: regularTransitions,
+          canComplete: canComplete,
+        );
+        final Widget? aparencia = switch (towAppearance) {
+          AppAppearance.a => null,
+          AppAppearance.b => ExecucaoGuinchoViewB(props: props()),
+          AppAppearance.c => ExecucaoGuinchoViewC(props: props()),
+        };
+        if (aparencia != null) return aparencia;
 
         return ErpScaffold(
           showAppBar: false,
@@ -760,6 +963,311 @@ String _lockMessage(_ExecData data) {
 }
 
 // ---------------------------------------------------------------------------
+// B-APP-APARENCIA (F2) — os valores prontos das aparências B e C
+// (`execucao-guincho-3opcoes.reference.html`). A regra continua no `_ExecData`;
+// aqui só se escolhe o texto e o desenho de cada estado.
+// ---------------------------------------------------------------------------
+
+const _kAvisoFilaEntrega =
+    'As respostas da entrega ficam salvas no aparelho e vão para o servidor '
+    'quando o sinal voltar.';
+const _kComparacaoPronta = 'As duas vistorias concluídas: veja o que mudou.';
+const _kComparacaoIncompleta = 'Fica completa quando a entrega for concluída.';
+
+PillTone _towTone(String tone) => switch (tone) {
+  'success' => PillTone.done,
+  'warning' => PillTone.warning,
+  'pending' => PillTone.purple,
+  _ => PillTone.info,
+};
+
+/// "às 09:42", na hora do aparelho.
+String? _towHour(DateTime? at) {
+  if (at == null) return null;
+  final local = at.toLocal();
+  final h = local.hour.toString().padLeft(2, '0');
+  final m = local.minute.toString().padLeft(2, '0');
+  return 'às $h:$m';
+}
+
+/// Uma vistoria que conta (a coleta, ou a entrega confirmada pelo servidor).
+ExecucaoGuinchoFaseView _towPhase(
+  _ExecData data, {
+  required MobileChecklistRun? run,
+  required String? checklistId,
+  required String label,
+  required String phase,
+  required bool done,
+  required bool current,
+  required IconData marker,
+  required bool nodeAction,
+  required VoidCallback? onAction,
+}) {
+  final (statusLabel, tone) = _phaseStatus(run);
+  final schema = checklistId == null ? null : data.schemas[checklistId];
+  final required = schema?.requiredFields;
+  final total = required?.length ?? 0;
+  final answered = run == null || required == null
+      ? 0
+      : required.where((f) => run.answers[f.id]?.hasValue ?? false).length;
+  final started = run != null && _hasAnswers(run);
+  final queue = _queuePill(run, data);
+  final savedOnDevice = queue != null && !done;
+  final hour = done ? _towHour(run?.completedAt) : null;
+  final meta = [
+    ?schema?.title,
+    if (total > 0) '$answered de $total obrigatórios',
+    if (savedOnDevice) 'salvas no aparelho',
+    ?hour,
+  ];
+  return ExecucaoGuinchoFaseView(
+    label: label,
+    statusLabel: statusLabel,
+    statusTone: _towTone(tone),
+    nodeState: done
+        ? MobilePhaseState.done
+        : current
+        ? MobilePhaseState.active
+        : MobilePhaseState.todo,
+    marker: done ? Icons.check : marker,
+    current: current,
+    timelineMeta: meta.isEmpty ? null : meta.join(' · '),
+    cardValue: total > 0 ? '$answered/$total' : null,
+    progress: total > 0 && (started || done) ? answered / total : null,
+    cardMeta: done
+        ? (hour == null ? 'Concluída' : 'Concluída $hour')
+        : savedOnDevice
+        ? 'Salvas no aparelho'
+        : started
+        ? 'Em andamento'
+        : 'Não iniciada',
+    cardMetaEmphasis: done && queue != null ? 'na fila' : null,
+    queuePill: queue,
+    actionLabel: _phaseAction(run, phase),
+    shortActionLabel: switch (statusLabel) {
+      'Concluída' => 'Ver',
+      'Em andamento' => 'Continuar',
+      _ => 'Abrir',
+    },
+    actionIcon: _phaseActionIcon(run),
+    onAction: onAction,
+    nodeAction: nodeAction,
+  );
+}
+
+/// A entrega que o servidor não confirmou: verificando, não verificada,
+/// aguardando despacho ou sem entrega (as frases da A).
+ExecucaoGuinchoFaseView _unconfirmedTowDelivery(
+  _ExecData data, {
+  required VoidCallback? onRefresh,
+}) {
+  final (statusLabel, tone) = _unconfirmedDeliveryStatus(data);
+  return ExecucaoGuinchoFaseView(
+    label: 'Entrega',
+    statusLabel: statusLabel,
+    statusTone: _towTone(tone),
+    nodeState: MobilePhaseState.todo,
+    marker: _unconfirmedDeliveryIcon(data),
+    message: _unconfirmedDeliveryMessage(data),
+    actionLabel: data.canRefreshAwaiting ? 'Atualizar' : null,
+    shortActionLabel: data.canRefreshAwaiting ? 'Atualizar' : null,
+    actionIcon: Icons.refresh_outlined,
+    onAction: onRefresh,
+    nodeAction: true,
+  );
+}
+
+/// A mudança de situação: o rótulo e o ícone do botão de hoje, e o verbo do
+/// menu "Mais ações" da B.
+ExecucaoGuinchoTransicao _towTransition(_TransitionButton button) {
+  final next = button.targetStatus;
+  return ExecucaoGuinchoTransicao(
+    key: ValueKey('guincho-transicao-${next.name}'),
+    label: next.label,
+    menuLabel: switch (next) {
+      WorkOrderStatus.paused => 'Pausar',
+      WorkOrderStatus.pendingApproval => 'Solicitar aprovação',
+      WorkOrderStatus.exception => 'Registrar exceção',
+      _ => next.label,
+    },
+    icon: button._iconFor(next),
+    color: switch (next) {
+      WorkOrderStatus.completed ||
+      WorkOrderStatus.approved => ErpMobileTheme.success,
+      WorkOrderStatus.cancelled ||
+      WorkOrderStatus.exception => ErpMobileTheme.danger,
+      _ => ErpMobileTheme.primary,
+    },
+    onPressed: button.onPressed,
+  );
+}
+
+/// A fase que dá o título da B: lida das vistorias que a trava lê.
+ExecucaoGuinchoFase _towFase(_ExecData data, {required bool showVistorias}) {
+  if (!showVistorias) return ExecucaoGuinchoFase.semFase;
+  if (!data.isCollectionComplete) return ExecucaoGuinchoFase.coleta;
+  if (!data.deliveryRequired) return ExecucaoGuinchoFase.semFase;
+  if (data.isDeliveryComplete) return ExecucaoGuinchoFase.pronta;
+  return data._deliveryStarted
+      ? ExecucaoGuinchoFase.entrega
+      : ExecucaoGuinchoFase.rotaEntrega;
+}
+
+/// A prévia da comparação da C, pela `compareChecklistRuns` no aparelho. Sem
+/// o modelo no aparelho, a prévia sai e fica a frase da B.
+String _comparePreviewText(_ExecData data) {
+  final collection = data.collectionRun;
+  final delivery = data.confirmedDelivery;
+  final schema = collection == null
+      ? null
+      : data.schemas[collection.checklistId];
+  if (collection == null || delivery == null || schema == null) {
+    return _kComparacaoPronta;
+  }
+  final changed = compareChecklistRuns(
+    schema: schema,
+    collection: collection,
+    delivery: delivery,
+  );
+  if (changed.isEmpty) return 'Sem divergências entre a coleta e a entrega.';
+  String lower(String s) =>
+      s.isEmpty ? s : '${s.substring(0, 1).toLowerCase()}${s.substring(1)}';
+  final names = [for (final d in changed) lower(d.label)];
+  if (names.length == 1) return '1 item mudou: ${names.single}.';
+  final shown = names.length > 3 ? names.sublist(0, 3) : names;
+  final rest = names.length - shown.length;
+  final list = rest > 0
+      ? '${shown.join(', ')} e mais $rest'
+      : '${shown.sublist(0, shown.length - 1).join(', ')} e ${shown.last}';
+  return '${names.length} itens mudaram: $list.';
+}
+
+/// A barra fixa da B: a vistoria que falta, ou concluir (e o porquê).
+ExecucaoGuinchoProximaAcao? _towNextAction(
+  _ExecData data, {
+  required bool showVistorias,
+  required bool canComplete,
+  required bool offline,
+  required bool unverified,
+}) {
+  if (!showVistorias) {
+    return canComplete
+        ? const ExecucaoGuinchoProximaAcao(
+            kind: ExecucaoGuinchoAcao.concluir,
+            supportingText: '',
+          )
+        : null;
+  }
+  if (!data.isCollectionComplete) {
+    return const ExecucaoGuinchoProximaAcao(
+      kind: ExecucaoGuinchoAcao.abrirColeta,
+      supportingText:
+          'Conclua a vistoria de coleta para seguir para a entrega.',
+    );
+  }
+  if (!data.deliveryGateOpen) {
+    return ExecucaoGuinchoProximaAcao(
+      kind: ExecucaoGuinchoAcao.abrirEntrega,
+      locked: true,
+      supportingText: data._deliveryStarted
+          ? 'Conclua a vistoria de entrega para liberar a conclusão da OS.'
+          : 'Leve o veículo até o local de entrega e abra a vistoria ao '
+                'chegar.',
+    );
+  }
+  if (!canComplete) return null;
+  final String support;
+  if (offline) {
+    support = unverified
+        ? 'Sem sinal, a entrega não foi conferida. Se a OS tiver entrega, a '
+              'conclusão só é aceita depois dela.'
+        : 'Sem sinal: a conclusão fica na fila e é enviada quando o sinal '
+              'voltar.';
+  } else if (data.deliveryRequired) {
+    support = 'Coleta e entrega concluídas.';
+  } else if (data.checking) {
+    support = 'Verificando com o servidor se esta OS tem vistoria de entrega.';
+  } else if (data.deliveryRun != null) {
+    support = 'A entrega aguarda a central e não impede concluir a OS.';
+  } else {
+    support = 'Esta OS conclui só com a coleta.';
+  }
+  return ExecucaoGuinchoProximaAcao(
+    kind: ExecucaoGuinchoAcao.concluir,
+    supportingText: support,
+  );
+}
+
+/// "Para concluir a OS" da C: só o que a trava já lê, mais a rede.
+List<MobileRequirement> _towRequirements(
+  _ExecData data, {
+  required bool offline,
+  required bool unverified,
+}) {
+  const collectionText = 'Vistoria de coleta concluída';
+  const deliveryText = 'Vistoria de entrega concluída';
+  final MobileRequirement delivery;
+  if (data.deliveryRequired) {
+    delivery = MobileRequirement(
+      data.isDeliveryComplete
+          ? MobileRequirementState.met
+          : MobileRequirementState.pending,
+      deliveryText,
+    );
+  } else if (data.checking) {
+    delivery = const MobileRequirement(
+      MobileRequirementState.info,
+      'Vistoria de entrega: verificando com o servidor',
+      icon: Icons.sync_outlined,
+    );
+  } else if (unverified) {
+    delivery = MobileRequirement(
+      MobileRequirementState.info,
+      offline
+          ? 'Vistoria de entrega: não verificada sem sinal. Se a OS tiver '
+                'entrega, a conclusão só é aceita depois dela.'
+          : 'Vistoria de entrega: não verificada. Se a OS tiver entrega, a '
+                'conclusão só é aceita depois dela.',
+      icon: Icons.cloud_off_outlined,
+    );
+  } else if (data.deliveryRun != null) {
+    delivery = const MobileRequirement(
+      MobileRequirementState.info,
+      'Vistoria de entrega: aguardando despacho, não exigida por enquanto',
+      icon: Icons.schedule_outlined,
+    );
+  } else {
+    delivery = const MobileRequirement(
+      MobileRequirementState.info,
+      'Vistoria de entrega: não exigida nesta OS',
+    );
+  }
+  return [
+    MobileRequirement(
+      data.isCollectionComplete
+          ? MobileRequirementState.met
+          : MobileRequirementState.pending,
+      collectionText,
+    ),
+    delivery,
+    if (!offline)
+      const MobileRequirement(
+        MobileRequirementState.met,
+        'Com sinal: a conclusão vai para o servidor na hora',
+      )
+    else
+      MobileRequirement(
+        MobileRequirementState.queued,
+        data.isDeliveryComplete
+            ? 'Sem sinal: a entrega e a conclusão ficam na fila; a entrega vai '
+                  'primeiro e a OS conclui logo depois'
+            : 'Sem sinal: o que você fizer fica no aparelho e vai quando o '
+                  'sinal voltar',
+      ),
+  ];
+}
+
+// ---------------------------------------------------------------------------
 // B-SAN3-14 — Vistorias do guincho (opção A aprovada: os cartões de hoje, um
 // por fase, a comparação e a trava no lugar de sempre). Maquete:
 // docs/claude-code-handoff/screen-refs/execucao-guincho-3opcoes.reference.html
@@ -990,7 +1498,11 @@ class _PhaseCard extends StatelessWidget {
           ListTile(
             titleAlignment: ListTileTitleAlignment.top,
             leading: Icon(icon),
-            title: Text(title),
+            // P-APP-TEMA-SUCESSO-TERTIARY: o título no tom da opção A.
+            title: Text(
+              title,
+              style: const TextStyle(color: ErpMobileTheme.ink),
+            ),
             subtitle: subtitle == null && queue == null
                 ? null
                 : Column(
