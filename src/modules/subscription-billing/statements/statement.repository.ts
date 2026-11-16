@@ -10,7 +10,7 @@ import type { InMemoryStatementChargeRepository } from "../charges/charges.repos
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
 import type { InMemoryOutboxRepository, OutboxRepository } from "../outbox/outbox.repository.js";
-import type { BillingOutboxRow, NewOutboxRow } from "../outbox/outbox.types.js";
+import { idempotencyKeyOf, type BillingOutboxRow, type NewOutboxRow } from "../outbox/outbox.types.js";
 import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.repository.js";
 import type {
   ChargeStatus,
@@ -26,6 +26,14 @@ export type NewCredit = Omit<SubscriptionCredit, "id" | "status" | "appliedToSta
 
 /** A nota VIVA do demonstrativo, lida DENTRO da transação, depois da trava do demonstrativo (conserto da J-530, B). */
 export type LiveInvoiceRef = { readonly provider: string; readonly seq: number; readonly status: "pending" | "authorized" | "cancel_pending" };
+
+/** B-ASS-08c2 (plano §4.1 item 5): os fatos da intenção de nota, lidos no MESMO `tx` e depois da trava do demonstrativo — as
+ * linhas `invoice_issue` da fila, o maior `seq` da tabela da nota (0 sem nota) e a nota viva. */
+export type InvoiceIntentFacts = {
+  readonly lines: readonly Pick<BillingOutboxRow, "kind" | "status" | "idempotencyKey" | "occurredAt" | "skipReason">[];
+  readonly maxInvoiceSeq: number;
+  readonly live: LiveInvoiceRef | undefined;
+};
 
 /** Operações dentro de UMA transação da organização. */
 export type StatementTx = {
@@ -47,6 +55,9 @@ export type StatementTx = {
   enqueueOutbox?(row: NewOutboxRow, now: Date): Promise<void>;
   /** A nota VIVA (`pending`/`authorized`/`cancel_pending`) do demonstrativo, lida da tabela da nota (não do espelho). */
   findLiveInvoice?(statementId: string): Promise<LiveInvoiceRef | undefined>;
+  /** B-ASS-08c2 (§4.1 item 5): os fatos da intenção de nota (as linhas, o maior `seq` e a nota viva), no MESMO `tx`. Ausente = este
+   * `tx` não sustenta a intenção de nota nova; as funções do settlement falham fechado (`invoice_intent_tx_unsupported`). */
+  invoiceIntentFacts?(statementId: string): Promise<InvoiceIntentFacts>;
   /** B-ASS-08c1b (P8, A7/A8) — OBRIGATÓRIO: há linha da fila em `NEEDS_REVIEW` para o demonstrativo? Lida NO MESMO `tx`,
    * depois da trava do demonstrativo (o `reopen` a chama no o marcador GUARD-01). O dublê sem as lojas do canal devolve `false`:
    * não há fila. */
@@ -68,7 +79,7 @@ export type ChargeSyncMatch = { readonly externalChargeId: string } | { readonly
  * `reopen` (B-ASS-08c1b, P8). */
 export type InMemoryChannelStores = {
   readonly outbox: Pick<OutboxRepository, "enqueue" | "listByStatement"> & Partial<Pick<InMemoryOutboxRepository, "skipPendingChargeCreate" | "skipChargeCreate">>;
-  readonly invoices: Pick<StatementInvoiceRepository, "findLive">;
+  readonly invoices: Pick<StatementInvoiceRepository, "findLive"> & Partial<Pick<StatementInvoiceRepository, "listByStatement">>;
   /** B-ASS-08c1c (plano §4.0 item 2): a tabela de cobranças e o índice. Com as QUATRO lojas o `tx` sustenta a cobrança
    * (`charging()`); com menos, um "sem canal" (lista vazia; toda escrita lança `charge_channel_tx_unsupported`). */
   readonly charges?: InMemoryStatementChargeRepository;
@@ -164,16 +175,32 @@ export class InMemoryStatementRepository implements StatementRepository {
     const channel = this.channel;
     const own = <T extends { tenantId: string }>(row: T | undefined): T | undefined =>
       row && row.tenantId === tenantId ? row : undefined;
-    const intent: Pick<StatementTx, "enqueueOutbox" | "findLiveInvoice"> = channel
+    const findLiveInvoice = async (statementId: string): Promise<LiveInvoiceRef | undefined> => {
+      const live = await channel!.invoices.findLive(tenantId, statementId);
+      return live && (live.status === "pending" || live.status === "authorized" || live.status === "cancel_pending")
+        ? { provider: live.provider, seq: live.seq, status: live.status }
+        : undefined;
+    };
+    const intent: Pick<StatementTx, "enqueueOutbox" | "findLiveInvoice" | "invoiceIntentFacts"> = channel
       ? {
           async enqueueOutbox(row, now) {
             pending.push({ row, now });
           },
-          async findLiveInvoice(statementId) {
-            const live = await channel.invoices.findLive(tenantId, statementId);
-            return live && (live.status === "pending" || live.status === "authorized" || live.status === "cancel_pending")
-              ? { provider: live.provider, seq: live.seq, status: live.status }
-              : undefined;
+          findLiveInvoice,
+          // B-ASS-08c2 (§4.1 item 5): a fila (com as linhas que ESTE `tx` já gravou, como o banco as veria) e a nota.
+          async invoiceIntentFacts(statementId) {
+            const listInvoices = channel.invoices.listByStatement;
+            if (!listInvoices) throw new Error("invoice_intent_tx_unsupported");
+            const stored = (await channel.outbox.listByStatement(tenantId, statementId)).filter((row) => row.kind === "invoice_issue");
+            const buffered = pending
+              .filter((item) => item.row.tenantId === tenantId && item.row.statementId === statementId && item.row.kind === "invoice_issue")
+              .map((item) => ({ kind: item.row.kind, status: "PENDING" as const, idempotencyKey: idempotencyKeyOf(item.row.kind, item.row.statementId, item.row.seq), occurredAt: item.now, skipReason: item.row.skipReason ?? null }));
+            const invoices = await listInvoices.call(channel.invoices, tenantId, statementId);
+            return {
+              lines: [...stored, ...buffered],
+              maxInvoiceSeq: invoices.reduce((max, invoice) => Math.max(max, invoice.seq), 0),
+              live: await findLiveInvoice(statementId),
+            };
           },
         }
       : {};

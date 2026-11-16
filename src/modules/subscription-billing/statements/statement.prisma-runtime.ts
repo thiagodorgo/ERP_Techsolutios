@@ -28,7 +28,7 @@ import { prismaChargeIntentTx } from "../charges/charge-intent.prisma.js";
 import { sqlStatusList } from "../charges/charge-rules.js";
 import { listByStatementInTx as listChargesByStatementInTx } from "../charges/charges.prisma.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
-import { enqueueInTx } from "../outbox/outbox.prisma.js";
+import { enqueueInTx, listByStatementInTx as listOutboxByStatementInTx } from "../outbox/outbox.prisma.js";
 import { computeStatement, type StatementSnapshot } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
 import { RepositoryStatementInputsProvider, type BindingsSource, type UsageSource } from "./statement.inputs-provider.js";
@@ -233,7 +233,7 @@ function mapCredit(record: CreditRecord): SubscriptionCredit {
 }
 
 function prismaTx(tx: Tx, tenantId: string): StatementTx {
-  return {
+  const self: StatementTx = {
     async insertIfAbsentAndLock(input) {
       const draft = emptyStatement(input, new Date());
       const inserted = await tx.subscriptionStatement.createMany({
@@ -353,6 +353,14 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       const row = rows[0];
       return row ? { provider: row.provider, seq: Number(row.seq), status: row.status } : undefined;
     },
+    // B-ASS-08c2 (plano §4.1 item 5): os fatos da intenção de nota no MESMO `tx`, depois da trava — as linhas `invoice_issue` (a
+    // leitura da fila de sempre, filtrada pelo tipo), o maior `seq` da tabela da nota e a nota viva (a MESMA consulta acima).
+    async invoiceIntentFacts(statementId) {
+      if (!isUuid(statementId)) return { lines: [], maxInvoiceSeq: 0, live: undefined };
+      const lines = (await listOutboxByStatementInTx(tx, statementId)).filter((row) => row.kind === "invoice_issue");
+      const max = (await tx.$queryRawUnsafe(`SELECT COALESCE(max(seq), 0)::int AS max FROM subscription_statement_invoices WHERE statement_id = $1::uuid`, statementId)) as Array<{ max: number }>;
+      return { lines, maxInvoiceSeq: Number(max[0]?.max ?? 0), live: await self.findLiveInvoice!(statementId) };
+    },
     // B-ASS-08c1b (P8, A7/A8): a leitura da fila do `reopen`, no MESMO `tx` e depois da trava do demonstrativo (1 conexão).
     async hasOutboxNeedsReview(statementId) {
       if (!isUuid(statementId)) return false;
@@ -381,6 +389,7 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       );
     },
   };
+  return self;
 }
 
 /** A linha de `audit_logs` dentro do `tx` corrente: se falhar, a transação do movimento cai junto (fail-closed). */

@@ -30,8 +30,9 @@ export type ChargeIntentTx = {
   findLiveCharge(statementId: string): Promise<SubscriptionStatementCharge | undefined>;
   /** Todas as linhas da fila do demonstrativo, lidas DEPOIS da concessão da trava (a elegibilidade filtra o tipo). */
   listChargeLines(statementId: string): Promise<readonly BillingOutboxRow[]>;
-  /** O índice GLOBAL de ids (`billing_statement_refs`), idempotente. */
-  putRef(ref: { readonly statementId: string; readonly tenantId: string; readonly provider: string }, now: Date): Promise<void>;
+  /** O índice GLOBAL de ids (`billing_statement_refs`), idempotente. B-ASS-08c2 (plano §4.1 item 6): `provider` nulo é o índice da
+   * NOTA (o demonstrativo sem cobrança pelo provedor); o `COALESCE` do `putRefInTx` não apaga o provedor de uma cobrança. */
+  putRef(ref: { readonly statementId: string; readonly tenantId: string; readonly provider: string | null }, now: Date): Promise<void>;
   /** `INSERT … ON CONFLICT (idempotency_key) DO NOTHING`; `created = false` se a chave já existia. */
   enqueue(input: NewOutboxRow, now: Date): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }>;
   /** B-ASS-08c1b (P9a): as cobranças do demonstrativo NA TABELA, lidas DEPOIS da trava (qualquer status). */
