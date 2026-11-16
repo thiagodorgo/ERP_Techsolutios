@@ -711,40 +711,46 @@ class _ScreenAppearanceOptions extends StatelessWidget {
       label: screen.label,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
-        child: RadioGroup<AppAppearance>(
-          groupValue: chosen,
-          onChanged: (value) {
-            if (value != null) onChanged(value);
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final option in screen.options)
-                RadioListTile<AppAppearance>(
-                  key: Key(
-                    'aparencia-opcao-${screen.key}-${option.value.letter}',
-                  ),
-                  value: option.value,
-                  title: Text(
-                    '${option.value.letter} · ${option.label}',
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      color: ErpMobileTheme.ink,
+        // O detalhe da `MobileExpandableRow` tem fundo próprio: o `Material`
+        // transparente deixa a tinta e o fundo dos `RadioListTile` visíveis
+        // por cima dele (assert do `ListTile` no Flutter 3.47).
+        child: Material(
+          type: MaterialType.transparency,
+          child: RadioGroup<AppAppearance>(
+            groupValue: chosen,
+            onChanged: (value) {
+              if (value != null) onChanged(value);
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final option in screen.options)
+                  RadioListTile<AppAppearance>(
+                    key: Key(
+                      'aparencia-opcao-${screen.key}-${option.value.letter}',
                     ),
+                    value: option.value,
+                    title: Text(
+                      '${option.value.letter} · ${option.label}',
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: ErpMobileTheme.ink,
+                      ),
+                    ),
+                    secondary: option.value == fallback
+                        ? const MobilePill(label: 'padrão')
+                        : null,
                   ),
-                  secondary: option.value == fallback
-                      ? const MobilePill(label: 'padrão')
-                      : null,
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(12, 6, 12, 0),
+                  child: Text(
+                    'Escolha pessoal: vale só para você, nesta organização e neste aparelho.',
+                    key: Key('aparencia-nota-pessoal'),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                  ),
                 ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 6, 12, 0),
-                child: Text(
-                  'Escolha pessoal: vale só para você, nesta organização e neste aparelho.',
-                  key: Key('aparencia-nota-pessoal'),
-                  style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
