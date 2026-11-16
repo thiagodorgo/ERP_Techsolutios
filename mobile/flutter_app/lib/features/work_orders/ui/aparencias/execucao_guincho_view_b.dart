@@ -150,13 +150,17 @@ class _HeaderTrailing extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         pill,
-        if (p.transitions.isNotEmpty)
+        if (p.transitions.isNotEmpty || p.onApprovalRequest != null)
           PopupMenuButton<int>(
             key: const Key('guincho-b-mais-acoes'),
             tooltip: 'Mais ações',
             enabled: !p.busy,
             icon: const Icon(Icons.more_vert, color: ErpMobileTheme.ink),
-            onSelected: (i) => p.transitions[i].onPressed(),
+            // B-SAN3-16 — o índice depois das transições é "Solicitar
+            // aprovação", que abre o pedido (não muda a situação).
+            onSelected: (i) => i < p.transitions.length
+                ? p.transitions[i].onPressed()
+                : p.onApprovalRequest?.call(),
             itemBuilder: (_) => [
               for (var i = 0; i < p.transitions.length; i++)
                 PopupMenuItem<int>(
@@ -171,6 +175,26 @@ class _HeaderTrailing extends StatelessWidget {
                       Flexible(
                         child: Text(
                           p.transitions[i].menuLabel,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (p.onApprovalRequest != null)
+                PopupMenuItem<int>(
+                  key: const Key('guincho-solicitar-aprovacao'),
+                  value: p.transitions.length,
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.approval_outlined,
+                        color: ErpMobileTheme.primary,
+                      ),
+                      SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          'Solicitar aprovação',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),

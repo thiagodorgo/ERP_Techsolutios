@@ -413,6 +413,7 @@ class _WorkOrderExecuteScreenState
     required WorkOrderRepository woRepo,
     required List<WorkOrderStatus> regularTransitions,
     required bool canComplete,
+    required bool canApprovalRequest,
   }) {
     final wo = data.wo;
     final showVistorias =
@@ -569,6 +570,16 @@ class _WorkOrderExecuteScreenState
           ? _towRequirements(data, offline: offline, unverified: unverified)
           : const [],
       transitions: transitions,
+      // B-SAN3-16 (E-580-APARENCIA-2) — a mesma condição e o mesmo toque do
+      // botão próprio "Solicitar aprovação" da opção A.
+      onApprovalRequest:
+          regularTransitions.isNotEmpty &&
+              canApprovalRequest &&
+              wo.status.allowedTransitions.contains(
+                WorkOrderStatus.pendingApproval,
+              )
+          ? () => _openApprovalRequest(wo)
+          : null,
     );
   }
 
@@ -689,6 +700,7 @@ class _WorkOrderExecuteScreenState
           woRepo: woRepo,
           regularTransitions: regularTransitions,
           canComplete: canComplete,
+          canApprovalRequest: canApprovalRequest,
         );
         final Widget? aparencia = switch (towAppearance) {
           AppAppearance.a => null,
