@@ -53,6 +53,14 @@ function requireOperatorReason(value: unknown): string {
   return reason.slice(0, 500);
 }
 
+/** B-ASS-08c2 (Emenda 1 §2.2): a confirmação do cuidado 1 no estorno manual — booleano estrito; ausente = não confirma; outro
+ * tipo (inclusive `null` e a string "true") → 400. */
+function optionalInvoiceCancelConfirmation(value: unknown): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "boolean") throw new StatementError(400, "invalid_confirmation", "confirmInvoiceCancel must be a boolean.");
+  return value;
+}
+
 /** B-ASS-08c1b (F7; Emenda 1 §3.6.5): o id de cobrança do PROVEDOR no `cancel-unknown` — `^[A-Za-z0-9_-]{1,64}$`; senão 400. */
 function requireProviderChargeId(value: unknown): string {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(value)) throw new StatementError(400, "invalid_charge_id", "chargeId must match ^[A-Za-z0-9_-]{1,64}$.");
@@ -388,15 +396,18 @@ export function createStatementsPlatformRouter(): Router {
     requirePlatformPermission("platform:billing:settle"),
     handleAsyncRoute(async (request, response) => {
       const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const confirmInvoiceCancel = optionalInvoiceCancelConfirmation(input.confirmInvoiceCancel);
       const { service } = await createDefaultStatementRuntime();
       const result = await service.reverseManualPayment({
-        tenantId: requireTenantId(input.tenantId),
+        tenantId,
         paymentId: readRouteParam(request.params.paymentId),
         reason: typeof input.reason === "string" ? input.reason : "",
         actorId: actorId(request),
         now: new Date(),
+        ...(confirmInvoiceCancel === undefined ? {} : { confirmInvoiceCancel }),
       });
-      response.status(200).json({ data: { statement: toStatementDto(result.statement), payment: toPaymentDto(result.payment) } });
+      response.status(200).json({ data: { statement: toStatementDto(result.statement), payment: toPaymentDto(result.payment), invoice: result.invoice } });
     }),
   );
 

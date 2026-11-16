@@ -13,12 +13,15 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
+import type { Server } from "node:http";
 import { createRequire } from "node:module";
+import type { AddressInfo } from "node:net";
 import path from "node:path";
 import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
+import { startAsaasFake } from "./helpers/fake-providers/asaas.js";
 import { startFocusNfeFake } from "./helpers/fake-providers/focusnfe.js";
 
 const connectionString = process.env.DATABASE_URL;
@@ -27,23 +30,29 @@ const FISCAL = { cnpj: "11222333000181", regimeTributario: "lucro_presumido", mu
 const SP_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
 const spDayPlus = (days: number) => SP_DAY.format(new Date(Date.now() + days * 24 * 60 * 60 * 1000));
 const ACTOR = "usr_platform";
+const PLATFORM = { "x-user-id": "usr_platform", "x-role": "super_admin" } as const;
+const OCT_1 = new Date("2026-10-01T00:00:00-03:00");
 
 type Fixture = { readonly tenantId: string; readonly statementId: string };
 
 if (!connectionString) {
   test("B-ASS-08c2 · o estorno manual com nota (-db) exige DATABASE_URL", { skip: "Defina DATABASE_URL para os testes -db." });
 } else {
-  const H: { admin: any; db: any; role: EphemeralRole; databaseName: string; focus: any; env: any; m: Record<string, any> } = {
+  const H: { admin: any; db: any; role: EphemeralRole; databaseName: string; server?: Server; baseUrl: string; focus: any; asaas: any; env: any; m: Record<string, any> } = {
     admin: undefined,
     db: undefined,
     role: undefined as unknown as EphemeralRole,
     databaseName: "",
+    baseUrl: "",
     focus: undefined,
+    asaas: undefined,
     env: undefined,
     m: {},
   };
 
   after(async () => {
+    if (H.server) await new Promise<void>((resolve) => H.server!.close(() => resolve()));
+    await H.asaas?.close();
     await H.focus?.close();
     await H.role?.drop();
     await H.db?.$disconnect();
@@ -52,6 +61,11 @@ if (!connectionString) {
   });
 
   const q = (sql: string, ...args: unknown[]) => H.db.$queryRawUnsafe(sql, ...args) as Promise<any[]>;
+
+  async function api(method: string, route: string, body?: unknown): Promise<{ status: number; body: Record<string, any> }> {
+    const response = await fetch(H.baseUrl + route, { method, headers: { "content-type": "application/json", ...PLATFORM }, body: body === undefined ? undefined : JSON.stringify(body) });
+    return { status: response.status, body: (await response.json()) as Record<string, any> };
+  }
 
   /** Organização SEM índice prévio + demonstrativo `closed` de R$ 100,00, sem pagamento, sem cobrança e sem nota. */
   async function seedClosed(tag: string): Promise<Fixture> {
@@ -109,10 +123,17 @@ if (!connectionString) {
     const c = H.role.client;
     return H.m.dispatcher.runDispatchOutbox({
       repo: new H.m.outboxPrisma.PrismaOutboxRepository(c, { tenantIds: [tenantId] }),
-      ports: {},
+      ports: { asaas: asaasPort() },
       resolveCustomer: async () => ({ ok: true as const, customerId: "cus_em" }),
       invoices: new H.m.invoiceDispatch.InvoiceOutboxHandler({ ports: { focusnfe: focusPort(server) }, invoices: new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(c), statements: new H.m.runtime.PrismaStatementRepository(c), resolveIssueContext: issueContext }),
     });
+  }
+
+  function asaasPort() {
+    return new H.m.asaas.AsaasPaymentAdapter(
+      new H.m.http.BillingHttpClient({ provider: "asaas", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${H.asaas.baseUrl}/v3` }),
+      async (kind: string) => (kind === "api_token" ? "TOKEN-FAKE" : "WEBHOOK-FAKE"),
+    );
   }
 
   async function setInvoiceEnabled(enabled: boolean): Promise<void> {
@@ -184,15 +205,22 @@ if (!connectionString) {
     const [posture] = (await H.db.$queryRawUnsafe(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1`, H.role.roleName)) as Array<{ rolsuper: boolean; rolbypassrls: boolean }>;
     assert.deepEqual(posture, { rolsuper: false, rolbypassrls: false }, "o papel de runtime é NOSUPERUSER NOBYPASSRLS");
     await H.db.$executeRawUnsafe(`INSERT INTO billing_provider_configs (provider, kind, environment, enabled, enabled_environment) VALUES ('focusnfe', 'invoice', 'sandbox', true, 'sandbox')`);
+    // O Asaas também ligado (o EM4: a cobrança pelo canal); sem cobrança, ele não muda nada nos outros casos.
+    await H.db.$executeRawUnsafe(`INSERT INTO billing_provider_configs (provider, kind, environment, enabled, enabled_environment) VALUES ('asaas', 'payment', 'sandbox', true, 'sandbox')`);
     (globalThis as { prisma?: unknown }).prisma = H.role.client;
     process.env.DATABASE_URL = targetUrl;
     process.env.CORE_SAAS_PERSISTENCE = "prisma";
     process.env.LOG_LEVEL = "silent";
     process.env.JWT_SECRET = "dev-only-change-me";
     process.env.JWT_EXPIRES_IN = "15m";
-    const [envModule, statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, reconcile, webhookEvents, statementRefs, settlement, rules] =
+    const [envModule, { createApp }, { MemoryCoreSaasAdapter }, { CoreSaasRegistry }, { InMemoryCoreSaasStore }, asaas, statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, reconcile, webhookEvents, statementRefs, settlement, rules] =
       await Promise.all([
         import("../src/config/env.js"),
+        import("../src/app.js"),
+        import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
+        import("../src/modules/core-saas/services/core-saas.service.js"),
+        import("../src/modules/core-saas/store/core-saas.store.js"),
+        import("../src/modules/subscription-billing/providers/payment/asaas/index.js"),
         import("../src/modules/subscription-billing/statements/statement.factory.js"),
         import("../src/modules/subscription-billing/vault/vault.factory.js"),
         import("../src/modules/subscription-billing/vault/vault-keys.js"),
@@ -209,7 +237,7 @@ if (!connectionString) {
         import("../src/modules/subscription-billing/statements/statement-settlement.service.js"),
         import("../src/modules/subscription-billing/invoices/invoice-intent-rules.js"),
       ]);
-    H.m = { dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, reconcile, webhookEvents, statementRefs, settlement, rules };
+    H.m = { asaas, statementFactory, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, reconcile, webhookEvents, statementRefs, settlement, rules };
     H.env = envModule.env;
     H.env.CORE_SAAS_PERSISTENCE = "prisma";
     H.env.BILLING_PROVIDERS_ENABLED = true;
@@ -218,6 +246,11 @@ if (!connectionString) {
     vaultFactory.setVaultKeysForTests(new vaultKeys.EnvVaultKeyProvider({ BILLING_VAULT_KEY: randomBytes(32).toString("base64"), BILLING_VAULT_KEY_VERSION: "1" }));
     // O roteiro `authorized`: a reconsulta da nota diz `autorizado`; a do cancelamento, `cancelado`.
     H.focus = await startFocusNfeFake("authorized");
+    H.asaas = await startAsaasFake();
+    const app = createApp(new MemoryCoreSaasAdapter(new CoreSaasRegistry(new InMemoryCoreSaasStore())));
+    H.server = app.listen(0, "127.0.0.1");
+    await new Promise<void>((resolve) => H.server!.once("listening", resolve));
+    H.baseUrl = `http://127.0.0.1:${(H.server.address() as AddressInfo).port}`;
   });
 
   test("EM1: baixa manual que quita, nota autorizada, estorno manual TOTAL com confirmInvoiceCancel → 1 invoice_cancel no tx do estorno (o seq da nota), invoice = cancel_requested, a trilha leva o invoice; despacho → 1 DELETE, nota cancelled", async () => {
@@ -355,5 +388,95 @@ if (!connectionString) {
     assert.equal(callsOn("POST", f.statementId), posts, "0 POST: o demonstrativo não está pago");
     assert.deepEqual((await lines(f.statementId)).filter((row) => row.kind === "invoice_issue").map((row) => [row.status, row.last_error]), [["NEEDS_REVIEW", "statement_not_paid"]], "o comportamento da 08b no caminho do provedor, declarado");
     assert.deepEqual(await invoicesOf(f.statementId), []);
+  });
+
+  // ============================================================== F10 · a rota `reverse` e a herança P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA
+  /** Organização com plano de R$ 100,00 desde 1º/10 (o fechamento real calcula o total e, com o canal ligado, pede a cobrança). */
+  async function seedSubscribed(tag: string): Promise<string> {
+    const slug = `c2-em-${tag}-${randomUUID().slice(0, 8)}`;
+    const tenantId = (await q(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, slug))[0].id as string;
+    const planId = (await q(`INSERT INTO subscription_plans (code, kind, name) VALUES ($1, 'base', $1) RETURNING id`, `c2em_${randomUUID().replaceAll("-", "").slice(0, 10)}`))[0].id as string;
+    await H.db.$executeRawUnsafe(
+      `INSERT INTO subscription_plan_versions (plan_id, version, valid_from, monthly_price, included_users, included_storage_gb, extra_user_price, extra_gb_price, per_vehicle_price, pricing_unit, modules)
+       VALUES ($1::uuid, 1, $2::timestamptz, 100.00, 10, 10.000, 5.00, 2.00, NULL, 'flat', ARRAY['dashboard']::text[])`,
+      planId,
+      OCT_1,
+    );
+    await H.db.$executeRawUnsafe(`INSERT INTO tenant_subscriptions (tenant_id, plan_id, valid_from) VALUES ($1::uuid, $2::uuid, $3::timestamptz)`, tenantId, planId, OCT_1);
+    return tenantId;
+  }
+  const chargeRows = (statementId: string) => q(`SELECT status FROM subscription_statement_charges WHERE statement_id = $1::uuid ORDER BY created_at, external_charge_id`, statementId);
+  const chargeCreates = async (statementId: string) => (await lines(statementId)).filter((row) => row.kind === "charge_create").map((row) => row.idempotency_key);
+  const asaasCalls = (method: string) => H.asaas.recorded.filter((r: { method: string; path: string }) => r.method === method && r.path.split("?")[0]!.startsWith("/v3/payments")).length;
+  /** A visão do cliente pela MESMA função que o `GET /api/v1/billing/subscription` chama (`buildTenantSubscriptionView`). */
+  async function clientView(tenantId: string): Promise<Record<string, any> | null> {
+    const runtime = await H.m.statementFactory.createDefaultStatementRuntime();
+    const { buildTenantSubscriptionView } = await import("../src/modules/subscription-billing/statements/subscription-view.js");
+    return (await buildTenantSubscriptionView(runtime, tenantId, new Date())) as Record<string, any> | null;
+  }
+  const reverseRoute = (f: Fixture, paymentId: string, extra: Record<string, unknown> = {}) =>
+    api("POST", `/api/v1/platform/billing/statements/${f.statementId}/payments/${paymentId}/reverse`, { tenantId: f.tenantId, reason: "lançado errado", ...extra });
+
+  test("EM4: quitou à mão a conta com cobrança pending → charge_cancel → cobrança cancelled; o estorno manual pela ROTA (confirmInvoiceCancel estrito, data.invoice) → closed, paidCents 0, 0 charge_create nova, payment nulo na visão do cliente, sem chave de dinheiro; o botão /charge grava 1 charge_create com o seq seguinte", async () => {
+    const tenantId = await seedSubscribed("em4");
+    const closed = await api("POST", "/api/v1/platform/billing/statements/close", { tenantId, period: "2026-10" });
+    assert.equal(closed.status, 200, JSON.stringify(closed.body));
+    const [{ id: statementId }] = await q(`SELECT id FROM subscription_statements WHERE tenant_id = $1::uuid`, tenantId);
+    const f: Fixture = { tenantId, statementId };
+    const posts = asaasCalls("POST");
+    await dispatch(tenantId);
+    assert.equal(asaasCalls("POST") - posts, 1, "a cobrança do fechamento foi ao Asaas falso");
+    assert.deepEqual((await chargeRows(statementId)).map((row) => row.status), ["pending"], "cobrança pending pelo canal");
+    assert.deepEqual(await chargeCreates(statementId), [`charge_create:${statementId}:1`]);
+    const before = await clientView(tenantId);
+    assert.match(String(before?.payment?.payUrl), /^https:\/\//, `controle positivo: com a cobrança pending a visão tem payUrl (${JSON.stringify(before?.payment)})`);
+
+    // A baixa manual que quita: o `charge_cancel` e a intenção de nota no MESMO tx; o despacho cancela a cobrança e emite a nota.
+    const paid = await api("POST", `/api/v1/platform/billing/statements/${statementId}/payments`, { tenantId, amount: "100.00", method: "pix" });
+    assert.equal(paid.status, 201, JSON.stringify(paid.body));
+    const paymentId = String(paid.body.data.payment.id);
+    assert.deepEqual((await lines(statementId)).filter((row) => row.kind === "charge_cancel").map((row) => row.status), ["PENDING"], "o charge_cancel da baixa");
+    const deletes = asaasCalls("DELETE");
+    await dispatch(tenantId);
+    assert.equal(asaasCalls("DELETE") - deletes, 1, "1 DELETE da cobrança");
+    assert.deepEqual((await chargeRows(statementId)).map((row) => row.status), ["cancelled"], "cobrança cancelled");
+    assert.deepEqual((await invoicesOf(statementId)).map((row) => row.status), ["pending"], "a nota da baixa está viva");
+
+    // A rota `reverse`: a confirmação é booleano estrito; sem ela, 422 e nada gravado; com `true`, o estorno e o cancelamento da nota.
+    const wrongType = await reverseRoute(f, paymentId, { confirmInvoiceCancel: "true" });
+    assert.equal(wrongType.status, 400, JSON.stringify(wrongType.body));
+    assert.equal(wrongType.body.error?.reason, "invalid_confirmation", JSON.stringify(wrongType.body));
+    const asNull = await reverseRoute(f, paymentId, { confirmInvoiceCancel: null });
+    assert.equal(asNull.status, 400, JSON.stringify(asNull.body));
+    const unconfirmed = await reverseRoute(f, paymentId);
+    assert.equal(unconfirmed.status, 422, JSON.stringify(unconfirmed.body));
+    assert.equal(unconfirmed.body.error?.reason, "invoice_cancel_confirmation_required", JSON.stringify(unconfirmed.body));
+    assert.equal((await paymentRow(paymentId)).reversed, "0.00", "nada gravado sem a confirmação");
+    const reversed = await reverseRoute(f, paymentId, { confirmInvoiceCancel: true });
+    assert.equal(reversed.status, 200, JSON.stringify(reversed.body));
+    assert.equal(reversed.body.data.invoice, "cancel_requested", "data.invoice");
+    assert.deepEqual((await cancelLines(statementId)).map((row) => row.idempotency_key), [`invoice_cancel:${statementId}:1`]);
+
+    const st = await statementRow(statementId);
+    assert.equal(st.status, "closed");
+    assert.equal(st.paid, "0.00", "paidCents = 0");
+    assert.deepEqual(await chargeCreates(statementId), [`charge_create:${statementId}:1`], "0 charge_create nova: o sistema não recobra sozinho (D-7)");
+    const view = await clientView(tenantId);
+    assert.ok(view, "a visão do cliente existe");
+    // "payment nulo" do plano, medido: a visão mantém o bloco do demonstrativo aberto, sem NENHUM meio de pagamento (o
+    // `findPayableCharge` não acha cobrança pagável; o molde do CV3 do 08c1c).
+    assert.equal(view!.payment?.statementId, statementId, "o bloco do demonstrativo aberto");
+    assert.deepEqual(
+      [view!.payment?.payUrl, view!.payment?.pixCopyPaste, view!.payment?.boletoLine, view!.payment?.boletoUrl],
+      [null, null, null, null],
+      `nada pagável (${JSON.stringify(view!.payment)})`,
+    );
+    const { findMoneyKeys } = await import("../src/modules/subscription-billing/charges/charge-view.js");
+    assert.deepEqual(findMoneyKeys(view), [], "nenhuma chave de dinheiro");
+
+    // A saída é o botão: o operador pede a cobrança de novo.
+    const charge = await api("POST", `/api/v1/platform/billing/statements/${statementId}/charge`, { tenantId, method: "pix" });
+    assert.equal(charge.status, 201, JSON.stringify(charge.body));
+    assert.deepEqual(await chargeCreates(statementId), [`charge_create:${statementId}:1`, `charge_create:${statementId}:2`], "1 charge_create com o seq seguinte");
   });
 }
