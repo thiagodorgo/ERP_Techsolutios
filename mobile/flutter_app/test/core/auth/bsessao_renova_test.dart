@@ -20,9 +20,13 @@ import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_repository.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
 import 'package:erp_techsolutions_mobile/core/auth/session_http_client.dart';
+import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
+import 'package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/registry_options_remote_api.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -88,6 +92,9 @@ class Terreno {
   final contas = <String, (String, String)>{};
   List<String> permissoesBootstrap = const ['work_orders:read'];
   int bootstraps = 0;
+
+  /// F4: o bootstrap recusa (401) o token de acesso que não é o de agora.
+  bool bootstrapExigeToken = false;
 
   int get gs => gets.values.fold(0, (a, b) => a + b);
 
@@ -266,6 +273,11 @@ class Terreno {
     bootstraps++;
     final bearer = r.headers.value('authorization') ?? '';
     final token = bearer.startsWith('Bearer ') ? bearer.substring(7) : '';
+    if (bootstrapExigeToken && (revogada || token != acesso)) {
+      return _json(r, 401, {
+        'error': {'code': 'INVALID_TOKEN'},
+      });
+    }
     final (sub, tenantDoLogin) = contas[token] ?? ('u1', 't1');
     final tenant = r.uri.queryParameters['tenantId'] ?? tenantDoLogin;
     return _json(r, 200, {
@@ -453,6 +465,20 @@ class Aparelho {
   void fechar() => container.dispose();
 }
 
+/// F4: os clientes do app apontam para o terreno, com o token da sessão
+/// autenticada (o `authenticatedApiConfigProvider` aponta para o servidor do
+/// app; aqui, para o terreno). O modo remoto ligado.
+List<Override> clientesNoTerreno(Terreno t) => [
+  remoteAuthModeProvider.overrideWithValue(true),
+  authenticatedApiConfigProvider.overrideWith((ref) {
+    final s = ref.watch(authStateProvider).asData?.value;
+    final token = (s?.isAuthenticated ?? false)
+        ? s?.session?.tokens.accessToken
+        : null;
+    return ApiConfig(baseUrl: t.base, accessToken: token);
+  }),
+];
+
 /// Faz o GET e devolve o status (ou o erro do app, já mapeado).
 Future<Object> pedir(Dio dio, [String path = '/api/v1/work-orders']) async {
   try {
@@ -546,6 +572,95 @@ void main() {
         AuthStatus.unauthenticated,
       );
     },
+  );
+
+  // ── F4: toda chamada autenticada passa pela renovação (D5) ─────────────────
+
+  test(
+    '[T1] a lista de OS, com o token vencido: 1 renovação, repete, 200; GET = 2',
+    () async {
+      await app.storage.saveSession(sessaoGuardada());
+      await app.abrir(extras: clientesNoTerreno(terreno));
+
+      final api = app.container.read(workOrderRemoteApiProvider)!;
+      final r = await api.fetchWorkOrders();
+
+      expect(r, isEmpty);
+      expect(terreno.renovacoes, 1);
+      expect(terreno.gets['/api/v1/work-orders'], 2);
+      expect(app.estado?.status, AuthStatus.authenticated);
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test(
+    '[T1c] os outros 4 sítios (estoque do técnico, viaturas, bootstrap e troca de organização): 1 renovação e 200 em cada',
+    () async {
+      Future<void> umSitio(
+        String nome,
+        Future<void> Function(Aparelho app, Terreno t) chamar,
+      ) async {
+        final t = Terreno()..bootstrapExigeToken = true;
+        await t.start();
+        final a = Aparelho(t);
+        try {
+          await a.storage.saveSession(sessaoGuardada());
+          await a.abrir(extras: clientesNoTerreno(t));
+          await chamar(a, t);
+          expect(t.renovacoes, 1, reason: nome);
+          expect(a.estado?.status, AuthStatus.authenticated, reason: nome);
+        } finally {
+          a.fechar();
+          await t.stop();
+        }
+      }
+
+      // O provider do estoque é o do app (segue o modo remoto do provider).
+      await umSitio('estoque', (a, t) async {
+        await a.container
+            .read(technicianStockRemoteApiProvider)!
+            .fetchTechnicianStock();
+        expect(t.gets['/api/v1/mobile/technician/stock'], 2);
+      });
+      // As viaturas e o bootstrap: os providers deles seguem a constante de
+      // compilação do modo remoto (desligada nos testes); o teste monta a MESMA
+      // composição do sítio (o cliente pela porta), e a G1/G2 guardam o sítio.
+      await umSitio('viaturas', (a, t) async {
+        final api = a.container.read(
+          Provider(
+            (ref) => DioRegistryOptionsApi(
+              sessionHttpClient(ref, ref.watch(authenticatedApiConfigProvider)),
+            ),
+          ),
+        );
+        expect(await api.fetchVehicles(), isEmpty);
+        expect(t.gets['/api/v1/vehicles'], 2);
+      });
+      DioMobileBootstrapRepository bootstrapPelaPorta(Aparelho a, Terreno t) =>
+          a.container.read(
+            Provider(
+              (ref) => DioMobileBootstrapRepository(
+                a.storage,
+                createClient: (c) => sessionHttpClient(
+                  ref,
+                  ApiConfig(baseUrl: t.base, accessToken: c.accessToken),
+                ),
+              ),
+            ),
+          );
+      await umSitio('bootstrap', (a, t) async {
+        final s = a.estado!.session!;
+        await bootstrapPelaPorta(a, t).fetch(s);
+        expect(t.bootstraps, 2);
+      });
+      await umSitio('troca de organização', (a, t) async {
+        final s = a.estado!.session!;
+        final b = await bootstrapPelaPorta(a, t).fetchForTenant(s, 't2');
+        expect(b.activeTenant.tenantId, 't2');
+        expect(t.bootstraps, 2);
+      });
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
   );
 
   test('[T8] as frases do 401, do 403 e da senha errada', () {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/auth_models.dart';
 import '../auth/auth_notifier.dart';
 import '../auth/auth_token_storage.dart';
+import '../auth/session_http_client.dart';
 import '../auth/session_renewal.dart';
 import '../config/app_config.dart';
 import '../network/api_contracts.dart';
@@ -465,7 +466,7 @@ bool bootstrapBelongsTo(BootstrapSession cached, AuthSession session) {
 class DioMobileBootstrapRepository implements MobileBootstrapRepository {
   DioMobileBootstrapRepository(
     this._storage, {
-    Dio Function(ApiConfig config) createClient = createExpenseHttpClient,
+    required Dio Function(ApiConfig config) createClient,
   }) : _createClient = createClient;
 
   final AuthTokenStorage _storage;
@@ -540,7 +541,11 @@ final mobileBootstrapRepositoryProvider = Provider<MobileBootstrapRepository>((
 ) {
   final storage = ref.watch(authTokenStorageProvider);
   if (kIsRemoteAuth) {
-    return DioMobileBootstrapRepository(storage);
+    // D5: o bootstrap também passa pela porta da renovação.
+    return DioMobileBootstrapRepository(
+      storage,
+      createClient: (config) => sessionHttpClient(ref, config),
+    );
   }
   return LocalDevBootstrapRepository(storage);
 });

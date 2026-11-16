@@ -16,6 +16,7 @@ import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_codec.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
+import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_action_store.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
@@ -320,7 +321,10 @@ void main() {
     test(
       '2.1 cache + restoreCached round-trip preserva activeTenant',
       () async {
-        final repo = DioMobileBootstrapRepository(storage);
+        final repo = DioMobileBootstrapRepository(
+          storage,
+          createClient: createExpenseHttpClient,
+        );
         final bs = fakeBootstrapSession();
 
         await repo.cache(bs);
@@ -332,13 +336,19 @@ void main() {
     );
 
     test('2.2 restoreCached retorna null quando cache esta vazio', () async {
-      final repo = DioMobileBootstrapRepository(storage);
+      final repo = DioMobileBootstrapRepository(
+        storage,
+        createClient: createExpenseHttpClient,
+      );
 
       expect(await repo.restoreCached(), isNull);
     });
 
     test('2.3 clearCache remove bootstrap do storage', () async {
-      final repo = DioMobileBootstrapRepository(storage);
+      final repo = DioMobileBootstrapRepository(
+        storage,
+        createClient: createExpenseHttpClient,
+      );
       await repo.cache(fakeBootstrapSession());
       expect(await repo.restoreCached(), isNotNull);
 
@@ -350,7 +360,10 @@ void main() {
     test(
       '2.4 cache round-trip preserva enabledModules e permissions',
       () async {
-        final repo = DioMobileBootstrapRepository(storage);
+        final repo = DioMobileBootstrapRepository(
+          storage,
+          createClient: createExpenseHttpClient,
+        );
         final bs = fakeBootstrapSession();
 
         await repo.cache(bs);
@@ -364,7 +377,10 @@ void main() {
     );
 
     test('2.5 cache round-trip preserva availableTenants multiplos', () async {
-      final repo = DioMobileBootstrapRepository(storage);
+      final repo = DioMobileBootstrapRepository(
+        storage,
+        createClient: createExpenseHttpClient,
+      );
       final bs = fakeBootstrapSession(
         availableTenants: const [
           TenantContext(tenantId: 'ten-a', displayName: 'Empresa A'),
@@ -383,7 +399,10 @@ void main() {
       '2.6 restoreCached retorna null e limpa storage em JSON corrompido',
       () async {
         await storage.saveBootstrapJson('{json invalido---}');
-        final repo = DioMobileBootstrapRepository(storage);
+        final repo = DioMobileBootstrapRepository(
+          storage,
+          createClient: createExpenseHttpClient,
+        );
 
         final restored = await repo.restoreCached();
 
