@@ -7,7 +7,7 @@
   de bloco de dinheiro. O frontmatter dos três corpos continua `model: fable`, como manda o §C7.6-bis: o fallback é do
   **invocador**, e quem lança declara o papel, o modelo que rodou e o motivo. Cada corpo manda a cadeira registrar isso na 1ª
   linha da evidência e no voto, e **parar** se estiver abaixo do Opus.
-- **Fonte lida:** o disco de `C:/Users/AMP/w-nuv09`, ramo `feat/bootstrap-platform-admin`. O head é
+- **Fonte lida:** o disco de `~/w-nuv09`, ramo `feat/bootstrap-platform-admin`. O head é
   `054f7a7ea350ba80837bcecf370475df6a1795b4`, lido nos arquivos de ref `refs/heads/feat/bootstrap-platform-admin` e
   `refs/remotes/origin/feat/bootstrap-platform-admin` do repositório principal. Os dois valores são iguais.
 - **Ressalva §A7:** a fábrica não tem `Bash` e não mediu nada por `git show`/`git ls-tree`. Toda linha citada abaixo e nos corpos
@@ -56,9 +56,9 @@ Padrões que os corpos propõem e que o mandato pode trocar:
 
 | cadeira | worktree | prefixo de container | evidência e voto |
 |---|---|---|---|
-| C1 | `C:/Users/AMP/w-j9c2c1` | `jurado-san3-09c2-c1-*` | `C1c2-evidencia.md` / `C1c2-voto.json` |
-| C2 | `C:/Users/AMP/w-j9c2c2` | `jurado-san3-09c2-c2-*` | `C2c2-evidencia.md` / `C2c2-voto.json` |
-| C3 | `C:/Users/AMP/w-j9c2c3` | não usa banco (container só se precisar, com o prefixo `jurado-san3-09c2-c3-*`) | `C3c2-evidencia.md` / `C3c2-voto.json` |
+| C1 | `~/w-j9c2c1` | `jurado-san3-09c2-c1-*` | `C1c2-evidencia.md` / `C1c2-voto.json` |
+| C2 | `~/w-j9c2c2` | `jurado-san3-09c2-c2-*` | `C2c2-evidencia.md` / `C2c2-voto.json` |
+| C3 | `~/w-j9c2c3` | não usa banco (container só se precisar, com o prefixo `jurado-san3-09c2-c3-*`) | `C3c2-evidencia.md` / `C3c2-voto.json` |
 
 - Os arquivos de evidência e voto ficam em `votos/B-SAN3-09/`. Os nomes `C1-*`, `C2-*` e `C3-*` são do ciclo 1 e os corpos
   proíbem gravar neles.
@@ -144,7 +144,7 @@ São leituras de disco: cada corpo manda medir, nunca herdar. A gravidade é de 
 
 ### De terreno e de norma
 
-19. **`C:/Users/AMP/erp-terreno/receita-pg16.sh` foi escrita para o B-SAN3-05.**
+19. **`~/erp-terreno/receita-pg16.sh` foi escrita para o B-SAN3-05.**
     - `TESTS` e `SAMPLE` nomeiam arquivos daquele bloco, e o `cat-file` aborta sob `set -e` se eles não existirem no objeto.
     - Não sobe Redis.
     - Nomeia tudo `pg16r-*`, e não com o prefixo da cadeira.

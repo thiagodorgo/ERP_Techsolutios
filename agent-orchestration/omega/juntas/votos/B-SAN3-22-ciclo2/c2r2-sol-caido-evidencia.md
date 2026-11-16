@@ -5,11 +5,11 @@ papel: cadeira C2 | identidade: jurado-san322-c2-r2-sol | executor: Codex CLI | 
 ## Terreno e legalidade inicial
 
 - Parecer lido inteiro: `insp-san322c2-parecer.md`, identidade `inspetor-san322-c2`, **LIBERADO COM RESSALVA**; seis ressalvas lidas.
-- Ressalva 1 destacada: os scripts originais de `j22-c2` nunca serão executados no lugar. Se reutilizados, serão copiados para `C:/Users/AMP/erp-pausa-2026-10-03/j22r2-c2/`, com worktree, porta e `OBJ` alterados, e o diff será publicado aqui antes da execução.
+- Ressalva 1 destacada: os scripts originais de `j22-c2` nunca serão executados no lugar. Se reutilizados, serão copiados para `~/erp-pausa-2026-10-03/j22r2-c2/`, com worktree, porta e `OBJ` alterados, e o diff será publicado aqui antes da execução.
 - Head no início: `git ls-remote origin refs/heads/fix/checklist-trava-versao` = `gh pr view 464 --json headRefOid` = `6b03e44d8136792398f521ccaf85d8dd45168a6d`; PR `OPEN`, não rascunho, `MERGEABLE`.
 - Recursos no lançamento: disco C: 9,28 GB livres (mínimo C2 8,05 GB); memória de commit livre 7,96 GB (mínimo 4 GB); trabalhos Docker fora de `erp-*`: 0.
-- Terreno autorizado: worktree exclusivo `C:/Users/AMP/j22r2-c2-wt`; Redis exclusivo `j22r2-c2-redis` em `127.0.0.1:48032`; base viva `erp-*` e portas 5432/6379/3000/5173/5050/8899 não serão tocadas; junction de `node_modules` proibida.
-- Scratch: `C:/Users/AMP/erp-pausa-2026-10-03/j22r2-c2/`. Variáveis: `OBJ`, `WT`, `SCRATCH`, `REDIS_URL`. Node e demais versões serão registrados depois da instalação.
+- Terreno autorizado: worktree exclusivo `~/j22r2-c2-wt`; Redis exclusivo `j22r2-c2-redis` em `127.0.0.1:48032`; base viva `erp-*` e portas 5432/6379/3000/5173/5050/8899 não serão tocadas; junction de `node_modules` proibida.
+- Scratch: `~/erp-pausa-2026-10-03/j22r2-c2/`. Variáveis: `OBJ`, `WT`, `SCRATCH`, `REDIS_URL`. Node e demais versões serão registrados depois da instalação.
 
 Comando executado → comparação EOL-neutra do corpo no disco de `w-san322` contra `git show 6b03e44d8136792398f521ccaf85d8dd45168a6d:.claude/agents/especialistas/jurado-san322-c2-contrato-classificador-consumidores.md`; `git ls-remote`; `gh pr view`; `Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory`; `Get-PSDrive C`; `docker ps`.
 
@@ -24,11 +24,11 @@ Comando executado → `git diff --no-index` entre `j22-c2/<script>` e `j22r2-c2/
 Saída resumida (diff integral das adaptações relevantes):
 
 ```diff
--cd C:/Users/AMP/j22-c2-wt || exit 1
--S=C:/Users/AMP/erp-pausa-2026-10-03/j22-c2
+-cd ~/j22-c2-wt || exit 1
+-S=~/erp-pausa-2026-10-03/j22-c2
 -OBJ=44d9cbb3874e45340ca43c934364c3d0103c53b8
-+cd C:/Users/AMP/j22r2-c2-wt || exit 1
-+S=C:/Users/AMP/erp-pausa-2026-10-03/j22r2-c2
++cd ~/j22r2-c2-wt || exit 1
++S=~/erp-pausa-2026-10-03/j22r2-c2
 +OBJ=6b03e44d8136792398f521ccaf85d8dd45168a6d
 -REDIS_URL=redis://127.0.0.1:47932
 +REDIS_URL=redis://127.0.0.1:48032
@@ -48,8 +48,8 @@ As quatro substituições acima aparecem em cada roteiro em que o valor existia 
 Na sonda REST:
 
 ```diff
--const OUT = process.env.J22C2_OUT ?? "C:/Users/AMP/erp-pausa-2026-10-03/j22-c2/i2b-rest.tsv";
-+const OUT = process.env.J22C2_OUT ?? "C:/Users/AMP/erp-pausa-2026-10-03/j22r2-c2/i2b-rest.tsv";
+-const OUT = process.env.J22C2_OUT ?? "~/erp-pausa-2026-10-03/j22-c2/i2b-rest.tsv";
++const OUT = process.env.J22C2_OUT ?? "~/erp-pausa-2026-10-03/j22r2-c2/i2b-rest.tsv";
 ```
 
 `mut.mjs` e `contrato.mjs` foram copiados byte a byte e ainda não foram executados; não contêm worktree, porta nem `OBJ` fixos. Nenhum script original foi executado no lugar.

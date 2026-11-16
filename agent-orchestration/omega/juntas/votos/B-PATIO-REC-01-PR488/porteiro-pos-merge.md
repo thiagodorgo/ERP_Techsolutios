@@ -16,7 +16,7 @@
 
 ## P1 — Merge e objeto
 
-- **Comando:** `git fetch -q origin; git log origin/main -3; gh pr view 488 --json ...; git worktree add --detach C:/Users/thiag/w-port488 origin/main`.
+- **Comando:** `git fetch -q origin; git log origin/main -3; gh pr view 488 --json ...; git worktree add --detach ~/w-port488 origin/main`.
 - **Saída resumida:** `origin/main` aponta para `36ad6aa7b967f3e1df0ae70fc4c4894fb0795744`; PR #488 está `MERGED`, `mergedAt=2026-11-03T19:35:49Z`, `mergeCommit=36ad6aa7…`, head aprovado `f472aab16d7c4b66df07c1802c1ff22e2b276297`; o worktree destacou exatamente `36ad6aa7…` e nasceu limpo.
 - **Veredito parcial:** merge existente, íntegro e medido na ref correta. O horário corresponde a 03/11/2026 16:35:49 SP.
 
@@ -62,7 +62,7 @@
 
 - **Comandos:** `git ls-remote --heads origin feat/patio-rec-01-dominio`; `git branch --list`; `git worktree list --porcelain`; `docker ps -a`; `git status --porcelain | grep '^ D'`; `df -BG /c`.
 - **Saída resumida:** ramo remoto e ramo local do PR ausentes; worktrees `w-j488-c1/c2/c3`, `w-rec01` e `w-conf488` ausentes; nenhum container `j488-*`, `conf488-pg`, `rec01-pg` ou `port488-pg`; nenhum arquivo rastreado apagado na árvore principal; 276 GB livres no disco C.
-- **Ressalva de limpeza:** `C:/Users/thiag/w-prerev488` ainda existe destacado em `f472aab1`. Não é worktree de jurado, mas é resíduo do pré-revisor e deve ser removido pela rotina de registro/limpeza. Nenhum `prune`, `down -v` ou serviço/porta da demo foi tocado.
+- **Ressalva de limpeza:** `~/w-prerev488` ainda existe destacado em `f472aab1`. Não é worktree de jurado, mas é resíduo do pré-revisor e deve ser removido pela rotina de registro/limpeza. Nenhum `prune`, `down -v` ou serviço/porta da demo foi tocado.
 
 ## P6 — Próximo alvo
 
@@ -72,7 +72,7 @@
 
 ## P7 — Limpeza do próprio porteiro
 
-- **Comando:** `git worktree remove --force C:/Users/thiag/w-port488`, seguido de teste de ausência no disco e em `git worktree list`.
+- **Comando:** `git worktree remove --force ~/w-port488`, seguido de teste de ausência no disco e em `git worktree list`.
 - **Saída resumida:** `WORKTREE_PROPRIO_REMOVIDO`; `port488-pg` já ausente.
 - **Veredito parcial:** limpeza própria concluída sem tocar na demo.
 

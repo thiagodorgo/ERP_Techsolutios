@@ -178,7 +178,7 @@
         "erro": {
           "name": "PrismaClientKnownRequestError",
           "code": "P2028",
-          "msg": " Invalid `this.client.cycleCountEntry.updateMany()` invocation in C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\cycle-count-prisma.repository.ts:105:41 102 if (!session) retu"
+          "msg": " Invalid `this.client.cycleCountEntry.updateMany()` invocation in ~/Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\cycle-count-prisma.repository.ts:105:41 102 if (!session) retu"
         },
         "sessao": {
           "status": "aberta",

@@ -1492,7 +1492,7 @@ ok 241 - T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma
     not ok 8 - T14a/b · o procedimento converge, é idempotente e falha fechado nos modos nomeados
       ---
       duration_ms: 244.2048
-      location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:3:18223'
+      location: '~/w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:3:18223'
       failureType: 'testCodeFailure'
       error: |-
         DO
@@ -1507,10 +1507,10 @@ ok 241 - T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma
       actual: 3
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1015:16)
+        TestContext.<anonymous> (~/w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1015:16)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:998:5)
+        async TestContext.<anonymous> (~/w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:998:5)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -1518,7 +1518,7 @@ ok 241 - T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma
     not ok 9 - T14c · filhos escritores respeitam a trava única e a guarda estrutural é fechada
       ---
       duration_ms: 767.7869
-      location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:15:3951'
+      location: '~/w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:15:3951'
       failureType: 'testCodeFailure'
       error: |-
         DO
@@ -1533,10 +1533,10 @@ ok 241 - T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma
       actual: 3
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1367:18)
+        TestContext.<anonymous> (~/w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1367:18)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1319:5)
+        async TestContext.<anonymous> (~/w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1319:5)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -1544,7 +1544,7 @@ ok 241 - T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma
     not ok 10 - T14d · MODO 6: qualquer view/matview sobre tabela FORCE recusa o papel novo, sem olhar dono nem privilégio
       ---
       duration_ms: 866.6529
-      location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:15:6566'
+      location: '~/w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:15:6566'
       failureType: 'testCodeFailure'
       error: |-
         caso CTL: view sobre tabela SEM FORCE deveria convergir
@@ -1560,10 +1560,10 @@ ok 241 - T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma
       actual: 3
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1408:24)
+        TestContext.<anonymous> (~/w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1408:24)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1382:5)
+        async TestContext.<anonymous> (~/w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1382:5)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -1576,7 +1576,7 @@ ok 241 - T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma
 not ok 242 - B-SAN3-05 · o papel de runtime não contorna FORCE RLS
   ---
   duration_ms: 14937.8769
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:3:1497'
+  location: '~/w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:3:1497'
   failureType: 'subtestsFailed'
   error: '3 subtests failed'
   code: 'ERR_TEST_FAILURE'

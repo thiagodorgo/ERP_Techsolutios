@@ -148,7 +148,7 @@
     }
   ],
   "o_que_executei": [
-    "worktree próprio C:/Users/AMP/w-jsan320-c3 (--detach objeto), npm ci próprio (sem junction), npm run db:generate (E1, DATABASE_URL fictícia — o prisma.config exige a variável)",
+    "worktree próprio ~/w-jsan320-c3 (--detach objeto), npm ci próprio (sem junction), npm run db:generate (E1, DATABASE_URL fictícia — o prisma.config exige a variável)",
     "gh api check-runs do objeto; logs dos jobs backend, backend-postgres e frontend do objeto e da main c76ec481",
     "npm test (passo 2, 9 arquivos) · node --test por arquivo (cheque-title-link, financial-titles) · npm test (passo 4) · npm run check/lint/build · node --check Kpis/app.js · git diff --check (worktree e B..objeto) · node scripts/sync-agent-agents.mjs --check",
     "npm test (suíte backend inteira, memory, Windows)",
@@ -172,5 +172,5 @@
   ],
   "voto": "APROVADO",
   "justificativa": "Medido no objeto a0f5aabc contra a base 7ab2fe71: a bateria do §4.6 que me cabe passa no meu worktree; a CI do objeto está 14/14 com 444/444 no backend-postgres, zero pulo e as 3 suítes novas sob o guard; a suíte inteira cresce só pelo que o bloco declarou (+67/+30/0) e nenhum teste some além da fixture do applyPayment removido; o applyPayment absoluto saiu dos 6 lugares e o svc.applyPayment ficou incremental sem quebrar os 64 de financial-titles nem os 15 de invariants-db; o diff tem 0 caminho PROIBIDO e 0 FORA; os 4 artefatos do bloco seguem o precedente do #448; Kpis, validators, repositórios de lançamento, controller, routes e migrações antigas estão intocados; o RBAC muda só a l.130; a ampliação nominal fica no que o §3.1 declara; as 32 mutações têm vermelho registrado e as 7 que amostrei morreram; o registro do §5.5 está completo, apensado depois da main de agora, sem erro de alvo; o 409 cai no safeMessage da TitlesListView. Os dois mutantes próprios que sobreviveram (titleId da listagem e a retentativa de svc.applyPayment, que não tem chamador de produção) não envolvem dinheiro, permissão nem perda de dado: um é ajuste, o outro nota. VOTO: APROVADO — regressão zero, escopo dentro do PERMITIDO, PROIBIDO intocado e registro completo; 1 ajuste e 5 notas, nenhum bloqueia.",
-  "teardown": "worktree C:/Users/AMP/w-jsan320-c3 removido por git worktree remove --force (git worktree list sem a linha; diretório inexistente); nenhuma mutação deixada (todas restored:true por hash); nenhum container jsan320-c3-* criado (docker ps -a → 0); logs grandes da CI apagados das sondas; sondas mantidas em C:/Users/AMP/erp-pausa-2026-10-03/jsan320-c3/ (mut.mjs, defs.json, mut-results.jsonl, escopo.sh, registro.sh, logs de teste); nenhum commit"
+  "teardown": "worktree ~/w-jsan320-c3 removido por git worktree remove --force (git worktree list sem a linha; diretório inexistente); nenhuma mutação deixada (todas restored:true por hash); nenhum container jsan320-c3-* criado (docker ps -a → 0); logs grandes da CI apagados das sondas; sondas mantidas em ~/erp-pausa-2026-10-03/jsan320-c3/ (mut.mjs, defs.json, mut-results.jsonl, escopo.sh, registro.sh, logs de teste); nenhum commit"
 }

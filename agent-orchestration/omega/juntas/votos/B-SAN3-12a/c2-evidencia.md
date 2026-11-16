@@ -3,14 +3,14 @@ papel: cadeira C2 | identidade: jurado-san312a-c2-opus | corpo: jurado-san312a-c
 # Evidência — cadeira C2 — B-SAN3-12a (PR #459, ciclo 1, junta de DINHEIRO)
 
 ## Terreno e legalidade
-- origin/main no início: b2f8e6cf5bb1bd044887ab0829821b089530d9c5 · $SCRATCH: C:/Users/AMP/erp-pausa-2026-10-03/j12a-c2/ · node v20.19.5
+- origin/main no início: b2f8e6cf5bb1bd044887ab0829821b089530d9c5 · $SCRATCH: ~/erp-pausa-2026-10-03/j12a-c2/ · node v20.19.5
 - `df -h /c` → 12G livres (≥ 7) · memória de commit livre 13,96 GB (≥ 4) · docker fora de erp-: dev-san322-pg/redis (1 trabalho) → com o meu, 2 (teto)
 - Objeto por duas fontes: `git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas-12a` = 04b8a667…; `gh pr view 459` headRefOid = 04b8a667…, OPEN, isDraft=false, MERGEABLE.
 - check-runs `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<objeto>/check-runs` → total 14 | não-verdes 0 | pendentes 0.
 - Bases: head-base do bloco `<objeto>~14` = 8a7885f4c3bfab02e6c31b318c1111e262f2907c (= 8a7885f4 do corpo); head-base da emenda `<objeto>~8` = fafd4b36731ae89574e1d0b3cff6ea34dc78abc7 (= fafd4b36 do corpo).
 - Legalidade: `insp-san312a-parecer.md` (inspetor-san312a-opus, 2ª passada) → LIBERADO COM RESSALVA; nomeia j12a-c2-wt, j12a-c2-pg/redis, portas 47723/47724, ordem C2 → C4 → C1 → C3 (C2 é a primeira). Confere: sim.
 - Inelegibilidade: minha identidade `jurado-san312a-c2-opus` não coincide com nenhum inelegível listado.
-- Worktree próprio: `git worktree add --detach C:/Users/AMP/j12a-c2-wt <objeto>` (caminho não existia); `npm ci` próprio (sem junction).
+- Worktree próprio: `git worktree add --detach ~/j12a-c2-wt <objeto>` (caminho não existia); `npm ci` próprio (sem junction).
 - Containers: j12a-c2-pg (postgres:16) em 127.0.0.1:47723 e j12a-c2-redis (redis:7) em 127.0.0.1:47724; portas testadas livres por netstat antes; senha aleatória só por ambiente (***). Variáveis usadas: DATABASE_URL, REDIS_URL (prefixo de comando, sem export).
 - Leitura de outras cadeiras: nenhuma (não abri c1-*, c3-*, c4-*).
 
@@ -22,7 +22,7 @@ papel: cadeira C2 | identidade: jurado-san312a-c2-opus | corpo: jurado-san312a-c
 
 ## Item 1 — as 2 permissões por ator (A5, A6, A6-bis/D1, A9–A12, A18, A27 por ator)
 - (a) `node --test --import tsx tests/b-san3-12a-unlink-title.test.ts` (REDIS_URL/DATABASE_URL meus) → tests 15 | pass 15 | fail 0 | skipped 0 (casos A5×4, A6, A6-bis, A27-e×3, A7, A20×2, R-res-2, HTTP A5/A6/A20, A19). `tests/b-san3-12a-unreconcile-policy.test.ts` → 11 | 11 | 0 | 0 (A9, A10, A11, A12, A13×4, R4, A18, A9-serviço "manager com política segue 403"). `tests/core-saas.test.ts` → 26 | 26 | 0 | 0.
-- (b) Matriz efetiva, sonda minha `C:/Users/AMP/erp-pausa-2026-10-03/j12a-c2/zz-j12ac2-matrix.ts` (copiada para `<wt>/tests/` só para rodar): app real `createApp(new PrismaCoreSaasService())`, persistência prisma, usuário por papel com atribuição ao papel GLOBAL provisionado, login real `POST /api/v1/auth/login`, papéis enumerados de `ROLE_PERMISSIONS` do objeto (13) + `finance+manager`; ações: unlink-title, PATCH null, PATCH outro título, cancel e DELETE de cheque vinculado, desfazer conciliação (política false/true), GET reconciliation-policy (false/true), PUT da política. Saída `matrix.out`: **140 células**; as 11 "divergências" da 1ª passada foram TODAS do meu comparador (esperado "403" × obtido "403:route" na coluna unlink dos 11 não aprovados — o 403 veio do `requirePermission`, que é o comportamento correto); corrigida a string do esperado, ver a 2ª passada abaixo.
+- (b) Matriz efetiva, sonda minha `~/erp-pausa-2026-10-03/j12a-c2/zz-j12ac2-matrix.ts` (copiada para `<wt>/tests/` só para rodar): app real `createApp(new PrismaCoreSaasService())`, persistência prisma, usuário por papel com atribuição ao papel GLOBAL provisionado, login real `POST /api/v1/auth/login`, papéis enumerados de `ROLE_PERMISSIONS` do objeto (13) + `finance+manager`; ações: unlink-title, PATCH null, PATCH outro título, cancel e DELETE de cheque vinculado, desfazer conciliação (política false/true), GET reconciliation-policy (false/true), PUT da política. Saída `matrix.out`: **140 células**; as 11 "divergências" da 1ª passada foram TODAS do meu comparador (esperado "403" × obtido "403:route" na coluna unlink dos 11 não aprovados — o 403 veio do `requirePermission`, que é o comportamento correto); corrigida a string do esperado, ver a 2ª passada abaixo.
   - unlink-title: 200 só `super_admin` e `tenant_admin`; 403 de rota para os outros 10 papéis e para `finance+manager`.
   - PATCH null / PATCH outro: admins → 422 `cheque_linked_unlink_first`; `finance` e `finance+manager` → 403 `unlink_requires_privilege`; sem `cheques:update` → 403 de rota.
   - cancel / DELETE vinculado: 422 `cheque_linked_unlink_first` para TODO ator com `cheques:update` (super, tenant_admin, finance, finance+manager); 403 de rota para o resto. Nenhum 200.
@@ -89,7 +89,7 @@ papel: cadeira C2 | identidade: jurado-san312a-c2-opus | corpo: jurado-san312a-c
 
 ## Limpeza e fim
 - `docker rm -f -v j12a-c2-pg j12a-c2-redis` → containers `j12a-c2-*` = 0 (o banco extra `j12a_c2_mig` já fora derrubado; `j12a_c2_main` saiu com o container/volume).
-- Contagem de processos com `j12a-c2-wt` na linha de comando = 4 no instante — o próprio comando de contagem (powershell/bash que carregam a string); nenhum node/tsx meu vivo; `git worktree remove --force C:/Users/AMP/j12a-c2-wt` sem erro → caminho ausente.
-- Mutações e checkouts todos restaurados (hash-object = blob, provado por mutação); sondas em `<wt>/tests/zz-j12ac2-*` apagadas antes da remoção; senha: `grep -c -F` = 0 em evidência, voto e saídas; arquivo da senha apagado. Sondas e saídas ficam em `C:/Users/AMP/erp-pausa-2026-10-03/j12a-c2/` (re-executáveis).
+- Contagem de processos com `j12a-c2-wt` na linha de comando = 4 no instante — o próprio comando de contagem (powershell/bash que carregam a string); nenhum node/tsx meu vivo; `git worktree remove --force ~/j12a-c2-wt` sem erro → caminho ausente.
+- Mutações e checkouts todos restaurados (hash-object = blob, provado por mutação); sondas em `<wt>/tests/zz-j12ac2-*` apagadas antes da remoção; senha: `grep -c -F` = 0 em evidência, voto e saídas; arquivo da senha apagado. Sondas e saídas ficam em `~/erp-pausa-2026-10-03/j12a-c2/` (re-executáveis).
 - Objeto no fim: HEAD de `w-san312a` = ls-remote = 04b8a667780930050c8af2c77c323b81fe8794bb (não andou). `w-san312a` só com o diretório de votos não rastreado; nada commitado. Base viva nunca tocada. Disco livre no fim: 12G.
 - VOTO: REPROVADO — C2-01: o desvínculo com justificativa contendo NUL (\u0000) sai 200 e grava title_id=null sem nenhuma linha cheque.title_unlinked (jsonb recusa \u0000; a auditoria best-effort engole o erro) | escopo: dentro-do-bloco | classe: não grave (rastro incompleto) | ciclo 1 | evidência: sonda zz-j12ac2-audit.ts, 3/3 execuções, log do Postgres "unsupported Unicode escape sequence".

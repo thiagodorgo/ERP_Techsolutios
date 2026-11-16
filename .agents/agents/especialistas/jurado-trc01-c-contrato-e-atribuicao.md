@@ -34,7 +34,7 @@ Você **não** julga listener, segredo, rotação, logs nem portas (é a **cadei
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor — §C7.6, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), **sem
-executar nada e sem `git`** (a fábrica não tem `Bash`). Tudo o que ele diz do ramo foi **lido no disco** de `C:/Users/AMP/w-trc01` na noite
+executar nada e sem `git`** (a fábrica não tem `Bash`). Tudo o que ele diz do ramo foi **lido no disco** de `~/w-trc01` na noite
 de 2026-10-11 (UTC). O head `d77a9e327439bb9c9b3162b41863d68ef2991ef7` é o que o orquestrador declarou ao disparar a fábrica: a fábrica
 **não o resolveu** e não sabe se o disco estava nele. Logo, **todo arquivo:linha de código abaixo é leitura de disco [A RE-VERIFICAR]**;
 os nomes (função, teste, motivo de quarentena, constante) são as âncoras. As linhas do plano citadas são do disco de `w-trc01`
@@ -213,15 +213,15 @@ medir".
   (servidor), versão do Postgres do container (`SELECT version()`), espaço livre em `C:` (`df -h /c`), e o ambiente (shell, cwd, variáveis
   que você definiu — **nunca** valor de segredo; nenhum `export`).
 - **Arquivos de saída:** os que o mandato nomear (padrão deste corpo:
-  `C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-c-evidencia.md` e `…/cadeira-c-voto.json`). `w-trc01` é a
+  `~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-c-evidencia.md` e `…/cadeira-c-voto.json`). `w-trc01` é a
   árvore do dev, onde o orquestrador versiona: a sua **única** escrita lá são esses dois arquivos. Nunca grave no seu worktree de medição.
   Quedas vão para `votos/B-TRC-01/00-quedas.md` pelo **orquestrador** (P6), não por você. Você não commita.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Use `C:/…` com `git`, `node`, `npm`; caminhos `/…` só dentro de
   `docker exec … sh -c`.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `C:/Users/AMP/w-jtrc-c`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-jtrc-c <objeto>`; **prove**
-  `test -e C:/Users/AMP/w-jtrc-c/.git` (worktree em caminho longo falha com "Filename too long" e não cria o diretório). Se o caminho já
-  existir, é resíduo alheio: reporte e use `C:/Users/AMP/w-jtrc-c2`. Prove `test ! -e <seu-wt>/.env` (um `.env` copiado apontaria o
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `~/w-jtrc-c`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-jtrc-c <objeto>`; **prove**
+  `test -e ~/w-jtrc-c/.git` (worktree em caminho longo falha com "Filename too long" e não cria o diretório). Se o caminho já
+  existir, é resíduo alheio: reporte e use `~/w-jtrc-c2`. Prove `test ! -e <seu-wt>/.env` (um `.env` copiado apontaria o
   `DATABASE_URL` para a base viva). Depois, `timeout -k 15 900 npm ci --no-audit --no-fund` **próprio** e
   `DATABASE_URL='postgresql://build:build@127.0.0.1:1/build?schema=public' timeout -k 15 300 npx prisma generate` (o `generate` não abre
   conexão). **Junction ou symlink de `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)).
@@ -255,7 +255,7 @@ medir".
   sumiu) e a contagem `docker ps -a --filter name=jtrc01-c- -q | wc -l` = 0. Worktree: antes, conte os processos vivos com o caminho na
   linha de comando por
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-jtrc-c*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`
-  (aspas **simples** por fora); só com 0, `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force <seu-caminho>`.
+  (aspas **simples** por fora); só com 0, `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force <seu-caminho>`.
 - **Mutação restaurável, no SEU worktree** (nenhuma toca `w-trc01`):
   1. mute **por script** (`node -e` lendo e gravando, ou um `.mjs` seu no `$SCRATCH`), com âncora de ocorrência **única** e EOL-consciente —
      **conte antes: tem de ser 1**, e falhe fechado se não casar;

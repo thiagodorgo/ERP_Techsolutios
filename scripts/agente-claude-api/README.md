@@ -55,7 +55,7 @@ python -m venv .venv
 ```
 
 O `.venv/` é ignorado pelo git (`.gitignore` local). Nada vai para o Python global. Se o Python da
-Microsoft Store não criar o venv, use `C:\Users\<você>\AppData\Local\Programs\Python\Python313\python.exe -m venv .venv`.
+Microsoft Store não criar o venv, use `~/AppData\Local\Programs\Python\Python313\python.exe -m venv .venv`.
 Exige **Python 3.11 ou mais novo**: a redação de JWT usa grupo atômico e quantificador possessivo do
 módulo `re`, que só existem a partir do 3.11 (medido e testado no 3.13).
 
@@ -227,7 +227,7 @@ Worktree órfão (queda de energia, por exemplo):
 
 ```
 git worktree list
-git worktree remove --force C:\Users\<você>\w-ag-<data>
+git worktree remove --force ~/w-ag-<data>
 git worktree prune
 ```
 

@@ -4,7 +4,7 @@
 > cobrindo o Codex (ocupado). Não planejou, não criticou e não vota neste bloco.
 > **Norma única:** plano v2 (`docs/revisoes/TRACCAR/B-TRC-02-plano.md`, cópia de `erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`)
 > + emenda v2.1 (`B-TRC-02-emenda-v2.1.md`; onde muda a v2, prevalece). Respostas do dono: `B-TRC-02-respostas-do-dono.md`.
-> **Worktree:** `C:/Users/AMP/w-trc02`, ramo `feat/traccar-b-trc-02`, head de partida `bf83cda8a9acdc92f05f29397d1860bed9be5388`.
+> **Worktree:** `~/w-trc02`, ramo `feat/traccar-b-trc-02`, head de partida `bf83cda8a9acdc92f05f29397d1860bed9be5388`.
 > **Formato:** comando → saída resumida → veredito, por passo (P1). Seções `EM APURAÇÃO` ainda não medidas.
 
 ## Emendas do orquestrador (registradas conforme v2 §8 gate 3: "senão renumerar e anotar")
@@ -28,7 +28,7 @@ Medido em 2026-10-19, ref `origin/main` = `bf83cda8a9acdc92f05f29397d1860bed9be5
 | 3 | `git ls-tree -r --name-only origin/main prisma/migrations | grep -c -E '2026087[89]|20260880'` | `0`; última da ref = `20260877000000_backfill_work_order_assignment_from_active_dispatches`. O `20260878000000` está reservado ao B-SAN3-02 (em revisão, ramo `fix/faturamento-atomico-e-delta`) | renumerado pela **EO-1**: A = `20260879000000`, B = `20260880000000` |
 | 4 | fixture real de evento | ver Passo 3 | (passo 3) |
 | 5 | baseline N (abaixo) | 149 executados | ver abaixo |
-| 6 | `df -h /c` → 18G livres; `docker ps --format '{{.Names}}' | grep -v '^erp-'` → vazio; `Get-CimInstance Win32_OperatingSystem` → FreePhys 7,10 GB, FreeVirtual 8,84 GB; `git worktree add C:/Users/AMP/w-trc02 -b feat/traccar-b-trc-02 origin/main` → head `bf83cda8`; `timeout -k 30 900 npm ci` → `added 326 packages`, ec 0; `test -L node_modules` → diretório real (sem junction); `DATABASE_URL=postgresql://build:build@localhost:5432/build npm run db:generate` → client gerado | ≥ 10 GB; 0 outro trabalho Docker; ≥ 3 GB de commit livre | verde |
+| 6 | `df -h /c` → 18G livres; `docker ps --format '{{.Names}}' | grep -v '^erp-'` → vazio; `Get-CimInstance Win32_OperatingSystem` → FreePhys 7,10 GB, FreeVirtual 8,84 GB; `git worktree add ~/w-trc02 -b feat/traccar-b-trc-02 origin/main` → head `bf83cda8`; `timeout -k 30 900 npm ci` → `added 326 packages`, ec 0; `test -L node_modules` → diretório real (sem junction); `DATABASE_URL=postgresql://build:build@localhost:5432/build npm run db:generate` → client gerado | ≥ 10 GB; 0 outro trabalho Docker; ≥ 3 GB de commit livre | verde |
 | 7 (R2-1) | `git show origin/main:agent-orchestration/controle/decisoes.md | grep -n 'D-TRC02-'` → só l.3783 (`D-TRC02-RESPOSTAS`, "Q1 sim, Q2 sim e Q3 sim"); `grep -n -E 'D-TRC02-Q1|Q1-NAO'` → nada | **Q1 = SIM por `decisoes.md:3783-3784`, sem `D-TRC02-Q1-NAO*`** | **variante Q1 = SIM** (§Q1 + emenda v2.1) |
 | 8 | idem, l.3785 (Q2 = sim; "Resolve P-TRC-DEMO-LOGIN-SEM-ORG-INERTE"); sem reversão | Q2 = SIM | **o passo do GRANT entra no demo** (§5.5) e H7 vale |
 
@@ -39,7 +39,7 @@ deste relatório (decisão do dono de 19/10, antes do merge).
 
 | Comando | Saída | Veredito |
 |---|---|---|
-| `bash teste-linux-dtrc02.sh C:/Users/AMP/w-trc02 'node --test --import tsx --test-reporter=tap $(ls tests/traccar-*.test.ts) tests/telemetry.test.ts'` (container Linux, Postgres 16 + Redis 7 próprios, prefixo `dtrc02-`) | `# tests 149` `# pass 139` `# fail 10` `# skipped 0` | **N = 149** executados (igual ao plano: 132 + 17). Os 10 vermelhos: 9 de `traccar-dev-topology` (o container não tem o CLI do Docker — a suíte FALHA de propósito sem Docker) e 1 de `traccar-idempotency-db` (abaixo) |
+| `bash teste-linux-dtrc02.sh ~/w-trc02 'node --test --import tsx --test-reporter=tap $(ls tests/traccar-*.test.ts) tests/telemetry.test.ts'` (container Linux, Postgres 16 + Redis 7 próprios, prefixo `dtrc02-`) | `# tests 149` `# pass 139` `# fail 10` `# skipped 0` | **N = 149** executados (igual ao plano: 132 + 17). Os 10 vermelhos: 9 de `traccar-dev-topology` (o container não tem o CLI do Docker — a suíte FALHA de propósito sem Docker) e 1 de `traccar-idempotency-db` (abaixo) |
 | `timeout -k 10 180 node --test --import tsx tests/traccar-dev-topology.test.ts` (host Windows, com Docker) | `# tests 12` `# pass 12` `# fail 0` | verde — os casos que exigem Docker reexecutam isolados onde há Docker, como no 01 (v2 §9.7 passo 3) |
 | `not ok 48 - idempotência: duas entregas idênticas concorrentes — ambas 2xx, 1 recibo, 1 localização` | `actual [204, 503]` em `traccar-idempotency-db.test.ts:219` | **pré-existente** (código da `main`, nada mudado): uma das duas entregas concorrentes saiu 503 sob a carga do lote paralelo. Frequência medida abaixo (snapshot limpo de `bf83cda8` por `git archive`) |
 
@@ -542,7 +542,7 @@ C-10") está entre os vermelhos. O plano v2 §9.1 previa "M-E09 → E8"; o alvo 
 | `dist/` do worktree (gitignored, do `npm run build`) | removido |
 | `df -h /c` | 14 GB livres |
 
-**Worktree `C:/Users/AMP/w-trc02` MANTIDO** (com o `node_modules` próprio, sem junction): o mandato proíbe push/PR por mim, e o
+**Worktree `~/w-trc02` MANTIDO** (com o `node_modules` próprio, sem junction): o mandato proíbe push/PR por mim, e o
 orquestrador precisa dele para empurrar o ramo `feat/traccar-b-trc-02`. A remoção (`git worktree remove --force`) fica para depois do
 push. Base viva (`erp-postgres`/`erp-redis`) e as portas 5432/6379/3000/5173/5050/8899 nunca foram tocadas.
 
@@ -569,8 +569,8 @@ push. Base viva (`erp-postgres`/`erp-redis`) e as portas 5432/6379/3000/5173/505
 
 > **Identidade:** `dev-trc02-c2-argon` (NOVA). **Executor:** Antigravity (`agy`). **Modelo:** Gemini 4 Argon (`gemini-4-argon`, nível menor declarado, §C7.6).
 > Não votou no ciclo 1, não achou o defeito (`jurado-trc02-b-opus`) e não planejou o conserto (`planejador-trc02-c2-fable` — §C7.4-bis).
-> **Norma única do ciclo 2:** `docs/revisoes/TRACCAR/B-TRC-02-ciclo2-auditoria-e-plano.md` (cópia de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-ciclo2-auditoria-e-plano.md`).
-> **Worktree:** `C:/Users/AMP/w-trc02`, ramo `feat/traccar-b-trc-02`, head de partida `c33e5d6f7a037070f85b0d496485c1635d332cdd` (commit R do redator).
+> **Norma única do ciclo 2:** `docs/revisoes/TRACCAR/B-TRC-02-ciclo2-auditoria-e-plano.md` (cópia de `~/erp-pausa-2026-10-03/planos/B-TRC-02-ciclo2-auditoria-e-plano.md`).
+> **Worktree:** `~/w-trc02`, ramo `feat/traccar-b-trc-02`, head de partida `c33e5d6f7a037070f85b0d496485c1635d332cdd` (commit R do redator).
 
 ### 1. Merge da `main` (§3.6 — commit M)
 
@@ -593,9 +593,9 @@ push. Base viva (`erp-postgres`/`erp-redis`) e as portas 5432/6379/3000/5173/505
 | 2 | `git diff --numstat 38504427 HEAD -- docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs` + conferência do catálogo | `5	2`; `ALL.length = 86` · `has M-E16' = false` · `has M-E16'' = true`; âncora `if (operator.kind !== "single") {` única em `traccar-ingestion.service.ts` | §3.3 |
 | 3 | `git commit` de `src/integrations/traccar/traccar-ingestion.service.ts` e `docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs` | commit C = `1887250352d6bc9792a8ea42486d66c52f132ff7` (`fix(traccar): phaseTwoSteps sem o andaime da Q1 = SIM revertida e M-E16″ ancorada no passo 5 (B-TRC-02, ciclo 2)`) | §3.1 |
 | 4 | `ts.transpileModule` (`ES2022`, `removeComments: true`) sobre `git show 38504427:<service>` (377 linhas JS) × `git show 18872503:<service>` (375 linhas JS) | diferem **exatamente** nas 7 linhas do andaime: `-L226: let binding;`, `-L242: binding = bindings[0];`, `-L243: const locked = binding;` → `+L241: const binding = bindings[0];` e nas 4 leituras `locked` → `binding` (`L247→L245`, `L258→L256`, `L262→L260`, `L291→L289`); normalizado `\blocked\b` → `binding`, resta **só a forma da declaração** | §3.8(2) |
-| 5 | `node C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-b/zz-jtrc02b-hunks.mjs C:/Users/AMP/w-trc02 c1485c94 18872503 src/integrations/traccar/traccar-ingestion.service.ts` (md5 `392a997bdf254ff580c12650e8ee1a42`) × controle positivo sobre `38504427` | em `18872503`: `phaseTwoSteps` tem **só** `+ { tx, repository, locations, operatorAt }` (1), `+ phaseTwoSteps` (8 = comentário + passo 7 `withSampleSavepoint`) e `- { repository, locations, operatorAt }` / `locations` / `operatorAt` / `repository` / `phaseTwoSteps` (destructuring) → **linhas fora das faixas = 0**. Controle positivo (`38504427`): acusa `+ phaseTwoSteps > binding` (1), `+ phaseTwoSteps > locked` (1), `+ phaseTwoSteps > operator` (1), `+ phaseTwoSteps > receiptId` (1), `+ phaseTwoSteps` (10) e `- phaseTwoSteps > binding` / `operator` / `receiptId` (as 7 linhas) | §3.8(3) |
+| 5 | `node ~/erp-pausa-2026-10-03/jtrc02-b/zz-jtrc02b-hunks.mjs ~/w-trc02 c1485c94 18872503 src/integrations/traccar/traccar-ingestion.service.ts` (md5 `392a997bdf254ff580c12650e8ee1a42`) × controle positivo sobre `38504427` | em `18872503`: `phaseTwoSteps` tem **só** `+ { tx, repository, locations, operatorAt }` (1), `+ phaseTwoSteps` (8 = comentário + passo 7 `withSampleSavepoint`) e `- { repository, locations, operatorAt }` / `locations` / `operatorAt` / `repository` / `phaseTwoSteps` (destructuring) → **linhas fora das faixas = 0**. Controle positivo (`38504427`): acusa `+ phaseTwoSteps > binding` (1), `+ phaseTwoSteps > locked` (1), `+ phaseTwoSteps > operator` (1), `+ phaseTwoSteps > receiptId` (1), `+ phaseTwoSteps` (10) e `- phaseTwoSteps > binding` / `operator` / `receiptId` (as 7 linhas) | §3.8(3) |
 | 6 | `grep -c -E '\blocked\b\|let binding' src/integrations/traccar/traccar-ingestion.service.ts` e `grep -n 'const binding = bindings\[0\]!;' src/integrations/traccar/traccar-ingestion.service.ts` | `0` · `302:    const binding = bindings[0]!;` (evento) e `411:    const binding = bindings[0]!;` (posição) | §3.8(4) |
-| 7 | `node C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-b/zz-jtrc02b-decl.mjs` (`28ed176ae738c54af77b7434c095e6c5`) `38504427` × `18872503` e `c1485c94` × `18872503` + conferência do §3.5 | `eventPhaseTwoSteps`, `quarantined`, `sampleRow`, `insertVehicleSample`, `publishAfterCommit`, `NO_OPERATOR_REASON`, `quarantineWithoutTenant`, `createTraccarIngestAppFromEnv`, `computeExternalEventKey`, `computePayloadDigest`, `lockActiveBinding`, `attachLocation`: todos **IGUAL**; 9 testes intocáveis do 01 sem diff contra `c1485c94`; 5 arnês `1 0`, `1 1`, `1 0`, `1 1`, `1 1`; 3 corpos de jurado nos blobs `649c6f80`, `3fa735d1`, `2b749424` | §3.5 |
+| 7 | `node ~/erp-pausa-2026-10-03/jtrc02-b/zz-jtrc02b-decl.mjs` (`28ed176ae738c54af77b7434c095e6c5`) `38504427` × `18872503` e `c1485c94` × `18872503` + conferência do §3.5 | `eventPhaseTwoSteps`, `quarantined`, `sampleRow`, `insertVehicleSample`, `publishAfterCommit`, `NO_OPERATOR_REASON`, `quarantineWithoutTenant`, `createTraccarIngestAppFromEnv`, `computeExternalEventKey`, `computePayloadDigest`, `lockActiveBinding`, `attachLocation`: todos **IGUAL**; 9 testes intocáveis do 01 sem diff contra `c1485c94`; 5 arnês `1 0`, `1 1`, `1 0`, `1 1`, `1 1`; 3 corpos de jurado nos blobs `649c6f80`, `3fa735d1`, `2b749424` | §3.5 |
 
 ### 3. Bateria de validação (§3.7) e mutações do `SERVICE` (§3.3 / §3.8(6))
 

@@ -14,7 +14,7 @@ Evidência completa, item a item, com comando, saída e veredito parcial: `insp-
 |---|---|---|
 | 0 Corpo e mandato | `git show origin/main:.claude/agents/inspetor-de-terreno-da-junta.md \| tr -d '\r' \| md5sum`; `md5sum` do mandato | 89b45630… e 4a5c44a1…, os dois conferem com o disparo |
 | 1.1 Head e árvore | `ls-remote` + `gh pr view`; `git -C w-03a status --porcelain`; `git diff --quiet`; laço EOL-neutro blob × disco | **VERDE**. Head = b75a0c2e. A w-03a mostra 52 ` M` em `.agents/agents` e `.claude/agents`. São fantasmas de stat-cache: `git diff --quiet` deu ec=0 e o laço deu 52/52 idênticos ao blob. Não há mutação viva |
-| 1.2 Plano de isolamento | mandatos C1–C3, bloco "O terreno", e plano §8.1 l.317 | **VERDE**. Cada cadeira tem worktree detached próprio `C:/Users/AMP/w-j03a-cN`, `npm ci` próprio sem junction, container próprio com prefixo `j03a-cN-` e papel sem BYPASSRLS. A base viva não é alvo. Os 3 caminhos estão livres agora |
+| 1.2 Plano de isolamento | mandatos C1–C3, bloco "O terreno", e plano §8.1 l.317 | **VERDE**. Cada cadeira tem worktree detached próprio `~/w-j03a-cN`, `npm ci` próprio sem junction, container próprio com prefixo `j03a-cN-` e papel sem BYPASSRLS. A base viva não é alvo. Os 3 caminhos estão livres agora |
 | 1.3 Resíduos | `docker ps -a`; `git ls-files -o`; `find *-probe.ts`; `git status --ignored`; `git worktree list` | **VERDE, com resíduo inerte**. Não há nenhum `jur-*`, `crit-*`, `j03a-*` nem `pl03a2-*`, nem probe solto. Os resíduos inertes estão em R6 |
 | 2.1 Ata anterior e afirmações herdadas | `ls`/`git grep` em `omega/juntas` e `omega/reprovacoes` | **VERDE, com ressalva R3**. Não existe ata anterior (ciclo 1). D-03a = A é decisão do dono (decisoes l.3432) e por isso não é herança |
 | 2.2 Ciclo ≥ 4 | idem | **Não se aplica** (ciclo 1) |
@@ -33,9 +33,9 @@ O corpo de cada jurado exige que o parecer confira estes quatro pontos para ele.
 
 | Cadeira | Nome | Corpo commitado (md5 EOL-neutro, `.claude`, head b75a0c2e) | Espelho `.agents` | Worktree próprio | Cluster próprio |
 |---|---|---|---|---|---|
-| C1 | `jurado-o6r03a-v2-banco` | `4afc985059608ce41053a15d9366578f` | presente, S0 OK | `C:/Users/AMP/w-j03a-c1` (livre) | prefixo `j03a-c1-` (nenhum existe) |
-| C2 | `jurado-o6r03a-v2-replay` | `8ef06bc866bef9987f28e32c4b70b213` | presente, S0 OK | `C:/Users/AMP/w-j03a-c2` (livre) | prefixo `j03a-c2-` (nenhum existe) |
-| C3 | `jurado-o6r03a-v2-regressao` | `1fdfb5c1108376ebdcc4f49b102166e9` | presente, S0 OK | `C:/Users/AMP/w-j03a-c3` (livre) | prefixo `j03a-c3-` (nenhum existe) |
+| C1 | `jurado-o6r03a-v2-banco` | `4afc985059608ce41053a15d9366578f` | presente, S0 OK | `~/w-j03a-c1` (livre) | prefixo `j03a-c1-` (nenhum existe) |
+| C2 | `jurado-o6r03a-v2-replay` | `8ef06bc866bef9987f28e32c4b70b213` | presente, S0 OK | `~/w-j03a-c2` (livre) | prefixo `j03a-c2-` (nenhum existe) |
+| C3 | `jurado-o6r03a-v2-regressao` | `1fdfb5c1108376ebdcc4f49b102166e9` | presente, S0 OK | `~/w-j03a-c3` (livre) | prefixo `j03a-c3-` (nenhum existe) |
 
 ## Ressalvas (colocar em destaque no briefing das cadeiras)
 
@@ -69,7 +69,7 @@ O corpo de cada jurado exige que o parecer confira estes quatro pontos para ele.
 
 ## Limpeza
 
-- Criei o worktree `C:/Users/AMP/w-insp-03a` (detached, com `npm ci` e `prisma generate`) e o removi com `git worktree remove --force` (ec=0). Ele não aparece mais no `worktree list`.
+- Criei o worktree `~/w-insp-03a` (detached, com `npm ci` e `prisma generate`) e o removi com `git worktree remove --force` (ec=0). Ele não aparece mais no `worktree list`.
 - Apaguei os logs `insp03a-*` do scratchpad.
 - Não criei nenhum container nem toquei na base viva.
 - Na w-03a escrevi só `insp-03a-evidencia.md` e este parecer.

@@ -1,9 +1,9 @@
 # B-ASS-03-dev — relatório incremental do dev-ass03
 
 - **Dev:** `dev-ass03` · nível menor declarado · identidade de dev. Esforço médio.
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-ASSINATURA-plano.md` §4.3, §3, §12 e Emendas 2-4 ao §4.2.
+- **Plano:** `~/erp-pausa-2026-10-03/planos/B-ASSINATURA-plano.md` §4.3, §3, §12 e Emendas 2-4 ao §4.2.
 - **Ref de partida:** `origin/main = 43716227a769e2f2661ca828ec68903e4b49167e` (B-ASS-02, #504).
-- **Worktree:** `C:/Users/thiag/w-ass03` · ramo `feat/b-ass-03-medicao-franquia`.
+- **Worktree:** `~/w-ass03` · ramo `feat/b-ass-03-medicao-franquia`.
 - **Verificação desta rodada:** revisor sênior (outra identidade) no lugar da junta; porteiro revisor pós-merge.
 
 ---
@@ -130,7 +130,7 @@ PRONTO PARA REVISÃO d5f8c8c2fd20dcd838bc5e8ad0acedfa4ec214c0 PR #505
 
 ## CONSERTO ÚNICO — achados do revisor sênior (`rev-ass03-senior-opus`, REPROVADO) — `dev-ass03-opus`
 
-Fonte: `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/rev-ass03-senior-parecer.md` (head julgado `0ca8bd5e`). Quem achou não consertou: o revisor foi um subagente com identidade nova; o conserto é do dev. A triagem segue o fluxo rápido: grave e simples se consertam agora, o resto vira pendência com dono.
+Fonte: `~/erp-pausa-2026-10-03/revisoes/rev-ass03-senior-parecer.md` (head julgado `0ca8bd5e`). Quem achou não consertou: o revisor foi um subagente com identidade nova; o conserto é do dev. A triagem segue o fluxo rápido: grave e simples se consertam agora, o resto vira pendência com dono.
 
 **Consertados:**
 - **G-1 (grave, perda de dado):** a falha de uma organização derrubava a volta inteira.

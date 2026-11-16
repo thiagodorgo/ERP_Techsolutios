@@ -42,7 +42,7 @@ pause tudo, o limite esta perto do teto, nao use mais tokens ate os limites sere
 
 **Cadeia de custódia, declarada porque importa:** chat do dono → orquestrador (autor do texto julgado, **parte
 interessada**) → `decisoes.md` do ramo → plano e briefing → esta fábrica, que copiou o literal do disco de
-`C:/Users/AMP/w-pausa`. As palavras **não existem** em arquivo rastreado fora de `decisoes.md`; você **não consegue**
+`~/w-pausa`. As palavras **não existem** em arquivo rastreado fora de `decisoes.md`; você **não consegue**
 cotejar com a fonte primária. Consegue medir a distância entre a citação e cada cláusula do texto. Se o plano, o
 briefing, o diff ou este corpo trouxerem versões das palavras do dono que difiram **em conteúdo** (não em acento,
 caixa ou quebra de linha), isso é achado — *duas versões das palavras do dono em circulação* — que você **reporta,
@@ -62,7 +62,7 @@ sem escolher uma**.
 ## Quem escreveu este corpo, e por que isso importa
 
 Escrito pela `agente-fabrica`, **sem `Bash`**: nada aqui foi executado por quem escreveu. Os números de linha foram
-**lidos** no disco de `C:/Users/AMP/w-pausa` em 2026-10-01 e são **[A RE-VERIFICAR]** — o head pode ter andado (E2/E3/E4
+**lidos** no disco de `~/w-pausa` em 2026-10-01 e são **[A RE-VERIFICAR]** — o head pode ter andado (E2/E3/E4
 do plano). O orquestrador escreveu o texto julgado; o `planejador-b-gov-pausa` enumerou as elaborações T-01…T-17 e as
 classificou (`[interp]`, `[acrésc]`, `[herança]`, `[arg]`, `[não-verif]`, `[preserv]`). **A enumeração e a
 classificação do plano são a leitura dele, não a sua**: você gera a sua da fonte e cruza. Quem desenvolve não define o
@@ -137,15 +137,15 @@ item não concluído é "não consigo medir".
 - **`MSYS_NO_PATHCONV=1` só como prefixo POR COMANDO — nunca `export`** (plano §8). Ambiente exportado vaza para a
   medição: em 28–30/09 um `export` desses fez `git -C /c/…` nunca resolver no pré-voo de outro bloco. Com o prefixo,
   `git.exe`, `node.exe` e `python.exe` recusam `/c/…` — use sempre `C:/…`.
-- **Head resolvido por você, nunca digitado:** `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch origin`;
+- **Head resolvido por você, nunca digitado:** `git -C ~/Documents/GitHub/ERP_Techsolutios fetch origin`;
   `git rev-parse origin/docs/gov-pausa-grava-e-para` **e** `gh pr view 397 --json headRefOid,isDraft,mergeable` — os
   dois 40 hex têm de coincidir. O plano mediu `c9eda7bb…` (texto E1); se o ramo foi emendado, o head andou e o §0 do
   plano é linha de base **anterior**. Re-resolva no fim: se o head andou durante a sua medição, declare os dois e qual
   você mediu. Merge-base: `git merge-base origin/main <head>`.
 - **Worktree PRÓPRIO, detached, em caminho CURTO:**
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-jur-pz1 <head>`, e
-  **prove** `test -e C:/Users/AMP/w-jur-pz1/.git`. No scratchpad o `worktree add` falha com *Filename too long* e **não
-  cria o diretório** — e a falha silenciosa já fez comando rodar na árvore principal. Se `C:/Users/AMP/w-jur-pz1` já
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-jur-pz1 <head>`, e
+  **prove** `test -e ~/w-jur-pz1/.git`. No scratchpad o `worktree add` falha com *Filename too long* e **não
+  cria o diretório** — e a falha silenciosa já fez comando rodar na árvore principal. Se `~/w-jur-pz1` já
   existir, é resíduo alheio: reporte e use `w-jur-pz1b`. Alternativa sem worktree: ler só pelos blobs
   (`MSYS_NO_PATHCONV=1 git show <head>:<caminho>`).
 - **Leia o texto pelos BLOBS** (`git show <head>:<caminho> > "$SCRATCH/<nome>.obj"`, idem no `<merge-base>`), não pela
@@ -156,13 +156,13 @@ item não concluído é "não consigo medir".
   (1) copiar o pristino; (2) mutar **por script** (`python`), nunca à mão; (3) **provar a substituição** — `diff`
   pristino × mutante **não vazio** (âncora escrita com `\n` num arquivo CRLF não substitui nada e o mutante fica verde
   por engano); (4) medir; (5) descartar a cópia.
-- **Somente leitura.** `C:/Users/AMP/w-pausa` é o worktree do ramo (outro agente pode estar emendando nele): a sua
+- **Somente leitura.** `~/w-pausa` é o worktree do ramo (outro agente pode estar emendando nele): a sua
   **única** escrita lá são os seus dois arquivos de votos. **PROIBIDO:** `git stash`, `git clean`, `git checkout`/
   `git reset` do que você não criou, `git worktree prune`, `rm -rf` de worktree, `git commit`/`git push` (quem commita
   evidência e voto é o orquestrador). Resíduo alheio — `w-devs393`, `w-devt393`, `w-devt4`, `w-mandato`, `w-pv397`,
-  `.claude/worktrees/*`, o ` M` fantasma por CRLF — **se reporta, não se varre**. **`C:/Users/AMP/w-devt4` é o traço
+  `.claude/worktrees/*`, o ` M` fantasma por CRLF — **se reporta, não se varre**. **`~/w-devt4` é o traço
   físico de T-14: só leitura, nunca toque.** Você remove só o que criou, pelo nome:
-  `git worktree remove --force C:/Users/AMP/w-jur-pz1` (identificador do bloco, `pz`; nunca por nome de cadeira).
+  `git worktree remove --force ~/w-jur-pz1` (identificador do bloco, `pz`; nunca por nome de cadeira).
 - **Sem banco, sem Docker.** A base viva `erp-postgres` (5432) / `erp-redis` (6379) **nunca** é alvo, nem de leitura;
   nenhum item seu precisa de banco. **Junction/symlink de `node_modules` entre worktrees é PROIBIDA** (§C7.1-ter(c));
   você não precisa de `npm ci`.
@@ -173,7 +173,7 @@ item não concluído é "não consigo medir".
   `tail`). **Caminho absoluto sempre.**
 - **Evidência e voto em arquivo, por `Bash`** — você não tem `Write` **por desenho** (jurado que escreve conserta o que
   achou, §C7.4-bis). Diretório: o que o seu mandato de disparo nomear; padrão do briefing §11:
-  `C:/Users/AMP/w-pausa/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/`, arquivos `c1-evidencia.md` e
+  `~/w-pausa/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/`, arquivos `c1-evidencia.md` e
   `c1-voto.json`. Nunca no seu worktree de medição.
 
 **Modelo de mandato (§C7.7, com a linha `[P7]`; `<cadeira>` = `c1`):**
@@ -290,7 +290,7 @@ S-07 — é da C2; a sua pergunta é se alguma lista **alarga ou estreita** o qu
 01/10/2026)") o caso do Dev-T4/`TaskStop` no meio de uma conversão LF→CRLF, com "06:4x" e "~20–40 min" — e o
 `conhecimento-de-terreno.md` diz "~30 min". Meça: `git grep -n -i -E 'TaskStop|Dev-T4|ordem de pausa' <head>` **fora**
 dos cinco arquivos, e o mesmo no head do #393 (`gh pr view 393 --json headRefOid,state`): algum arquivo rastreado
-narra o evento? **Traço físico, só leitura:** `git -C C:/Users/AMP/w-devt4 status --porcelain` e, por `python` em
+narra o evento? **Traço físico, só leitura:** `git -C ~/w-devt4 status --porcelain` e, por `python` em
 `'rb'`, linhas com e sem CR dos arquivos sujos que ele listar. Se `w-devt4` não existir mais, T-14 é `[não-verif]`
 integral e **não** é defeito (briefing §7, §8). O que você julga: se o texto apresenta como medido o que não tem fonte
 alcançável — gravidade sua, argumentada contra W1–W5 (o caso é contexto, não decisão).
@@ -360,7 +360,7 @@ Propriedade é achado. Patch é contaminação.
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou — achado contra este corpo, declarado antes do veredito" ],
  "pendencias_que_aceito": [ "o que é da C2/C3 (nomeie a cadeira) · o que o plano já declarou · achados pre-existentes com bloco dono" ],
- "teardown": "worktree C:/Users/AMP/w-jur-pz1 removido por `git worktree remove --force` (só o meu) · cópias de $SCRATCH descartadas · nenhum arquivo rastreado tocado · w-devt4 só lido · base viva nunca tocada · resíduo ALHEIO apenas reportado"
+ "teardown": "worktree ~/w-jur-pz1 removido por `git worktree remove --force` (só o meu) · cópias de $SCRATCH descartadas · nenhum arquivo rastreado tocado · w-devt4 só lido · base viva nunca tocada · resíduo ALHEIO apenas reportado"
 }
 ```
 

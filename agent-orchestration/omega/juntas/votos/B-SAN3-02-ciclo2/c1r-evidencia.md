@@ -2,30 +2,30 @@ executor efetivo: jurado-san302c2-c1r-opus (Claude Code, subagente) · modelo: C
 
 # Evidência — Cadeira C1r (REVALIDAÇÃO da C1, §C7 item 9 regra (2)) — B-SAN3-02 ciclo 2 (DINHEIRO)
 
-Roteiro P3: `git show 09b380da:agent-orchestration/omega/juntas/votos/B-SAN3-02/c1-evidencia.md` e `c1-voto.json` (objeto do ciclo 1 8e6a6c29) — A RE-VERIFICAR, nunca fato. Logs do ciclo 1 em `C:/Users/AMP/erp-pausa-2026-10-03/jsan302-c1/` — A RE-VERIFICAR.
-Sondas desta cadeira guardadas em `C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c1r/` (fora do worktree).
+Roteiro P3: `git show 09b380da:agent-orchestration/omega/juntas/votos/B-SAN3-02/c1-evidencia.md` e `c1-voto.json` (objeto do ciclo 1 8e6a6c29) — A RE-VERIFICAR, nunca fato. Logs do ciclo 1 em `~/erp-pausa-2026-10-03/jsan302-c1/` — A RE-VERIFICAR.
+Sondas desta cadeira guardadas em `~/erp-pausa-2026-10-03/jsan302c2-c1r/` (fora do worktree).
 
 ## 0. Legalidade e objeto — IGUAL (re-execução da §0 do ciclo 1, objeto novo)
 
 - Objeto por duas fontes: `git ls-remote origin refs/heads/fix/faturamento-atomico-e-delta` → `09b380dab54946e16303c8bae0e95bbaa0d667a5`; `gh pr view 448 --json headRefOid,state,isDraft,mergeable` → `09b380da…`, OPEN, rascunho=false, MERGEABLE. Coincidem (ciclo 1: 8e6a6c29 por duas fontes — mesma forma, objeto novo).
 - check-runs: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/09b380da…/check-runs --jq '.total_count, ([...select(.status != "completed" or .conclusion != "success")] | length)'` → `14` / `0` (ciclo 1: 14/0) → IGUAL.
 - `git merge-base origin/main 09b380da` → `9009e81be3c5…` (B do ciclo 2); `origin/main` início = `7f07844c` (andou 1 commit, #452 KPI; não muda o objeto).
-- Inspetor: `insp-san302c2-parecer.md` → LIBERADO COM RESSALVA (R-A…R-E), nomeia C1r = `jurado-san302c2-c1r-opus`, worktree `C:/Users/AMP/w-jsan302c2-c1r-…`, banco `teste-linux.sh`/`tl…`. R-A (sondas perdidas → reconstrução = VOTO NOVO) aplicada; R-D (disco) respeitada: sem `npm ci` no Windows.
+- Inspetor: `insp-san302c2-parecer.md` → LIBERADO COM RESSALVA (R-A…R-E), nomeia C1r = `jurado-san302c2-c1r-opus`, worktree `~/w-jsan302c2-c1r-…`, banco `teste-linux.sh`/`tl…`. R-A (sondas perdidas → reconstrução = VOTO NOVO) aplicada; R-D (disco) respeitada: sem `npm ci` no Windows.
 - Regra que me rege: `git show origin/main:CLAUDE.md | grep -n 'JUNTA: SÓ A CADEIRA'` → l.809 (§C7 item 9; regras (0)–(4) lidas). Identidade `jurado-san302c2-c1r-opus` não está na lista de inelegíveis do inspetor (83 tokens gerados) — sem colisão.
 - Corpo de contexto: md5 EOL-neutro do blob `bbaed208` = `0668a346…` = o carregado (1ª linha) → IDENTICO; igual ao do ciclo 1 (`0668a346…`).
 - Divergência corpo × plano (§A2, já no mandato): T-A4 vale na forma do plano v2 (201 complementar), não no 409 da l.127 do corpo.
 
 ## 0.1 Terreno
 
-- Worktree próprio: `git -C C:/Users/AMP/w-san3-02 worktree add --detach C:/Users/AMP/w-jsan302c2-c1r-a 09b380da…` → `HEAD is now at 09b380da`; `git status --short` = 0 linha. Prefixo `w-jsan302c2-c1r-` do mandato (sufixo `a`).
+- Worktree próprio: `git -C ~/w-san3-02 worktree add --detach ~/w-jsan302c2-c1r-a 09b380da…` → `HEAD is now at 09b380da`; `git status --short` = 0 linha. Prefixo `w-jsan302c2-c1r-` do mandato (sufixo `a`).
 - `npm ci` próprio DENTRO do contêiner da ferramenta, sobre a cópia do worktree (tar exclui `node_modules`); no Windows o worktree fica SEM `node_modules` (`fsutil reparsepoint query …
 ode_modules` → "não pode encontrar o arquivo") → zero junction por construção (§C7.1-ter(c)); poupa ~0,45 GB de disco (R-D).
 - 06:41:20Z / 06:48:49Z P8: commit livre 8,14 / 7,91 GB (≥ 4) · `docker ps` = só `erp-postgres`/`erp-redis` (excluídos) → 0 trabalho Docker alheio · disco `/c` 14 / 13 GB (≥ 10).
-- Sondas PRÓPRIAS (não rastreadas, nunca commitadas), GUARDADAS em `C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c1r/` (`tests/jsan302c2-c1r-sonda-{db,mem}.test.ts`, `.jsan302c2-c1r/{driver.sh,mut.mjs,q.mjs,hashes.tsv,base-hashes.tsv,base/}`) e copiadas para o worktree. Base = 12 arquivos de `src/` de `2ecfb333` (B0 = merge-base(8e6a6c29, 9009e81b), o mesmo src da base do ciclo 1) por `git -c core.autocrlf=false show`; `git hash-object --no-filters` de cada um = `git rev-parse 2ecfb333:<arq>` → 12/12. `hashes.tsv` = `git rev-parse 09b380da:<arq>` dos 12 (prova de restauro EOL-neutra: `tr -d '
+- Sondas PRÓPRIAS (não rastreadas, nunca commitadas), GUARDADAS em `~/erp-pausa-2026-10-03/jsan302c2-c1r/` (`tests/jsan302c2-c1r-sonda-{db,mem}.test.ts`, `.jsan302c2-c1r/{driver.sh,mut.mjs,q.mjs,hashes.tsv,base-hashes.tsv,base/}`) e copiadas para o worktree. Base = 12 arquivos de `src/` de `2ecfb333` (B0 = merge-base(8e6a6c29, 9009e81b), o mesmo src da base do ciclo 1) por `git -c core.autocrlf=false show`; `git hash-object --no-filters` de cada um = `git rev-parse 2ecfb333:<arq>` → 12/12. `hashes.tsv` = `git rev-parse 09b380da:<arq>` dos 12 (prova de restauro EOL-neutra: `tr -d '
 ' < f | git hash-object --stdin`).
-- Subida 1 (06:49Z, STAGE=obj): `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-jsan302c2-c1r-a "STAGE=obj bash .jsan302c2-c1r/driver.sh"` → contêineres **MEUS `tl179247896563165-{pg,redis,run}`** (registrados antes do `trap`; `docker inspect` do `-run` monta `C:/Users/AMP/w-jsan302c2-c1r-a`). Log `C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c1r/run1-obj.log`.
+- Subida 1 (06:49Z, STAGE=obj): `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-jsan302c2-c1r-a "STAGE=obj bash .jsan302c2-c1r/driver.sh"` → contêineres **MEUS `tl179247896563165-{pg,redis,run}`** (registrados antes do `trap`; `docker inspect` do `-run` monta `~/w-jsan302c2-c1r-a`). Log `~/erp-pausa-2026-10-03/jsan302c2-c1r/run1-obj.log`.
 - Subida 1 resultado (`run1-obj.log`, `teste-linux ec=0`, 06:52:13Z→06:53:05Z): PG 16.14 descartável (alias `tlbanco7q`, sem porta publicada); `HASHCHECK inicial ok=12/12` e `final ok=12/12`; `RESTO [{"trg":"0","fn":"0","tenants":"0","roles":"0"}]`; contêineres removidos pelo `trap`.
-- Subida 2 (06:54Z, STAGE=mut, base e m5b em sequência): P8 às 06:54:07Z commit livre 5,38 GB (≥ 4) · 1 trabalho Docker alheio (`tl179247899463276-*`, outra cadeira) + o meu = 2 (teto) · disco 13 GB. Contêineres **MEUS `tl179247925364581-{pg,redis,run}`** (`docker inspect` do `-run` monta `C:/Users/AMP/w-jsan302c2-c1r-a`). Log `C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c1r/run2-mut.log`. Antes dela, a sonda db ganhou o `EXPLAIN` do UPDATE sem ordem também pela conexão de superusuário (para comparar com o "Seq Scan" registrado no ciclo 1); cópia atualizada guardada na pasta fora do worktree.
+- Subida 2 (06:54Z, STAGE=mut, base e m5b em sequência): P8 às 06:54:07Z commit livre 5,38 GB (≥ 4) · 1 trabalho Docker alheio (`tl179247899463276-*`, outra cadeira) + o meu = 2 (teto) · disco 13 GB. Contêineres **MEUS `tl179247925364581-{pg,redis,run}`** (`docker inspect` do `-run` monta `~/w-jsan302c2-c1r-a`). Log `~/erp-pausa-2026-10-03/jsan302c2-c1r/run2-mut.log`. Antes dela, a sonda db ganhou o `EXPLAIN` do UPDATE sem ordem também pela conexão de superusuário (para comparar com o "Seq Scan" registrado no ciclo 1); cópia atualizada guardada na pasta fora do worktree.
 
 - Subida 2 resultado (`run2-mut.log`, `teste-linux ec=0`, 06:55:43Z→06:59:31Z): STAGE=mut, base e m5b, cada um com `HASHCHECK inicial/final ok=12/12` e `RESTO {trg 0, fn 0, tenants 0, roles 0}`.
 - Subidas 3, 4 e 5 (T-Z3/T-Z3L em cluster novo, para medir o plano):
@@ -33,7 +33,7 @@ ode_modules` → "não pode encontrar o arquivo") → zero junction por constru�
   - 4: `tl179247979265472-*`, 07:03:24Z, `run4-z3.log`. P8: 4,48 GB, 1 alheio + o meu, 13 GB. `ec=0`.
   - 5: `tl179248002465899-*`, 07:07:16Z, `run5-z3b.log`. P8: 4,86 GB, 1 alheio + o meu, 13 GB. `ec=0`.
 
-  O `-run` de cada uma montava `C:/Users/AMP/w-jsan302c2-c1r-a` (`docker inspect`), e os IDs foram registrados antes do `trap`.
+  O `-run` de cada uma montava `~/w-jsan302c2-c1r-a` (`docker inspect`), e os IDs foram registrados antes do `trap`.
 
 ### Papel sem bypass (regra comum) — IGUAL
 `JSAN_OBS ROLE` (sonda-db, subida 1): serviço = `o6r_b01_1792479168103_c7d7e12c80c8` com `rolsuper=false`, `rolbypassrls=false` lidos pela PRÓPRIA conexão (`SELECT current_user, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`); vencedor/medidor cru = `postgres` (`rolsuper=true`). Em TODA corrida o backend bloqueado em `pg_stat_activity` tem `usename` = o papel (`blocksAllRole:true`), e no ORD o backend que espera a advisory é o papel. Igual ao ciclo 1.
@@ -61,11 +61,11 @@ Veredito parcial item 1: as 6 execuções que se repetem pelo mesmo comando (3 c
 ## Item 2 de 3 — K1 e K2 por sonda RECONSTRUÍDA — VOTO NOVO (régua do ciclo 2)
 
 A sonda foi reconstruída pelo caso registrado, porque as originais sumiram (R-A). Os comandos ficam registrados e reexecutáveis:
-- objeto: `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh <worktree com as sondas> "STAGE=obj bash .jsan302c2-c1r/driver.sh"`;
+- objeto: `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh <worktree com as sondas> "STAGE=obj bash .jsan302c2-c1r/driver.sh"`;
 - mutações, base e M5b: `"STAGE=mut bash …; STAGE=base bash …; STAGE=m5b bash …"`;
 - dentro do contêiner: `node --test --test-reporter=tap --import tsx tests/jsan302c2-c1r-sonda-db.test.ts` (seleção por `JC_CASES`, N por `JC_N_<caso>`) e `CORE_SAAS_PERSISTENCE=memory … tests/jsan302c2-c1r-sonda-mem.test.ts`.
 
-Os textos estão em `C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c1r/`. O papel sem bypass está provado na seção "Papel sem bypass".
+Os textos estão em `~/erp-pausa-2026-10-03/jsan302c2-c1r/`. O papel sem bypass está provado na seção "Papel sem bypass".
 
 ### K1 no objeto (`run1-obj.log`: sonda-mem 8/8 e sonda-db 17/17, 0 skip)
 
@@ -157,7 +157,7 @@ Nenhum achado.
 - **O que não toquei:** nenhum contêiner alheio (o `tl179247899463276-*` de outra cadeira seguiu vivo) nem `erp-*` (`erp-postgres`/`erp-redis` vivos). Nenhum `prune`, nenhuma porta publicada; 5432/6379/3000/5173/5050/8899 intocadas e base viva nunca usada.
 - **Cluster antes de morrer:** `RESTO [{"trg":"0","fn":"0","tenants":"0","roles":"0"}]` em todas as subidas que executaram: gatilhos e funções `jsan302c2_c1r%` = 0 em `pg_trigger`/`pg_proc`, tenants `jsan302c2c1r-%` = 0, papéis efêmeros `o6r_b01_%` = 0. O índice M5b foi recriado antes do fim (`IDX_FIM`).
 - **Mutações e base:** só na cópia `/w` do contêiner, com `HASHCHECK ok=12/12` depois de cada uma e no fim. O worktree no Windows nunca foi mutado (`git diff --stat` vazio antes da remoção).
-- **Worktree:** nenhum processo com `w-jsan302c2-c1r` na linha de comando (`tasklist //V` = 0). `git worktree remove --force C:/Users/AMP/w-jsan302c2-c1r-a` → REMOVIDO; `git worktree list` sem ele; diretório ausente.
-- **Sondas guardadas** fora do repositório, `cmp`-iguais às do worktree antes da remoção: `C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c1r/` (`tests/`, `.jsan302c2-c1r/`, logs `run1-obj.log`…`run5-z3b.log`).
+- **Worktree:** nenhum processo com `w-jsan302c2-c1r` na linha de comando (`tasklist //V` = 0). `git worktree remove --force ~/w-jsan302c2-c1r-a` → REMOVIDO; `git worktree list` sem ele; diretório ausente.
+- **Sondas guardadas** fora do repositório, `cmp`-iguais às do worktree antes da remoção: `~/erp-pausa-2026-10-03/jsan302c2-c1r/` (`tests/`, `.jsan302c2-c1r/`, logs `run1-obj.log`…`run5-z3b.log`).
 - **Disco depois:** 13 GB livres.
 - Não li voto de outra cadeira. Não commitei. Não proponho correção.

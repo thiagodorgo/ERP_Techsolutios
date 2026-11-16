@@ -3,14 +3,14 @@
 > **Desenvolvedor:** `dev-b-os-filtrar-exportar` (não planejou; não revisa).
 > **Papel:** `frontend-pixel-master`, subordinado ao plano e ao `CLAUDE.md` §11.
 > **Modelo:** Codex GPT-5.6 Sol — substituição declarada por `D-FABLE-ASTRA-SO-DINHEIRO`; o bloco não toca dinheiro.
-> **Worktree exclusivo:** `C:/Users/AMP/w-osfe` · ramo `feat/web-os-filtrar-exportar`.
+> **Worktree exclusivo:** `~/w-osfe` · ramo `feat/web-os-filtrar-exportar`.
 > **Base de comparação do plano:** `c8af6458` · head inicial medido: `5d8d8f4d88127c16503f30ceca1eaf76458c8c13`.
 
 ## Evidência incremental (P1)
 
 ### Pré-voo de ref — CONCLUÍDO
 
-- Comando: `git -C C:/Users/AMP/w-osfe rev-parse HEAD` e `git -C C:/Users/AMP/w-osfe ls-remote origin feat/web-os-filtrar-exportar`.
+- Comando: `git -C ~/w-osfe rev-parse HEAD` e `git -C ~/w-osfe ls-remote origin feat/web-os-filtrar-exportar`.
 - Saída resumida: local = remoto = `5d8d8f4d88127c16503f30ceca1eaf76458c8c13` (N=2 refs, forma=SHA completo).
 - Resultado: worktree e ramo remoto conferem com o prefixo esperado `5d8d8f4d`; desenvolvimento liberado.
 
@@ -75,7 +75,7 @@
 
 - Comando: bateria §8.1 na ordem prescrita; 16 rodadas do protocolo §7.3; reexecução do bloco após restauração; inspeção e remoção dos artefatos gerados.
 - Saída resumida: comandos 1–7 e 9–13 verdes; bloco restaurado `47/47`; mutações `16/16` vermelhas nos IDs previstos e `16/16` hashes restaurados; `npm test` raiz ec 1 em 7 casos fora do escopo; QA visual não executado.
-- Resultado: implementação e provas específicas verdes. Foram removidos somente `C:/Users/AMP/w-osfe/frontend/dist` e `C:/Users/AMP/w-osfe/dist`, ambos resolvidos dentro do worktree. Nenhum servidor/browser/banco foi iniciado.
+- Resultado: implementação e provas específicas verdes. Foram removidos somente `~/w-osfe/frontend/dist` e `~/w-osfe/dist`, ambos resolvidos dentro do worktree. Nenhum servidor/browser/banco foi iniciado.
 
 #### Bateria §8.1
 
@@ -99,7 +99,7 @@
 
 Diagnóstico nominal do item 8 (segunda execução, mesma contagem): `core-saas-role-authority.test.ts` (arquivo silencioso), dois jobs de evento de checklist, três casos de fila/worker Redis e um writer Redis (`not ok` 86, 639, 640, 1278–1280 e 2675). Nenhum caminho pertence a A1–A13; o item foi encerrado como premissa de baseline falsa, sem iniciar banco/Redis nem alterar o produto fora do plano.
 
-O §8.1 sugere um segundo worktree em `C:/Users/AMP/w-osfe-base` para comparar a falha raiz. A ordem desta execução restringe toda atividade **somente** a `C:/Users/AMP/w-osfe`; por isso o dev não criou nem escreveu no segundo worktree. A investigação permitida ficou limitada à repetição nominal no mesmo worktree.
+O §8.1 sugere um segundo worktree em `~/w-osfe-base` para comparar a falha raiz. A ordem desta execução restringe toda atividade **somente** a `~/w-osfe`; por isso o dev não criou nem escreveu no segundo worktree. A investigação permitida ficou limitada à repetição nominal no mesmo worktree.
 
 ## Mutações §7.3
 
@@ -142,7 +142,7 @@ O §8.1 sugere um segundo worktree em `C:/Users/AMP/w-osfe-base` para comparar a
 
 **Feito:** A1–A13 implementados. A bateria específica passou com bloco `47/47`, regressões `191/191`, smoke `1268/1268`, contratos backend-front `16/16`, builds/checks verdes e 16 mutações eficazes com restauração integral.
 
-**Não feito / divergências:** QA visual não feito por ausência de navegador/captura na sessão. `npm test` raiz falhou em 7 casos fora de A1–A13 (eventos/Redis e arquivo silencioso), reproduzidos nominalmente; a comparação em segundo worktree prescrita no plano conflita com a ordem explícita de trabalhar somente em `C:/Users/AMP/w-osfe` e não foi feita. `Blob.text()` remove o BOM na decodificação, embora os bytes `EF BB BF` estejam no arquivo; FE3 mede os bytes. A base `c8af6458` inclui plano + dois `controle/**` já presentes no head inicial; o delta desta identidade desde `5d8d8f4d` é exatamente A1–A13.
+**Não feito / divergências:** QA visual não feito por ausência de navegador/captura na sessão. `npm test` raiz falhou em 7 casos fora de A1–A13 (eventos/Redis e arquivo silencioso), reproduzidos nominalmente; a comparação em segundo worktree prescrita no plano conflita com a ordem explícita de trabalhar somente em `~/w-osfe` e não foi feita. `Blob.text()` remove o BOM na decodificação, embora os bytes `EF BB BF` estejam no arquivo; FE3 mede os bytes. A base `c8af6458` inclui plano + dois `controle/**` já presentes no head inicial; o delta desta identidade desde `5d8d8f4d` é exatamente A1–A13.
 
 **Validação:** §8.1: itens 1–7 e 9–13 passaram; item 8 ficou vermelho em `2705` testes (`2627` pass, `7` fail, `71` skipped), fora do escopo; item 14 teve `16/16` mutações vermelhas e restauradas; item 15 não foi executado. A suíte do bloco após as mutações voltou a `47/47`.
 

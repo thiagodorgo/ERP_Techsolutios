@@ -22,7 +22,7 @@ CONTEÚDO (tabela rodada-a-rodada, N, forma, causa, logs nomeados). Quem consoli
 
 | Item | Valor medido | Comando |
 |---|---|---|
-| Worktree | `c:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\san2-r` | `pwd` |
+| Worktree | `~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\san2-r` | `pwd` |
 | Branch | `chore/san2-4a-medir-arnes` | `git rev-parse --abbrev-ref HEAD` |
 | Head | `26ede7301a54277b19baec56cc77499b70177039` (= `26ede73`, o do plano) | `git rev-parse HEAD` |
 | Working tree | limpo salvo `?? agent-orchestration/omega/planos/SAN2-4a-plano.md` (o plano, untracked) | `git status --porcelain` |

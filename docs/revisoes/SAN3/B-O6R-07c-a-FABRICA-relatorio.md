@@ -25,7 +25,7 @@ Os três têm:
 - a régua: unanimidade de 3 com veto, teto de 2 ciclos, `gravidade` + `escopo` (pre-existente com evidência) + `classe`,
   "não consigo medir" = REPROVADO, e nenhum jurado propõe correção;
 - P1, P2, P4 e P7, com o voto-esqueleto;
-- o terreno: worktree próprio detached (`C:/Users/AMP/w-j07cac1`, `w-j07cac2`, `w-j07cac3`), `npm ci` próprio, container
+- o terreno: worktree próprio detached (`~/w-j07cac1`, `w-j07cac2`, `w-j07cac3`), `npm ci` próprio, container
   Linux próprio sem porta publicada (prefixos `j07ca-c1-`, `j07ca-c2-`, `j07ca-c3-`), e a base viva e as portas do dono
   proibidas;
 - os inelegíveis por nome do 07c-a.7, mais os dois devs nomeados no relatório do dev, a fábrica, o orquestrador, o
@@ -40,7 +40,7 @@ hipótese; o mandato nomeia o caminho que vale.
 
 ## O que usei de cada corpo de origem
 
-Li os corpos de origem no disco de `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/`. Não os medi por
+Li os corpos de origem no disco de `~/Documents/GitHub/ERP_Techsolutios/.claude/agents/`. Não os medi por
 `git ls-tree c1cfdabe` como o 07c-a.7 manda, porque não tenho `Bash`; ver a divergência D7.
 
 - **`coordenador-de-acessos.md` → C1.** Usei:

@@ -7,7 +7,7 @@
 
 - **Papel:** `inspetor-de-terreno-da-junta`
 - **Modelo:** Opus 5 (`claude-opus-5[1m]`) — substituindo Fable por indisponibilidade (ver nota acima)
-- **Corpo aplicado:** carregado de `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/inspetor-de-terreno-da-junta.md`
+- **Corpo aplicado:** carregado de `~/Documents/GitHub/ERP_Techsolutios/.claude/agents/inspetor-de-terreno-da-junta.md`
   (md5 EOL-neutro `934a8b08`) e, por ele divergir do head julgado, **re-executado sob o corpo do head
   `3a0ea095`** (`8a7d53a5`), que e superset estrito — itens 3.1-bis, 3.3 e 4.3 inclusos. Medicao e
   fundamento no §8 deste parecer (ressalva R1).
@@ -68,7 +68,7 @@ $ git -C .../sanb1 diff --stat aadaa6d5 3a0ea095
 ### 1-bis. Arvore PRINCIPAL — mutacao viva de **OUTRA SESSAO**, reportada e NAO varrida
 
 ```
-$ git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios status --porcelain
+$ git -C ~/Documents/GitHub/ERP_Techsolutios status --porcelain
  M .agents/agents/especialistas/critico-c5-adversarial.md
  M .agents/agents/especialistas/jurado-c5-arnes-catalogo-postgres.md
  M .claude/agents/especialistas/critico-c5-adversarial.md
@@ -95,7 +95,7 @@ Sao os corpos dos especialistas **`c5`** do `B-O6R-02 ciclo 5` (outra sessao; a 
 ## 2. Isolamento — **VERDE (declarado e verificavel)**
 
 O briefing §0 declara por escrito, e eu confirmei que o texto existe: worktree **detached proprio por
-cadeira** em **caminho curto** (`C:/Users/AMP/w-j-sanb1-<cadeira>`), com a medicao de que worktree dentro do
+cadeira** em **caminho curto** (`~/w-j-sanb1-<cadeira>`), com a medicao de que worktree dentro do
 scratchpad falha no Windows (`Filename too long`); **`npm ci` proprio**; **sem junction** (§C7.1-ter(c));
 conteineres proprios com `DATABASE_URL`/`REDIS_URL` explicitas se subir banco; **5432 e de outro projeto**;
 faixa **58284-58483 excluida pelo Windows**; **base viva `erp-postgres`/`erp-redis` NUNCA e alvo**; remocao
@@ -126,7 +126,7 @@ erp-redis                      Exited (255) 3 days ago
   briefing manda. Nada na 5432 por Docker.
 - `find .../sanb1 -name "*probe*"` (fora de `node_modules`) devolveu **vazio**; `git status` do worktree
   julgado **vazio**. Nenhum arquivo de sonda solto na arvore julgada.
-- **Worktree `C:/Users/AMP/w-s1`** (`chore/ci-probe@27eae4b0`) segue vivo: e a sonda S2 do orquestrador,
+- **Worktree `~/w-s1`** (`chore/ci-probe@27eae4b0`) segue vivo: e a sonda S2 do orquestrador,
   **deliberadamente preservada como evidencia ate este bloco mergear** (§7 do relatorio do dev). Residuo
   **inerte e declarado** — ressalva, nao bloqueio. **Nao e deste bloco e nao deve ser varrido por ninguem.**
 
@@ -140,7 +140,7 @@ erp-redis                      Exited (255) 3 days ago
 | Relatorio do dev | `DEV-B-SAN3-B1.md` — **15 556 bytes** |
 | Comando com as emendas | `.../sanb1/agent-orchestration/codex/comandos/B-SAN3-B1-ci-ve-o-sha-julgado.md` — **10 678 bytes** |
 | Simulacoes | `SIMULACOES-S1-S2.md` — **4 574 bytes** (executadas **pelo orquestrador**, worktree descartavel `w-s1`) |
-| Plano-mestre | `C:/Users/AMP/.claude/plans/luminous-nibbling-sparrow.md` — **23 727 bytes** |
+| Plano-mestre | `~/.claude/plans/luminous-nibbling-sparrow.md` — **23 727 bytes** |
 
 **Item 2.3 (o comando nomeia head, escopo e bateria com forma).** Conferido por `grep` das secoes: o comando
 tem Objetivo / Contexto e fontes / As duas mudancas sao INSEPARAVEIS / Escopo PERMITIDO / Escopo PROIBIDO /
@@ -217,7 +217,7 @@ node --check Kpis/app.js   ->   EXIT=0
 **Na RAIZ o mesmo comando e VERMELHO — e NAO e deste bloco:**
 
 ```
-cd C:/Users/AMP/Documents/GitHub/ERP_Techsolutios && node scripts/sync-agent-agents.mjs --check
+cd ~/Documents/GitHub/ERP_Techsolutios && node scripts/sync-agent-agents.mjs --check
 [agents-sync] FALTA no espelho: .agents/agents/especialistas/jurado-o6r11-contrato-mobile-fila.md
 [agents-sync] FALTA no espelho: .agents/agents/especialistas/jurado-o6r11-suplente-contrato-mobile-fila.md
 [agents-sync] FALTA no espelho: .agents/agents/especialistas/jurado-san3-01c2-fail-closed-web.md
@@ -412,7 +412,7 @@ destaque):
 | **R2** (forte) | **O briefing nao diz o que acontece com a unanimidade de 3 se uma cadeira cair.** A norma existe no head: `PROTOCOLO-JUNTA-RESILIENTE.md`, P3/R2 — *"voto perdido nao conta; o sucessor tem identidade nova"*. | Conserto = uma frase no briefing. Sem ela, um voto perdido produz resultado que o dono nao consegue interpretar. |
 | **R3** | **P5 sem conta comum.** Ha uma **junta irma viva** (`B-SAN3-00`, PR #392, `7822deaf`) montada nos mesmos minutos. O teto de 2 cadeiras precisa ser **somado entre as juntas vivas**. | Quem sequencia e o orquestrador; a cadeira so precisa saber que pode esperar vez. |
 | **R4** | **Mutacao viva de OUTRA sessao na arvore principal** (4 corpos `c5` do `B-O6R-02 ciclo5`, +364/-8, medida real e nao fantasma de `autocrlf`) e **S0 vermelho na raiz** (4 especialistas de outros blocos fora do espelho + 2 `DIVERGE`). **Nada disso esta no diff deste bloco.** | Rode tudo **dentro do worktree julgado**. Residuo alheio **se reporta, nunca se varre** — remocao so por identificador **deste** bloco. |
-| **R5** | **Worktree `C:/Users/AMP/w-s1`** (`chore/ci-probe@27eae4b0`) segue vivo de proposito: e a sonda S2, preservada como evidencia ate este bloco mergear. Inerte, sem privilegio, sem mutacao. | Nao e sujeira a limpar durante a junta. |
+| **R5** | **Worktree `~/w-s1`** (`chore/ci-probe@27eae4b0`) segue vivo de proposito: e a sonda S2, preservada como evidencia ate este bloco mergear. Inerte, sem privilegio, sem mutacao. | Nao e sujeira a limpar durante a junta. |
 | **R6** | **12 afirmacoes do dev + 2 numeros do briefing estao listados no §10 como A RE-VERIFICAR** — inclusive a A7 (`npm test` nao rodou localmente) e a A2 (o alcance corrigido do defeito), que o briefing manda julgar. | Nada disso e fato herdado. |
 
 **Nao ha item que eu tenha deixado de medir.** Onde meu alcance parou, esta dito no texto (conclusoes por

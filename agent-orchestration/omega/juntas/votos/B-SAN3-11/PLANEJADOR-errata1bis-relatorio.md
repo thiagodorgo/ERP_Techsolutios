@@ -8,13 +8,13 @@ papel: planejador-mestre | identidade: planejador-errata1-b-san3-11 (mesma ident
 
 ## 0. Verificações de identidade — 2026-10-02T16:14Z
 
-- Mandato: `agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/planejador-errata1bis.md` em `C:/Users/AMP/w-nuv11`
+- Mandato: `agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/planejador-errata1bis.md` em `~/w-nuv11`
   (HEAD `ff1f69b4` = FETCH_HEAD do ramo) → `tr -d '\r' | md5sum` = `310f353fad2be576c246beeca01a59b1` (68 linhas); o blob
   `git show ff1f69b4:<caminho>` dá o mesmo md5. Conclusão parcial: mandato íntegro.
 - Corpo do papel: o mesmo da errata 1 (md5 `4c912f69a93f07b14d8fd1c49539c778`, blob de `origin/main` 4ab9d232), já conferido às 15:20Z.
 - Papéis (§C7.4-bis): quem achou = o dev da errata 1 (parou e relatou, não propôs — `DEV-ERRATA1-401.md` §9); quem planeja = esta
   identidade; quem desenvolve = o mesmo dev da errata 1 retoma (a correção é de **critério**, não de código — ver seção 15-bis).
-  Esta identidade não desenvolve, não vota, não commita; `C:/Users/AMP/w-dev11` é **só leitura** para mim.
+  Esta identidade não desenvolve, não vota, não commita; `~/w-dev11` é **só leitura** para mim.
 
 ## 1. Leitura do mandato e do insumo (relato do dev, §9 e PARADA) — 2026-10-02T16:17Z
 
@@ -81,7 +81,7 @@ Conclusões parciais:
 
 ### 3.1 Bateria de controle do novo A17, por execução (w-pl11b @ 46bd9fbe, CRLF, Node v20.19.5) — 2026-10-02T16:23Z
 
-Terreno próprio: `git worktree add --detach C:/Users/AMP/w-pl11b 46bd9fbe` (os objetos do head local do dev são partilhados entre
+Terreno próprio: `git worktree add --detach ~/w-pl11b 46bd9fbe` (os objetos do head local do dev são partilhados entre
 worktrees; `w-dev11` não foi tocado) → `porcelain=0`; `cd frontend && npm ci --no-audit --no-fund` → `added 103 packages in 20s`, ec=0
 (16:20:43→16:21:03Z), sem junction. Mutações por `pl11b-mut-a17.mjs` (preserva o EOL, lança se não aplicar), restauração por cópia de backup.
 Medido por: `timeout 600 node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx` após cada mutação (16:22:15→16:22:35Z; TAPs em
@@ -171,10 +171,10 @@ antes de publicar** — "critério impossível de passar" é defeito do planejad
 
 - Processos com `w-pl11b` na `CommandLine` (`Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'w-pl11b' }`, PowerShell
   direto, 20:52:31Z) → **0**. (Na tentativa pré-queda, a mesma contagem chamada de dentro do Bash devolveu `n/d` e a regra fail-closed não removeu.)
-- `git worktree remove --force C:/Users/AMP/w-pl11b` → ec=0 (20:52:47Z); `test -e` → removido; `git worktree list | grep -c pl11` → 0;
+- `git worktree remove --force ~/w-pl11b` → ec=0 (20:52:47Z); `test -e` → removido; `git worktree list | grep -c pl11` → 0;
   worktrees restantes **18** (todos alheios — inclusive `w-dev11` e `w-dev11lf` do dev, mantidos por ele para a retomada); árvore principal
   `status --porcelain` **55 linhas antes e 55 depois** (nada meu); `%TEMP%/.tmp-censo-*` → **0**.
-- `C:/Users/AMP/w-dev11` **só leitura, intocado**: HEAD `46bd9fbe`, `porcelain=0` (tudo o que mutei — `?? 1`, `timeout: 1`, os `throw`,
+- `~/w-dev11` **só leitura, intocado**: HEAD `46bd9fbe`, `porcelain=0` (tudo o que mutei — `?? 1`, `timeout: 1`, os `throw`,
   a linha de status da P-CHK, o índice — foi no MEU `w-pl11b`, revertido e depois removido).
 - Nada escrito no repositório; nenhum commit; nenhum container/cluster; base viva 5432/6379 não tocada.
 - Ficam no scratchpad (evidência, fora do repo): `pl11b-probe-d1.mjs`, `pl11b-mut-a17.mjs`, `pl11b-a17.log`, `pl11b-tap-a17-{a,b,c}.log`,

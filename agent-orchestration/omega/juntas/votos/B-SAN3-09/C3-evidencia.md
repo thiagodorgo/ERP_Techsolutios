@@ -15,7 +15,7 @@ Formato P1: cada item = comando · saida resumida · veredito parcial, com hora 
 - veredito parcial: legal. OBJETO = **ba65c03a4c3edc0723633b0f1330f34852a60e6f** (delta desde 6330bce2 = so registro de junta; produto identico).
 
 ## T. Terreno (2026-10-04T19:40Z)
-- `git worktree add --detach C:/Users/AMP/w-j09c3 ba65c03a...` → HEAD ba65c03a4c3edc0723633b0f1330f34852a60e6f, `status --porcelain` = 0 linhas.
+- `git worktree add --detach ~/w-j09c3 ba65c03a...` → HEAD ba65c03a4c3edc0723633b0f1330f34852a60e6f, `status --porcelain` = 0 linhas.
 - `npm ci --no-audit --no-fund` → ec=0, added 326 packages; `cmd /c "dir /AL /S /B node_modules" | wc -l` → 0 junction/symlink.
 - `DATABASE_URL=postgresql://inerte@127.0.0.1:1/inerte npx prisma generate` (variavel so no comando) → ec=0.
 - disco C: 11 GB livres antes do npm ci (`df -h /c`).
@@ -120,7 +120,7 @@ Formato P1: cada item = comando · saida resumida · veredito parcial, com hora 
 
 ## L2. Limpeza (20:04–20:09Z)
 - `docker rm -f -v j09c3-node j09c3-pg j09c3-redis` e `docker network rm j09c3-net` → 0 containers/redes j09c3; base viva erp-postgres/erp-redis "Up 7 days (healthy)", nunca alvo. Volumes orfaos: 12, o mais novo criado 18:41:47Z (antes dos meus containers, ~19:43Z) — nenhum meu.
-- worktree: 0 processo com `w-j09c3` na linha de comando; `git -C w-j09c3 status --porcelain` = 0; `git worktree remove --force C:/Users/AMP/w-j09c3` → ec=0; `test -e` → removido; `git worktree list | grep -ic w-j09c3` = 0.
+- worktree: 0 processo com `w-j09c3` na linha de comando; `git -C w-j09c3 status --porcelain` = 0; `git worktree remove --force ~/w-j09c3` → ec=0; `test -e` → removido; `git worktree list | grep -ic w-j09c3` = 0.
 - **INCIDENTE (relato, nao merito):** a limpeza dos meus temporarios usou, alem de nomes literais, o glob `./*.log` dentro de `scratchpad/` — que e o diretorio de scratchpad COMPARTILHADO da sessao (contem BRIEFING-*, DEV-*, CRITICO-* de outros agentes). O glob apagou TODO `.log` da raiz desse diretorio, nao so os meus (contagem depois = 0; a contagem antes NAO foi medida, portanto nao sei quantos `.log` alheios havia). Nenhum arquivo rastreado, nenhum worktree, nenhum `.md`/`.tap` alheio foi tocado (os 13 `mut-*.tap`/`mut-c2` de 09-20/09 continuam). O orquestrador deve conferir se alguma evidencia que ele contava ler estava em `scratchpad/*.log`; o que foi commitado em `votos/` nao foi afetado.
 - disco C: 8,1 GB livres ao fim.
 

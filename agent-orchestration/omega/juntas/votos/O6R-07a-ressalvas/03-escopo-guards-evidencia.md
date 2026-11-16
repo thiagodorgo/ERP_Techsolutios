@@ -7,7 +7,7 @@
 
 | item | valor |
 |---|---|
-| worktree | `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/r07a` |
+| worktree | `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/r07a` |
 | HEAD | `533cefd14dd69e0f63bdc480a0674c1aa38676b1` (`chore/o6r07a-ressalvas`) |
 | `origin/main` | `3c29189351541e082d218ff510a7bc4de174776a` |
 | merge-base(origin/main, HEAD) | `cae60863ba9fb8e27f23d29daf496b58f29905f1` |

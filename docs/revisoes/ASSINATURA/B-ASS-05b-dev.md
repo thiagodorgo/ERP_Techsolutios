@@ -11,7 +11,7 @@ Plano: `B-ASSINATURA`, "Emenda 2 ao §4.5 — bloco `B-ASS-05b`" (fora do reposi
 ## F0 — terreno
 
 - `git fetch -q origin` → `origin/main` = `015234d05320c4888cb4326affd8f4eb65a3a3e1` (o #510 já está lá).
-- `git worktree add -b feat/b-ass-05b-trilha-planos C:/Users/thiag/w-ass05b origin/main` → `HEAD is now at 015234d0`.
+- `git worktree add -b feat/b-ass-05b-trilha-planos ~/w-ass05b origin/main` → `HEAD is now at 015234d0`.
 - `npm ci` próprio → `npmci=0` (sem junction).
 - Memória de commit livre: `11` GB; Docker sem outro trabalho (`docker ps` vazio).
 - `docker run -d --name ass05b-pg ... -p 127.0.0.1:55526:5432 postgres:16`; `DATABASE_URL` exportado para ele.
@@ -120,7 +120,7 @@ Plano: `B-ASSINATURA`, "Emenda 2 ao §4.5 — bloco `B-ASS-05b`" (fora do reposi
     estão no log do job, sem skip.
   - `backend-postgres`: `# tests 503 · # pass 503 · # fail 0`.
   - `frontend`: `# tests 1676 · # pass 1676 · # fail 0`.
-- **Limpeza:** `git worktree remove --force C:/Users/thiag/w-ass05b-ctl` (o `git worktree list | grep -c ctl` → 0);
+- **Limpeza:** `git worktree remove --force ~/w-ass05b-ctl` (o `git worktree list | grep -c ctl` → 0);
   bases de drill que sobraram no cluster → 0; `docker rm -f ass05b-pg` (contêineres `ass05b` → 0); `dist/` do worktree
   apagado. O worktree `w-ass05b` fica para a junta.
 - **Escopo** (`git diff --name-only origin/main...HEAD`): `audit-metadata.ts`, `bootstrap-trail-once.ts` (novo),

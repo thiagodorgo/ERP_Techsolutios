@@ -2050,7 +2050,7 @@ TAP version 13
     not ok 8 - T14a/b · o procedimento converge, é idempotente e falha fechado nos modos nomeados
       ---
       duration_ms: 165.6852
-      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-05-runtime-role-guard-db.test.ts:3:18223'
+      location: '~/w-conf484\\tests\\san3-05-runtime-role-guard-db.test.ts:3:18223'
       failureType: 'testCodeFailure'
       error: |-
         psql: ausente — pré-requisito da suíte -db
@@ -2065,12 +2065,12 @@ TAP version 13
       actual: 1
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1003:14)
+        TestContext.<anonymous> (~/w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1003:14)
         Test.runInAsyncScope (node:async_hooks:206:9)
         Test.run (node:internal/test_runner/test:796:25)
         Test.start (node:internal/test_runner/test:702:17)
         TestContext.test (node:internal/test_runner/test:292:20)
-        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:998:17)
+        TestContext.<anonymous> (~/w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:998:17)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
@@ -2079,7 +2079,7 @@ TAP version 13
     not ok 9 - T14c · filhos escritores respeitam a trava única e a guarda estrutural é fechada
       ---
       duration_ms: 673.4501
-      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-05-runtime-role-guard-db.test.ts:15:3951'
+      location: '~/w-conf484\\tests\\san3-05-runtime-role-guard-db.test.ts:15:3951'
       failureType: 'testCodeFailure'
       error: |-
         <3>WSL (32289 - Relay) ERROR: CreateProcessCommon:875: execvpe(/bin/bash) failed: No such file or directory
@@ -2093,10 +2093,10 @@ TAP version 13
       actual: 1
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1367:18)
+        TestContext.<anonymous> (~/w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1367:18)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1319:5)
+        async TestContext.<anonymous> (~/w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1319:5)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -2104,7 +2104,7 @@ TAP version 13
     not ok 10 - T14d · MODO 6: qualquer view/matview sobre tabela FORCE recusa o papel novo, sem olhar dono nem privilégio
       ---
       duration_ms: 200.4863
-      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-05-runtime-role-guard-db.test.ts:15:6566'
+      location: '~/w-conf484\\tests\\san3-05-runtime-role-guard-db.test.ts:15:6566'
       failureType: 'testCodeFailure'
       error: |-
         caso COL: status deveria ser 3
@@ -2119,10 +2119,10 @@ TAP version 13
       actual: 1
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1415:24)
+        TestContext.<anonymous> (~/w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1415:24)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1382:5)
+        async TestContext.<anonymous> (~/w-conf484\tests\san3-05-runtime-role-guard-db.test.ts:1382:5)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -2135,7 +2135,7 @@ TAP version 13
 not ok 1 - B-SAN3-05 · o papel de runtime não contorna FORCE RLS
   ---
   duration_ms: 11771.8154
-  location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-05-runtime-role-guard-db.test.ts:3:1497'
+  location: '~/w-conf484\\tests\\san3-05-runtime-role-guard-db.test.ts:3:1497'
   failureType: 'subtestsFailed'
   error: '3 subtests failed'
   code: 'ERR_TEST_FAILURE'

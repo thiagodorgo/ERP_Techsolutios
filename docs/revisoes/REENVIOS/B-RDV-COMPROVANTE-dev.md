@@ -1,7 +1,7 @@
 # B-RDV-COMPROVANTE — diário do dev (incremental)
 
 > Bloco B' do plano `B-REENVIOS` (§G.3). Dev: **identidade Claude (Fable 5), DECLARADA** — a junta será
-> cross-model; o dev não julga a própria entrega. Worktree `C:/Users/thiag/w-rdvcomp`, ramo
+> cross-model; o dev não julga a própria entrega. Worktree `~/w-rdvcomp`, ramo
 > `feat/mobile-rdv-comprovante`, base `origin/main` = `e7e8d678` (medida em 2026-11-09, já com #520/B-O6R-03b).
 > KPI congelado. Uma linha por fatia: comando · saída · veredito.
 

@@ -11,7 +11,7 @@
 ## Item 0 — objeto, contrato e terreno
 
 **Comando:** leitura integral de `CLAUDE.md`, `PROJECT_MEMORY.md`, das skills
-`backend-review-ts-prisma`/`saas-multi-tenant` e referências; `git -C C:/Users/AMP/w-trc01 show
+`backend-review-ts-prisma`/`saas-multi-tenant` e referências; `git -C ~/w-trc01 show
 2043c584...:.claude/agents/agente-dba-guardiao.md`; leitura da decisão
 `D-TRC01-VEHICLE-ASSIGNED-AT` em `origin/main`; leitura do parecer do ciclo 1 no objeto.
 
@@ -22,7 +22,7 @@ cobre a nova 76.
 
 **Veredito parcial:** mandato e objeto delimitados; esta cadeira não vota e não conserta.
 
-**Comando:** `git worktree add --detach C:/Users/AMP/w-dba-trc01c2 2043c584...`; `npm ci` executado dentro do
+**Comando:** `git worktree add --detach ~/w-dba-trc01c2 2043c584...`; `npm ci` executado dentro do
 worktree; `git rev-parse HEAD`; `git branch --show-current`; `git status --short`; inspeção de atributos de
 `node_modules`; `docker ps --format '{{.Names}}'` filtrado por `tl*`/`j*`.
 
@@ -114,7 +114,7 @@ timestamp e o gatilho prevalece nos ramos de troca, manutenção e ausência de 
 ## Item 4 — limpeza
 
 **Comando:** confirmação dos alvos exatos por `docker inspect`, `Resolve-Path` e `git worktree list`; `docker rm -f
-dba-trc01c2-pg16`; `git worktree remove --force C:/Users/AMP/w-dba-trc01c2`; verificação posterior por
+dba-trc01c2-pg16`; `git worktree remove --force ~/w-dba-trc01c2`; verificação posterior por
 `docker ps -a`, `Test-Path` e nova listagem de worktrees.
 
 **Saída resumida:** foi removido somente o container próprio `/dba-trc01c2-pg16` (`postgres:16-alpine`, bind

@@ -1,7 +1,7 @@
 # B-TRC-02 — crítica adversarial, rodada 2 (ÚLTIMA) — critico-trc02-opus
 
 > **Papel:** crítico adversarial; mesma identidade da r1 (`critico-trc02-opus`), Claude Opus `claude-opus-5-5`, nível menor, DECLARADO.
-> **Objeto:** v2 do plano, `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md` (1173 l.); v1 em `B-TRC-02-plano-v1.md`.
+> **Objeto:** v2 do plano, `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md` (1173 l.); v1 em `B-TRC-02-plano-v1.md`.
 > **Regra:** quem acha não conserta (§C7.4-bis) — sem correção proposta. Nada editado no repo; sem Docker; sem base viva.
 > **Estado:** COMPLETO — 12 evidências (R2-E1..E12); 4 bloqueia da r1 fechados; 4 achados novos (0 bloqueia, 4 ajuste); veredito APROVA COM AJUSTES.
 

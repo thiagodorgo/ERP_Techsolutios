@@ -15,7 +15,7 @@ papel: cadeira C1 | identidade: jurado-san322-c1-sol | executor: Codex CLI | cor
 - veredito parcial: corpo canônico válido e espelhamento EOL-neutro confirmado.
 
 - comando: `Get-PSDrive C`; memória de commit; `docker ps`; `node -v`; `docker version`.
-- saída resumida: C: 10,45 GB livres; memória de commit livre 11,43 GB; trabalhos Docker fora de `erp-*`: 0; base viva `erp-postgres`/`erp-redis` identificada e proibida; Node `v20.19.5`; Docker Server `29.6.1`; scratch `C:/Users/AMP/erp-pausa-2026-10-03/j22-c1/`; worktree alvo `C:/Users/AMP/j22-c1-wt`; containers próprios `j22-c1-pg`/`j22-c1-redis`; portas `127.0.0.1:47921/47922`; bancos extras prefixo `j22_c1_`; junction proibida; piso 4 GB memória e 7 GB disco observado.
+- saída resumida: C: 10,45 GB livres; memória de commit livre 11,43 GB; trabalhos Docker fora de `erp-*`: 0; base viva `erp-postgres`/`erp-redis` identificada e proibida; Node `v20.19.5`; Docker Server `29.6.1`; scratch `~/erp-pausa-2026-10-03/j22-c1/`; worktree alvo `~/j22-c1-wt`; containers próprios `j22-c1-pg`/`j22-c1-redis`; portas `127.0.0.1:47921/47922`; bancos extras prefixo `j22_c1_`; junction proibida; piso 4 GB memória e 7 GB disco observado.
 - veredito parcial: terreno comporta a cadeira; base viva e portas 5432/6379 permanecem fora do alvo.
 
 ## Item 1 — EM APURAÇÃO

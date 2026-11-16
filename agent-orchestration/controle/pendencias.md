@@ -11360,7 +11360,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   A10-drain quebrado na mesma rodada) · **dono:** o orquestrador (triagem por execução: N ≥ 20 rodadas do arquivo concorrendo com a suíte; nomeia o bloco dono pela causa achada).
 - **medido:** `tests/inventory-cycle-count-close-units-db.test.ts`, B16 ("recontar Y enquanto a unidade de X segura a
   sessão…"): esperava `ok` e recebeu `422|entry_already_adjusted`. Falhou 1/3 no `npm test` da RETOMADA 4 do
-  `B-ARNES-2`, antes do ajuste A10 (log `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3.tap.log`); passou 0/3 no
+  `B-ARNES-2`, antes do ajuste A10 (log `~/erp-pausa-2026-10-03/arnes2-full-n3.tap.log`); passou 0/3 no
   `npm test` depois do ajuste e 0/10 no subconjunto backend-postgres local (RETOMADA 3).
 - **bloqueia:** não.
 - **teste de encerramento:** a causa nomeada por execução, ou N ≥ 20 rodadas do arquivo concorrendo com a suíte sem
@@ -11574,7 +11574,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou do contexto ativo) passa por cima das permissões na UI — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (`011632f1`, 2026-06-07; o diff do `B-DASH-PERFIL` não toca a linha) · **dono:** `B-SAN3-06a` (ou bloco próprio, se o dono preferir)
-- **Origem:** achado C1-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), reclassificado na auditoria de topo (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-ciclo2-auditoria-e-plano.md`, §1.1, §1.2 S1/S4 e Parte 3 item 1).
+- **Origem:** achado C1-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), reclassificado na auditoria de topo (`~/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-ciclo2-auditoria-e-plano.md`, §1.1, §1.2 S1/S4 e Parte 3 item 1).
 - `PermissionProvider.can`/`hasAny` fazem `|| isPlatformAdmin({ roles, permissions })`, e `isPlatformAdmin` aceita o RÓTULO `"Super Admin"`; `roles` une `session.user.roles` com `activeContext.role`. Efeito medido: sessão sintética `roles=["Super Admin"], permissions=[]` responde `can(<qualquer>)=true` (2/2 permissões sintéticas, S1), e contexto obsoleto com `role:"Super Admin"` no `localStorage` libera a UI do Financeiro (1/1, S4). Só UI: o backend continua negando, e `platform_admin`/`super_admin` recebem o catálogo inteiro (`catalog.ts:412/729`), então o fluxo real não produz o estado.
 - **Decisão que é do dono:** derivar "admin de plataforma" só de `permissions` (`platform:tenants:read`) e derivar `roles` só da sessão.
 - **bloqueia:** não.
@@ -11607,10 +11607,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-JUNTA-MUTACAO-NEGADA-PELO-HARNESS (2026-10-20) — o classificador de permissões do Claude Code negou a mutação de controle de um jurado em worktree descartável — MÉDIA
 
 - **status:** ABERTA · **escopo:** processo (orquestração) · **dono:** o dono, porque são as configurações de permissão do Claude Code; o orquestrador não as altera
-- **Origem:** achado C3-dash3-03 da junta do ciclo 3 do `B-DASH-PERFIL`. A escrita da mutação M3b em `C:/Users/AMP/w-jdash3-c3-opus/frontend/src/pages/ContextSelectionPage.tsx` foi negada duas vezes (`sed -i` e Edit, motivo "Modify Shared Resources"). Nem o jurado nem o orquestrador contornaram a negação. A mesma mutação foi medida vermelha no mesmo ciclo pela C2 e pelo dev.
+- **Origem:** achado C3-dash3-03 da junta do ciclo 3 do `B-DASH-PERFIL`. A escrita da mutação M3b em `~/w-jdash3-c3-opus/frontend/src/pages/ContextSelectionPage.tsx` foi negada duas vezes (`sed -i` e Edit, motivo "Modify Shared Resources"). Nem o jurado nem o orquestrador contornaram a negação. A mesma mutação foi medida vermelha no mesmo ciclo pela C2 e pelo dev.
 - **Efeito:** o jurado que exige vermelho-controle próprio fica sem poder medir. Pelo corpo das cadeiras, "não consigo medir" vale REPROVADO; no ciclo 3 vale a régua do §C7 item 8(2).
 - **bloqueia:** não.
-- **teste de encerramento:** uma mutação de controle num worktree descartável `C:/Users/AMP/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
+- **teste de encerramento:** uma mutação de controle num worktree descartável `~/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
 
 ## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA — FECHADA pelo `B-SAN3-23`
 
@@ -12286,7 +12286,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID (2026-10-26) — drills deixam EBUSY no `after` e o host não tem `setsid` — MÉDIA
 - **status:** ABERTA · **escopo:** `pre-existente`, ambiente/arnês, não produto (C3-04: frequência igual na base `8a7885f4`) · **dono:** arnês de testes · **bloqueia:** não. Gravidade MÉDIA é classificação do registrador (a C3 deu `nota`): o vermelho de ambiente impede medir no Windows o que só a CI Linux mede.
-- **origem:** `agent-orchestration/omega/juntas/votos/B-SAN3-12a-ciclo2/c3-voto.json`, C3-04 ("EBUSY no teardown (after → rmSync do temp) dos drills de migração no Windows"; pede pendência nova com dono); ata `J-B-SAN3-12a.md:36`; parecer do porteiro dos PRs #456/#454 (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md`), linhas 16, 25, 41, 92 e 100; parecer do porteiro do #459, linha 144. No Windows, o `after` de `tests/traccar-event-migration-drill-db.test.ts:118` e de `tests/work-order-invoicing-migration-drill-db.test.ts:98` (o drill de faturamento) encontra `EBUSY` ao remover o diretório temporário depois de os subtestes passarem; T14 não chega à asserção de produto porque `setsid` não existe no host.
+- **origem:** `agent-orchestration/omega/juntas/votos/B-SAN3-12a-ciclo2/c3-voto.json`, C3-04 ("EBUSY no teardown (after → rmSync do temp) dos drills de migração no Windows"; pede pendência nova com dono); ata `J-B-SAN3-12a.md:36`; parecer do porteiro dos PRs #456/#454 (`~/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md`), linhas 16, 25, 41, 92 e 100; parecer do porteiro do #459, linha 144. No Windows, o `after` de `tests/traccar-event-migration-drill-db.test.ts:118` e de `tests/work-order-invoicing-migration-drill-db.test.ts:98` (o drill de faturamento) encontra `EBUSY` ao remover o diretório temporário depois de os subtestes passarem; T14 não chega à asserção de produto porque `setsid` não existe no host.
 - **fora desta pendência:** a falha do shim do `prisma` no T2.1 (mesma lista do porteiro, linha 100) já tem dona própria, `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS` (C3-04).
 - **efeito:** vermelho ambiental e resíduo temporário podem mascarar o resultado do drill no host; a CI Linux cobre o produto, mas o arnês local não é portátil.
 - **reprodução na máquina nova (2026-11-01):** a RYZENCASA reproduziu `EBUSY` no gancho de limpeza de `tests/traccar-event-migration-drill-db.test.ts` e `tests/work-order-invoicing-migration-drill-db.test.ts`; a causa permanece **provável, processo não identificado**. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-38`. Esta ocorrência é apensa aqui; não nasce pendência nova.
@@ -12294,7 +12294,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-GUARD-MIGRACAO-CONTROLES-SEM-CASO (2026-10-26) — controles transacionais sem caso de regressão — BAIXA
 - **status:** ABERTA · **escopo:** ferramenta de processo · **dono:** `B-DRILL-GENERICO-POR-PREFIXO` ou próximo PR do guard · **bloqueia:** não.
-- **origem:** revisão independente do PR #458 (merge `b08c7557`), `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/PR-458-revisao.md:112-126` (N1–N3; a N1 propõe este ID, BAIXA, e o dono). O regex fica em `scripts/migration-transaction-guard.mjs:200`; os casos existentes, em `tests/migration-transaction-guard.test.ts:156-173`; a mutação MR6 sobreviveu 25/25. Remover `ROLLBACK` de `CONTROLE_DE_TRANSACAO` não deixa a suíte vermelha; faltam casos próprios para `ROLLBACK`, `SAVEPOINT` e `ABORT`.
+- **origem:** revisão independente do PR #458 (merge `b08c7557`), `~/erp-pausa-2026-10-03/revisoes/PR-458-revisao.md:112-126` (N1–N3; a N1 propõe este ID, BAIXA, e o dono). O regex fica em `scripts/migration-transaction-guard.mjs:200`; os casos existentes, em `tests/migration-transaction-guard.test.ts:156-173`; a mutação MR6 sobreviveu 25/25. Remover `ROLLBACK` de `CONTROLE_DE_TRANSACAO` não deixa a suíte vermelha; faltam casos próprios para `ROLLBACK`, `SAVEPOINT` e `ABORT`.
 - **notas N2/N3:** G5 lê linhas cruas, de modo que `NAO-ATOMICA` dentro de literal também satisfaz a declaração (caso artificial); `docs/revisoes/B-GUARD-MIGRACAO-{plano,dev}.md` ficaram fora da tabela de escopo do §3, mas são somente registro e não tocaram proibidos.
 - **encerramento:** casos permanentes tornam vermelha a retirada de cada controle (`ROLLBACK`, `SAVEPOINT`, `ABORT`) e prendem a leitura de declaração fora de literal; a tabela de escopo passa a listar os dois arquivos de registro ou registra expressamente a exceção documental.
 
@@ -12370,7 +12370,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` (R4(b)) não tem teste que a prenda — BAIXA
 - **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa. **Alias da E5:** `C3R3-N2` = `R-P3`; não é uma pendência nova.
-- **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/`).
+- **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `~/erp-pausa-2026-10-03/j12b2-c3r2/`).
 
 ## P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria-pressed=true` com uma conta escolhida pela faixa — BAIXA
 - **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.

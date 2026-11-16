@@ -7,7 +7,7 @@ papel: cadeira (b′) ciclo 2 | identidade: jurado-trc01c2-b-cdx | executor: Cod
 - Plano externo: MD5 EOL-neutro `dd6e9074fbc56395e877a396dec16d2a` (esperado e medido).
 - Inspetor: `LIBERADO COM RESSALVA`; R-DBA ciclo 2: `APROVA`.
 - Sucessão P3: dois ocupantes Gemini anteriores caíram sem gravar evidência nem voto; portanto não há comando anterior que possa contar nem roteiro P1 a reexecutar. Esta identidade parte do zero.
-- Terreno: `C:/Users/AMP/w-jc2-b` já existia detached no objeto e não foi usado nem alterado; terreno próprio criado em `C:/Users/AMP/w-jc2-b3`, detached no objeto, sem `.env`, com `npm ci` próprio e sem junction/symlink.
+- Terreno: `~/w-jc2-b` já existia detached no objeto e não foi usado nem alterado; terreno próprio criado em `~/w-jc2-b3`, detached no objeto, sem `.env`, com `npm ci` próprio e sem junction/symlink.
 - Ambiente inicial: Windows/Git Bash; Node `v20.19.5`; Docker Server `29.6.1`; nenhum serviço `erp-*`, porta proibida ou base viva será alvo.
 - Ressalvas do inspetor rechecadas em `origin/main@a26f8afe`: `D-GEMINI-TRACCAR-TETO`, limite de dois trabalhos Docker, `D-IAS-EXTERNAS-PRIMEIRO` e `D-EMENDA-ANTES-DO-CODIGO` estão persistidos. O teto Gemini é não aplicável ao executor sucessor Codex; a troca foi ordenada pelo usuário.
 - Independência: não li nem citarei evidência/voto das cadeiras (a′) e (c′) deste ciclo antes do meu voto.
@@ -35,7 +35,7 @@ papel: cadeira (b′) ciclo 2 | identidade: jurado-trc01c2-b-opus (nova; sucesso
 
 - Início: 2026-10-18T03:50:37Z. Plano do ciclo 2 md5 EOL-neutro: dd6e9074fbc56395e877a396dec16d2a (esperado dd6e9074fbc56395e877a396dec16d2a).
 - Roteiro P3: a evidência do Codex acima não registra NENHUM comando literal (só conclusões). Pela P3, conclusão sem comando não é insumo: re-executo cada conclusão dele pelo meu comando e comparo.
-- Terreno: w-jc2-b e w-jc2-b3 existem (resíduo dos ocupantes caídos) — NÃO usados. Meu worktree: C:/Users/AMP/w-jc2-b4 (detached no objeto). Docker no início: outros = 1 grupo (jtrc01c2-c-*); erp-postgres/erp-redis listados à parte (base viva, nunca alvo). Disco C: 16G livres.
+- Terreno: w-jc2-b e w-jc2-b3 existem (resíduo dos ocupantes caídos) — NÃO usados. Meu worktree: ~/w-jc2-b4 (detached no objeto). Docker no início: outros = 1 grupo (jtrc01c2-c-*); erp-postgres/erp-redis listados à parte (base viva, nunca alvo). Disco C: 16G livres.
 - Independência: não li nem lerei cadeira-a-*/cadeira-c-* deste ciclo.
 
 ### Re-execução do roteiro do Codex (P3) — legalidade
@@ -80,7 +80,7 @@ papel: cadeira (b′) ciclo 2 | identidade: jurado-trc01c2-b-opus (nova; sucesso
 
 ## Item 2 — superfície e trava Ω6R-SEC-002 (sucessora; o Codex não chegou a este item)
 
-**Terreno do item.** Docker antes de subir: `docker ps --format '{{.Names}}'` → outros = 1 grupo (`jtrc01c2-c-*`); base viva `erp-postgres`/`erp-redis` listada à parte, nunca alvo. Portas 47662/47672 fora das faixas excluídas (`netsh … excludedportrange`) e livres. `jtrc01c2-b-pg` (postgres:16 → `SELECT version()` = PostgreSQL 16.14) e `jtrc01c2-b-redis` (redis:7); `docker port` → `127.0.0.1:47662` e `127.0.0.1:47672`. Senha aleatória por `node -e` em `$SCRATCH/jtrc01c2-b.pw`, só por ambiente (`DATABASE_URL=postgresql://postgres:***@127.0.0.1:47662/…`). Segundo worktree meu `C:/Users/AMP/w-jc2-b4-h1` detached em h1, `npm ci` próprio (326 pacotes, ec 0) + `prisma generate`. Bancos: `erp_jc2b` ← `prisma migrate deploy` do objeto (111 migrações, coluna 1, gatilho 1) + `db:seed`; `erp_jc2b_h1` ← migrate deploy de h1 (110, coluna 0, gatilho 0) + `db:seed`.
+**Terreno do item.** Docker antes de subir: `docker ps --format '{{.Names}}'` → outros = 1 grupo (`jtrc01c2-c-*`); base viva `erp-postgres`/`erp-redis` listada à parte, nunca alvo. Portas 47662/47672 fora das faixas excluídas (`netsh … excludedportrange`) e livres. `jtrc01c2-b-pg` (postgres:16 → `SELECT version()` = PostgreSQL 16.14) e `jtrc01c2-b-redis` (redis:7); `docker port` → `127.0.0.1:47662` e `127.0.0.1:47672`. Senha aleatória por `node -e` em `$SCRATCH/jtrc01c2-b.pw`, só por ambiente (`DATABASE_URL=postgresql://postgres:***@127.0.0.1:47662/…`). Segundo worktree meu `~/w-jc2-b4-h1` detached em h1, `npm ci` próprio (326 pacotes, ec 0) + `prisma generate`. Bancos: `erp_jc2b` ← `prisma migrate deploy` do objeto (111 migrações, coluna 1, gatilho 1) + `db:seed`; `erp_jc2b_h1` ← migrate deploy de h1 (110, coluna 0, gatilho 0) + `db:seed`.
 
 **(a) Código da superfície.** `git diff --stat h1 objeto -- src/integrations/traccar src/database/rls.ts src/server.ts src/config/env.ts docker-compose.traccar.yml infra/traccar .env.example` → **vazio**. Superfície do listener/segredo não reaberta (sem razão nova: o diff não a toca). A RE-VERIFICAR do ciclo 1 (item 7 do mandato): não re-julgo listener/segredo/rotação por mérito porque o ciclo 2 não os tocou (medido acima); também não os declaro verdadeiros.
 
@@ -130,7 +130,7 @@ O plano §2.1 deu dono `B-TRC-03` a 1, 3 e 4; o objeto não registrou.
 
 - `ALTER SYSTEM RESET log_statement/log_line_prefix` + `pg_reload_conf()` → `show log_statement` = none (antes de remover o cluster). Papéis `o6r_b01_%`/`jc2b_%` restantes no meu cluster: 0. Gatilho de controle `zz_jc2b_ctl`: 0.
 - `docker rm -f -v jtrc01c2-b-pg jtrc01c2-b-redis` → `docker ps -a --filter name=jtrc01c2-b- -q | wc -l` = 0. Nenhum container alheio tocado; `erp-*` nunca alvo; `jtrc01c2-c-*` (de outra cadeira) intocados.
-- Processos vivos com `w-jc2-b4` no caminho = 0 (Get-CimInstance); `status --porcelain` dos dois worktrees = 0 (controles de código restaurados); `git worktree remove --force` de `C:/Users/AMP/w-jc2-b4` e `C:/Users/AMP/w-jc2-b4-h1` → ec 0, caminhos ausentes, `worktree list` sem eles. **Resíduo ALHEIO apenas reportado:** `C:/Users/AMP/w-jc2-b` e `C:/Users/AMP/w-jc2-b3` (worktrees dos ocupantes caídos desta cadeira, detached no objeto) seguem de pé — não são meus, não removi.
+- Processos vivos com `w-jc2-b4` no caminho = 0 (Get-CimInstance); `status --porcelain` dos dois worktrees = 0 (controles de código restaurados); `git worktree remove --force` de `~/w-jc2-b4` e `~/w-jc2-b4-h1` → ec 0, caminhos ausentes, `worktree list` sem eles. **Resíduo ALHEIO apenas reportado:** `~/w-jc2-b` e `~/w-jc2-b3` (worktrees dos ocupantes caídos desta cadeira, detached no objeto) seguem de pé — não são meus, não removi.
 - Senha: `grep -c -F <senha>` na evidência e no voto = 0 (e o prefixo de 8 usado no papel de controle = 0); subpasta do `$SCRATCH` (`jc2b-opus`, com sondas, logs e o arquivo da senha) apagada inteira. Sondas publicadas por md5 nesta evidência; texto não versionado.
 - Disco C: 16 GB livres no início e no fim. Em `w-trc01` a minha única escrita são `cadeira-b-evidencia.md` (apensado, sem apagar o do Codex) e `cadeira-b-voto.json` (sobrescrito). Nada commitado.
 - Objeto no fim: `git ls-remote origin refs/heads/feat/traccar-b-trc-01` → (medido no voto).

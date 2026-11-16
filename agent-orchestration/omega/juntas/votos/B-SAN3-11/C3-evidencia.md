@@ -24,14 +24,14 @@ Evidencia incremental (P1). Cada secao: hora UTC, comando, saida resumida, vered
 
 ## T. Terreno proprio — 2026-10-03T03:06Z
 
-- `git worktree add --detach C:/Users/AMP/w-j11c3 defa502ee0a03dabbc8786d568d00f7eb7ca726d` → HEAD=defa502e, `status --porcelain` 0 linhas (checkout CRLF, core.autocrlf=true da maquina).
+- `git worktree add --detach ~/w-j11c3 defa502ee0a03dabbc8786d568d00f7eb7ca726d` → HEAD=defa502e, `status --porcelain` 0 linhas (checkout CRLF, core.autocrlf=true da maquina).
 - `cd w-j11c3/frontend && timeout 900 npm ci --no-audit --no-fund` → ec=0 (03:06:11→03:06:25Z, 103 pacotes); `ls node_modules | wc -l` = 61; `cmd /c dir /AL node_modules | grep -ciE 'JUNCTION|SYMLINK'` = 0 (sem junction). Raiz sem npm ci (nao preciso de banco nem do backend: o P-o e lido por tsx do frontend sobre o catalog.ts, que nao importa nada).
 - Base viva erp-postgres/erp-redis: nao tocada (nenhum comando meu aponta para 5432/6379).
 
 ## Item 1 — P-o reexecutado no catalogo; aba e acesso negado intactos (T10 + 2 integracoes) — 2026-10-03T03:07Z
 
 - Script do Apendice D extraido VERBATIM do plano no objeto: `sed -n '1019,1030p' docs/revisoes/SAN3/B-SAN3-11-plano.md | tr -d '\r' > scratchpad/papeis-com-as-duas.mts; md5sum` → **57671f2979d477ca8272226badc85d05** (= o md5 declarado no plano, l.1015).
-- `cd w-j11c3/frontend && REPO_ROOT=file:///C:/Users/AMP/w-j11c3 timeout 120 npx tsx scratchpad/papeis-com-as-duas.mts; echo ec=$?` (1a tentativa com `REPO_ROOT=C:/...` falhou com ERR_UNSUPPORTED_ESM_URL_SCHEME — caminho Windows nao e URL; corrigido so a forma do argumento, o script e o verbatim) → **ec=0**:
+- `cd w-j11c3/frontend && REPO_ROOT=file:///~/w-j11c3 timeout 120 npx tsx scratchpad/papeis-com-as-duas.mts; echo ec=$?` (1a tentativa com `REPO_ROOT=C:/...` falhou com ERR_UNSUPPORTED_ESM_URL_SCHEME — caminho Windows nao e URL; corrigido so a forma do argumento, o script e o verbatim) → **ec=0**:
   `ambas (9): super_admin, tenant_admin, manager, technician, viewer, platform_admin, operator, field_technician, auditor` · `só impound:read (1): field_dispatcher` · `só checklist_runs:read (3): finance, inventory, support` · `nenhuma (0): ∅` — **identico** a saida do plano (Apendice D, l.1036-1039), agora no catalogo do objeto defa502e.
 - Catalogo do objeto: `catalog.ts` sem import (lido); `platform_admin: PERMISSION_CATALOG` (l.729); `field_dispatcher` l.628; `support` l.1033 com `checklist_runs:read` e sem `impound:read`. `git diff --name-only origin/main...HEAD -- src` → 0 (o bloco nao muda catalogo nem rota).
 - Backend (autoridade): `impound.routes.ts` l.202-204 no objeto → `"/impound-processes/:processId/checklist-runs", requirePermission(IMPOUND_PERMISSIONS.read), requirePermission("checklist_runs:read")` — guarda dupla intacta. `RBAC_MATRIX.md:134` read de impound = super_admin, platform_admin, tenant_admin, manager, operator, field_dispatcher, technician, field_technician, viewer, auditor; "NÃO (nem read): finance, inventory, support" — bate com o catalogo (os 9 ∪ field_dispatcher).
@@ -106,7 +106,7 @@ Evidencia incremental (P1). Cada secao: hora UTC, comando, saida resumida, vered
 - `timeout 60 node varredura-v2a.mjs . f03b883f` (w-j11c3, objeto) → ec=0, 4 arquivos varridos (as 2 fixtures, o arquivo do bloco, o gerador), **`# TOTAIS: MUT=5 · EOL=3 · CP=1 · TETO=0 · NULL=0 · WRITE=3`**; com base `origin/main` (= b404815c agora) → identico. Os 3 `EOL`: `censo.mjs:42` (`$` em nome de arquivo) · `versao…:276` (normalizador `/\r\n/g` do `mutate`) · `versao…:318` (regex de T14 **dentro de `mutate(`**) — exatamente os nomeados pelo A18′. `MUT` de fonte: `:300` (T13) e `:318` (T14), ambos dentro de `mutate(`; `:276` e o proprio normalizador; `:234`/`:251` sao recorte de HTML do T11. **A18′ VERDE.**
 - Vermelho-controle do A18′ (o do plano): copia de seguranca do arquivo de teste; `node -e` troca `return { exitCode: result.status, stdout` por `… result.status ?? 1, stdout` com prova (`ocorrencias=1 aplicada=1`) → varredura `versao…:271 | NULL | …` e **`NULL=1`**; restaurado por copia, porcelain 0, diff --stat 0. O instrumento enxerga a classe.
 - `git diff --check origin/main...HEAD` → ec=0 (vazio).
-- `timeout 300 node --test --import file:///C:/Users/AMP/w-j11c3/frontend/node_modules/tsx/dist/loader.mjs tests/kpi-dashboard-charts.test.ts` (raiz do worktree; so builtins + o tsx do frontend) → ec=0, **# tests 17 · pass 17 · fail 0** (o painel hidrata dos JSON do objeto e o FROZEN bate).
+- `timeout 300 node --test --import file:///~/w-j11c3/frontend/node_modules/tsx/dist/loader.mjs tests/kpi-dashboard-charts.test.ts` (raiz do worktree; so builtins + o tsx do frontend) → ec=0, **# tests 17 · pass 17 · fail 0** (o painel hidrata dos JSON do objeto e o FROZEN bate).
 - Veredito parcial 3e: **VERDE**.
 
 ### 3 — fechamento do item — 2026-10-03T03:31Z
@@ -121,6 +121,6 @@ Evidencia incremental (P1). Cada secao: hora UTC, comando, saida resumida, vered
 
 ## Limpeza — 2026-10-03T03:29Z
 
-- Criei: worktree `C:/Users/AMP/w-j11c3` (detached em defa502e, `node_modules` proprio em `frontend/`); temporarios so no scratchpad da sessao (logs, `papeis-com-as-duas.mts`, `varredura-v1/v2a/v2b.mjs`, backups das mutacoes, scripts de voto). Mutacoes de controle (VehicleDossieModal, ChecklistRunsPanel ×2, arquivo de teste, indice) todas em copia no meu worktree, restauradas por copia com porcelain 0 a cada vez; a sonda `zz-j11c3-probe.test.tsx` apagada antes da suite inteira. Nenhum container, nenhum banco, nenhum commit; a arvore do dev so ganhou os meus dois arquivos `C3-*` (untracked; nenhum rastreado tocado).
-- Processos com `w-j11c3` na CommandLine = **0** (Get-CimInstance, 03:28Z, comando sem o nome no proprio CommandLine) → `git worktree remove --force C:/Users/AMP/w-j11c3` ec=0 → `test -e` nao existe; `git worktree list | grep -ic w-j11c3` → **0**.
+- Criei: worktree `~/w-j11c3` (detached em defa502e, `node_modules` proprio em `frontend/`); temporarios so no scratchpad da sessao (logs, `papeis-com-as-duas.mts`, `varredura-v1/v2a/v2b.mjs`, backups das mutacoes, scripts de voto). Mutacoes de controle (VehicleDossieModal, ChecklistRunsPanel ×2, arquivo de teste, indice) todas em copia no meu worktree, restauradas por copia com porcelain 0 a cada vez; a sonda `zz-j11c3-probe.test.tsx` apagada antes da suite inteira. Nenhum container, nenhum banco, nenhum commit; a arvore do dev so ganhou os meus dois arquivos `C3-*` (untracked; nenhum rastreado tocado).
+- Processos com `w-j11c3` na CommandLine = **0** (Get-CimInstance, 03:28Z, comando sem o nome no proprio CommandLine) → `git worktree remove --force ~/w-j11c3` ec=0 → `test -e` nao existe; `git worktree list | grep -ic w-j11c3` → **0**.
 - Uma linha: removi so o que criei (o worktree w-j11c3); nada fora do scratchpad.

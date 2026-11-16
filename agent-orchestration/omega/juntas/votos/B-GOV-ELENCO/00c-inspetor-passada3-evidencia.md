@@ -1,7 +1,7 @@
 # Inspetor de terreno — `B-GOV-ELENCO`, passada 3 · EVIDÊNCIA INCREMENTAL (§C7.7 P1)
 
 Cada item é apensado assim que medido. Comando · saída · veredito parcial. Todo comando com `git -C <wt>` ou
-caminho absoluto; `wt` = `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`.
+caminho absoluto; `wt` = `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`.
 Árvore principal não tocada nem lida. Mandato: 3 itens (P4) — re-medir SÓ o que mudou desde o BLOQUEADO da passada 2.
 
 ## 0 · Estado do terreno ANTES de eu escrever qualquer coisa

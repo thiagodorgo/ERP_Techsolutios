@@ -74,7 +74,7 @@
 - Conclusão: §C3.3 cumprido (valor carregado, nota explícita do PR corrente). **Sem achado.**
 - `mvp_demo` 99 / `mvp_vendavel` 88: só ganham `[KPI-MARCO-2026-10-09: INTOCADO (§C3.4) …]`; nenhuma das 4 entregas é escopo novo grande (#409 acrescenta ferramenta a tela existente); a decisão de não mexer, com recálculo de dono nomeado `B-SAN3-10`, segue o precedente da #386/#409. **Sem achado.**
 
-## §3 Painel e guards (worktree próprio destacado `C:/Users/AMP/w-rev412` @ bc767a64; `npm ci` próprio 326 pacotes ec 0; sem junction; `DATABASE_URL` ausente do ambiente; sem banco)
+## §3 Painel e guards (worktree próprio destacado `~/w-rev412` @ bc767a64; `npm ci` próprio 326 pacotes ec 0; sem junction; `DATABASE_URL` ausente do ambiente; sem banco)
 
 | # | Comando | Saída | Conclusão |
 |---|---|---|---|
@@ -106,6 +106,6 @@ Nenhum número foi copiado: cada um vem do log do CI do próprio merge (item 1).
 
 **VEREDITO: APROVADO** — 0 bloqueia · 0 ajuste · 3 notas (N-1, N-2, N-3).
 
-Terreno: worktree `C:/Users/AMP/w-rev412` removido por `git worktree remove --force` ao final (ver linha abaixo). `C:/Users/AMP/w-kpi` intocado. Nenhum commit, nenhuma escrita no repositório além do próprio worktree (mutações restauradas byte a byte e provadas por `git hash-object`).
-- Limpeza (2026-10-10 03:28 UTC): 0 processos com w-rev412 na linha de comando; `git worktree remove --force C:/Users/AMP/w-rev412` ec 0; `git worktree list` sem w-rev412; w-kpi segue em bc767a64, intocado. Logs de CI e scripts de apoio ficam só no scratchpad da sessão.
-- Anomalia de terreno, sem efeito no mérito: `C:/Users/AMP/w-pkt001` (a9fbe283, `api/pkt-001-b-san3-05t`) aparecia no `git worktree list` às 03:16 UTC e não aparece mais no fim. Este revisor não o tocou: a única remoção feita foi a de w-rev412. A remoção é de outra sessão e fica relatada, não investigada.
+Terreno: worktree `~/w-rev412` removido por `git worktree remove --force` ao final (ver linha abaixo). `~/w-kpi` intocado. Nenhum commit, nenhuma escrita no repositório além do próprio worktree (mutações restauradas byte a byte e provadas por `git hash-object`).
+- Limpeza (2026-10-10 03:28 UTC): 0 processos com w-rev412 na linha de comando; `git worktree remove --force ~/w-rev412` ec 0; `git worktree list` sem w-rev412; w-kpi segue em bc767a64, intocado. Logs de CI e scripts de apoio ficam só no scratchpad da sessão.
+- Anomalia de terreno, sem efeito no mérito: `~/w-pkt001` (a9fbe283, `api/pkt-001-b-san3-05t`) aparecia no `git worktree list` às 03:16 UTC e não aparece mais no fim. Este revisor não o tocou: a única remoção feita foi a de w-rev412. A remoção é de outra sessão e fica relatada, não investigada.

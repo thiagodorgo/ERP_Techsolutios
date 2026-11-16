@@ -6,12 +6,12 @@
 - Esforço declarado: `medium`
 - PR: `#426`
 - Head sob julgamento: `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`
-- Worktree: `C:/Users/AMP/w-trc01`
+- Worktree: `~/w-trc01`
 - Estado: `APROVA COM RESSALVA`
 
 ## 1. Identidade do objeto e contrato aplicável
 
-**Comando:** `git -C C:/Users/AMP/w-trc01 rev-parse HEAD` e `git -C C:/Users/AMP/w-trc01 branch --show-current`
+**Comando:** `git -C ~/w-trc01 rev-parse HEAD` e `git -C ~/w-trc01 branch --show-current`
 
 **Saída resumida:** head `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`; branch `feat/traccar-b-trc-01`.
 
@@ -19,7 +19,7 @@
 
 ## 2. Aditividade e aderência ao plano
 
-**Comando:** `git -C C:/Users/AMP/w-trc01 merge-base origin/main 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91` e `git -C C:/Users/AMP/w-trc01 diff <merge-base> 5abdf83b... -- prisma/schema.prisma prisma/migrations/20260874000000_traccar_ingestion_foundation/migration.sql prisma/migrations/20260875000000_validate_location_source_check/migration.sql`.
+**Comando:** `git -C ~/w-trc01 merge-base origin/main 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91` e `git -C ~/w-trc01 diff <merge-base> 5abdf83b... -- prisma/schema.prisma prisma/migrations/20260874000000_traccar_ingestion_foundation/migration.sql prisma/migrations/20260875000000_validate_location_source_check/migration.sql`.
 
 **Saída resumida:** merge-base `9566d55bd719ce7d7a545281c57923a25f883ed3`; em `prisma/**`, o bloco acrescenta 86 linhas ao schema e duas migrações (189 + 12 linhas). No schema, os únicos acréscimos a modelos existentes são relações reversas sem coluna em `Tenant`, `FieldOperatorLocation` e `Vehicle`, e `FieldDispatch.operator_assigned_at`; nas migrações há três tabelas novas, alargamento do CHECK de `source` por `NOT VALID`, a coluna autorizada e seu trigger. Não há `DROP TABLE`, `DROP COLUMN` nem redução de domínio no up.
 
@@ -101,7 +101,7 @@ Nenhum defeito bloqueante confirmado.
 
 ### S1. Reexecução — identidade do objeto e dimensão do diff
 
-**Comando:** `git -C C:/Users/AMP/w-trc01 rev-parse HEAD`; `git -C C:/Users/AMP/w-trc01 branch --show-current`; `git -C C:/Users/AMP/w-trc01 merge-base origin/main 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`; `git diff --stat/--numstat <merge-base> <head> -- <3 caminhos Prisma>`.
+**Comando:** `git -C ~/w-trc01 rev-parse HEAD`; `git -C ~/w-trc01 branch --show-current`; `git -C ~/w-trc01 merge-base origin/main 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`; `git diff --stat/--numstat <merge-base> <head> -- <3 caminhos Prisma>`.
 
 **Saída resumida:** head `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`; branch `feat/traccar-b-trc-01`; merge-base `9566d55bd719ce7d7a545281c57923a25f883ed3`; `287` inserções e `0` remoções nos três arquivos (`189 + 12 + 86`). A árvore já continha mutações/untracked de outras cadeiras e o parecer atual; não foram tocadas.
 

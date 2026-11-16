@@ -2,7 +2,7 @@
 
 > **Identidade:** `dev-527-tela-app-cl`, nova (não achou, não planejou, não criticou nada no #527).
 > **Modelo:** Claude Opus 5.5, o da sessão ("telas no Claude", `D-CODEX-PRIMEIRO-TELAS-E-PLANOS-NO-CLAUDE`).
-> **Ramo:** `feat/users-seg-tela-app`, criado de `e09e9667` (F1 do backend), worktree `C:/Users/thiag/w-tela527app`.
+> **Ramo:** `feat/users-seg-tela-app`, criado de `e09e9667` (F1 do backend), worktree `~/w-tela527app`.
 > **Plano:** `planos/B-USERS-ACESSO-SEG-conserto-c1.md`, seção A-04 (T.1, T.3, T.4) e emendas 3, 4 e 5 (prevalecem
 > nessa ordem). Só a opção A no app (Emenda 4, item 2). Programado pelo CONTRATO, com dublês (Emenda 5 aplicada ao
 > app); o orquestrador integra depois da F2 do backend.
@@ -194,7 +194,7 @@ Motivo: recursos em VERMELHO desde 22:08 SP (5 medições, a cada 5 min); nenhum
 
 **Próximo comando exato** (só com recursos liberados: depois das 22:45, só VERDE; commit livre ≥ 2048 MB):
 ```
-cd C:/Users/thiag/w-tela527app/mobile/flutter_app && flutter analyze && flutter test test/features/busers_seg_troca_senha_test.dart --reporter compact
+cd ~/w-tela527app/mobile/flutter_app && flutter analyze && flutter test test/features/busers_seg_troca_senha_test.dart --reporter compact
 ```
 As mutações rodam com `bash <scratchpad>/t2/run-mut.sh <ID>` (aplica, roda o teste novo, lista os `[E]`, reverte por
 edição inversa e confere `git diff --quiet -- lib`); se o scratchpad sumir no reinício, as trocas literais estão acima e

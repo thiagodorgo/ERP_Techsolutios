@@ -113,10 +113,10 @@ vai no parecer, nomeado, **antes** de qualquer veredito.
   **sabidamente** mudou nessa delta tem de voltar não-vazio).
 - **Merge-base:** `git merge-base origin/main <objeto>`, depois de `git fetch origin`.
 - **Worktree PRÓPRIO, detached, em caminho CURTO:**
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-stc1 <objeto>`,
-  e **prove** `test -d C:/Users/AMP/w-stc1/.git || test -f C:/Users/AMP/w-stc1/.git`. No scratchpad o
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-stc1 <objeto>`,
+  e **prove** `test -d ~/w-stc1/.git || test -f ~/w-stc1/.git`. No scratchpad o
   `worktree add` falha com *Filename too long* e **não cria o diretório** — e a falha silenciosa já fez
-  comando rodar na árvore principal. Se `C:/Users/AMP/w-stc1` **já existir**, é resíduo alheio: reporte e
+  comando rodar na árvore principal. Se `~/w-stc1` **já existir**, é resíduo alheio: reporte e
   use `w-stc1b`. Você **não** precisa de `npm ci` (seus itens são `git` + `python`); se precisar, é
   `npm ci` **próprio** — **junction/symlink de `node_modules` entre worktrees é PROIBIDA**.
 - **Leia o texto pelos BLOBS, não pela árvore de trabalho:**
@@ -136,10 +136,10 @@ vai no parecer, nomeado, **antes** de qualquer veredito.
   declarado, precisar de banco: contêiner **descartável seu**, porta escolhida fora de 5432/6379 e da faixa
   58284–58483, **provada ligada** (`docker port <nome>`), derrubado no fim pelo nome.
 - **PROIBIDO:** `git stash`, `git clean`, `git checkout`/`git reset` de coisa que você não criou,
-  `git worktree prune`, `rm -rf` de worktree, e **qualquer escrita no `C:/Users/AMP/w-teto`** (é o
+  `git worktree prune`, `rm -rf` de worktree, e **qualquer escrita no `~/w-teto`** (é o
   worktree do orquestrador; você lê o ramo pelos blobs). Os worktrees `w-teto`, `w-mandato`, `b04a`, `b11`,
   `gov-*` e quaisquer outros são de outros blocos/sessões: **resíduo alheio se reporta, não se varre**.
-  Você remove **só o que criou, pelo nome** — `git worktree remove --force C:/Users/AMP/w-stc1` — e remoção
+  Você remove **só o que criou, pelo nome** — `git worktree remove --force ~/w-stc1` — e remoção
   é por identificador de **bloco** (`stc` = sem-teto), nunca por nome de cadeira: com blocos simultâneos,
   nome de papel colide entre sessões.
 - **Saída para arquivo, exit por variável:** `cmd > "$LOG" 2>&1; ec=$?`. **Nunca `| tail`** — devolve o
@@ -361,7 +361,7 @@ Propriedade é achado. Patch é contaminação.
  ],
  "criterios_que_nao_puderam_falhar": [ "item cujo vermelho-controle NÃO ficou vermelho — achado contra este corpo, declarado antes do veredito" ],
  "pendencias_que_aceito": [ "o que é da C2/C3 (nomeie a cadeira) · o que já estava declarado no plano · achados pre-existentes com bloco dono" ],
- "teardown": "worktree C:/Users/AMP/w-stc1 removido por `git worktree remove --force` (só o meu) · cópias de $SCRATCH descartadas · nenhum arquivo rastreado tocado · base viva nunca tocada · resíduo ALHEIO apenas reportado"
+ "teardown": "worktree ~/w-stc1 removido por `git worktree remove --force` (só o meu) · cópias de $SCRATCH descartadas · nenhum arquivo rastreado tocado · base viva nunca tocada · resíduo ALHEIO apenas reportado"
 }
 ```
 

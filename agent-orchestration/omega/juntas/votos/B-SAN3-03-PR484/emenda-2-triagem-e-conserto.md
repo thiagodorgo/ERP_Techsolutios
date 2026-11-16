@@ -106,7 +106,7 @@ Isto também resolve o A3: os dois arquivos ficam declarados.
 
 ### C3, A2: prova da equivalência da M28
 
-- Script fora do repositório, em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs`. Ele confere `Number((Number(n)/1e6).toFixed(6)) === Number(n)/1e6` para:
+- Script fora do repositório, em `~/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs`. Ele confere `Number((Number(n)/1e6).toFixed(6)) === Number(n)/1e6` para:
   - todo `n` em [−10⁶, 10⁶];
   - 10⁶ valores pseudoaleatórios até 10¹⁵;
   - as bordas 2^53 − 1 e −(2^53 − 1).

@@ -21,7 +21,7 @@ Forma: cada item registra comando → saída resumida → veredito parcial, grav
 
 ### 0.3 Parecer do inspetor da junta 4
 - `git show 79b0d594:agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/00-inspetor-terreno.md` — instância `inspetor-de-terreno-da-junta` (Opus 5.5, substituição declarada), aberto 19:14Z, fechado 19:28Z, objeto `2400049b`, **LIBERADO COM RESSALVA** (R1 resíduo alheio inerte · R2 disco 11 GB · R3 disparo general-purpose com md5 do corpo · R4 objeto que andar).
-- A tabela do veredito confere **este nome** (`jurado-san305-c4-catalogo-de-views`), **este corpo** (`45b6126fee088767c15f736f0b1c717e`, rastreado nos dois espelhos), worktree `C:/Users/AMP/w-j05c4c1` (livre) e containers `j05c4-c1-*` sem porta. Confere.
+- A tabela do veredito confere **este nome** (`jurado-san305-c4-catalogo-de-views`), **este corpo** (`45b6126fee088767c15f736f0b1c717e`, rastreado nos dois espelhos), worktree `~/w-j05c4c1` (livre) e containers `j05c4-c1-*` sem porta. Confere.
 - Veredito parcial: VERDE — legalidade: LIBERADO COM RESSALVA vale para esta cadeira.
 
 ### 0.4 Decisões no objeto (§A7)
@@ -35,8 +35,8 @@ Forma: cada item registra comando → saída resumida → veredito parcial, grav
 ### 0.6 Terreno do host
 - `uname -a` (host): `MINGW64_NT-10.0-22631 N3SOH82 3.6.6-1cdd4371.x86_64 2026-01-15 22:20 UTC x86_64 Msys`; `docker version` servidor `29.6.1`; `df -h /c` = 11G livres (96%).
 - `docker ps -a` no início: `erp-postgres-alt` (Exited 3 sem), `pastrack-teste-banco-teste-1` (Exited), `erp-postgres` (Exited 29 h), `erp-redis` (Exited 29 h). Nenhum `j05c4-` — nenhuma outra cadeira de pé. Base viva DESLIGADA e nunca alvo.
-- `ls -d C:/Users/AMP/w-j05c4c1` → inexistente (livre).
-- Ambiente: Git Bash (MSYS) no Windows 11; nenhuma variável exportada; `MSYS_NO_PATHCONV=1` só como prefixo. SCRATCH = `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c1`.
+- `ls -d ~/w-j05c4c1` → inexistente (livre).
+- Ambiente: Git Bash (MSYS) no Windows 11; nenhuma variável exportada; `MSYS_NO_PATHCONV=1` só como prefixo. SCRATCH = `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c1`.
 
 ### 0.7 Normas citadas na ref julgada (§A7) — 19:46Z
 - `md5 EOL-neutro CLAUDE.md` objeto = `a9419a55a77ea2adfd61a6ce80e77a27` = origin/main (idênticos: a norma é a mesma nas duas refs).
@@ -44,7 +44,7 @@ Forma: cada item registra comando → saída resumida → veredito parcial, grav
 - Veredito parcial: VERDE — todas as normas aplicadas existem na ref julgada.
 
 ### 0.8 Worktree próprio
-- `git -C <principal> worktree add --detach C:/Users/AMP/w-j05c4c1 79b0d594` ec=0; `test -e C:/Users/AMP/w-j05c4c1/.git` → 0; `rev-parse HEAD` = `79b0d594b137c4b65640a2da6ac4e61b8e3ddc7f`.
+- `git -C <principal> worktree add --detach ~/w-j05c4c1 79b0d594` ec=0; `test -e ~/w-j05c4c1/.git` → 0; `rev-parse HEAD` = `79b0d594b137c4b65640a2da6ac4e61b8e3ddc7f`.
 
 ### 0.9 Objeto do disparo e nascimento dos arquivos (escopo)
 - `git show <objeto>:…/ciclo4/DEV-relatorio.md` l.7: "Head do disparo: `7c63f920c996cf105535f345eec2ee10461c77a3`". `git log --oneline 37c83064..79b0d594`: 7c63f920 (plano) → a10fc267 → **afb575b4 fix(database)** → d66eb178 → 941c9ea7 → 2fee8d28 → 737e8cf3 → 2400049b → 79b0d594. Uso `7c63f920..79b0d594` como o que o ciclo mudou.
@@ -52,7 +52,7 @@ Forma: cada item registra comando → saída resumida → veredito parcial, grav
 - `git log --diff-filter=A` no objeto: `runtime-role.ts`/`runtime-role.bootstrap.ts` nasceram em `d76b255f` (2026-10-02), `db-runtime-role.sh` em `041e414b` (2026-10-02), o arquivo de guarda em `e0143db1` (2026-10-03); `git merge-base --is-ancestor <c> origin/main` ec=1 nos três (não estão na main; merge-base do ramo `c8af6458`). **Nasceram neste bloco** → defeito neles é `dentro-do-bloco`.
 
 ### 0.10 Condutor do terreno (adaptado da receita)
-- Receita `C:/Users/AMP/erp-terreno/receita-pg16.sh` md5 EOL-neutro `9861a2aaa55fc49fcf1c4263261a3668` (= o citado pelo inspetor). Não a executei: ela derruba tudo no `trap EXIT`. Escrevi `$SCRATCH/condutor-setup.sh` (md5 EOL-neutro `2dcc134c4169539def0732c67b7ec933`, `bash -n` ec=0) com o MESMO procedimento das seções 1–4 da receita, prefixo `j05c4-c1-`, sem `trap EXIT` (containers ficam de pé até o meu teardown), e a segunda árvore do disparo. Diferenças à receita: (i) nomes fixos `j05c4-c1-net/-pg/-node` em vez de `pg16r-<sha>-<rand>`; (ii) árvore temporária `/c/Users/AMP/t-j05c4c1`, removida logo após a cópia; (iii) sem suíte nem teardown no mesmo script; (iv) +segunda árvore `7c63f920` com 3 arquivos em `/tmp/zz-j05c4c1-old/` no container; (v) senha num arquivo 600 do scratchpad (para os comandos seguintes a lerem por ambiente — nunca argv).
+- Receita `~/erp-terreno/receita-pg16.sh` md5 EOL-neutro `9861a2aaa55fc49fcf1c4263261a3668` (= o citado pelo inspetor). Não a executei: ela derruba tudo no `trap EXIT`. Escrevi `$SCRATCH/condutor-setup.sh` (md5 EOL-neutro `2dcc134c4169539def0732c67b7ec933`, `bash -n` ec=0) com o MESMO procedimento das seções 1–4 da receita, prefixo `j05c4-c1-`, sem `trap EXIT` (containers ficam de pé até o meu teardown), e a segunda árvore do disparo. Diferenças à receita: (i) nomes fixos `j05c4-c1-net/-pg/-node` em vez de `pg16r-<sha>-<rand>`; (ii) árvore temporária `~/t-j05c4c1`, removida logo após a cópia; (iii) sem suíte nem teardown no mesmo script; (iv) +segunda árvore `7c63f920` com 3 arquivos em `/tmp/zz-j05c4c1-old/` no container; (v) senha num arquivo 600 do scratchpad (para os comandos seguintes a lerem por ambiente — nunca argv).
 - Execução 19:49:16Z, `timeout 1500 bash condutor-setup.sh` → **ec=0**:
   - `subiram: rede=j05c4-c1-net pg=j05c4-c1-pg volume=e81906ca…(anônimo) node=j05c4-c1-node portas_pg=0 portas_node=0` (sem porta no host)
   - `postgres (PostgreSQL) 16.14 (Debian 16.14-1.pgdg13+1)`
@@ -630,8 +630,8 @@ ok 1 - B-SAN3-05 · o papel de runtime não contorna FORCE RLS
 - Cluster (antes de derrubar): `mig.ts desmontar` → papéis `j05c4c1_mig%` = 0; `caso.ts desmontar` × 10 → cada caso `papeis_restantes=0 bancos_restantes=0`; contagem final: papéis `j05c4c1%` = 0, bancos `j05c4c1%` = 0, papéis `s305%` = 0, slots = 0, views fora do catálogo no migrado = 0, tabelas `zz%` = 0.
 - Mutações: as 9 execuções (M4a/b/c × t/s, CTL1_t, CTL1_s, CTL2_s) restauradas por `cp` do `.pristino`, md5 container = blob (`9efee03d…` trava, `5cab4f63…` script) em todas, antes de derrubar o container.
 - Containers: `docker rm -f -v j05c4-c1-node` ec=0, `docker rm -f -v j05c4-c1-pg` ec=0 (volume anônimo `e81906ca…` → **removido**), `docker network rm j05c4-c1-net` ec=0; `docker ps -a --filter name=j05c4-c1` = **0**, redes = **0**. Restam só `erp-postgres-alt`, `pastrack-teste-banco-teste-1`, `erp-postgres`, `erp-redis` — todos **parados e nunca tocados** (base viva fora de alvo; nenhuma porta 5432/6379/55432 usada).
-- Árvore temporária `/c/Users/AMP/t-j05c4c1`: removida no setup (inexistente).
-- Worktree: processos vivos com `w-j05c4c1` na linha de comando = **0**; `git worktree remove --force C:/Users/AMP/w-j05c4c1` ec=0; `worktree list | grep -c w-j05c4c1` = **0**.
+- Árvore temporária `~/t-j05c4c1`: removida no setup (inexistente).
+- Worktree: processos vivos com `w-j05c4c1` na linha de comando = **0**; `git worktree remove --force ~/w-j05c4c1` ec=0; `worktree list | grep -c w-j05c4c1` = **0**.
 - Scratchpad `$SCRATCH` (c1): **273 arquivos apagados** (senhas descartáveis `pgpw`/`rpw`, condutor, sondas, mutador, logs JSONL/TAP) — as saídas que sustentam o voto estão coladas neste arquivo; os md5 das sondas estão acima.
 - No `w-o05` escrevi só `ciclo4/C1-evidencia.md` e `ciclo4/C1-voto.json`. Nenhum commit, nenhum push. Disco: 11 GB livres no início e no fim.
 

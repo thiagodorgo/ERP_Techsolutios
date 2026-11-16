@@ -3,7 +3,7 @@
 - Identidade: `dev-03a-codex`
 - Papel: DEV (implementa o plano; não o reescreve nem o julga)
 - Modelo declarado: Codex em GPT-5.6 Sol, nível menor
-- Worktree: `C:/Users/AMP/w-03a`
+- Worktree: `~/w-03a`
 - Ramo: `fix/expense-sync-atomic`
 - HEAD inicial esperado e medido: `76bd103b9910b4272fd90640aeb3b0362fccdab7`
 - Decisão aplicada: `D-03a-MESMA-CHAVE-OUTRO-ATOR = A` (2026-10-11): a ação é única por organização + `client_action_id`; pertence ao primeiro ator; outro ator recebe conflito e não produz lançamento.
@@ -30,7 +30,7 @@
 
 ## 2026-10-11T18:18:11Z — dependências próprias
 
-**Comando:** `timeout 900 npm ci --no-audit --no-fund` no próprio `C:/Users/AMP/w-03a`.
+**Comando:** `timeout 900 npm ci --no-audit --no-fund` no próprio `~/w-03a`.
 
 **Saída resumida:** `ec=0`; 326 pacotes instalados em 35 s. Aviso `EBADENGINE` preexistente de `@prisma/streams-local@0.1.2` (pede Node >=22; runtime do repo é Node 20.19.5), sem falha de instalação.
 
@@ -69,12 +69,12 @@
 ## Retomada 21:19Z — `dev-03a-claude` substitui `dev-03a-codex` (P3)
 
 - Identidade NOVA: `dev-03a-claude`. Modelo: **Claude Opus 5.5 (`claude-opus-5-5`), nível menor** (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), cobrindo o Codex, que está no limite até 23:15Z (`D-CLAUDE-SO-ORQUESTRA`).
-- Mandato: `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-03a-claude.txt` (orquestrador). Implemento o plano v2 + emenda v3 (onde divergem, vale a v3) + `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`. Não reescrevo nem julgo o plano.
+- Mandato: `~/erp-pausa-2026-10-03/prompts/dev-03a-claude.txt` (orquestrador). Implemento o plano v2 + emenda v3 (onde divergem, vale a v3) + `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`. Não reescrevo nem julgo o plano.
 - Regra P3: cada comando registrado acima é re-executado e comparado; conclusão sem comando não é insumo. O que segue é só o que eu medi.
 
 ### R0 — ref e terreno
 
-**Comando:** `git fetch origin; git rev-parse HEAD; git branch --show-current; git status --short; git diff --stat 76bd103b HEAD; docker ps -a; node --version; npm --version; cmd /c dir /AL C:\Users\AMP\w-03a; uname -a`
+**Comando:** `git fetch origin; git rev-parse HEAD; git branch --show-current; git status --short; git diff --stat 76bd103b HEAD; docker ps -a; node --version; npm --version; cmd /c dir /AL ~/w-03a; uname -a`
 
 **Saída resumida:** HEAD `3a648ca4fc92b551a9f15ea470c0452d4b55e981` (o do mandato), ramo `fix/expense-sync-atomic`, árvore limpa. Entre o HEAD do Codex (`76bd103b`) e o atual, só `docs/revisoes/SAN3/B-O6R-03a-dev.md` (+67, o relatório parcial) — zero diff de produto. Node `v20.19.5`, npm `11.7.0` (iguais aos registrados). Nenhuma junction no worktree. Container `dev03a-pg` **não existe mais** (o Codex o removeu ou ele caiu com a sessão); vivos só `trc01-pg`/`trc01-redis` (do outro agente — não tocados) e `erp-postgres`/`erp-redis` (base viva — proibida). Máquina `MINGW64_NT-10.0-22631` (Windows do dono, local).
 
@@ -97,7 +97,7 @@
 
 ### R2 — vermelho-controle no código do HEAD-base (antes de editar produto)
 
-**Comando:** sonda própria `vc-head.mts` (scratchpad da sessão, fora do repo), `CORE_SAAS_PERSISTENCE=memory LOG_LEVEL=silent timeout 120 node --import tsx vc-head.mts C:/Users/AMP/w-03a`, com o código do HEAD `3a648ca4` (produto intocado). Ela exercita o serviço antigo pelas interfaces que já existem (v2 §3, "Vermelho-controle").
+**Comando:** sonda própria `vc-head.mts` (scratchpad da sessão, fora do repo), `CORE_SAAS_PERSISTENCE=memory LOG_LEVEL=silent timeout 120 node --import tsx vc-head.mts ~/w-03a`, com o código do HEAD `3a648ca4` (produto intocado). Ela exercita o serviço antigo pelas interfaces que já existem (v2 §3, "Vermelho-controle").
 
 **Saída resumida (ec=0):**
 - **VC1 colisão u1/u2:** u1 cria `X1` (`processed`, `replayed:false`, resultRef `fb2ab28d…`); u2 (gestor) envia `X1` → `processed`, `replayed:true`, **resultRef de u1 (`fb2ab28d…`) entregue a u2**; relatórios = 1.
@@ -136,7 +136,7 @@ Os itens 1–7 são as falhas de ambiente conhecidas do mandato (`psql` e shim d
 
 ### R5 — forma dos erros do Prisma medida antes de escrever os mapeamentos
 
-**Comando:** sonda própria `probe-errors.mts` (scratchpad, fora do repo) em `dev03a-pg`, tenant descartável `probe03a-*` apagado no `finally`; `DATABASE_URL=<dev03a-pg> timeout 120 node --import tsx probe-errors.mts C:/Users/AMP/w-03a`.
+**Comando:** sonda própria `probe-errors.mts` (scratchpad, fora do repo) em `dev03a-pg`, tenant descartável `probe03a-*` apagado no `finally`; `DATABASE_URL=<dev03a-pg> timeout 120 node --import tsx probe-errors.mts ~/w-03a`.
 
 **Saída resumida (ec=0):**
 - FK de work order no `create` e no `update` de relatório: `P2003`, `meta.driverAdapterError.cause = { originalCode: "23503", kind: "ForeignKeyConstraintViolation", constraint: { index: "expense_reports_tenant_id_work_order_id_fkey" }, originalMessage: '… "expense_reports_tenant_id_work_order_id_fkey"' }`. A FK do empregado chega com `constraint.index = "expense_reports_tenant_id_employee_user_id_fkey"` — é ela que NÃO pode virar 404 de work order.
@@ -485,7 +485,7 @@ import subprocess
 import sys
 import time
 
-ROOT = "C:/Users/AMP/w-03a"
+ROOT = "~/w-03a"
 SP = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(SP, "mutations.log")
 JSONL = os.path.join(SP, "mutations.jsonl")

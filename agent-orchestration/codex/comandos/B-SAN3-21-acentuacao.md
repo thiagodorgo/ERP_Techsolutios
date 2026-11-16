@@ -5,7 +5,7 @@
 - **Executor:** Claude Opus 5.5 `dev-san321-opus` (nível menor, declarado).
 - **Verificador:** Codex GPT-5.6 Sol (§C7 item 11).
 - **Nível:** revisão simples + CI (§C7 item 10(1)): só texto, sem regra, permissão ou dado.
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-SAN3-21-plano.md` (autor: orquestrador, Claude Opus 5.5); fonte `PLANO_SAN3.md:277`.
+- **Plano:** `~/erp-pausa-2026-10-03/planos/B-SAN3-21-plano.md` (autor: orquestrador, Claude Opus 5.5); fonte `PLANO_SAN3.md:277`.
 - **Relatório do dev:** `docs/revisoes/SAN3/B-SAN3-21-dev.md`.
 
 ## Escopo

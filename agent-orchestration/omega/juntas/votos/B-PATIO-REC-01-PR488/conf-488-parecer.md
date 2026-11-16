@@ -3,12 +3,12 @@
 - **Identidade:** `conf-488-opus` — Claude Opus, nível menor declarado, identidade nova (não achou, não planejou, não consertou).
 - **Cruzamento de modelo (item 11):** **NÃO cruza modelo.** O conserto é Claude (`dev-rec01-opus`) e o Codex está sem limite; escolha do dono: *"Claude revisa agora"* (item 11(2)). Verificador = identidade nova, sem preferência de modelo.
 - **Objeto:** head do PR `cda1f7661f34faa1e61a49d846831b5305562164` (conserto em `12daf50e`/`6542ef18`, diário em `805fb3da`/`cda1f766`). Antes do conserto: `ea6d4aef54181a0dc4030ec56e174e378aec5e12`.
-- **Terreno:** worktree `C:/Users/thiag/w-conf488` (detach), `npm ci` próprio, Postgres `conf488-pg` 127.0.0.1:55495.
+- **Terreno:** worktree `~/w-conf488` (detach), `npm ci` próprio, Postgres `conf488-pg` 127.0.0.1:55495.
 
 ## Item 1 — o grave sumiu (C2-2)
 
-**1a. Comando da C2 no objeto (a forma executável, com serviço).** O comando literal da C2 chama só `assertIntentAccount`, que o conserto não mudou (continua imprimindo `accepted` — o validador de forma não é a porta de propriedade). A prova da C2 que importa é a execução com serviço; reproduzi-a com sonda PRÓPRIA (`C:/Users/thiag/conf488-probe/probe-k1.mts`: `InMemoryImpoundPaymentRepository` com processo `RELEASE_IN_PROGRESS`/`STANDARD`, portão aberto, ator A, porta devolvendo 9 formas), rodada no objeto e no `ea6d4aef` (`git -c core.autocrlf=false checkout ea6d4aef -- src/modules/impound-payments/`, restaurado depois; `git status` limpo).
-- Comando: `WT=C:/Users/thiag/w-conf488 node --import tsx C:/Users/thiag/conf488-probe/probe-k1.mts`
+**1a. Comando da C2 no objeto (a forma executável, com serviço).** O comando literal da C2 chama só `assertIntentAccount`, que o conserto não mudou (continua imprimindo `accepted` — o validador de forma não é a porta de propriedade). A prova da C2 que importa é a execução com serviço; reproduzi-a com sonda PRÓPRIA (`~/conf488-probe/probe-k1.mts`: `InMemoryImpoundPaymentRepository` com processo `RELEASE_IN_PROGRESS`/`STANDARD`, portão aberto, ator A, porta devolvendo 9 formas), rodada no objeto e no `ea6d4aef` (`git -c core.autocrlf=false checkout ea6d4aef -- src/modules/impound-payments/`, restaurado depois; `git status` limpo).
+- Comando: `WT=~/w-conf488 node --import tsx ~/conf488-probe/probe-k1.mts`
 - Saída no `ea6d4aef`: 8 de 9 formas CRIAM intenção `pending` com 1 linha de fila — inclusive a forma da C2 (UUID arbitrário sem dono), dono = B, dono = null, dono = [A], grupo com e sem membros; só `platform` dá 422 `account_not_allowed`. **O grave reproduz no `ea6d4aef`.**
 - Saída no objeto: UUID arbitrário sem dono → 422 `payment_connection_not_owned`; dono = B → idem; dono = null → idem; dono = [A] (array) → idem; dono = A em maiúsculas → idem (comparação estrita, fail-closed; nota: uma porta real que devolva UUID em maiúsculas será recusada, nunca aceita errado); `group` com A membro e sem membros → 422 `group_scope_unavailable`; `platform` → 422 `account_not_allowed`; **todas com `intents=0 outbox=0`**. Controle positivo (dono = A) → CRIADA, conta gravada só `{scope, connectionId}` (o `ownerTenantId` não vaza para a intenção), `intents=1 outbox=1`.
 - Única porta: `grep -rn "\.resolve(\|PaymentConnectionPort" src/` → o único consumidor de `PaymentConnectionPort.resolve` é `impound-payment.service.ts:70` (`create`). Não há outro caminho que grave conta.
@@ -19,7 +19,7 @@
 - Comando (vermelho-controle: `src/modules/impound-payments/` do `ea6d4aef` + testes do objeto): memória `tests 24 pass 18 fail 6` — `not ok 11 T-DOM-28 (got resolved)`, `not ok 12 T-DOM-29 (got resolved)`, e os 4 K2; Postgres `tests 8 pass 7 fail 1` — `not ok 6 T-DOM-28-db`.
 - **Ressalva R1 (não grave, forma de teste):** o vermelho do T-DOM-28-db no `ea6d4aef` é `got release_not_started`, NÃO a intenção nascendo: o processo do arnês está `RELEASE_IN_PROGRESS` sem dossiê STANDARD ativo, e no Postgres o `enqueue` do REC-01 falha fechado (`impound-payment-prisma.repository.ts:169-171`), então nenhuma intenção pode persistir no Postgres pelo serviço no REC-01, com ou sem o conserto. O T-DOM-28-db prova que a recusa no objeto vem antes de qualquer escrita, mas seu vermelho-controle é por outro motivo; a prova do perigo está na memória (T-DOM-28, sonda 1a). T-DOM-29 e T-DOM-30 só existem em memória — o §12 pede "memória e Postgres" só para o T-DOM-28. T-DOM-30 é verde no `ea6d4aef` por desenho (controle positivo, "como hoje").
 
-**1c. Mutações M-K1-a e M-K1-b** (`node C:/Users/thiag/conf488-probe/mut.mjs <service.ts> <id>`, âncora única, `numstat 0 3`, restauradas por `git checkout HEAD`).
+**1c. Mutações M-K1-a e M-K1-b** (`node ~/conf488-probe/mut.mjs <service.ts> <id>`, âncora única, `numstat 0 3`, restauradas por `git checkout HEAD`).
 - M-K1-a (apagar o `if (account.ownerTenantId !== tenantId)`): memória `pass 13 fail 1` — `not ok 11 T-DOM-28 (got resolved)`, **morde**; Postgres `not ok 6 T-DOM-28-db (got release_not_started)` — morde, pelo motivo da R1.
 - M-K1-b (apagar a recusa de `group`): memória `pass 13 fail 1` — `not ok 12 T-DOM-29 (got payment_connection_not_owned)`, **morde**. Nota: sem a recusa, o grupo ainda cai na checagem de dono (grupo não tem `ownerTenantId`) — dupla barreira; Postgres 8/8 (não há T-DOM-29-db).
 - Veredito parcial item 1: **GRAVE SUMIU**, com a ressalva R1 (não grave).
@@ -65,6 +65,6 @@
   - **R1** — o vermelho-controle do T-DOM-28-db no `ea6d4aef` (e sob M-K1-a) é `release_not_started`, não a intenção nascendo; no Postgres do REC-01 o `enqueue` falha fechado e nenhuma intenção persiste pelo serviço. A prova do perigo é a de memória.
   - **R2** — o teste do canário injeta a linha alheia por executor falso, não "como superusuário" (forma diferente da letra do §12, propriedade igual).
   - **R3** — `P-PATIO-BODY-PARSER-ANTES-DO-PORTAO` não está registrada em `agent-orchestration/controle/` (só no diário e no comentário do teste).
-- Terreno: worktree `C:/Users/thiag/w-conf488` e container `conf488-pg` removidos ao fim; sondas em `C:/Users/thiag/conf488-probe/` (removidas junto). Nada tocado em erp-postgres, erp-redis, 3000/5173, no worktree externo da apresentação, em w-rec01 nem na árvore principal.
+- Terreno: worktree `~/w-conf488` e container `conf488-pg` removidos ao fim; sondas em `~/conf488-probe/` (removidas junto). Nada tocado em erp-postgres, erp-redis, 3000/5173, no worktree externo da apresentação, em w-rec01 nem na árvore principal.
 
 VEREDITO: CONFERIDO COM RESSALVA

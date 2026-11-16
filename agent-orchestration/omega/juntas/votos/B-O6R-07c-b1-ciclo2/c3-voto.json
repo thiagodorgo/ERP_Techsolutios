@@ -3,7 +3,7 @@
   "cadeira": "C3 — censo, regressão/CI, escopo e registro",
   "modelo": "Claude Opus 5.5 (claude-opus-5-5), nível menor (§C7.6), reserva declarada (Codex com 1 tarefa; Gemini/Argon sem limite — D-IAS-EXTERNAS-PRIMEIRO)",
   "objeto": "7ff1e0039c07b22b84acf8007eef6835560e823a (ls-remote refs/pull/440/head = gh pr view headRefOid, no início e no fim); B = merge-base = c260d36201f6e835799e7f96a14bc9eb8889ca5a; origin/main início = fim = a26f8afe74b73d9379b4fae5deba312875c2427b; merge b14478ab sem conteúdo próprio (diff-tree --cc vazio); objeto do ciclo 1 = b198fe35; base do ciclo 1 = 4fe7524e",
-  "legalidade": "inspetor insp-07cb1c2 LIBERADO nomeando a C3 e o terreno w-j07cb1c2-c3-*/j07cb1c2-c3-*; corpo md5 EOL-neutro 44db36af06f249c1507324fe9da0d2a1 (blob do objeto) = esperado; mandato md5 42b41847d49773ef445a99ae6291b84c = esperado; 14/14 check-runs completed/success; worktree próprio C:/Users/AMP/w-j07cb1c2-c3 (o caminho do disparo), npm ci próprio, 0 junction; decisões medidas em origin/main e no objeto (D-GOV-PROPORCIONAL l.2940, D-07CB1-TRAVA-ATE-B2 l.3709, D-INICIO-ATENDIMENTO-CONFIRMADO l.3719, D-07CB1-* l.3728-3730); ata do ciclo 1 tratada como A RE-VERIFICAR",
+  "legalidade": "inspetor insp-07cb1c2 LIBERADO nomeando a C3 e o terreno w-j07cb1c2-c3-*/j07cb1c2-c3-*; corpo md5 EOL-neutro 44db36af06f249c1507324fe9da0d2a1 (blob do objeto) = esperado; mandato md5 42b41847d49773ef445a99ae6291b84c = esperado; 14/14 check-runs completed/success; worktree próprio ~/w-j07cb1c2-c3 (o caminho do disparo), npm ci próprio, 0 junction; decisões medidas em origin/main e no objeto (D-GOV-PROPORCIONAL l.2940, D-07CB1-TRAVA-ATE-B2 l.3709, D-INICIO-ATENDIMENTO-CONFIRMADO l.3719, D-07CB1-* l.3728-3730); ata do ciclo 1 tratada como A RE-VERIFICAR",
   "quorum": "unanimidade de 3 com veto; ciclo 2",
   "voto": "APROVADO",
   "itens": {
@@ -14,7 +14,7 @@
   "o_que_executei": [
     "git show <obj>:<corpo> | tr -d CR | md5sum; tr -d CR < cadeira-c3.md | md5sum",
     "git ls-remote origin refs/pull/440/head; gh pr view 440 --json headRefOid,state; git merge-base origin/main <obj> (início e fim)",
-    "git worktree add --detach C:/Users/AMP/w-j07cb1c2-c3 <obj>; npm ci; find node_modules -maxdepth 1 -type l | wc -l → 0",
+    "git worktree add --detach ~/w-j07cb1c2-c3 <obj>; npm ci; find node_modules -maxdepth 1 -type l | wc -l → 0",
     "node --import tsx tests/helpers/o6r07c-census.ts gravar regen{1,2}.json; cmp regen1 regen2; cmp regenN blob-do-fixture; git hash-object --no-filters regen1",
     "node --test --import tsx --test-reporter=tap tests/o6r07c-census-guard.test.ts (sozinho): objeto, MT11, M25, src de b198fe35 (checkout com core.autocrlf=false; restauro por hash)",
     "gravar com o src de b198fe35 + comparação chave a chave contra o blob (N=3) e controle regen1 × blob (N=0)",
@@ -60,6 +60,6 @@
     "C3c2-A2 — K2, RESIDUAL-BACKFILL e as 6 da §1.5 entram em controle/pendencias.md por APPEND (dono: orquestrador, PR semanal ou o do bloco)",
     "P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO e P-07CB1-CANCELAR-EM-NO-LOCAL (dono B-O6R-07c-b2), já registradas"
   ],
-  "teardown": "mutações restauradas por hash (fixture c2ff01fd; 6 arquivos de src = blobs do objeto; porcelain 0); dist removido; worktree C:/Users/AMP/w-j07cb1c2-c3 removido por git worktree remove --force (ec 0); subpasta do scratchpad apagada; j07cb1c2-c3-* = 0 (nenhum container criado); base viva e portas proibidas intocadas",
+  "teardown": "mutações restauradas por hash (fixture c2ff01fd; 6 arquivos de src = blobs do objeto; porcelain 0); dist removido; worktree ~/w-j07cb1c2-c3 removido por git worktree remove --force (ec 0); subpasta do scratchpad apagada; j07cb1c2-c3-* = 0 (nenhum container criado); base viva e portas proibidas intocadas",
   "justificativa": "Censo regenerável e determinístico, T14/T11 com vermelho provado; CI 14/14 e suíte sem teste sumido, -db executado com banco; escopo do ciclo 2 contido, PROIBIDO vazio, espelhos consistentes e registro sem remoção. Os dois achados são de registro do orquestrador, fora do objeto, sem efeito em produto, graduados como ajuste pela consequência medida. VOTO: APROVADO — censo byte-idêntico ao gerador com T14 que falha, CI e regressão sem perda de teste, diff do ciclo 2 dentro do PERMITIDO com 3 extras declarados; ajustes C3c2-A1 (corpo do PR desatualizado) e C3c2-A2 (8 pendências só no plano) ficam como pendência do orquestrador."
 }

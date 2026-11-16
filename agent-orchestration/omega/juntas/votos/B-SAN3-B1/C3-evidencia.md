@@ -2,8 +2,8 @@
 
 - Cadeira: C3 · Identidade: `validador-mestre` · Modelo: Opus 5 (`claude-opus-5[1m]`)
 - Foco: diff x plano, escopo, KPI §C3.5, §C7.1-bis espelhado (CLAUDE.md + AGENTS.md + 2 corpos do inspetor), registro
-- Terreno proprio: worktree detached `C:/c/Users/AMP/w-j-sanb1-c3` @ `3a0ea095` (o `git worktree add` sob
-  `MSYS_NO_PATHCONV=1` resolveu `/c/Users/...` como `C:/c/Users/...`; caminho curto, meu, removido ao fim).
+- Terreno proprio: worktree detached `C:~/w-j-sanb1-c3` @ `3a0ea095` (o `git worktree add` sob
+  `MSYS_NO_PATHCONV=1` resolveu `/c/...` como `C:/c/...`; caminho curto, meu, removido ao fim).
   `git status --porcelain` = vazio na criacao. Sem junction. Nenhum conteiner subido.
 - P1/P2: esqueleto escrito antes das medicoes; cada medicao apensada abaixo.
 - **STATUS: EM MEDICAO** (M1..M9 fechadas)
@@ -313,7 +313,7 @@ gastar um ciclo de teto para corrigir duas frases, num bloco cuja materia tecnic
 
 ## Limpeza (§C5)
 
-- Removi **o meu** worktree `C:/c/Users/AMP/w-j-sanb1-c3` por `git worktree remove --force`, **pelo nome
+- Removi **o meu** worktree `C:~/w-j-sanb1-c3` por `git worktree remove --force`, **pelo nome
   deste bloco** — nunca por varredura.
 - **Nao toquei** nos worktrees alheios (`sanb1`, `san300`, `b04a`, `b11`, `gov-*`, `w-s1`), na arvore
   principal, nem na mutacao viva de outra sessao (R4) e na sonda S2 (R5): **residuo alheio se reporta**.
@@ -321,20 +321,20 @@ gastar um ciclo de teto para corrigir duas frases, num bloco cuja materia tecnic
 - Unica escrita que fiz em arvore rastreada foi rodar o gerador de indice **no meu worktree**, e a **desfiz
   pela edicao inversa** (`git checkout --` do arquivo, so no meu): `git status --porcelain` = vazio e head
   `3a0ea095` antes de remover.
-- Logs brutos (log do job backend, corpo do PR, diffs) ficaram em `/c/Users/AMP/AppData/Local/Temp/c3-tmp/`,
+- Logs brutos (log do job backend, corpo do PR, diffs) ficaram em `~/AppData/Local/Temp/c3-tmp/`,
   **fora da pasta de votos**, como o briefing manda.
 
 — `validador-mestre` · cadeira C3 · Opus 5 · 2026-09-21
 
 ## Anomalia de terreno que eu mesmo produzi — registrada, sem efeito no merito
 
-Sob `MSYS_NO_PATHCONV=1` (que o briefing manda usar para `git show`), o `git worktree add /c/Users/...`
+Sob `MSYS_NO_PATHCONV=1` (que o briefing manda usar para `git show`), o `git worktree add /c/...`
 **nao** foi convertido pelo bash e o git resolveu o caminho na raiz da unidade corrente: o meu worktree
-nasceu em **`C:/c/Users/AMP/w-j-sanb1-c3`**, nao em `C:/Users/AMP/w-j-sanb1-c3`. Usei-o assim (caminho
+nasceu em **`C:~/w-j-sanb1-c3`**, nao em `~/w-j-sanb1-c3`. Usei-o assim (caminho
 curto, meu, isolado) e o removi pelo nome; depois removi a cadeia de diretorios vazios `C:/c` que sobrou
 (`find C:/c -type f` = **0 arquivos** antes de remover).
 
-**Susto correlato, que registro para ninguem repetir:** `git -C /c/Users/.../sanb1 status` devolveu
+**Susto correlato, que registro para ninguem repetir:** `git -C /c/.../sanb1 status` devolveu
 `fatal: cannot change to ... No such file or directory` — **pelo mesmo motivo de conversao de caminho**, e
 nao porque o worktree do dev tivesse sumido. Refeito com caminho Windows: **`sanb1` intacto**, head
 `3a0ea095`, `git status --porcelain` = **0**, 41 entradas na raiz, `node_modules` presente. Nao toquei nele.

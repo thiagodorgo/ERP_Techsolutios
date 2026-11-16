@@ -4,7 +4,7 @@
 - **modelo:** Claude Opus 5.5 (uma tarefa por vez)
 - **regra:** `D-GOV-PROPORCIONAL` (CLAUDE.md §C7 item 8, medida em `origin/main` = `357a98e9`, l.611–652): o #401 passa à regra (1) — um revisor independente + CI verde, sem junta; (5) KPI congelado
 - **objeto:** `dc63ff66b9ae27ad79a38b58d06671f98362007b` (`gh pr view 401` → `headRefOid`, `OPEN`, `MERGEABLE`; `git rev-parse origin/fix/dossie-versao-da-vistoria` = o mesmo); merge-base com a `main` = `357a98e9` (a main atual)
-- **terreno:** worktree próprio detached `C:/Users/AMP/w-rev401` (checkout CRLF, `core.autocrlf=true`), `npm --prefix frontend ci` próprio (103 pacotes, sem junction); base viva 5432/6379 não tocada
+- **terreno:** worktree próprio detached `~/w-rev401` (checkout CRLF, `core.autocrlf=true`), `npm --prefix frontend ci` próprio (103 pacotes, sem junction); base viva 5432/6379 não tocada
 
 ## Item 0 — CI do head
 
@@ -57,7 +57,7 @@ Veredito F2: **CORRIGIDO**. Uma resposta recusada pelo contrato limpa as linhas 
 
 ## Item 2 — nada quebrou
 
-Terreno `C:/Users/AMP/w-rev401` (CRLF), head `dc63ff66`, `npm --prefix frontend ci --no-audit --no-fund` próprio → `added 103 packages`, `ec=0`.
+Terreno `~/w-rev401` (CRLF), head `dc63ff66`, `npm --prefix frontend ci --no-audit --no-fund` próprio → `added 103 packages`, `ec=0`.
 
 - `timeout 600 npm --prefix frontend run check` (`tsc -b --noEmit`) → **`ec=0`**.
 - `cd frontend && timeout 1200 node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx` → **`tests 28 · pass 28 · fail 0 · cancelled 0 · skipped 0`**, `duration_ms 151301`, `ec=0`, nenhum morto por sinal.
@@ -94,4 +94,4 @@ Achados (nenhum `bloqueia`). Pela regra (2) do `D-GOV-PROPORCIONAL`, nenhum é d
 
 **Limpeza:** veja a última linha deste arquivo.
 
-**Limpeza (2026-10-05):** 0 processo vivo com `w-rev401` na linha de comando (`Get-CimInstance Win32_Process`); `git worktree remove --force C:/Users/AMP/w-rev401` → `ec=0`, diretório inexistente; nenhum `.tmp-censo-*` restante em `%TEMP%`; scratch próprio (`rev401-*`) apagado; no `w-nuv11` só este arquivo foi escrito. Não commitei, não fiz push nem merge.
+**Limpeza (2026-10-05):** 0 processo vivo com `w-rev401` na linha de comando (`Get-CimInstance Win32_Process`); `git worktree remove --force ~/w-rev401` → `ec=0`, diretório inexistente; nenhum `.tmp-censo-*` restante em `%TEMP%`; scratch próprio (`rev401-*`) apagado; no `w-nuv11` só este arquivo foi escrito. Não commitei, não fiz push nem merge.

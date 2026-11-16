@@ -21,9 +21,9 @@
 
 ## 0. Insumos lidos (com ref)
 
-Tudo medido em `C:/Users/AMP/w-trc01` (só leitura; o ramo está em `e6b4a33a` = objeto `2043c584` + ata/votos) e por
+Tudo medido em `~/w-trc01` (só leitura; o ramo está em `e6b4a33a` = objeto `2043c584` + ata/votos) e por
 `git show origin/main:<caminho>` onde indicado. Nada editado no repositório. O protótipo do conserto (§3.9) foi medido num worktree
-MEU, detached no objeto (`C:/Users/AMP/w-plan-trc3`), removido no fim.
+MEU, detached no objeto (`~/w-plan-trc3`), removido no fim.
 
 | Insumo | Ref/caminho | O que tirei |
 |---|---|---|
@@ -35,7 +35,7 @@ MEU, detached no objeto (`C:/Users/AMP/w-plan-trc3`), removido no fim.
 | Migração | `prisma/migrations/20260876000000_work_orders_vehicle_assigned_at/migration.sql` | o gatilho: troca → `now()`; `→ NULL` → `NULL`; legada → `now()` no 1º UPDATE |
 | Testes | `tests/traccar-position-ingestion-db.test.ts` (helpers l.146–250; casos l.333–528, T-C1 l.421–448, T-C2 l.450–476, T-C3 l.478–528) · `tests/traccar-operator-at-fix-time.test.ts` (T-C4, 4 casos) | o molde dos casos novos e as asserções de motivo que mudam |
 | Mutações | `docs/revisoes/TRACCAR/B-TRC-01-evidencias/mutations.mjs` l.84–96 (MUT-43, M-C1..M-C4, M-B*) | o formato do catálogo e o texto `find` de M-C1 que o conserto invalida |
-| Plano do ciclo 2 | `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md` §1.3, §2.4.1–2.4.5, §2.5 | a janela enunciada só pelo lado de quem GANHA a viatura; a tabela de cenários com UMA OS; a ordem com o 07c-b1 |
+| Plano do ciclo 2 | `~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md` §1.3, §2.4.1–2.4.5, §2.5 | a janela enunciada só pelo lado de quem GANHA a viatura; a tabela de cenários com UMA OS; a ordem com o 07c-b1 |
 | Decisões do dono | `origin/main:agent-orchestration/controle/decisoes.md` l.2289–2296 (2026-09-08: "janela de tempo… nunca mapa estático, ou o trajeto de um técnico é atribuído a outro — erro de dado E exposição de dado pessoal"), l.3682 (`D-TRC01-VEHICLE-ASSIGNED-AT`, opção (i), períodos → B-TRC-03), l.2208–2285 (`D-TRACCAR-HTTP-PRIVADO-AWS`, "vínculo ambíguo falha fechado") | a norma que o P1 viola e o que já foi autorizado |
 | Contrato | `API_CONTRACTS.md:96` | a frase de `operator_history_ambiguous` que ganha um "ou" |
 | Pendências | `origin/main:agent-orchestration/controle/pendencias.md` (grep `P-TRC-`) | `P-TRC-VIATURA-PERIODOS` e `P-CI-LISTA-CURADA-6-PRE-EXISTENTES` **não existem** (confirma a nota 1 da (b′)) |
@@ -187,7 +187,7 @@ ciclo 3 (§3.10). **Não entrega** os ajustes da (a′)/(b′) — vão para o �
 **Proibido:** `prisma/**` e `migrations/**` (sem autorização neste ciclo — §2); `.github/workflows/ci.yml` **inteiro** (o comentário 363→389 é
 pendência, ordem do dono); `src/integrations/traccar/**`; `src/database/rls.ts`; `src/modules/work-orders/**`; `src/modules/field-dispatch/field-dispatch.service.ts`;
 qualquer outro `src/`; qualquer outro teste (em particular `tests/field-dispatch*`, `tests/work-order*`, os 5 casos `-db` do ciclo 1 e T-C2/T-C3);
-o CHECK de `reason`; `Kpis/**`; `package.json`/lockfiles; o worktree `C:/Users/AMP/w-07cb1`; qualquer "melhoria" fora do P1 (ex.: refinar por
+o CHECK de `reason`; `Kpis/**`; `package.json`/lockfiles; o worktree `~/w-07cb1`; qualquer "melhoria" fora do P1 (ex.: refinar por
 operador — §3.8).
 
 ### 3.3 O conserto — literal (diff do protótipo deste planejador sobre o objeto `2043c584`; o dev reproduz, não copia cegamente)
@@ -343,7 +343,7 @@ M-P1b entram como entradas novas com `tests: T.ing` (+ o unitário em M-P1b).
 ### 3.7 Bateria de validação (ordem do dev; testes primeiro)
 
 Worktree novo com `npm ci` próprio (sem junction, §C7.1-ter(c)); o que é `-db` roda em container Linux próprio
-(`bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh <worktree> "<comando>"`: Postgres 16 + Redis 7 descartáveis, `npm ci` e
+(`bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh <worktree> "<comando>"`: Postgres 16 + Redis 7 descartáveis, `npm ci` e
 `migrate deploy` dentro do container, tudo removido pelo nome), **nunca** a base viva nem as portas 5432/6379/3000/5173/5050/8899.
 
 1. `npm run check` · `npm run lint` (o tipo novo é obrigatório no candidato: um `candidate()` de teste sem a flag **não compila** — é o guard de que
@@ -384,7 +384,7 @@ Worktree novo com `npm ci` próprio (sem junction, §C7.1-ter(c)); o que é `-db
 - **(d) C4 continua perda aceita** (agora com motivo honesto): o ponto real de A, tirado antes da troca e entregue depois, vai à quarentena. Só o
   histórico por período atribui corretamente.
 
-### 3.9 Protótipo medido por este planejador (worktree detached `C:/Users/AMP/w-plan-trc3` em `2043c584`, container Linux descartável)
+### 3.9 Protótipo medido por este planejador (worktree detached `~/w-plan-trc3` em `2043c584`, container Linux descartável)
 
 O conserto do §3.3 e os testes do §3.5 foram **aplicados num worktree meu** (nunca em `w-trc01` nem na árvore principal) e executados por
 `teste-linux.sh` (Postgres 16 + Redis 7 próprios, `npm ci` e `migrate deploy` dentro do container, removidos pelo nome). Duas rodadas:
@@ -444,7 +444,7 @@ nova** o que a ata do ciclo 2 lista como confirmado por execução (l.40–48) �
    os 17 casos do ciclo 1 com motivo igual; corpos dos casos do ciclo 1 intactos byte a byte.
 
 **Inspetor:** além do protocolo e do `LIBERADO` sobre SHA com check-runs concluídos: (i) diff sem `prisma/**` (sem autorização = sem migração);
-(ii) os worktrees `C:/Users/AMP/w-jc2-b` e `w-jc2-b3` (resíduo da (b′)) removidos ou declarados; (iii) mandatos marcam A RE-VERIFICAR (lição da
+(ii) os worktrees `~/w-jc2-b` e `w-jc2-b3` (resíduo da (b′)) removidos ou declarados; (iii) mandatos marcam A RE-VERIFICAR (lição da
 1ª passada do ciclo 2).
 
 **Papéis do ciclo 3 para a ata (§C7.4-bis):** quem achou = `jurado-trc01c2-c-opus` (c′); quem planejou = `planejador-trc01-ciclo3` (Fable, este);
@@ -477,7 +477,7 @@ no ciclo 3 (8(2)); nenhuma entra no diff de código do ciclo 3 (ordem do dono).
 | `P-TRC-M-B1-CONTROLE-TERMINATED` | (c′) nota N-MB1 | sob M-B1 o T-B1 cai no controle interno `terminated === 1` (l.316) antes da asserção `receipts: 1` prevista; a propriedade é vigiada pelos irmãos #7/#8 | B-TRC-03 (forma de teste) | T-B1 cai pela asserção prevista ou o plano §2.3.2 do ciclo 2 é emendado |
 | `P-TRC-AUTORIZACAO-EM-BLOCO` | (b′) nota 4 | `D-TRC01-VEHICLE-ASSIGNED-AT` foi aprovada pela frase "todas as decisões nas suas recomendações", não por frase própria do dono | orquestrador (registro de forma, sem ação de código) | 1 linha em `decisoes.md` declarando a forma válida, ou o dono reafirma |
 | (fechadas por este plano, registrar como tal) | (b′) notas 3 e 5 | "nada reescrito" não declarado → o relatório do ciclo 3 declara (§3.1); helper `assignVehicle` fora do PERMITIDO literal → o §3.2 deste plano permite os helpers do arnês | ciclo 3 | a linha no relatório; o `git diff --stat` do ciclo 3 |
-| resíduo de terreno | (b′) teardown | worktrees `C:/Users/AMP/w-jc2-b` e `w-jc2-b3` (ocupantes caídos) em `2043c584` | orquestrador, antes do inspetor do ciclo 3 | `git worktree list` sem os dois (conferir processo vivo antes; `git worktree remove --force`) |
+| resíduo de terreno | (b′) teardown | worktrees `~/w-jc2-b` e `w-jc2-b3` (ocupantes caídos) em `2043c584` | orquestrador, antes do inspetor do ciclo 3 | `git worktree list` sem os dois (conferir processo vivo antes; `git worktree remove --force`) |
 
 ## 5. Riscos e rollback
 
@@ -496,7 +496,7 @@ em produção (não existe). Posições gravadas durante o ciclo 3 em dev não s
 
 ## 6. Limpeza desta auditoria
 
-- Worktree `C:/Users/AMP/w-plan-trc3` removido por `git worktree remove --force` + `git worktree prune` (`git worktree list` sem ele; o diretório não
+- Worktree `~/w-plan-trc3` removido por `git worktree remove --force` + `git worktree prune` (`git worktree list` sem ele; o diretório não
   existe). Nenhuma junction/symlink de `node_modules` foi criada (o `npm ci` rodou só dentro do container).
 - Containers: os `tl<id>-{pg,redis,run}` e as redes `tl<id>-net` das duas rodadas foram removidos pelo próprio `teste-linux.sh`; `docker ps -a`
   mostra só `erp-postgres`/`erp-redis` (base viva, nunca tocada); redes `tl*` = 0.
@@ -504,7 +504,7 @@ em produção (não existe). Posições gravadas durante o ciclo 3 em dev não s
   3 untracked pré-existentes são de outros trabalhos, só reportados).
 - Scratchpad: só a subpasta `plan-trc3/` da sessão (scripts do protótipo, seções deste arquivo, logs das duas rodadas) — fica como evidência até a
   sessão acabar; apagável sem perda (este arquivo é a entrega).
-- Resíduo alheio encontrado e **não** removido: worktrees `C:/Users/AMP/w-jc2-b` e `w-jc2-b3` (ocupantes caídos da (b′) do ciclo 2) — §4.
+- Resíduo alheio encontrado e **não** removido: worktrees `~/w-jc2-b` e `w-jc2-b3` (ocupantes caídos da (b′) do ciclo 2) — §4.
 
 ## 7. Registro de execução (comandos deste planejador)
 
@@ -517,9 +517,9 @@ em produção (não existe). Posições gravadas durante o ciclo 3 em dev não s
 | 5 | grep `mutations.mjs` (M-C1..M-C4, MUT-43); `API_CONTRACTS.md:90-100`; `PLANO_TRACCAR.md` §3.1 item 6, §4.2 (l.585–625), §8.6, §8.9 | formato do catálogo; a frase do contrato; onde a regra está escrita | §3.2, §3.6 |
 | 6 | `git show origin/main:agent-orchestration/controle/decisoes.md` (l.2287–2300, 3670–3700); idem `pendencias.md` grep `P-TRC-` | a norma de 2026-09-08; `D-TRC01-VEHICLE-ASSIGNED-AT`; as 2 pendências não existem | §0, §1.3, §4 |
 | 7 | Read plano do ciclo 2 (inteiro, 613 l.) | a janela só pelo lado de quem ganha; tabela com uma OS; §2.5 | §1.4, §3.11 |
-| 8 | `git worktree list`; `docker ps`; `git worktree add --detach C:/Users/AMP/w-plan-trc3 2043c584…` | terreno: 0 trabalhos de outros; worktree meu | §3.9 |
+| 8 | `git worktree list`; `docker ps`; `git worktree add --detach ~/w-plan-trc3 2043c584…` | terreno: 0 trabalhos de outros; worktree meu | §3.9 |
 | 9 | `proto.py` (edições por âncora única, CRLF preservado) sobre o worktree meu; `git diff --stat` → 5 arquivos +89/−8 | o conserto e os testes | §3.3, §3.5 |
-| 10 | `teste-linux.sh C:/Users/AMP/w-plan-trc3 "bash proto-run.sh"` (rodada 1) e `"bash proto-run2.sh"` (rodada 2) | §3.9 inteiro | §3.9 |
+| 10 | `teste-linux.sh ~/w-plan-trc3 "bash proto-run.sh"` (rodada 1) e `"bash proto-run2.sh"` (rodada 2) | §3.9 inteiro | §3.9 |
 | 11 | `git worktree remove --force` + `prune`; `docker ps -a`; `docker network ls`; `git status` | limpeza conferida | §6 |
 
 **Veredito da auditoria: (c′)-P1 é defeito real do produto, classe NÃO GRAVE confirmada, originado em dado podre do PLANO do ciclo 2 (janela

@@ -26,7 +26,7 @@
       "id": "A-03",
       "gravidade": "nao-grave",
       "escopo": "dentro-do-bloco",
-      "comando": "git diff --name-only origin/main...d3e80027 | grep emenda-3-guard ; grep -n 'cópias versionadas' C:/Users/thiag/erp-pausa-2026-10-03/planos/B-O6R-11-emenda-2-corte.md ; grep -n 'Cópias versionadas' C:/Users/thiag/erp-pausa-2026-10-03/planos/B-O6R-11-emenda-4-despesa.md",
+      "comando": "git diff --name-only origin/main...d3e80027 | grep emenda-3-guard ; grep -n 'cópias versionadas' ~/erp-pausa-2026-10-03/planos/B-O6R-11-emenda-2-corte.md ; grep -n 'Cópias versionadas' ~/erp-pausa-2026-10-03/planos/B-O6R-11-emenda-4-despesa.md",
       "saida": "agent-orchestration/omega/planos/B-O6R-11-emenda-3-guard.md está no diff; a emenda 2 §4 lista cópias de plano-ciclo3, emenda-1 e emenda-2-corte; a emenda 4 F6c lista 'esta emenda, as duas evidências e a conferência'",
       "motivo": "A cópia da emenda 3 está fora da lista literal do PERMITIDO. É registro, o comando v2 'cita as 4 emendas' e não é PROIBIDO. Fica só para a triagem registrar a extensão."
     },

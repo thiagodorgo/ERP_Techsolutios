@@ -5,7 +5,7 @@
 - **fontes, em ordem de prevalência:** `D-PORTAO-7-RECOMENDACOES-1011` e `D-PORTAO-3-RECOMENDACOES-1111`
   (`REGISTRO-PENDENTE.md` l.909-911 e l.930-933) → emenda 1 (`planos/plano-B-SAN3-08-emenda1.md`) → plano v1
   (`planos/B-SAN3-08-plano.md`) → crítica `crit-08-cl` (`revisoes/crit-08-plano.json`).
-- **terreno:** worktree próprio `C:/Users/thiag/w-san308`, ramo `feat/web-orcamento-aprovar-destino` a partir da
+- **terreno:** worktree próprio `~/w-san308`, ramo `feat/web-orcamento-aprovar-destino` a partir da
   `origin/main` `6f727afc0ed9eb40449d34cafb5ebf00a47c52f5` (medida em 2026-11-11 01:56 SP). `npm ci` e
   `npm --prefix frontend ci` próprios, sem junction, ambos `ec=0`.
 - **ref do plano × ref do dev:** o plano e a emenda mediram `d5ec1696`. `git diff --stat d5ec1696 HEAD` nos caminhos do bloco

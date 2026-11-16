@@ -2,7 +2,7 @@
 
 **Papel · modelo que rodou:** porteiro-pos-merge · Claude Opus 5.5 (nível menor DECLARADO, §C7.6). Sem queda de modelo.
 **Objeto:** PR #520, B-O6R-03b: despesas (RDV) de verdade no app de campo (replay autenticado, payload, permissão e conflito). Fecha o item 30 do portão (`Ω6R-QUA-001`).
-**Onde medi (§A7):** `origin/main` = `e7e8d678` (merge do #520) e head aprovado `77e5ed30`. As duas árvores são idênticas (`8f42d818…`). Usei um worktree próprio, `C:/Users/thiag/w-porteiro520`, desanexado em `e7e8d678`, com `npm ci` e `flutter pub get` próprios (sem junction) e sem Docker. Não toquei os worktrees vivos `w-ass08` e `w-demoint`; o `w-ass08b` não aparece no `git worktree list`.
+**Onde medi (§A7):** `origin/main` = `e7e8d678` (merge do #520) e head aprovado `77e5ed30`. As duas árvores são idênticas (`8f42d818…`). Usei um worktree próprio, `~/w-porteiro520`, desanexado em `e7e8d678`, com `npm ci` e `flutter pub get` próprios (sem junction) e sem Docker. Não toquei os worktrees vivos `w-ass08` e `w-demoint`; o `w-ass08b` não aparece no `git worktree list`.
 
 ## 1. Merge íntegro: OK
 - `git log origin/main --oneline -5`: o topo é `e7e8d678` (#520), com pai `89f1d38e` (#521).
@@ -133,7 +133,7 @@ O KPI está congelado (`D-GOV-PROPORCIONAL`, item 8(5)). O diff não toca `Kpis/
 - `git show --stat e7e8d678` e `--numstat`; diffs de `catalog.ts`, do snapshot, de `RBAC_MATRIX.md`, de `sync_screen.dart`, do b093, de `docs/api.md`, de `docs/mobile-sync-contracts.md` e do `PLANO_SAN3.md`; `grep` dos blocos de papel e das permissões no pai e no merge.
 - `gh api …/commits/<sha>/check-runs` no head e no merge; `gh run view <run> --job <job> --log | grep '# tests|pass|fail|skipped'` nos runs `42719533706` (head), `42708543517` (main de antes) e `42723037189` (merge).
 - `git merge-base --is-ancestor` dos 7 SHAs citados; `git branch -r --contains 21468f73`; `git rev-parse <sha>^{tree}`.
-- `git worktree add --detach C:/Users/thiag/w-porteiro520 e7e8d678`; `npm ci` (rc 0); `npx prisma generate` com `DATABASE_URL` fictícia (rc 0); `flutter pub get` (rc 0).
+- `git worktree add --detach ~/w-porteiro520 e7e8d678`; `npm ci` (rc 0); `npx prisma generate` com `DATABASE_URL` fictícia (rc 0); `flutter pub get` (rc 0).
 - `flutter test test/core/sync/bo6r03b_expense_http_errors_test.dart` (10/10); `flutter test --reporter compact` (+1047); mutação M-P1 + `flutter test --reporter compact` (+1047, ou seja, a mutação sobreviveu), seguida de `git checkout` e `git hash-object` (blob igual).
 - `node --test --import tsx tests/b-o6r-03b-expense-payload-contract.test.ts tests/b-o6r-03b-field-technician-expense-sync.test.ts tests/core-saas-role-authority.test.ts` (17/17).
 - `env -u DATABASE_URL -u REDIS_URL npm test` (4018 / 3881 / 9 fail / 128 skip), mais a rodada descartada com a `DATABASE_URL` fictícia.

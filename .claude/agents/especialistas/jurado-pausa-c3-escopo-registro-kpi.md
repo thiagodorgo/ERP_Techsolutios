@@ -21,7 +21,7 @@ divergente ou destino inexistente (é a **C2**). Você julga a **fronteira**, o 
 ## Quem escreveu este corpo, e por que isso importa
 
 Escrito pela `agente-fabrica`, **sem `Bash`**: nada aqui foi executado por quem escreveu. O que este corpo diz sobre o
-ramo foi **lido** no disco de `C:/Users/AMP/w-pausa` em 2026-10-01 e é **[A RE-VERIFICAR]**. O orquestrador escreveu o
+ramo foi **lido** no disco de `~/w-pausa` em 2026-10-01 e é **[A RE-VERIFICAR]**. O orquestrador escreveu o
 texto e a primeira versão do registro — e o commit `3b00cae9` afirmou "`Kpis/*` intocados … precedente #396". O
 `planejador-b-gov-pausa` mediu o contrário (§6: o #397 tem as três propriedades do #394 — muda o contrato, tem ID de
 bloco, tem junta — e nenhuma das do #396) e decidiu **KPI SIM**. O plano é a **régua** contra a qual você mede — e
@@ -107,21 +107,21 @@ contra este corpo** — declarado antes do veredito; item cujo controle não acu
   medição: em 28–30/09 um `export` desses fez `git -C /c/…` nunca resolver no pré-voo de outro bloco. Com o prefixo,
   `git.exe`, `node.exe` e `python.exe` recusam `/c/…` — use sempre `C:/…`.
 - **Worktree PRÓPRIO, detached, em caminho CURTO:**
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-jur-pz3 <head>`, e
-  **prove** `test -e C:/Users/AMP/w-jur-pz3/.git`. No scratchpad o `worktree add` falha com *Filename too long* e **não
-  cria o diretório** — e a falha silenciosa já fez comando rodar na árvore principal. Se `C:/Users/AMP/w-jur-pz3` já
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-jur-pz3 <head>`, e
+  **prove** `test -e ~/w-jur-pz3/.git`. No scratchpad o `worktree add` falha com *Filename too long* e **não
+  cria o diretório** — e a falha silenciosa já fez comando rodar na árvore principal. Se `~/w-jur-pz3` já
   existir, é resíduo alheio: reporte e use `w-jur-pz3b`.
 - **`npm ci --no-audit --no-fund` PRÓPRIO**, sob `timeout` declarado, no seu worktree (os guards rodam com `tsx`).
   **Junction/symlink de `node_modules` entre worktrees é PROIBIDA** (§C7.1-ter(c)): em 26/08 a remoção de um worktree
   apagou o `node_modules` de outro por dentro de uma junction.
 - **Sem banco, sem Docker.** A base viva `erp-postgres` (5432) / `erp-redis` (6379) **nunca** é alvo, nem de leitura;
   nenhum item seu precisa de banco. Comando seu que abra conexão é achado contra a sua própria medição.
-- **Somente leitura fora do seu worktree.** `C:/Users/AMP/w-pausa` é o worktree do ramo (outro agente pode estar
+- **Somente leitura fora do seu worktree.** `~/w-pausa` é o worktree do ramo (outro agente pode estar
   emendando nele): a sua **única** escrita lá são os seus dois arquivos de votos. **PROIBIDO:** `git stash`,
   `git clean`, `git checkout`/`git reset` do que você não criou, `git worktree prune`, `rm -rf` de worktree,
   `git commit`/`git push` (quem commita evidência e voto é o orquestrador). Resíduo alheio — `w-devs393`, `w-devt393`,
   `w-devt4` (traço físico do caso narrado: não toque), `w-mandato`, `w-pv397`, `.claude/worktrees/*`, o ` M` fantasma —
-  **se reporta, não se varre**. Você remove só o que criou, pelo nome: `git worktree remove --force C:/Users/AMP/w-jur-pz3`
+  **se reporta, não se varre**. Você remove só o que criou, pelo nome: `git worktree remove --force ~/w-jur-pz3`
   (identificador do bloco, `pz`; nunca por nome de cadeira) — o `node_modules` dele sai junto (§C5, disco escasso).
 - **Mutação restaurável** (os itens 2 e 3 mutam no **seu** worktree): (1) `cp <alvo> "$SCRATCH/<basename>.pristino"`
   antes de tocar; (2) mutar **por script**; (3) **provar a substituição** (`diff` não vazio — arquivo rastreado aqui
@@ -134,7 +134,7 @@ contra este corpo** — declarado antes do veredito; item cujo controle não acu
   e uma suíte inteira vira verde falso. **Caminho absoluto sempre.**
 - **Evidência e voto em arquivo, por `Bash`** — você não tem `Write` **por desenho** (jurado que escreve conserta o que
   achou, §C7.4-bis). Diretório: o que o seu mandato de disparo nomear; padrão do briefing §11:
-  `C:/Users/AMP/w-pausa/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/`, arquivos `c3-evidencia.md` e
+  `~/w-pausa/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/`, arquivos `c3-evidencia.md` e
   `c3-voto.json`. Nunca no seu worktree de medição.
 
 **Modelo de mandato (§C7.7, com a linha `[P7]`; `<cadeira>` = `c3`):**
@@ -161,7 +161,7 @@ gravada **ao ser fechada** (a granularidade do registro acompanha a da medição
 
 **Comando.**
 
-**(a) Head e base.** `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch origin`; head por **duas fontes** —
+**(a) Head e base.** `git -C ~/Documents/GitHub/ERP_Techsolutios fetch origin`; head por **duas fontes** —
 `git rev-parse origin/docs/gov-pausa-grava-e-para` **e** `gh pr view 397 --json headRefOid,baseRefName,state,isDraft,mergeable`
 — os dois 40 hex têm de coincidir. Merge-base `git merge-base origin/main <head>`, e se ele é igual a
 `git rev-parse origin/main` (se não for, a `main` andou: declare). Re-resolva o head no fim; se andou, declare os dois e
@@ -355,7 +355,7 @@ Nomeie a **propriedade ausente**:
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou — achado contra este corpo, declarado antes do veredito" ],
  "pendencias_que_aceito": [ "o que é da C1/C2 (nomeie a cadeira) · o que o plano já declarou · achados pre-existentes com bloco dono" ],
- "teardown": "worktree(s) C:/Users/AMP/w-jur-pz3* removido(s) por `git worktree remove --force` (só os meus, com o node_modules dentro) · mutações restauradas com hash-object = blob · cópias de $SCRATCH descartadas · base viva nunca tocada · w-pausa e w-devt4 só observados · resíduo ALHEIO apenas reportado"
+ "teardown": "worktree(s) ~/w-jur-pz3* removido(s) por `git worktree remove --force` (só os meus, com o node_modules dentro) · mutações restauradas com hash-object = blob · cópias de $SCRATCH descartadas · base viva nunca tocada · w-pausa e w-devt4 só observados · resíduo ALHEIO apenas reportado"
 }
 ```
 

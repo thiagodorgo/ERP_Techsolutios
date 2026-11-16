@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 
-const root = "C:/Users/thiag/w-j484-c2";
+const root = "~/w-j484-c2";
 const service = "src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts";
 const routes = "src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts";
 const files = [service, routes];

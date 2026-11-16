@@ -2,15 +2,15 @@ executor efetivo: jurado-dash3-c1-opus (Claude Code subagente) · modelo: Claude
 # Evidência — Cadeira C1 — B-DASH-PERFIL ciclo 3
 
 ## Legalidade (antes do mérito)
-- `git -C C:/Users/AMP/w-dash rev-parse HEAD; git ls-remote origin refs/heads/fix/dash-perfil; gh pr view 446 --json headRefOid,state` → 33345c6e… nas 3 fontes; OPEN.
-- Parecer `insp-dash3-parecer.md` (inspetor-dash3-opus): **LIBERADO COM RESSALVA** (R1–R5), nomeia C1 = `jurado-dash3-c1-opus`, Claude Opus subagente, worktree `C:/Users/AMP/w-jdash3-c1-opus`, sem cluster; check-runs 14/14 completed success.
+- `git -C ~/w-dash rev-parse HEAD; git ls-remote origin refs/heads/fix/dash-perfil; gh pr view 446 --json headRefOid,state` → 33345c6e… nas 3 fontes; OPEN.
+- Parecer `insp-dash3-parecer.md` (inspetor-dash3-opus): **LIBERADO COM RESSALVA** (R1–R5), nomeia C1 = `jurado-dash3-c1-opus`, Claude Opus subagente, worktree `~/w-jdash3-c1-opus`, sem cluster; check-runs 14/14 completed success.
 - `diff <(git show O:.claude/...c1...md|tr -d '\r') <(git show O:.agents/...c1...md|tr -d '\r')` → diferença só em `tools:` e no bloco "Papel para o Codex" (espelho por construção).
 - Mandato tem 2 itens (§2.8 do R-2) — prevalece sobre os 3 do corpo genérico; cumpro os 2 do mandato.
 - Memória de commit livre: `pwsh ... FreeVirtualMemory/1MB` → 4,1 GB (≥3 GB) → npm ci autorizado. Nenhum `w-jdash*` preexistente.
 - Veredito parcial: legalidade OK.
 
 ## Terreno
-- `git -C C:/Users/AMP/w-dash worktree add C:/Users/AMP/w-jdash3-c1-opus 33345c6e --detach` → HEAD 33345c6e (prefixo w-jdash3-c1-). `npm ci` próprio em background, sem junction de node_modules. Sem Docker, sem banco, nenhuma porta 5432/6379/3000/5173/5050/8899 usada. Logs em C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c1/.
+- `git -C ~/w-dash worktree add ~/w-jdash3-c1-opus 33345c6e --detach` → HEAD 33345c6e (prefixo w-jdash3-c1-). `npm ci` próprio em background, sem junction de node_modules. Sem Docker, sem banco, nenhuma porta 5432/6379/3000/5173/5050/8899 usada. Logs em ~/erp-pausa-2026-10-03/jdash3-c1/.
 
 ## Item 1 de 2 — inalteração do produto e reclassificação de C1-01
 1a. `git fetch origin main; B=$(git merge-base origin/main 33345c6e)` → B = origin/main = 2ecfb333aed0a0efcc1f171148473aad2921be66.
@@ -22,10 +22,10 @@ executor efetivo: jurado-dash3-c1-opus (Claude Code subagente) · modelo: Claude
 - **Veredito parcial item 1: VERDE.** Produto inalterado entre ciclos (0 arquivos; patch-id idêntico). C1-01 permanece `pre-existente` (origem 011632f1, 2026-06-07, PR 25, anterior ao bloco), **não grave**: atalho só de UI — o rótulo "Super Admin" só nasce de super_admin/platform_admin, que no backend já recebem o catálogo inteiro; a autoridade (backend) não é quebrada. Dono: `P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI`. N=1 (as duas linhas can/hasAny do mesmo commit), forma: OR com rótulo de papel na UI.
 
 ## Item 2 de 2 — re-execução P3 de T5/T6 e recusas do active-tenant
-2a. Terreno: `npm ci --no-audit --no-fund` em C:/Users/AMP/w-jdash3-c1-opus → ec=0; `(Get-Item node_modules).LinkType` → vazio (diretório comum, **zero junction**).
+2a. Terreno: `npm ci --no-audit --no-fund` em ~/w-jdash3-c1-opus → ec=0; `(Get-Item node_modules).LinkType` → vazio (diretório comum, **zero junction**).
 2b. Leitura no objeto: `auth.routes.ts:31-34` `resolveLoginPermissions(roleKeys)` = `resolvePermissionsForRoles(roleKeys ∩ chaves de ROLE_PERMISSIONS)`; l.467 `permissions: resolveLoginPermissions(match.user.roles)` no 200 do `POST /active-tenant`; `git diff 2ecfb333 HEAD -- src/modules/auth/routes/auth.routes.ts` → +1 linha (a l.467), nada mais. Recusas l.390-418: 401 sem ator, 400 sem tenantId, 403 FORBIDDEN sem `data` se `findMembershipForIdentity` for null.
 2c. `timeout 300 node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts` (lista explícita) → **ec=0, tests 9 pass 9 fail 0 skipped 0** (log t-base.log).
-2d. Sonda HTTP PRÓPRIA (`C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c1/sonda/sonda-c1.ts`, express + createAuthRouter real + CoreSaasRegistry em memória + signAccessToken real, `listen(0)` efêmero, JWT_SECRET efêmero próprio): `timeout 120 node --import tsx sonda-c1.ts C:/Users/AMP/w-jdash3-c1-opus` → **ec=0, 18/18 OK**:
+2d. Sonda HTTP PRÓPRIA (`~/erp-pausa-2026-10-03/jdash3-c1/sonda/sonda-c1.ts`, express + createAuthRouter real + CoreSaasRegistry em memória + signAccessToken real, `listen(0)` efêmero, JWT_SECRET efêmero próprio): `timeout 120 node --import tsx sonda-c1.ts ~/w-jdash3-c1-opus` → **ec=0, 18/18 OK**:
   - T5: finance 61/61, inventory 17/17, support 10/10 (e operator 68/68, manager 139/139, tenant_admin 185/185) — `permissions` **== resolvePermissionsForRoles([papel])**, extra=0, miss=0, nenhuma fora do catálogo; `dashboard:view` ausente em todos; `dashboard:read` false para finance/inventory, true para support.
   - T6: cross-tenant → 403 FORBIDDEN, `data` undefined; sem Bearer → 401 UNAUTHORIZED; Bearer inválido → 401 INVALID_TOKEN; sem tenantId → 400 BAD_REQUEST; org inexistente → 403 FORBIDDEN sem data; usuário homônimo (mesmo e-mail) com papel inventory na org B, token de finance em A pedindo B → 403 (não fabrica, não une catálogos).
 - Veredito parcial 2a–2d: VERDE (base). Vermelho-controle a seguir.
@@ -37,9 +37,9 @@ executor efetivo: jurado-dash3-c1-opus (Claude Code subagente) · modelo: Claude
 - **Veredito parcial item 2: VERDE.** Re-execução própria (P3) confirma T5 (catálogo exato, zero fabricação) e T6 (403 FORBIDDEN sem data, 401 sem/ com Bearer inválido, 400 sem tenantId), e os três vermelhos-controle derrubam a suíte e a sonda. Observação (não achado): 401/400 não estão em `tests/auth-active-tenant-permissions.test.ts`; foram provados só pela sonda. As recusas l.390-405 não estão no diff do bloco (pre-existentes), então a ausência de teste não é defeito do bloco; registro como nota, gravidade nenhuma.
 
 ## Teardown
-- Processos node com `w-jdash3-c1` na linha de comando → 0. `git worktree remove --force C:/Users/AMP/w-jdash3-c1-opus` → ec=0; `ls -d C:/Users/AMP/w-jdash3-c1*` → inexistente; `git worktree list | grep -c jdash3-c1` → 0; contêineres `jdash3-c1*` → 0 (nenhum criado). Base viva e portas proibidas intocadas (nenhum banco, servidor só em `listen(0)`).
-- Árvore `C:/Users/AMP/w-dash`: além dos ` M` fantasmas de `.agents/`/`.claude/`, só `?? votos/B-DASH-PERFIL-ciclo3/` (meus 2 artefatos entre eles) e `?? votos/B-DASH-PERFIL-ciclo2/00-quedas.md` (não criado por mim; registro do orquestrador da R3). Nada commitado.
-- Restos meus fora do repo: só `C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c1/` (logs, sonda, mut.js, upd.js).
+- Processos node com `w-jdash3-c1` na linha de comando → 0. `git worktree remove --force ~/w-jdash3-c1-opus` → ec=0; `ls -d ~/w-jdash3-c1*` → inexistente; `git worktree list | grep -c jdash3-c1` → 0; contêineres `jdash3-c1*` → 0 (nenhum criado). Base viva e portas proibidas intocadas (nenhum banco, servidor só em `listen(0)`).
+- Árvore `~/w-dash`: além dos ` M` fantasmas de `.agents/`/`.claude/`, só `?? votos/B-DASH-PERFIL-ciclo3/` (meus 2 artefatos entre eles) e `?? votos/B-DASH-PERFIL-ciclo2/00-quedas.md` (não criado por mim; registro do orquestrador da R3). Nada commitado.
+- Restos meus fora do repo: só `~/erp-pausa-2026-10-03/jdash3-c1/` (logs, sonda, mut.js, upd.js).
 
 ## Voto
 VOTO: APROVADO — itens 1 e 2 verdes por execução própria; nenhum defeito de produto, grave ou não, dentro do bloco na cadeia de acesso.

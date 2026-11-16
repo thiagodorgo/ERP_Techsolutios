@@ -9,7 +9,7 @@
 - **(c) contrato e atribuição** (`jurado-trc01-c-contrato-e-atribuicao-claude`, Claude Opus 5.5) → **REPROVADO**, 1 bloqueio: (c)-1 a atribuição da posição não tem dimensão de tempo (usa a viatura que a OS tem quando a posição CHEGA, não a do instante do fix).
 
 ## Auditoria de topo (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`)
-`planejador-trc01-ciclo2` (Fable): **1 achado real × 2 artefatos** — (c)-1 real; (a)-1 artefato na consequência (o job `backend` executou os 44/44 `-db`), fato menor na forma; (a)-2 artefato (não-medição por cota). Plano: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`.
+`planejador-trc01-ciclo2` (Fable): **1 achado real × 2 artefatos** — (c)-1 real; (a)-1 artefato na consequência (o job `backend` executou os 44/44 `-db`), fato menor na forma; (a)-2 artefato (não-medição por cota). Plano: `~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`.
 
 ## Separação de papéis (§C7.4-bis)
 - **Quem achou:** as cadeiras (a) e (c) do ciclo 1.

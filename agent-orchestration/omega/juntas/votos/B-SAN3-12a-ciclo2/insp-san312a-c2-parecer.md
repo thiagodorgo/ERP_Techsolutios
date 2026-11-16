@@ -34,7 +34,7 @@ Os comandos e as saídas de cada item estão em `insp-san312a-c2-evidencia.md`. 
 **Pré-voo dos 5 mandatos**
 - Rodei o PRE-VOO dos 5 mandatos com as ferramentas de `redator-san312a-c2/`. Os 5 deram `PRE-VOO OK`, ec=0, e os md5 batem com a tabela do redator.
 - Toda unidade de `MEDIDO` tem saída colada: 0 unidade sem saída, num total de 112 unidades nos 5 mandatos.
-- Testei a existência de todos os caminhos absolutos. Os que não existem são só os que ainda vão ser criados (worktrees, pastas de sonda, votos e evidências `j12a2-*`), o `RAIZ` que o mandato já declara ausente (`C:/Users/AMP/w-trc02`) e prefixos de glob.
+- Testei a existência de todos os caminhos absolutos. Os que não existem são só os que ainda vão ser criados (worktrees, pastas de sonda, votos e evidências `j12a2-*`), o `RAIZ` que o mandato já declara ausente (`~/w-trc02`) e prefixos de glob.
 
 **Corpos e S0**
 - Os 4 corpos `jurado-san312a-c{1..4}-*` são iguais entre o blob e o worktree, e IDENTICOS entre os dois espelhos, descontado o bloco Codex.
@@ -123,6 +123,6 @@ Os comandos e as saídas de cada item estão em `insp-san312a-c2-evidencia.md`. 
 
 **LIBERADO COM RESSALVA.** A composição C1, C2b, C3 e C4b está liberada no objeto `8a9fc1d8`, com as 7 ressalvas acima no briefing, na ordem C2b → C4b → C1 → C3, uma por vez. Se o head andar, o terreno fica bloqueado até um novo pré-voo.
 
-**Limpeza:** criei e removi o worktree `C:/Users/AMP/j12a2-insp2-s0` (`git worktree list` dá 0 `j12a2`). Não subi nenhum container. Os temporários ficaram só no scratchpad da sessão (`insp/chk.py`, `insp/check.log`). Não editei nenhum arquivo rastreado e não fiz commit.
+**Limpeza:** criei e removi o worktree `~/j12a2-insp2-s0` (`git worktree list` dá 0 `j12a2`). Não subi nenhum container. Os temporários ficaram só no scratchpad da sessão (`insp/chk.py`, `insp/check.log`). Não editei nenhum arquivo rastreado e não fiz commit.
 
 LIBERADO COM RESSALVA

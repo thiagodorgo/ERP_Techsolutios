@@ -32,23 +32,23 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 
 O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed), instancia nova para a junta 1 do B-SAN3-11 (PR 401),
   em Fable por contrato (esgotado o Fable, Opus com a substituicao declarada; esgotado o Opus, para), com o corpo de origin/main, e
-  declara na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md | grep -ic 'mandato_md5'`
+  declara na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md | grep -ic 'mandato_md5'`
 
 O objeto e o head do PR 401 resolvido pelo proprio inspetor, e so e objeto com os check-runs CONCLUIDOS (ausencia, pendente ou cancelado
   bloqueia; vermelho e insumo do voto); o tabuleiro e o da secao 10 do plano docs/revisoes/SAN3/B-SAN3-11-plano.md: as tres cadeiras
   (cognicao-visual, guardiao-fail-closed, coordenador-de-acessos) existem no origin/main e nao participaram deste bloco (inelegiveis por
   nome: o planejador do B-SAN3-11, o dev de nuvem dev-san3-11-dossie e o orquestrador); um worktree por cadeira que muta (w-j11c1,
   w-j11c2, w-j11c3) e a arvore do dev nunca mutada; nenhum jurado precisa de banco; S0 (node scripts/sync-agent-agents.mjs --check igual a
-  zero); baseline honesto (frontend check e smoke com npm ci proprio); plano de perda (queda relanca a mesma identidade) e de PAUSA (P7) derruba com: `grep -ic 'check-run' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md`
+  zero); baseline honesto (frontend check e smoke com npm ci proprio); plano de perda (queda relanca a mesma identidade) e de PAUSA (P7) derruba com: `grep -ic 'check-run' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md`
 
 Os mandatos: um por papel em agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/ com a cerca do veredito do pre-voo e a cerca igual ao head colado (errata 15.15 do plano do
   B-GOV-MANDATO); o desenvolvimento foi feito na nuvem, com mandato proprio no mesmo diretorio e relatorio em agent-orchestration/omega/juntas/votos/B-SAN3-11/DEV-relatorio.md, que o
-  inspetor le como insumo e nao como fato; a correcao pos-CI (kpi-freeze) e parte do objeto derruba com: `grep -ic '00-mandatos' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md`
+  inspetor le como insumo e nao como fato; a correcao pos-CI (kpi-freeze) e parte do objeto derruba com: `grep -ic '00-mandatos' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md`
 
 O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; o parecer e incremental com hora em
-  C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md e o orquestrador o
-  versiona; worktree proprio detached C:/Users/AMP/w-insp401, removido pelo nome; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout no
-  que executa; base viva nunca alvo; nada escrito no repositorio; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md`
+  ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md e o orquestrador o
+  versiona; worktree proprio detached ~/w-insp401, removido pelo nome; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout no
+  que executa; base viva nunca alvo; nada escrito no repositorio; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401.md`
 
 ## MEDIDO
 
@@ -56,7 +56,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-19: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/inspetor.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/inspetor.md
 ec=0
 head=cff64cecc9a46fea0f0adc280401c135fc660125
 utc=2026-10-02T11:37:57Z

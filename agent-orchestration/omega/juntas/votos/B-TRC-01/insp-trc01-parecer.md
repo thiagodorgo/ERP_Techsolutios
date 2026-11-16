@@ -40,4 +40,4 @@ O head antigo `e38b47...` embutido na seção MEDIDO dos mandatos é pré-voo do
 
 ## Limpeza
 
-Worktree detached `C:\Users\AMP\w-insp-trc01` removido pelo nome (`exists_after=False`, ausente de `git worktree list`); dois logs temporários removidos. Nenhum container/rede/volume criado. Base viva, portas do dono e junta paralela não foram tocadas. No worktree do PR foram escritos somente esta evidência e este parecer.
+Worktree detached `~/w-insp-trc01` removido pelo nome (`exists_after=False`, ausente de `git worktree list`); dois logs temporários removidos. Nenhum container/rede/volume criado. Base viva, portas do dono e junta paralela não foram tocadas. No worktree do PR foram escritos somente esta evidência e este parecer.

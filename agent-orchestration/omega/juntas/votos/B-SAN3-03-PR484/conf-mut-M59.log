@@ -23,7 +23,7 @@ ok 4 - T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ
 not ok 5 - T-SUM-10 · summary recusa qualquer chave desconhecida
   ---
   duration_ms: 27.0727
-  location: 'C:\\Users\\thiag\\w-conf484\\tests\\cloud-cost-allocation-routes.test.ts:1:4450'
+  location: '~/w-conf484\\tests\\cloud-cost-allocation-routes.test.ts:1:4450'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -36,11 +36,11 @@ not ok 5 - T-SUM-10 · summary recusa qualquer chave desconhecida
   actual: 200
   operator: 'strictEqual'
   stack: |-
-    assertInvalidPeriod (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:257:10)
-    <anonymous> (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:164:7)
+    assertInvalidPeriod (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:257:10)
+    <anonymous> (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:164:7)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    async withAllocationApi (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:234:5)
-    async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:150:3)
+    async withAllocationApi (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:234:5)
+    async TestContext.<anonymous> (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:150:3)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...

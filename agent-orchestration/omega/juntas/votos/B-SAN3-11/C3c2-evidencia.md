@@ -15,14 +15,14 @@ papel: C3′ | identidade: jurado-san3-11-c2-registro-e-escopo | modelo: Codex G
 ## Terreno próprio — 2026-10-04 UTC
 
 - Carga da máquina: CPU 7% (`Win32_Processor.LoadPercentage`).
-- Comando: `git worktree add --detach C:/Users/AMP/w-s11k2c d24f7283bfba55d298e8118e7b590465c5a4d4d6`; criação de scratch exclusivo `C:/Users/AMP/AppData/Local/Temp/c3c2-b-san3-11-d24f7283`; conferências `rev-parse HEAD`, `status --porcelain`, `config --get core.autocrlf`, `node -v`, `python --version`, `Test-Path .git`.
-- Saída resumida: worktree criado por esta cadeira; HEAD `d24f7283bfba55d298e8118e7b590465c5a4d4d6`; status vazio; `core.autocrlf=true` (checkout CRLF); `.git` existe; Node `v20.19.5`; Python `3.13.14`; shell PowerShell/Windows 11; cwd de mérito `C:/Users/AMP/w-s11k2c`; nenhuma variável `MSYS_NO_PATHCONV` exportada.
+- Comando: `git worktree add --detach ~/w-s11k2c d24f7283bfba55d298e8118e7b590465c5a4d4d6`; criação de scratch exclusivo `~/AppData/Local/Temp/c3c2-b-san3-11-d24f7283`; conferências `rev-parse HEAD`, `status --porcelain`, `config --get core.autocrlf`, `node -v`, `python --version`, `Test-Path .git`.
+- Saída resumida: worktree criado por esta cadeira; HEAD `d24f7283bfba55d298e8118e7b590465c5a4d4d6`; status vazio; `core.autocrlf=true` (checkout CRLF); `.git` existe; Node `v20.19.5`; Python `3.13.14`; shell PowerShell/Windows 11; cwd de mérito `~/w-s11k2c`; nenhuma variável `MSYS_NO_PATHCONV` exportada.
 - Veredito parcial: TERRENO PRÓPRIO CONFIRMADO; sem junction e sem acesso à base viva.
 
 ### Dependências próprias
 
 - Carga da máquina: CPU 0% antes do `npm ci` frontend; CPU 6% antes do `npm ci` raiz. Cada comando foi executado em série e com timeout externo de 900 s.
-- Comandos: `npm ci --no-audit --no-fund` em `C:/Users/AMP/w-s11k2c/frontend`; `npm ci --ignore-scripts --no-audit --no-fund` em `C:/Users/AMP/w-s11k2c`; stdout/stderr em logs do scratch exclusivo.
+- Comandos: `npm ci --no-audit --no-fund` em `~/w-s11k2c/frontend`; `npm ci --ignore-scripts --no-audit --no-fund` em `~/w-s11k2c`; stdout/stderr em logs do scratch exclusivo.
 - Saída resumida: frontend `ec=0`, 103 pacotes; raiz `ec=0`, 326 pacotes; aviso EBADENGINE de `@prisma/streams-local` (Node >=22 exigido, runtime local v20.19.5), sem falha. Instalações físicas dentro do worktree, sem junction/symlink.
 - Veredito parcial: DEPENDÊNCIAS PRÓPRIAS INSTALADAS; nenhum teste falhou por carga/tempo.
 
@@ -36,7 +36,7 @@ papel: C3′ | identidade: jurado-san3-11-c2-registro-e-escopo | modelo: Codex G
 ## Item 1 — APROVADO — P-o + T10 + T11′ (A34) + allowlist
 
 - Carga da máquina: CPU por medição, em ordem, `11%, 3%, 12%, 26%, 7%, 0%, 10%, 7%, 2%, 1%, 6%, 4%, 18%, 2%`; nenhuma falha temporal. Testes/mutações foram seriados.
-- P-o, comando: extração por regex do primeiro bloco `ts` sob `## Apêndice D` em `docs/revisoes/SAN3/B-SAN3-11-plano.md`; terminal LF preservado; MD5 EOL-neutro `57671f2979d477ca8272226badc85d05`; execução pelo `tsx` próprio do frontend com `REPO_ROOT=file:///C:/Users/AMP/w-s11k2c`.
+- P-o, comando: extração por regex do primeiro bloco `ts` sob `## Apêndice D` em `docs/revisoes/SAN3/B-SAN3-11-plano.md`; terminal LF preservado; MD5 EOL-neutro `57671f2979d477ca8272226badc85d05`; execução pelo `tsx` próprio do frontend com `REPO_ROOT=file:///~/w-s11k2c`.
 - P-o, saída (`ec=0`): ambas = `{super_admin, tenant_admin, manager, technician, viewer, platform_admin, operator, field_technician, auditor}`; só `impound:read` = `{field_dispatcher}`; só `checklist_runs:read` = `{finance, inventory, support}`; nenhuma = `{}`. `RBAC_MATRIX.md:134` declara leitura de impound para as 9 de ambas + `field_dispatcher`; regra de célula: papel listado em `read` lê, papel em `NÃO (nem read)` não lê. A interseção executada coincide; `technician/viewer` vêm do catálogo, pois não são colunas da tabela de checklist.
 - Vermelho-controle P-o: rotina de comparação real produziu `extra=[]/missing=[]` em quatro grupos; cópia fabricada adicionando `checklist_runs:read` ao `field_dispatcher` acusou nominalmente `both.extra=[field_dispatcher]` e `onlyImp.missing=[field_dispatcher]`.
 - Guarda/gate, leitura no objeto: `src/modules/impound/impound.routes.ts:201-206` registra GET `/impound-processes/:processId/checklist-runs` com `requirePermission(IMPOUND_PERMISSIONS.read)` (`impound:read`) + `requirePermission("checklist_runs:read")`; `src/app.ts:164` monta `createImpoundRouter()` sob `/api/v1`; `useProcessChecklistRuns.ts:20` exige `can("checklist_runs:read")`; `VehicleDossieModal.tsx:232`, `ProcessoDossiePage.tsx:141` e `DossiePrintDocument.tsx:94-95` mantêm `canReadChecklist`. `git diff --name-only origin/main...HEAD -- src <hook> <modal> <pages>` retornou N=0; irmão `ChecklistRunsPanel.tsx` retornou N=1. O diff integral de `DossiePrintDocument.tsx` contém só `idPrefix="vistoria-impressa"`, mantendo o gate.
@@ -130,4 +130,4 @@ papel: C3′ | identidade: jurado-san3-11-c2-registro-e-escopo | modelo: Codex G
 ## Teardown
 
 - A primeira tentativa combinada de remoção foi rejeitada pela política do executor antes de iniciar; nenhum alvo foi tocado. Refeito em passos separados e verificados.
-- `git worktree remove --force C:\Users\AMP\w-s11k2c` após N=0 processos vivos → worktree inexistente e desregistrado. Scratch exato `C:\Users\AMP\AppData\Local\Temp\c3c2-b-san3-11-d24f7283` removido por `System.IO.Directory.Delete(..., true)` após a validação do caminho → inexistente. Espaço livre C: 8,03 GB. Nenhum processo, worktree ou arquivo das outras frentes foi tocado.
+- `git worktree remove --force ~/w-s11k2c` após N=0 processos vivos → worktree inexistente e desregistrado. Scratch exato `~/AppData\Local\Temp\c3c2-b-san3-11-d24f7283` removido por `System.IO.Directory.Delete(..., true)` após a validação do caminho → inexistente. Espaço livre C: 8,03 GB. Nenhum processo, worktree ou arquivo das outras frentes foi tocado.

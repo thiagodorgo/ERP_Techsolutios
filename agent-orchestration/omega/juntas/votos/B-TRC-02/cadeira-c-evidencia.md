@@ -9,5 +9,5 @@ papel: cadeira (c) B-TRC-02 ciclo 1 | identidade: jurado-trc02-c-opus (corpo: ju
 - uname: MINGW64_NT-10.0-26200 3.6.6 x86_64 Msys · node v20.19.5 · docker server 29.6.1.
 - memória de commit livre (P8) na 1ª ação: 13,12 GB · disco C: livre 14G.
 - docker ps antes de subir: jtrc02-a-tl-run, jtrc02-a-tl-redis, jtrc02-a-tl-pg, jtrc02-a-redis, jtrc02-a-pg (UM trabalho de outro: prefixo jtrc02-a-) · erp-* ignorados na contagem: erp-postgres, erp-redis. Com o meu, 2 trabalhos.
-- diretório persistente: C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-c/ (criado agora, vazio) · SCRATCH = C:/Users/AMP/AppData/Local/Temp/claude/.../scratchpad/jc
+- diretório persistente: ~/erp-pausa-2026-10-03/jtrc02-c/ (criado agora, vazio) · SCRATCH = ~/AppData/Local/Temp/claude/.../scratchpad/jc
 - Nota mandato_md5: o mandato no disco já traz a unidade do porteiro (l.202) com a saída 72:LIBERADO COM RESSALVA e o pré-voo final PRE-VOO OK, logo é a versão corrigida depois da R-1 da reinspeção; o md5 6d91b030 citado pelo inspetor é da versão anterior. Divergência de processo registrada (§A2), não matéria contra o objeto.

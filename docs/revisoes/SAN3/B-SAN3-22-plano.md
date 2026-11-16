@@ -1,8 +1,8 @@
 # B-SAN3-22 — Checklist: trava otimista no modelo e vistoria em andamento protegida (`P-CHK-PATCH-SEM-LOCK`) — **plano v2**
 
 > **Papel:** `planejador-mestre` (identidade `planejador-san322-fable`) · **modelo:** Fable (claude-fable-5-1), o do frontmatter — sem fallback. Rodada final (§C7, máximo de 2 rodadas de crítica): cada achado da r1 virou requisito com critério e mutação.
-> **Ref medida (§A7):** `origin/main` = `b08c755719a6cb0ed192fa04e549ac5fc67a3e67` (`git fetch` em 2026-10-25; inalterada desde a v1), lida no worktree detached `C:/Users/AMP/w-plan22b` (removido ao fim). Base viva (5432/6379, `erp-*`) não tocada.
-> **v1** preservada em `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-22-plano-v1.md`. **Crítica r1:** `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-22-critica-r1.md` (`crit-san322-opus-r1`, Opus declarado): VOLTA AO PLANO — 3 `bloqueia` (A-05, A-07, A-09), 8 `ajuste`, 4 notas.
+> **Ref medida (§A7):** `origin/main` = `b08c755719a6cb0ed192fa04e549ac5fc67a3e67` (`git fetch` em 2026-10-25; inalterada desde a v1), lida no worktree detached `~/w-plan22b` (removido ao fim). Base viva (5432/6379, `erp-*`) não tocada.
+> **v1** preservada em `~/erp-pausa-2026-10-03/planos/B-SAN3-22-plano-v1.md`. **Crítica r1:** `~/erp-pausa-2026-10-03/revisoes/B-SAN3-22-critica-r1.md` (`crit-san322-opus-r1`, Opus declarado): VOLTA AO PLANO — 3 `bloqueia` (A-05, A-07, A-09), 8 `ajuste`, 4 notas.
 > **Respostas do dono (25/10) — NÃO se reabrem, e esta v2 é escrita a partir delas:** Q1 **A "só textos"** (com "tornar opcional" e "adicionar campo opcional" contando como mudança de campo) · Q2 **obrigatório** · Q3 **sem migração** · tela: **3 opções**, as 3 aparências entregues pelo dev. Texto literal no fim do arquivo.
 > **Gravação:** incremental (P1/P2); montada a partir de 16 fatias; nenhuma seção em apuração.
 
@@ -416,7 +416,7 @@ O que P2 **não** cobre está no §2.4 e vira pendências nomeadas (`P-CHK-RUN-S
 
 ---
 
-**Fechamento desta identidade (v2):** worktree `C:/Users/AMP/w-plan22b` removido com `git worktree remove --force`; nenhum container criado nesta rodada (as medições novas são leituras na ref e as execuções do crítico, citadas com comando); nenhum arquivo do repositório tocado; base viva não acessada. A v1 ficou em `B-SAN3-22-plano-v1.md`. O comando do bloco é derivado desta v2 pelo orquestrador depois da resposta à Q4 e da referência aprovada em `screen-refs/`.
+**Fechamento desta identidade (v2):** worktree `~/w-plan22b` removido com `git worktree remove --force`; nenhum container criado nesta rodada (as medições novas são leituras na ref e as execuções do crítico, citadas com comando); nenhum arquivo do repositório tocado; base viva não acessada. A v1 ficou em `B-SAN3-22-plano-v1.md`. O comando do bloco é derivado desta v2 pelo orquestrador depois da resposta à Q4 e da referência aprovada em `screen-refs/`.
 
 ---
 
@@ -434,7 +434,7 @@ O que P2 **não** cobre está no §2.4 e vira pendências nomeadas (`P-CHK-RUN-S
 Maquete: o dono aprovou refazê-la a partir do molde aprovado e da tela real ("Sim, corrija"). Quem faz é o orquestrador Claude; o dev só toca a tela depois que o dono aprovar as 3.
 
 ## Aprovação do dono da maquete das 3 opções (25/10)
-"aprovado a maquete 22". Aprovado: `C:/Users/AMP/erp-pausa-2026-10-03/maquetes/B-SAN3-22-checklist-trava-3opcoes.html`, com fonte em `maquetes/fonte-22/`. Ficaram as 3 opções, A Padrão fiel, B Analítica e C Painel de impacto, como aparências que cada usuário escolhe (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`).
+"aprovado a maquete 22". Aprovado: `~/erp-pausa-2026-10-03/maquetes/B-SAN3-22-checklist-trava-3opcoes.html`, com fonte em `maquetes/fonte-22/`. Ficaram as 3 opções, A Padrão fiel, B Analítica e C Painel de impacto, como aparências que cada usuário escolhe (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`).
 Revisões:
 - 1ª, Claude `cognicao-visual`: VOLTA;
 - 2ª, Argon: APROVA;
@@ -446,7 +446,7 @@ A fatia de tela copia a maquete para `docs/claude-code-handoff/screen-refs/check
 
 ## Emenda E3 (2026-10-26) — backend pronto; a fatia web entra no MESMO PR; escopo, opção B, divergências do dev e junta do PR inteiro
 
-> **Papel:** `planejador-mestre` (`planejador-san322-fable`, Fable, sem fallback). **Refs medidas (§A7):** `origin/main` = **`9dad66c0`** (moveu desde a v2: #459 financeiro, #461 `B-APARENCIA-USUARIO`, #462 KPI); head do dev **`baf7d661`** (`fix/checklist-trava-versao`, `merge-base` = `9dad66c0`, já empurrado, PR não aberto), lido no worktree detached `C:/Users/AMP/w-plan22c` (removido ao fim; `w-san322` não tocado). Relatório do dev: `docs/revisoes/SAN3/B-SAN3-22-dev.md` (commitado em `baf7d661`), seção "Retomada (dev-san322-opus)". Maquete **aprovada pelo dono**: `C:/Users/AMP/erp-pausa-2026-10-03/maquetes/B-SAN3-22-checklist-trava-3opcoes.html` (fonte `maquetes/fonte-22/template.html`). Nenhum código tocado.
+> **Papel:** `planejador-mestre` (`planejador-san322-fable`, Fable, sem fallback). **Refs medidas (§A7):** `origin/main` = **`9dad66c0`** (moveu desde a v2: #459 financeiro, #461 `B-APARENCIA-USUARIO`, #462 KPI); head do dev **`baf7d661`** (`fix/checklist-trava-versao`, `merge-base` = `9dad66c0`, já empurrado, PR não aberto), lido no worktree detached `~/w-plan22c` (removido ao fim; `w-san322` não tocado). Relatório do dev: `docs/revisoes/SAN3/B-SAN3-22-dev.md` (commitado em `baf7d661`), seção "Retomada (dev-san322-opus)". Maquete **aprovada pelo dono**: `~/erp-pausa-2026-10-03/maquetes/B-SAN3-22-checklist-trava-3opcoes.html` (fonte `maquetes/fonte-22/template.html`). Nenhum código tocado.
 > **Regra de emenda:** `D-EMENDA-ANTES-DO-CODIGO` — esta E3 passa por **uma** passada do `critico-adversarial` restrita à fatia web e à decisão da opção B antes de o dev da web codar; não é r3 do plano. Q1–Q4 não se reabrem; a Q4 está **superada pelo fato** (o seletor mergeou no #461 — caminho (b) da v2).
 
 ### E3.0 — Medido
@@ -552,7 +552,7 @@ Recomendo **(i)**: o item 6 do gate é perda de dado e já está pronto no backe
 - **Pendências:** `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS` fecha no PR; `P-B-SAN3-22-CI-DB-SUITE` fica não bloqueante com as condições de E3-22; nasce `P-CHK-EDITOR-LEITURAS-B` (dono: orquestrador planejar `B-CHK-EDITOR-LEITURAS-B`) se a Q5 for (i).
 - **Perguntas ao dono em aberto: 1 (Q5).**
 
-**Fechamento desta identidade (E3):** worktree `C:/Users/AMP/w-plan22c` removido com `git worktree remove --force`; `w-san322` não tocado; nenhum container; nenhum arquivo do repositório alterado; base viva não acessada.
+**Fechamento desta identidade (E3):** worktree `~/w-plan22c` removido com `git worktree remove --force`; `w-san322` não tocado; nenhum container; nenhum arquivo do repositório alterado; base viva não acessada.
 
 ## Resposta do dono à Q5 (26/10)
 "(i) B com o que existe (Recomendado)". A opção B sai com os 3 blocos e números reais, sem as 2 listas e sem link morto. As leituras e a tela de execuções viram o bloco `B-CHK-EDITOR-LEITURAS-B`.
@@ -561,7 +561,7 @@ Recomendo **(i)**: o item 6 do gate é perda de dado e já está pronto no backe
 
 ## Emenda E3-bis (2026-10-26) — resposta à crítica da E3: o salvar idempotente, e os 9 ajustes e 8 notas como requisitos
 
-> **Papel:** `planejador-mestre` (`planejador-san322-fable`, Fable, sem fallback). **Refs (§A7):** `origin/main` = `9dad66c0` (inalterada); ramo `fix/checklist-trava-versao` head **`2b85369d`** (= `baf7d661` + a referência aprovada `screen-refs/checklist-editor-estados-3opcoes.reference.html`), lido no worktree detached `C:/Users/AMP/w-plan22d` (removido ao fim; `w-san322` não tocado; nenhum código alterado). Crítica: `revisoes/B-SAN3-22-E3-critica.md` (`crit-san322-e3-opus`): **VOLTA À EMENDA** — 1 bloqueia (A1), 9 ajustes (A2–A9), 8 notas (N1–N8). Q1–Q5 não se reabrem. **Sem nova crítica:** cada achado vira requisito com critério e mutação.
+> **Papel:** `planejador-mestre` (`planejador-san322-fable`, Fable, sem fallback). **Refs (§A7):** `origin/main` = `9dad66c0` (inalterada); ramo `fix/checklist-trava-versao` head **`2b85369d`** (= `baf7d661` + a referência aprovada `screen-refs/checklist-editor-estados-3opcoes.reference.html`), lido no worktree detached `~/w-plan22d` (removido ao fim; `w-san322` não tocado; nenhum código alterado). Crítica: `revisoes/B-SAN3-22-E3-critica.md` (`crit-san322-e3-opus`): **VOLTA À EMENDA** — 1 bloqueia (A1), 9 ajustes (A2–A9), 8 notas (N1–N8). Q1–Q5 não se reabrem. **Sem nova crítica:** cada achado vira requisito com critério e mutação.
 
 ### E3b.0 — Medido (A1 e arredores)
 
@@ -642,7 +642,7 @@ Nenhum outro arquivo de `src/` (repositórios, serviço, validator, controller, 
 - **Referência:** o orquestrador ajusta duas linhas (E3b-16) — cópia das vivas sem "versão N" e selo por situação — antes do start do dev; a C3 julga contra a referência ajustada.
 - **Perguntas ao dono: 0.** (Q1–Q5 intactas; E3b-16 é D-007, não produto; E3b-17 está na referência aprovada.)
 
-**Fechamento desta identidade (E3-bis):** worktree `C:/Users/AMP/w-plan22d` removido com `git worktree remove --force`; `w-san322` não tocado; nenhum container; nenhum arquivo do repositório alterado; base viva não acessada.
+**Fechamento desta identidade (E3-bis):** worktree `~/w-plan22d` removido com `git worktree remove --force`; `w-san322` não tocado; nenhum container; nenhum arquivo do repositório alterado; base viva não acessada.
 
 ## Ratificação do orquestrador (2026-10-26 12:30Z) — escopo da E3b-12 (D-W6 do dev)
 
@@ -744,4 +744,4 @@ git diff --check
 
 **Ordem:** dev → `git push` (sem force) → CI concluída → inspetor-c2 LIBERADO → C2 e C1 em paralelo (2 trabalhos Docker) → C3 → ata `J-B-SAN3-22-ciclo2` com, por cadeira, "refeita/revalidada" e o comando que o provou (regra 4). **Unanimidade de 3** do conjunto, referido ao objeto final.
 
-**Fechamento desta identidade (E4):** worktree `C:/Users/AMP/w-plan22r` (detached no objeto, `npm ci` próprio, sem junction, sem Docker) removido com `git worktree remove --force`; sondas apagadas e mutações restauradas (status vazio); nenhum arquivo de código tocado; `w-san322` só com o `R-`; base viva não acessada.
+**Fechamento desta identidade (E4):** worktree `~/w-plan22r` (detached no objeto, `npm ci` próprio, sem junction, sem Docker) removido com `git worktree remove --force`; sondas apagadas e mutações restauradas (status vazio); nenhum arquivo de código tocado; `w-san322` só com o `R-`; base viva não acessada.

@@ -115,7 +115,7 @@ Só `Kpis/app.js` muda neste commit (gerado, nunca editado à mão). Node v20.20
 `00-mandatos/dev-errata1.md` (md5 EOL-neutro `e348f93ce9f778ccb06cf55bc17790f6`). Não achou (inspetor), não planejou
 (`planejador-errata1-b-san3-11`), não vota. Evidência incremental completa (P1): `scratchpad/DEV-ERRATA1-401.md` da sessão do orquestrador.
 
-**Terrenos:** `C:/Users/AMP/w-dev11` (CRLF, `core.autocrlf=true`, CR no adapter = 583) e `C:/Users/AMP/w-dev11lf` (`core.autocrlf=false`, CR = 0);
+**Terrenos:** `~/w-dev11` (CRLF, `core.autocrlf=true`, CR no adapter = 583) e `~/w-dev11lf` (`core.autocrlf=false`, CR = 0);
 `MINGW64_NT-10.0-22631`, Node v20.19.5; `npm ci` próprio em `frontend/` nos dois e na raiz (`--ignore-scripts`) no CRLF; sem junction.
 
 **Head anterior:** `508240fb`. **Commits locais (NÃO empurrados, por causa da parada):** `1654ae57` merge da `origin/main` `4ab9d232`
@@ -201,7 +201,7 @@ da sessão do orquestrador, seções R0–R6.
 conflitava também em `frontend/package.json` (linha `test:smoke`), fora de "registro e KPI". 2ª tentativa sob o mandato emendado
 `00-mandatos/dev-integracao2.md` (md5 EOL-neutro `f32aa97109b764bd379b6db9ba8ace53`, versionado em `5e3c525a`): essa linha pela UNIÃO dos dois acréscimos.
 
-**Terreno:** worktree próprio `C:/Users/AMP/w-dev11i` (detached, CRLF, `core.autocrlf=true`, CR no adapter 583), `npm ci` próprio na raiz e em `frontend/`, sem junction; Node v20.19.5.
+**Terreno:** worktree próprio `~/w-dev11i` (detached, CRLF, `core.autocrlf=true`, CR no adapter 583), `npm ci` próprio na raiz e em `frontend/`, sem junction; Node v20.19.5.
 
 ```
 merge  5c8efa08 = 5e3c525a (ramo) + 3e40a256 (main, #402); nunca rebase; os mesmos 8 conflitos da 1ª tentativa, nenhum novo
@@ -229,7 +229,7 @@ D3 integração, KPI e registro (`dev-ciclo2-D3.md`, regenerado em `566e3454`, `
 responde às quatro divergências que o dev mediu na D2: T22 → só a abertura; A17′ → A17″; A18′ → A18″; A25 → A25″). Evidência incremental
 completa (comando · saída · hora UTC de cada passo): `scratchpad/DEV-C2-401.md`, seções D1, D2, D2 retomada e D3.
 
-**Terrenos:** `C:/Users/AMP/w-dc2` (CRLF: `core.autocrlf=true`, 602 CR no adapter) e `C:/Users/AMP/w-dc2lf` (LF: `core.autocrlf=false` no
+**Terrenos:** `~/w-dc2` (CRLF: `core.autocrlf=true`, 602 CR no adapter) e `~/w-dc2lf` (LF: `core.autocrlf=false` no
 `config.worktree` dele, 0 CR); `npm ci` próprio em `frontend/` nos dois e na raiz do w-dc2; sem junction; Node v20.19.5. **Incidente declarado:**
 às 05:46:00Z o `git config core.autocrlf false` rodado dentro do w-dc2lf sem `--worktree` gravou na config COMUM do repositório
 (`extensions.worktreeConfig=true`) — `core.autocrlf` efetivo `false` em todos os worktrees até 11:20:32Z, quando o dev desfez (`--unset` na

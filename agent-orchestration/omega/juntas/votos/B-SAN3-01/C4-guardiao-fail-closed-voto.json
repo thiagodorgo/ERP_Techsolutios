@@ -102,7 +102,7 @@
   ],
   "urls_usadas": [],
   "urls_nota": "Nenhum db:seed/migrate/npm test/e2e rodado: DATABASE_URL e REDIS_URL nao foram usadas, e nenhum conteiner foi criado.",
-  "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C4-guardiao-fail-closed-evidencia.md",
-  "scripts_e_resultados": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c4-mut/ (run-mut.mjs, probe*.mts, censo*.mjs, <id>.json, <id>.result.md)",
+  "evidencia": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C4-guardiao-fail-closed-evidencia.md",
+  "scripts_e_resultados": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c4-mut/ (run-mut.mjs, probe*.mts, censo*.mjs, <id>.json, <id>.result.md)",
   "limpeza": "Worktree .claude/worktrees/j-bsan301-c4 (npm --prefix frontend ci proprio, sem junction) removido por 'git worktree remove --force' pelo nome: worktree list | grep -c j-bsan301-c4 = 0. Toda mutacao restaurada por backup, com 'git status --porcelain' = 0 e 'git diff --quiet' EXIT=0 conferidos apos cada uma (18 execucoes). Nenhum conteiner, volume ou banco criado (docker ps -a | grep -c j-bsan301-c4 = 0). bsan301 intacto (status 0, HEAD 74f3f7c9). Log do npm ci apagado. Mantidos no scratchpad, como evidencia: c4-mut/ (scripts, specs e *.result.md). j-bsan301-c1 e alheio: nao tocado."
 }

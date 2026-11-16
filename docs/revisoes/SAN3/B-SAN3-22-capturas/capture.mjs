@@ -3,7 +3,7 @@
 import { createRequire } from "node:module";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const require = createRequire("C:/Users/AMP/w-san322/package.json");
+const require = createRequire("~/w-san322/package.json");
 const { chromium } = require("playwright");
 
 const BASE = process.argv[2] ?? "http://127.0.0.1:47322";

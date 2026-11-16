@@ -4,19 +4,19 @@ papel: cadeira C2 (c2r2, REFEITA, sucessora P3) | identidade: jurado-san322-c2-r
 
 ## Terreno e legalidade
 
-- `origin/main` no início: `c9a2d036c1aaff21df92817525d7f9c92cbbe272` (após `git fetch`). `$SCRATCH` = `C:/Users/AMP/erp-pausa-2026-10-03/j22r2-c2/` (a pasta do caído, reaproveitada; as cópias conferidas abaixo). `node -v` = v20.19.5. Variáveis: `OBJ`, `WT`, `S`, `REDIS_URL`.
+- `origin/main` no início: `c9a2d036c1aaff21df92817525d7f9c92cbbe272` (após `git fetch`). `$SCRATCH` = `~/erp-pausa-2026-10-03/j22r2-c2/` (a pasta do caído, reaproveitada; as cópias conferidas abaixo). `node -v` = v20.19.5. Variáveis: `OBJ`, `WT`, `S`, `REDIS_URL`.
 - Comando → `git show 6b03e44d…:.claude/agents/especialistas/jurado-san322-c2-contrato-classificador-consumidores.md` > scratchpad; `diff <(tr -d '\r' < blob) <(tr -d '\r' < w-san322/.claude/…)`; `tr -d '\r' < cadeira-c2r2.md | md5sum`. Saída → `IDENTICO`; md5 `574264f83505bd4b43c96b474f020b76` (igual ao do caído).
 - Comando → `git ls-remote origin refs/heads/fix/checklist-trava-versao`; `gh pr view 464 --json headRefOid,state`. Saída → ambos `6b03e44d8136792398f521ccaf85d8dd45168a6d`, OPEN.
 - Legalidade: `insp-san322c2-parecer.md` (`inspetor-san322-c2`, Opus) **LIBERADO COM RESSALVA**, 6 ressalvas lidas; a C2 consta para Claude Opus ou Codex Sol, worktree `j22r2-c2-wt`. Ressalva 1 cumprida abaixo (diff das cópias). Identidade `jurado-san322-c2-r2-opus` não coincide com nenhum dos 21 inelegíveis do mandato nem com as outras cadeiras.
 - Recursos (02:05Z): disco C: livre 8,7 GB (≥ 7 GB; esta cadeira não instala nada novo: worktree e `node_modules` do caído reaproveitados); memória de commit livre 8,43 GB (≥ 4 GB); trabalhos Docker fora de `erp-*`: 1 (`j22r2-c1`) + o meu = 2 (teto).
-- Worktree: `C:/Users/AMP/j22r2-c2-wt` (do caído), `git rev-parse HEAD` = objeto; `git status --porcelain` = 0 linhas; `node_modules` com `LinkType` vazio (não é junction; 222 entradas; sem `frontend/node_modules`).
+- Worktree: `~/j22r2-c2-wt` (do caído), `git rev-parse HEAD` = objeto; `git status --porcelain` = 0 linhas; `node_modules` com `LinkType` vazio (não é junction; 222 entradas; sem `frontend/node_modules`).
 - Redis próprio: `j22r2-c2o-redis` (`redis:7-alpine`) só em `127.0.0.1:48032` (porta fora das faixas excluídas, sem escuta antes; o container do caído já removido); `PONG`. Base viva `erp-*` (5432/6379) e as portas 3000/5173/5050/8899/55432/56379 não tocadas.
 
 ### Ressalva 1 — diff das cópias conferido (re-execução do comando do caído)
 
 Comando → `for f in ce13.sh ce13b.sh drill.sh silent.sh zz-j22c2-rest.test.ts contrato.mjs mut.mjs; do diff j22-c2/$f j22r2-c2/$f; done`.
 
-Saída → idêntica à publicada pelo caído: nos 4 roteiros `cd C:/Users/AMP/j22-c2-wt` → `cd C:/Users/AMP/j22r2-c2-wt`, `S=…/j22-c2` → `S=…/j22r2-c2`, `OBJ=44d9cbb3…` → `OBJ=6b03e44d8136792398f521ccaf85d8dd45168a6d`, `REDIS_URL=…:47932` → `…:48032`; `ce13b.sh` sem o bloco que criava/apagava `tests/zz-j22c2-forma.test.ts`; sonda REST com `OUT` em `j22r2-c2/` e mais 6 linhas (id inexistente, rascunho sem viva, inativo sem viva); `contrato.mjs` e `mut.mjs` sem diferença. Reuso a porta 48032 com o MEU container, logo nenhum valor fixo aponta para o objeto do ciclo 1, para o worktree antigo ou para a porta antiga. Nenhum script original roda no lugar.
+Saída → idêntica à publicada pelo caído: nos 4 roteiros `cd ~/j22-c2-wt` → `cd ~/j22r2-c2-wt`, `S=…/j22-c2` → `S=…/j22r2-c2`, `OBJ=44d9cbb3…` → `OBJ=6b03e44d8136792398f521ccaf85d8dd45168a6d`, `REDIS_URL=…:47932` → `…:48032`; `ce13b.sh` sem o bloco que criava/apagava `tests/zz-j22c2-forma.test.ts`; sonda REST com `OUT` em `j22r2-c2/` e mais 6 linhas (id inexistente, rascunho sem viva, inativo sem viva); `contrato.mjs` e `mut.mjs` sem diferença. Reuso a porta 48032 com o MEU container, logo nenhum valor fixo aponta para o objeto do ciclo 1, para o worktree antigo ou para a porta antiga. Nenhum script original roda no lugar.
 
 Veredito parcial → **TERRENO E LEGALIDADE VERDES**.
 
@@ -119,7 +119,7 @@ Veredito parcial → **VERDE**. Regressão da C2 com N igual; E4-07 vermelha pel
 
 - Head no fim: `git ls-remote` = `gh pr view 464 headRefOid` = `6b03e44d8136792398f521ccaf85d8dd45168a6d` (não andou). Worktree no fim: `rev-parse HEAD` = objeto, `status --porcelain` = 0 (toda mutação e todo checkout de base restaurados, `hash-object` = blob).
 - `docker rm -f -v j22r2-c2o-redis` → contagem `j22r2-c2o` = 0. Containers `j22r2-c1-*` (de outra cadeira), `erp-*` e `agv3-proxy` não tocados.
-- Processos com o caminho do worktree: 0 (só a própria consulta) → `git worktree remove --force C:/Users/AMP/j22r2-c2-wt` ec=0; diretório ausente; `worktree list` sem ele.
+- Processos com o caminho do worktree: 0 (só a própria consulta) → `git worktree remove --force ~/j22r2-c2-wt` ec=0; diretório ausente; `worktree list` sem ele.
 - Apagados: os meus extraídos `$S/o-base8`, `$S/o-base21`, `$S/o-idx8.md` e a cópia do corpo no scratchpad da sessão. Ficam no `$S` os meus roteiros (`o-i1-mut.sh`, `o-silent.sh`, `o-i2-iv.sh`, `o-guard-runner.ts`) e TAPs/logs `o-*`, ao lado dos do caído (não apagados).
 - `w-san322`: só `c2r2-evidencia.md` e `c2r2-voto.json` escritos por mim; sem commit. Base viva nunca tocada. Disco livre no fim: 9,0 GB.
 

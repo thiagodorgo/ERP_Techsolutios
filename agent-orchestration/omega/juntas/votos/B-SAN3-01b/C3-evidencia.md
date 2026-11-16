@@ -17,7 +17,7 @@ papel: cadeira C3 da junta 1 do B-SAN3-01b (PR 402) | identidade: cognicao-visua
 - **Veredito parcial (legalidade): VERDE** — objeto = cdf370dc, CI 14/14 concluido e verde, delta so registro, cadeira elegivel.
 
 ## T. Terreno — 21:53Z-21:55Z
-- `ls -d C:/Users/AMP/w-j01bc3` -> inexistente; `git worktree add --detach C:/Users/AMP/w-j01bc3 cdf370dcb4c8...` -> HEAD cdf370dc, porcelain 0.
+- `ls -d ~/w-j01bc3` -> inexistente; `git worktree add --detach ~/w-j01bc3 cdf370dcb4c8...` -> HEAD cdf370dc, porcelain 0.
 - `npm ci --ignore-scripts` (raiz, Node 20.19.5) -> added 326, ec=0 (21:54:10-21:54:27); `cd frontend && npm ci` -> added 103, ec=0 (21:54:39). `cmd /c dir /AL` no worktree -> 0 junction. Porcelain apos npm ci -> 0.
 - Head-base do bloco = merge-base 4ab9d232 (= origin/main). Diff de producao 4ab9d232..cdf370dc lido: WorkOrdersPage.tsx (comentario l.237-239 + `canCreate ? (<button ...>Nova OS</button>) : undefined` l.250-257), 3 cabecalhos so comentario (dispatches.service.ts, repository.ts, useServiceQuoteReferences.ts), frontend/package.json so +1 caminho no test:smoke.
 
@@ -52,7 +52,7 @@ papel: cadeira C3 da junta 1 do B-SAN3-01b (PR 402) | identidade: cognicao-visua
 - 22:08:53Z: `gh pr view 402 --json headRefOid` e `git ls-remote origin refs/pull/402/head` -> cdf370dc (o head nao andou durante a medicao); check-runs -> [14 total, 0 nao concluido/nao success].
 - Servidor vite: o unico ouvinte de 127.0.0.1:5791 era o meu (porta livre antes do disparo; `vite.log` "Local: http://127.0.0.1:5791"; HMR registrou a troca para o base 22:02:46Z e a restauracao 22:03:01Z) -> `taskkill //PID 84536 //T //F` (e o filho 45132); `netstat | grep -c ':5791 .*LISTENING'` -> 0.
 - Antes de remover: `tasklist //V | grep -ci w-j01bc3` -> 0; `wmic process get CommandLine | grep -ci w-j01bc3` -> 0; node com vite/5791/probe-c3/shot-c3 -> 0; worktree porcelain 0, HEAD cdf370dc.
-- `git worktree remove --force C:/Users/AMP/w-j01bc3` -> ec=0; `git worktree prune`; `git worktree list | grep -ic w-j01bc3` -> 0; `ls -d` -> inexistente. Nenhum container, nenhuma porta da base viva tocada (API do vite apontada para 127.0.0.1:59999, porta morta). Arvore principal 4ab9d232 e w-nuv01b cdf370dc intactas (w-nuv01b: so os arquivos de voto nao versionados das cadeiras; nao li os de C1/C2).
+- `git worktree remove --force ~/w-j01bc3` -> ec=0; `git worktree prune`; `git worktree list | grep -ic w-j01bc3` -> 0; `ls -d` -> inexistente. Nenhum container, nenhuma porta da base viva tocada (API do vite apontada para 127.0.0.1:59999, porta morta). Arvore principal 4ab9d232 e w-nuv01b cdf370dc intactas (w-nuv01b: so os arquivos de voto nao versionados das cadeiras; nao li os de C1/C2).
 - Ficam no scratchpad da sessao (evidencia citada, fora do repo): `scratchpad/c3/{minidom.mjs, probe-c3.mts, shot-c3.mts, probe-head.txt, probe-base.txt, out-head/, out-base/, shots-head/, shots-base/, bloco.log, vite.log, npmci.log}`.
 
 ## VOTO — 22:11Z: APROVADO (itens 1, 2 e 3 VERDES; 0 bloqueante; 1 nota pre-existente C3-N1)

@@ -6,7 +6,7 @@ Saída: corpo=910c63c27fc371f6e9976bf4739977a6; mandato=f48e02e59ec26b776e4b863c
 Veredito parcial: CONFERIDO; sem divergência nos hashes publicados.
 
 ## 2026-10-10T13:26:01.000Z — 1.1 PR via GitHub
-Comando: gh "pr" "view" "389" "--repo" "thiagodorgo/ERP_Techsolutios" "--json" "headRefOid,headRefName,baseRefName,state,isDraft" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "pr" "view" "389" "--repo" "thiagodorgo/ERP_Techsolutios" "--json" "headRefOid,headRefName,baseRefName,state,isDraft" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"baseRefName":"main","headRefName":"fix/inventory-consistency","headRefOid":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","isDraft":true,"state":"OPEN"}
@@ -16,7 +16,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:01.041Z — 1.1 refs git
-Comando: git "rev-parse" "origin/main" "origin/fix/inventory-consistency" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "rev-parse" "origin/main" "origin/fix/inventory-consistency" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 c1cfdabe12c74b58f8393dbee4f333224c56b303
@@ -27,7 +27,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:01.082Z — 1.1 main ancestral
-Comando: git "merge-base" "--is-ancestor" "origin/main" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "merge-base" "--is-ancestor" "origin/main" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 
@@ -36,7 +36,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:01.123Z — 1.1 delta de código C2 para C3
-Comando: git "diff" "--exit-code" "35ef85be" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "src" "tests" "prisma" "scripts" ".github" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "diff" "--exit-code" "35ef85be" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "src" "tests" "prisma" "scripts" ".github" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 
@@ -45,7 +45,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:01.167Z — 1.1 delta desde Emenda 8
-Comando: git "diff" "--name-status" "e62d1e4b" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "diff" "--name-status" "e62d1e4b" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 A	agent-orchestration/omega/juntas/votos/B-O6R-04a/00-mandatos/inspetor-c3.md
@@ -55,7 +55,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:01.944Z — 4.3 check-runs
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion,head_sha}]}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion,head_sha}]}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"check_runs":[{"conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"authority-portal","status":"completed"},{"conclusion":null,"head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"backend","status":"in_progress"},{"conclusion":null,"head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"flutter","status":"in_progress"},{"conclusion":null,"head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"frontend","status":"in_progress"},{"conclusion":null,"head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"backend-postgres","status":"in_progress"},{"conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"owner-portal","status":"completed"},{"conclusion":null,"head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"frontend","status":"in_progress"},{"conclusion":null,"head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"backend-postgres","status":"in_progress"},{"conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"owner-portal","status":"completed"},{"conclusion":null,"head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"backend","status":"in_progress"},{"conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"authority-portal","status":"completed"},{"conclusion":null,"head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"flutter","status":"in_progress"}],"total_count":12}
@@ -65,26 +65,26 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:01.994Z — 1.3 worktrees
-Comando: git "worktree" "list" "--porcelain" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "worktree" "list" "--porcelain" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios
+worktree ~/Documents/GitHub/ERP_Techsolutios
 HEAD c1cfdabe12c74b58f8393dbee4f333224c56b303
 branch refs/heads/main
 
-worktree C:/Users/AMP/w-07ca
+worktree ~/w-07ca
 HEAD 99c5912d28293d5e369988a7e2866b43c17cfcd7
 branch refs/heads/fix/o6r07c-subresource-scope
 
-worktree C:/Users/AMP/w-389
+worktree ~/w-389
 HEAD de1dff89a8fd8a501bf57dd92983a23c244fd5fd
 branch refs/heads/fix/inventory-consistency
 
-worktree C:/Users/AMP/w-pvpr
+worktree ~/w-pvpr
 HEAD e62d1e4b364d8473d8599ed207c92d61a19b426d
 detached
 
-worktree C:/Users/AMP/w-traccar
+worktree ~/w-traccar
 HEAD 9cb441bd10f5103eaac7a79883b901c5b1ba7477
 branch refs/heads/docs/plano-traccar
 
@@ -94,7 +94,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:02.095Z — 1.3 containers (metadados apenas)
-Comando: docker "ps" "-a" "--format" "{{.Names}}\t{{.Status}}\t{{.Ports}}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: docker "ps" "-a" "--format" "{{.Names}}\t{{.Status}}\t{{.Ports}}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 erp-postgres-alt	Exited (255) 3 weeks ago	127.0.0.1:55432->5432/tcp
@@ -123,7 +123,7 @@ Saída:
 Veredito parcial: CONFERIDO >=10 GB
 
 ## 2026-10-10T13:26:14.910Z — 1.1 criar isolamento
-Comando: git "worktree" "add" "--detach" "C:/Users/AMP/w-insp389c3" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" [timeout=60000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "worktree" "add" "--detach" "~/w-insp389c3" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" [timeout=60000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 HEAD is now at de1dff89 chore(junta): mandato do inspetor da junta do ciclo 3 do B-O6R-04a (pré-voo OK)
@@ -135,7 +135,7 @@ exit=0
 Veredito parcial: CONFERIDO se exit=0
 
 ## 2026-10-10T13:26:15.198Z — 1.1 árvore própria
-Comando: git "status" "--porcelain" [timeout=30000ms; cwd=C:/Users/AMP/w-insp389c3]
+Comando: git "status" "--porcelain" [timeout=30000ms; cwd=~/w-insp389c3]
 Saída:
 ```
 
@@ -144,7 +144,7 @@ exit=0
 Veredito parcial: CONFERIDO se vazia
 
 ## 2026-10-10T13:26:15.260Z — 1.1 árvore PR
-Comando: git "-C" "C:/Users/AMP/w-389" "status" "--porcelain" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "-C" "~/w-389" "status" "--porcelain" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 ?? agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c3-evidencia.md
@@ -155,7 +155,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:15.302Z — leitura agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 # OBITUÁRIO DE IDENTIDADES DE JUNTA — registro canônico de quem não pode mais votar
@@ -505,15 +505,15 @@ Os **12 corpos que vieram da `main`** com frase parecida (`jurado-*` de outros b
 
 **Para o orquestrador (antes do próximo dev):** emenda 7 do comando com (a) D5 = caminho (i), motivo e as duas mutações; (b) D2 = errata 2 (texto acima); (c) D3 = aceite corrigido; (d) a C2 recebe no briefing o item "resolvedor de constante: fail-closed provado por D1-r1/D1-r2"; (e) o inspetor confere o item 3.3 contra os blobs pós-errata 2. **Nada aqui é do dono.**
 
-**Fim da emenda 1 — `planejador-retomada-b-o6r-04a` (Fable 5.1), 2026-10-10.** Decisão D5: **caminho (i)** — o classificador resolve `const` de literal pelo símbolo e nega tudo o mais; 1 arquivo (`tests/inventory-write-paths-guard.test.ts`), 0 `src/`, sem emenda de escopo; vermelho-controle = o D1 em HC (3233/3236); verde esperado = T-D 12/12 e `npm test` 3237 (a medir). Nada commitado por mim; nenhum container criado; worktree `C:/Users/AMP/w-389p` com **este único arquivo** modificado.
+**Fim da emenda 1 — `planejador-retomada-b-o6r-04a` (Fable 5.1), 2026-10-10.** Decisão D5: **caminho (i)** — o classificador resolve `const` de literal pelo símbolo e nega tudo o mais; 1 arquivo (`tests/inventory-write-paths-guard.test.ts`), 0 `src/`, sem emenda de escopo; vermelho-controle = o D1 em HC (3233/3236); verde esperado = T-D 12/12 e `npm test` 3237 (a medir). Nada commitado por mim; nenhum container criado; worktree `~/w-389p` com **este único arquivo** modificado.
 
 ### Ciclo 3 — plano (2026-10-10)
 
-> **Papel/modelo:** `planejador-retomada-b-o6r-04a` (não achou, não desenvolveu, não votou — §C7.4-bis), Fable 5.1 (bloco de dinheiro e dado). **Objeto medido:** HC `5f2d7894b148268c1ad6759af464622dc773891e` = `origin/fix/inventory-consistency`, lido em worktree próprio detached `C:/Users/AMP/w-389p2` (`git status` vazio); `main` = `c1cfdabe`. **Insumos lidos na ref:** `J-B-O6R-04a-ciclo2.md` (REPROVADO 2 × 1: C1 e C3 APROVADO, C2 4 `bloqueia`), `R-B-O6R-04a-ciclo2.md`, `votos/B-O6R-04a/c2-C2-voto.json` + `c2-C2-evidencia.md` (21 mutações; VERDES = achados N1, N2, N2b, N3, N3b, N5, N8, N9, N10, N11), `c2-C1-voto.json` (A1), `insp-c2-parecer.md` (R1–R7). **Régua deste ciclo:** `CLAUDE.md` §C7 item 8(2) na ref — **GRAVE**: bloqueia só o que perde dado, vaza entre organizações, quebra permissão ou erra dinheiro; forma de guard é não grave e vira pendência com dono.
+> **Papel/modelo:** `planejador-retomada-b-o6r-04a` (não achou, não desenvolveu, não votou — §C7.4-bis), Fable 5.1 (bloco de dinheiro e dado). **Objeto medido:** HC `5f2d7894b148268c1ad6759af464622dc773891e` = `origin/fix/inventory-consistency`, lido em worktree próprio detached `~/w-389p2` (`git status` vazio); `main` = `c1cfdabe`. **Insumos lidos na ref:** `J-B-O6R-04a-ciclo2.md` (REPROVADO 2 × 1: C1 e C3 APROVADO, C2 4 `bloqueia`), `R-B-O6R-04a-ciclo2.md`, `votos/B-O6R-04a/c2-C2-voto.json` + `c2-C2-evidencia.md` (21 mutações; VERDES = achados N1, N2, N2b, N3, N3b, N5, N8, N9, N10, N11), `c2-C1-voto.json` (A1), `insp-c2-parecer.md` (R1–R7). **Régua deste ciclo:** `CLAUDE.md` §C7 item 8(2) na ref — **GRAVE**: bloqueia só o que perde dado, vaza entre organizações, quebra permissão ou erra dinheiro; forma de guard é não grave e vira pendência com dono.
 
 #### C3.0 Terreno e varredura — comando → saída (2026-10-10)
 
-| # | comando (em `C:/Users/AMP/w-389p2`, ref HEAD = HC) | saída |
+| # | comando (em `~/w-389p2`, ref HEAD = HC) | saída |
 |---|---|---|
 | u1 | `git log --oneline 7cc02916..HEAD` · `git diff --stat 7cc02916 HEAD -- src tests prisma scripts .github` | 11 commits (D5 do guard `518b8ccd`, errata 2 `a48872e0`, integração 2, emenda 7, mandatos, inspetor, votos, ata); **único arquivo de código/teste mudado desde a emenda 1: `tests/inventory-write-paths-guard.test.ts` (+72/−7)**. `src/**` igual ao que a junta 1 e a C1/C3 da junta 2 julgaram |
 | u2 | `git diff --name-status origin/main HEAD -- src prisma scripts` | os **8** arquivos de `src/modules/inventory/**` + `prisma/schema.prisma` + a migration + o censo `.sql` — a superfície de produto do bloco |
@@ -642,7 +642,7 @@ Cabeçalho comum das 5: `escopo: dentro-do-bloco` (o guard/detector é do bloco)
 | r3 | a C2 do ciclo 3 **falsifica** C3.1 (acha escritor/porta/transição real fora dos N) | — (é o que a junta existe para medir) | passo 2b: dev novo, só a instância, vermelho-controle; a varredura u11 fica como baseline comparável (N por classe) |
 | r4 | intermitência herdada: T15 do #405 falhou 1/3 sob carga (`P-SAN3-05-T15-TETO-DE-RELOGIO`, pré-existente — R7 do inspetor) e as esperas fixas das `-db` do bloco (R3.4 da retomada) | sim | C3 declara escopo com evidência de data; re-executa 1× isolado; **não** ajusta `sleep` nem teto |
 | r5 | disco: 14 GB (R4) e cada worktree+`npm ci` ≈ 0,7–1 GB + clusters | sim | ≥ 10 GB antes de cada cadeira; sequência P5; remover cada worktree ao fim; `DEEP_CLEAN=1` só com a base viva parada |
-| r6 | prefixos/nomes de recursos divergentes entre corpo e plano (R1 do inspetor) | sim | prefixo único por cadeira **no mandato**: `j389c3-c1-*`, `j389c3-c2-*`, `j389c3-c3-*`, worktrees `C:/Users/AMP/w-j389c3-c*` |
+| r6 | prefixos/nomes de recursos divergentes entre corpo e plano (R1 do inspetor) | sim | prefixo único por cadeira **no mandato**: `j389c3-c1-*`, `j389c3-c2-*`, `j389c3-c3-*`, worktrees `~/w-j389c3-c*` |
 | r7 | o dono das pendências não existe (ID) e elas ficam órfãs | sim (u14) | o orquestrador decide o ID na emenda 8; até lá, `dono` cita o decreto literalmente; o `gerar-indice-pendencias.py` as lista como ABERTAS com dono textual |
 | r8 | deploy pós-merge: a migration **aborta** se houver duplicata sem censo (M-02) — ato do dono | sim (plano §4.3/§13-1) | `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` continua ALTA e **do dono** (R6 da retomada); o merge em si não perde dado |
 
@@ -658,7 +658,7 @@ Nenhuma decisão nova: a régua grave é a decisão (2) de 04/10 do próprio don
 Veredito parcial: LIDO; conferir execução
 
 ## 2026-10-10T13:26:23.506Z — leitura agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c2-parecer.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 papel: inspetor-de-terreno-da-junta · modelo: Fable (claude-fable-5-1) · mandato_md5: ff3a7e4b5013e7c6839f5593a8cb0403 · corpo_md5_eol_neutro: de80b2a9d4fc7edd7b9a26e2d601f97d · INSTANCIA 2 (mesma identidade relancada; a instancia 1 caiu ~07:00Z por 429 de sessao, 00-quedas.md) · ciclo 2 · B-O6R-04a · PR #389
@@ -675,7 +675,7 @@ papel: inspetor-de-terreno-da-junta · modelo: Fable (claude-fable-5-1) · manda
 
 ## 1. Isolamento
 - 1.1 head e arvore limpa: VERDE - w-389 @ae863e1a, porcelain so com 3 ?? (00-quedas.md, insp-c2-evidencia.md, insp-c2-parecer.md = artefatos deste gate); 19/19 arquivos centrais (src/modules/inventory, tests, schema, migration, censo, ci.yml) com md5 EOL-neutro IGUAL ao blob do head.
-- 1.2 plano de isolamento declarado: VERDE COM RESSALVA - plano Passo 0/2/3 + emenda 6 (ii, jj) + secoes Terreno dos corpos: worktree proprio detached + npm ci proprio por jurado, cluster Postgres/Redis descartavel proprio, base viva erp-postgres/erp-redis nunca alvo, >= 10 GB antes de cada jurado, P5 sequencial; imagem erp-junta-node20-pg16:local presente (386MB). RESSALVA R1: prefixos divergem (corpos j-b04a-c2-c*/.claude/worktrees vs plano j389-c*-*/C:/Users/AMP/w-*) - fixar UM por cadeira no briefing.
+- 1.2 plano de isolamento declarado: VERDE COM RESSALVA - plano Passo 0/2/3 + emenda 6 (ii, jj) + secoes Terreno dos corpos: worktree proprio detached + npm ci proprio por jurado, cluster Postgres/Redis descartavel proprio, base viva erp-postgres/erp-redis nunca alvo, >= 10 GB antes de cada jurado, P5 sequencial; imagem erp-junta-node20-pg16:local presente (386MB). RESSALVA R1: prefixos divergem (corpos j-b04a-c2-c*/.claude/worktrees vs plano j389-c*-*/~/w-*) - fixar UM por cadeira no briefing.
 - 1.3 residuo de jurado anterior: VERDE COM RESSALVA - docker ps -a: zero insp389-*/jur-*/crit-*/j05*; so base viva (Up) + erp-postgres-alt (Exited 3 sem., inerte) + pastrack (outro projeto); nenhuma sonda solta em w-389/w-insp389/main/w-pvpr (inclui ignorados). RESSALVA R5: w-pvpr (detached @6cd27088, 2 scripts ?? do pre-voo nao rastreados no head) = residuo INERTE do orquestrador, nao removido por mim.
 
 ## 2. Insumos do briefing
@@ -701,7 +701,7 @@ papel: inspetor-de-terreno-da-junta · modelo: Fable (claude-fable-5-1) · manda
 **LIBERADO COM RESSALVA** (2026-10-10T07:56:18Z). Nenhum item BLOQUEADO: objeto e um SHA com 14 check-runs concluidos e verdes; arvore do dev sem mutacao viva; S0 verde; baseline npm run check ec 0 no head; inelegibilidade sem colisao; ata do ciclo 1 declarada reconstituida e marcada a re-verificar; plano de isolamento e de perda declarados; disco 14 GB. A junta do ciclo 2 pode comecar quando o orquestrador colocar as ressalvas abaixo no briefing.
 
 ## Ressalvas (para o briefing das cadeiras, em destaque)
-- R1 (nome dos recursos): corpos mandam j-b04a-c2-c1-pg/j-b04a-c2-c2-pg e worktree .claude/worktrees/j-b04a-c2-*; plano Passo 0 + emenda 6-jj mandam prefixos j389-c1-*/j389-c2-*/j389-c3-* e caminho curto C:/Users/AMP/w-*. Fixar UM prefixo por cadeira (residuo e limpeza sao por nome; caminho curto evita Filename too long) e usar worktree detached (w-389 tem a branch checked out).
+- R1 (nome dos recursos): corpos mandam j-b04a-c2-c1-pg/j-b04a-c2-c2-pg e worktree .claude/worktrees/j-b04a-c2-*; plano Passo 0 + emenda 6-jj mandam prefixos j389-c1-*/j389-c2-*/j389-c3-* e caminho curto ~/w-*. Fixar UM prefixo por cadeira (residuo e limpeza sao por nome; caminho curto evita Filename too long) e usar worktree detached (w-389 tem a branch checked out).
 - R2 (corpo carregado): os 4 corpos o6r04a nao estao no diretorio de agentes da sessao -> disparar general-purpose com o blob do head ae863e1a colado e o md5 EOL-neutro publicado (acima, item 3.3); corpos sem model: -> passar Fable explicitamente, fallback Opus DECLARADO no voto e na ata (§C7.6-bis). agente-ci-doutor pode ser carregado pelo nome (sessao == head).
 - R3 (mandatos): os mandatos das 3 cadeiras nao existem na ref; gerar com o modelo de mandato §C7.7 (P1-P7, PAUSA) e pre-voo, sobre HC = origin/fix/inventory-consistency = ae863e1a (ou o head novo que os contenha, com check-runs concluidos de novo).
 - R4 (disco e sequencia): 14 GB agora; cada worktree+npm ci ~0,7-1 GB e cada cluster aperta -> o orquestrador re-mede >= 10 GB ANTES de cada cadeira (este papel morre quando a junta comeca); P5: C1 e C2 em paralelo, C3 depois; DEEP_CLEAN=1 NAO roda (apaga erp-junta-node20-pg16:local).
@@ -711,14 +711,14 @@ papel: inspetor-de-terreno-da-junta · modelo: Fable (claude-fable-5-1) · manda
 - Credenciais no diff sao so de containers descartaveis (crit:crit, dev389i); nenhum segredo real.
 
 ## Limpeza
-- Criado/usado para medir: worktree detached C:/Users/AMP/w-insp389 (reutilizado da instancia 1; npm ci proprio, nao junction) -> processos vivos conferidos (0 alem da propria medicao) -> git worktree remove --force -> ec 0, diretorio ausente; /tmp/s0.out, /tmp/pg.out, /tmp/check.out apagados. Nenhum container criado (nenhum insp389-* nasceu: a inspecao nao precisou de banco). Base viva, w-07c, w-traccar, w-pvpr e w-389 (fora destes 2 arquivos + 00-quedas.md do orquestrador) intocados. Disco ao fim: 14 GB livres.
+- Criado/usado para medir: worktree detached ~/w-insp389 (reutilizado da instancia 1; npm ci proprio, nao junction) -> processos vivos conferidos (0 alem da propria medicao) -> git worktree remove --force -> ec 0, diretorio ausente; /tmp/s0.out, /tmp/pg.out, /tmp/check.out apagados. Nenhum container criado (nenhum insp389-* nasceu: a inspecao nao precisou de banco). Base viva, w-07c, w-traccar, w-pvpr e w-389 (fora destes 2 arquivos + 00-quedas.md do orquestrador) intocados. Disco ao fim: 14 GB livres.
 
 exit=0
 ```
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:23.548Z — leitura package.json
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:package.json" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:package.json" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {
@@ -794,7 +794,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:25.098Z — 4.1 S0
-Comando: node "scripts/sync-agent-agents.mjs" "--check" [timeout=30000ms; cwd=C:/Users/AMP/w-insp389c3]
+Comando: node "scripts/sync-agent-agents.mjs" "--check" [timeout=30000ms; cwd=~/w-insp389c3]
 Saída:
 ```
 [agents-sync] OK — 49 agentes, espelho consistente.
@@ -832,7 +832,7 @@ Saída:
 Veredito parcial: LIDO
 
 ## 2026-10-10T13:26:49.920Z — leitura agent-orchestration/omega/juntas/J-B-O6R-04a-ciclo2.md
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/J-B-O6R-04a-ciclo2.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/J-B-O6R-04a-ciclo2.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 # J-B-O6R-04a — junta do ciclo 2 (2026-10-10) · PR #389, a consistência do estoque sob concorrência
@@ -898,7 +898,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:49.977Z — leitura agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo2.md
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo2.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo2.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 # R-B-O6R-04a-ciclo2 — reprovação da junta do ciclo 2 (2026-10-10)
@@ -922,7 +922,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:50.033Z — 2 mandatos existentes
-Comando: git "ls-tree" "-r" "--name-only" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/votos/B-O6R-04a/00-mandatos" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "ls-tree" "-r" "--name-only" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/votos/B-O6R-04a/00-mandatos" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 agent-orchestration/omega/juntas/votos/B-O6R-04a/00-mandatos/C1c2.md
@@ -936,7 +936,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:26:50.081Z — 2 emenda 8
-Comando: git "grep" "-n" "-A80" "Emenda 8" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-A80" "Emenda 8" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md:284:## Emenda 8 do orquestrador — o ciclo 3 (2026-10-10)
@@ -962,7 +962,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:27:05.240Z — 3.1 nomes nas atas e reprovações
-Comando: git "grep" "-n" "-E" "jurado-o6r04a-c2-suplente-(banco-rls|fail-closed-backend)|coordenador-de-acessos|inspetor-de-arnes-concorrente" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/J-*O6R-04*" "agent-orchestration/omega/reprovacoes/R-*O6R-04*" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-E" "jurado-o6r04a-c2-suplente-(banco-rls|fail-closed-backend)|coordenador-de-acessos|inspetor-de-arnes-concorrente" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/J-*O6R-04*" "agent-orchestration/omega/reprovacoes/R-*O6R-04*" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 
@@ -971,7 +971,7 @@ exit=1
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:27:05.284Z — leitura agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 # R-B-O6R-04a — ciclo 1 (junta 1): REPROVADO 1 × 2 — ata RECONSTITUÍDA
@@ -1015,7 +1015,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:27:05.335Z — 2 pendências e índice
-Comando: git "grep" "-n" "-A12" "-E" "^#+ P-O6R-B04-(GUARD-D[1257]|CENSO-DETECTOR-DE-LITERAIS)|P-O6R-B04-GUARD-D1|P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/controle/pendencias.md" "agent-orchestration/controle/pendencias-indice.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-A12" "-E" "^#+ P-O6R-B04-(GUARD-D[1257]|CENSO-DETECTOR-DE-LITERAIS)|P-O6R-B04-GUARD-D1|P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/controle/pendencias.md" "agent-orchestration/controle/pendencias-indice.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/controle/pendencias-indice.md:243:| `P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA` | 10628 | MÉDIA | **a atribuir** | P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA (2026-10-10) — o D1 do T-D deriva o universo de es |
@@ -1094,7 +1094,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:27:05.395Z — 3.1 artefatos de votos
-Comando: git "ls-tree" "-r" "--name-only" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/votos/B-O6R-04a" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "ls-tree" "-r" "--name-only" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/votos/B-O6R-04a" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 agent-orchestration/omega/juntas/votos/B-O6R-04a/00-critico-r1.md
@@ -1145,7 +1145,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:27:05.929Z — 4.2 npm ci próprio
-Comando: node "C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js" "ci" "--no-audit" "--no-fund" [timeout=240000ms; cwd=C:/Users/AMP/w-insp389c3]
+Comando: node "C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js" "ci" "--no-audit" "--no-fund" [timeout=240000ms; cwd=~/w-insp389c3]
 Saída:
 ```
 
@@ -1161,7 +1161,7 @@ exit=0
 Veredito parcial: MEDIDO; baseline ainda pendente
 
 ## 2026-10-10T13:27:15.317Z — leitura prisma.config.ts
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:prisma.config.ts" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:prisma.config.ts" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 import "dotenv/config";
@@ -1249,7 +1249,7 @@ Saída:
 Veredito parcial: MEDIDO; carregamento das futuras cadeiras ainda não aconteceu
 
 ## 2026-10-10T13:27:42.831Z — 1.3 worktree residual
-Comando: git "-C" "C:/Users/AMP/w-pvpr" "status" "--porcelain" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "-C" "~/w-pvpr" "status" "--porcelain" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 ?? scripts/mandato-preflight.sh
@@ -1260,7 +1260,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:27:42.834Z — 1.3 sondas soltas incluindo ignorados
-Comando: rg "--files" "--hidden" "--no-ignore" "-g" "!node_modules/**" "-g" "!.git/**" "-g" "!frontend/node_modules/**" "-g" "*probe*" [timeout=30000ms; cwd=C:/Users/AMP/w-389]
+Comando: rg "--files" "--hidden" "--no-ignore" "-g" "!node_modules/**" "-g" "!.git/**" "-g" "!frontend/node_modules/**" "-g" "*probe*" [timeout=30000ms; cwd=~/w-389]
 Saída:
 ```
 
@@ -1269,7 +1269,7 @@ exit=null error=spawnSync rg ENOENT
 Veredito parcial: MEDIDO
 
 ## 2026-10-10T13:27:43.030Z — 1.2 imagem runner
-Comando: docker "image" "inspect" "erp-junta-node20-pg16:local" "--format" "{{.Id}} {{.Os}} {{.Size}}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: docker "image" "inspect" "erp-junta-node20-pg16:local" "--format" "{{.Id}} {{.Os}} {{.Size}}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 sha256:4203157f95ea5e494d975e496f22905ffe184d059ae6aaa62aae840c761c19b5 linux 101208249
@@ -1279,7 +1279,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:27:46.579Z — 4.2 gerar Prisma (sem conexão)
-Comando: node "C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js" "run" "db:generate" [timeout=60000ms; cwd=C:/Users/AMP/w-insp389c3]
+Comando: node "C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js" "run" "db:generate" [timeout=60000ms; cwd=~/w-insp389c3]
 Saída:
 ```
 
@@ -1301,7 +1301,7 @@ exit=0
 Veredito parcial: MEDIDO; nenhum banco usado
 
 ## 2026-10-10T13:27:53.725Z — leitura .agents/agents/especialistas/jurado-o6r04a-c2-suplente-banco-rls.md
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:.agents/agents/especialistas/jurado-o6r04a-c2-suplente-banco-rls.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:.agents/agents/especialistas/jurado-o6r04a-c2-suplente-banco-rls.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 ---
@@ -1487,7 +1487,7 @@ para matéria de outra cadeira, **nomeada**.
 
 - **Worktree PRÓPRIO, detached, no head do briefing**, com caminho curto (`Filename too long` já derrubou quem
   pôs worktree no scratchpad):
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c1s <head>`.
+  `git -C ~/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c1s <head>`.
   **Nunca** meça no `b04a` (worktree do bloco), nem no worktree do titular, nem na árvore principal, nem no
   worktree de outro jurado: nesses, **somente leitura**.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** no seu worktree, e `npx prisma generate` com a `DATABASE_URL` só no
@@ -1743,7 +1743,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:27:53.769Z — leitura .agents/agents/especialistas/jurado-o6r04a-c2-suplente-fail-closed-backend.md
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:.agents/agents/especialistas/jurado-o6r04a-c2-suplente-fail-closed-backend.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:.agents/agents/especialistas/jurado-o6r04a-c2-suplente-fail-closed-backend.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 ---
@@ -1908,7 +1908,7 @@ cadeira, **nomeada**.
 ## Terreno — a condição de o seu voto significar alguma coisa
 
 - **Worktree PRÓPRIO, detached, no head do briefing**, com caminho curto:
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c2s <head>`.
+  `git -C ~/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c2s <head>`.
   **Nunca** meça no `b04a`, no worktree do titular, na árvore principal nem no worktree de outro jurado: nesses,
   **somente leitura**.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** e `npx prisma generate` com a `DATABASE_URL` só no ambiente do
@@ -2173,7 +2173,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:28:24.341Z — 4.3 check-runs nova medição
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion,completed_at}]}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion,completed_at}]}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"check_runs":[{"completed_at":"2026-10-10T13:24:39Z","conclusion":"success","name":"authority-portal","status":"completed"},{"completed_at":null,"conclusion":null,"name":"backend","status":"in_progress"},{"completed_at":"2026-10-10T13:26:39Z","conclusion":"success","name":"flutter","status":"completed"},{"completed_at":"2026-10-10T13:27:07Z","conclusion":"success","name":"frontend","status":"completed"},{"completed_at":"2026-10-10T13:27:45Z","conclusion":"success","name":"backend-postgres","status":"completed"},{"completed_at":"2026-10-10T13:24:36Z","conclusion":"success","name":"owner-portal","status":"completed"},{"completed_at":"2026-10-10T13:26:03Z","conclusion":"success","name":"frontend","status":"completed"},{"completed_at":"2026-10-10T13:27:33Z","conclusion":"success","name":"backend-postgres","status":"completed"},{"completed_at":"2026-10-10T13:24:36Z","conclusion":"success","name":"owner-portal","status":"completed"},{"completed_at":null,"conclusion":null,"name":"backend","status":"in_progress"},{"completed_at":"2026-10-10T13:24:38Z","conclusion":"success","name":"authority-portal","status":"completed"},{"completed_at":"2026-10-10T13:27:04Z","conclusion":"success","name":"flutter","status":"completed"}],"total_count":12}
@@ -2183,7 +2183,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:28:24.414Z — 3.1 cruzamento abrangente nomes — atas e reprovações
-Comando: git "grep" "-n" "-E" "jurado-o6r04a-c2-suplente-(banco-rls|fail-closed-backend)|coordenador-de-acessos|inspetor-de-arnes-concorrente" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/J-*.md" "agent-orchestration/omega/reprovacoes/R-*.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-E" "jurado-o6r04a-c2-suplente-(banco-rls|fail-closed-backend)|coordenador-de-acessos|inspetor-de-arnes-concorrente" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/J-*.md" "agent-orchestration/omega/reprovacoes/R-*.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/J-ACESSO-gate-provisionamento.md:9:| coordenador-de-acessos (VETO) | **APROVADO** | 9 papéis logam (senha errada→401); matriz efetiva do Mapa = esperada (admin/manager/operator/auditor/super VÊ; finance/inventory/support/field_tech NÃO); gating dinâmico provado e revertido ao vivo (remover field_operations → Mapa some; restaurar → volta). Nenhum item visível com feature não provisionada. |
@@ -2335,7 +2335,7 @@ Saída:
 ```
 Veredito parcial: CONFERIDO: votantes anteriores distintos dos titulares C3
 
-## 2026-10-10T13:28:24.602Z — 1.3 sondas C:/Users/AMP/w-389
+## 2026-10-10T13:28:24.602Z — 1.3 sondas ~/w-389
 Comando: fs.readdirSync recursivo, deadline 20s; exclui node_modules/.git/.dart_tool/build/.gradle e symlinks
 Saída:
 ```
@@ -2343,7 +2343,7 @@ nenhuma
 ```
 Veredito parcial: MEDIDO; separar artefatos versionados de sondas soltas
 
-## 2026-10-10T13:28:24.651Z — 1.3 sondas C:/Users/AMP/w-insp389c3
+## 2026-10-10T13:28:24.651Z — 1.3 sondas ~/w-insp389c3
 Comando: fs.readdirSync recursivo, deadline 20s; exclui node_modules/.git/.dart_tool/build/.gradle e symlinks
 Saída:
 ```
@@ -2351,7 +2351,7 @@ nenhuma
 ```
 Veredito parcial: MEDIDO; separar artefatos versionados de sondas soltas
 
-## 2026-10-10T13:28:24.687Z — 1.3 sondas C:/Users/AMP/w-pvpr
+## 2026-10-10T13:28:24.687Z — 1.3 sondas ~/w-pvpr
 Comando: fs.readdirSync recursivo, deadline 20s; exclui node_modules/.git/.dart_tool/build/.gradle e symlinks
 Saída:
 ```
@@ -2360,7 +2360,7 @@ nenhuma
 Veredito parcial: MEDIDO; separar artefatos versionados de sondas soltas
 
 ## 2026-10-10T13:28:29.953Z — 4.2 baseline npm run check
-Comando: node "C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js" "run" "check" [timeout=180000ms; cwd=C:/Users/AMP/w-insp389c3]
+Comando: node "C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js" "run" "check" [timeout=180000ms; cwd=~/w-insp389c3]
 Saída:
 ```
 
@@ -2373,7 +2373,7 @@ exit=0
 Veredito parcial: CONFERIDO se exit=0; status do processo capturado diretamente
 
 ## 2026-10-10T13:28:30.039Z — 4.2 árvore após baseline
-Comando: git "status" "--porcelain" [timeout=30000ms; cwd=C:/Users/AMP/w-insp389c3]
+Comando: git "status" "--porcelain" [timeout=30000ms; cwd=~/w-insp389c3]
 Saída:
 ```
 
@@ -2403,7 +2403,7 @@ D-JUNTA-ESCOPO-E-CALIBRACAO: true
 Veredito parcial: CONFERIDO; §C7 item 8 prevalece nas divergências documentais
 
 ## 2026-10-10T13:28:41.174Z — 2.3 escopo e bateria nomeados
-Comando: git "grep" "-n" "-E" "^## .*([Ee]scopo|[Bb]ateria)|^## (8|10)|^## Retomada" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/planos/B-O6R-04a-plano.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-E" "^## .*([Ee]scopo|[Bb]ateria)|^## (8|10)|^## Retomada" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/planos/B-O6R-04a-plano.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/planos/B-O6R-04a-plano.md:452:## 8. Escopo permitido e proibido — arquivo a arquivo (carrega as emendas 1-a/b/c, 2-g/l e 3 dentro de si)
@@ -2415,7 +2415,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:28:41.233Z — 2.3 baseline/forma do plano
-Comando: git "grep" "-n" "-A32" "^## 10" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/planos/B-O6R-04a-plano.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-A32" "^## 10" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/planos/B-O6R-04a-plano.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/planos/B-O6R-04a-plano.md:509:## 10. Bateria de validação (forma exata, N esperado, `ec` lido do processo)
@@ -2457,7 +2457,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:28:41.285Z — R7 pendência T15
-Comando: git "grep" "-n" "-A15" "^## P-SAN3-05-T15-TETO-DE-RELOGIO" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/controle/pendencias.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-A15" "^## P-SAN3-05-T15-TETO-DE-RELOGIO" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/controle/pendencias.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/controle/pendencias.md:10388:## P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carga — MÉDIA
@@ -2482,7 +2482,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:29:41.207Z — 3.1 obituário colisões explícitas
-Comando: git "grep" "-n" "-E" "jurado-o6r04a-c2-suplente-(banco-rls|fail-closed-backend)|coordenador-de-acessos|inspetor-de-arnes-concorrente" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-E" "jurado-o6r04a-c2-suplente-(banco-rls|fail-closed-backend)|coordenador-de-acessos|inspetor-de-arnes-concorrente" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 
@@ -2491,7 +2491,7 @@ exit=1
 Veredito parcial: CONFERIDO se exit=1: nenhuma identidade proposta registrada
 
 ## 2026-10-10T13:29:41.260Z — R6 texto residual suplente C1
-Comando: git "grep" "-n" "-E" "o teto manda|régua COMPLETA|régua completa" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" ".agents/agents/especialistas/jurado-o6r04a-c2-suplente-banco-rls.md" ".agents/agents/especialistas/jurado-o6r04a-c2-suplente-fail-closed-backend.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-E" "o teto manda|régua COMPLETA|régua completa" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" ".agents/agents/especialistas/jurado-o6r04a-c2-suplente-banco-rls.md" ".agents/agents/especialistas/jurado-o6r04a-c2-suplente-fail-closed-backend.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd:.agents/agents/especialistas/jurado-o6r04a-c2-suplente-banco-rls.md:3:description: Jurado SUPLENTE com IDENTIDADE NOVA e PODER DE VETO da junta do B-O6R-04a no CICLO 2 (régua COMPLETA, `D-GOV-PROPORCIONAL` §C7 item 8(2): reprovar aqui abre o ciclo 3, onde só defeito GRAVE de produto bloqueia) —, cadeira C1: banco, RLS e concorrência do estoque (PR #389; Postgres 16, FORCE ROW LEVEL SECURITY, papéis NOSUPERUSER sem BYPASSRLS, migração aditiva fail-closed, censo de duplicatas, FOR UPDATE / FOR NO KEY UPDATE / FOR SHARE / KEY SHARE, 40P01, 23505 / P2002 / P3009, fechamento de contagem em unidades retomáveis). Competência, mandato e poder de veto IDÊNTICOS aos do titular jurado-o6r04a-c2-banco-rls, e NENHUMA medição dele é herdada — quem assume re-executa o mandato inteiro do zero. Só é acionado se o titular ficar INELEGÍVEL ou for declarado irrecuperável pelo orquestrador; queda por limite de sessão RELANÇA o titular e não aciona esta cadeira. Mandato de exatamente 3 itens, todos por EXECUÇÃO em worktree próprio detached e em cluster Postgres e Redis DESCARTÁVEIS PRÓPRIOS (DATABASE_URL e REDIS_URL explícitas; a porta 5432 é de outro projeto), cada item medido SOB OS DOIS PAPÉIS — superusuário e o papel REAL da aplicação: (1) censo e migração, em que o censo de duplicatas e a mensagem de aborto da migração publicam a contagem VERDADEIRA sob o papel da aplicação, com duplicatas semeadas, e o deploy aborta com o número em vez de sair mudo (é o C1-F1 do ciclo 1: respondiam 0|0 com 17 grupos duplicados); (2) locks e concorrência, com toda via que decide saldo tomando o lock da linha do item ANTES da primeira leitura que decide, sem 40P01 novo, sem 25P02 e sem perdedor silencioso; (3) unidades retomáveis, com toda transição de status por CAS, saída de toda falha, nenhuma unidade aplicada duas vezes, retomada que conclui e total da sessão inteira lido sob o lock. Quórum UNANIMIDADE DE 3 (§C7.1-ter(b) — dinheiro e dado), em que o voto desta cadeira sozinho reprova; todo achado declara gravidade (bloqueia | ajuste | nota) e escopo (dentro-do-bloco | pre-existente com evidência de data ou origem, sem a qual conta como dentro-do-bloco); "não consigo medir" = REPROVADO; NÃO propõe correção (§C7.4-bis); voto incremental (P1/P2).
@@ -2506,7 +2506,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:29:41.319Z — R7 origem T15
-Comando: git "log" "-1" "--format=%H %ad %s" "--date=iso-strict" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "tests/san3-05-runtime-role-guard-db.test.ts" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "log" "-1" "--format=%H %ad %s" "--date=iso-strict" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "tests/san3-05-runtime-role-guard-db.test.ts" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 a9fbe28342a41e2f61cfbb0bea7e618f85d86d9f 2026-10-09T19:01:03-03:00 fix(database): o papel de runtime não contorna o RLS (B-SAN3-05) (#405)
@@ -2516,7 +2516,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:29:42.062Z — 4.3 CI atualização
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion}]}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion}]}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"check_runs":[{"conclusion":"success","name":"authority-portal","status":"completed"},{"conclusion":null,"name":"backend","status":"in_progress"},{"conclusion":"success","name":"flutter","status":"completed"},{"conclusion":"success","name":"frontend","status":"completed"},{"conclusion":"success","name":"backend-postgres","status":"completed"},{"conclusion":"success","name":"owner-portal","status":"completed"},{"conclusion":"success","name":"frontend","status":"completed"},{"conclusion":"success","name":"backend-postgres","status":"completed"},{"conclusion":"success","name":"owner-portal","status":"completed"},{"conclusion":null,"name":"backend","status":"in_progress"},{"conclusion":"success","name":"authority-portal","status":"completed"},{"conclusion":"success","name":"flutter","status":"completed"}],"total_count":12}
@@ -2887,7 +2887,7 @@ nao decidida: `tests/db-catalog-write-guard.test.ts` esta fora da lista "PERMITI
 Veredito parcial: LIDO como contexto, sem herdar aprovação
 
 ## 2026-10-10T13:30:06.625Z — 1.3 processos associados aos worktrees inspecionados
-Comando: powershell.exe "-NoProfile" "-Command" "$targets = @('w-insp389c3','w-pvpr','w-389'); Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(node|npm|postgres|redis-server|bash|sh|git|python|python3)(.exe)?$' } | ForEach-Object { $proc = $_; foreach ($target in $targets) { if ($proc.CommandLine -like ('*' + $target + '*')) { [PSCustomObject]@{pid=$proc.ProcessId; name=$proc.Name; target=$target} } } } | ConvertTo-Json -Compress" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: powershell.exe "-NoProfile" "-Command" "$targets = @('w-insp389c3','w-pvpr','w-389'); Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(node|npm|postgres|redis-server|bash|sh|git|python|python3)(.exe)?$' } | ForEach-Object { $proc = $_; foreach ($target in $targets) { if ($proc.CommandLine -like ('*' + $target + '*')) { [PSCustomObject]@{pid=$proc.ProcessId; name=$proc.Name; target=$target} } } } | ConvertTo-Json -Compress" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 
@@ -2896,7 +2896,7 @@ exit=null error=spawnSync powershell.exe ENOENT
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:30:07.354Z — 1.1 refs remotas frescas
-Comando: git "ls-remote" "origin" "refs/heads/main" "refs/heads/fix/inventory-consistency" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "ls-remote" "origin" "refs/heads/main" "refs/heads/fix/inventory-consistency" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd	refs/heads/fix/inventory-consistency
@@ -2915,7 +2915,7 @@ Lido restante do resumo histórico
 Veredito parcial: LIDO; prevalece trilha atual
 
 ## 2026-10-10T13:30:25.905Z — 1.3 processos — caminho absoluto do PowerShell
-Comando: C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe "-NoProfile" "-Command" "$targets = @('w-insp389c3','w-pvpr','w-389'); $matches = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(node|npm|postgres|redis-server|bash|sh|git|python|python3)(.exe)?$' } | ForEach-Object { $proc = $_; foreach ($target in $targets) { if ($proc.CommandLine -like ('*' + $target + '*')) { [PSCustomObject]@{pid=$proc.ProcessId; name=$proc.Name; target=$target} } } }); ConvertTo-Json -InputObject $matches -Compress" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe "-NoProfile" "-Command" "$targets = @('w-insp389c3','w-pvpr','w-389'); $matches = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(node|npm|postgres|redis-server|bash|sh|git|python|python3)(.exe)?$' } | ForEach-Object { $proc = $_; foreach ($target in $targets) { if ($proc.CommandLine -like ('*' + $target + '*')) { [PSCustomObject]@{pid=$proc.ProcessId; name=$proc.Name; target=$target} } } }); ConvertTo-Json -InputObject $matches -Compress" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 []
@@ -2925,7 +2925,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:30:26.683Z — 4.3 CI atualização
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion}]}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion}]}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"check_runs":[{"conclusion":"success","name":"authority-portal","status":"completed"},{"conclusion":null,"name":"backend","status":"in_progress"},{"conclusion":"success","name":"flutter","status":"completed"},{"conclusion":"success","name":"frontend","status":"completed"},{"conclusion":"success","name":"backend-postgres","status":"completed"},{"conclusion":"success","name":"owner-portal","status":"completed"},{"conclusion":"success","name":"frontend","status":"completed"},{"conclusion":"success","name":"backend-postgres","status":"completed"},{"conclusion":"success","name":"owner-portal","status":"completed"},{"conclusion":null,"name":"backend","status":"in_progress"},{"conclusion":"success","name":"authority-portal","status":"completed"},{"conclusion":"success","name":"flutter","status":"completed"}],"total_count":12}
@@ -2935,7 +2935,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:31:02.290Z — CI workflows no head
-Comando: gh "run" "list" "--repo" "thiagodorgo/ERP_Techsolutios" "--commit" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--json" "databaseId,name,status,conclusion,createdAt" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "run" "list" "--repo" "thiagodorgo/ERP_Techsolutios" "--commit" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--json" "databaseId,name,status,conclusion,createdAt" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 [{"conclusion":"","createdAt":"2026-10-10T13:24:21Z","databaseId":38055584930,"name":"ci","status":"in_progress"},{"conclusion":"","createdAt":"2026-10-10T13:24:19Z","databaseId":38055582686,"name":"ci","status":"in_progress"}]
@@ -2945,7 +2945,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:31:02.462Z — 2 mandatos C3 — busca complementar na ref
-Comando: git "grep" "-n" "-i" "-E" "mandato.*ciclo 3|ciclo 3.*mandato" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/votos/B-O6R-04a/00-mandatos" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "-i" "-E" "mandato.*ciclo 3|ciclo 3.*mandato" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "agent-orchestration/omega/juntas/votos/B-O6R-04a/00-mandatos" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/votos/B-O6R-04a/00-mandatos/inspetor-c3.md:1:# Mandato — Inspetor de terreno da junta do ciclo 3 — B-O6R-04a (PR 389, junta)
@@ -2956,7 +2956,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:31:02.609Z — 3.1 quedas registradas
-Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/votos/B-O6R-04a/00-quedas.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "show" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd:agent-orchestration/omega/juntas/votos/B-O6R-04a/00-quedas.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 # Quedas — junta do ciclo 2 do B-O6R-04a (P6)
@@ -2970,7 +2970,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:31:02.729Z — 2 dono transversal no plano SAN3
-Comando: git "grep" "-n" "B-GOV-GUARDA-POR-PROPRIEDADE" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "docs/revisoes/SAN3/PLANO_SAN3.md" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "grep" "-n" "B-GOV-GUARDA-POR-PROPRIEDADE" "de1dff89a8fd8a501bf57dd92983a23c244fd5fd" "--" "docs/revisoes/SAN3/PLANO_SAN3.md" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 
@@ -2979,7 +2979,7 @@ exit=1
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:31:20.797Z — CI etapa corrente push
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/actions/runs/38055582686/jobs" "--jq" "[.jobs[]|select(.status!=\"completed\")|{name,status,started_at,steps:[.steps[]|select(.status!=\"completed\")|{name,status}]}]" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/actions/runs/38055582686/jobs" "--jq" "[.jobs[]|select(.status!=\"completed\")|{name,status,started_at,steps:[.steps[]|select(.status!=\"completed\")|{name,status}]}]" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 [{"name":"docker","started_at":"2026-10-10T13:30:30Z","status":"in_progress","steps":[{"name":"Build backend image (push to GHCR only on main)","status":"in_progress"},{"name":"Load backend image into the local daemon (for the container smoke)","status":"pending"},{"name":"Load builder image for the compose migrate service","status":"pending"},{"name":"Container smoke — write → restart → read (persistência + worker)","status":"pending"},{"name":"Post Build backend image (push to GHCR only on main)","status":"pending"},{"name":"Post Set up Docker Buildx","status":"pending"},{"name":"Post Setup Node.js","status":"pending"},{"name":"Post Checkout","status":"pending"}]}]
@@ -2989,7 +2989,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:31:21.556Z — CI etapa corrente PR
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/actions/runs/38055584930/jobs" "--jq" "[.jobs[]|select(.status!=\"completed\")|{name,status,started_at,steps:[.steps[]|select(.status!=\"completed\")|{name,status}]}]" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/actions/runs/38055584930/jobs" "--jq" "[.jobs[]|select(.status!=\"completed\")|{name,status,started_at,steps:[.steps[]|select(.status!=\"completed\")|{name,status}]}]" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 [{"name":"backend","started_at":"2026-10-10T13:24:25Z","status":"in_progress","steps":[{"name":"Tests","status":"in_progress"},{"name":"Build","status":"pending"},{"name":"Post Setup Node.js","status":"pending"},{"name":"Post Checkout","status":"pending"},{"name":"Stop containers","status":"pending"}]}]
@@ -2999,15 +2999,15 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:31:21.560Z — limpeza alvo verificado
-Comando: fs.realpathSync C:/Users/AMP/w-insp389c3; lstat node_modules
+Comando: fs.realpathSync ~/w-insp389c3; lstat node_modules
 Saída:
 ```
-C:/Users/AMP/w-insp389c3; node_modules symlink=false
+~/w-insp389c3; node_modules symlink=false
 ```
 Veredito parcial: CONFERIDO: somente worktree descartável desta inspeção
 
 ## 2026-10-10T13:31:26.655Z — limpeza worktree próprio
-Comando: git "worktree" "remove" "--force" "C:/Users/AMP/w-insp389c3" [timeout=60000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "worktree" "remove" "--force" "~/w-insp389c3" [timeout=60000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 
@@ -3016,7 +3016,7 @@ exit=0
 Veredito parcial: MEDIDO; confirmar ausência
 
 ## 2026-10-10T13:31:26.655Z — limpeza confirmação
-Comando: fs.existsSync C:/Users/AMP/w-insp389c3
+Comando: fs.existsSync ~/w-insp389c3
 Saída:
 ```
 false
@@ -3035,7 +3035,7 @@ Saída:
 Veredito parcial: CONFERIDO: diferenças de hash entre ambientes decorrem do preâmbulo Codex; não comparar hashes de formatos diferentes
 
 ## 2026-10-10T13:32:00.145Z — 4.3 check-runs aguardando todos
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion}]}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion}]}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"check_runs":[{"conclusion":null,"name":"docker","status":"in_progress"},{"conclusion":"success","name":"authority-portal","status":"completed"},{"conclusion":null,"name":"backend","status":"in_progress"},{"conclusion":"success","name":"flutter","status":"completed"},{"conclusion":"success","name":"frontend","status":"completed"},{"conclusion":"success","name":"backend-postgres","status":"completed"},{"conclusion":"success","name":"owner-portal","status":"completed"},{"conclusion":"success","name":"frontend","status":"completed"},{"conclusion":"success","name":"backend-postgres","status":"completed"},{"conclusion":"success","name":"owner-portal","status":"completed"},{"conclusion":"success","name":"backend","status":"completed"},{"conclusion":"success","name":"authority-portal","status":"completed"},{"conclusion":"success","name":"flutter","status":"completed"}],"total_count":13}
@@ -3061,7 +3061,7 @@ Itens medidos, R1-R9 e limpeza registrados; veredito/check-runs ainda EM APURAÇ
 Veredito parcial: AGUARDANDO somente conclusão CI e conferência final do objeto
 
 ## 2026-10-10T13:34:02.556Z — 4.3 CI — nova medição
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion,completed_at}]}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion,completed_at}]}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"check_runs":[{"completed_at":null,"conclusion":null,"name":"docker","status":"in_progress"},{"completed_at":"2026-10-10T13:33:36Z","conclusion":"success","name":"docker","status":"completed"},{"completed_at":"2026-10-10T13:24:39Z","conclusion":"success","name":"authority-portal","status":"completed"},{"completed_at":"2026-10-10T13:32:40Z","conclusion":"success","name":"backend","status":"completed"},{"completed_at":"2026-10-10T13:26:39Z","conclusion":"success","name":"flutter","status":"completed"},{"completed_at":"2026-10-10T13:27:07Z","conclusion":"success","name":"frontend","status":"completed"},{"completed_at":"2026-10-10T13:27:45Z","conclusion":"success","name":"backend-postgres","status":"completed"},{"completed_at":"2026-10-10T13:24:36Z","conclusion":"success","name":"owner-portal","status":"completed"},{"completed_at":"2026-10-10T13:26:03Z","conclusion":"success","name":"frontend","status":"completed"},{"completed_at":"2026-10-10T13:27:33Z","conclusion":"success","name":"backend-postgres","status":"completed"},{"completed_at":"2026-10-10T13:24:36Z","conclusion":"success","name":"owner-portal","status":"completed"},{"completed_at":"2026-10-10T13:30:27Z","conclusion":"success","name":"backend","status":"completed"},{"completed_at":"2026-10-10T13:24:38Z","conclusion":"success","name":"authority-portal","status":"completed"},{"completed_at":"2026-10-10T13:27:04Z","conclusion":"success","name":"flutter","status":"completed"}],"total_count":14}
@@ -3079,7 +3079,7 @@ Saída:
 Veredito parcial: CONFERIDO >=10 GiB
 
 ## 2026-10-10T13:35:07.047Z — 4.3 último CI pendente
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,completed:([.check_runs[]|select(.status==\"completed\")]|length),success:([.check_runs[]|select(.conclusion==\"success\")]|length),pending:[.check_runs[]|select(.status!=\"completed\" or .conclusion==\"cancelled\")|{name,status,conclusion}]}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,completed:([.check_runs[]|select(.status==\"completed\")]|length),success:([.check_runs[]|select(.conclusion==\"success\")]|length),pending:[.check_runs[]|select(.status!=\"completed\" or .conclusion==\"cancelled\")|{name,status,conclusion}]}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"completed":13,"pending":[{"conclusion":null,"name":"docker","status":"in_progress"}],"success":13,"total_count":14}
@@ -3089,7 +3089,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:35:07.845Z — CI etapa final corrente
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/actions/runs/38055584930/jobs" "--jq" "[.jobs[]|select(.status!=\"completed\")|{name,status,steps:[.steps[]|select(.status==\"in_progress\")|{name,status}]}]" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/actions/runs/38055584930/jobs" "--jq" "[.jobs[]|select(.status!=\"completed\")|{name,status,steps:[.steps[]|select(.status==\"in_progress\")|{name,status}]}]" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 [{"name":"docker","status":"in_progress","steps":[{"name":"Post Checkout","status":"in_progress"}]}]
@@ -3099,7 +3099,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:35:53.276Z — 4.3 CI final
-Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion,completed_at,head_sha}]}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "api" "repos/thiagodorgo/ERP_Techsolutios/commits/de1dff89a8fd8a501bf57dd92983a23c244fd5fd/check-runs?per_page=100" "--jq" "{total_count,check_runs:[.check_runs[]|{name,status,conclusion,completed_at,head_sha}]}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"check_runs":[{"completed_at":"2026-10-10T13:35:08Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"docker","status":"completed"},{"completed_at":"2026-10-10T13:33:36Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"docker","status":"completed"},{"completed_at":"2026-10-10T13:24:39Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"authority-portal","status":"completed"},{"completed_at":"2026-10-10T13:32:40Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"backend","status":"completed"},{"completed_at":"2026-10-10T13:26:39Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"flutter","status":"completed"},{"completed_at":"2026-10-10T13:27:07Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"frontend","status":"completed"},{"completed_at":"2026-10-10T13:27:45Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"backend-postgres","status":"completed"},{"completed_at":"2026-10-10T13:24:36Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"owner-portal","status":"completed"},{"completed_at":"2026-10-10T13:26:03Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"frontend","status":"completed"},{"completed_at":"2026-10-10T13:27:33Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"backend-postgres","status":"completed"},{"completed_at":"2026-10-10T13:24:36Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"owner-portal","status":"completed"},{"completed_at":"2026-10-10T13:30:27Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"backend","status":"completed"},{"completed_at":"2026-10-10T13:24:38Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"authority-portal","status":"completed"},{"completed_at":"2026-10-10T13:27:04Z","conclusion":"success","head_sha":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","name":"flutter","status":"completed"}],"total_count":14}
@@ -3109,7 +3109,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:35:54.074Z — 1.1 PR final
-Comando: gh "pr" "view" "389" "--repo" "thiagodorgo/ERP_Techsolutios" "--json" "headRefOid,state,isDraft,mergeable,mergeStateStatus" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: gh "pr" "view" "389" "--repo" "thiagodorgo/ERP_Techsolutios" "--json" "headRefOid,state,isDraft,mergeable,mergeStateStatus" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 {"headRefOid":"de1dff89a8fd8a501bf57dd92983a23c244fd5fd","isDraft":true,"mergeStateStatus":"CLEAN","mergeable":"MERGEABLE","state":"OPEN"}
@@ -3119,7 +3119,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:35:54.147Z — 1.1 estado final w-389
-Comando: git "-C" "C:/Users/AMP/w-389" "status" "--porcelain" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "-C" "~/w-389" "status" "--porcelain" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 ?? agent-orchestration/omega/juntas/votos/B-O6R-04a/insp-c3-evidencia.md
@@ -3130,26 +3130,26 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:35:54.196Z — limpeza lista final worktrees
-Comando: git "worktree" "list" "--porcelain" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: git "worktree" "list" "--porcelain" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios
+worktree ~/Documents/GitHub/ERP_Techsolutios
 HEAD c1cfdabe12c74b58f8393dbee4f333224c56b303
 branch refs/heads/main
 
-worktree C:/Users/AMP/w-07ca
+worktree ~/w-07ca
 HEAD d89002487f9c0426eb3e1df65877d15567f29a85
 branch refs/heads/fix/o6r07c-subresource-scope
 
-worktree C:/Users/AMP/w-389
+worktree ~/w-389
 HEAD de1dff89a8fd8a501bf57dd92983a23c244fd5fd
 branch refs/heads/fix/inventory-consistency
 
-worktree C:/Users/AMP/w-pvpr
+worktree ~/w-pvpr
 HEAD e62d1e4b364d8473d8599ed207c92d61a19b426d
 detached
 
-worktree C:/Users/AMP/w-traccar
+worktree ~/w-traccar
 HEAD 9cb441bd10f5103eaac7a79883b901c5b1ba7477
 branch refs/heads/docs/plano-traccar
 
@@ -3159,7 +3159,7 @@ exit=0
 Veredito parcial: MEDIDO; interpretação em apuração
 
 ## 2026-10-10T13:35:54.259Z — limpeza containers do inspetor
-Comando: docker "ps" "-a" "--filter" "name=insp389c3-" "--format" "{{.Names}} {{.Status}}" [timeout=30000ms; cwd=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios]
+Comando: docker "ps" "-a" "--filter" "name=insp389c3-" "--format" "{{.Names}} {{.Status}}" [timeout=30000ms; cwd=~/Documents/GitHub/ERP_Techsolutios]
 Saída:
 ```
 

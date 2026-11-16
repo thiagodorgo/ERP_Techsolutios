@@ -164,5 +164,5 @@
   "C2-01: ator por permissão (não por papel) nos testes do F7 — dono a nomear pelo orquestrador no registro do PR",
   "para a ata: origin/main andou para f7922ab7 (#464) durante a junta; o objeto não andou"
  ],
- "teardown": "servidor em memória fechado (47923 só TIME_WAIT) · processos node com o caminho = 0 · worktree removido por git worktree remove --force (ec 0) · 9 mutações e 4 checkouts do head-base restaurados (status vazio, hash-object = blob) · sondas copiadas para frontend/tests apagadas; originais só em C:/Users/AMP/erp-pausa-2026-10-03/j12b-c2 · nenhum docker, nenhuma base · w-san312b só com c2-evidencia.md e c2-voto.json"
+ "teardown": "servidor em memória fechado (47923 só TIME_WAIT) · processos node com o caminho = 0 · worktree removido por git worktree remove --force (ec 0) · 9 mutações e 4 checkouts do head-base restaurados (status vazio, hash-object = blob) · sondas copiadas para frontend/tests apagadas; originais só em ~/erp-pausa-2026-10-03/j12b-c2 · nenhum docker, nenhuma base · w-san312b só com c2-evidencia.md e c2-voto.json"
 }

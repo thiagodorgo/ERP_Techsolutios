@@ -103,7 +103,7 @@ lancamentos VIVOS na conta: out 100 | out 100 | in 100
 
 Contra-prova no código íntegro: mesma sequência, `reverse` recusado, saldo final 0, helper verde. **O helper é verde nos dois mundos** — ele não discrimina.
 
-- `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\tests\helpers\financial-ledger.ts:39-81` (`expectChequeLedgerCoherent`)
+- `~/Documents\GitHub\ERP_Techsolutios\tests\helpers\financial-ledger.ts:39-81` (`expectChequeLedgerCoherent`)
 - carregadores que o alimentam: `...\tests\cheques.test.ts:79-91` (`linked.includes(entry.id)`) e `...\tests\cheque-clear-bounce-atomic-db.test.ts:516-521` (`id: { in: linkedIds }`)
 
 O comentário do arquivo diz que o filtro `deleted_at IS NULL` é o ponto — *"um lançamento apagado não sustenta dinheiro nenhum"*. Mas o B-3 **nunca apagou nada**: ele acrescentou. O helper foi desenhado contra o mecanismo do B-1 e aplicado como resposta ao B-3.

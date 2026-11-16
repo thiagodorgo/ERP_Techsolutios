@@ -49,7 +49,7 @@
     "redis://127.0.0.1:45446",
     "abortado sem uso: 127.0.0.1:56445/56446 (colisao com a C2, ver anomalias)"
   ],
-  "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-04a/C3-agente-ci-doutor-evidencia.md (medicoes M0-M16; logs e TAPs em scratchpad/c3-bsan304a/; ci-run.log apagado, refazivel por gh run view 35381265287 --log)",
+  "evidencia": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-04a/C3-agente-ci-doutor-evidencia.md (medicoes M0-M16; logs e TAPs em scratchpad/c3-bsan304a/; ci-run.log apagado, refazivel por gh run view 35381265287 --log)",
   "limpeza": {
     "conteineres": "docker rm -f j-bsan304a-c3-pg j-bsan304a-c3-redis (2 vezes: 56445/56446 as 19:50:30; 45445/45446 ao fim); docker ps -a --filter name=j-bsan304a-c3 = 0",
     "worktree": "git worktree remove --force C:/.../j-bsan304a-c3: desregistrado (worktree list 0; .git/worktrees sem a entrada; arquivos, node_modules, dist e frontend/dist apagados), mas o DIRETORIO VAZIO ficou (Device or resource busy pelo cmd.exe PID 27920, ver anomalias). Residuo inerte a remover pelo nome depois do fim do meu turno.",
