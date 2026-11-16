@@ -418,6 +418,8 @@ void main() {
       await t.pump(const Duration(milliseconds: 100));
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byKey(_rootC), findsNothing);
+      // A C segue o título da A (sem decisão: "Localização em campo").
+      expect(find.text('Localização em campo'), findsOneWidget);
     });
 
     testWidgets('C-bloco. tocar num bloco abre a linha dele, marcado', (
