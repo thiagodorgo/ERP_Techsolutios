@@ -7,6 +7,10 @@
 //   E1-A2             — evidencia da Emenda 1 (localizacao, foto, encargo e vistoria repetidos; encargo e da gestao)
 //   F3-T2 … F3-T7     — diario do Dev B, F3 (usuarios, cadastros, criacao repetida, menu, token da provisoria)
 //   F4-T1, F4-T2, F4-T5 — diario do Dev B, F4 (patio, processo, vistoria, OS, check-in, financeiro, sync repetido)
+//   SC                — B-SAN3-10b-SEED-CONSENT: evidencia E5 (S1 a S20) e E5b (P1 a P5) do plano, a sonda no Postgres
+//                       da critica (B1-B15, C1-C5) e, do #568, D1, D2, D6, D7 e `[T-17-ACEITE-VELHO-db] (f)`: perfil de
+//                       operador, consentimento pela rota do app, posicao trancada e a trilha da auditoria
+//                       (`operator-profile.controller.ts:25/47`, `field-location.controller.ts:47-53`, `audit.routes.ts`).
 // O que nao foi medido nao entra como regra: o falso aceita (o motor tem de ler antes) e o resto fica para a pilha.
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -23,7 +27,17 @@ const MATRIZ = path.resolve("scripts/demo-isolado/matriz-exemplo.tsv");
 const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8"));
 
 type Json = Record<string, any>;
-type Chamada = { metodo: string; caminho: string; corpo: Json | undefined };
+type Chamada = { metodo: string; caminho: string; corpo: Json | undefined; ator?: string };
+// Opcoes do arnes (SC): cada uma forca uma resposta MEDIDA, nunca inventa comportamento.
+//   aceiteVelho      — todo aceite num perfil desligado sai `superseded` (S9; (f)), como se o relogio do servidor estivesse atras
+//   aceite503UmaVez  — o 1o aceite sai 503 `field_location_busy`, sem gravar nada e sem evento na trilha
+//   trilhaFalha      — a leitura de `/audit-events` sai 500
+type Opcoes = { aceiteVelho?: boolean; aceite503UmaVez?: boolean; trilhaFalha?: boolean };
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Papeis da fixture com a permissao (catalogo da ref 80f5b4d9, `getRolePermissions`; E3 do plano).
+const CRIA_PERFIL = ["tenant_admin", "manager"];
+const MANDA_POSICAO = ["tenant_admin", "field_technician", "operator"];
+const LE_AUDITORIA = ["tenant_admin", "manager", "auditor"];
 type Conta = { id: string; tenantId: string; email: string; nome: string; senha: string; trocar: boolean; roles: string[] };
 
 // Rotulos do menu do servidor por papel: um SUBCONJUNTO do que a API real devolveu (F3-T6, F4-T7).
@@ -45,7 +59,7 @@ const SENHA_PLATAFORMA = `plat-${randomUUID()}`;
 const SENHA_DEMO = `demo-${randomUUID()}`;
 const PROVISORIA_ADMIN = `prov-${randomUUID()}`;
 
-function criarApi() {
+function criarApi(opcoes: Opcoes = {}) {
   const plataformaId = randomUUID();
   const orgId = randomUUID();
   const orgs = [
@@ -61,7 +75,9 @@ function criarApi() {
     customers: [], vehicles: [], teams: [], "service-catalog": [], "price-tables": [], tariffs: [], "jurisdiction-profiles": [],
     yards: [], areas: [], spots: [], processos: [], charges: [], locations: [], "work-orders": [], eventos: [],
     "financial-accounts": [], "financial-titles": [], "financial-entries": [], settings: [],
+    perfis: [], auditoria: [],
   };
+  let aceite503Pendente = opcoes.aceite503UmaVez === true;
   const recibos = new Map<string, string>();
   const chamadas: Chamada[] = [];
   let relogio = 0;
@@ -88,7 +104,9 @@ function criarApi() {
     const metodo = (init.method ?? "GET").toUpperCase();
     const caminho = url.pathname.replace(/^\/api\/v1/, "");
     const corpo = init.body ? JSON.parse(init.body) : undefined;
-    chamadas.push({ metodo, caminho: caminho + url.search, corpo });
+    // Quem chamou (pelo token), para os testes saberem o ator (SC, §4.5 do plano).
+    const ator = contas.find((x) => x.id === tokens.get((init.headers?.authorization ?? "").replace(/^Bearer /, "")))?.email;
+    chamadas.push({ metodo, caminho: caminho + url.search, corpo, ator });
 
     if (metodo === "POST" && caminho === "/auth/login") {
       // Sob o papel de runtime, login sem tenantId → 401 INVALID_CREDENTIALS (E11-P2; F3-T2).
@@ -302,14 +320,109 @@ function criarApi() {
       }
     }
 
+    // Perfil de operador (SC). Cria so quem tem `operator_profiles:create` (S3: tecnica → 403); mesmo usuario de novo
+    // → 409 duplicate_profile (S5/S5b). O consentimento nasce `true` so se o corpo mandar (pre-existente,
+    // `RBAC_MATRIX.md:146`). createdBy = updatedBy = o ator e createdAt = updatedAt na criacao (P1).
+    const perfilDe = (userId: string) => c.perfis.find((p) => p.userId === userId);
+    const registrar = (action: string, resourceId: string) =>
+      c.auditoria.push({ id: randomUUID(), action, actor_user_id: conta.id, tenant_id: orgId, resourceId, timestamp: agora() });
+    const prf = /^\/operator-profiles(?:\/([^/]+))?$/.exec(caminho);
+    if (prf) {
+      const [, id] = prf;
+      if (metodo === "POST" && !id) {
+        if (!papeis.some((r) => CRIA_PERFIL.includes(r))) return erro(403, "FORBIDDEN", "permission_required");
+        if (perfilDe(corpo.user_id)) return erro(409, "CONFLICT", "duplicate_profile");
+        const quando = agora();
+        const ligado = corpo.tracking_consent === true;
+        const p: Json = {
+          id: randomUUID(), userId: corpo.user_id, phone: corpo.phone ?? null, trackingConsent: ligado, trackingConsentAt: ligado ? quando : null,
+          createdBy: conta.id, updatedBy: conta.id, createdAt: quando, updatedAt: quando,
+        };
+        c.perfis.push(p);
+        // Trilha: `operator_profile.created` (operator-profile.controller.ts:25).
+        registrar("operator_profile.created", p.id);
+        return resposta(201, { data: p });
+      }
+      // Lista: sem updatedAt, createdBy e updatedBy (S6; `operator-profile.dto.ts`, lista).
+      if (metodo === "GET" && !id) {
+        return pagina(c.perfis.map((p) => ({ id: p.id, userId: p.userId, phone: p.phone, trackingConsent: p.trackingConsent, trackingConsentAt: p.trackingConsentAt, createdAt: p.createdAt })), url);
+      }
+      const p = c.perfis.find((x) => x.id === id);
+      if (!p) return erro(404, "NOT_FOUND");
+      if (metodo === "GET") return resposta(200, { data: p });
+      if (metodo === "PATCH") {
+        if (!papeis.some((r) => CRIA_PERFIL.includes(r))) return erro(403, "FORBIDDEN", "permission_required");
+        // O cadastro nunca liga o consentimento (S8; B3 no Postgres): `true` num perfil desligado → 422.
+        if (corpo.tracking_consent === true && !p.trackingConsent) return erro(422, "UNPROCESSABLE", "tracking_consent_holder_only");
+        // Desligar pelo cadastro passa (P5; B13: o gestor desliga), e editar o telefone tambem (C3).
+        if (corpo.tracking_consent === false) Object.assign(p, { trackingConsent: false, trackingConsentAt: null });
+        if ("phone" in corpo) p.phone = corpo.phone;
+        Object.assign(p, { updatedBy: conta.id, updatedAt: agora() });
+        // Trilha: `operator_profile.updated` (operator-profile.controller.ts:47).
+        registrar("operator_profile.updated", p.id);
+        return resposta(200, { data: p });
+      }
+    }
+
+    // Consentimento pela rota do app (SC; contrato `mobile_location_consent@2026-11.b-san3-17`).
+    if (metodo === "POST" && (caminho === "/mobile/location-consent" || caminho === "/mobile/location-consent/revoke")) {
+      // Sem `field_location:send` → 403 (S14: o gestor); sem perfil → 422 operator_profile_required (S2; B4).
+      if (!papeis.some((r) => MANDA_POSICAO.includes(r))) return erro(403, "FORBIDDEN", "permission_required");
+      const p = perfilDe(conta.id);
+      if (!p) return erro(422, "UNPROCESSABLE", "operator_profile_required");
+      if (caminho.endsWith("/revoke")) {
+        // Revoga o proprio: desliga, updatedBy = o ator (S18, P3; B6/B7, C2).
+        Object.assign(p, { trackingConsent: false, trackingConsentAt: null, updatedBy: conta.id, updatedAt: agora() });
+        registrar("field_location.consent_revoked", p.id);
+        return resposta(200, { data: { granted: false, status: "applied" } });
+      }
+      // client_action_id nao-UUID → 400 (S10b); decided_at alem de agora + 5 min → 400 (S10).
+      if (!UUID_RE.test(String(corpo?.client_action_id ?? ""))) return erro(400, "BAD_REQUEST", "invalid_client_action_id");
+      const decidido = Date.parse(String(corpo?.decided_at ?? ""));
+      if (Number.isNaN(decidido) || decidido > Date.parse(agora()) + 5 * 60 * 1000) return erro(400, "BAD_REQUEST", "invalid_date");
+      if (aceite503Pendente) {
+        aceite503Pendente = false;
+        return erro(503, "SERVICE_UNAVAILABLE", "field_location_busy");
+      }
+      // Perfil desligado e decided_at <= updatedAt → 200 superseded, nao liga (S9; `[T-17-ACEITE-VELHO-db] (f)`; B1).
+      if (!p.trackingConsent && (opcoes.aceiteVelho || decidido <= Date.parse(p.updatedAt))) {
+        registrar("field_location.consent_superseded", p.id);
+        return resposta(200, { data: { granted: false, status: "superseded" } });
+      }
+      // Liga (S11, P2); ja ligado → 200 applied, sem mudar nada (S12).
+      if (!p.trackingConsent) Object.assign(p, { trackingConsent: true, trackingConsentAt: new Date(decidido).toISOString(), updatedBy: conta.id, updatedAt: agora() });
+      registrar("field_location.consent_granted", p.id);
+      return resposta(200, { data: { granted: true, status: "applied" } });
+    }
+
+    // Trilha da auditoria (`audit.routes.ts`): so `action`, `actorId`, `limit` e `offset`; a visao NAO traz a entidade.
+    if (metodo === "GET" && caminho === "/audit-events") {
+      if (opcoes.trilhaFalha) return erro(500, "INTERNAL", "internal_error");
+      if (!papeis.some((r) => LE_AUDITORIA.includes(r))) return erro(403, "FORBIDDEN", "permission_required");
+      const acao = url.searchParams.get("action");
+      const quem = url.searchParams.get("actorId");
+      const limit = Number.parseInt(url.searchParams.get("limit") ?? "50", 10);
+      const offset = Number.parseInt(url.searchParams.get("offset") ?? "0", 10);
+      const filtrados = c.auditoria.filter((e) => (!acao || e.action === acao) && (!quem || e.actor_user_id === quem)).reverse();
+      const visao = filtrados.slice(offset, offset + limit).map(({ id, action, actor_user_id, tenant_id, timestamp }) => ({ id, action, actor_user_id, tenant_id, timestamp }));
+      return resposta(200, { data: visao, ...(filtrados.length > offset + limit ? { nextOffset: offset + limit } : {}) });
+    }
+
     // Localizacao (E1-A2, F4-T2): repetida → 201 e linha nova; `latest` traz o operador com e-mail.
+    // Desde o #568 (SC): sem perfil → 422 operator_profile_required (S1, D1); perfil desligado → 422
+    // tracking_consent_required (S7; B2); ligado → 201 (S15, D2).
     if (metodo === "POST" && caminho === "/mobile/field-locations") {
+      const p = perfilDe(conta.id);
+      if (!p) return erro(422, "UNPROCESSABLE", "operator_profile_required");
+      if (!p.trackingConsent) return erro(422, "UNPROCESSABLE", "tracking_consent_required");
       const l = { id: randomUUID(), operatorUserId: conta.id, latitude: corpo.latitude, longitude: corpo.longitude, operator: { userId: conta.id, email: conta.email } };
       c.locations.push(l);
       return resposta(201, { data: l });
     }
     if (metodo === "GET" && caminho === "/field-locations/latest") {
-      const ultimas = new Map(c.locations.map((l) => [l.operatorUserId, l]));
+      // O ponto de quem nao consente sai da lista (S19, D7).
+      const consente = (userId: string) => perfilDe(userId)?.trackingConsent === true;
+      const ultimas = new Map(c.locations.filter((l) => consente(l.operatorUserId)).map((l) => [l.operatorUserId, l]));
       return resposta(200, { data: [...ultimas.values()] });
     }
 
@@ -388,7 +501,7 @@ function criarApi() {
   const estado = () =>
     JSON.stringify({ c, contas: contas.map((x) => ({ email: x.email, roles: x.roles, trocar: x.trocar })) }, (k, v) => (k === "createdAt" ? undefined : v));
   const reiniciar = () => recibos.clear();
-  return { fetch, chamadas, escritas, estado, reiniciar, colecoes: c, plataformaId, orgId };
+  return { fetch, chamadas, escritas, estado, reiniciar, colecoes: c, plataformaId, orgId, contas, opcoes };
 }
 
 function prepararDir(api: ReturnType<typeof criarApi>, comTenantId = true, fixturePath = FIXTURE) {
@@ -504,6 +617,9 @@ test("C6-e1 ler antes de escrever: localizacao, foto, encargo e vistoria nao rep
     assert.equal(api.colecoes.locations.length, 1);
     assert.equal(api.colecoes.charges.length, 1);
     assert.equal(api.colecoes.processos[0].fotos.length, 11);
+    // SC: o perfil e o consentimento tambem nao repetem.
+    assert.equal(api.colecoes.perfis.length, 1, "perfil repetido");
+    assert.equal(api.colecoes.perfis.filter((p) => p.trackingConsent === true).length, 1, "consentimento ausente ou repetido");
   } finally {
     d.limpar();
   }
@@ -799,4 +915,280 @@ test("verificador: os predicados da matriz", () => {
   assert.equal(avaliarEsperado("status=503", { status: 503, json: null }), null);
   assert.notEqual(avaliarEsperado("conta>=0", { status: 503, json: null }), null);
   assert.notEqual(avaliarEsperado("forma-desconhecida(x)", lista), null);
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// B-SAN3-10b-SEED-CONSENT (SC): perfil de operador, consentimento pela rota do app e a trilha do perfil na ET6.
+// ---------------------------------------------------------------------------------------------------------
+const EMAIL_TECNICA = fixture.usuarios.find((u: Json) => u.chave === "tecnica").email;
+const EMAIL_GESTOR = fixture.usuarios.find((u: Json) => u.chave === "gestor").email;
+const TEXTO_DO_APP = /locationConsentTextVersion = '([^']+)'/.exec(
+  fs.readFileSync(path.resolve("mobile/flutter_app/lib/core/location/location_consent_store.dart"), "utf8"),
+)?.[1];
+const idDe = (api: Api, email: string) => api.contas.find((x) => x.email === email)?.id;
+const perfilDaTecnica = (api: Api) => api.colecoes.perfis.find((p) => p.userId === idDe(api, EMAIL_TECNICA));
+const posts = (lista: Chamada[], caminho: string) => lista.filter((x) => x.metodo === "POST" && x.caminho === caminho);
+
+// O arnes age como uma pessoa da organizacao, pelas rotas do produto (login com a senha de demonstracao).
+async function comoUsuario(api: Api, email: string, metodo: string, caminho: string, corpo?: Json) {
+  const login = await api.fetch("http://127.0.0.1:3111/api/v1/auth/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, password: SENHA_DEMO, tenantId: api.orgId }),
+  });
+  assert.equal(login.status, 200, `login de ${email}`);
+  const token = (await login.json()).data.access_token;
+  const r = await api.fetch(`http://127.0.0.1:3111/api/v1${caminho}`, {
+    method: metodo,
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: corpo === undefined ? undefined : JSON.stringify(corpo),
+  });
+  return r.status;
+}
+const MSG_TRILHA = /^DEMO-ISOLADO ESTADO_INESPERADO ET6 o perfil teve decisão ou mudança depois da criação$/m;
+
+test("SC1 ET6: perfil pelo admin so com user_id, aceite pela tecnica com o texto do app, depois a posicao", async () => {
+  const api = criarApi();
+  const d = prepararDir(api);
+  try {
+    const r = await rodarMotor(api, d.argv());
+    assert.equal(r.codigo, 0, r.saida);
+    const tecnicaId = idDe(api, EMAIL_TECNICA);
+    const criacoes = posts(api.chamadas, "/operator-profiles");
+    assert.equal(criacoes.length, 1, "1 criacao de perfil");
+    assert.equal(criacoes[0].ator, fixture.admin.email, "o perfil nasce pelo admin");
+    assert.deepEqual(Object.keys(criacoes[0].corpo ?? {}), ["user_id"], "so o vinculo no corpo");
+    assert.equal(criacoes[0].corpo?.user_id, tecnicaId);
+    const aceites = posts(api.chamadas, "/mobile/location-consent");
+    assert.equal(aceites.length, 1, "1 aceite");
+    assert.equal(aceites[0].ator, EMAIL_TECNICA, "o aceite e da propria tecnica");
+    assert.ok(TEXTO_DO_APP, "a versao do texto do app foi lida");
+    assert.equal(aceites[0].corpo?.text_version, TEXTO_DO_APP, "o texto do app");
+    assert.match(String(aceites[0].corpo?.client_action_id), UUID_RE);
+    const perfil = perfilDaTecnica(api);
+    assert.ok(Date.parse(aceites[0].corpo?.decided_at) > Date.parse(perfil.createdAt), "decided_at depois da criacao do perfil");
+    assert.equal(perfil.trackingConsent, true);
+    const indice = (caminho: string) => api.chamadas.findIndex((x) => x.metodo === "POST" && x.caminho === caminho);
+    assert.ok(indice("/operator-profiles") < indice("/mobile/location-consent"), "perfil antes do aceite");
+    assert.ok(indice("/mobile/location-consent") < indice("/mobile/field-locations"), "aceite antes da posicao");
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC2 2a execucao: 0 perfil, 0 aceite; nunca revoke nem PATCH de perfil", async () => {
+  const api = criarApi();
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    const antes = api.chamadas.length;
+    const r2 = await rodarMotor(api, d.argv());
+    assert.equal(r2.codigo, 0, r2.saida);
+    const segunda = api.chamadas.slice(antes);
+    assert.equal(segunda.filter((x) => x.metodo !== "GET" && x.caminho.startsWith("/operator-profiles")).length, 0, "perfil escrito de novo");
+    assert.equal(segunda.filter((x) => x.metodo !== "GET" && x.caminho.startsWith("/mobile/location-consent")).length, 0, "aceite de novo");
+    assert.equal(api.chamadas.filter((x) => x.caminho.startsWith("/mobile/location-consent/revoke")).length, 0, "o motor revogou");
+    assert.equal(api.chamadas.filter((x) => x.metodo === "PATCH" && x.caminho.startsWith("/operator-profiles")).length, 0, "PATCH de perfil");
+    assert.equal(api.colecoes.perfis.length, 1);
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC3 aceite superseded sai 5 antes da posicao", async () => {
+  const api = criarApi({ aceiteVelho: true });
+  const d = prepararDir(api);
+  try {
+    const r = await rodarMotor(api, d.argv());
+    assert.equal(r.codigo, 5, r.saida);
+    assert.match(r.saida, /^DEMO-ISOLADO ESTADO_INESPERADO ET6 consentimento status=superseded$/m);
+    assert.equal(posts(api.chamadas, "/mobile/field-locations").length, 0, "gravou a posicao");
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC4 revogado pelo titular: a 2a execucao sai 5 e nao re-liga", async () => {
+  const api = criarApi();
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    assert.equal(await comoUsuario(api, EMAIL_TECNICA, "POST", "/mobile/location-consent/revoke", {}), 200);
+    const antes = api.chamadas.length;
+    const r2 = await rodarMotor(api, d.argv());
+    assert.equal(r2.codigo, 5, r2.saida);
+    assert.match(r2.saida, MSG_TRILHA);
+    assert.equal(posts(api.chamadas.slice(antes), "/mobile/location-consent").length, 0, "aceite depois da revogacao");
+    assert.equal(perfilDaTecnica(api).trackingConsent, false);
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC4b desligado ou editado pelo gestor: a 2a execucao sai 5 e nao re-liga", async () => {
+  const api = criarApi();
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    const perfil = perfilDaTecnica(api);
+    assert.equal(await comoUsuario(api, EMAIL_GESTOR, "PATCH", `/operator-profiles/${perfil.id}`, { tracking_consent: false }), 200);
+    assert.equal(perfil.updatedBy, idDe(api, EMAIL_GESTOR));
+    const antes = api.chamadas.length;
+    const r2 = await rodarMotor(api, d.argv());
+    assert.equal(r2.codigo, 5, r2.saida);
+    assert.match(r2.saida, MSG_TRILHA);
+    assert.equal(posts(api.chamadas.slice(antes), "/mobile/location-consent").length, 0, "aceite depois do desligamento");
+    assert.equal(perfil.trackingConsent, false);
+  } finally {
+    d.limpar();
+  }
+  // A mudanca de cadastro sozinha tambem para: o aceite caiu (503) antes de ligar, entao nao ha decisao do titular na
+  // trilha, e o gestor mexeu no perfil. So `operator_profile.updated` separa este caso do da retomada (SC5).
+  const api2 = criarApi({ aceite503UmaVez: true });
+  const d2 = prepararDir(api2);
+  try {
+    assert.equal((await rodarMotor(api2, d2.argv())).codigo, 1);
+    const perfil = perfilDaTecnica(api2);
+    assert.equal(await comoUsuario(api2, EMAIL_GESTOR, "PATCH", `/operator-profiles/${perfil.id}`, { phone: "(11) 90000-0001" }), 200);
+    const antes = api2.chamadas.length;
+    const r2 = await rodarMotor(api2, d2.argv());
+    assert.equal(r2.codigo, 5, r2.saida);
+    assert.match(r2.saida, MSG_TRILHA);
+    assert.equal(posts(api2.chamadas.slice(antes), "/mobile/location-consent").length, 0, "aceite depois da mudanca de cadastro");
+    assert.equal(perfil.trackingConsent, false);
+  } finally {
+    d2.limpar();
+  }
+});
+
+test("SC4c revogado pelo titular e depois o admin criador edita so o telefone: a 2a execucao sai 5 (CSC-01)", async () => {
+  const api = criarApi();
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    const perfil = perfilDaTecnica(api);
+    assert.equal(await comoUsuario(api, EMAIL_TECNICA, "POST", "/mobile/location-consent/revoke", {}), 200);
+    assert.equal(await comoUsuario(api, fixture.admin.email, "PATCH", `/operator-profiles/${perfil.id}`, { phone: "(11) 90000-0000" }), 200);
+    // O caso que a regua antiga deixava passar: quem mexeu por ultimo e quem criou.
+    assert.equal(perfil.updatedBy, perfil.createdBy);
+    const antes = api.chamadas.length;
+    const r2 = await rodarMotor(api, d.argv());
+    assert.equal(r2.codigo, 5, r2.saida);
+    assert.match(r2.saida, MSG_TRILHA);
+    assert.equal(posts(api.chamadas.slice(antes), "/mobile/location-consent").length, 0, "aceite depois da revogacao");
+    assert.equal(perfil.trackingConsent, false);
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC4d a trilha do perfil nao se le: sai 5 e nao liga", async () => {
+  const api = criarApi({ aceite503UmaVez: true });
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 1);
+    api.opcoes.trilhaFalha = true;
+    const antes = api.chamadas.length;
+    const r2 = await rodarMotor(api, d.argv());
+    assert.equal(r2.codigo, 5, r2.saida);
+    assert.match(r2.saida, /^DEMO-ISOLADO ESTADO_INESPERADO ET6 a trilha do perfil não foi lida$/m);
+    assert.equal(posts(api.chamadas.slice(antes), "/mobile/location-consent").length, 0, "aceite sem a trilha");
+    assert.equal(perfilDaTecnica(api).trackingConsent, false);
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC5 retomada: aceite que caiu (503) e retomado na 2a execucao", async () => {
+  const api = criarApi({ aceite503UmaVez: true });
+  const d = prepararDir(api);
+  try {
+    const r1 = await rodarMotor(api, d.argv());
+    assert.equal(r1.codigo, 1, r1.saida);
+    assert.match(r1.saida, /HTTP_503 papel=tecnica rota=POST \/mobile\/location-consent /);
+    assert.equal(posts(api.chamadas, "/mobile/field-locations").length, 0, "posicao antes do aceite");
+    const r2 = await rodarMotor(api, d.argv());
+    assert.equal(r2.codigo, 0, r2.saida);
+    assert.equal(api.colecoes.perfis.length, 1, "1 perfil so");
+    assert.equal(perfilDaTecnica(api).trackingConsent, true);
+    assert.equal(api.colecoes.locations.length, 1, "posicao gravada");
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC6 o motor nunca liga pelo cadastro (fonte)", () => {
+  const texto = fs.readFileSync(path.resolve("scripts/demo-isolado/semear.mjs"), "utf8");
+  assert.equal(texto.includes("tracking_consent"), false, "tracking_consent no motor");
+  assert.equal(/trackingConsent\s*:/.test(texto), false, "trackingConsent como chave de corpo");
+  assert.equal(texto.includes("location-consent/revoke"), false, "revoke no motor");
+  assert.equal(texto.split("const corpoPerfil = { user_id: tecnicaId };").length - 1, 1, "a ancora A1");
+  assert.equal(texto.split('const TEXTO_DO_CONSENTIMENTO = "2026-11.b-san3-17.v1";').length - 1, 1, "a ancora A8");
+});
+
+test("SC7 verificador morde sem consentimento", async () => {
+  const api = criarApi();
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    assert.equal(await comoUsuario(api, EMAIL_TECNICA, "POST", "/mobile/location-consent/revoke", {}), 200);
+    const r = await rodarVerificador(api, argvVerificador(d));
+    assert.equal(r.codigo, 6, r.saida);
+    assert.match(r.saida, /^PRE OPS-perfil-operador FALTA/m);
+    assert.match(r.saida, /^PRE OPS-localizacao FALTA/m);
+  } finally {
+    d.limpar();
+  }
+});
+
+// Conserto da J-581 (DP-581-01/N1, N2 = ROT-01, ROT-02): a regua, o id do aceite e a sessao das leituras.
+test("SC8 o aceite caiu (503) e a titular revogou um perfil que nunca foi ligado: a 2a execucao sai 5 e nao liga (DP-581-01)", async () => {
+  const api = criarApi({ aceite503UmaVez: true });
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 1);
+    assert.equal(perfilDaTecnica(api).trackingConsent, false, "o perfil nunca foi ligado");
+    assert.equal(await comoUsuario(api, EMAIL_TECNICA, "POST", "/mobile/location-consent/revoke", {}), 200);
+    // So a decisao da titular separa este caso do da retomada (SC5): nao ha `consent_granted` nem mudanca de cadastro.
+    assert.deepEqual(api.colecoes.auditoria.map((e) => e.action), ["operator_profile.created", "field_location.consent_revoked"]);
+    const antes = api.chamadas.length;
+    const r2 = await rodarMotor(api, d.argv());
+    assert.equal(r2.codigo, 5, r2.saida);
+    assert.match(r2.saida, MSG_TRILHA);
+    assert.equal(posts(api.chamadas.slice(antes), "/mobile/location-consent").length, 0, "aceite depois da revogacao da titular");
+    assert.equal(perfilDaTecnica(api).trackingConsent, false);
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC9 o client_action_id do aceite e deterministico: o mesmo nas 2 execucoes (ROT-01)", async () => {
+  const api = criarApi({ aceite503UmaVez: true });
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 1);
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    const ids = posts(api.chamadas, "/mobile/location-consent").map((x) => x.corpo?.client_action_id);
+    assert.equal(ids.length, 2, "o aceite que caiu e o da retomada");
+    assert.match(String(ids[0]), UUID_RE);
+    assert.equal(ids[1], ids[0], "a retomada e a mesma decisao: o mesmo client_action_id");
+  } finally {
+    d.limpar();
+  }
+});
+
+test("SC10 a trilha e o perfil por id sao lidos pela sessao do admin (ROT-02)", async () => {
+  const api = criarApi();
+  const d = prepararDir(api);
+  try {
+    assert.equal((await rodarMotor(api, d.argv())).codigo, 0);
+    const trilha = api.chamadas.filter((x) => x.metodo === "GET" && x.caminho.startsWith("/audit-events"));
+    assert.equal(trilha.length, 5, "as 5 leituras da trilha");
+    assert.ok(trilha.every((x) => x.ator === fixture.admin.email), "trilha lida por outra sessao");
+    const porId = api.chamadas.filter((x) => x.metodo === "GET" && /^\/operator-profiles\/[0-9a-f-]{36}$/i.test(x.caminho));
+    assert.equal(porId.length, 1, "1 leitura do perfil por id");
+    assert.equal(porId[0].ator, fixture.admin.email, "perfil por id lido por outra sessao");
+  } finally {
+    d.limpar();
+  }
 });

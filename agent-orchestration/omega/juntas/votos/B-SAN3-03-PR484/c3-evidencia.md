@@ -3,7 +3,7 @@
 - Identidade: `jurado-j484-c3-opus` · Claude Opus, nível menor, DECLARADO
 - Objeto: `5b628b886520bcbece0228eec9d47c965a32b577` · Base do conserto: `49ddd0f8b9efa8724923ec99fa546cce907288cc`
 - Competência: banco real, regressão, escopo e registro
-- Terreno: worktree `C:/Users/thiag/w-j484-c3`, Postgres `j484-c3-pg` em 127.0.0.1:55483
+- Terreno: worktree `~/w-j484-c3`, Postgres `j484-c3-pg` em 127.0.0.1:55483
 
 ## Item 1 — Suíte
 
@@ -16,7 +16,7 @@
 - **Veredito parcial:** nenhum teste sumiu, virou skip ou caiu entre base e objeto no CI. VERDE.
 
 ### 1b. Bateria local no objeto, contra o Postgres próprio
-- **Terreno:** memória de commit livre 46,47 GB antes do Docker (`Win32_OperatingSystem.FreeVirtualMemory`); `git worktree add --detach C:/Users/thiag/w-j484-c3 5b628b88` (HEAD conferido, status vazio); `npm ci --include=dev` ec=0 (`c3-npmci.log`, node_modules próprio). Container `j484-c3-pg` (postgres:16, 127.0.0.1:55483). 1ª tentativa com usuário `erp` derrubou 5 testes do `san3-05-runtime-role-guard-db` porque eles esperam o superusuário chamado `postgres` (erro "escape atributo/postgres não encontrado"); recriei o container igual ao CI (`POSTGRES_USER=postgres`, banco `erp_techsolutions`). Isso é terreno meu, não achado.
+- **Terreno:** memória de commit livre 46,47 GB antes do Docker (`Win32_OperatingSystem.FreeVirtualMemory`); `git worktree add --detach ~/w-j484-c3 5b628b88` (HEAD conferido, status vazio); `npm ci --include=dev` ec=0 (`c3-npmci.log`, node_modules próprio). Container `j484-c3-pg` (postgres:16, 127.0.0.1:55483). 1ª tentativa com usuário `erp` derrubou 5 testes do `san3-05-runtime-role-guard-db` porque eles esperam o superusuário chamado `postgres` (erro "escape atributo/postgres não encontrado"); recriei o container igual ao CI (`POSTGRES_USER=postgres`, banco `erp_techsolutions`). Isso é terreno meu, não achado.
 - **Comando:** `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55483/erp_techsolutions CORE_SAAS_PERSISTENCE=memory`; `npm run db:generate` ec=0; `npx prisma migrate deploy` ec=0 (todas aplicadas); `npm run check` ec=0; `npm run lint` ec=0; `npm run build` ec=0; `node scripts/sync-agent-agents.mjs --check` → OK, 95 agentes.
 - **Comando (bateria dirigida):** `node scripts/run-backend-tests.mjs $(cat c3-bateria-arquivos.txt)` — 38 arquivos: `san3-03-*` (17, todas as `-db` do bloco), `cloud-cost-allocation*`, `cloud-charge-*`, `cloud-usage*`, `o6r06-*`, `san3-05-*`, `charging-*`, `job-queue`, `job-worker-bootstrap`. Log: `c3-bateria-objeto.log`.
 - **Saída objeto:** tests 299, pass 295, fail 4, skipped 0. As 4 falhas são do `san3-05-runtime-role-guard-db` (T14a/b, T14c, T14d e o describe-pai): `setsid: ausente — necessário para impedir que psql \password leia a senha do terminal` — falta de binário Linux no Git Bash do Windows.
@@ -55,7 +55,7 @@
 - **Veredito parcial item 3:** M28 e registro VERDES. Um achado NÃO GRAVE de registro (C3-01). Contagens de CI, mutações e índice são de execução real.
 
 ## Limpeza
-- `docker rm -f j484-c3-pg` → ausente; `git worktree remove --force C:/Users/thiag/w-j484-c3` ec=0, caminho ausente e fora do `git worktree list`. Worktree estava com `git status --porcelain` vazio antes da remoção. Não toquei `j484-c2-pg`, `erp-postgres`, `erp-redis`, portas 3000/5173 nem a árvore principal (só leitura de git nela). Nenhum `prune` nem `down -v`.
+- `docker rm -f j484-c3-pg` → ausente; `git worktree remove --force ~/w-j484-c3` ec=0, caminho ausente e fora do `git worktree list`. Worktree estava com `git status --porcelain` vazio antes da remoção. Não toquei `j484-c2-pg`, `erp-postgres`, `erp-redis`, portas 3000/5173 nem a árvore principal (só leitura de git nela). Nenhum `prune` nem `down -v`.
 
 ## Voto
 APROVADO — 0 grave; 1 não grave (C3-01, registro: o 256/256 da RETOMADA 16 não se reproduz pela letra do relatório). Voto em `c3-voto.json`.

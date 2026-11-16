@@ -33,12 +33,12 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed), instancia nova para a junta do bloco B-O6R-03a
   (PR 425, sync de despesa atomico e sem lancamento em dobro, bloco de DINHEIRO), rodando no Claude Code em Opus 5.5, no nivel menor
   por decisao do dono de 2026-10-10 (topo so no plano e em toda reprovacao de junta), declarado no parecer; usa o corpo de origin/main
-  e declara na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md | grep -ic 'mandato_md5'` (novo)
+  e declara na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 ~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md | grep -ic 'mandato_md5'` (novo)
 
 O objeto e o head do PR 425 resolvido pelo proprio inspetor por git e por gh, so com os check-runs CONCLUIDOS (ausencia, pendente ou
   cancelado bloqueia; vermelho e insumo; o T15 do B-SAN3-05 e o A11 sao instaveis conhecidos, dono B-ARNES-2); os insumos estao na
   ref: o plano v2 em docs/revisoes/SAN3/B-O6R-03a-plano.md (secao 8, a junta), a emenda v3, as criticas r1 e r2, a pre-critica da
-  API e o relatorio do dev em docs/revisoes/SAN3/B-O6R-03a-dev.md (inclusive o incidente R11a, desfeito e conferido por sha256) derruba com: `grep -ic 'check-run' C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md` (novo)
+  API e o relatorio do dev em docs/revisoes/SAN3/B-O6R-03a-dev.md (inclusive o incidente R11a, desfeito e conferido por sha256) derruba com: `grep -ic 'check-run' ~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md` (novo)
 
 O tabuleiro e o da secao 8 do plano: as tres cadeiras novas (jurado-o6r03a-v2-banco, jurado-o6r03a-v2-replay,
   jurado-o6r03a-v2-regressao) rastreadas no head nos dois espelhos e S0 verde (node scripts/sync-agent-agents.mjs --check), corpo
@@ -46,14 +46,14 @@ O tabuleiro e o da secao 8 do plano: as tres cadeiras novas (jurado-o6r03a-v2-ba
   v2, criticos r1 e r2, os devs do bloco, inclusive o dev-03a-codex e o dev-03a-claude); a decisao do dono D-03a = A e o passo 0
   da v3 registrados em agent-orchestration/controle/decisoes.md; um worktree e um container Linux descartavel por cadeira com prefixo unico (j03a-c1,
   j03a-c2, j03a-c3), papel sem BYPASSRLS, nunca a base viva; os containers trc01-* de outro bloco nao sao alvo; disco de pelo
-  menos 10 GB antes de cada cadeira derruba com: `grep -ic 'inelegib' C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md` (novo)
+  menos 10 GB antes de cada cadeira derruba com: `grep -ic 'inelegib' ~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md` (novo)
 
 O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; a evidencia e incremental com hora em
-  C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-evidencia.md (novo) e o parecer em
-  C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md (novo), que o orquestrador versiona;
-  worktree proprio detached C:/Users/AMP/w-insp-03a (novo), removido pelo nome; nunca tail -f; timeout no que executa; a base viva e
+  ~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-evidencia.md (novo) e o parecer em
+  ~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md (novo), que o orquestrador versiona;
+  worktree proprio detached ~/w-insp-03a (novo), removido pelo nome; nunca tail -f; timeout no que executa; a base viva e
   as portas do servidor do dono nunca sao alvo; nada escrito no repositorio fora da evidencia e do parecer; PAUSA grava a secao PAUSA
-  e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md` (novo)
+  e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/insp-03a-parecer.md` (novo)
 
 ## MEDIDO
 
@@ -61,7 +61,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-19: refs do PR #425 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/00-mandatos/inspetor-03a.md
+PRE-VOO OK — ~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/00-mandatos/inspetor-03a.md
 ec=0
 head=5cee8e5754888ef138d8d8b2bcb9ad9c37907ad5
 utc=2026-10-11T23:15:21Z

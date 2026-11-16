@@ -6,7 +6,7 @@
 
 - Hora UTC: `2026-11-01T00:20:33Z`.
 - Head de partida: `e78e3968bf054666777056481aba724db1a9006c` (`origin/main`).
-- Ramo: `fix/mobile-fila-duravel-b-o6r-11`, worktree `C:/Users/AMP/w-o6r11c3`.
+- Ramo: `fix/mobile-fila-duravel-b-o6r-11`, worktree `~/w-o6r11c3`.
 - `flutter pub get`: concluído, sem mudança em lockfile; 81 versões mais novas incompatíveis foram apenas informadas.
 - Flutter local: `3.41.6` stable; Dart `3.11.4`; DevTools `2.54.2`.
 - Disco: `24G` livres em `/c`, acima do piso de `7,5 GB`.
@@ -19,7 +19,7 @@
 
 - Hora UTC: `2026-11-01T00:31:49Z`.
 - Head do bloco: `fe0cce5e` antes deste registro; objeto de controle: `origin/main` `e78e3968bf054666777056481aba724db1a9006c`.
-- Worktree de controle: `C:/Users/AMP/w-o6r11c3-f1`, detached em `origin/main`, removido ao fim; disco permaneceu em `24G` livres.
+- Worktree de controle: `~/w-o6r11c3-f1`, detached em `origin/main`, removido ao fim; disco permaneceu em `24G` livres.
 - Contaminação corrigida antes dos testes: a primeira cópia dos três testes entrou por engano na árvore principal. O índice foi desfeito apenas nesses três caminhos e os três arquivos que eu criei foram removidos; `git status --short` da árvore principal voltou a mostrar somente os três untracked preexistentes (`.history-memo/`, `TEMPLATE-J-ata.md`, `B-SAN3-06a/`). Nenhum arquivo preexistente foi alterado.
 
 ### Vermelho-controle R1/R2
@@ -111,7 +111,7 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 
 - Hora UTC: `2026-11-02T04:53:56Z`.
 - Papel: `dev-o6r11-e4-sol`; modelo Codex GPT-5.6 Sol, nível menor declarado. Não planejou nem verificou a emenda.
-- Head de partida: `19e18e1543f6f80659c3576298ba752fde4f4985`; worktree novo `C:/Users/thiag/w-o6r11c3`; disco `302G` livres. `flutter pub get` concluído sem mudança em `pubspec.lock`.
+- Head de partida: `19e18e1543f6f80659c3576298ba752fde4f4985`; worktree novo `~/w-o6r11c3`; disco `302G` livres. `flutter pub get` concluído sem mudança em `pubspec.lock`.
 - F-S0: a Emenda 4 foi copiada byte a byte para `agent-orchestration/omega/planos/B-O6R-11-emenda-4-despesa.md`. O resgate da fila saiu do coordenador para `SyncQueueReclaimService`, exposto por provider; o coordenador não contém `queue.`.
 - Vermelho-controle no objeto `19e18e15`: `flutter test test/core/sync/bo6r11_guard_fila_await_ast_test.dart --reporter compact` → `+10 -1`; caso 21 vermelho em `auto_sync_coordinator.dart:57`, V3 `_triggerSync()` descartada.
 - Mutação M-Q1: removidas temporariamente as chamadas a `update`; `flutter test test/core/sync/bo6r11_sync_queue_reclaim_service_test.dart --plain-name 'resgata syncing e preserva a ação que já estava pending' --reporter compact` → `+0 -1`, esperado 2 updates e observado 0. Restaurada por edição inversa.

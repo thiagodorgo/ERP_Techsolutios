@@ -22,7 +22,7 @@ Você julga a **cadeia de acesso** do gate que o bloco criou (E4 do plano) e a *
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica`, **sem `Bash`**: quem escreveu não executou nada do que está aqui. Tudo o que
-ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-nuv01b` em 2026-10-02, com o ramo no head que o disparo da
+ele diz sobre o ramo foi **lido** no disco de `~/w-nuv01b` em 2026-10-02, com o ramo no head que o disparo da
 fábrica declarou (o mandato da fábrica foi versionado em `62ffdec4`). Por isso cada arquivo:linha, SHA, número e conjunto
 abaixo é **[A RE-VERIFICAR]**. Nenhum deles é fato.
 
@@ -170,8 +170,8 @@ contra este corpo**. Declare-o antes do veredito. Item cujo controle não acusou
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Ambiente exportado vaza para a medição. Com o
   prefixo, `git.exe`, `node.exe` e `python.exe` recusam `/c/…`: use sempre `C:/…`.
 - **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o seu mandato de disparo nomear (o mandato da C2 nomeia
-  `C:/Users/AMP/w-j01bc2`), criado com
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`. Depois **prove**
+  `~/w-j01bc2`), criado com
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`. Depois **prove**
   `test -e <caminho>/.git`. No scratchpad, `worktree add` falha com *Filename too long* e **não cria o diretório**. Se o
   caminho já existir, é resíduo alheio: reporte-o e use o sufixo `b`.
 - **`npm --prefix frontend ci` PRÓPRIO**, sob `timeout` declarado. Os `[GB*]` e o catálogo rodam com o `tsx` do
@@ -183,7 +183,7 @@ contra este corpo**. Declare-o antes do veredito. Item cujo controle não acusou
   em Node 22 é opcional, e se rodar, publique os dois.
 - **Sem banco e sem Docker.** `erp-postgres` (5432) e `erp-redis` (6379) **nunca** são alvo, nem de leitura. Um comando
   seu que abra conexão é achado contra a sua própria medição.
-- **Somente leitura fora do seu worktree.** `C:/Users/AMP/w-nuv01b` é o worktree do dev, no ramo do PR. A sua **única**
+- **Somente leitura fora do seu worktree.** `~/w-nuv01b` é o worktree do dev, no ramo do PR. A sua **única**
   escrita lá são os seus dois arquivos de voto. **PROIBIDO:** `git stash`, `git clean`, `git checkout`/`git reset` do que
   você não criou, `git worktree prune`, `rm -rf` de worktree, `git commit` e `git push`. Quem versiona evidência e voto é
   o orquestrador. Resíduo alheio se **reporta, não se varre**, e isso vale para os worktrees órfãos e os containers
@@ -207,7 +207,7 @@ contra este corpo**. Declare-o antes do veredito. Item cujo controle não acusou
   e transforma uma suíte vermelha em verde falso. **Caminho absoluto sempre.**
 - **Evidência e voto em arquivo, por `Bash`.** Você não tem `Write` **por desenho**: jurado que escreve conserta o que
   achou (§C7.4-bis). O diretório é o que o seu mandato de disparo nomear. O padrão é
-  `C:/Users/AMP/w-nuv01b/agent-orchestration/omega/juntas/votos/B-SAN3-01b/`, com os arquivos `C2-evidencia.md` e
+  `~/w-nuv01b/agent-orchestration/omega/juntas/votos/B-SAN3-01b/`, com os arquivos `C2-evidencia.md` e
   `C2-voto.json`. O plano §10 diz `votos/J-B-SAN3-01b/`, que não existe (ressalva R2 do inspetor). Nunca grave no seu
   worktree de medição.
 

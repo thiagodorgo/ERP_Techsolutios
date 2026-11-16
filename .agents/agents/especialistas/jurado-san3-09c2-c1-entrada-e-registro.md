@@ -30,7 +30,7 @@ entrada, o segredo, a trava e o registro**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica`, **sem `Bash`**: quem escreveu não executou nada do que está aqui. Tudo o que
-ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-nuv09` em 2026-10-08, com o ramo no head
+ele diz sobre o ramo foi **lido** no disco de `~/w-nuv09` em 2026-10-08, com o ramo no head
 `054f7a7ea350ba80837bcecf370475df6a1795b4` (lido nos arquivos de ref locais `refs/heads/` e `refs/remotes/origin/`, não por
 `git`). Logo, **todo** arquivo:linha, SHA, contagem e trecho abaixo é **[A RE-VERIFICAR]**. Nenhum deles é fato.
 
@@ -169,12 +169,12 @@ consigo medir".
   Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `node -v`, `python --version`, espaço livre em `C:` (`df -h /c`),
   e o ambiente (shell, cwd, variáveis que você definiu).
 - **Arquivos de saída:** os que o seu mandato nomear, no diretório que ele nomear (padrão:
-  `C:/Users/AMP/w-nuv09/agent-orchestration/omega/juntas/votos/B-SAN3-09/`, arquivos `C1c2-evidencia.md` e `C1c2-voto.json`).
+  `~/w-nuv09/agent-orchestration/omega/juntas/votos/B-SAN3-09/`, arquivos `C1c2-evidencia.md` e `C1c2-voto.json`).
   **Nunca** grave em `C1-evidencia.md`/`C1-voto.json`: são do ciclo 1. Nunca grave no seu worktree de medição.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Ambiente exportado vaza para a medição. Use
   sempre `C:/…` com `git.exe`, `node.exe`, `python.exe`.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão deste corpo: `C:/Users/AMP/w-j9c2c1`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão deste corpo: `~/w-j9c2c1`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
   `test -e <caminho>/.git`. No scratchpad, `worktree add` falha com *Filename too long* e **não cria o diretório**. Se o
   caminho já existir, é resíduo alheio: reporte e use o sufixo `b`.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** na raiz do seu worktree e `npx prisma generate` com `DATABASE_URL` **só naquele
@@ -192,7 +192,7 @@ consigo medir".
   `git -c core.autocrlf=false archive <objeto> | docker exec -i jurado-san3-09c2-c1-node sh -c 'mkdir -p /work && cd /work && tar -x'`
   (caminhos `/…` **só dentro** do `sh -c`, por causa da conversão do MSYS); md5 do script, dos dois testes e do lockfile
   dentro do container = md5 do blob (`git cat-file blob <objeto>:<f> | md5sum`); `npm ci`, `prisma generate`, e o teste com
-  `-e DATABASE_URL -e REDIS_URL -e CORE_SAAS_PERSISTENCE=memory`. Alternativa: `C:/Users/AMP/erp-terreno/receita-pg16.sh`
+  `-e DATABASE_URL -e REDIS_URL -e CORE_SAAS_PERSISTENCE=memory`. Alternativa: `~/erp-terreno/receita-pg16.sh`
   (imagem `erp-junta-node20-pg16:local`) **adaptada** — lida pela fábrica, ela foi escrita para o `B-SAN3-05`: os arrays
   `TESTS` e `SAMPLE` nomeiam arquivos do B-SAN3-05 (que podem não existir no objeto, e o `cat-file` aborta sob `set -e`), não
   sobe Redis, nomeia tudo `pg16r-*` (não o prefixo desta cadeira) e derruba tudo no `trap EXIT` — **não** atende mutação
@@ -204,7 +204,7 @@ consigo medir".
   declare. Comando seu que toque 5432/6379 é achado contra a sua própria medição.
 - **Disco:** meça o livre em `C:` antes de começar e depois de cada `npm ci`. Abaixo de ~2 GB, **pare** e registre (a limpeza
   profunda do §C5 é do orquestrador).
-- **Somente leitura fora do seu terreno.** `C:/Users/AMP/w-nuv09` é a árvore do ramo: a sua **única** escrita lá são os seus
+- **Somente leitura fora do seu terreno.** `~/w-nuv09` é a árvore do ramo: a sua **única** escrita lá são os seus
   dois arquivos de saída. **PROIBIDO:** `git stash`, `git clean`, `git checkout`/`git reset` do que você não criou,
   `git worktree prune`, `rm -rf` de worktree, `git commit`, `git push`, `docker rm` de container que não tem o seu prefixo,
   `docker volume prune`, `docker system prune`. Resíduo alheio se **reporta, não se varre**.

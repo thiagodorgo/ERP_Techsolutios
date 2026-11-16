@@ -74,6 +74,13 @@ export class StatementSettlementService {
     await intent.enqueueOutbox({ tenantId: change.after.tenantId, statementId: change.after.id, kind: "invoice_issue", provider: intents.issueTarget.provider, seq: 1, payload: { seq: 1 }, skipReason }, now);
   }
 
+  /** B-ASS-08c1c (R2-03, plano §4.7): o 1º pagamento do provedor, no `tx` da baixa — a tabela de cobranças passa a `confirmed`
+   * (também com `applied = 0`: é a verdade do provedor) e depois a intenção de nota de sempre. */
+  async #afterProviderPayment(tx: StatementTx, change: { readonly before: SubscriptionStatement; readonly after: SubscriptionStatement }, input: { readonly statementId: string; readonly externalChargeId: string; readonly now: Date }): Promise<void> {
+    await tx.syncCharge(input.statementId, { externalChargeId: input.externalChargeId }, "confirmed"); // [CHG-SYNC-PAY]
+    await this.#issueIntent(tx, change, input.now);
+  }
+
   /**
    * Aplica (ou atualiza) a baixa de UMA cobrança do provedor. `paidCents` é o valor BRUTO da RECONSULTA (nunca o do
    * webhook — R-WH-4). A organização e o demonstrativo já foram resolvidos pelo NOSSO `statement_id` (R-WH-5).
@@ -100,7 +107,7 @@ export class StatementSettlementService {
         method: input.method,
         now: input.now,
         // [INTX-01]
-        afterWrite: (tx, change) => this.#issueIntent(tx, change, input.now),
+        afterWrite: (tx, change) => this.#afterProviderPayment(tx, change, input),
       });
       return { kind: "settled", statement: recorded.statement, payment: recorded.payment, credit: recorded.credit };
     }
@@ -125,6 +132,7 @@ export class StatementSettlementService {
         status: paidCents >= statement.totalCents ? "paid" : statement.status,
         paidAt: paidCents >= statement.totalCents ? input.now : statement.paidAt,
       });
+      await tx.syncCharge(input.statementId, { externalChargeId: input.externalChargeId }, "confirmed"); // [CHG-SYNC-MONO]
       const extra = delta - addApplied; // o que passou do saldo vira crédito (excedente)
       const credit =
         extra > 0
@@ -208,6 +216,7 @@ export class StatementSettlementService {
         status,
         paidAt: paidCents >= statement.totalCents ? statement.paidAt : null,
       });
+      await tx.syncCharge(input.statementId, { externalChargeId: input.externalChargeId }, chargeStatus); // [CHG-SYNC-REV]
       // (B) a nota VIVA, lida sob a trava do demonstrativo; o cancelamento vai ao provedor e ao `seq` DELA.
       const intents = this.invoiceIntents;
       const intent = intents ? intentTx(tx) : null;
@@ -242,6 +251,8 @@ export class StatementSettlementService {
     return this.repository.transaction(input.tenantId, async (tx) => {
       const statement = await tx.lockById(input.statementId);
       if (!statement) return undefined;
+      // §9 D-6: a função não recebe o id da cobrança (o chamador está em `webhooks/**`): a cobrança `confirmed` DO demonstrativo.
+      await tx.syncCharge(input.statementId, { status: "confirmed" }, "chargeback_disputed"); // [CHG-SYNC-DISP]
       return tx.saveStatement({ ...statement, chargeStatus: "chargeback_disputed" });
     });
   }
@@ -258,7 +269,9 @@ export class StatementSettlementService {
     if (input.outcome === "won") {
       await this.repository.transaction(input.tenantId, async (tx) => {
         const statement = await tx.lockById(input.statementId);
-        if (statement) await tx.saveStatement({ ...statement, chargeStatus: "confirmed" });
+        if (!statement) return;
+        await tx.syncCharge(input.statementId, { externalChargeId: input.externalChargeId }, "confirmed"); // [CHG-SYNC-WON]
+        await tx.saveStatement({ ...statement, chargeStatus: "confirmed" });
       });
       return { chargeStatus: "confirmed" };
     }

@@ -27,7 +27,7 @@ o escopo, o registro, o contrato escrito nem o drill da migração (é a **C3**,
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito por `fab-red-san312a-r3-opus` (Claude Opus 5.5, nível menor DECLARADO — §C7.6), nos papéis de fábrica e redator,
-por decisão do orquestrador. A fábrica leu o ramo no disco de `C:/Users/AMP/w-san312a` em 2026-10-25, no head `5efc99e2` (a **cerca**
+por decisão do orquestrador. A fábrica leu o ramo no disco de `~/w-san312a` em 2026-10-25, no head `5efc99e2` (a **cerca**
 desta cadeira: o merge da `main` no ramo, objeto anterior da junta). **Todo arquivo:linha abaixo é leitura de disco [A RE-VERIFICAR]**; os
 nomes são as âncoras. Afirmação do plano, das emendas, do relatório do dev, das críticas, do orquestrador, do inspetor e deste corpo é
 **roteiro, nunca fato**.
@@ -148,14 +148,14 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo** (verm
 
 - **Onde roda:** Git Bash no Windows do dono; `timeout -k 15 <s>` em todo comando, saída para arquivo, `ec` lido em variável; nunca
   `tail -f`/`watch`/leitura sem fim; caminho absoluto; o que precisa sobreviver vai para o seu `$SCRATCH`
-  (`C:/Users/AMP/erp-pausa-2026-10-03/j12a-c4/`).
+  (`~/erp-pausa-2026-10-03/j12a-c4/`).
 - **Primeira linha da evidência**, numa linha só:
   `papel: cadeira C4 | identidade: <nome da sessão> | corpo: jurado-san312a-c4-isolamento-e-invariantes | executor: <Claude Opus (subagente genérico, corpo lido do blob do objeto) | outro> | modelo: <modelo> (nível menor, §C7.6; substituição: <…>) | objeto: <40 hex> | mandato_md5: <…> | corpo carregado × blob do objeto: IDENTICO | DIVERGE`;
   abaixo, `origin/main` no início, `$SCRATCH`, `node -v`, `docker version` (servidor), `SELECT version()`, `df -h /c`, memória de commit
   livre e os nomes das variáveis (nunca valor de segredo; nenhum `export`).
-- **Saída:** `C:/Users/AMP/w-san312a/agent-orchestration/omega/juntas/votos/B-SAN3-12a/c4-evidencia.md` e `…/c4-voto.json` (ou o que o
+- **Saída:** `~/w-san312a/agent-orchestration/omega/juntas/votos/B-SAN3-12a/c4-evidencia.md` e `…/c4-voto.json` (ou o que o
   mandato nomear) — a única escrita sua em `w-san312a`; não commita.
-- **Worktree PRÓPRIO** `C:/Users/AMP/j12a-c4-wt` (detached no objeto, `npm ci` próprio, `npx prisma generate` com URL de build; nunca
+- **Worktree PRÓPRIO** `~/j12a-c4-wt` (detached no objeto, `npm ci` próprio, `npx prisma generate` com URL de build; nunca
   junction de `node_modules`, §C7.1-ter(c)); caminho existente = resíduo alheio, reporte e use `…-wt2`. Antes do `npm ci`, disco ≥ 7 GB.
 - **Postgres 16 e Redis 7 PRÓPRIOS** `j12a-c4-pg`/`j12a-c4-redis`, só em `127.0.0.1`, portas testadas antes (candidatas **47743** e
   **47744**); nunca 5432, 6379, 3000, 3100, 3200, 5050, 5173, 8899, 55432, 55412, 55413, nem as portas das outras cadeiras (47713, 47714,

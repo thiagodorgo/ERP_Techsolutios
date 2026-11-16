@@ -45,7 +45,7 @@
 - Unanimidade de 3, motivo escrito (briefing §0 + PLANO cabeçalho: fecha por presença pendências de segurança/permissão/dinheiro; §C7.1-ter(b); CR2-07). VERDE.
 - Perda de jurado (briefing §5): suplente nomeado por cadeira, re-executa o mandato inteiro; voto perdido nunca vale aprovação; <3 votos de mérito não fecha; queda por limite vira nota. Compatível com P3. NOTA: P6 (CLAUDE.md ref l.545) exige `votos/<JUNTA>/00-quedas.md` com colunas fixas — o briefing não o nomeia.
 
-## 4. S0 e baseline (medido AGORA, em worktree detached PRÓPRIO em fce82fef: C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/wt-insp-san3 — criado com `-c core.longpaths=true` após falha "Filename too long" no caminho do scratchpad; porcelain 0)
+## 4. S0 e baseline (medido AGORA, em worktree detached PRÓPRIO em fce82fef: ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/wt-insp-san3 — criado com `-c core.longpaths=true` após falha "Filename too long" no caminho do scratchpad; porcelain 0)
 - 4.1 `node scripts/sync-agent-agents.mjs --check` → ec=0 "[agents-sync] OK — 23 agentes, espelho consistente." Recursivo: .claude/agents 23 .md; .agents/agents 24 (23 + README.md); `especialistas/` = 0 arquivos nos dois lados da ref (as 24 remoções do PR são simétricas 12+12). VERDE.
 - `node scripts/kpi-freeze.mjs --check` → ec=0 "em dia (snapshot 2026-09-11)". VERDE.
 - `node --check Kpis/app.js` → ec=0. VERDE.

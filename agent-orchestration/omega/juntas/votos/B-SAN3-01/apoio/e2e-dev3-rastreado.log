@@ -33,7 +33,7 @@ Running 13 tests using 1 worker
       97 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       98 |   await page.getByRole("textbox", { name: /Senha/i }).fill("senha-invalida");
       99 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:96:38
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:96:38
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-login-real--e1838-e-rota-protegida-exige-auth-chromium\test-failed-1.png
@@ -65,8 +65,8 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:113:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:113:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-tenant-admi-bfa92-o-e-nao-ve-Platform-Console-chromium\test-failed-1.png
@@ -98,9 +98,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:130:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:130:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-tenant-admi-f8e38-cacoes-sem-depender-de-seed-chromium\test-failed-1.png
@@ -132,9 +132,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:145:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:145:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-Mapa-Operac-a9532--filtro-sem-chips-passivos--chromium\test-failed-1.png
@@ -166,9 +166,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:181:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:181:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-Despachos-O-f2eae-lista-KPIs-e-acoes-por-RBAC-chromium\test-failed-1.png
@@ -200,9 +200,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:207:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:207:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-E1-—-lista--cf7ca-stra-é-o-que-a-API-devolveu-chromium\test-failed-1.png
@@ -234,9 +234,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:241:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:241:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-E2-—-create-5520d-ceito-navega-para-a-OS-real-chromium\test-failed-1.png
@@ -268,9 +268,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:293:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:293:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-E3-—-detalh-7c3d0--erro-são-estados-não-dados-chromium\test-failed-1.png
@@ -299,7 +299,7 @@ Running 13 tests using 1 worker
       348 |   await loginAsPlatformAdmin(page);
       349 |   await navigationResponse;
       350 |
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:347:35
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:347:35
 
     Error: locator.fill: Test timeout of 45000ms exceeded.
     Call log:
@@ -313,8 +313,8 @@ Running 13 tests using 1 worker
       447 |   await page.getByLabel("E-mail corporativo").fill(platformEmail);
       448 |   await page.getByRole("textbox", { name: /Senha/i }).fill(platformPassword);
       449 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsPlatformAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:446:38)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:348:3
+        at loginAsPlatformAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:446:38)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:348:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-platform-admin-acessa-Platform-Console-chromium\test-failed-1.png
@@ -346,9 +346,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:372:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:372:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-PR-02a-Mode-548a9-ova-e-o-builder-sem-quebrar-chromium\test-failed-1.png
@@ -380,9 +380,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:381:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:381:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-runtime-web-8ee8c-ia-obrigatorios-incompletos-chromium\test-failed-1.png
@@ -414,9 +414,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:396:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:396:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-W03-Configu-f1cdb-tegorias-e-temas-planejados-chromium\test-failed-1.png
@@ -448,9 +448,9 @@ Running 13 tests using 1 worker
       438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
       439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
       440 |   await page.getByRole("button", { name: "Entrar" }).click();
-        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
-        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:421:3
+        at loginAsTenantAdmin (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:421:3
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\critical-flows-logout-real-0a517-ssao-local-e-volta-ao-login-chromium\test-failed-1.png

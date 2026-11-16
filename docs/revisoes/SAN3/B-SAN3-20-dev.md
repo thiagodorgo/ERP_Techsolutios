@@ -2,7 +2,7 @@
 
 - Papel: DEV do bloco; não planejou, não criticou e não votará.
 - Modelo: Codex (nível menor conforme mandato do bloco).
-- Worktree: `C:/Users/AMP/w-san320`.
+- Worktree: `~/w-san320`.
 - Branch: `fix/cheque-x-baixa`.
 - Base inicial: `origin/main@7ab2fe71d0d40c2be51a790f0d20893651cdf972`.
 - PR: `#456` — aberto como **rascunho bloqueado**, sem autorização de merge.
@@ -12,7 +12,7 @@
 ## Retomada (Claude Opus, cobrindo o Codex)
 
 - **Quem:** `dev-san320-opus`, Claude **Opus** (nível menor, declarado — §C7.6). O dev anterior, Codex `gpt-5.6-sol`, caiu por **limite de uso** às 18:15Z de 24/10 (log `codex-dev-san3-20b.log`, fim: `You've hit your usage limit … try again at 7:19 PM`), no passo 4 da bateria (regressões `-db`). Regra do dono (24/10): *"vc tambem cobre que cair por limite"*. Não planejei, não critiquei e não voto.
-- **Cópia de segurança antes de tocar:** `C:/Users/AMP/erp-pausa-2026-10-03/backup-san320-1816Z/`. Medido: `git diff > cur.diff; cmp cur.diff backup/nao-commitado.diff` → **iguais** (nada mudou entre o backup e a retomada).
+- **Cópia de segurança antes de tocar:** `~/erp-pausa-2026-10-03/backup-san320-1816Z/`. Medido: `git diff > cur.diff; cmp cur.diff backup/nao-commitado.diff` → **iguais** (nada mudou entre o backup e a retomada).
 
 ### R0 — o que medi do parcial (P3: só vale o que tem comando registrado)
 
@@ -59,7 +59,7 @@
 
 ### R5 — vermelho-controle (§4.5): todas as mutações, uma a uma, contra o worktree commitado (`044e33cd`)
 
-Mecanismo: `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-20-dev-evidencia/mutacoes.py` (saída crua em `mutacoes.jsonl` no mesmo diretório) aplica cada mutação por âncora única (falha se a âncora casar ≠ 1 vez), roda **só** o arquivo do teste citado (memória: `npm test -- tests/cheque-title-link.test.ts`; `-db`: a suíte com `DATABASE_URL=<dev-san320>`, `CORE_SAAS_PERSISTENCE=prisma`; tipos: `npm run check`), registra a saída, restaura com `git checkout -- <arquivo>` e confere `git diff --stat` vazio. Resultado: **33 linhas, todas VERMELHAS, exceto `M8-mem`** (declarado abaixo). Restauro sem resto em todas.
+Mecanismo: `~/erp-pausa-2026-10-03/revisoes/B-SAN3-20-dev-evidencia/mutacoes.py` (saída crua em `mutacoes.jsonl` no mesmo diretório) aplica cada mutação por âncora única (falha se a âncora casar ≠ 1 vez), roda **só** o arquivo do teste citado (memória: `npm test -- tests/cheque-title-link.test.ts`; `-db`: a suíte com `DATABASE_URL=<dev-san320>`, `CORE_SAAS_PERSISTENCE=prisma`; tipos: `npm run check`), registra a saída, restaura com `git checkout -- <arquivo>` e confere `git diff --stat` vazio. Resultado: **33 linhas, todas VERMELHAS, exceto `M8-mem`** (declarado abaixo). Restauro sem resto em todas.
 
 | M | mutação | alvo do plano | comando | saída (1 linha) | testes vermelhos (nº do TAP) | veredito | restauro |
 |---|---|---|---|---|---|---|---|
@@ -108,7 +108,7 @@ Mecanismo: `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-20-dev-evidencia/m
 - **Passo 2 (bloco, memória):** `npm test -- tests/cheque-title-link.test.ts tests/cheques.test.ts tests/financial-entries.test.ts tests/financial-titles.test.ts tests/financial-titles-routes.test.ts tests/financial-entry-undo-owners.test.ts tests/financial-uow-journal-classification.test.ts tests/financial-entry-link-census.test.ts tests/financial-uow-memory.test.ts` → `9 arquivo(s) · 304 teste(s) · pass 304 · fail 0 · skipped 0`. `financial-titles` segue 64/64 (H12: nenhum caso dependia da sobrescrita absoluta); o harness perdeu o caso do membro `applyPayment` (D8b) — 279 + 26 do parcial − 1 + 12 meus = 304 com o `financial-summary` fora deste passo.
 - **Passo 3 (bloco, `-db`), 3 execuções seguidas:** `for i in 1 2 3; do DATABASE_URL=<dev-san320> CORE_SAAS_PERSISTENCE=prisma npm test -- tests/cheque-title-link-atomic-db.test.ts tests/financial-title-status-cas-db.test.ts tests/cheque-title-link-migration-drill-db.test.ts tests/cheque-clear-bounce-atomic-db.test.ts tests/financial-pay-title-atomic-db.test.ts tests/financial-entry-reverse-restore-db.test.ts tests/financial-entry-delete-reverse-race-db.test.ts tests/financial-title-invariants-db.test.ts; done` → `8 arquivo(s) · 77 teste(s) · pass 77 · fail 0 · skipped 0` **nas três** (denominador constante; 0 skip). As 3 suítes novas: 15 + 9 + 6 = 30.
 - **Passo 4 (regressões do financeiro):** `-db` `financial-period-close-write-race-db`, `work-order-invoicing-atomic-db`, `work-order-invoicing-migration-drill-db`, `pg-barrier-scoped-db` → `4 arquivo(s) · 32 teste(s) · pass 31 · fail 1`: o "teste" 32 é o **arquivo** do drill do B-SAN3-02 falhando no `after` com `EBUSY: resource busy or locked, rmdir '…\Temp\san302-drill-RCjYcs'` — os casos dele passaram todos. É o mesmo artefato do Windows medido em R3, num arquivo que este bloco não toca (`git diff --quiet 7ab2fe71 -- tests/work-order-invoicing-migration-drill-db.test.ts` → exit 0) e fora do PERMITIDO; na CI (Linux) ele é verde. O diretório que esta execução deixou foi removido à mão. Memória `work-order-invoicing`, `financial-title-source`, `work-order-financials-routes` → `3 arquivo(s) · 60 teste(s) · pass 60 · fail 0 · skipped 0`.
-- **Passo 5 (roteiros refeitos pela porta nova, os dois executores)** — `roteiro-k5-http.mts` e `roteiro-k5-db.mts` (cópias em `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-20-dev-evidencia/`; são os roteiros da reprodução do §2.1 com o cheque **vinculado**), rodados da raiz do worktree e apagados:
+- **Passo 5 (roteiros refeitos pela porta nova, os dois executores)** — `roteiro-k5-http.mts` e `roteiro-k5-db.mts` (cópias em `~/erp-pausa-2026-10-03/revisoes/B-SAN3-20-dev-evidencia/`; são os roteiros da reprodução do §2.1 com o cheque **vinculado**), rodados da raiz do worktree e apagados:
   - memória/HTTP: `receivable pay-clear [422,200] cheque_required paid 100 saldo 100 entries 1` · `receivable clear-pay [200,422] title_already_paid paid 100 saldo 100 entries 1` · `payable pay-clear … saldo −100 entries 1` · `payable clear-pay … saldo −100 entries 1` — em todos o único lançamento tem `titleId` do título.
   - Postgres: as mesmas quatro linhas (`mode: prisma`, `["422 cheque_required","cleared"]` / `["cleared","422 title_already_paid"]`, `paidAmount 100`, saldo ±100, `entries 1`, `entryHasTitle [true]`).
   - No head antes do bloco o mesmo roteiro dava **saldo 200 com dois lançamentos** (F14). Agora: ±100, 1 lançamento, título pago, a 2ª porta recusada.

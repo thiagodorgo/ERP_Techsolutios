@@ -2,7 +2,7 @@
 
 > **Papel:** `planejador-mestre` (TOPO). **Modelo efetivo:** Fable 5.1 (`claude-fable-5-1`), o do frontmatter — sem
 > fallback. **Data:** 2026-10-24. **Ref medida:** `origin/main` `7ab2fe71d0d40c2be51a790f0d20893651cdf972` (worktree
-> só-leitura `C:/Users/AMP/w-plan21`, detached) e, para a regra do cheque, `origin/fix/cheque-x-baixa` `a0f5aabc` (PR
+> só-leitura `~/w-plan21`, detached) e, para a regra do cheque, `origin/fix/cheque-x-baixa` `a0f5aabc` (PR
 > #456, **não mergeado**; merge-base = `7ab2fe71`). Nada foi editado, nada rodou contra a base viva, sem Docker.
 > **Itens do portão:** #28 `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA` e #55 `P-WEB-CONCILIACAO-SEM-TELA` + CE-4
 > (`docs/revisoes/SAN3/PLANO_SAN3.md:147, :163, :268, :327`). **Risco:** DINHEIRO + PERMISSÃO → junta completa,
@@ -10,7 +10,7 @@
 > **Versão:** **v3 (final)** — 2026-10-25. Responde à crítica r2 (Claude Opus, a última rodada; seção própria abaixo): **todos os 5 bloqueantes e os 5 ajustes viram requisito explícito com critério e mutação**; o dono decidiu R2-01, R2-03 e R2-04 (apêndice no fim). **Ref medida agora:** `origin/main` **`37a3f360`** = o **PR #456 MERGEADO** (`mergedAt 2026-10-25T03:21:54Z`); o que o §0.2 chamava "ramo do #456" é hoje **fato da `main`** (`git diff --stat a0f5aabc bb3cbd6c -- src tests prisma` vazio, medido pelo crítico; o worktree `w-plan21` está detached em `37a3f360`). Não haverá rodada 3 de crítica: o próximo leitor é o dev do 12a. **Estado:** COMPLETO (P1/P2). Cópia versionada prevista: `docs/revisoes/SAN3/B-SAN3-12-plano-v3.md` (no PR do 12a).
 
 ## Resposta à crítica r1 (2026-10-24) — achado por achado, com re-execução própria (P3)
-Crítica: `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-12-critica-r1.md` (crit-san312-pro, Gemini 3.1 Pro CLI, crítico **de leitura** — não roda `npm`). Veredito: VOLTA AO PLANO
+Crítica: `~/erp-pausa-2026-10-03/revisoes/B-SAN3-12-critica-r1.md` (crit-san312-pro, Gemini 3.1 Pro CLI, crítico **de leitura** — não roda `npm`). Veredito: VOLTA AO PLANO
 (1 bloqueia · 1 ajuste · 2 notas positivas). Re-executei o que o terreno permite (leitura por `git show` no ramo do #456 e `git grep` na `main`; sem `npm ci` no worktree, sem Docker).
 A `main` avançou `7ab2fe71 → c76ec481` só em `Kpis/*` (`git diff --stat 7ab2fe71 origin/main` → 4 arquivos, todos `Kpis/`): **todas as medições do §0 continuam válidas**. O #456 segue `OPEN`, `mergedAt: null`.
 
@@ -24,7 +24,7 @@ A `main` avançou `7ab2fe71 → c76ec481` só em `Kpis/*` (`git diff --stat 7ab2
 **Riscos residuais que a r1 não atacou (para a junta, não para o crítico):** (i) a leitura `findPendingByTitle` dentro da tx é READ COMMITTED — enxerga o cheque `deposited` de um `clear` ainda não commitado como **pendente** (recusa; fail-closed) e um `clear` já commitado como `cleared` (segue; o CAS do título guarda) — A4 mede as duas janelas; (ii) `expected_updated_at` obrigatório transfere ao front a disciplina de **reler antes de salvar** (F3/F10 já exigem); (iii) a política por `tenant-settings` depende de o validador da chave existir **antes** de o serviço a ler (A12 antes de A9 na ordem do dev).
 
 ## Resposta à crítica r2 (2026-10-25) — a última rodada; cada achado vira requisito
-Crítica: `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-12-critica-r2.md` (`crit-san312-opus-r2`, Claude Opus — substituição declarada; **executou** sondas em worktree próprio: `probe.ts`, `parity.ts`, `tz.ts`).
+Crítica: `~/erp-pausa-2026-10-03/revisoes/B-SAN3-12-critica-r2.md` (`crit-san312-opus-r2`, Claude Opus — substituição declarada; **executou** sondas em worktree próprio: `probe.ts`, `parity.ts`, `tz.ts`).
 Re-execução própria (P3), no que o terreno permite (sem `npm ci`): li em `37a3f360` cada arquivo:linha que a crítica cita e as três sondas; onde a crítica **executou** (guards vermelhos, P1–P3, tz), aceito o
 resultado e confiro a premissa no código. **Decisões do dono (25/10, literais, apêndice no fim):** R2-03 *"Só cheque do valor exato (Recomendado)"*; R2-04 *"Mesmo privilégio da troca (Recomendado)"*; R2-01 *"Autorizo (Recomendado)"*.
 
@@ -47,7 +47,7 @@ resultado e confiro a premissa no código. **Decisões do dono (25/10, literais,
 
 ## §0 — MEDIDO × HIPÓTESE
 > **v3:** tudo abaixo foi medido em `7ab2fe71`/ramo `a0f5aabc` e **re-conferido em `37a3f360`** (a `main` com o #456): os números de linha de `cheque.service.ts` citados nas emendas v3 são os da `main` (`create :113`, `update :144`, `delete :169`, `cancel :183`, `clear :193`, `bounce :226`, `flipOnly :350`, `assertEditable :372`, `validateTitleLink :388`). H1 **resolvida** (o #456 entrou).
-Convenção: **M** = medido (comando → saída); **H** = hipótese (com o comando que a derruba). Tudo em `C:/Users/AMP/w-plan21`
+Convenção: **M** = medido (comando → saída); **H** = hipótese (com o comando que a derruba). Tudo em `~/w-plan21`
 (`git rev-parse HEAD` → `7ab2fe71…`); o ramo do #456 por `git show origin/fix/cheque-x-baixa:<caminho>` (`a0f5aabc`; `git merge-base`
 = `7ab2fe71`, logo o ramo é a `main` + 10 commits do B-SAN3-20). `gh pr view 456` → `state: OPEN`, `mergeable: MERGEABLE`, 7 check-runs
 `SUCCESS` (backend, backend-postgres, frontend, owner-portal, authority-portal, flutter, docker), `reviewDecision` vazio.
@@ -144,7 +144,7 @@ direciona para **trocar a vinculação** (`POST /cheques/:id/unlink-title`, priv
 ## §2 — Decisões do dono que regem o bloco (literais)
 Citadas **assim**, nos termos do dono (24/10, ~17:10), e o que cada uma obriga neste plano:
 
-1. ***"Aprovo as 3"*** — as 3 aparências da maquete `C:/Users/AMP/erp-pausa-2026-10-03/maquetes/B-SAN3-12-financeiro-baixa-conta-conciliacao-3opcoes.html`
+1. ***"Aprovo as 3"*** — as 3 aparências da maquete `~/erp-pausa-2026-10-03/maquetes/B-SAN3-12-financeiro-baixa-conta-conciliacao-3opcoes.html`
    são entregues **todas**, e cada usuário escolhe a sua (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`). A maquete vai para
    `docs/claude-code-handoff/screen-refs/financeiro-baixa-conta-conciliacao-3opcoes.reference.html` e passa a ser a referência da tela
    (a `financeiro-3opcoes.reference.html` de 16/10 fica como referência do **painel**; a linha "Cheque" dos meios dela é corrigida no
@@ -670,8 +670,8 @@ Resposta literal: ***"Aceito as 4 (Recomendado)"*** — (1) 3 PRs 12a → 12b �
 ## Emenda E1 (12a) — o que a execução do dev falsificou no PERMITIDO do §7.1, e o que entra (D-EMENDA-ANTES-DO-CODIGO)
 
 > **Papel:** `planejador-mestre` (TOPO), identidade nova `planejador-san312-e1-fable`. **Modelo efetivo:** Fable 5.1 (`claude-fable-5-1`), o do
-> frontmatter — sem fallback. **Data:** 2026-10-25. **Insumo:** `C:/Users/AMP/w-san312a/docs/revisoes/SAN3/B-SAN3-12a-dev.md` (F1–F9, dev
-> `dev-san312a-opus`). **Ref medida:** worktree do dev `C:/Users/AMP/w-san312a`, head **`fafd4b36`** (ramo `feat/web-financeiro-baixa-e-contas-12a`,
+> frontmatter — sem fallback. **Data:** 2026-10-25. **Insumo:** `~/w-san312a/docs/revisoes/SAN3/B-SAN3-12a-dev.md` (F1–F9, dev
+> `dev-san312a-opus`). **Ref medida:** worktree do dev `~/w-san312a`, head **`fafd4b36`** (ramo `feat/web-financeiro-baixa-e-contas-12a`,
 > base `8a7885f4`), **só leitura**: nenhum arquivo do ramo editado, nada rodou contra a base viva (5432/6379, `erp-*`); banco, se preciso, no
 > container descartável `plan12e1-pg` (porta alta em 127.0.0.1, removido ao fim). **Pendência que responde:** `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`.
 > **Estado:** COMPLETO (P1/P2 — cada F foi gravado ao ser medido; 9/9 procedem · 4 caminhos entram + 2 se ampliam · 1 sai · 0 perguntas ao dono).
@@ -838,8 +838,8 @@ node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-cl
 
 > **Papel:** `planejador-mestre` (TOPO), a mesma identidade `planejador-san312-e1-fable` (devolução de **crítico**, não reprovação de junta — §C7.4 não
 > exige identidade nova). **Modelo efetivo:** Fable 5.1 (`claude-fable-5-1`), sem fallback. **Data:** 2026-10-25. **Insumo:**
-> `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-12a-E1-critica.md` (Claude Opus 5.5, declarado; VOLTA À EMENDA). **Ref medida:** `fafd4b36` em
-> `C:/Users/AMP/w-san312a`, só leitura (`git status --porcelain` vazio antes e depois de cada medição); sem banco nesta rodada — o achado bloqueante
+> `~/erp-pausa-2026-10-03/revisoes/B-SAN3-12a-E1-critica.md` (Claude Opus 5.5, declarado; VOLTA À EMENDA). **Ref medida:** `fafd4b36` em
+> `~/w-san312a`, só leitura (`git status --porcelain` vazio antes e depois de cada medição); sem banco nesta rodada — o achado bloqueante
 > vem com barreira no Postgres executada e registrada pelo crítico (P1, item 2.2), e a metade em memória eu re-executei (E1b.0); nada contra
 > 5432/6379/`erp-*`. **Respostas do dono que esta emenda NÃO reabre:** "Só cheque do valor exato", "Mesmo privilégio da troca", desvínculo pelo
 > administrador com justificativa e auditoria Crítica, delegável ao Financeiro por política. **Estado:** COMPLETO. **Última rodada sobre a emenda:
@@ -934,7 +934,7 @@ Toda linha da bateria publica `tests · pass · fail · skipped` (B2). **Mutaç�
 - **Requisitos novos: 4** — **A27** (CAS do `title_id` lido em `update`/`cancel`/`delete`, provado com barreira no Postgres e em memória), **A28** (`clear` de título já pago falha fechado, com M2 vermelha em memória e no `-db`), **B1** (fechamento: CI verde no head + três listas normalizadas por script + T2.1 medido à mão), **B2** (`skipped` publicado em todo passo e `audit-security` com banco; fonte do `details` corrigida).
 - **Pendências novas: 2** (`P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE`, `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS`), ambas `pre-existente`. **Correções de texto na E1: 3.** **D1 mantida.**
 - **Perguntas ao dono: 0.** Respostas do dono intactas.
-- **Terreno:** `C:/Users/AMP/w-san312a` em `fafd4b36`, `git status --porcelain` vazio antes e depois; sem container nesta rodada; a sonda de memória do crítico foi re-executada a partir do scratchpad (`e1bis-probe-race-mem.test.mts`, `cwd` no worktree) sem gravar nada nele.
+- **Terreno:** `~/w-san312a` em `fafd4b36`, `git status --porcelain` vazio antes e depois; sem container nesta rodada; a sonda de memória do crítico foi re-executada a partir do scratchpad (`e1bis-probe-race-mem.test.mts`, `cwd` no worktree) sem gravar nada nele.
 
 ## Ciclo 2 (12a) — plano de resolução (reprovação do ciclo 1 da junta de dinheiro, `R-B-SAN3-12a-ciclo1.md`)
 
@@ -942,10 +942,10 @@ Toda linha da bateria publica `tests · pass · fail · skipped` (B2). **Mutaç�
 > (≠ `planejador-san312-e1-fable`, que escreveu E1/E1-bis; ≠ C2/C4, que acharam; ≠ `dev-san312a-opus`, que desenvolveu). **Modelo efetivo:**
 > Fable 5.1 (`claude-fable-5-1`), sem fallback. **Data:** 2026-10-26 (~00:20 BRT). **Objeto julgado:** `04b8a667780930050c8af2c77c323b81fe8794bb`
 > (PR #459, ciclo 1). **Insumos:** `omega/reprovacoes/R-B-SAN3-12a-ciclo1.md`; `omega/juntas/votos/B-SAN3-12a/{c2,c4}-{voto.json,evidencia.md}`;
-> sondas das cadeiras em `C:/Users/AMP/erp-pausa-2026-10-03/j12a-c2/` e `j12a-c4/`; `B-SAN3-12a-dev.md` (E0–E14). **Terreno próprio, removido ao
-> fim:** worktree `C:/Users/AMP/w-j12a-plan` (detached no objeto, `npm ci` próprio, sem junction) + Postgres 16 `j12a-plan-pg` em `127.0.0.1:47763`
+> sondas das cadeiras em `~/erp-pausa-2026-10-03/j12a-c2/` e `j12a-c4/`; `B-SAN3-12a-dev.md` (E0–E14). **Terreno próprio, removido ao
+> fim:** worktree `~/w-j12a-plan` (detached no objeto, `npm ci` próprio, sem junction) + Postgres 16 `j12a-plan-pg` em `127.0.0.1:47763`
 > (117 migrações, última `20260882000000_…`); `git status --porcelain` do worktree = 0 ao fim; mutações restauradas por `hash-object = blob`;
-> containers `j12a-plan-*` = 0, worktree = 0, senha apagada; **a base viva (5432/6379, `erp-*`) nunca foi alvo**; `C:/Users/AMP/w-san312a` recebeu
+> containers `j12a-plan-*` = 0, worktree = 0, senha apagada; **a base viva (5432/6379, `erp-*`) nunca foi alvo**; `~/w-san312a` recebeu
 > só este apenso. Sondas e log: `<scratchpad>/j12a-plan/{zz-plan-c403-barrier.ts,zz-plan-c201-nul.ts,run.log}`. Disco: 12G → 11G → 12G (piso 7 GB).
 > **Respostas do dono que este plano NÃO reabre:** "Só cheque do valor exato", "Mesmo privilégio da troca", desvínculo pelo administrador com
 > justificativa e auditoria Crítica, delegação do desfazer por política, migração de dados autorizada. **Nenhum código foi tocado por mim.**
@@ -1103,7 +1103,7 @@ O `rg` da bateria do §9 passa a ser: "`rg` lista exatamente as 8 do inventário
 
 ## Emenda E2 (ciclo 2 do 12b) — plano de resolução da reprovação do ciclo 1
 
-> Autor: `planejador-san312b-c1rep-fable` (topo, Fable). Parecer: `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md`. Esta emenda é apensa verbatim ao fim da cópia do orquestrador (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`) e, pelo R13, ao plano versionado `docs/revisoes/SAN3/B-SAN3-12-plano.md`. Onde divergir do plano v3 e das ratificações de 26/10, **vale a E2**; onde a E2 cala, vale o plano.
+> Autor: `planejador-san312b-c1rep-fable` (topo, Fable). Parecer: `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md`. Esta emenda é apensa verbatim ao fim da cópia do orquestrador (`~/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`) e, pelo R13, ao plano versionado `docs/revisoes/SAN3/B-SAN3-12-plano.md`. Onde divergir do plano v3 e das ratificações de 26/10, **vale a E2**; onde a E2 cala, vale o plano.
 > **Objetivo:** fechar os 6 `bloqueia` e o ajuste do ciclo 1 sem reintroduzir defeito, com o ramo trazido à `main` (`f7922ab7`), e entregar um objeto que a junta do ciclo 2 (C1 e C3 refeitas; C2 revalidada) possa aprovar. O ciclo 2 é o último em que achado não grave reprova (§C7 item 8(2)): cada requisito abaixo tem critério, mutação e vermelho-controle no objeto do ciclo 1.
 > **Ator:** Financeiro (baixa, conciliação, contas), Administrador da organização (desvincular e cancelar cheque), Gestor/Auditor (só consulta), Técnico de Campo (sem acesso).
 > **Fluxo origem → destino:** o mesmo do plano (§4 e §6): tela `/finance` → `GET /financial-summary`, `/financial-accounts(+/balance)`, `/financial-titles` (agora com `offset`), `/financial-entries(+/aggregate, /reconciliation-policy)`, `POST /financial-titles/:id/pay`, `PATCH /financial-entries/:id/reconcile`, `GET /cheques?title_id=`, `POST /cheques/:id/unlink-title` e, **de volta ao contrato**, `POST /cheques/:id/cancel`.
@@ -1199,11 +1199,11 @@ O `rg` da bateria do §9 passa a ser: "`rg` lista exatamente as 8 do inventário
 
 **R13 — registro: ratificações e emenda versionadas; transcrições corrigidas; D-8 verdadeiro.**
 - Arquivos: `docs/revisoes/SAN3/B-SAN3-12-plano.md`, `docs/revisoes/SAN3/B-SAN3-12b-dev.md`, `agent-orchestration/controle/pendencias.md` (+ índice).
-- Critério: (a) as 3 ratificações de 26/10 (14:35Z ×2, 14:40Z) e esta E2 são apensas **verbatim** ao fim do plano versionado (`git grep -c "Ratificação do orquestrador" <head> -- docs/revisoes/SAN3/B-SAN3-12-plano.md` = 2; `"Emenda E2"` ≥ 1); a frase de `pendencias.md` sobre "no fim do plano" passa a ser verdadeira. (b) No plano versionado, por linha de transcrição apensa na E2 (não editar o corpo v3): o §4.1 ganha `POST /cheques/:chequeId/cancel`; o §10 passa a dar à C3 também F20–F22 (ressalva 1 do inspetor); o F4 diz 32 (ratificação). (c) D-8 do relatório corrigido: "Node 22.14.0 está instalado (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`); o `test:smoke` foi executado nas duas versões por caminho absoluto no PATH do comando, nunca `nvm use`; a CI roda Node 20" e os dois TAP (`tests · pass · fail · skipped`) publicados. (d) as pendências de E2.4 abertas com dono e critério de encerramento; o índice regenerado (R7).
+- Critério: (a) as 3 ratificações de 26/10 (14:35Z ×2, 14:40Z) e esta E2 são apensas **verbatim** ao fim do plano versionado (`git grep -c "Ratificação do orquestrador" <head> -- docs/revisoes/SAN3/B-SAN3-12-plano.md` = 2; `"Emenda E2"` ≥ 1); a frase de `pendencias.md` sobre "no fim do plano" passa a ser verdadeira. (b) No plano versionado, por linha de transcrição apensa na E2 (não editar o corpo v3): o §4.1 ganha `POST /cheques/:chequeId/cancel`; o §10 passa a dar à C3 também F20–F22 (ressalva 1 do inspetor); o F4 diz 32 (ratificação). (c) D-8 do relatório corrigido: "Node 22.14.0 está instalado (`~/AppData/Local/nvm/v22.14.0/node.exe`); o `test:smoke` foi executado nas duas versões por caminho absoluto no PATH do comando, nunca `nvm use`; a CI roda Node 20" e os dois TAP (`tests · pass · fail · skipped`) publicados. (d) as pendências de E2.4 abertas com dono e critério de encerramento; o índice regenerado (R7).
 - Mutação: tirar uma ratificação do plano versionado → o `git grep` cai para 1 (vermelho). Vermelho-controle: objeto do ciclo 1 → 0 (medido pela C3).
 
 **R14 — bateria do ciclo 2, relatório e mutações.**
-- Executor: **Codex GPT-5.6 Sol** (`dev-san312b-ciclo2-sol`, identidade nova), comandos por `"C:/Program Files/Git/bin/bash.exe" -lc` (no Codex desta máquina `/bin/bash` não existe), no worktree `C:/Users/AMP/w-san312b` com os `node_modules` próprios dele (sem junction), **sem Docker**.
+- Executor: **Codex GPT-5.6 Sol** (`dev-san312b-ciclo2-sol`, identidade nova), comandos por `"C:/Program Files/Git/bin/bash.exe" -lc` (no Codex desta máquina `/bin/bash` não existe), no worktree `~/w-san312b` com os `node_modules` próprios dele (sem junction), **sem Docker**.
 - Bateria (de `frontend/` para os `.tsx`, como a D-3 transcreve; cada linha publica `tests · pass · fail · skipped`): `npm --prefix frontend run check`; `cd frontend && node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx` (meta: ≥ 67 + 17 = **84** casos nos arquivos do bloco; baseline do ciclo 1 N = 67); `npm --prefix frontend run test:smoke` em Node 20 **e** 22 (esperado ≥ 1435 + 1 do #464 + 17 = 1453); `npm --prefix frontend run build`; raiz `npm run check`, `npm run lint`, `npm run build`; F8 como comando (`git grep -n -E "reduce\(|\+= *[a-zA-Z.]*amount" -- frontend/src/modules/finance` = exatamente o inventário); `git diff --check`; `python -I …/gerar-indice-pendencias.py` → diff vazio. **CE-4 `-db` (F18):** o backend continua byte-idêntico (`git diff --name-only c9a2d036 HEAD -- src prisma scripts` = 0, publicado); o Codex não roda Docker, então a régua do F18 neste ciclo é o job `backend` da CI no head (braço 2) mais o parecer do ciclo 1 (braço 1, 3/3 na C3); a C3 do ciclo 2 re-executa o `-db` no Postgres descartável dela se quiser.
 - Mutações (§M, uma por vez, âncora única, restauro por hash, uma linha por mutação no relatório): as **24 do ciclo 1** re-executadas no head final + as **17 novas** desta E2 (R1 ×2, R2 ×1, R3 ×4, R4 ×2, R5 ×3, R6 ×1, R9 ×1, R10 ×1, R11 ×2 — a R12 e a R7 contam como as suas próprias). O roteiro do ciclo 1 (`mutacoes.py`) vive no scratchpad do dev anterior, fora do repo: se o orquestrador não o entregar, o dev escreve o seu (mesma forma: aplicar, rodar o teste dono, restaurar, conferir hash).
 - Relatório: seção `## Ciclo 2 (dev-san312b-ciclo2-sol)` em `B-SAN3-12b-dev.md`, P1 por fatia (E2.6), com `## RETOMADA n` ao fim de cada fatia (head · feito · falta · próximo comando).
@@ -1222,7 +1222,7 @@ Notas sem pendência (ficam no relatório do ciclo 2): C1-N7 (composição local
 
 ### E2.5 Merge da `main` (R8): como o dev traz `f7922ab7` (merge, nunca rebase)
 Medido por mim em worktree descartável: `git merge --no-commit --no-ff f7922ab7` sobre `fc5ead6c` → **3 conflitos**, todos de registro: `agent-orchestration/controle/pendencias.md`, `agent-orchestration/controle/pendencias-indice.md`, `frontend/package.json`. O resto (API_CONTRACTS, app.css, appearance.registry, checklists, 3 corpos de jurado do #464) mergeia sozinho. No `test:smoke`: o objeto acrescenta 9 testes; a `main` acrescenta 1 (`tests/checklists-editor-lock.smoke.test.tsx`).
-1. `git -C C:/Users/AMP/w-san312b fetch origin main && git merge origin/main` (sem `--rebase`, sem `reset`, sem `--force`; `git status` limpo antes).
+1. `git -C ~/w-san312b fetch origin main && git merge origin/main` (sem `--rebase`, sem `reset`, sem `--force`; `git status` limpo antes).
 2. `pendencias.md`: **os dois lados ficam** (as entradas do #464 e as do 12b; ordem: o lado da `main` primeiro, depois o do 12b, sem apagar nem reordenar entrada alheia); conferir que os cabeçalhos `## P-…` do objeto (`P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE`, `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO`, o fechamento de `P-SAN3-20-RESUMO-CHEQUE-VINCULADO`) e os do #464 existem uma vez cada (`grep -c`).
 3. `pendencias-indice.md`: **não se resolve à mão**: depois do passo 2, `python -I agent-orchestration/controle/gerar-indice-pendencias.py` e `git add` do resultado (R7).
 4. `frontend/package.json`: a linha `test:smoke` = lista da `main` + os 9 testes do 12b no fim (união; nenhum repetido; `node -e` que lê o JSON e imprime a lista, publicado).
@@ -1298,7 +1298,7 @@ Ordem obrigatória: 1 antes de tudo (o objeto da junta tem de aceitar a `main`);
 - Teste (suíte, em `finance-contas-extrato.smoke.test.tsx`): lê `frontend/src/styles/app.css`, remove comentários como o `pattern-css-guard` e afirma que o CSS efetivo tem o bloco `.pat-kpi-row--6 .pat-kpi__value {…}` com `font-size: 18px`, `white-space: nowrap` e `text-overflow: ellipsis`, e a `@media (max-width: 1340px)` com `font-size: 15.5px`; SSR da view com o resumo carregado: o `.pat-kpi-row` tem a classe `pat-kpi-row--6` e o atributo `style` não contém `grid-template-columns`.
 - Mutações (2): tirar a regra `.pat-kpi-row--6 .pat-kpi__value` do `app.css` → vermelho; devolver o `gridTemplateColumns` inline e tirar a classe → vermelho (e a sonda volta a −39 a 1280).
 - Vermelho-controle: `e77a5ac1` → o teste novo vermelho (sem regra, sem classe); sonda: −39/−27 a 1280 (C1 `kpiclip-obj.json`; eu `probe-out.txt`).
-- Sondas (roteiro P3 para o dev e para a C1): `C:/Users/AMP/erp-pausa-2026-10-03/plan12b-c2rep/kpi/probe.{html,mjs}` (página estática; trocar o `styles/` pelo do head) e `C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c1r2/zz-j12bc1r2-kpiclip.mjs` (app real no Vite).
+- Sondas (roteiro P3 para o dev e para a C1): `~/erp-pausa-2026-10-03/plan12b-c2rep/kpi/probe.{html,mjs}` (página estática; trocar o `styles/` pelo do head) e `~/erp-pausa-2026-10-03/j12b2-c1r2/zz-j12bc1r2-kpiclip.mjs` (app real no Vite).
 
 **R-E3-4 — C1r2-02: VALOR, SALDO EM ABERTO (títulos) e VALOR (extrato) à direita e tabulares no skin `.pat-ab-table`.**
 - Arquivos: `app.css` (junto das `.pat-ab-*`), `finance-contas-extrato.smoke.test.tsx`.
@@ -1317,7 +1317,7 @@ Ordem obrigatória: 1 antes de tudo (o objeto da junta tem de aceitar a `main`);
 - Mutação: tirar a E3 do plano versionado → (c) = 0. Vermelho-controle: `e77a5ac1` → 0.
 
 **R-E3-7 — bateria do ciclo 3 e mutações.**
-- Executor: **Codex GPT-5.6 Sol** (`dev-san312b-ciclo3-sol`, identidade nova), comandos por `"C:/Program Files/Git/bin/bash.exe" -lc`, no worktree `C:/Users/AMP/w-san312b` com os `node_modules` próprios (sem junction), **sem Docker**, **uma fatia por vez**.
+- Executor: **Codex GPT-5.6 Sol** (`dev-san312b-ciclo3-sol`, identidade nova), comandos por `"C:/Program Files/Git/bin/bash.exe" -lc`, no worktree `~/w-san312b` com os `node_modules` próprios (sem junction), **sem Docker**, **uma fatia por vez**.
 - Bateria (de `frontend/` para os `.tsx`; cada linha publica `tests · pass · fail · skipped`): `npm --prefix frontend run check`; `cd frontend && node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx tests/pattern-css-guard.test.ts` (baseline do ciclo 2 **N = 112** nos arquivos do bloco; meta **M ≥ 119**: +2 R-E3-2, +2 R-E3-3, +2 R-E3-4, +1 R-E3-5); `npm --prefix frontend run test:smoke` em Node 20 **e** 22 (esperado ≥ 1475 + 7 = **1482**); `npm --prefix frontend run build`; raiz `npm run check`, `npm run lint`, `npm run build`; `git grep` do F8 = 8; os 2 `comm` da R-E3-1 vazios; `python -I …/gerar-indice-pendencias.py` → diff vazio; `git diff --check`; `git diff --name-only e77a5ac1 HEAD -- src prisma scripts` = 0 (CE-4: backend intocado; a régua do F18 continua o job `backend` da CI no head).
 - Mutações (uma por vez, âncora única, restauro por hash, uma linha por mutação no relatório): as **11 novas** (R-E3-2 ×5 + inventário falso, R-E3-3 ×2, R-E3-4 ×1, R-E3-5 ×1, R-E3-6 ×1) **e** a re-execução das mutações do ciclo 2 cujos testes-dono leem arquivos que a E3 toca (`FinanceiroViewA.tsx`, os 2 arquivos de teste): R1 ×2, R2, R3 ×4, R10, R11 ×2, F11, F12, F16, F17, F19, F8/R12 ×1 e as 2 da ratificação — **17**. As outras 24 do ciclo 2 (BaixaForm, hooks, gates, registro) **não** se re-executam: a E3 não toca esses arquivos, e `git diff --name-only e77a5ac1 HEAD` (publicado) é a prova.
 
@@ -1377,7 +1377,7 @@ Ordem obrigatória: 1 → 2 → 3 → 4 (a 1 primeiro porque é a que conflitari
 | `git show origin/main:frontend/src/components/charts/TrendChart.tsx` | type line/area/bar, múltiplas séries, labels, legenda, valueFormat, SVG inline; preferir reúso para 14 dias |
 | `gh pr view 473 --json state,isDraft,headRefName,baseRefName,title` | OPEN, isDraft=true; chore/kpi-marco-2026-10-28 → main; título do rascunho cita 191 blocos e 40% vendável (não ratificados como números atuais) |
 
-**Porteiro lido:** `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-469-parecer.md`. Veredito exato: **LIBERADO COM RESSALVA** para 12c/24, remover branch remota residual `feat/web-financeiro-baixa-e-contas` antes do primeiro push. O mandato abreviou como LIBERADO; registra-se a precisão aqui, sem esconder a ressalva. A orquestração confere se já foi removida; este planejador não limpa remotos.
+**Porteiro lido:** `~/erp-pausa-2026-10-03/revisoes/porteiro-469-parecer.md`. Veredito exato: **LIBERADO COM RESSALVA** para 12c/24, remover branch remota residual `feat/web-financeiro-baixa-e-contas` antes do primeiro push. O mandato abreviou como LIBERADO; registra-se a precisão aqui, sem esconder a ressalva. A orquestração confere se já foi removida; este planejador não limpa remotos.
 
 **O que a v3 deixou de descrever corretamente:** 12a/12b e aparência agora existem; não criar de novo camada de dados nem hook temporário em frontend/src/hooks. A referência nova está versionada. O 12b incorporou paginação incremental de títulos, guarda contra rodada velha, estados por leitura, variante visual de 6 indicadores e F8 por token/F17 ampliado (E2/E3). O §7.3 isolado é insuficiente: faltam ali a ligação em FinanceiroPage, entrada no registry e correções das pendências. Esta E5 autoriza nominalmente esses caminhos. **Não invalida a v3 inteira**: substitui suas premissas históricas de ausência, a contingência §6.4 e o alcance operacional do 12c; contratos financeiros e decisões v3+E1/E1-bis+E2+E3 continuam. O backend permanece intocado. O marco de KPI é tratado em E5.5, por decisão posterior do dono.
 
@@ -1438,7 +1438,7 @@ Os caminhos abaixo são relativos à raiz. Ampliações em relação ao §7.3 es
 - `frontend/src/modules/finance/entries/components/BaixaForm.tsx`: prop opcional de conta inicial para B; default preserva A/C, só aceita conta ativa e permite trocar. Nenhuma regra de payload/idempotência/releitura alterada. ConciliarForm/EntryDetail/TitleDetail/useFinanceActions: **reúso por import**, sem edição.
 - `frontend/src/styles/app.css`: apenas seletores escopados novos de B/C (prefixo `.financeiro-b`/`.financeiro-c`) e variantes dos gráficos na biblioteca; reutilizar tokens e regras pat existentes. Não alterar globalmente pat-kpi, dense, shell ou tipografia.
 - Testes novos em `frontend/tests/`: `finance-aparencia-b.smoke.test.tsx`, `finance-aparencia-c.smoke.test.tsx`, `balance-bridge.test.tsx`, `reconcile-donut.test.tsx`, `day-bars.test.tsx` se DayBars nascer. Editáveis: `finance-page-live.test.tsx`, `finance-contas-extrato.smoke.test.tsx`, `finance-baixa.smoke.test.tsx`, `financial-summary.adapter.test.ts`, `finance-no-money-reduce.guard.test.ts` (só ampliar cobertura, nunca afrouxar inventário), `frontend/package.json` só lista test:smoke.
-- Registro: `docs/revisoes/SAN3/B-SAN3-12-plano.md` (E5 verbatim), `docs/revisoes/SAN3/B-SAN3-12c-dev.md` (novo), `docs/revisoes/SAN3/B-SAN3-12c-revisao.md` e `B-SAN3-12c-visual.md` (outros papéis), `agent-orchestration/codex/comandos/B-SAN3-12c-aparencias-b-c.md`, `agent-orchestration/controle/pendencias.md`, `pendencias-indice.md` pelo gerador, `controle/decisoes.md`, `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md`, `docs/revisoes/SAN3/PLANO_SAN3.md` só linha/status do 12c. Sondas/capturas/logs volumosos fora do repo, em `C:/Users/AMP/erp-pausa-2026-10-03/san312c/`.
+- Registro: `docs/revisoes/SAN3/B-SAN3-12-plano.md` (E5 verbatim), `docs/revisoes/SAN3/B-SAN3-12c-dev.md` (novo), `docs/revisoes/SAN3/B-SAN3-12c-revisao.md` e `B-SAN3-12c-visual.md` (outros papéis), `agent-orchestration/codex/comandos/B-SAN3-12c-aparencias-b-c.md`, `agent-orchestration/controle/pendencias.md`, `pendencias-indice.md` pelo gerador, `controle/decisoes.md`, `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md`, `docs/revisoes/SAN3/PLANO_SAN3.md` só linha/status do 12c. Sondas/capturas/logs volumosos fora do repo, em `~/erp-pausa-2026-10-03/san312c/`.
 
 **PROIBIDO:** tudo fora da lista, especialmente `src/**`, `tests/**` da raiz, `prisma/**`, `migrations/**`, `infra/**`, `.env*`, lockfiles, dependências/package.json da raiz, `.github/**`, `mobile/**`, `Kpis/**` no PR 12c; `frontend/src/App.tsx`, `guards/**`, `layouts/**`, `navigation/**`, `providers/**`, `modules/auth/**`; `finance/commissions/**`, `payable-source/**`, InvoicesPage; telas Cheques/Fechamento do 24; componentes genéricos DenseTable/KpiStatCard/TrendChart existentes (reusar); contratos API_CONTRACTS/RBAC_MATRIX/APPROVAL_LIMITS e referências aprovadas. useEntriesAggregate.ts só pode ser mutado temporariamente para o controle R-P3 e restaurado byte a byte, não receber commit de mudança. Não iniciar base viva erp-*, não usar portas 5432/6379/3000/5173/5050/8899, não iniciar/consultar Docker, não criar junction de node_modules.
 
@@ -1480,11 +1480,11 @@ Datas civis respeitam timezone devolvido pelo agregado/contrato de negócio; nã
 Requisitos: base atual da main, E5 versionada, isolamento e P1. Comandos pelo Bash obrigatório:
 ```bash
 export MSYS_NO_PATHCONV=1
-git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch origin main
-git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios rev-parse origin/main
-git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree list --porcelain
-git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add -b feat/web-financeiro-aparencias-b-c C:/Users/AMP/w-san312c origin/main
-cd /c/Users/AMP/w-san312c
+git -C ~/Documents/GitHub/ERP_Techsolutios fetch origin main
+git -C ~/Documents/GitHub/ERP_Techsolutios rev-parse origin/main
+git -C ~/Documents/GitHub/ERP_Techsolutios worktree list --porcelain
+git -C ~/Documents/GitHub/ERP_Techsolutios worktree add -b feat/web-financeiro-aparencias-b-c ~/w-san312c origin/main
+cd ~/w-san312c
 npm ci
 npm --prefix frontend ci
 ```

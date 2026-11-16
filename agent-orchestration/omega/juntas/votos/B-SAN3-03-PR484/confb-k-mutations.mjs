@@ -1,10 +1,10 @@
 // conf-484b-opus (cópia do driver do antecessor, só o nome dos logs mudou) — mutações do conserto K (M57, M58, M59, M47-c′), aplicadas por âncora única,
 // executadas e restauradas por `git checkout HEAD -- <arquivo>` com `git status --porcelain` publicado.
-// Uso: cd C:/Users/thiag/w-conf484 && DATABASE_URL=... node <este arquivo>
+// Uso: cd ~/w-conf484 && DATABASE_URL=... node <este arquivo>
 import { execSync, spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const root = "C:/Users/thiag/w-conf484";
+const root = "~/w-conf484";
 const ENGINE = "src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts";
 const ROUTES = "src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts";
 
@@ -52,7 +52,7 @@ for (const m of mutations) {
     cwd: root, env: process.env, encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
   });
   const out = `${r.stdout}\n${r.stderr}`;
-  writeFileSync(`C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/confb-mut-${m.id.replace("′", "p")}.log`, out);
+  writeFileSync(`~/erp-pausa-2026-10-03/revisoes/j484/confb-mut-${m.id.replace("′", "p")}.log`, out);
   const notOk = [...out.matchAll(/^\s*not ok \d+ - (.+)$/gm)].map((x) => x[1].trim());
   const summary = ["tests", "pass", "fail"].map((k) => (out.match(new RegExp(`^# ${k} (\\d+)`, "m")) ?? [])[1]).join("/");
   const assertion = /ERR_ASSERTION|AssertionError/.test(out);

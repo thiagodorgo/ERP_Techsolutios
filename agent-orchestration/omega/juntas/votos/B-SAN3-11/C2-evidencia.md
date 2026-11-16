@@ -18,13 +18,13 @@ Nao li o voto de nenhuma outra cadeira (C1-voto.json existe no diretorio; nao ab
 
 ## Terreno da cadeira — 2026-10-03T03:06Z
 
-- `git worktree add --detach C:/Users/AMP/w-j11c2 defa502e...` → HEAD=defa502ee0a03dabbc8786d568d00f7eb7ca726d; `status --porcelain` 0 linhas; checkout **CRLF** (`core.autocrlf=true`): `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` → **583**.
+- `git worktree add --detach ~/w-j11c2 defa502e...` → HEAD=defa502ee0a03dabbc8786d568d00f7eb7ca726d; `status --porcelain` 0 linhas; checkout **CRLF** (`core.autocrlf=true`): `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` → **583**.
 - `cd frontend && timeout 900 npm ci --no-audit --no-fund` → ec=0 (03:06:31→03:06:44Z, 103 pacotes); `ls node_modules | wc -l` → 61; `dir /AL frontend` → 0 JUNCTION/SYMLINK. Raiz sem `node_modules` (0) — o gerador roda com `TS_ROOT=<frontend>`, como na CI (D11 do plano). Nenhum banco, nenhum container.
 
 ## Item 1a — gerador no head — 2026-10-03T03:07Z
 
 - `tr -d '\r' < scripts/san3-11-dossie-vistoria-censo.mjs | md5sum` → `da2f2891f85d49a6b897de0b5e375d8e`; `diff` contra o bloco ```js do Apendice A do plano (extraido do blob defa502e) → **IGUAL** (o gerador versionado e o verbatim do plano).
-- `TS_ROOT=C:/Users/AMP/w-j11c2/frontend timeout 120 node scripts/san3-11-dossie-vistoria-censo.mjs .` → **ec=0** (03:07:04→03:07:18Z). Saida (L3 arquivos varridos = 26, elidida):
+- `TS_ROOT=~/w-j11c2/frontend timeout 120 node scripts/san3-11-dossie-vistoria-censo.mjs .` → **ec=0** (03:07:04→03:07:18Z). Saida (L3 arquivos varridos = 26, elidida):
   - L0 DTO emite (12) · L1 espelho (12) · L2 adapter (12) — as 3 chaves de versao presentes nas tres camadas.
   - `DESCARTADAS pelo espelho (0): ∅` · `DESCARTADAS pelo adapter (0): ∅`
   - L3 pontos (2): `ChecklistRunsPanel.tsx:116 | getChecklistRunStatusLabel(run.status) | consulta: sim` · `ChecklistRunsPanel.tsx:119 | getChecklistRunStatusTone(run.status) | consulta: sim`
@@ -53,7 +53,7 @@ Mutacao no ARQUIVO DE TESTE do meu worktree (CRLF, 325 CR; adapter 583 CR), por 
 
 ## Item 1b — mutacoes PROPRIAS (consumidor que nao e o documento de impressao + residual iii) — inicio 2026-10-03T03:18Z
 
-Onde: meu worktree descartavel `C:/Users/AMP/w-j11c2` (nunca a arvore do dev), arquivo `frontend/src/modules/patios/processes/components/VehicleDossieModal.tsx` (consumidor L4 do painel, `VehicleDossieView`), CRLF. Ferramenta: `scratchpad/c2/mut2.mjs` (ancora unica, aborta exit 2 se casar ≠1; imprime bytes e contagem de `data-c2` antes/depois = prova de aplicacao) e `scratchpad/c2/run-mut.sh` (aplica → gerador `TS_ROOT=frontend timeout 120` → `timeout 900 npm run check` do frontend → `timeout 900` arquivo do bloco → sonda de runtime `zz-c2-probe.tsx` (renderToString de `VehicleDossieView` com `RUN_V1` SUBSTITUIDA: completed, supersededByRunId=run-v2), copiada para `frontend/tests/` so durante a execucao e apagada → restaura por copia do backup → md5 e `status --porcelain`).
+Onde: meu worktree descartavel `~/w-j11c2` (nunca a arvore do dev), arquivo `frontend/src/modules/patios/processes/components/VehicleDossieModal.tsx` (consumidor L4 do painel, `VehicleDossieView`), CRLF. Ferramenta: `scratchpad/c2/mut2.mjs` (ancora unica, aborta exit 2 se casar ≠1; imprime bytes e contagem de `data-c2` antes/depois = prova de aplicacao) e `scratchpad/c2/run-mut.sh` (aplica → gerador `TS_ROOT=frontend timeout 120` → `timeout 900 npm run check` do frontend → `timeout 900` arquivo do bloco → sonda de runtime `zz-c2-probe.tsx` (renderToString de `VehicleDossieView` com `RUN_V1` SUBSTITUIDA: completed, supersededByRunId=run-v2), copiada para `frontend/tests/` so durante a execucao e apagada → restaura por copia do backup → md5 e `status --porcelain`).
 Cada mutacao acrescenta, ao lado do painel, um ponto que mostra a situacao da vistoria **sem consultar a substituicao** (o "proximo membro nao classificado"), mais o import de `getChecklistRunStatusLabel`.
 
 ### M1 — receptor `run` — 03:18:14→03:18:53Z
@@ -167,7 +167,7 @@ O §4 do plano diz: "`null`/ausente no DTO ⇒ **vigente** (...); **o guard E4 �
 
 ## Limpeza — 2026-10-03T03:39Z→03:40Z
 - Processos com o caminho do meu worktree na CommandLine (Get-CimInstance, excluindo a propria consulta) = **0** antes de remover. `%TEMP%/.tmp-censo-*` = 0. `git -C w-j11c2 status --porcelain` = 0 (todas as mutacoes restauradas por copia e conferidas por md5).
-- `git worktree remove --force C:/Users/AMP/w-j11c2` → ec=0; `test -e` → nao existe; `git worktree list | grep -ic w-j11c2` → **0**.
+- `git worktree remove --force ~/w-j11c2` → ec=0; `test -e` → nao existe; `git worktree list | grep -ic w-j11c2` → **0**.
 - Arvore do dev `w-nuv11`: so `??` em arquivos de voto/evidencia (C1, C2, C3) — nenhum rastreado tocado; nada commitado por mim. Nenhum container, nenhum cluster, base viva intocada.
 - Restam so artefatos meus no scratchpad da sessao (`scratchpad/c2/`: logs, sondas, `mut.mjs`, `mut2.mjs`, `run-mut.sh`), fora do repositorio.
 

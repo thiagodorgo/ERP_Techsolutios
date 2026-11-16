@@ -1,7 +1,7 @@
 # BRIEFING — junta do bloco `B-GOV-SEM-TETO` (PR #394) — ciclo 1
 
 **Branch:** `docs/sem-teto-auditoria-no-3` · **Base:** `origin/main` = `fc3363e3` (#392) · **Worktree do
-bloco:** `C:/Users/AMP/w-teto` (somente-leitura para as cadeiras) · **Plano:**
+bloco:** `~/w-teto` (somente-leitura para as cadeiras) · **Plano:**
 `docs/revisoes/SAN3/B-GOV-SEM-TETO-plano.md` (no ramo; **hipótese a reproduzir**, não fato).
 
 **Objeto julgado: o head do ramo, que CADA CADEIRA RESOLVE POR SI** — `git rev-parse origin/docs/sem-teto-auditoria-no-3`
@@ -172,10 +172,10 @@ intocados; `pr 394`, `merge_commit`/`approved_head` `null` na autoria; backfill 
 
 ## 12. ISOLAMENTO — por escrito (inspetor 1.2)
 
-- O worktree `C:/Users/AMP/w-teto` é **somente-leitura** para as cadeiras. Cada cadeira escreve **apenas** os
+- O worktree `~/w-teto` é **somente-leitura** para as cadeiras. Cada cadeira escreve **apenas** os
   seus dois arquivos em `agent-orchestration/omega/juntas/votos/B-GOV-SEM-TETO/`.
 - Leitura do head por `git show <head>:<caminho>` ou por **worktree próprio e descartável** em caminho curto
-  (`git worktree add --detach C:/Users/AMP/w-jur-<id> <head>`), removido **só** por `git worktree remove --force`.
+  (`git worktree add --detach ~/w-jur-<id> <head>`), removido **só** por `git worktree remove --force`.
   **Sem junction de `node_modules`** (§C7.1-ter(c)); `npm ci` próprio se precisar dos guards.
 - **Nenhuma cadeira precisa de banco.** **A base viva `erp-postgres` (5432) / `erp-redis` (6379) NUNCA é alvo de
   jurado.** Sem Docker. Mutação para medir (C2) **só em cópia fora do repo**, apagada ao fim.

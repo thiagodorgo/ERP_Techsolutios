@@ -4,8 +4,8 @@
 - **Ramo:** `fix/jurisdiction-profile-versioning`
 - **Base medida:** `origin/main` `6f727afc0ed9eb40449d34cafb5ebf00a47c52f5`
 - **Dev:** `dev-o6r12-cdx`, Codex 2, GPT-5.6 Sol (nível menor declarado)
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/plano-B-O6R-12-v2.md`
-- **Crítica:** `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/crit-12-r2-plano.json` — APROVADO COM AJUSTES
+- **Plano:** `~/erp-pausa-2026-10-03/planos/plano-B-O6R-12-v2.md`
+- **Crítica:** `~/erp-pausa-2026-10-03/revisoes/crit-12-r2-plano.json` — APROVADO COM AJUSTES
 - **Decisões do dono:** `D-PORTAO-9-RECOMENDACOES-1011` e `D-PORTAO-5-RECOMENDACOES-1111`
 
 ## Objetivo ratificado antes do código

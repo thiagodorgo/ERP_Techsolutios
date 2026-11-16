@@ -84,7 +84,7 @@ Downloading packages...
 Got dependencies!
 81 packages have newer versions incompatible with dependency constraints.
 Try `flutter pub outdated` for more information.
-00:00 +0: loading C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart                                                                             00:01 +0: loading C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart                                                                             00:01 +0: reclaimInterruptedSyncing converte somente ações syncing                                                                                                                                     00:01 +0 -1: reclaimInterruptedSyncing converte somente ações syncing [E]
+00:00 +0: loading ~/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart                                                                             00:01 +0: loading ~/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart                                                                             00:01 +0: reclaimInterruptedSyncing converte somente ações syncing                                                                                                                                     00:01 +0 -1: reclaimInterruptedSyncing converte somente ações syncing [E]
   Expected: SyncStatus:<SyncStatus.conflict>
     Actual: SyncStatus:<SyncStatus.failed>
 
@@ -93,7 +93,7 @@ Try `flutter pub outdated` for more information.
   test\core\sync\bo6r11_resgate_syncing_interrompido_test.dart 124:7  main.<fn>.<fn>
 
 
-To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart -p vm --plain-name "reclaimInterruptedSyncing converte somente ações syncing"
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test ~/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart -p vm --plain-name "reclaimInterruptedSyncing converte somente ações syncing"
 00:01 +0 -1: reclaimInterruptedSyncing preserva identidade, payload, criação e retry; limpa processedAt                                                                                                00:01 +1 -1: reclaimInterruptedSyncing preserva identidade, payload, criação e retry; limpa processedAt                                                                                                00:01 +1 -1: reclaimInterruptedSyncing entrada vazia devolve lista vazia                                                                                                                               00:01 +2 -1: reclaimInterruptedSyncing entrada vazia devolve lista vazia                                                                                                                               00:01 +2 -1: reclaimInterruptedSyncing preserva a ordem original das ações syncing                                                                                                                     00:01 +3 -1: reclaimInterruptedSyncing preserva a ordem original das ações syncing                                                                                                                     00:01 +3 -1: reclaimInterruptedSyncing os três tipos RDV duráveis voltam para pending                                                                                                                  00:01 +3 -2: reclaimInterruptedSyncing os três tipos RDV duráveis voltam para pending [E]
   Expected: true
     Actual: <false>
@@ -103,7 +103,7 @@ To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/U
   test\core\sync\bo6r11_resgate_syncing_interrompido_test.dart 175:7  main.<fn>.<fn>
 
 
-To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart -p vm --plain-name "reclaimInterruptedSyncing os três tipos RDV duráveis voltam para pending"
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test ~/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart -p vm --plain-name "reclaimInterruptedSyncing os três tipos RDV duráveis voltam para pending"
 00:01 +3 -2: reclaimInterruptedSyncing demais domínios e tipo desconhecido falham fechados em conflict                                                                                                 00:01 +3 -3: reclaimInterruptedSyncing demais domínios e tipo desconhecido falham fechados em conflict [E]
   Expected: true
     Actual: <false>
@@ -113,7 +113,7 @@ To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/U
   test\core\sync\bo6r11_resgate_syncing_interrompido_test.dart 202:7  main.<fn>.<fn>
 
 
-To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart -p vm --plain-name "reclaimInterruptedSyncing demais domínios e tipo desconhecido falham fechados em conflict"
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test ~/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart -p vm --plain-name "reclaimInterruptedSyncing demais domínios e tipo desconhecido falham fechados em conflict"
 00:01 +3 -3: coordenador resgata fila Drift antes dos replays de domínio                                                                                                                               00:01 +3 -4: coordenador resgata fila Drift antes dos replays de domínio [E]
   Expected: SyncStatus:<SyncStatus.conflict>
     Actual: SyncStatus:<SyncStatus.failed>
@@ -123,5 +123,5 @@ To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/U
   test\core\sync\bo6r11_resgate_syncing_interrompido_test.dart 288:7  main.<fn>
 
 
-To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart -p vm --plain-name "coordenador resgata fila Drift antes dos replays de domínio"
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test ~/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart -p vm --plain-name "coordenador resgata fila Drift antes dos replays de domínio"
 00:01 +3 -4: Some tests failed.

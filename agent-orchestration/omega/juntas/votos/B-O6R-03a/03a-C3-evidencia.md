@@ -127,7 +127,7 @@ papel: C3 | identidade: jurado-o6r03a-v2-regressao-cdx (sucessor P3, identidade 
 ### S0 — retomada P3 e legalidade própria
 
 - Li integralmente a evidência anterior (122 linhas). Todas as conclusões anteriores são roteiro: reexecuto os comandos equivalentes no meu terreno antes de usá-las.
-- Disco antes do worktree: `df -h /c` sob Git Bash excedeu timeout de 15 s (`ec=124`); medição equivalente nativa `Get-PSDrive C` = **25,84 GB livres**, acima do piso de 10 GB. `C:/Users/AMP/w-j03a-c3` estava livre; worktrees alheios apenas listados, não tocados.
+- Disco antes do worktree: `df -h /c` sob Git Bash excedeu timeout de 15 s (`ec=124`); medição equivalente nativa `Get-PSDrive C` = **25,84 GB livres**, acima do piso de 10 GB. `~/w-j03a-c3` estava livre; worktrees alheios apenas listados, não tocados.
 - Head por duas fontes: `git ls-remote origin refs/heads/fix/expense-sync-atomic` = `b75a0c2e96a80b2f54cc629fe856d16660ccbe86`; `gh pr view 425 --json ...` = mesmo `headRefOid`, PR OPEN, base main, draft=false, mergeable=CONFLICTING. Objeto próprio fixado nesse SHA.
 - `git fetch origin main` (`ec=0`): `origin/main` inicial = `f59ad1d6caaa9da3f451f1ad57e5b9e3ea8a235a`; `B = git merge-base origin/main objeto` = `9566d55bd719ce7d7a545281c57923a25f883ed3`; objeto não é merge, pai único `5cee8e5754888ef138d8d8b2bcb9ad9c37907ad5`. A main avançou desde o parecer (684e9afd→f59ad1d6), mas B permaneceu 9566d55b.
 - Check-runs próprios: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<objeto>/check-runs?per_page=100` → total 14, não-verdes 0, pendentes 0. Todos `completed/success`: docker 114605355851/114602966470; authority-portal 114603778347/114601463367; owner-portal 114603774998/114601463434; frontend 114603767545/114601463195; backend-postgres 114603751105/114601463352; flutter 114603750967/114601463359; backend 114603750102/114601463382.
@@ -143,7 +143,7 @@ papel: C3 | identidade: jurado-o6r03a-v2-regressao-cdx2 (terceiro ocupante, suce
 - Li integralmente o corpo de 711 linhas, o mandato Forma A, o parecer LIBERADO COM RESSALVA e as 136 linhas de evidência anteriores; não li arquivos C1/C2. As conclusões anteriores são apenas roteiro até reexecução equivalente própria.
 - Gates próprios: corpo `git show b75a0c2e…:.claude/agents/especialistas/jurado-o6r03a-v2-regressao.md | tr -d '\r' | md5sum` = `1fdfb5c1108376ebdcc4f49b102166e9`; mandato `md5sum C3.md` = `182184fa7a3a880fbc618bffd0c92e20`.
 - Disco antes de criar/reusar terreno: `Get-PSDrive C` = 22,64 GB livres (> piso 10 GB). `df -h /c` em chamada combinada não retornou antes do timeout; medição nativa é a equivalente usada.
-- O caminho obrigatório `C:/Users/AMP/w-j03a-c3` já existia, deixado pelo segundo ocupante em `B=9566d55bd719ce7d7a545281c57923a25f883ed3`, `git status --porcelain` vazio e sem `node_modules`. Não o aceitei como prova; ele é apenas o terreno próprio desta cadeira parado no ponto de baseline, como a sucessão descreve. `w-j03a-c3b` não existe.
+- O caminho obrigatório `~/w-j03a-c3` já existia, deixado pelo segundo ocupante em `B=9566d55bd719ce7d7a545281c57923a25f883ed3`, `git status --porcelain` vazio e sem `node_modules`. Não o aceitei como prova; ele é apenas o terreno próprio desta cadeira parado no ponto de baseline, como a sucessão descreve. `w-j03a-c3b` não existe.
 - Veredito parcial S0: **LEGAL PARA REEXECUTAR**, sujeito à nova resolução git+gh/check-runs e à validação do worktree/isolamento abaixo.
 
 ### S0 — legalidade própria concluída
@@ -192,5 +192,5 @@ papel: C3 | identidade: jurado-o6r03a-v2-regressao-cdx2 (terceiro ocupante, suce
 
 ### Teardown e selo final
 
-- Antes da remoção: worktree próprio em `b75a0c2e96a80b2f54cc629fe856d16660ccbe86`, `git status --porcelain` vazio; nenhum container `tl*` ativo. `git worktree remove --force C:/Users/AMP/w-j03a-c3` ec=0; caminho removido. Nenhum recurso `jtrc01-*`, `j03a-c1/c2-*`, base viva ou porta proibida foi tocado.
+- Antes da remoção: worktree próprio em `b75a0c2e96a80b2f54cc629fe856d16660ccbe86`, `git status --porcelain` vazio; nenhum container `tl*` ativo. `git worktree remove --force ~/w-j03a-c3` ec=0; caminho removido. Nenhum recurso `jtrc01-*`, `j03a-c1/c2-*`, base viva ou porta proibida foi tocado.
 - Depois da remoção: nenhum container `tl*`; disco C: **20,64 GB livres**. Selo remoto final por git e gh: head ainda `b75a0c2e96a80b2f54cc629fe856d16660ccbe86`, PR 425 OPEN, não draft, base main.

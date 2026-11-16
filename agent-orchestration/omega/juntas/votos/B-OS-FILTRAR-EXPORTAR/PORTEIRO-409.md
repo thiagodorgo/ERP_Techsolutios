@@ -5,7 +5,7 @@ Papel: porteiro-pos-merge · Modelo que rodou: Claude Opus (claude-opus-5-5) · 
 - Squash na main: `fea93281ec9b5729b5379d4a423c42a06a439137`
 - Corpo carregado: `origin/main:.claude/agents/porteiro-pos-merge.md` — md5 EOL-neutro `374b1b0d091a85cddf1733d3e51456ae` (confere com o esperado), 78 linhas.
 - Regra vigente: CLAUDE.md §C7 item 8 (D-GOV-PROPORCIONAL) — regra (1): um revisor + CI verde; KPI CONGELADO (item 8(5)) → os itens 4 e 5 do corpo não se cobram.
-- Terreno: worktree próprio detached `C:/Users/AMP/w-port409`, `npm ci` próprio, sem .env, sem banco.
+- Terreno: worktree próprio detached `~/w-port409`, `npm ci` próprio, sem .env, sem banco.
 
 ## Itens (esqueleto inicial; cada item foi gravado ao ser medido — P1/P2)
 
@@ -51,8 +51,8 @@ Papel: porteiro-pos-merge · Modelo que rodou: Claude Opus (claude-opus-5-5) · 
 - Escopo que cresceu em silêncio: nenhum. Comentário afirmando comportamento ausente: o comentário novo da página (l.42-43) diz "filtrados no servidor" e "CSV local das linhas visíveis" — coerente com o código (filtros vão em `apiFilters` ao hook; exporta `filtered`).
 - Veredito parcial: OK.
 
-### Item 3 — números reais, re-executados na main (worktree `C:/Users/AMP/w-port409` detached em `fea93281`)
-- Terreno: `git worktree add --detach C:/Users/AMP/w-port409 fea93281…` → HEAD `fea93281…`, `status --porcelain` vazio, só `.env.example` (sem `.env`); `env | grep DATABASE_URL|REDIS_URL|CORE_SAAS|VITE_` → vazio. `npm ci` próprio: frontend ec 0 (103 pacotes), raiz ec 0 (326 pacotes; aviso EBADENGINE node 20 vs >=22, sem efeito). Sem junction (`dir /AL` sem JUNCTION). Disco: 12 GB livres.
+### Item 3 — números reais, re-executados na main (worktree `~/w-port409` detached em `fea93281`)
+- Terreno: `git worktree add --detach ~/w-port409 fea93281…` → HEAD `fea93281…`, `status --porcelain` vazio, só `.env.example` (sem `.env`); `env | grep DATABASE_URL|REDIS_URL|CORE_SAAS|VITE_` → vazio. `npm ci` próprio: frontend ec 0 (103 pacotes), raiz ec 0 (326 pacotes; aviso EBADENGINE node 20 vs >=22, sem efeito). Sem junction (`dir /AL` sem JUNCTION). Disco: 12 GB livres.
 - (1) `npm --prefix frontend run check` → ec 0.
 - (2) bloco: `node --test --import tsx tests/work-orders-list-tools.test.ts tests/work-orders.adapter.test.ts tests/work-orders-page-live.test.tsx` → ec 0, **# tests 47 · pass 47 · fail 0 · skipped 0** (declarado 47/47 — reproduz).
 - Por arquivo: list-tools **15/15**, adapter **9/9**, page-live **23/23** (= 15+9+23 do §8.1 #2).
@@ -68,7 +68,7 @@ Protocolo: `git hash-object` H0 → script Node que exige âncora casando EXATAM
 - **M-P1** `work-orders-list-filters.ts` l.91 `countActiveFilters`: `parseLocalDate(state.from) || parseLocalDate(state.to) ? 1 : 0` → `parseLocalDate(state.from) ? 1 : 0` (período só com "até" deixaria de contar como filtro ativo — selo/sr-only/vazio filtrado mentiriam). H0 `32388c03…`; diff 1+/1−; bloco 47 → **pass 46 · fail 1 · `not ok [LT4]`**; restaurado, H1 `32388c03…` = H0. **Pega.**
 - **M-P2** `WorkOrdersPage.tsx` l.291: `exportWorkOrdersCsv(filtered, source, …)` → `exportWorkOrdersCsv(filtered, "mock", …)` (exportação real sairia com nome "demonstrativo"). H0 `1a6cb6a1…`; diff 1+/1−; page-live 23 → **pass 22 · fail 1 · `not ok [FE3]`**; restaurado, H1 `1a6cb6a1…` = H0. **Pega.**
 - Incidente de terreno (sem efeito): a 1ª tentativa do M-P2 usou âncora LF e o script ABORTOU com "casou 0 vezes" (trava funcionou; nada aplicado; `status --porcelain` vazio). O `grep -c $'\r$'` do Git Bash não enxerga o CR — a contagem de EOL vale por Node.
-- `git -C C:/Users/AMP/w-port409 status --porcelain` após as duas → vazio.
+- `git -C ~/w-port409 status --porcelain` após as duas → vazio.
 - Veredito parcial: os testes do bloco pegam mutações de produto que ninguém listou.
 
 ### Item 4 — KPI
@@ -98,7 +98,7 @@ Protocolo: `git hash-object` H0 → script Node que exige âncora casando EXATAM
 ### Item 7 — limpeza §C5
 - Branch remota: `git ls-remote origin refs/heads/feat/web-os-filtrar-exportar` → vazio (apagada). Remote-tracking `origin/feat/web-os-filtrar-exportar` → ausente.
 - Branch local: `git branch --list 'feat/web-os-filtrar-exportar' '*osfe*' '*rev409*'` → vazio.
-- Worktrees: `git worktree list` sem `w-osfe` nem `w-rev409`; `ls -d C:/Users/AMP/w-osfe C:/Users/AMP/w-rev409` → ambos ausentes; `git worktree prune --dry-run -v` → nada pendente.
+- Worktrees: `git worktree list` sem `w-osfe` nem `w-rev409`; `ls -d ~/w-osfe ~/w-rev409` → ambos ausentes; `git worktree prune --dry-run -v` → nada pendente.
 - Processos: `Win32_Process` com `w-osfe|w-rev409` na linha de comando → **0 vivos**.
 - Árvore principal: `git status --porcelain | grep '^( D|D )'` → vazio (nenhum rastreado apagado); nenhum rastreado modificado; `frontend/dist`, `dist`, `coverage` ausentes.
 - Banco: o bloco não toca banco (nenhuma escrita; item 2) → sem resíduo possível na base viva; não toquei na base viva nem em volumes Docker.
@@ -121,7 +121,7 @@ Protocolo: `git hash-object` H0 → script Node que exige âncora casando EXATAM
 - `git diff --check 026ff7b8 fea93281` → ec 0, sem saída.
 
 ### Limpeza do porteiro (1 linha)
-Worktree `C:/Users/AMP/w-port409` removido por `git worktree remove --force` (ec 0; 0 processo vivo com o caminho antes; conteúdo sem diff; diretório ausente; fora do `git worktree list`), 16 temporários `p409-*` (499 KB) apagados do scratchpad; `w-o05`, árvore principal, base viva e volumes Docker não tocados. Disco C depois: 12 GB livres.
+Worktree `~/w-port409` removido por `git worktree remove --force` (ec 0; 0 processo vivo com o caminho antes; conteúdo sem diff; diretório ausente; fora do `git worktree list`), 16 temporários `p409-*` (499 KB) apagados do scratchpad; `w-o05`, árvore principal, base viva e volumes Docker não tocados. Disco C depois: 12 GB livres.
 
 ## Itens (estado final)
 1. Merge existe e íntegro — **OK** (árvore do squash = árvore do head aprovado; CI 14/14 no head, 7 success + deploy skipped na main).

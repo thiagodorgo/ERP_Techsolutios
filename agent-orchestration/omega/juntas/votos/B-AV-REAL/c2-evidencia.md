@@ -1,5 +1,5 @@
 # Evidencia C2 (c2-j-avreal, Opus, nivel menor declarado)
-Objeto: 2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77. Worktree: C:/Users/AMP/w-jav2 (detached, npm ci proprio).
+Objeto: 2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77. Worktree: ~/w-jav2 (detached, npm ci proprio).
 
 ## Item 1 R6: ver abaixo
 ## Item 2 R7: ver abaixo
@@ -58,7 +58,7 @@ Veredito parcial item 3: R12(b) OK; "nenhuma porta publica" OK; overlay com 2 de
 
 ## Item 2 R7, continuacao
 - Sobreviventes x todas as suites com EvidenceBinaryUploadService (b090b, b091, b104, b105, b106, b108): http422, http503, timeout, generico -> exit 0, 89/89. Via de checklist: `c2-mut-r7c.mjs` (apaga em HTTP 422) x pr_b_dispatch_run_download + pr_b_junta_fixes -> exit 0, 26/26.
-- Sonda positiva `flutter test C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2_sonda_r7_test.dart` -> 6/6: blob preservado em 422 (UPLOAD_REJECTED), 503 (SCAN_FAILED), timeout e rede (NETWORK_ERROR), 409 (UPLOAD_CONFLICT); replay apos stored = 1 chamada e blob apagado. 422 e 503 reenviam no 2o sync (2 chamadas): P-O6R-B07B-MOBILE-RETRY-PERMANENTE, aberta, pendencias.md:7301.
+- Sonda positiva `flutter test ~/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2_sonda_r7_test.dart` -> 6/6: blob preservado em 422 (UPLOAD_REJECTED), 503 (SCAN_FAILED), timeout e rede (NETWORK_ERROR), 409 (UPLOAD_CONFLICT); replay apos stored = 1 chamada e blob apagado. 422 e 503 reenviam no 2o sync (2 chamadas): P-O6R-B07B-MOBILE-RETRY-PERMANENTE, aberta, pendencias.md:7301.
 - `mapDioError`: 422 e 503 chegam como ApiServerError, ou seja o caminho real do antivirus e `on ApiError`, nao `response.status`. Unico delete em evidence_upload.dart:207, no ramo stored.
 - Datas: b108 test e evidence_upload.dart `be750e92 2026-06-18`; checklist_attachment_upload.dart `c0630fa3 2026-08-01`.
 Veredito parcial item 2: comportamento OK; lacuna de guarda pre-existente, 1 ressalva.

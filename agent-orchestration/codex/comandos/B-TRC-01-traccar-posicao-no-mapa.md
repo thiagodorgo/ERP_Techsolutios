@@ -159,7 +159,7 @@ git diff --check
 
 ## Ciclo 2 — janela temporal da viatura e provas permanentes
 
-- Plano vinculante: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`, Parte 2.
+- Plano vinculante: `~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`, Parte 2.
 - Autorização nominal do dono: opção (i) da §2.4.6; migração aditiva
   `20260876000000_work_orders_vehicle_assigned_at`, sem backfill, linhas antigas inelegíveis até o próximo UPDATE.
 - Escopo e proibições: §2.1; `Kpis/*` congelado. O TRC-01 mergeia antes do 07c-b1 (§2.5).
@@ -171,7 +171,7 @@ git diff --check
 
 ## Ciclo 3 — só o (c′)-P1
 
-- Plano vinculante: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo3-auditoria-e-plano.md`, §3 (auditoria e
+- Plano vinculante: `~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo3-auditoria-e-plano.md`, §3 (auditoria e
   plano Fable, `planejador-trc01-ciclo3`). Ordem do dono: *"ataque so a c"* — nada do §4 do plano entra no código.
 - Sem migração: `prisma/**` e `migrations/**` proibidos; `.github/workflows/ci.yml`, `src/integrations/traccar/**`,
   `src/database/rls.ts`, `src/modules/work-orders/**`, `field-dispatch.service.ts`, `Kpis/**` intocados (§3.2).

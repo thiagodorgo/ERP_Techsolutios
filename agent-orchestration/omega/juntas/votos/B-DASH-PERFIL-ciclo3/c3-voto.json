@@ -3,7 +3,7 @@
   "cadeira": "C3 — Regressão, escopo e arnês (ciclo 3)",
   "modelo": "Claude Opus 5.5, Claude Code subagente, nível menor DECLARADO (§C7.6)",
   "objeto": "33345c6ed5021bdd7c3a5162b14c2bc52a2ed39d (PR 446); delta do ciclo 3 = faad24ce..33345c6e ^origin/main",
-  "legalidade": "inspetor-dash3-opus: LIBERADO COM RESSALVA (R1–R5), nomeia jurado-dash3-c3-opus / Claude Opus / worktree C:/Users/AMP/w-jdash3-c3-opus; corpos IDENTICOS nos dois espelhos (EOL-neutro, só tools: e bloco Codex diferem); 14/14 check-runs completed success no objeto; worktree próprio com npm ci próprio, sem junction; sem Docker e sem banco. Plano R-2, atas e relatório do dev tratados como A RE-VERIFICAR e re-verificados onde meu mandato toca.",
+  "legalidade": "inspetor-dash3-opus: LIBERADO COM RESSALVA (R1–R5), nomeia jurado-dash3-c3-opus / Claude Opus / worktree ~/w-jdash3-c3-opus; corpos IDENTICOS nos dois espelhos (EOL-neutro, só tools: e bloco Codex diferem); 14/14 check-runs completed success no objeto; worktree próprio com npm ci próprio, sem junction; sem Docker e sem banco. Plano R-2, atas e relatório do dev tratados como A RE-VERIFICAR e re-verificados onde meu mandato toca.",
   "quorum": "unanimidade de 3 com veto; régua do ciclo 3 (§C7 item 8(2)): só defeito de produto GRAVE reprova",
   "voto": "APROVADO",
   "itens": {
@@ -12,7 +12,7 @@
     "item3_arquivo_A_no_smoke_espelhos_e_CI": "VERDE — context-selection-page-live.test.tsx 1x no package.json, na linha test:smoke; sync-agent-agents --check OK (73) e sync-agent-skills --check OK (12/39), ec=0/0; check-runs de 33345c6e: 14/14 completed success; head do PR não andou."
   },
   "o_que_executei": [
-    "git worktree add C:/Users/AMP/w-jdash3-c3-opus 33345c6e --detach; npm ci (raiz e frontend), sem junction",
+    "git worktree add ~/w-jdash3-c3-opus 33345c6e --detach; npm ci (raiz e frontend), sem junction",
     "git log --no-merges --name-only faad24ce..33345c6e ^origin/main + avaliador PROIBIDO com vermelho-controle",
     "git diff -U0 (linhas de teste removidas = 0); package.json; deps de DOM; lockfiles",
     "python agent-orchestration/controle/gerar-indice-pendencias.py → hash igual ao objeto",
@@ -53,6 +53,6 @@
     "C3-dash3-03 — prova por mutação M3b do context-selection-page-live pela C3 (dono: orquestrador)",
     "C3-dash3-02 — db:generate antes de check em worktree novo (nota de terreno, pré-existente)"
   ],
-  "teardown": "ContextSelectionPage.tsx intacto (hash-object = rev-parse = e34d4cbd); worktree C:/Users/AMP/w-jdash3-c3-opus removido com git worktree remove --force (ec=0, inexistente, 0 no worktree list); nenhum contêiner, porta ou commit",
+  "teardown": "ContextSelectionPage.tsx intacto (hash-object = rev-parse = e34d4cbd); worktree ~/w-jdash3-c3-opus removido com git worktree remove --force (ec=0, inexistente, 0 no worktree list); nenhum contêiner, porta ou commit",
   "justificativa": "Itens 2 e 3 VERDES por execução; item 1 VERDE na regressão (1339/1339) e na compilação, com o vermelho-controle M3b não executado por negação de permissão do harness — lacuna de medição, não defeito de produto. Régua do ciclo 3 (§C7 item 8(2), que prevalece sobre o corpo da cadeira): nenhum defeito de produto grave achado. VOTO: APROVADO — regressão, escopo e CI verdes no objeto 33345c6e; achados C3-dash3-01/02/03 viram pendência com dono."
 }

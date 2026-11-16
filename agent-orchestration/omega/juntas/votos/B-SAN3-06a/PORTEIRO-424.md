@@ -13,11 +13,11 @@
 
 **Comando executado:** `git fetch origin` com timeout PowerShell de 60 s; `git rev-parse origin/main`; `git show origin/main:CLAUDE.md`; `git show origin/main:.agents/agents/porteiro-pos-merge.md`; `git show origin/main:.agents/skills/erp-techsolutions-code-auditor/SKILL.md`; inspeção de `git worktree list --porcelain` e dos caminhos-alvo.
 
-**Saída resumida:** o primeiro invólucro `bash -lc 'timeout 60s ...'` não iniciou o Git porque `/bin/bash` não existe neste Windows; a repetição com timeout nativo do PowerShell concluiu. `origin/main` resolve para `9566d55bd719ce7d7a545281c57923a25f883ed3`. O corpo do porteiro e o `CLAUDE.md` foram lidos integralmente na ref; o papel exige GPT-5.6 Sol no Codex e parecer incremental. O alvo do parecer e `C:/Users/AMP/w-port424` estavam ausentes; não houve colisão.
+**Saída resumida:** o primeiro invólucro `bash -lc 'timeout 60s ...'` não iniciou o Git porque `/bin/bash` não existe neste Windows; a repetição com timeout nativo do PowerShell concluiu. `origin/main` resolve para `9566d55bd719ce7d7a545281c57923a25f883ed3`. O corpo do porteiro e o `CLAUDE.md` foram lidos integralmente na ref; o papel exige GPT-5.6 Sol no Codex e parecer incremental. O alvo do parecer e `~/w-port424` estavam ausentes; não houve colisão.
 
 **Veredito parcial:** `CONFORME`. Identidade/modelo/ref corretos. A ausência de Bash é limitação ambiental registrada; os comandos serão limitados com `Start-Job`/`Wait-Job -Timeout` e os subprocessos longos terão encerramento explícito em timeout.
 
-**Comando executado:** `git worktree add --detach C:/Users/AMP/w-port424 origin/main`, limitado a 120 s.
+**Comando executado:** `git worktree add --detach ~/w-port424 origin/main`, limitado a 120 s.
 
 **Saída resumida:** worktree próprio criado sem junction; `HEAD` destacado em `9566d55bd719ce7d7a545281c57923a25f883ed3`.
 
@@ -79,7 +79,7 @@
 
 **Comando executado:** `git worktree list --porcelain` antes do gate e leitura do PR (`headRefName=fix/menu-sem-tela-ficticia`).
 
-**Saída resumida:** o worktree do porteiro foi criado destacado e sem junction. A checagem da branch remota e dos resíduos do bloco ainda não havia sido executada quando o comando foi barrado. Para cumprir “PARE”, não foi executado comando posterior de limpeza; assim `C:/Users/AMP/w-port424` permanece e deve ser removido por `git worktree remove --force C:/Users/AMP/w-port424` na retomada autorizada. Não há `node_modules` nem artefatos de teste criados por este porteiro, pois o `npm ci` não iniciou.
+**Saída resumida:** o worktree do porteiro foi criado destacado e sem junction. A checagem da branch remota e dos resíduos do bloco ainda não havia sido executada quando o comando foi barrado. Para cumprir “PARE”, não foi executado comando posterior de limpeza; assim `~/w-port424` permanece e deve ser removido por `git worktree remove --force ~/w-port424` na retomada autorizada. Não há `node_modules` nem artefatos de teste criados por este porteiro, pois o `npm ci` não iniciou.
 
 **Veredito parcial:** `INCONCLUSIVO`; a própria limpeza do worktree do gate ficou pendente por causa da ordem de parada.
 
@@ -93,7 +93,7 @@
 
 ## Veredito
 
-`BLOQUEADO: a execução foi barrada por política antes do npm ci; é necessário retomar este mesmo gate com autorização de execução, reexecutar C1–C7 e todas as contagens em worktree/containers próprios, registrar as cinco pendências, conferir as travas de B-SAN3-06a-perm, B-SAN3-02, B-TRC-01 e B-O6R-03a e remover C:/Users/AMP/w-port424 antes de qualquer start`
+`BLOQUEADO: a execução foi barrada por política antes do npm ci; é necessário retomar este mesmo gate com autorização de execução, reexecutar C1–C7 e todas as contagens em worktree/containers próprios, registrar as cinco pendências, conferir as travas de B-SAN3-06a-perm, B-SAN3-02, B-TRC-01 e B-O6R-03a e remover ~/w-port424 antes de qualquer start`
 
 ---
 
@@ -112,13 +112,13 @@
 
 **Comando executado:** `git fetch origin`; leitura integral de `git show origin/main:CLAUDE.md`, `git show origin/main:.agents/agents/porteiro-pos-merge.md`, `git show origin/main:PROJECT_MEMORY.md` e da skill local `erp-techsolutions-code-auditor`; `git rev-parse origin/main`; `git log origin/main -3`; `gh pr view 424 --json ...`; `git show --stat 9566d55b...`; `git status --short --branch`; `git worktree list --porcelain`.
 
-**Saída resumida:** o PR #424 está `MERGED`, com merge commit exatamente `9566d55bd719ce7d7a545281c57923a25f883ed3`. Após o fetch de 2026-10-12, porém, `origin/main` está em `684e9afd` por causa do PR #427, posterior ao objeto julgado. A árvore principal contém untracked preexistentes, inclusive este diretório de pareceres; nenhuma medição de produto será feita nela. O worktree `C:/Users/AMP/w-port424` existe detached no SHA correto, remanescente do porteiro anterior, e será recriado antes das execuções desta identidade.
+**Saída resumida:** o PR #424 está `MERGED`, com merge commit exatamente `9566d55bd719ce7d7a545281c57923a25f883ed3`. Após o fetch de 2026-10-12, porém, `origin/main` está em `684e9afd` por causa do PR #427, posterior ao objeto julgado. A árvore principal contém untracked preexistentes, inclusive este diretório de pareceres; nenhuma medição de produto será feita nela. O worktree `~/w-port424` existe detached no SHA correto, remanescente do porteiro anterior, e será recriado antes das execuções desta identidade.
 
 **Veredito parcial:** `CONFORME COM NOTA DE REF`. O objeto do merge existe e é íntegro. Para cumprir `CLAUDE.md` §A7 sem atribuir o follow-up ao PR #424, produto/diff/testes serão medidos no SHA imutável do merge; registros pós-merge serão conferidos na `origin/main` atual.
 
 ### R1. Integridade do merge — CONCLUÍDO
 
-**Comando executado:** recriação do worktree com `timeout 120 git worktree remove --force C:/Users/AMP/w-port424` e `timeout 120 git worktree add --detach C:/Users/AMP/w-port424 9566d55b...`; no worktree, `git status --short --branch`, `git rev-parse HEAD`, `git log origin/main -3`; `gh pr checks 424`; `gh pr view 424 --json reviews,reviewDecision,statusCheckRollup`.
+**Comando executado:** recriação do worktree com `timeout 120 git worktree remove --force ~/w-port424` e `timeout 120 git worktree add --detach ~/w-port424 9566d55b...`; no worktree, `git status --short --branch`, `git rev-parse HEAD`, `git log origin/main -3`; `gh pr checks 424`; `gh pr view 424 --json reviews,reviewDecision,statusCheckRollup`.
 
 **Saída resumida:** worktree próprio, limpo, sem branch e no SHA `9566d55b`. O GitHub informa PR `MERGED`; o merge commit coincide. Duas execuções completas do CI têm `backend`, `backend-postgres`, `frontend`, `flutter`, `docker`, `owner-portal` e `authority-portal` em `pass`. `origin/main` está dois commits à frente do predecessor do merge e um commit à frente do #424, pelo follow-up #427.
 
@@ -168,7 +168,7 @@
 
 **Comando executado:** `git ls-remote --heads origin fix/menu-sem-tela-ficticia`; `git branch --list`; `git status --short --branch`; censo dos containers/redes depois do wrapper; busca dirigida por `dist`, `coverage`, `.vite` e `*.tsbuildinfo`; `df -BG C:/`.
 
-**Saída resumida:** branch remota e local do #424 ausentes; worktree rastreado limpo antes da remoção; nenhum container/rede do wrapper restou; nenhum artefato de build fora de `node_modules` (o único `tsbuildinfo` achado está dentro de uma dependência). `timeout 300 git worktree remove --force C:/Users/AMP/w-port424` terminou com exit 0; o censo final de worktrees confirma que `w-port424` não existe mais. A remoção elevou o espaço livre de `3 GB` para `4 GB`, ainda muito abaixo do gatilho aproximado de 10 GB do §C5. O `DEEP_CLEAN=1` não foi executado porque este mandato proíbe `docker * prune`. A árvore principal continua sem alteração rastreada; os untracked preexistentes foram preservados, inclusive este parecer.
+**Saída resumida:** branch remota e local do #424 ausentes; worktree rastreado limpo antes da remoção; nenhum container/rede do wrapper restou; nenhum artefato de build fora de `node_modules` (o único `tsbuildinfo` achado está dentro de uma dependência). `timeout 300 git worktree remove --force ~/w-port424` terminou com exit 0; o censo final de worktrees confirma que `w-port424` não existe mais. A remoção elevou o espaço livre de `3 GB` para `4 GB`, ainda muito abaixo do gatilho aproximado de 10 GB do §C5. O `DEEP_CLEAN=1` não foi executado porque este mandato proíbe `docker * prune`. A árvore principal continua sem alteração rastreada; os untracked preexistentes foram preservados, inclusive este parecer.
 
 **Veredito parcial:** limpeza do bloco e do gate `CONFORME`; saúde de disco é `RESSALVA URGENTE` e requer limpeza profunda em sessão autorizada, sem violar a proibição deste gate.
 

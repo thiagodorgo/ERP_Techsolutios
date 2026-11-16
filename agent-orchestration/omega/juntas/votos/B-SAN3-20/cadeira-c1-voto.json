@@ -75,5 +75,5 @@
     "P-SAN3-20-DESVINCULAR-DEPOSITADO (R5: cheque depositado vinculado a título já pago fica sem compensação; saída por bounce sem caixa)",
     "P-SAN3-20-DELETE-TITULO-COM-CHEQUE (R6: clear falha fechado com 404, medido)"
   ],
-  "teardown": "jsan320-c1-pg removido (docker ps -a: 0); worktree C:/Users/AMP/w-jsan320-c1 sem mutação viva (status vazio, 18/18 restore_hash_ok) e removido por git worktree remove --force; sondas preservadas em C:/Users/AMP/erp-pausa-2026-10-03/jsan320-c1/; nenhum commit"
+  "teardown": "jsan320-c1-pg removido (docker ps -a: 0); worktree ~/w-jsan320-c1 sem mutação viva (status vazio, 18/18 restore_hash_ok) e removido por git worktree remove --force; sondas preservadas em ~/erp-pausa-2026-10-03/jsan320-c1/; nenhum commit"
 }

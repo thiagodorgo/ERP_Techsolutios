@@ -4,12 +4,12 @@
 - Identidade: `jurado-j484-c1b-opus` (sucessora de `jurado-j484-c1-opus`, parado por PAUSA/P7)
 - Modelo: Claude Opus, nível menor, DECLARADO
 - Objeto: `5b628b886520bcbece0228eec9d47c965a32b577` · Base: `49ddd0f8b9efa8724923ec99fa546cce907288cc`
-- Worktree: `C:/Users/thiag/w-j484-c1b` · Postgres: `j484-c1b-pg` em `127.0.0.1:55484`
+- Worktree: `~/w-j484-c1b` · Postgres: `j484-c1b-pg` em `127.0.0.1:55484`
 - Sondas próprias ficam fora do worktree, nesta pasta, com prefixo `c1b-`.
 
 ## Terreno
 
-- **Comando:** memória `FreeVirtualMemory=46,98 GB`; `git worktree add --detach C:/Users/thiag/w-j484-c1b 5b628b88…`; `git rev-parse HEAD`; `git diff --name-only 49ddd0f8..HEAD`; `npm ci --include=dev` (log `c1b-npmci.log`); `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npx prisma generate`.
+- **Comando:** memória `FreeVirtualMemory=46,98 GB`; `git worktree add --detach ~/w-j484-c1b 5b628b88…`; `git rev-parse HEAD`; `git diff --name-only 49ddd0f8..HEAD`; `npm ci --include=dev` (log `c1b-npmci.log`); `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npx prisma generate`.
 - **Saída:** HEAD = `5b628b886520bcbece0228eec9d47c965a32b577`; 12 arquivos no diff do conserto (igual ao antecessor); `npmci_exit=0`, `node_modules` próprio (diretório, não junction); status vazio.
 - **Veredito parcial:** terreno próprio apto; erp-postgres/erp-redis, portas 3000/5173 e árvore principal não tocados.
 
@@ -92,6 +92,6 @@
 
 ## Fechamento
 
-- **Comando:** `git status --porcelain` (vazio, 0 sonda `zz-` em `tests/`); `docker rm -f j484-c1b-pg`; `git worktree remove --force C:/Users/thiag/w-j484-c1b`; `docker ps`; `git worktree list | grep -c c1b`.
+- **Comando:** `git status --porcelain` (vazio, 0 sonda `zz-` em `tests/`); `docker rm -f j484-c1b-pg`; `git worktree remove --force ~/w-j484-c1b`; `docker ps`; `git worktree list | grep -c c1b`.
 - **Saída:** worktree removido (`wt_exit=0`, diretório ausente, 0 na lista); container removido; vivos: `erp-postgres`, `erp-redis` (intocados) e `j484-c2-pg` (de outra cadeira, intocado).
 - **Voto:** **REPROVADO** — 1 grave (C1b-A1, dentro-do-bloco), 1 não grave (C1b-A2, pré-existente). Arquivo: `c1b-voto.json`.

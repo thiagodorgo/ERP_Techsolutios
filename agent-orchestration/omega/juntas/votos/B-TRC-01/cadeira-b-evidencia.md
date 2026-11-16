@@ -16,7 +16,7 @@ Objeto previsto: `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91` — a resolver por G
 
 - Comando: `df -h /c` com `timeout -k 5 20`; alternativa Windows `Get-PSDrive C`; `netsh interface ipv4 show excludedportrange protocol=tcp`; `docker ps -a --format ...`.
 - Saída resumida: `df` do Git Bash travou e foi morto (ec 137); medição nativa independente: `10,68 GB` livres antes do worktree, acima do piso de 10 GB. Portas excluídas publicadas; `47473` não pertence às faixas. Recursos alheios encontrados e intocados: `jtrc01-a-cdx2-{redis,pg}` e `jtrc01-a-{redis,pg}`; nenhum `jtrc01-b-*`.
-- Veredito parcial: piso de disco satisfeito por medição nativa; candidato `C:/Users/AMP/w-jtrc-b` ausente e reservado para esta cadeira. A falha específica do `df` fica declarada, não é verde herdado.
+- Veredito parcial: piso de disco satisfeito por medição nativa; candidato `~/w-jtrc-b` ausente e reservado para esta cadeira. A falha específica do `df` fica declarada, não é verde herdado.
 
 ## Item 1 — Listener próprio e nenhuma porta pública — FECHADO (sucessor P3)
 
@@ -42,7 +42,7 @@ Objeto previsto: `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91` — a resolver por G
 
 - Identidade nova: `jurado-trc01-b-superficie-e-segredo-cdx2`; modelo declarado pelo disparo: `GPT-5.6 Sol (medium)`, nível menor (§C7.6. Substitui `jurado-trc01-b-superficie-e-segredo-cdx`, que caiu por limite curto após deixar os itens pendentes.
 - P3: nenhum verde da ocupante anterior será herdado. Reexecução curta obrigatória: head Git/GitHub, check-runs, MD5 do corpo e mandato, parecer do inspetor; em seguida, os três itens serão medidos no objeto fixo.
-- Disco antes da retomada: `df -h /c` = 12 GB disponíveis (95% usado), acima do piso de 10 GB. Worktree próprio `C:/Users/AMP/w-jtrc-b` já existe; será medido antes de confiar.
+- Disco antes da retomada: `df -h /c` = 12 GB disponíveis (95% usado), acima do piso de 10 GB. Worktree próprio `~/w-jtrc-b` já existe; será medido antes de confiar.
 
 ### Reexecução curta P3 — legalidade
 

@@ -55,7 +55,7 @@ reprovação de junta"*. Isto não é esgotamento de cota; é decisão de aloca�
 - Veredito parcial item 1: **CONFERE** (delta = approved_head; DAT-002 e DAT-003 no código; migração aditiva e fail-closed).
 
 ### E2.0 — worktree próprio (15:30Z)
-- `git worktree add --detach C:/Users/AMP/w-port389 ab52ec5065dec1fd542e8280f0f2150187780955` → HEAD = ab52ec50…, `status --porcelain` vazio. `npm ci --no-audit --no-fund` → "added 326 packages", exit 0 (avisos EBADENGINE: Node do host v20.19.5). `node_modules` é diretório real: 0 symlink, `dir /AL` sem junction.
+- `git worktree add --detach ~/w-port389 ab52ec5065dec1fd542e8280f0f2150187780955` → HEAD = ab52ec50…, `status --porcelain` vazio. `npm ci --no-audit --no-fund` → "added 326 packages", exit 0 (avisos EBADENGINE: Node do host v20.19.5). `node_modules` é diretório real: 0 symlink, `dir /AL` sem junction.
 - EOL: `core.autocrlf=true` no host → worktree em CRLF (ex. `inventory-write-paths-guard.test.ts` wt_CR=1339, blob_CR=0). O CI roda em LF; por isso as suítes `-db` vão para um runner Linux com cópia LF (E2.2).
 
 ### E2.1 — guard T-D e regressão em memória, no worktree Windows (15:33Z)
@@ -121,13 +121,13 @@ reprovação de junta"*. Isto não é esgotamento de cota; é decisão de aloca�
 - Veredito parcial item 3: **CONFERE**, com dívida de registro pós-merge (P-020 → FECHADA, P-O6R-B04 → PARCIAL, nascimento de `B-BAT-01`/`B-GOV-GUARDA-POR-PROPRIEDADE` como bloco ou pendência com dono) — é o Passo 6 do próprio plano de retomada (l.784), no PR semanal de registro.
 
 ### E4 — limpeza §C5 (16:18Z)
-- `git worktree list` → main@ab52ec50, w-07ca (fix/o6r07c-subresource-scope, NÃO tocado), w-port389 (meu), w-pvpr@bb083ea5, w-traccar. **`w-389` ausente** (`ls -d C:/Users/AMP/w-*` sem w-389). CONFERE.
+- `git worktree list` → main@ab52ec50, w-07ca (fix/o6r07c-subresource-scope, NÃO tocado), w-port389 (meu), w-pvpr@bb083ea5, w-traccar. **`w-389` ausente** (`ls -d ~/w-*` sem w-389). CONFERE.
 - `git branch --list fix/inventory-consistency` → vazio; `git ls-remote --heads origin fix/inventory-consistency` → vazio. **Ramo removido no local e no remoto.** CONFERE.
 - `git ls-remote --heads origin wip/bateria-estoque-preservacao` → `dee45faf…` **PRESERVADO no remoto** (sem cópia local — não é necessária). CONFERE.
 - `docker ps -a` (antes dos meus) → só erp-postgres (Up, viva do dono), erp-redis (Up, viva), erp-postgres-alt (Exited 3 semanas), pastrack-teste-banco-teste-1 (Exited 2 semanas) — nenhum `j389*`, `dev389*`, `j389c3-*`. `docker network ls` → nenhuma rede do bloco (só erp_techsolutions_local, pastrack-teste_default + a minha port389-net). `docker volume ls | grep -iE '389|o6r|04a'` → vazio. **Nenhum container de cadeira/dev do bloco vivo.** CONFERE.
 - Árvore principal: `git status --porcelain | grep '^ D'` → 0 (nenhum rastreado apagado). `dist`, `frontend/dist`, `coverage`, `.vite` ausentes. Único untracked: `agent-orchestration/omega/juntas/TEMPLATE-J-ata.md` (mtime 2026-09-07, anterior ao bloco — alheio, não varro).
 - Disco: `df -h /c` → **16 GB livres** (≥ 10 GB; `DEEP_CLEAN` não é necessário — e a Emenda 6 (ii) proíbe rodá-lo enquanto a imagem `erp-junta-node20-pg16:local` for o terreno das juntas).
-- **Resíduo a nomear (nota, não bloqueia):** `C:/Users/AMP/w-pvpr` — worktree detached em `bb083ea5` (commit do ramo do #389), criado 2026-10-10 03:25, 69 MB, sem node_modules, 2 untracked (`scripts/mandato-preflight.sh`, `scripts/mandato-refs.sh`). É o arnês de pré-voo dos mandatos montado pelo orquestrador (mandato C1c3 l.73 "pré-voo do ramo do B-GOV-MANDATO copiado para um arnês local"). Pode servir ao pré-voo da junta do 07c-a; a remoção (por nome, `git worktree remove --force`) é decisão do orquestrador quando não for mais usado. Não toquei.
+- **Resíduo a nomear (nota, não bloqueia):** `~/w-pvpr` — worktree detached em `bb083ea5` (commit do ramo do #389), criado 2026-10-10 03:25, 69 MB, sem node_modules, 2 untracked (`scripts/mandato-preflight.sh`, `scripts/mandato-refs.sh`). É o arnês de pré-voo dos mandatos montado pelo orquestrador (mandato C1c3 l.73 "pré-voo do ramo do B-GOV-MANDATO copiado para um arnês local"). Pode servir ao pré-voo da junta do 07c-a; a remoção (por nome, `git worktree remove --force`) é decisão do orquestrador quando não for mais usado. Não toquei.
 - Veredito parcial item 4: **CONFERE**, com 1 resíduo nomeado (w-pvpr) para o orquestrador decidir.
 
 ### E5 — o que bloqueia o próximo alvo (16:30Z)
@@ -157,7 +157,7 @@ reprovação de junta"*. Isto não é esgotamento de cota; é decisão de aloca�
 
 ## 4. Limpeza §C5 — CONFERE
 - w-389 removido; fix/inventory-consistency ausente no local e no remoto; wip/bateria-estoque-preservacao preservado no remoto (dee45faf); nenhum container, rede ou volume de cadeira ou dev do bloco; 0 rastreado apagado; 16 GB livres (E4).
-- Resíduo nomeado (sem efeito no mérito): C:/Users/AMP/w-pvpr@bb083ea5, o arnês de pré-voo dos mandatos do orquestrador (69 MB, 2 untracked). Não toquei.
+- Resíduo nomeado (sem efeito no mérito): ~/w-pvpr@bb083ea5, o arnês de pré-voo dos mandatos do orquestrador (69 MB, 2 untracked). Não toquei.
 
 ## 5. O que bloqueia o próximo alvo
 **(a) Junta do 07c-a (PR #414): nada deste merge a bloqueia.** O #414 tem 14/14 check-runs no head d4cd35e3, 0 arquivo em comum com o #389, merge-tree limpo contra ab52ec50 e 0 referência nova a estoque. Nenhuma pendência marcada "bloqueia" nomeia o 07c. O plano do 07c já mediu a interseção com o #389 e reordenou a trava do work-order.service.ts. Fica para o inspetor do 07c-a: a base do #414 é c1cfdabe (sem o #389), e integrar a main é decisão dele (a interseção medida é vazia). Há WIP local não commitado no w-07ca, fora do meu alcance.
@@ -176,6 +176,6 @@ Entrega íntegra e números reproduzidos por execução própria. Nenhum achado 
 3. **A decisão de modelo do dono de 2026-10-10** ("o topo fica só no plano e em toda reprovação de junta") entra em controle/decisoes.md com as palavras literais, declarando que substitui a D-FABLE-ASTRA-SO-DINHEIRO (08/10) para cadeiras e porteiro (§A2). Hoje ela só existe na ata e nos votos.
 4. O w-pvpr sai por nome quando o pré-voo do 07c-a não precisar mais dele.
 
-Terreno próprio desmontado: containers port389-runner/redis/pg e a rede port389-net removidos pelo nome (0 restantes); git worktree remove --force C:/Users/AMP/w-port389 com ec 0; a cópia scratchpad/gen389 apagada. Base viva, portas do dono e w-07ca não tocados. Fim: 16:42Z.
+Terreno próprio desmontado: containers port389-runner/redis/pg e a rede port389-net removidos pelo nome (0 restantes); git worktree remove --force ~/w-port389 com ec 0; a cópia scratchpad/gen389 apagada. Base viva, portas do dono e w-07ca não tocados. Fim: 16:42Z.
 
 LIBERADO COM RESSALVA: junta de permissão do B-O6R-07c-a (PR #414) e continuidade da trilha de produção | no próximo PR de registro: P-020 → FECHADA e P-O6R-B04 → PARCIAL com a rastreabilidade do #389; B-BAT-01 e B-GOV-GUARDA-POR-PROPRIEDADE registrados como blocos/pendências com dono (incluindo o residual R3.4 das esperas fixas); a decisão de modelo do dono de 2026-10-10 em decisoes.md (substitui a D-FABLE-ASTRA-SO-DINHEIRO); e, antes de qualquer deploy ou de ligar STAGING_DEPLOY_ENABLED, o ato do dono P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD com papel superusuário/BYPASSRLS

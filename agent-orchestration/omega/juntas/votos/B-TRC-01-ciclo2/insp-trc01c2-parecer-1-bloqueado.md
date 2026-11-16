@@ -14,9 +14,9 @@ Papel `inspetor-de-terreno-da-junta` · instância `inspetor-trc01c2-cdx` · exe
 
 Plano declarado para as cadeiras:
 
-- (a′) `jurado-trc01c2-a-rls-banco-e-ci` — Codex GPT-5.6 Sol médio; `C:/Users/AMP/w-jc2-a`; `jtrc01c2-a-`; portas 47661/47671.
-- (b′) `jurado-trc01c2-b-escopo-superficie-e-trava` — Gemini 3.1 Pro API, teto operacional da cadeira **US$ 3**; `C:/Users/AMP/w-jc2-b`; `jtrc01c2-b-`; portas 47662/47672.
-- (c′) `jurado-trc01c2-c-viatura-no-tempo`, instância `jurado-trc01c2-c-opus` — Claude Code, Claude Opus 5.5; `C:/Users/AMP/w-jc2-c` e comparação `w-jc2-c-h1`; `jtrc01c2-c-`; portas 47663/47673.
+- (a′) `jurado-trc01c2-a-rls-banco-e-ci` — Codex GPT-5.6 Sol médio; `~/w-jc2-a`; `jtrc01c2-a-`; portas 47661/47671.
+- (b′) `jurado-trc01c2-b-escopo-superficie-e-trava` — Gemini 3.1 Pro API, teto operacional da cadeira **US$ 3**; `~/w-jc2-b`; `jtrc01c2-b-`; portas 47662/47672.
+- (c′) `jurado-trc01c2-c-viatura-no-tempo`, instância `jurado-trc01c2-c-opus` — Claude Code, Claude Opus 5.5; `~/w-jc2-c` e comparação `w-jc2-c-h1`; `jtrc01c2-c-`; portas 47663/47673.
 
 Cada cadeira tem `npm ci` próprio, Postgres 16 + Redis 7 descartáveis em `127.0.0.1`; base viva, portas 5432/6379/3000/5173/5050/8899 e servidores públicos Traccar são proibidos. Aplica-se o limite mais restritivo de 2 trabalhos Docker simultâneos.
 
@@ -26,7 +26,7 @@ Cada cadeira tem `npm ci` próprio, Postgres 16 + Redis 7 descartáveis em `127.
 
 Item 2.2 não se aplica (ciclo 2). O plano do ciclo 2 existe fora do repositório, tem 612 linhas, escopo e bateria com forma/N, e fica fixado para as três cadeiras por:
 
-`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md` — **MD5 EOL-neutro `dd6e9074fbc56395e877a396dec16d2a`**.
+`~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md` — **MD5 EOL-neutro `dd6e9074fbc56395e877a396dec16d2a`**.
 
 O parecer `dba-guardiao-c2-parecer.md` está no disco, não rastreado, sobre o mesmo objeto, e declara `APROVA`. A autorização nominal `D-TRC01-VEHICLE-ASSIGNED-AT` opção (i) e a migration 76 existem no objeto.
 
@@ -73,4 +73,4 @@ Ressalvas não bloqueantes: plano do ciclo 2 e R-DBA são insumos locais não ve
 
 ## Limpeza
 
-Worktree próprio `C:/Users/AMP/w-jc2-insp` e seu `node_modules` removidos pelo nome (exit 0; caminho ausente e não listado depois); zero container `jtrc01c2-*`/`jur-*`/`crit-*`. Nenhum container, base, porta, worktree ou arquivo alheio foi alterado.
+Worktree próprio `~/w-jc2-insp` e seu `node_modules` removidos pelo nome (exit 0; caminho ausente e não listado depois); zero container `jtrc01c2-*`/`jur-*`/`crit-*`. Nenhum container, base, porta, worktree ou arquivo alheio foi alterado.

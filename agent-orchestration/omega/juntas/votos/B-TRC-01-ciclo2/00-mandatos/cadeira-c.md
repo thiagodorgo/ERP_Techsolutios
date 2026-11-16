@@ -2,7 +2,7 @@
 
 ## MEDIDO
 
-Estado do PR 426 pela ferramenta do B-GOV-MANDATO, extraida sem edicao de origin/chore/mandato-refs-e-preflight para a pasta mandatos-07cb1 do scratchpad do redator e executada a partir de C:/Users/AMP/w-trc01, medido por: `bash <scratch-do-redator>/mandato-refs.sh 426`
+Estado do PR 426 pela ferramenta do B-GOV-MANDATO, extraida sem edicao de origin/chore/mandato-refs-e-preflight para a pasta mandatos-07cb1 do scratchpad do redator e executada a partir de ~/w-trc01, medido por: `bash <scratch-do-redator>/mandato-refs.sh 426`
 ```
 # refs do PR #426 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato
 # gerado em: 2026-10-18T02:43Z · repo: thiagodorgo/ERP_Techsolutios
@@ -65,7 +65,7 @@ O limite de Docker que esta escrito (3 trabalhos, D-BRACOS-E-DOCKER-17-10) e se 
 origin/main limite_2_escrito=0 limite_3_escrito=1
 ```
 
-Os insumos da junta: a ata e o registro de reprovacao do ciclo 1 e o relatorio do dev do ciclo 2 estao no objeto; o plano do ciclo 2 NAO esta versionado (vive fora do repositorio, no caminho absoluto abaixo), medido por: `O=2043c5840c8f60fe91538840aaefb3420a11cfe3; for p in agent-orchestration/omega/juntas/J-B-TRC-01-ciclo1.md agent-orchestration/omega/reprovacoes/R-B-TRC-01-ciclo1.md docs/revisoes/TRACCAR/B-TRC-01-ciclo2-dev.md docs/revisoes/TRACCAR/PLANO_TRACCAR.md; do MSYS_NO_PATHCONV=1 git cat-file -e "$O:$p" 2>/dev/null && echo "$p no objeto: sim" || echo "$p no objeto: nao"; done; echo "plano_ciclo2_versionado=$(git ls-tree -r --name-only $O | grep -i -c "B-TRC-01-ciclo2-auditoria")"; wc -l < C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`
+Os insumos da junta: a ata e o registro de reprovacao do ciclo 1 e o relatorio do dev do ciclo 2 estao no objeto; o plano do ciclo 2 NAO esta versionado (vive fora do repositorio, no caminho absoluto abaixo), medido por: `O=2043c5840c8f60fe91538840aaefb3420a11cfe3; for p in agent-orchestration/omega/juntas/J-B-TRC-01-ciclo1.md agent-orchestration/omega/reprovacoes/R-B-TRC-01-ciclo1.md docs/revisoes/TRACCAR/B-TRC-01-ciclo2-dev.md docs/revisoes/TRACCAR/PLANO_TRACCAR.md; do MSYS_NO_PATHCONV=1 git cat-file -e "$O:$p" 2>/dev/null && echo "$p no objeto: sim" || echo "$p no objeto: nao"; done; echo "plano_ciclo2_versionado=$(git ls-tree -r --name-only $O | grep -i -c "B-TRC-01-ciclo2-auditoria")"; wc -l < ~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`
 ```
 agent-orchestration/omega/juntas/J-B-TRC-01-ciclo1.md no objeto: sim
 agent-orchestration/omega/reprovacoes/R-B-TRC-01-ciclo1.md no objeto: sim
@@ -110,12 +110,12 @@ O modelo de mandato do CLAUDE.md secao C7.7, verbatim no objeto, medido por: `MS
    o arquivo. Não inicie item novo.  [P7]
 ```
 
-Os worktrees que existem agora com os nomes deste tabuleiro (w-trc01 do dev; w-jc2-a, w-jc2-b, w-jc2-c e w-jc2-insp aparecem aqui se ja tiverem sido criados), medido por: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree list | grep -i -E "w-trc01|w-jc2" | awk "{print \$1, \$3, \$4}" | sed -E "s,[[:space:]]+\$,,"`
+Os worktrees que existem agora com os nomes deste tabuleiro (w-trc01 do dev; w-jc2-a, w-jc2-b, w-jc2-c e w-jc2-insp aparecem aqui se ja tiverem sido criados), medido por: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree list | grep -i -E "w-trc01|w-jc2" | awk "{print \$1, \$3, \$4}" | sed -E "s,[[:space:]]+\$,,"`
 ```
-C:/Users/AMP/w-trc01 [feat/traccar-b-trc-01]
+~/w-trc01 [feat/traccar-b-trc-01]
 ```
 
-A arvore C:/Users/AMP/w-trc01 esta no objeto, as linhas modificadas que o git status lista sao so de fim de linha, e estes sao os nao rastreados (o parecer e a evidencia do R-DBA, um log solto do dev e, depois deles, os arquivos desta junta), medido por: `echo "porcelain_M=$(git status --porcelain | grep -i -c "^ M") conteudo_sem_CR=$(git diff --ignore-cr-at-eol --name-only | wc -l)"; git status --porcelain --untracked-files=all | grep -i "^??"; git rev-parse HEAD`
+A arvore ~/w-trc01 esta no objeto, as linhas modificadas que o git status lista sao so de fim de linha, e estes sao os nao rastreados (o parecer e a evidencia do R-DBA, um log solto do dev e, depois deles, os arquivos desta junta), medido por: `echo "porcelain_M=$(git status --porcelain | grep -i -c "^ M") conteudo_sem_CR=$(git diff --ignore-cr-at-eol --name-only | wc -l)"; git status --porcelain --untracked-files=all | grep -i "^??"; git rev-parse HEAD`
 ```
 porcelain_M=52 conteudo_sem_CR=0
 ?? .npmtest-503.log
@@ -138,7 +138,7 @@ C:              238G  223G   16G  94% /c
 2026-10-18T02:43Z
 ```
 
-O que a ata do ciclo 1 diz que as cadeiras aprovaram por execucao (linha 22) e a frase do plano do ciclo 2 que manda nao reabrir (linha 488): as duas entram nesta junta como A RE-VERIFICAR (secao HIPOTESE), nunca como fato herdado, medido por: `sed -n 22p agent-orchestration/omega/juntas/J-B-TRC-01-ciclo1.md; sed -n 488,489p C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`
+O que a ata do ciclo 1 diz que as cadeiras aprovaram por execucao (linha 22) e a frase do plano do ciclo 2 que manda nao reabrir (linha 488): as duas entram nesta junta como A RE-VERIFICAR (secao HIPOTESE), nunca como fato herdado, medido por: `sed -n 22p agent-orchestration/omega/juntas/J-B-TRC-01-ciclo1.md; sed -n 488,489p ~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`
 ```
 **O que as cadeiras aprovaram por execução (não reabrir no ciclo 2 sem razão nova):** organização nunca vem do payload (45 grafias de chave reservada → 422, zero escrita); idempotência sob corrida com barreira provada no log do Postgres; chave de outra organização → 409 e quarentena; quarentena sob 20 entregas concorrentes = 1 episódio, sem coordenada; resolução sem escolher organização acima do teto; canário com papel BYPASSRLS → 503 e nada gravado; superfície (listener próprio, nenhuma porta pública), autenticação, rotação e segredo, e logs sem segredo (cadeira b); a trava `Ω6R-SEC-002` intocada (395 rotas, mesmo md5, sem diff de permissão). Base medida pela cadeira (c): **120/120** nas 13 suítes traccar, zero pulado (o relatório do dev dizia 113: número não herdado).
 vazamento entre organizações, permissão ou dinheiro. **Não reabrir sem razão nova** o que a ata lista como aprovado por
@@ -154,17 +154,17 @@ O papel e a cadeira (c′) (contrato e atribuicao no tempo) da junta de SEGURANC
   Opus 5.5, no nivel menor do contrato (secao C7.6), por ordem do dono repassada pelo orquestrador (o Claude entra nesta cadeira),
   declarado no artefato; se o md5 EOL-neutro do corpo recebido divergir do que o orquestrador publica no disparo, a
   cadeira nao vota; declara na 1a linha da evidencia o papel, o executor, o modelo, o mandato_md5 deste arquivo e o md5 do corpo, na forma da
-  secao Terreno do corpo derruba com: `head -1 C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md | grep -ic 'mandato_md5'` (novo)
+  secao Terreno do corpo derruba com: `head -1 ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md | grep -ic 'mandato_md5'` (novo)
 
 A legalidade e conferida antes do merito: o parecer do inspetor (instancia inspetor-trc01c2-cdx, no papel que o corpo chama de
   jtrc01c2-insp)
-  (C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/insp-trc01c2-parecer.md) diz LIBERADO ou LIBERADO COM
+  (~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/insp-trc01c2-parecer.md) diz LIBERADO ou LIBERADO COM
   RESSALVA e nomeia esta cadeira, este executor, o worktree e o prefixo dela; o objeto e o head do PR 426 resolvido de novo por git
   ls-remote e por gh pr view, com os check-runs concluidos; o head-base do vermelho-controle e o head julgado no ciclo 1, o da linha 3
   da ata do ciclo 1, ancestral do objeto (medido acima); a regua e a do CLAUDE.md da ref, secao C7 item 8(1)(2)(4): seguranca,
   unanimidade de 3 com veto, ciclo 2; a D-TRC01-VEHICLE-ASSIGNED-AT escolheu a opcao (i) (linhas antigas nulas, falha fechada, medido
   acima), e o esperado do cenario de OS anterior a migracao deriva dela e do texto da migracao no objeto; as regras do dono para o
-  Traccar valem como criterio de veto; ninguem roda ferramenta no worktree do dev derruba com: `grep -ic 'LIBERADO' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
+  Traccar valem como criterio de veto; ninguem roda ferramenta no worktree do dev derruba com: `grep -ic 'LIBERADO' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
 
 O merito, por EXECUCAO em Postgres 16 e Redis 7 proprios, sem diluir (os tres itens do corpo, o plano do ciclo 2 secao 2.6, Cadeira
   (c′)): (1) a tabela de cenarios da secao 2.4.4 do plano inteira, nas duas formas (RlsPrismaWorkOrderRepository.assign e SQL), com
@@ -174,23 +174,23 @@ O merito, por EXECUCAO em Postgres 16 e Redis 7 proprios, sem diluir (os tres it
   catalogo que nao compila ou cai por erro de banco conta como nao mede; (3) regressao: as 13 + 2 suites do Traccar com pelo menos
   129 de 129 e skipped 0 contra o cluster dela (N declarado), tests/field-dispatch* e tests/work-order* sem diff e verdes, as 21
   transicoes do despacho com e sem o gatilho novo (md5 das linhas sem as duas colunas de atribuicao igual) e os 17 casos de ingestao
-  do ciclo 1 com o mesmo desfecho; vermelho-controle por item derruba com: `grep -ic 'vehicle_assigned_at' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
+  do ciclo 1 com o mesmo desfecho; vermelho-controle por item derruba com: `grep -ic 'vehicle_assigned_at' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
 
 As regras da casa: unanimidade de 3 com veto; todo achado com gravidade (bloqueia, ajuste, nota), classe e escopo (dentro-do-bloco,
   ou pre-existente com evidencia de data ou origem, sem a qual conta como dentro-do-bloco, secao C7.1-ter(a)), e se e a mesma classe
   de um achado do ciclo 1 sem informacao nova; a perda do cenario 4 (fix atrasado da viatura antiga) que o plano
   diz aceita e A RE-VERIFICAR: a cadeira mede que ela e fechada e so reprova por ela com achado medido e razao nova; nao consigo medir e REPROVADO; a cadeira nao propoe correcao, nao le o voto das outras deste
-  ciclo e nao cobra KPI; escreve so C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md
-  e C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-voto.json, o voto nascendo como esqueleto
-  com cada item EM APURACAO e gravado ao ser medido; o modelo de mandato do CLAUDE.md secao C7.7 colado acima vale com cadeira = cadeira-c derruba com: `grep -ic '"escopo"' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-voto.json` (novo)
+  ciclo e nao cobra KPI; escreve so ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md
+  e ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-voto.json, o voto nascendo como esqueleto
+  com cada item EM APURACAO e gravado ao ser medido; o modelo de mandato do CLAUDE.md secao C7.7 colado acima vale com cadeira = cadeira-c derruba com: `grep -ic '"escopo"' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-voto.json` (novo)
 
-O terreno: worktrees proprios detached C:/Users/AMP/w-jc2-c no objeto e C:/Users/AMP/w-jc2-c-h1 no head do ciclo 1, cada um com npm
+O terreno: worktrees proprios detached ~/w-jc2-c no objeto e ~/w-jc2-c-h1 no head do ciclo 1, cada um com npm
   ci proprio sem junction; Postgres e Redis proprios com prefixo jtrc01c2-c-, so em 127.0.0.1, porta alta testada antes (candidatas
   47663 e 47673), senha aleatoria so por ambiente, sondas sob o papel NOSUPERUSER NOBYPASSRLS do runtime; antes de subir, conta os
   trabalhos com container de outros por prefixo e so sobe se houver no maximo 1 (o limite desta junta e 2 trabalhos na maquina); a
-  base viva, as portas do dono e os servidores publicos de demonstracao do Traccar nunca sao alvo; em C:/Users/AMP/w-trc01 a unica
+  base viva, as portas do dono e os servidores publicos de demonstracao do Traccar nunca sao alvo; em ~/w-trc01 a unica
   escrita sao os dois arquivos de saida; remocao so do que criou, pelo nome, nunca prune; nunca tail -f; timeout no que executa;
-  PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'jtrc01c2-c-' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
+  PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'jtrc01c2-c-' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
 
 ### A RE-VERIFICAR — o que a ata do ciclo 1 (linha 22) e o plano do ciclo 2 (linha 488) dizem que "foi aprovado por execucao"
 
@@ -198,7 +198,7 @@ Nada desta lista e fato herdado (contrato secao C7.1-bis): cada afirmacao abaixo
   plano, e A RE-VERIFICAR; onde a ata e o plano dizem "nao reabrir sem razao nova", vale para esta junta a regra seguinte: a cadeira
   RE-EXECUTA, no objeto, a afirmacao que o item dela tocar, registra na evidencia o comando, a saida e o rotulo A RE-VERIFICAR, e so
   reprova por ela com achado MEDIDO e razao nova (o ciclo 2 mexeu na propriedade, ou a re-execucao no objeto deu outro desfecho);
-  afirmacao que o item dela nao toca nao e julgada por ela, e tambem nao e declarada como verdadeira por ela derruba com: `grep -ic 'A RE-VERIFICAR' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
+  afirmacao que o item dela nao toca nao e julgada por ela, e tambem nao e declarada como verdadeira por ela derruba com: `grep -ic 'A RE-VERIFICAR' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
 
 A RE-VERIFICAR, com a cadeira provavel cujo item toca cada uma (a cadeira confere pelo proprio item, e o mapa e hipotese do
   redator): (1) a organizacao nunca vem do payload (45 grafias de chave reservada dao 422 e zero escrita), item 3 da (c′); (2) a
@@ -207,11 +207,11 @@ A RE-VERIFICAR, com a cadeira provavel cujo item toca cada uma (a cadeira confer
   (5) a resolucao nao escolhe organizacao acima do teto, item 3 da (c′); (6) o canario com papel BYPASSRLS da 503 e nada gravado,
   itens 1 e 2 da (a′); (7) a superficie (listener proprio, nenhuma porta publica), a autenticacao, a rotacao, o segredo e os logs sem
   segredo, item 2 da (b′); (8) a trava do Omega6R-SEC-002 intocada (395 rotas, mesmo md5, sem diff de permissao), item 2 da (b′); (9)
-  a base de 120/120 nas 13 suites do Traccar com zero pulado, item 3 da (c′), que mede de novo e publica o seu N derruba com: `grep -ic 'A RE-VERIFICAR' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
+  a base de 120/120 nas 13 suites do Traccar com zero pulado, item 3 da (c′), que mede de novo e publica o seu N derruba com: `grep -ic 'A RE-VERIFICAR' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` (novo)
 
 ## MEDIDO
 
-Pre-voo deste mandato no head do PR, com o pre-voo de origin/chore/mandato-refs-e-preflight copiado para um arnes local no scratchpad do redator (unica alteracao, na linha 211: RAIZ fixada em C:/Users/AMP/w-trc01; o mandato-refs.sh entra pela costura MANDATO_REFS; na saida colada, o carimbo de 14 digitos entre aspas, o nome do campo reservado citado no AVISO e o caminho do scratchpad saem trocados por marcadores, porque as checagens 4 e 7 os cobrariam fora da colagem) medido por: `MANDATO_REFS=<scratch-do-redator>/mandato-refs.sh bash <arnes>/mandato-preflight.sh <este-mandato> 426 2>&1 | sed -E "$FILTRO"; echo ec=$?` com FILTRO = `s,'[0-9]{14}','<14 digitos da migracao>',; s,appro.ed.head,<campo reservado>,g; s,C:/Users/AMP/AppData/Local/Temp/[^ ']*/mandato-refs.sh,<scratch-do-redator>/mandato-refs.sh,g`
+Pre-voo deste mandato no head do PR, com o pre-voo de origin/chore/mandato-refs-e-preflight copiado para um arnes local no scratchpad do redator (unica alteracao, na linha 211: RAIZ fixada em ~/w-trc01; o mandato-refs.sh entra pela costura MANDATO_REFS; na saida colada, o carimbo de 14 digitos entre aspas, o nome do campo reservado citado no AVISO e o caminho do scratchpad saem trocados por marcadores, porque as checagens 4 e 7 os cobrariam fora da colagem) medido por: `MANDATO_REFS=<scratch-do-redator>/mandato-refs.sh bash <arnes>/mandato-preflight.sh <este-mandato> 426 2>&1 | sed -E "$FILTRO"; echo ec=$?` com FILTRO = `s,'[0-9]{14}','<14 digitos da migracao>',; s,appro.ed.head,<campo reservado>,g; s,~/AppData/Local/Temp/[^ ']*/mandato-refs.sh,<scratch-do-redator>/mandato-refs.sh,g`
 ```
 COLAGEM    l.6-22: refs do PR #426 confere com a saida atual
 AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '<14 digitos da migracao>' em prisma/migrations/20260874000000_traccar_ingestion_foundation/migration.sql — l.26
@@ -219,7 +219,7 @@ AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '<14 d
 AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '<14 digitos da migracao>' em prisma/migrations/20260876000000_work_orders_vehicle_assigned_at/migration.sql — l.26
 AVISO      <campo reservado> NAO DETERMINAVEL (mandato-refs.sh ec=3) — a proveniencia dos SHAs vale; rode 'bash <scratch-do-redator>/mandato-refs.sh 426' para ver o que a ferramenta viu.
 
-PRE-VOO OK — C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/00-mandatos/cadeira-c.md
+PRE-VOO OK — ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/00-mandatos/cadeira-c.md
 ec=0
 head=2043c5840c8f60fe91538840aaefb3420a11cfe3
 utc=2026-10-18T02:48:05Z

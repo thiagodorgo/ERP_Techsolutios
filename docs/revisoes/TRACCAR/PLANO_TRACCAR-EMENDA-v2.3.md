@@ -16,7 +16,7 @@
 ## Execução (gerado pelo script)
 
 - id: 20261011-155824Z-emenda-traccar-v23 · início 2026-10-11T15:58:24Z · fim 2026-10-11T16:03:27Z
-- worktree: C:\Users\AMP\w-ag-20261011-155824 · removido: True · npm ci: False
+- worktree: ~/w-ag-20261011-155824 · removido: True · npm ci: False
 - agente 2026.10.10 · SDK anthropic 1.13.0
 
 ## Conta e cobrança (gerado pelo script)

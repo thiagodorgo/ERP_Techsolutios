@@ -21,9 +21,9 @@
 | Node | `v20.19.5` (`node --version`) |
 | `core.autocrlf` | `true` (`git -C <wt> config core.autocrlf`) |
 | Shell | Git Bash / Windows 11 |
-| Worktree | `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` |
-| Cópia isolada | `C:/Users/AMP/AppData/Local/Temp/claude/.../scratchpad/dev-rail` — **caminho Windows**, que o Node do Windows resolve (o `mktemp -d` do Git Bash devolve `/tmp/...`, que ele **não** resolve; essa armadilha já fez um teste passar sem testar nada nesta sessão) |
-| Árvore principal | `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios` (branch `demo/investidor`) — **não recebeu um único comando** |
+| Worktree | `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` |
+| Cópia isolada | `~/AppData/Local/Temp/claude/.../scratchpad/dev-rail` — **caminho Windows**, que o Node do Windows resolve (o `mktemp -d` do Git Bash devolve `/tmp/...`, que ele **não** resolve; essa armadilha já fez um teste passar sem testar nada nesta sessão) |
+| Árvore principal | `~/Documents/GitHub/ERP_Techsolutios` (branch `demo/investidor`) — **não recebeu um único comando** |
 
 ---
 
@@ -300,7 +300,7 @@ TOTAL de <title> na pagina inteira: 639
 
 ### Terreno
 
-Árvore principal `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios` (branch `demo/investidor`, trabalho de
+Árvore principal `~/Documents/GitHub/ERP_Techsolutios` (branch `demo/investidor`, trabalho de
 outra sessão): **não recebeu um único comando**. Os demais worktrees: idem. Toda mutação de teste ficou em
 `…/scratchpad/dev-rail/{antes,depois}/Kpis/` — cópias **fora** do repositório, em **caminho Windows** que o
 Node do Windows resolve.

@@ -2,8 +2,8 @@
 
 - **Dev:** `dev-users-seg`, identidade nova e exclusiva de dev. **Modelo:** Claude Opus 5.5, nível menor DECLARADO (§C7.6). Não julga a própria entrega: a pré-revisão e a junta são de OUTRO modelo (`D-UM-FAZ-OUTRO-VERIFICA`).
 - **Autorização:** o dono, em 10/11 às 00:40 SP: *"pode abrir B-USERS-ACESSO-SEG"* (hora corrigida pelo orquestrador a partir do registro). Decisões que regem o bloco, na `origin/main`, `agent-orchestration/controle/decisoes.md:3687` (`D-USERS-ACESSO-RESPOSTAS`) e `:3689` (`D-USERS-ACESSO-REPLANO-RESPOSTAS`).
-- **Plano (fonte):** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-USERS-ACESSO-plano.md`, da linha 47 ao fim (as seções do topo com "EM APURAÇÃO" são esqueleto antigo e ficam de fora). Crítica que o replano dobrou: `origin/main:docs/revisoes/TELAS/B-USERS-ACESSO-critica.md`. Plano original citado pela crítica: `origin/main:docs/revisoes/TELAS/B-USERS-ACESSO-plano.md`.
-- **Terreno:** worktree próprio `C:/Users/thiag/w-users-seg`, ramo `fix/users-acesso-seg`, criado de `origin/main` = `75572269`. `npm ci` próprio (pasta real, sem junction) e `prisma generate` próprio. Postgres 16.15 próprio: container `users-seg-pg`, `127.0.0.1:5491`, banco `erp_users_seg`, migrado com `prisma migrate deploy`.
+- **Plano (fonte):** `~/erp-pausa-2026-10-03/planos/B-USERS-ACESSO-plano.md`, da linha 47 ao fim (as seções do topo com "EM APURAÇÃO" são esqueleto antigo e ficam de fora). Crítica que o replano dobrou: `origin/main:docs/revisoes/TELAS/B-USERS-ACESSO-critica.md`. Plano original citado pela crítica: `origin/main:docs/revisoes/TELAS/B-USERS-ACESSO-plano.md`.
+- **Terreno:** worktree próprio `~/w-users-seg`, ramo `fix/users-acesso-seg`, criado de `origin/main` = `75572269`. `npm ci` próprio (pasta real, sem junction) e `prisma generate` próprio. Postgres 16.15 próprio: container `users-seg-pg`, `127.0.0.1:5491`, banco `erp_users_seg`, migrado com `prisma migrate deploy`.
 
 Formato das linhas: comando → saída → veredito.
 
@@ -186,7 +186,7 @@ Recomendação do dev: **(a)**, com o residual como pendência (cabe na janela j
 
 ## RETOMADA 4 — a Emenda 1 (10/11 04:12 SP)
 
-- O orquestrador mandou retomar: o dono respondeu P-SEG-1/2/3 às 03:42 SP (*"aprovo recomendação"* = as recomendações (a)/(a) do dev, o residual como pendência, a P-SEG-3 ratificada). Emenda 1 lida inteira no plano (`C:/Users/thiag/erp-pausa-2026-10-03/planos/B-USERS-ACESSO-plano.md`, l.119–170: a Emenda 1, a correção da rodada 1 e os requisitos finais da rodada 2, que prevalecem). As pendências `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` e `P-HTTP-ERRO-ECOA-MENSAGEM-CRUA` são do orquestrador; o código deste bloco não depende delas.
+- O orquestrador mandou retomar: o dono respondeu P-SEG-1/2/3 às 03:42 SP (*"aprovo recomendação"* = as recomendações (a)/(a) do dev, o residual como pendência, a P-SEG-3 ratificada). Emenda 1 lida inteira no plano (`~/erp-pausa-2026-10-03/planos/B-USERS-ACESSO-plano.md`, l.119–170: a Emenda 1, a correção da rodada 1 e os requisitos finais da rodada 2, que prevalecem). As pendências `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` e `P-HTTP-ERRO-ECOA-MENSAGEM-CRUA` são do orquestrador; o código deste bloco não depende delas.
 - Terreno: `git fetch` → a `origin/main` (`699e6e20`) só mudou `agent-orchestration/**` desde a base do ramo (nada de código). `docker ps` → só `ci522-pg` → `docker start users-seg-pg` (2 trabalhos de pé); memória de commit livre 10,3 GB.
 
 ## P-SEG-2 — o que a senha provisória deixa fazer (Emenda 1, opção a)

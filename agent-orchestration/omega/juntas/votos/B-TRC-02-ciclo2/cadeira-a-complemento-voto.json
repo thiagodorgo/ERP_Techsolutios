@@ -6,7 +6,7 @@
  "ciclo": "2 · régua: bloqueia dentro-do-bloco reprova; não medido = REPROVADO",
  "mandato_md5": "f55e1e5e4dbe176bd522e6e7dd2f4de5 (cadeira-a.md, EOL-neutro) · declarado no disparo: não declarado",
  "corpo_md5": ".claude 147850658e1d5974b058ab147dd0ca1c · .agents f2a879c5588597872e8296ea1e85ec22 · recebido no prompt: n/a",
- "terreno": "worktree C:/Users/AMP/w-jt2c2-a4 (detached no objeto, npm ci próprio, .env ausente) · jt2c2-a4-pg postgres:16 em 127.0.0.1:47881 · jt2c2-a4-redis redis:7 em 127.0.0.1:47891 · 1 trabalho Docker alheio (agv3-proxy) + o meu; erp-* intocados · memória livre 12,15–12,71 GB",
+ "terreno": "worktree ~/w-jt2c2-a4 (detached no objeto, npm ci próprio, .env ausente) · jt2c2-a4-pg postgres:16 em 127.0.0.1:47881 · jt2c2-a4-redis redis:7 em 127.0.0.1:47891 · 1 trabalho Docker alheio (agv3-proxy) + o meu; erp-* intocados · memória livre 12,15–12,71 GB",
  "papel_medido": "jt2c2_a4_runtime criado por scripts/db-runtime-role.sh do objeto: rolsuper=f rolbypassrls=f rolinherit=f, DML em 119 relações",
  "medicoes": {
   "1_M-E14": "VERDE — aplicador próprio (âncora 1 em cada um dos 2 arquivos, CRLF), numstat 1/1 ×2, npm run check ec=0, banco novo com o índice mutado no catálogo; tests/traccar-event-ingestion-db.test.ts 21/20/1: not ok 10 E9 em :370 expected {conflict, owned_elsewhere} actual {stored}; controle no objeto 21/21; restauro porcelain 0, hash-object = rev-parse",
@@ -20,7 +20,7 @@
   "medicao_2": ["src/integrations/traccar/**", "src/modules/telemetry/**", "src/modules/field-dispatch/**", "src/database/rls.ts", "scripts/db-runtime-role.sh", "infra/traccar/fixtures/6.16.0/**", "prisma/migrations/**", "src/**"],
   "medicao_3": ["src/integrations/traccar/**", "src/modules/telemetry/**", "src/modules/field-dispatch/**", "src/database/rls.ts", "scripts/db-runtime-role.sh", "infra/traccar/fixtures/6.16.0/**", "prisma/migrations/**"]
  },
- "sondas_persistentes": "C:/Users/AMP/erp-pausa-2026-10-03/jt2c2-a4/ · zz-jt2c2a4-mut-apply.mjs 0e273099c025bae96b2e3c079ddc7924 · zz-jt2c2a4-lib.mts 6e3fbf2a8b19cabeac76e6441eb5309d · zz-jt2c2a4-p23505.mts 99dc089e9f53742139eb1b8fab4212de · zz-jt2c2a4-ctl-23505.mjs 4364dba227e3a562455d28ebe7d04fde · zz-jt2c2a4-bpov.mts 9bd34e48099b5f315c074f7910813336 · grep das senhas = 0",
+ "sondas_persistentes": "~/erp-pausa-2026-10-03/jt2c2-a4/ · zz-jt2c2a4-mut-apply.mjs 0e273099c025bae96b2e3c079ddc7924 · zz-jt2c2a4-lib.mts 6e3fbf2a8b19cabeac76e6441eb5309d · zz-jt2c2a4-p23505.mts 99dc089e9f53742139eb1b8fab4212de · zz-jt2c2a4-ctl-23505.mjs 4364dba227e3a562455d28ebe7d04fde · zz-jt2c2a4-bpov.mts 9bd34e48099b5f315c074f7910813336 · grep das senhas = 0",
  "achados": [],
  "criterios_que_nao_puderam_falhar": [],
  "nao_medido": [],

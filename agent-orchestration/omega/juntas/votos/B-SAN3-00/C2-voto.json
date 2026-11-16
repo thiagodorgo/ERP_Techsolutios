@@ -5,7 +5,7 @@
   "corpo_aplicado": "git show 7822deaf:.claude/agents/agente-secops.md - md5 EOL-neutro dc1a2974877dc56f04a5e3cb43668c75, identico ao corpo carregado pela sessao",
   "objeto": "7822deaf9afabd076d1095eaf48a6dfb635e5401",
   "base": "aadaa6d51be950e152ca6a6f15327bc9989039de",
-  "worktree": "C:/Users/AMP/w-j-san300-c2 (detached, caminho curto, sem junction, sem conteiner, base viva nao recebeu comando)",
+  "worktree": "~/w-j-san300-c2 (detached, caminho curto, sem junction, sem conteiner, base viva nao recebeu comando)",
   "veredito": "APROVADO",
   "achados": [
     {
@@ -55,7 +55,7 @@
     "calibracao_de_quorum_R3": "Medi a dimensao seguranca em vez de opinar: o conjunto de rastreados ignorados do objeto e SUBCONJUNTO PROPRIO do da base (nada entrou), e o que devia continuar escondido continuou em 19 de 19 sondas (12 diretas mais 7 de worktree aninhado), incluindo .env em qualquer profundidade e settings.local.json, que e onde vive credencial local. Nao ha afrouxamento de gate nem exposicao de segredo; pela minha medicao o bloco NAO cai no toca-seguranca que exigiria unanimidade. Como voto APROVADO, maioria e unanimidade coincidem nesta cadeira de qualquer modo.",
     "metodo_R8": "a regua foi SEMPRE o exit code (git check-ignore -q), nunca a saida em texto. Registro que o -v teria me enganado: no objeto ele imprime 26 linhas com padroes de NEGACAO (a negacao de SKILL.md nos dois diretorios de skill, a de .env.example e a do .gitkeep de storage) para caminhos que NAO estao ignorados.",
     "CRLF": "a arvore esta em i/lf w/crlf sob core.autocrlf=true. Nao usei mutacao por ancora: troquei o arquivo inteiro por git checkout da revisao e PROVEI a troca por md5 EOL-neutro e pela ausencia do bloco novo ANTES de ler qualquer resultado, nos dois sentidos.",
-    "residuo_alheio": "REPORTO, NAO VARRI: worktree C:/c/Users/AMP/w-j-sanb1-c3 (detached 3a0ea095, junta paralela do B-SAN3-B1, com prefixo de caminho anomalo C:/c/); worktrees b04a, b11, gov-descuido, gov-elenco, sanb1 e w-s1; arvore principal em demo/investidor@d1fab3bc com modificacoes vivas de outra sessao. Li a arvore principal apenas com find e com git --no-optional-locks ls-files: nenhuma escrita e nenhum refresh de indice."
+    "residuo_alheio": "REPORTO, NAO VARRI: worktree C:~/w-j-sanb1-c3 (detached 3a0ea095, junta paralela do B-SAN3-B1, com prefixo de caminho anomalo C:/c/); worktrees b04a, b11, gov-descuido, gov-elenco, sanb1 e w-s1; arvore principal em demo/investidor@d1fab3bc com modificacoes vivas de outra sessao. Li a arvore principal apenas com find e com git --no-optional-locks ls-files: nenhuma escrita e nenhum refresh de indice."
   },
   "consequencia_operacional_medida": "Na arvore principal (demo/investidor) ha 201 arquivos em disco nos 4 diretorios reincluidos, dos quais 48 NAO sao rastreados. Apos o merge os 48 passam a aparecer como nao-rastreados (48 visiveis e 0 escondidos sob as regras do objeto), todos em .claude/agents e .agents/agents e NENHUM em skills. Esse e o efeito PRETENDIDO do bloco e o objeto da pendencia P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR, nao um achado; anoto porque muda a superficie estageavel: um git add -A naquela arvore passaria a estagiar os 48. Varri os 48 por segredo em passe case-sensitive e deu 0."
 }

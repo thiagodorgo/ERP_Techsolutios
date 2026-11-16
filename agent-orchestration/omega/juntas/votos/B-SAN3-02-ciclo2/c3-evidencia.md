@@ -3,7 +3,7 @@ executor: Claude Code subagente · identidade: jurado-san302c2-c3-opus · modelo
 # C3′ — evidência — B-SAN3-02 ciclo 2 (junta de DINHEIRO)
 
 Insumos A RE-VERIFICAR (plano v2, plano do ciclo 2 `R-B-SAN3-02-1.md`, ata do ciclo 1, relatório do dev, parecer do DBA): nada herdado como fato.
-Sondas e scripts citados aqui: `C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c3/` (fora do worktree).
+Sondas e scripts citados aqui: `~/erp-pausa-2026-10-03/jsan302c2-c3/` (fora do worktree).
 
 ## Legalidade (2026-10-20T07:14Z)
 - `git ls-remote origin refs/heads/fix/faturamento-atomico-e-delta` → 09b380dab54946e16303c8bae0e95bbaa0d667a5
@@ -17,7 +17,7 @@ Sondas e scripts citados aqui: `C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c3/`
 
 ### 1.0 Terreno
 - P8 antes de qualquer subida (07:15Z): `Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory` → commit livre 6,63 GB (≥ 4 GB); `docker ps` → só `erp-postgres`/`erp-redis` (base viva, não tocada) → trabalhos Docker alheios = 0; disco C: 12,6 GB (≥ 10 GB).
-- `git worktree add --detach C:/Users/AMP/w-jsan302c2-c3 09b380da…` + `npm ci --no-audit --no-fund` (ec 0, 326 pacotes; node_modules diretório real, sem junction). `git worktree add --detach C:/Users/AMP/w-jsan302c2-c3b 9009e81b…` + `npm ci` (ec 0). `prisma generate` em cada (DATABASE_URL fictício `127.0.0.1:1`, nenhuma conexão).
+- `git worktree add --detach ~/w-jsan302c2-c3 09b380da…` + `npm ci --no-audit --no-fund` (ec 0, 326 pacotes; node_modules diretório real, sem junction). `git worktree add --detach ~/w-jsan302c2-c3b 9009e81b…` + `npm ci` (ec 0). `prisma generate` em cada (DATABASE_URL fictício `127.0.0.1:1`, nenhuma conexão).
 - Ferramentas próprias (fora do worktree): `tap-parse.mjs` (parser TAP por seção `=====BEGIN/END <tag>`), `name-compare.mjs` (comparador de nomes base × objeto), `run-named-mem.sh`.
 
 ### 1.1 Base por nome — memória (host, runner `scripts/run-backend-tests.mjs`, sem DATABASE_URL → runner declara memory)
@@ -145,7 +145,7 @@ Comando: `git diff --name-status 9009e81b 09b380da > diff-B-obj.txt` (51 linhas)
 
 ### 1.2 Suíte inteira no objeto (check, lint, build, npm test na forma do job `backend`)
 - **Host, worktree do objeto** (o job `backend` roda `npm run db:generate` antes do `check`): sem o client gerado, `npm run check` dá ec 2 (269 `error TS`, `@prisma/client has no exported member` — ambiente, não produto). Depois de `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npm run db:generate` (ec 0): `npm run check` ec **0**, `npm run lint` ec **0**, `npm run build` ec **0**. O `dist/` foi apagado logo depois.
-- **`npm test` na forma do job `backend`**: `bash …/ferramentas/teste-linux.sh C:/Users/AMP/w-jsan302c2-c3 "$(cat cmd-obj.sh)"`, ID **`tl179248111267270`** (meu; contêineres `-pg`/`-redis`/`-run`, rede própria, sem porta publicada). O ambiente é o do blob do `ci.yml`: `CORE_SAAS_PERSISTENCE=memory`, `DATABASE_URL`/`REDIS_URL` do cluster próprio, `npm ci` + `prisma generate` + `prisma migrate deploy` dentro do contêiner. O runner declara: `CORE_SAAS_PERSISTENCE=memory — herdado do ambiente`. P8 antes: commit livre 7,27 GB, 0 trabalhos alheios, disco 13 GB.
+- **`npm test` na forma do job `backend`**: `bash …/ferramentas/teste-linux.sh ~/w-jsan302c2-c3 "$(cat cmd-obj.sh)"`, ID **`tl179248111267270`** (meu; contêineres `-pg`/`-redis`/`-run`, rede própria, sem porta publicada). O ambiente é o do blob do `ci.yml`: `CORE_SAAS_PERSISTENCE=memory`, `DATABASE_URL`/`REDIS_URL` do cluster próprio, `npm ci` + `prisma generate` + `prisma migrate deploy` dentro do contêiner. O runner declara: `CORE_SAAS_PERSISTENCE=memory — herdado do ambiente`. P8 antes: commit livre 7,27 GB, 0 trabalhos alheios, disco 13 GB.
 - Parser (`node tap-parse.mjs obj-container.log npmtest`): **tests 3762 · pass 3751 · fail 9 · skipped 2**; runner: `327 arquivo(s) · 3762 teste(s) · pass 3751 · fail 9 · skipped 2`.
   - **Skips nomeados (2) = o orçamento nomeado no runner** (`SKIP_BUDGET_DB = 2`, l.~90): "toda permissão do catálogo existe na tabela `permissions` do banco" e "os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS (nas duas direções)".
   - **As 9 falhas são TODAS de `tests/traccar-dev-topology.test.ts`**, com o erro `B-TRC-01 topologia: não foi possível executar "docker compose" (spawnSync docker ENOENT)`: o contêiner da ferramenta não tem o binário `docker`. A origem do arquivo é `c1485c94 2026-10-18 feat(traccar)… (B-TRC-01) (#426)` (`git log --diff-filter=A`), e `git diff --name-only B HEAD -- tests/traccar-dev-topology.test.ts docker-compose* infra/` = 0, ou seja, fora do diff do bloco. Os mesmos 9 nomes estão **`ok`** nos dois check-runs `backend` da CI do objeto (jobs 118472540942 e 118472525167). → `pre-existente` de ambiente, com origem e data (B-TRC-01, 2026-10-18), verde no log do job `backend` da CI do objeto. **Não reprova** (§C7.1-ter(a)).
@@ -157,7 +157,7 @@ Comando: `git diff --name-status 9009e81b 09b380da > diff-B-obj.txt` (51 linhas)
 **Veredito parcial 1.2: VERDE.** Fail 0 no que o bloco toca; as 9 falhas são de ambiente, pré-existentes e verdes na CI; skips = 2, nomeados.
 
 ### 1.1-bis Regressões `-db` do financeiro (§7.6 passo 4), por nome, base × objeto (cluster descartável)
-- Objeto: o mesmo `tl179248111267270`. Base: `bash teste-linux.sh C:/Users/AMP/w-jsan302c2-c3b "$(cat cmd-base.sh)"`, das 07:44 às 07:47Z, ec 0; antes de subir: 0 trabalhos alheios, commit livre 8,04 GB, disco 13 GB. Rodei `node --test --import tsx --test-reporter=tap tests/<s>.test.ts` em cada suíte, separada por marcador, e comparei com `name-compare.mjs`.
+- Objeto: o mesmo `tl179248111267270`. Base: `bash teste-linux.sh ~/w-jsan302c2-c3b "$(cat cmd-base.sh)"`, das 07:44 às 07:47Z, ec 0; antes de subir: 0 trabalhos alheios, commit livre 8,04 GB, disco 13 GB. Rodei `node --test --import tsx --test-reporter=tap tests/<s>.test.ts` em cada suíte, separada por marcador, e comparei com `name-compare.mjs`.
 
 | suíte | base | objeto | nomes da base ausentes ou não-ok |
 |---|---|---|---|
@@ -206,7 +206,7 @@ O denominador fica estável (17 e 6) nas 3 rodadas, com 0 skip e 0 fail. Os nome
 ## Item 2 (continuação)
 
 ### 2.5 Amostra do ciclo 2: **M29** (sem `BEGIN;`/`COMMIT;`), reexecutada por mim
-- Mutação aplicada na CÓPIA `/w` do contêiner (o arquivo do meu worktree não é tocado): `bash teste-linux.sh C:/Users/AMP/w-jsan302c2-c3 "$(cat cmd-m29.sh)"`, das 07:51 às 07:54Z, ec 0. Antes de subir: 0 trabalhos alheios, commit livre 7,83 GB, disco 13 GB.
+- Mutação aplicada na CÓPIA `/w` do contêiner (o arquivo do meu worktree não é tocado): `bash teste-linux.sh ~/w-jsan302c2-c3 "$(cat cmd-m29.sh)"`, das 07:51 às 07:54Z, ec 0. Antes de subir: 0 trabalhos alheios, commit livre 7,83 GB, disco 13 GB.
 - `sed -i -E '/^(BEGIN|COMMIT);\r?$/d' <migração>`: sha256 `807b685e…` → `64c71665…`, com BEGIN/COMMIT indo de 2 para 0.
 - **Drill sob M29: 6 tests · 1 pass · 5 fail.**
   - **T-D(f) not ok**: `k=1: depois do deploy falho o catálogo é o de ANTES…`, `+ column: 1 / - column: 0`. É o C2-01 reproduzido, igual ao relatório ("k=1 `column 1`").

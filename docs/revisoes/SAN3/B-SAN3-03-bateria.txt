@@ -6,7 +6,7 @@ tests/san3-05-leituras-de-plataforma-db.test.ts:351 (§11 da emenda 2), commitad
 O produto (src/) é o mesmo de f1a123ca. Data: 2026-11-03 (horário de São Paulo, manhã).
 
 AMBIENTE
-- Windows 11, Git Bash, Node do worktree C:/Users/thiag/w-san303 (node_modules próprio, sem junction).
+- Windows 11, Git Bash, Node do worktree ~/w-san303 (node_modules próprio, sem junction).
 - Postgres descartável próprio: container devsan303ko-pg, imagem postgres:16, 127.0.0.1:55466, sem volume,
   usuário postgres como no CI; `npx prisma migrate deploy` exit 0.
 - Memória de commit livre antes do Docker: 41,06 GB (P8: >= 4 GB).

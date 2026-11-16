@@ -81,5 +81,5 @@
     "Fila de concorrencia com as duas juntas empurrando ao mesmo tempo — nao houve evento hoje para medir"
   ],
   "terreno_e_limpeza": "Medicoes somente leitura (git show / git for-each-ref / git log / gh api) a partir do worktree san300, lendo a ref julgada por git show 3a0ea095:<caminho>. Nao criei worktree, nao subi conteiner, nao toquei a base viva (erp-postgres/erp-redis seguem parados, sem um comando meu), nao rodei clean/prune/stash/checkout/reset/gc. Unico comando de escrita: git fetch origin --prune -q (atualiza refs remotas, nao muta arvore de trabalho) — declarado. Nenhum arquivo rastreado alterado. Residuo alheio reportado e NAO varrido: worktree w-s1 (sonda S2) e a mutacao viva de outra sessao na arvore principal seguem intactos. Artefatos meus: C2-voto.json, C2-evidencia.md e os logs brutos em scratchpad/logs-C2/ (fora da pasta de votos).",
-  "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-B1/C2-evidencia.md"
+  "evidencia": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-B1/C2-evidencia.md"
 }

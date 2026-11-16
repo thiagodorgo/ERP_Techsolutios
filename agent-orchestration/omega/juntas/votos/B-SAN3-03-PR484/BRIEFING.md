@@ -22,11 +22,11 @@ Cada uma usa o seu próprio Postgres descartável.
 ## Terreno (R3, R4)
 | Cadeira | Worktree | Container | Porta |
 |---|---|---|---|
-| C1 | `C:/Users/thiag/w-j484-c1b` | `j484-c1b-pg` | 127.0.0.1:55484 |
-| C2 | `C:/Users/thiag/w-j484-c2` | `j484-c2-pg` | 127.0.0.1:55482 |
-| C3 | `C:/Users/thiag/w-j484-c3` | `j484-c3-pg` | 127.0.0.1:55483 |
+| C1 | `~/w-j484-c1b` | `j484-c1b-pg` | 127.0.0.1:55484 |
+| C2 | `~/w-j484-c2` | `j484-c2-pg` | 127.0.0.1:55482 |
+| C3 | `~/w-j484-c3` | `j484-c3-pg` | 127.0.0.1:55483 |
 
-- Cada worktree nasce por `git -C C:/Users/thiag/Documents/GitHub/ERP_Techsolutios worktree add --detach <wt> 5b628b88`, com `npm ci` próprio. Nunca junction de `node_modules` (§C7.1-ter(c)).
+- Cada worktree nasce por `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <wt> 5b628b88`, com `npm ci` próprio. Nunca junction de `node_modules` (§C7.1-ter(c)).
 - **Proibidos:** `erp-postgres`, `erp-redis`, as portas 3000, 5173, 5432 e 6379, a árvore principal, `prune` e `down -v`.
 - No fim, derrube o seu container e remova o worktree só por `git worktree remove --force`.
 - No máximo 2 cadeiras ao mesmo tempo. A 3ª só nasce quando uma terminar e derrubar o container. Confira a memória de commit livre ≥ 4 GB antes de subir o Docker.

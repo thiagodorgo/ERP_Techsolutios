@@ -164,7 +164,7 @@ Declare no §0 de todo plano ou relatório: `uname -a`, `node -v`, `git --versio
   o resultado. ` M` em `git status` pode ser fantasma de stat-cache: confira `git hash-object` × `git rev-parse :<f>`.
 - **`git archive` + `tar` sob autocrlf injeta CR** e fabrica divergência (`CLAUDE.md` §C7.1-ter(c)).
 - **Caminho longo:** worktree dentro do scratchpad falha com *Filename too long* e não cria o diretório — use
-  caminho curto (`C:/Users/AMP/w-<id>`) e confira que existe.
+  caminho curto (`~/w-<id>`) e confira que existe.
 - **`MSYS_NO_PATHCONV=1`** faz `git.exe`/`node.exe` recusarem `/c/…` e quebra `git show ref:caminho` sem ela —
   use por comando, nunca exportada (§2.3).
 - **O ignore global do dono cobre `.claude/` e `.agents/`:** corpo novo nasce invisível; versione com `git add -f` nos

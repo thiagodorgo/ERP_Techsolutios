@@ -7,12 +7,12 @@ Modelo: Opus 5 (`claude-opus-5[1m]`).
 ## M0 — terreno proprio e corpo aplicado (ressalva R1)
 
 Worktree **detached proprio**, caminho curto, criado por mim:
-`git worktree add --detach "C:/Users/AMP/w-j-sanb1-c1" 3a0ea095` -> head `3a0ea095`,
+`git worktree add --detach "~/w-j-sanb1-c1" 3a0ea095` -> head `3a0ea095`,
 `git status --porcelain` = **0 linhas**. Sem junction. Sem `npm ci` — esta cadeira nao precisou:
 toda medicao e de YAML lido na ref (`git show` / `git grep <sha>`) + `gh api`.
 
 Nota de terreno (minha, declarada): a 1a tentativa com `MSYS_NO_PATHCONV=1` criou o worktree em
-`C:\c\Users\AMP\w-j-sanb1-c1`; removido por `git worktree remove --force` (identificador MEU) e os
+`C:\c\Users\~\w-j-sanb1-c1`; removido por `git worktree remove --force` (identificador MEU) e os
 3 diretorios vazios remanescentes removidos por `rmdir`. **Nada alheio tocado.**
 
 **Corpo aplicado (R1):** `agente-secops`, md5 EOL-neutro (`tr -d CR | md5sum`):
@@ -449,7 +449,7 @@ A-C1-03, A-C1-04 e A-C1-06 sao pre-existentes com dono sugerido.
 
 ## Limpeza (§C5)
 
-Worktree proprio `C:/Users/AMP/w-j-sanb1-c1` criado e **removido por identificador MEU** ao fim.
+Worktree proprio `~/w-j-sanb1-c1` criado e **removido por identificador MEU** ao fim.
 Nenhum conteiner subido; a base viva (`erp-postgres`/`erp-redis`) **nunca foi alvo**; nenhum
 `prune`/`clean`/`stash`/`checkout`/`reset` em arvore alguma. Medicoes foram leitura (`git show`,
 `git grep <sha>`, `git diff`) e `gh api`. Residuo alheio — a mutacao viva da arvore principal e o
@@ -461,12 +461,12 @@ deste bloco).
 ## Anexo — anomalia de terreno observada (sem efeito no merito)
 
 Registro por disciplina, ainda que nao afete o meu voto. No inicio da minha passada (18:41) o
-`git worktree list` incluia `C:/Users/AMP/w-insp-san300` (`7822deaf`, detached) — o worktree do
+`git worktree list` incluia `~/w-insp-san300` (`7822deaf`, detached) — o worktree do
 inspetor da junta irma `B-SAN3-00` (PR #392), citado na ressalva R3. Ao fim da minha passada
 (18:58) ele **nao consta mais da lista nem existe em disco**.
 
 **Nao fui eu.** O unico `git worktree remove` que executei nomeia explicitamente o meu proprio
-caminho (`C:/Users/AMP/w-j-sanb1-c1`), e `remove` nao alcanca outras entradas. A explicacao provavel
+caminho (`~/w-j-sanb1-c1`), e `remove` nao alcanca outras entradas. A explicacao provavel
 e que a sessao irma encerrou e limpou o proprio terreno no intervalo. Anoto porque a licao de
 2026-09-04 desta casa e que **remocao se faz por identificador de bloco** e que **anomalia de
 terreno se anota mesmo sem efeito no merito** — se a sessao irma ainda estiver viva e sentir falta

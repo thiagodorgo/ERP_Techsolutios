@@ -20,9 +20,9 @@
 - Se o orquestrador trocar uma cadeira Opus pelo Argon (Gemini via API), a identidade nova tem de ser conferida contra a mesma lista de 20 e declarada na 1ª linha da evidência; não está nos mandatos atuais.
 
 ## Item 3 de 3 — terreno — VERDE (ressalva forte R4)
-- Árvore C:/Users/AMP/w-dash no objeto faad24ce sem mutação viva: só os 55 ` M` fantasmas de EOL em .agents/ e .claude/ (0 divergentes EOL-neutro) e o ?? deste diretório (4 mandatos + 2 outputs).
+- Árvore ~/w-dash no objeto faad24ce sem mutação viva: só os 55 ` M` fantasmas de EOL em .agents/ e .claude/ (0 divergentes EOL-neutro) e o ?? deste diretório (4 mandatos + 2 outputs).
 - Sem resíduo: nenhum w-jdash*, w-dash-mut, w-dash-s0 no disco nem na lista de worktrees; 0 sonda; node_modules do w-dash real, zero junction.
-- Isolamento exigido de cada cadeira (declarado nos 3 mandatos; cada cadeira prova na 1ª medição): C1 = jurado-dash2-c1-opus, Claude Code / Claude Opus, worktree C:/Users/AMP/w-jdash2-c1-*, cluster e rede jdash2-c1-* só se precisar (itens sem banco); C2 = jurado-dash2-c2-opus, Claude Code / Claude Opus, worktree C:/Users/AMP/w-jdash2-c2-*, cluster e rede jdash2-c2-* só se precisar (sem banco; navegador em porta livre fora da lista); C3 = jurado-dash2-c3-cdx, Codex / GPT-5.6 Sol médio, worktree C:/Users/AMP/w-jdash2-c3-*, cluster e rede jdash2-c3-* (ou o tl* do teste-linux.sh, declarado e removido), sem porta publicada. npm ci próprio, zero junction de node_modules em todas.
+- Isolamento exigido de cada cadeira (declarado nos 3 mandatos; cada cadeira prova na 1ª medição): C1 = jurado-dash2-c1-opus, Claude Code / Claude Opus, worktree ~/w-jdash2-c1-*, cluster e rede jdash2-c1-* só se precisar (itens sem banco); C2 = jurado-dash2-c2-opus, Claude Code / Claude Opus, worktree ~/w-jdash2-c2-*, cluster e rede jdash2-c2-* só se precisar (sem banco; navegador em porta livre fora da lista); C3 = jurado-dash2-c3-cdx, Codex / GPT-5.6 Sol médio, worktree ~/w-jdash2-c3-*, cluster e rede jdash2-c3-* (ou o tl* do teste-linux.sh, declarado e removido), sem porta publicada. npm ci próprio, zero junction de node_modules em todas.
 - Docker às 22:23Z: base viva erp-postgres/erp-redis (intocável) + 2 trabalhos alheios excluindo erp-*: tl17924485782852 (w-fix302d, Codex B-SAN3-02) e dtrc02-17924485852887 (dev B-TRC-02), sem porta publicada. 2 = teto.
 - Proibidos a todas as cadeiras: base viva (erp-postgres, erp-redis) e as portas 5432, 6379, 3000, 5173, 5050 e 8899.
 - Baseline honesto no objeto: npm run check ec=0; npm --prefix frontend run check ec=0.
@@ -38,4 +38,4 @@ A junta do ciclo 2 do B-DASH-PERFIL pode começar sobre o objeto faad24ce7c00ab4
 - **R4 (forte) — Docker no teto.** 2 trabalhos alheios vivos (B-SAN3-02 e B-TRC-02). Nenhuma cadeira sobe contêiner sem recontar; C3 (Prisma só em contêiner, ≥3 GB de commit livre) espera vaga. Ordem natural sob P5: C1 e C2 primeiro (sem banco), C3 quando houver vaga.
 - **R5 — trocar uma cadeira Opus pelo Argon** não está nos mandatos. Se acontecer: identidade nova conferida contra os 20 inelegíveis, mandato reemitido com pré-voo novo (o md5 muda) e executor declarado na 1ª linha da evidência.
 
-Limpeza: worktree C:/Users/AMP/w-insp2b-s0 criado e removido; nenhum contêiner, rede ou porta criados; ferramentas e logs só no scratch próprio (insp-dash2b/).
+Limpeza: worktree ~/w-insp2b-s0 criado e removido; nenhum contêiner, rede ou porta criados; ferramentas e logs só no scratch próprio (insp-dash2b/).

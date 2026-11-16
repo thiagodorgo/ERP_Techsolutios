@@ -10,7 +10,7 @@ executor: jurado-trc02-c2-a-sol2 | modelo: Codex gpt-5.6-sol | nível: menor dec
 
 - Comando: `git rev-parse HEAD`; `git ls-remote origin refs/heads/feat/traccar-b-trc-02`; `gh pr view 454 --json headRefOid,baseRefName,state,isDraft,mergeable`; memória, disco e `docker ps`.
 - Saída resumida: HEAD local = remoto = PR `42800d0dcece29c7e3a39476c9b40c917a66dfd0`; PR OPEN, não draft; mergeable temporariamente UNKNOWN; commit livre 12,05 GB; disco 10,78 GB; zero trabalhos Docker alheios, apenas `erp-postgres`/`erp-redis`, explicitamente proibidos e intocados.
-- Veredito parcial: terreno atende memória ≥4 GB, disco ≥10 GB e teto Docker; worktree próprio `C:/Users/AMP/w-jt2c2-a2`, prefixo `jt2c2-a2-`, sondas `C:/Users/AMP/erp-pausa-2026-10-03/jt2c2-a2/`.
+- Veredito parcial: terreno atende memória ≥4 GB, disco ≥10 GB e teto Docker; worktree próprio `~/w-jt2c2-a2`, prefixo `jt2c2-a2-`, sondas `~/erp-pausa-2026-10-03/jt2c2-a2/`.
 
 ## Item 1 — EM APURAÇÃO
 

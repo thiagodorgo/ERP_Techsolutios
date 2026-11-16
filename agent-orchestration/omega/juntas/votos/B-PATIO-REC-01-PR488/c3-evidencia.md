@@ -18,7 +18,7 @@
 - **Saída:** sumiram 0 (backend) e 0 (backend-postgres); novos 37 (backend) e 9 (backend-postgres) — todos do REC-01 (T-DOM-*, T-ISO-*, T-MAQ-*, drill (a)/(b)). Skips: os mesmos 2 na base e no objeto (`toda permissão do catálogo existe…` e `os grants do papel GLOBAL…`, RBAC_DB_PARITY, ligados só no backend-postgres); backend-postgres 0 skip nos dois.
 - **Veredito parcial:** VERDE. 4264→4301 (+37) e 493→502 (+9); nenhum teste sumiu, virou skip ou caiu. As suítes `-db` do REC-01 rodam (ok, não SKIP) nos dois jobs; o job `backend` tem serviço postgres e `migrate deploy` (ci.yml).
 
-### 1b. Suítes do REC-01 no meu Postgres (`j488-c3-pg`, 127.0.0.1:55493, base `erp_c3`), worktree `C:/Users/thiag/w-j488-c3` em `ea6d4aef`, `npm ci` próprio
+### 1b. Suítes do REC-01 no meu Postgres (`j488-c3-pg`, 127.0.0.1:55493, base `erp_c3`), worktree `~/w-j488-c3` em `ea6d4aef`, `npm ci` próprio
 - **Comando:** `npm run db:generate` (com DATABASE_URL, R4) → gen=0; `npx prisma migrate deploy` → 120 migrações, "All migrations have been successfully applied"; `for t in tests/rec-01-*.test.ts; node --test --import tsx $t`.
 - **Saída:** domain-db 7/7; intent-service 11/11; live-link-guard 1/1; migration-drill-db 2/2; routes-permissions 6/6; state-machine 3/3; validators 7/7 → **37 pass, 0 fail, 0 skip** (= os 37 novos do job backend; os 9 `-db` = os 9 novos do backend-postgres). 2ª rodada dos `-db`: 7/7 e 2/2. Depois de `npm run db:seed`: `RBAC_DB_PARITY=1 tests/permission-catalog-db-parity.test.ts` 2/2, 0 skip.
 - **Vermelho-controle na base:**
@@ -67,7 +67,7 @@ Nenhum, grave ou não grave. Nota de terreno (não é achado): a `san3-05-runtim
 
 ## Limpeza
 - Container `j488-c3-pg` removido (`docker rm -f`), sem tocar em `erp-postgres`/`erp-redis` nem em `j488-c1-pg`.
-- Worktree `C:/Users/thiag/w-j488-c3` removido com `git worktree remove --force`.
+- Worktree `~/w-j488-c3` removido com `git worktree remove --force`.
 - Ficam, como evidência: este arquivo, `c3-voto.json`, os 6 logs de CI em `c3-ci/` e o censo regenerado `c3-scratch/censo-obj.json`.
 
 VOTO: APROVADO

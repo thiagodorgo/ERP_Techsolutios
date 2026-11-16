@@ -5,7 +5,7 @@ inspetor-de-terreno-da-junta · instância inspetor-07cb1-opus · Claude Opus 5.
 Objeto: b198fe358b41186b2598ab258ccb735da8c04cbc. Início: 2026-10-17T03:30:03Z.
 
 ## Item 0 — corpo e mandato
-- comando: `git -C C:/Users/AMP/w-07cb1 show b198fe35:.claude/agents/inspetor-de-terreno-da-junta.md | tr -d '\r' | md5sum` → 89b4563001df748a4016ae57b05fbd20 (= publicado).
+- comando: `git -C ~/w-07cb1 show b198fe35:.claude/agents/inspetor-de-terreno-da-junta.md | tr -d '\r' | md5sum` → 89b4563001df748a4016ae57b05fbd20 (= publicado).
 - comando: `tr -d '\r' < 00-mandatos/{inspetor-07cb1,cadeira-c1,cadeira-c2,cadeira-c3}.md | md5sum` → 1effac95…, fa118ae5…, 83c4674c…, f1d55dff… (os 4 = publicados).
 - veredito parcial: VERDE — corpo e mandatos conferem com o md5 publicado.
 
@@ -15,7 +15,7 @@ Objeto: b198fe358b41186b2598ab258ccb735da8c04cbc. Início: 2026-10-17T03:30:03Z.
 - comando: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/b198fe35…/check-runs --jq '.total_count, (.check_runs[]|…)'` → total_count=14; todos `completed | success` (docker×2, authority-portal×2, backend×2, flutter×2, frontend×2, backend-postgres×2, owner-portal×2). 0 queued/in_progress/cancelled.
 - veredito parcial: VERDE — objeto = head do PR por 2 fontes; check-runs concluídos e verdes.
 
-## Item 1.1 — árvore do dev (C:/Users/AMP/w-07cb1) × objeto (03:33Z)
+## Item 1.1 — árvore do dev (~/w-07cb1) × objeto (03:33Z)
 - comando: `git rev-parse HEAD` → b198fe358b41186b2598ab258ccb735da8c04cbc (= objeto).
 - comando: `git status --porcelain` → 55 linhas ` M` (todas sob `.agents/agents/**`, `grep -vc ' .agents/'` = 0) + 6 `??` (os 5 da junta: 00-mandatos/{cadeira-c1,c2,c3,inspetor-07cb1}.md e 00-quedas.md; mais este arquivo de evidência).
 - comando: `git diff --name-only | wc -l` → 0; `git diff --ignore-cr-at-eol --name-only | wc -l` → 0; `git diff --cached --name-only | wc -l` → 0. Os 55 ` M` são o "M fantasma" de autocrlf (core.autocrlf=true): mtime 23:29:19 local (=02:29Z), conteúdo igual ao índice.
@@ -27,9 +27,9 @@ Objeto: b198fe358b41186b2598ab258ccb735da8c04cbc. Início: 2026-10-17T03:30:03Z.
 
 ## Item 1.2 — plano de isolamento no briefing (03:36Z)
 - comando: `tr -d '\r' < 00-mandatos/cadeira-c{1,2,3}.md | awk '/^## HIPOTESE/{p=1} p'` (seção "O terreno" de cada mandato).
-- C1: worktree próprio detached `C:/Users/AMP/w-j07cb1c1` (ou sufixo b), `npm ci` próprio sem junction; em memória (`env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory`, `listen(0)`), sem banco; container só se preciso, prefixo `j07cb1-c1-`, sem porta publicada.
+- C1: worktree próprio detached `~/w-j07cb1c1` (ou sufixo b), `npm ci` próprio sem junction; em memória (`env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory`, `listen(0)`), sem banco; container só se preciso, prefixo `j07cb1-c1-`, sem porta publicada.
 - C2: idem com N=2, prefixo `j07cb1-c2-`.
-- C3: worktree `C:/Users/AMP/w-j07cb1c3`, Postgres 16 (e Redis se preciso) descartável, prefixo `j07cb1-c3-`, rede própria, nenhuma porta publicada, senha aleatória só por ambiente; remoção por nome (`docker rm -f -v`), nunca prune.
+- C3: worktree `~/w-j07cb1c3`, Postgres 16 (e Redis se preciso) descartável, prefixo `j07cb1-c3-`, rede própria, nenhuma porta publicada, senha aleatória só por ambiente; remoção por nome (`docker rm -f -v`), nunca prune.
 - Os três: base viva e portas 5432/6379/3000/5173/5050/8899 nunca são alvo; em w-07cb1 só os 2 arquivos de saída; w-arnes2 não é alvo; conta grupos tl/j antes de subir container (≤3 trabalhos, D-BRACOS-E-DOCKER-17-10).
 - veredito parcial: VERDE — plano de isolamento declarado por escrito e verificável por cadeira.
 
@@ -39,7 +39,7 @@ Objeto: b198fe358b41186b2598ab258ccb735da8c04cbc. Início: 2026-10-17T03:30:03Z.
 - comando: `docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}|{{.Image}}'` → de pé só `erp-postgres` e `erp-redis` (base viva, Up 40 min, healthy). Exited: `jtrc01-a-cdx2-{pg,redis}` (Exited 255, 26 h), `jtrc01-a-{pg,redis}` (Exited 255, 34 h) — trilha Traccar, outro bloco, portas só em 127.0.0.1 e parados; `agv3-proxy` (3 dias), `pastrack-teste-banco-teste-1` (3 semanas). Nenhum `j07cb1-*`, `jur-*` ou `crit-*`.
 - comando: `docker network ls` → agv3-int, erp_techsolutions_local, pastrack-teste_default (nenhuma de j07cb1).
 - comando: `git worktree list` → main, w-07cb1 (dev, objeto), w-agapi2, w-arnes2 (outro bloco, T15 — reportado, não alvo), w-dash, w-design, w-planos, w-reg7, w-trc01. Nenhum w-j07cb1c* nem w-insp-07cb1 ainda.
-- comando: `ls -d C:/Users/AMP/w-*` → além dos registrados, `C:/Users/AMP/w-reg6` (diretório vazio, não é worktree registrado — resíduo inerte de outra rodada).
+- comando: `ls -d ~/w-*` → além dos registrados, `~/w-reg6` (diretório vazio, não é worktree registrado — resíduo inerte de outra rodada).
 - comando: `git status --porcelain --untracked-files=all --ignored | grep -iE 'probe|jur-'` em w-07cb1 → vazio.
 - comando: `df -h /c` → 13G livres (95% usado) — acima do piso de ~2 GB dos corpos, mas apertado para 3 `npm ci` + cluster.
 - veredito parcial: VERDE COM RESSALVA INERTE — sem resíduo com privilégio ou mutação de junta anterior; resíduos inertes de outros blocos (4 containers jtrc01-* Exited, w-reg6 vazio) reportados, não varridos.
@@ -77,7 +77,7 @@ Objeto: b198fe358b41186b2598ab258ccb735da8c04cbc. Início: 2026-10-17T03:30:03Z.
 - veredito parcial: VERDE.
 
 ## Item 3.3 — corpo carregado × corpo julgado (EOL-neutro) (03:36Z)
-- comando: para cada corpo, `git show b198fe35:<p> | tr -d '\r' | md5sum` × `tr -d '\r' < w-07cb1/<p> | md5sum` × sessão (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/<p>`, HEAD 684e9afd):
+- comando: para cada corpo, `git show b198fe35:<p> | tr -d '\r' | md5sum` × `tr -d '\r' < w-07cb1/<p> | md5sum` × sessão (`~/Documents/GitHub/ERP_Techsolutios/<p>`, HEAD 684e9afd):
   - .claude C1 1a5e17a5…e4e · .agents C1 3d2fa99f…6d6 · .claude C2 fc06a7d5…645 · .agents C2 3d45cc3b…01e · .claude C3 58eae266…284 · .agents C3 74c95ad4…15c — objeto = disco do worktree = valores publicados pelo orquestrador, os 6.
   - sessão: AUSENTE nos 6 (a árvore da sessão está em 684e9afd, atrás). Logo nenhum corpo pode ser carregado por `subagent_type` a partir da sessão: os 3 executores (Codex, Gemini CLI, Claude Code general-purpose) recebem o corpo do BLOB no prompt, como os mandatos dizem; cada cadeira confere o md5 recebido contra o publicado.
 - comando: `git diff 34b8ae73 b198fe35 -- .claude/agents/especialistas/jurado-07cb1-c3-…` → o corpo da C3 foi alterado DEPOIS de criado, pelo commit do dev (b198fe35): 4 linhas por espelho, só `20260874000000` → `20260877000000` (rename do carimbo da migração, achado do redator, conferido pelo orquestrador; relatório do dev l.201-205). Nenhum critério mudou além do nome do diretório.
@@ -85,7 +85,7 @@ Objeto: b198fe358b41186b2598ab258ccb735da8c04cbc. Início: 2026-10-17T03:30:03Z.
 - veredito parcial: VERDE COM RESSALVA — corpos íntegros; ressalva: o corpo da C3 recebeu edição do DEV julgado (só o carimbo, diff acima), a ata deve registrar.
 
 ## Item 4.1 — fatia S0, espelho Codex (03:36Z)
-- comando: `git worktree add --detach C:/Users/AMP/w-insp-07cb1 b198fe35…` → HEAD b198fe358b41186b2598ab258ccb735da8c04cbc; `git status --porcelain | wc -l` → 0 (árvore própria limpa).
+- comando: `git worktree add --detach ~/w-insp-07cb1 b198fe35…` → HEAD b198fe358b41186b2598ab258ccb735da8c04cbc; `git status --porcelain | wc -l` → 0 (árvore própria limpa).
 - comando: `node scripts/sync-agent-agents.mjs --check` (em w-insp-07cb1) → "[agents-sync] OK — 58 agentes, espelho consistente." ec=0.
 - comando: `find .claude/agents -name '*.md' | wc -l` → 58 (23 + 35 em especialistas/) = N do check → recursivo; `.agents/agents` → 59 (+ README.md do protocolo de emulação).
 - veredito parcial: VERDE.
@@ -105,5 +105,5 @@ Objeto: b198fe358b41186b2598ab258ccb735da8c04cbc. Início: 2026-10-17T03:30:03Z.
 - veredito parcial: RESSALVA FORTE (não bloqueia sozinha) — plano de perda existe em partes (P3/P5/P6 do contrato, 00-quedas.md pronto, paradas por cota nos mandatos), com contradição texto-corpo sobre a identidade do sucessor.
 
 ## Encerramento (03:41Z)
-- comando: `git worktree remove --force C:/Users/AMP/w-insp-07cb1` → ec=0 (0 processos o usavam); `git worktree list | grep -c insp` → 0; diretório inexistente. Subpasta `scratchpad/insp-07cb1` removida. Nenhum container criado.
+- comando: `git worktree remove --force ~/w-insp-07cb1` → ec=0 (0 processos o usavam); `git worktree list | grep -c insp` → 0; diretório inexistente. Subpasta `scratchpad/insp-07cb1` removida. Nenhum container criado.
 - Parecer gravado em `insp-07cb1-parecer.md`: **LIBERADO COM RESSALVA** (R1–R8).

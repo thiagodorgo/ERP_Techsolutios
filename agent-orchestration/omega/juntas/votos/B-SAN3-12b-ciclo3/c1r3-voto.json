@@ -166,7 +166,7 @@
       "casos_vermelhos": [
         "not ok 2 - R-E3-3: a variante .pat-kpi-row--6 existe no CSS efetivo — grade de 6, valor a 18 px sem quebra e com reticências, 15,5 px até 1340 px"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-3a.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-3a.tap"
     },
     {
       "nome": "M-E3-3b",
@@ -174,7 +174,7 @@
       "casos_vermelhos": [
         "not ok 3 - R-E3-3: a linha de indicadores da opção A usa a classe da biblioteca, sem grade inline — carregada e no esqueleto"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-3b.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-3b.tap"
     },
     {
       "nome": "M-E3-4",
@@ -182,7 +182,7 @@
       "casos_vermelhos": [
         "not ok 3 - R-E3-4: o skin .pat-ab-table alinha à direita e tabula as colunas de dinheiro no CSS efetivo (espelho de .dense-table)"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-4.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-4.tap"
     },
     {
       "nome": "M-E3-5",
@@ -190,7 +190,7 @@
       "casos_vermelhos": [
         "not ok 2 - F17: nenhum termo técnico (tenant, role, reconciled, rota de API) nos textos de tela do Financeiro (12b)"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-5.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-5.tap"
     },
     {
       "nome": "R1-M1",
@@ -199,7 +199,7 @@
         "not ok 2 - R1: filtro de conta convive com o alvo e sai com um clique sem manter account_id",
         "not ok 3 - R1: indicador da organização limpa a conta selecionada antes de abrir 'A conciliar'"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R1-M1.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R1-M1.tap"
     },
     {
       "nome": "R1-M2",
@@ -207,7 +207,7 @@
       "casos_vermelhos": [
         "not ok 3 - R1: indicador da organização limpa a conta selecionada antes de abrir 'A conciliar'"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R1-M2.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R1-M2.tap"
     },
     {
       "nome": "R2-M1",
@@ -215,7 +215,7 @@
       "casos_vermelhos": [
         "not ok 2 - R2: 'Conciliação por conta' separa nome e contagem com flex e distância mínima"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R2-M1.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R2-M1.tap"
     },
     {
       "nome": "R3-M1",
@@ -224,7 +224,7 @@
         "not ok 3 - R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam páginas",
         "not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M1.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M1.tap"
     },
     {
       "nome": "R3-M2",
@@ -233,7 +233,7 @@
         "not ok 2 - R3(a): o hook carrega 100, busca offset 100, deduplica e relê todas as páginas alcançadas",
         "not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M2.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M2.tap"
     },
     {
       "nome": "R3-M3",
@@ -241,7 +241,7 @@
       "casos_vermelhos": [
         "not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M3.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M3.tap"
     },
     {
       "nome": "R3-M4",
@@ -250,7 +250,7 @@
         "not ok 3 - R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam páginas",
         "not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M4.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M4.tap"
     },
     {
       "nome": "R10-M1",
@@ -258,7 +258,7 @@
       "casos_vermelhos": [
         "not ok 2 - R10: aba 'Contas e extrato' sem financial_accounts:read mostra acesso não permitido, nunca 'Cadastre a primeira conta'"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R10-M1.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R10-M1.tap"
     },
     {
       "nome": "F16",
@@ -266,7 +266,7 @@
       "casos_vermelhos": [
         "not ok 6 - F16 desatualizado: a atualização em 2º plano falha → faixa 'Dados desatualizados' e o dado anterior continua na tela"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F16.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F16.tap"
     },
     {
       "nome": "F19",
@@ -274,7 +274,7 @@
       "casos_vermelhos": [
         "not ok 2 - F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca '—' nem R$ 0,00 fingido"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F19.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F19.tap"
     },
     {
       "nome": "F11",
@@ -282,7 +282,7 @@
       "casos_vermelhos": [
         "not ok 2 - F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um clique"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F11.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F11.tap"
     },
     {
       "nome": "F12",
@@ -290,7 +290,7 @@
       "casos_vermelhos": [
         "not ok 2 - F12: linha de uma altura, sem botão; o detalhe abre logo abaixo, um por vez; Enter/Espaço abrem, Escape fecha"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F12.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F12.tap"
     },
     {
       "nome": "MINHA-pressed",
@@ -298,7 +298,7 @@
       "casos_vermelhos": [
         "not ok 2 - F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um clique"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-MINHA-pressed.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-MINHA-pressed.tap"
     },
     {
       "nome": "MINHA-saldo0",
@@ -306,7 +306,7 @@
       "casos_vermelhos": [
         "not ok 2 - F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca '—' nem R$ 0,00 fingido"
       ],
-      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-MINHA-saldo0.tap"
+      "log": "~/erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-MINHA-saldo0.tap"
     }
   ],
   "pendencias_que_aceito": [

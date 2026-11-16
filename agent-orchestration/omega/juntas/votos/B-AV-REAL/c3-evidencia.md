@@ -3,7 +3,7 @@ Identidade: c3-j-avreal. Modelo: Claude Opus, nível menor, declarado. Objeto: 2
 Itens: (1) R9 VERDE no dev · (2) R5r + R10r + S4 VERDE · (3) R11 VERDE, registro com ressalvas, overlay reprovado
 
 ## Terreno
-- `git worktree add --detach C:/Users/AMP/w-jav3 <objeto>` · `npm ci` exit 0 · `DATABASE_URL=postgresql://gerar:gerar@127.0.0.1:1/gerar npm run db:generate` exit 0 · status vazio.
+- `git worktree add --detach ~/w-jav3 <objeto>` · `npm ci` exit 0 · `DATABASE_URL=postgresql://gerar:gerar@127.0.0.1:1/gerar npm run db:generate` exit 0 · status vazio.
 - CI no objeto (`gh run view --job 124658651283/124658636949 --log`): 8 ok, tests 8, pass 8, fail 0, skipped 0 nos dois. Job 124556664769 (023b565a): not ok 8, pass 7, fail 1. `bf24bb2b` antivirus: failure 2x. Contexto do mandato CONFIRMADO por medição.
 
 ## Item 1, R9 (daemon real), sub-passos
@@ -50,5 +50,5 @@ Veredito parcial item 3: R11 VERDE; registro com ressalvas; overlay local-prod N
 
 ## Fechamento
 - `git show 2746eb60:docker-compose.prod.yml`: api publica `${API_PORT:-3000}:3000` e exige build, por isso a API não foi subida (porta 3000 vedada pelo mandato).
-- Limpeza: `rm -s -f` nos 3 containers, `docker volume rm` nos 3 volumes da cadeira, `docker network rm j-avreal-c3p_clamav_private`, `git worktree remove --force C:/Users/AMP/w-jav3` exit 0, ausente da lista. `erp-postgres` e `erp-redis` Up, sem comando contra eles. Disco 25 GB. Sondas e TAPs ficam nesta pasta.
+- Limpeza: `rm -s -f` nos 3 containers, `docker volume rm` nos 3 volumes da cadeira, `docker network rm j-avreal-c3p_clamav_private`, `git worktree remove --force ~/w-jav3` exit 0, ausente da lista. `erp-postgres` e `erp-redis` Up, sem comando contra eles. Disco 25 GB. Sondas e TAPs ficam nesta pasta.
 - Voto: reprova, 2 bloqueia (A1, A2, ambos do overlay), 7 ressalvas. `c3-voto.json`.

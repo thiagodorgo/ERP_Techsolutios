@@ -15,7 +15,7 @@ ambiente: Git Bash (MINGW64) no Windows 11; cwd declarado por comando; MSYS_NO_P
 ## HEAD E TERRENO INICIAL (2026-10-10T06:41:07Z)
 - cmd: `git rev-parse origin/fix/inventory-consistency` → `ae863e1aa7a138e8cc3eb536bde2778b11fc4c2f`
 - cmd: `gh pr view 389 --json headRefOid,...` → headRefOid=`ae863e1aa7a138e8cc3eb536bde2778b11fc4c2f`, state=OPEN, isDraft=true, mergeable=MERGEABLE, base=main → git = gh → **CONFERE**
-- cmd: `git -C C:/Users/AMP/w-389 rev-parse --short HEAD; status --porcelain` → `ae863e1a`, porcelain VAZIO (antes de eu gravar este arquivo)
+- cmd: `git -C ~/w-389 rev-parse --short HEAD; status --porcelain` → `ae863e1a`, porcelain VAZIO (antes de eu gravar este arquivo)
 - cmd: `git worktree list` → main@c1cfdabe · w-07c@00109988 [fix/o6r07c-subresource-scope] · w-389@ae863e1a [fix/inventory-consistency] · **w-pvpr@6cd27088 (detached)** · w-traccar@9cb441bd [docs/plano-traccar]  → w-pvpr anotado para o item 1.3
 - cmd: `df -h /c` → 238G total · 225G usado · **14G livre (95%)** → ≥ 10 GB → **CONFERE** (medido ANTES de qualquer jurado)
 - veredito parcial: head resolvido por duas fontes; disco suficiente.
@@ -34,10 +34,10 @@ ambiente: Git Bash (MINGW64) no Windows 11; cwd declarado por comando; MSYS_NO_P
 - [P3] cmd: `git rev-parse origin/main` → `c1cfdabe12c74b58f8393dbee4f333224c56b303`; `git rev-parse origin/fix/inventory-consistency` → `ae863e1aa7a138e8cc3eb536bde2778b11fc4c2f` = o que o caído mediu → CONFERE
 - cmd: `md5sum` EOL-neutro de insp-c2-evidencia.md e insp-c2-parecer.md em w-389 × cópia durável erp-pausa-2026-10-03/insp389-parcial-2026-10-10/ → `62b7af77…`/`32db292b…` idênticos nos dois lados → parcial do caído íntegro
 - cmd: `git worktree list` → main@c1cfdabe · w-07c@f7334f34 [fix/o6r07c-subresource-scope] (MOVEU desde 00109988: outra sessão viva, não toco) · w-389@ae863e1a · **w-insp389@ae863e1a (detached)** · w-pvpr@6cd27088 (detached) · w-traccar@9cb441bd
-- cmd: `git -C C:/Users/AMP/w-insp389 status --porcelain` → VAZIO; node_modules presente e NÃO é junction (`fsutil reparsepoint query` → "não é um ponto de nova análise")
+- cmd: `git -C ~/w-insp389 status --porcelain` → VAZIO; node_modules presente e NÃO é junction (`fsutil reparsepoint query` → "não é um ponto de nova análise")
 - cmd: `powershell Get-CimInstance Win32_Process | ? CommandLine -like *w-insp389*` → 5 processos, TODOS a própria cadeia de medição (bash/timeout/powershell); zero node/tsx/postgres órfãos → worktree w-insp389 REUTILIZADO
 - cmd: `timeout 25 df -h /c` → 238G total · 225G usado · **13G livre** → ≥ 10 GB → CONFERE (caiu 1 GB desde o caído: 14G)
-- cmd: `git -C C:/Users/AMP/w-389 status --porcelain` → 3 `??` só: 00-quedas.md (orquestrador, P6), insp-c2-evidencia.md, insp-c2-parecer.md (saídas deste papel). Nenhum rastreado modificado.
+- cmd: `git -C ~/w-389 status --porcelain` → 3 `??` só: 00-quedas.md (orquestrador, P6), insp-c2-evidencia.md, insp-c2-parecer.md (saídas deste papel). Nenhum rastreado modificado.
 - veredito parcial: Passo 0 re-executado e verde; terreno do próprio inspetor limpo.
 
 ### OBJETO re-executado [P3] (07:37:40Z)
@@ -53,18 +53,18 @@ ambiente: Git Bash (MINGW64) no Windows 11; cwd declarado por comando; MSYS_NO_P
 - veredito parcial 1.3: sem resíduo com privilégio/mutação; resíduo inerte nomeado (w-pvpr; erp-postgres-alt parado) → verde com ressalva leve.
 
 ### 4.1 S0 — espelho Codex (07:37:40Z)
-- cmd: `cd C:/Users/AMP/w-insp389 && timeout 120 node scripts/sync-agent-agents.mjs --check` @ae863e1a → ec=0 · `[agents-sync] OK — 49 agentes, espelho consistente.`
+- cmd: `cd ~/w-insp389 && timeout 120 node scripts/sync-agent-agents.mjs --check` @ae863e1a → ec=0 · `[agents-sync] OK — 49 agentes, espelho consistente.`
 - cmd: `find .claude/agents -name *.md | wc -l` → 49; `.agents/agents` → 50 (49 + README.md do protocolo). Os 4 `jurado-o6r04a-c2-*` presentes nos DOIS espelhos (git ls-tree no head). md5 cru difere por desenho (adaptador Codex: sem `tools:`, com preâmbulo "Papel para o Codex") — a autoridade é o --check.
 - veredito parcial 4.1: **VERDE**.
 
 ### 4.2 baseline honesto (07:39:04Z)
-- cmd: `cd C:/Users/AMP/w-insp389 && git status --porcelain` → VAZIO antes; `timeout 540 npm run check > /tmp/check.out 2>&1; ec=$?` → **ec=0** (`tsc -p tsconfig.json --noEmit`); porcelain VAZIO depois. node_modules próprio do worktree (npm ci 06:45Z pela instância 1; `.package-lock.json` presente; package-lock == head), não é junction.
+- cmd: `cd ~/w-insp389 && git status --porcelain` → VAZIO antes; `timeout 540 npm run check > /tmp/check.out 2>&1; ec=$?` → **ec=0** (`tsc -p tsconfig.json --noEmit`); porcelain VAZIO depois. node_modules próprio do worktree (npm ci 06:45Z pela instância 1; `.package-lock.json` presente; package-lock == head), não é junction.
 - cmd: client Prisma gerado (`node_modules/.prisma/client/schema.prisma`) × `prisma/schema.prisma` do head, espaços normalizados → EQUIVALENTE (diferença cru = só realinhamento de colunas). `npx prisma generate` recusou por falta de DATABASE_URL no env (esperado; não é falha do head).
 - veredito parcial 4.2: **VERDE** — baseline medido AGORA, no head, árvore limpa, antes de qualquer jurado.
 - PRECISÃO (emenda à linha acima, 07:39:39Z): normalização só de espaços ainda diferia; com espaços + linhas em branco normalizados o `diff` é VAZIO (gerado 3739 linhas × head 3736 = 3 linhas em branco). Equivalência de conteúdo mantida; a frase "só realinhamento" é imprecisa — é realinhamento + 3 linhas em branco.
 
 ### 1.1 head e árvore limpa (07:40:13Z)
-- cmd: `git -C C:/Users/AMP/w-389 rev-parse HEAD` → `ae863e1a…` = origin/fix/inventory-consistency = gh headRefOid; porcelain → só 3 `??` (quedas/evidência/parecer deste gate), 0 rastreado modificado.
+- cmd: `git -C ~/w-389 rev-parse HEAD` → `ae863e1a…` = origin/fix/inventory-consistency = gh headRefOid; porcelain → só 3 `??` (quedas/evidência/parecer deste gate), 0 rastreado modificado.
 - cmd: laço `tr -d  < f | md5sum` × `git show ae863e1a:f | tr -d  | md5sum` sobre os 19 arquivos centrais do diff (8 src/modules/inventory, 7 tests, schema.prisma, migration 20260873000000, scripts/inventory-duplicates-census.sql, .github/workflows/ci.yml) → **iguais=19 diferentes=0**.
 - veredito parcial 1.1: **VERDE** — sem mutação viva no worktree do dev.
 
@@ -75,7 +75,7 @@ ambiente: Git Bash (MINGW64) no Windows 11; cwd declarado por comando; MSYS_NO_P
 ### 1.2 plano de isolamento declarado e verificavel (07:52:20Z)
 - cmd: sed -n 745,800p plano (Passo 0/2/3 da retomada) + sed -n 219,282p comando (emenda 6 jj/ii) + secoes Terreno dos corpos C1 (l.165-204) e C2 (l.143-178) -> declarado POR ESCRITO: worktree PROPRIO detached + npm ci proprio (junction PROIBIDA) por jurado; cluster Postgres 16/Redis DESCARTAVEIS e proprios por jurado, DATABASE_URL so no env do comando; base viva erp-postgres/erp-redis (5432/6379) nao recebe sentenca de ninguem; disco >= 10 GB antes de cada jurado; papeis sequenciais (P5).
 - cmd: docker images | grep erp-junta -> erp-junta-node20-pg16:local 386MB (terreno das cadeiras, emenda 6-ii) PRESENTE; DEEP_CLEAN=1 nao roda (apagaria a imagem).
-- DIVERGENCIA DE NOME (ressalva, nao bloqueia): corpos mandam j-b04a-c2-c1-pg / j-b04a-c2-c2-pg e worktree .claude/worktrees/j-b04a-c2-*; plano Passo 0 + emenda 6-jj mandam prefixos j389-c1-* / j389-c2-* / j389-c3-* e caminho curto C:/Users/AMP/w-*. Ambos isolados e descartaveis, mas residuo e limpeza sao conferidos POR NOME: o briefing deve fixar UM prefixo por cadeira.
+- DIVERGENCIA DE NOME (ressalva, nao bloqueia): corpos mandam j-b04a-c2-c1-pg / j-b04a-c2-c2-pg e worktree .claude/worktrees/j-b04a-c2-*; plano Passo 0 + emenda 6-jj mandam prefixos j389-c1-* / j389-c2-* / j389-c3-* e caminho curto ~/w-*. Ambos isolados e descartaveis, mas residuo e limpeza sao conferidos POR NOME: o briefing deve fixar UM prefixo por cadeira.
 - veredito parcial 1.2: VERDE com ressalva (plano declarado; prefixo a unificar no briefing).
 
 ### 2.1 ata do ciclo anterior - a re-verificar, nao herdada (07:52:40Z)
@@ -116,6 +116,6 @@ ambiente: Git Bash (MINGW64) no Windows 11; cwd declarado por comando; MSYS_NO_P
 - veredito parcial 5.1: VERDE com ressalva (declarado; mandatos das cadeiras a gerar com P7).
 
 ### Limpeza e fecho (07:56:35Z)
-- cmd: powershell Get-CimInstance ... -like *w-insp389* (excluindo a propria cadeia) -> 0 processos; git worktree remove --force C:/Users/AMP/w-insp389 -> ec 0; ls -> No such file; rm -f /tmp/s0.out /tmp/pg.out /tmp/check.out -> ausentes; df -h /c -> 14G livres. Nenhum container criado por este papel. w-07c moveu de novo (39e7c836): outra sessao viva, intocada.
+- cmd: powershell Get-CimInstance ... -like *w-insp389* (excluindo a propria cadeia) -> 0 processos; git worktree remove --force ~/w-insp389 -> ec 0; ls -> No such file; rm -f /tmp/s0.out /tmp/pg.out /tmp/check.out -> ausentes; df -h /c -> 14G livres. Nenhum container criado por este papel. w-07c moveu de novo (39e7c836): outra sessao viva, intocada.
 - cmd: wc -l insp-c2-parecer.md -> 51 linhas; veredito gravado ANTES desta mensagem final (P2).
 - VEREDITO: LIBERADO COM RESSALVA (R1 prefixo unico por cadeira; R2 disparo por blob+md5 e model Fable explicito; R3 mandatos das cadeiras a gerar com P1-P7; R4 re-medir disco >= 10 GB antes de cada cadeira; R5 residuo inerte w-pvpr/erp-postgres-alt; R6 texto residual C1 l.20; R7 D7 como insumo do voto de C3).

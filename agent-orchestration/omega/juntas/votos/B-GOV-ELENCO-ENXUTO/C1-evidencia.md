@@ -24,7 +24,7 @@ re-mede o `C1-01` do zero, contra o arquivo, e não contra a ata que diz que ele
 
 | item | valor |
 |---|---|
-| Worktree | `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` |
+| Worktree | `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` |
 | Branch | `chore/gov-elenco-enxuto` |
 | **Head atual medido** | `9c0e6ac9df237b5cfe1a6fe1d16d4128861d7d10` |
 | **Head de código** | `adc41a54a885ba7243692890156a5da0b4d23786` |

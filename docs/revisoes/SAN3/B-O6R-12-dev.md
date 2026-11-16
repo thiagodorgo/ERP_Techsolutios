@@ -4,7 +4,7 @@
 - **Verificador previsto:** Claude Opus, identidade nova
 - **Ramo:** `fix/jurisdiction-profile-versioning`
 - **Base:** `6f727afc0ed9eb40449d34cafb5ebf00a47c52f5`
-- **Worktree:** `C:/Users/thiag/w-o6r12`
+- **Worktree:** `~/w-o6r12`
 - **Banco:** `o6r12-pg`, PostgreSQL 16, `127.0.0.1:55492`
 
 ## F0 — 2026-11-11T01:45:47-0300

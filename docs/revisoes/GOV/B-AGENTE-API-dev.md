@@ -1,7 +1,7 @@
 # B-AGENTE-API — Relatório do dev
 
 > **Papel:** dev do bloco `B-AGENTE-API` (instância nova). **Modelo que rodou:** Claude **Opus 5.5** (`claude-opus-5-5`), **nível menor**, pela decisão do dono `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` (topo só no plano e em toda reprovação; dev em Opus declarado).
-> **Fonte de verdade:** worktree `C:/Users/AMP/w-agapi`, ramo `chore/agente-claude-api`, head de partida `a6606e41` (plano + brief). Plano: `docs/revisoes/GOV/B-AGENTE-API-plano.md` (Fable). Implemento o plano; não o reescrevo.
+> **Fonte de verdade:** worktree `~/w-agapi`, ramo `chore/agente-claude-api`, head de partida `a6606e41` (plano + brief). Plano: `docs/revisoes/GOV/B-AGENTE-API-plano.md` (Fable). Implemento o plano; não o reescrevo.
 > **Proibições respeitadas:** nenhuma chamada à API da Anthropic; o valor de `ERP_AGENTE_ANTHROPIC_KEY` nunca foi lido nem impresso; sem commit/push (o orquestrador versiona); nada fora do venv da pasta; base viva e portas intocadas.
 > **Gravação:** incremental (P1). Cada passo traz comando → saída resumida → veredito parcial.
 
@@ -37,7 +37,7 @@
 - Veredito: referência fechada; o que não está no skill será medido no venv sem rede à API.
 
 ### B1 — venv ([H5])
-- `cd scripts/agente-claude-api && timeout 300 python -m venv .venv` → exit 0; `.venv/Scripts/python.exe -c "import sys; print(sys.prefix, sys.version)"` → `C:\Users\AMP\w-agapi\scripts\agente-claude-api\.venv` · `3.13.14 ... [MSC v.1944 64 bit (AMD64)]`.
+- `cd scripts/agente-claude-api && timeout 300 python -m venv .venv` → exit 0; `.venv/Scripts/python.exe -c "import sys; print(sys.prefix, sys.version)"` → `~/w-agapi\scripts\agente-claude-api\.venv` · `3.13.14 ... [MSC v.1944 64 bit (AMD64)]`.
 - Veredito: **[H5] confirmada** — o Python da Store cria venv funcional; o caminho alternativo do F1 não foi preciso.
 - `.gitignore` local criado **antes** do pip (`.venv/`, `saidas/`, `__pycache__/`, `*.pyc`): `git check-ignore -v scripts/agente-claude-api/.venv/x scripts/agente-claude-api/saidas/x` → exit 0, regras `scripts/agente-claude-api/.gitignore:1` e `:2`.
 
@@ -86,14 +86,14 @@ typing_extensions==4.16.0
 
 ### B9 — [H3]/[H3b]/[H3c]/[H4] (worktree descartável à mão, ambiente LIMPO do próprio agente)
 - Script de medição no scratchpad (`b9_h3_h4.py`) que usa `agente_claude.cerca.ambiente_limpo()` e `agente_claude.executor.executar()` — mede exatamente o que o agente fará. `env` (nomes) = `APPDATA, CI, COMSPEC, CORE_SAAS_PERSISTENCE, FORCE_COLOR, GIT_PAGER, GIT_TERMINAL_PROMPT, HOMEDRIVE, HOMEPATH, LOCALAPPDATA, NO_COLOR, NUMBER_OF_PROCESSORS, NVM_HOME, NVM_SYMLINK, PATH, PATHEXT, PROCESSOR_ARCHITECTURE, PROGRAMDATA, SYSTEMDRIVE, SYSTEMROOT, TEMP, TMP, USERPROFILE, WINDIR, npm_config_*` (sem `DATABASE_URL`, `REDIS_URL`, `ANTHROPIC_*`).
-- `git worktree add --detach C:/Users/AMP/w-ag-h3 9b611468` → código 0 (1,6 s).
+- `git worktree add --detach ~/w-ag-h3 9b611468` → código 0 (1,6 s).
 - `npm.CMD ci` → código 0 (15,1 s, cache quente).
 - `npm.CMD run check` **sem generate** → **código 2** (37,3 s): `error TS2305: Module '"@prisma/client"' has no exported member 'Prisma'` / `'PrismaClient'` em dezenas de `*-prisma.repository.ts`. **[H3] CONFIRMADA.**
 - `node.EXE --test --import tsx tests/auth-jwt.test.ts` **sem generate**, sem `.env`, `CORE_SAAS_PERSISTENCE=memory` → código 0, `# tests 6 # pass 6 # fail 0`. **[H3c] e [H4] CONFIRMADAS.**
 - `node.EXE node_modules/prisma/build/index.js generate` com ambiente limpo → **código 1**: `Failed to load config file ... PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL.` **[H3b]: o generate EXIGE `DATABASE_URL`.** `npm run check` depois disso continua código 2.
 - **Regra do plano aplicada (§0.7 [H3] coluna "Se falhar" e §8):** `npm run check` **sai da lista fechada neste bloco** (`verificar.nome` não aceita mais `npm_check`; o passo de `prisma generate` não entra na preparação) e vira a pendência `P-AGENTE-CHECK-SEM-GENERATE`. **Não** inventei `DATABASE_URL` inerte: o brief proíbe `DATABASE_URL` no ambiente das verificações, e o plano não autoriza. `teste` (node --test sem `-db`) segue na lista: roda sem generate.
-- Custo de disco medido do `--npm-ci`: `du -sm C:/Users/AMP/w-ag-h3` = **488 MB** (worktree + `node_modules`).
-- Limpeza: processos vivos com `w-ag-h3` na linha de comando = 0 (`Get-CimInstance Win32_Process`); `git worktree remove --force C:/Users/AMP/w-ag-h3` → exit 0; `git worktree prune`; diretório removido; `git worktree list | grep -c w-ag-` → 0.
+- Custo de disco medido do `--npm-ci`: `du -sm ~/w-ag-h3` = **488 MB** (worktree + `node_modules`).
+- Limpeza: processos vivos com `w-ag-h3` na linha de comando = 0 (`Get-CimInstance Win32_Process`); `git worktree remove --force ~/w-ag-h3` → exit 0; `git worktree prune`; diretório removido; `git worktree list | grep -c w-ag-` → 0.
 
 ### Achado de terreno A2 — ponto/espaço final só some no `realpath` quando o arquivo existe (refina o F22)
 - Probe (`python -I`, scratchpad): `existe.pem.` → `realpath` = `existe.pem`; `existe.pem ` → `existe.pem`; **`nao_existe.pem.` → `nao_existe.pem.`** (o ponto fica); `nao_existe.key ` → fica; `abspath` tira nos dois casos.
@@ -172,15 +172,15 @@ typing_extensions==4.16.0
 - **2ª execução, literal do plano:** `ERP_AGENTE_ANTHROPIC_KEY=sk-ant-teste-falso ERP_AGENTE_ANTHROPIC_WORKSPACE=wrkspc_teste .venv/Scripts/python.exe -m agente_claude revisar-pr 416 --simular` (as duas variáveis no processo: o registro nem é consultado).
   - Saída: `parecer completo: veredito=inconclusivo · custo US$ 0.00` · `pasta: ...\saidas\20261010-193012Z-revisar-pr-416` · **exit 0**.
   - `saidas/20261010-193012Z-revisar-pr-416/` = `auditoria.jsonl`, `parecer.json`, `parecer.md`, `resumo.json` (mantida como evidência, ignorada pelo git).
-  - `parecer.json`: `alvo.sha = 9af697df441dec6716235bb8765ad2629f8bc9b6` (= `headRefOid` do #416, F16/F34, conferido com `FETCH_HEAD`), `modelo.respondeu = "simulado"`, `fallback_servidor = false`, `nivel = "menor (D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO)"`, `conta.origem_chave = processo`, `execucao.worktree = C:\Users\AMP\w-ag-20261010-193012`, `worktree_removido = true`, `sdk = anthropic 1.13.0`.
+  - `parecer.json`: `alvo.sha = 9af697df441dec6716235bb8765ad2629f8bc9b6` (= `headRefOid` do #416, F16/F34, conferido com `FETCH_HEAD`), `modelo.respondeu = "simulado"`, `fallback_servidor = false`, `nivel = "menor (D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO)"`, `conta.origem_chave = processo`, `execucao.worktree = ~/w-ag-20261010-193012`, `worktree_removido = true`, `sdk = anthropic 1.13.0`.
   - Auditoria: `1 inicio · 2 evento worktree_criado · 3 modelo · 4 ferramenta entregar_parecer · 5 evento worktree_removido · 6 fim`.
-  - `git worktree list | grep -c w-ag-` → 0; `ls -d C:/Users/AMP/w-ag-*` → nenhum; `grep -c teste-falso` nos 4 arquivos → 0.
+  - `git worktree list | grep -c w-ag-` → 0; `ls -d ~/w-ag-*` → nenhum; `grep -c teste-falso` nos 4 arquivos → 0.
 - **Prova extra (item 11 do revisor, antecipado):** `b8_stop_real.py` (scratchpad) sobe `investigar ... --simular --simular-turnos 5` como processo real e cria `STOP` (vazio) quando a auditoria tem 2 linhas `modelo`: `STOP criado após 2 turnos (6.4s)` → `parecer PARCIAL (STOP)` · **código 2** · auditoria `7 modelo (turno 3) · 8 evento stop_detectado "entre ferramentas do mesmo turno" · 9 ferramenta listar_diretorio negado=true motivo=STOP · 10 worktree_removido · 11 fim codigo_saida=2`. Saída gravada no scratchpad (fora do repositório).
 
 ### Achado de terreno A3 — sob mutação, um teste escreveu fora do temporário (corrigido)
-- Depois do B8 havia **duas pastas a mais** em `saidas/` (19:28:14Z e 19:29:04Z). Origem medida pelo `parecer.json` delas: head `bbbb…` (o do repositório falso), chave de usuário sem workspace — eram da mutação 3.7b (pula a checagem de workspace) nas duas primeiras passadas: o teste que esperava recusa seguiu adiante sem `--saida`, gravou na `saidas/` real e o worktree falso criou e apagou `C:\Users\AMP\w-ag-<data>` (`worktree_removido: true`).
+- Depois do B8 havia **duas pastas a mais** em `saidas/` (19:28:14Z e 19:29:04Z). Origem medida pelo `parecer.json` delas: head `bbbb…` (o do repositório falso), chave de usuário sem workspace — eram da mutação 3.7b (pula a checagem de workspace) nas duas primeiras passadas: o teste que esperava recusa seguiu adiante sem `--saida`, gravou na `saidas/` real e o worktree falso criou e apagou `~/w-ag-<data>` (`worktree_removido: true`).
 - Correção (só nos testes): `tests/__init__.py` aponta `tarefas.PASTA_SAIDAS` para um temporário da suíte (apagado no `atexit`); `deps_repo_falso` põe `USERPROFILE` no temporário; `test_conta.py` trocou `tempfile.mkdtemp()` sem limpeza por temporário com `addCleanup`. As duas pastas espúrias (artefato meu, dentro da `saidas/` ignorada) foram apagadas.
-- **3ª passada da rodada de mutação, com conferência de escape:** 48/48 vermelhas; `ls saidas/` e `ls -d C:/Users/AMP/w-ag-*` idênticos antes × depois; 0 temporários `agente-suite-*` restantes.
+- **3ª passada da rodada de mutação, com conferência de escape:** 48/48 vermelhas; `ls saidas/` e `ls -d ~/w-ag-*` idênticos antes × depois; 0 temporários `agente-suite-*` restantes.
 
 ### B10 — escopo e espaço em branco
 - `git diff --check` (rastreados) → exit 0, sem saída.
@@ -280,7 +280,7 @@ Nenhuma ação foi barrada pelo classificador ou pela permissão durante a const
 
 ## 7. Limpeza (C5)
 
-Removidos: worktree de medição `C:/Users/AMP/w-ag-h3` (488 MB; 0 processos vivos antes; `git worktree remove --force` + `prune`); worktrees `w-ag-*` do B8 (removidos pelo próprio agente); 2 pastas espúrias de `saidas/` (A3); `__pycache__/` de `agente_claude/` e `tests/`; temporários da suíte (`atexit`). Ficam: `.venv/` (ignorado) e `saidas/20261010-193012Z-revisar-pr-416/` (evidência do B8, ignorada). Artefatos de medição no scratchpad da sessão (fora do repo): `b9/`, `b8/`, `mutacao/`. `git worktree list` sem `w-ag-*`.
+Removidos: worktree de medição `~/w-ag-h3` (488 MB; 0 processos vivos antes; `git worktree remove --force` + `prune`); worktrees `w-ag-*` do B8 (removidos pelo próprio agente); 2 pastas espúrias de `saidas/` (A3); `__pycache__/` de `agente_claude/` e `tests/`; temporários da suíte (`atexit`). Ficam: `.venv/` (ignorado) e `saidas/20261010-193012Z-revisar-pr-416/` (evidência do B8, ignorada). Artefatos de medição no scratchpad da sessão (fora do repo): `b9/`, `b8/`, `mutacao/`. `git worktree list` sem `w-ag-*`.
 
 ## 8. Bateria final (N e forma)
 

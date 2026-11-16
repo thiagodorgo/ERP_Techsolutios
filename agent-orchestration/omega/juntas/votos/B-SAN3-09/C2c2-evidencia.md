@@ -10,12 +10,12 @@ papel: C2 | identidade: jurado-san3-09c2-c2-dryrun-e-concorrencia | modelo: Clau
 - Cerca do mandato: `6319f11aef2c05ca375bb7b6df2eb941ae14e4aa`. `git diff --name-status 6319f11a e277bb6d` = 5 × `A agent-orchestration/omega/juntas/votos/B-SAN3-09/{00-mandatos/C1c2.md,C2c2.md,C3c2.md, C1c2-evidencia.md, C1c2-voto.json}` → **só registro**.
 - Objeto julgado pelo inspetor: `e120644708fc78694d1b69847e0bcd93666343f0`; `git diff --name-status e1206447 e277bb6d` = os 5 acima + `A 00-inspetor-terreno-c2.md` → **só registro**; e1206447 e 6319f11a são ancestrais de e277bb6d.
 - Arquivos `C1c2-evidencia.md`/`C1c2-voto.json` existem no delta: **NÃO lidos** (cadeiras votam juntas).
-- `$SCRATCH` = C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/j9c2c2
-- host: node v20.19.5 · Python 3.13.14 · Git Bash (MINGW64, SHELL=/bin/bash.exe) · `MSYS_NO_PATHCONV` NÃO exportada · cwd por comando = C:/Users/AMP/w-nuv09 ou o worktree próprio · variáveis definidas: só caminhos (S, V, E, W) por comando.
+- `$SCRATCH` = ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/j9c2c2
+- host: node v20.19.5 · Python 3.13.14 · Git Bash (MINGW64, SHELL=/bin/bash.exe) · `MSYS_NO_PATHCONV` NÃO exportada · cwd por comando = ~/w-nuv09 ou o worktree próprio · variáveis definidas: só caminhos (S, V, E, W) por comando.
 - disco: `df -h /c` = 12G livres de 238G (95%) no início.
 - docker no início: `erp-postgres`/`erp-redis` Exited (255) 3 h (base viva desligada, nunca alvo); `erp-postgres-alt`, `pastrack-teste-banco-teste-1` Exited (alheios). Imagens locais: erp-junta-node20-pg16:local, postgres:16, postgres:16-alpine, redis:7, node:20-bookworm-slim.
 - Prefixo de containers desta cadeira: **`j9c2c2-`** (o mandato e o disparo o nomeiam; o corpo l.178 tinha como padrão `jurado-san3-09c2-c2-*` "ou o que o mandato nomear" — vale o mandato).
-- Worktree próprio: `C:/Users/AMP/w-j9c2c2` (nomeado pelo mandato).
+- Worktree próprio: `~/w-j9c2c2` (nomeado pelo mandato).
 
 ## 1. Legalidade (gravado ~2026-10-08T17:43Z)
 
@@ -30,7 +30,7 @@ papel: C2 | identidade: jurado-san3-09c2-c2-dryrun-e-concorrencia | modelo: Clau
 
 ## 2. Terreno montado (gravado ~2026-10-08T17:45Z)
 
-- Worktree: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j9c2c2 e277bb6d…` → `test -e …/.git` ok, `rev-parse HEAD` = e277bb6d, `status --porcelain` = 0 linhas. `npm ci --no-audit --no-fund` próprio → 326 pacotes, ec=0 (sem junction). Versões no worktree: @prisma/client 7.8.0, prisma 7.8.0, pg 8.21.0, tsx 4.22.3, typescript 5.9.3. Disco depois: 12G livres (96%).
+- Worktree: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j9c2c2 e277bb6d…` → `test -e …/.git` ok, `rev-parse HEAD` = e277bb6d, `status --porcelain` = 0 linhas. `npm ci --no-audit --no-fund` próprio → 326 pacotes, ec=0 (sem junction). Versões no worktree: @prisma/client 7.8.0, prisma 7.8.0, pg 8.21.0, tsx 4.22.3, typescript 5.9.3. Disco depois: 12G livres (96%).
 - Docker (prefixo `j9c2c2-`, nomeado pelo mandato): rede `j9c2c2-net`; `j9c2c2-pg` (postgres:16, senha aleatória de 32 hex gerada por `secrets.token_hex(16)`, passada por `-e POSTGRES_PASSWORD` SEM valor; guardada só em $SCRATCH/pgpw.secret, apagada ao fim); `j9c2c2-redis` (redis:7); `j9c2c2-node` (node:20-bookworm-slim, `--init`, `sleep infinity`). `docker ps` → portas `5432/tcp` e `6379/tcp` só expostas, **nenhuma publicada**.
 - Árvore: `git -c core.autocrlf=false archive e277bb6d | docker exec -i j9c2c2-node sh -c 'mkdir -p /work && cd /work && tar -x'`. md5 dentro do container × `git cat-file blob e277bb6d:<f> | md5sum` (cru e EOL-neutro, iguais — 0 CR): script 995022e1efb3a896e007ccf68ba38fd8 · -db.test 928d7d294ddfbd6c99d8c4feecb56e92 · T1 407100f6336fcfc07095285b30782ac1 · package-lock.json 69a6ea326087249d7aa03896859513f8 · helpers/auth-identity-fixture.ts 7e1ad910c87bb54476202530cae29931 → **5/5 = blob**.
 - Variáveis do teste: escritas por stdin em `/root/.dbenv` (umask 077) dentro do container node: DATABASE_URL (postgresql://postgres:<senha>@j9c2c2-pg:5432/erp_j9c2c2_base), REDIS_URL (redis://j9c2c2-redis:6379), CORE_SAAS_PERSISTENCE=memory; carregadas por `. /root/.dbenv` dentro do `sh -c` (equivale ao `-e` da receita; a senha nunca vai a argv do host). Base viva (`erp-postgres`/`erp-redis`, 5432/6379 do host) nunca tocada.
@@ -86,7 +86,7 @@ papel: C2 | identidade: jurado-san3-09c2-c2-dryrun-e-concorrencia | modelo: Clau
 - Laço no container `j9c2c2-pg` (`timeout 1200`, ~0,2 s por amostra, até arquivo de parada): `SELECT coalesce(max(c),0) FROM (SELECT datname, count(*) c FROM pg_stat_activity WHERE datname LIKE 'erp_san3_09_drill_model_%' GROUP BY 1) s` + contagem de bancos `erp_san3_09_drill_model_%`.
 - Resultado: **365 amostras**, `model_sessions=0` em 365/365; o banco-modelo existiu em **161** delas (`model_dbs=1`) — a amostragem cobriu a vida do modelo. **Máximo de sessões no modelo visto = 0.**
 - Resíduo depois do T2 **verde** (psql do container pg): `erp_san3_09_drill_%` = **0** · `o6r_b01_%` = **0** · todas as 6 famílias do arnês (`^(o6r_b01|o6r_clone_owner|audit_rls|vid_rls_test|vid_link_rls|rls_test)`) = **0**. Linha de base antes do T2 = 0/0/0.
-- Anomalia de terreno minha: o 1º `docker exec j9c2c2-pg touch /tmp/stop` foi convertido pelo MSYS para `C:/Users/AMP/AppData/Local/Temp/stop` e falhou; parada refeita com `sh -c 'touch /tmp/stop'`. Sem efeito na medição.
+- Anomalia de terreno minha: o 1º `docker exec j9c2c2-pg touch /tmp/stop` foi convertido pelo MSYS para `~/AppData/Local/Temp/stop` e falhou; parada refeita com `sh -c 'touch /tmp/stop'`. Sem efeito na medição.
 
 ### 1(c) Matriz 5 × 6 pela minha sonda (gravado 2026-10-08T17:52Z)
 - Sonda `/work/zz-j9c2c2-matriz.mts` (verbatim em `$SCRATCH/zz-j9c2c2-matriz.mts`, md5 **a34c64592f05756479e5a34133ed1214** host = container). Mutantes como cópias `/work/scripts/zz-j9c2c2-ma{1..5}.ts` geradas por `/work/zz-j9c2c2-mutar.mjs` (md5 47ecb8cd27bba0604cdfff1c3a0c1144) a partir do script do objeto (md5 995022e1… conferido depois): MA1 âncora `if (dryRun) {` 2× → ocorrência #1, l.231; MA2 a mesma, ocorrência #2, l.276; MA3 `!assignment && !dryRun` 1×, l.301; MA4 `if (!dryRun) {` 1×, l.316; MA5 `if (!dryRun && (` 1×, l.336; cada `diff` = 2 linhas (1 `<` + 1 `>`).
@@ -206,7 +206,7 @@ papel: C2 | identidade: jurado-san3-09c2-c2-dryrun-e-concorrencia | modelo: Clau
 - Bancos: `DROP DATABASE zz_j9c2c2_modelo` e `erp_j9c2c2_base` (os meus); contagens finais no meu cluster: `zz\_j9c2c2\_%` = **0** · `erp\_san3\_09\_drill\_%` = **0** · 6 famílias de papel = **0**.
 - Sondas e mutantes removidos de `/work` (`ls` → nenhum `zz-*`); script e -db.test.ts dentro do container com md5 = blob (995022e1… / 928d7d29…) antes da remoção.
 - Containers `j9c2c2-node`, `j9c2c2-pg`, `j9c2c2-redis` removidos por `docker rm -f -v` (contagem `name=j9c2c2` = 0); os 2 volumes anônimos (pg 4c2aa489…, redis ad9e5303…) **removidos** (`docker volume inspect` falha); `docker volume ls` 18 → 16 (os 16 alheios do inspetor intactos, nunca prune); rede `j9c2c2-net` removida (contagem 0).
-- Worktree `C:/Users/AMP/w-j9c2c2`: `status --porcelain` = 0; processos com o caminho = **0** (PowerShell `Get-CimInstance`); `git worktree remove --force` ec=0; `test -e` → removido; `worktree list | grep -ic w-j9c2c2` = **0**. Disco: 12G livres.
+- Worktree `~/w-j9c2c2`: `status --porcelain` = 0; processos com o caminho = **0** (PowerShell `Get-CimInstance`); `git worktree remove --force` ec=0; `test -e` → removido; `worktree list | grep -ic w-j9c2c2` = **0**. Disco: 12G livres.
 - `$SCRATCH`: `pgpw.secret`, o pristino do teste e as cópias do script apagados; ficam só logs e as sondas (texto no Anexo A).
 - Base viva `erp-postgres`/`erp-redis` nunca tocada (Exited). Em `w-nuv09` escrevi só `C2c2-evidencia.md` e `C2c2-voto.json` (`git status`: só esses dois `??` além dos ` M` fantasma de `.agents/`). Não li `C1c2-*` (o `git grep -l` do nome da minha identidade listou `C1c2-voto.json` como arquivo que contém o nome — conteúdo não aberto).
 

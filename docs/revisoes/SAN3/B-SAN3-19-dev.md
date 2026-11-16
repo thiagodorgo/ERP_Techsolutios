@@ -2,8 +2,8 @@
 
 - **Dev:** `dev-san319-opus`, Claude Opus 5.5. Não escreveu o plano.
 - **Verificador:** Codex GPT-5.6 Sol (item 11). Houve cruzamento de modelo.
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-SAN3-19-plano.md`.
-- **Worktree:** `C:/Users/thiag/w-san319`, ramo `fix/mobile-faxina-termos`, base `origin/main` `5da03cac`.
+- **Plano:** `~/erp-pausa-2026-10-03/planos/B-SAN3-19-plano.md`.
+- **Worktree:** `~/w-san319`, ramo `fix/mobile-faxina-termos`, base `origin/main` `5da03cac`.
 - Gravado fatia por fatia (P1).
 
 ## Fatia 1 — medição do §1 (em `origin/main` `5da03cac`)

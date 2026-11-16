@@ -123,7 +123,7 @@
   "REDIS_URL=redis://127.0.0.1:56414 (j-bsan301-c3-redis, redis:7-alpine)",
   "API http://127.0.0.1:3213/api/v1 (CORE_SAAS_PERSISTENCE=prisma, NODE_ENV=test); web http://127.0.0.1:5213 (VITE_USE_MOCKS=false)"
  ],
- "evidencia_arquivo": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C3-cognicao-visual-evidencia.md",
- "capturas": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3-shots/ (23 PNG + facts.json)",
+ "evidencia_arquivo": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C3-cognicao-visual-evidencia.md",
+ "capturas": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3-shots/ (23 PNG + facts.json)",
  "limpeza": "servidores 3213/5213 encerrados por PID (0 processos com j-bsan301-c3); docker rm -f j-bsan301-c3-pg j-bsan301-c3-redis (0 restantes); git worktree remove --force j-bsan301-c3 ec 0 (0 na lista); bsan301 intocado (74f3f7c9, porcelain 0); logs de npm/servidor apagados; scripts, capturas e facts.json mantidos no scratchpad como evidência"
 }

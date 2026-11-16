@@ -31,7 +31,7 @@ o registro**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, substituição declarada pelo §C7.6-bis), **sem executar nada**
-do que está aqui: a fábrica não tem `Bash`. O que ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-07ca` em
+do que está aqui: a fábrica não tem `Bash`. O que ele diz sobre o ramo foi **lido** no disco de `~/w-07ca` em
 2026-10-10. A ref local e a de rastreio do ramo estavam em `054dada26ce6d225f344604d512b1c0f3a72e6a4`, lidas nos arquivos
 de ref e não por `git`. O reflog local dá a esse commit a mensagem "merge origin/main: Merge made by the 'ort' strategy",
 **depois** do último commit do desenvolvedor (`d4cd35e3`). Os arquivo:linha abaixo vêm do plano (medidos em `c1cfdabe`) ou do
@@ -227,22 +227,22 @@ passar, é achado contra este corpo ou contra a régua, declarado antes do vered
     `git --version` (host e container), `psql --version` (container), `docker version` (servidor), o espaço livre em `C:` e o
     ambiente.
 - **Arquivos de saída:** os que o seu mandato nomear. O padrão deste corpo é
-  `C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c-a/C3-evidencia.md` e `…/C3-voto.json`. Nunca grave no
+  `~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c-a/C3-evidencia.md` e `…/C3-voto.json`. Nunca grave no
   seu worktree de medição. As quedas são do **orquestrador** (P6).
 - **Saída colada: LF, sem espaço no fim de linha** (`sed -E 's/[[:space:]]+$//'`). No fim, `grep -cE '[[:space:]]+$'` = **0**
   nos seus dois arquivos (publique). **Nunca** cole URL de conexão nem senha na evidência.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** `C:/Users/AMP/w-j07cac3` (ou o que o mandato nomear), criado por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j07cac3 <objeto>`. **Prove**
-  `test -e C:/Users/AMP/w-j07cac3/.git`. Se o caminho existir, é resíduo alheio: reporte e use o sufixo `b`. Se precisar de
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** `~/w-j07cac3` (ou o que o mandato nomear), criado por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j07cac3 <objeto>`. **Prove**
+  `test -e ~/w-j07cac3/.git`. Se o caminho existir, é resíduo alheio: reporte e use o sufixo `b`. Se precisar de
   `node_modules` nele, use `npm ci --no-audit --no-fund` **próprio**. **Junction ou symlink de `node_modules` entre worktrees
   é PROIBIDO** (§C7.1-ter(c)).
-- **Árvores intocáveis.** `C:/Users/AMP/w-07ca` é a árvore do **desenvolvedor**: a sua **única** escrita lá são os seus dois
+- **Árvores intocáveis.** `~/w-07ca` é a árvore do **desenvolvedor**: a sua **única** escrita lá são os seus dois
   arquivos de saída. Os worktrees de outros agentes você não toca.
 - **Containers PRÓPRIOS, prefixo `j07ca-c3-`**, numa rede Docker própria **sem porta publicada no host**:
   - um `postgres:16` (`j07ca-c3-pg`) e um `redis:7` (`j07ca-c3-redis`) descartáveis. Se a imagem não estiver local, faça o
     `pull` e declare. **Não** remova imagem compartilhada;
   - um cliente Node 20 (`j07ca-c3-node`). A imagem `erp-junta-node20-pg16:local` da receita
-    `C:/Users/AMP/erp-terreno/receita-pg16.sh` serve: copie a receita para `$SCRATCH` e adapte, publicando o `diff` e o md5 da
+    `~/erp-terreno/receita-pg16.sh` serve: copie a receita para `$SCRATCH` e adapte, publicando o `diff` e o md5 da
     cópia. A receita derruba tudo no `trap EXIT`: para manter os containers de pé entre a régua, a suíte e o `-db`, escreva um
     condutor seu, com texto verbatim e md5 na evidência;
   - a árvore entra por `git -c core.autocrlf=false archive <objeto>`, com **todos** os blobs conferidos (`git hash-object
@@ -271,7 +271,7 @@ passar, é achado contra este corpo ou contra a régua, declarado antes do vered
   com a contagem `j07ca-c3-` = 0 conferida. Antes de remover o worktree, conte os processos vivos com o caminho na linha de
   comando:
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-j07cac3*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`.
-  Depois, `git worktree remove --force C:/Users/AMP/w-j07cac3`. Limpe os diretórios que as suítes criam
+  Depois, `git worktree remove --force ~/w-j07cac3`. Limpe os diretórios que as suítes criam
   (`storage/checklist-attachments/<uuid>/` da **sua** árvore; o `.gitkeep` fica) e os temporários `o6r07c-*` que você gerou.
 - **Saída para arquivo e exit por variável:** `cmd > "$LOG" 2>&1; ec=$?`. **Nunca `| tail`.** **Caminho absoluto sempre.**
 - **Evidência e voto em arquivo, por `Bash`.** Você não tem `Write`, por desenho (§C7.4-bis). Um script com barra invertida
@@ -592,7 +592,7 @@ Voto (JSON):
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou — achado contra este corpo, declarado antes do veredito · critério que não pode PASSAR por construção — achado contra a régua" ],
  "pendencias_que_aceito": [ "o que é da C1/C2 (nomeie a cadeira) · o 07c-b e as decisões do dono · falhas pre-existentes com dono e evidência · registro ausente com destino nomeado · o que este corpo declara reprovação por construção" ],
- "teardown": "src/ trocados restaurados (md5/hash-object = blob do objeto) · containers j07ca-c3-* (Postgres, Redis, cliente) removidos por docker rm -f -v e rede removida, contagem 0 · árvore temporária da receita removida · storage/checklist-attachments/<uuid>/ e temporários o6r07c-* que eu criei removidos (o .gitkeep fica) · worktree C:/Users/AMP/w-j07cac3 removido por `git worktree remove --force`, com 0 processos vivos com o caminho antes · cópias e segredos de $SCRATCH apagados · base viva (erp-postgres/erp-redis) nunca tocada · w-07ca só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
+ "teardown": "src/ trocados restaurados (md5/hash-object = blob do objeto) · containers j07ca-c3-* (Postgres, Redis, cliente) removidos por docker rm -f -v e rede removida, contagem 0 · árvore temporária da receita removida · storage/checklist-attachments/<uuid>/ e temporários o6r07c-* que eu criei removidos (o .gitkeep fica) · worktree ~/w-j07cac3 removido por `git worktree remove --force`, com 0 processos vivos com o caminho antes · cópias e segredos de $SCRATCH apagados · base viva (erp-postgres/erp-redis) nunca tocada · w-07ca só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
 }
 ```
 

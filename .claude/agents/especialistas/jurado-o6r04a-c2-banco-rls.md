@@ -166,7 +166,7 @@ outra cadeira, **nomeada**.
 
 - **Worktree PRÓPRIO, detached, no head do briefing**, com caminho curto (`Filename too long` já derrubou quem
   pôs worktree no scratchpad):
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c1 <head>`.
+  `git -C ~/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c1 <head>`.
   **Nunca** meça no `b04a` (worktree do bloco) nem na árvore principal nem no worktree de outro jurado: nesses,
   **somente leitura**.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** no seu worktree, e `npx prisma generate` com a `DATABASE_URL` só no

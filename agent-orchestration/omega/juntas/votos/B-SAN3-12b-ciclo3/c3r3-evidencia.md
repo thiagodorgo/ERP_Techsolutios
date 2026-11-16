@@ -23,18 +23,18 @@ papel: cadeira C3 | identidade: jurado-san312b-ciclo3-c3-sol | executor: Codex C
 ## Legalidade antes do mérito — 2026-10-28T12:34:36Z
 
 - Comando: leitura integral de `insp-san312b-c3-parecer.md`; reexecução de `git ls-remote`, `gh pr view`, check-runs, `origin/main`, merge-base, resíduos de worktree/container, trabalhos Docker e recursos.
-- Saída resumida: inspetor `inspetor-san312b-ciclo3-opus`, `LIBERADO COM RESSALVA`; autoriza a identidade C3 Codex Sol e o worktree `C:/Users/AMP/j12b-c3-c3r3-wt`; ramo remoto = PR = objeto; PR OPEN/não rascunho/MERGEABLE; `backend`, `backend-postgres`, `frontend` = `completed/success`; check-runs `14 total | 0 não-verdes | 0 pendentes`; `origin/main=merge-base=f076973921539165df8d406b8c061dbf4e4ee127`; worktree ausente; containers próprios 0; trabalhos Docker fora de `erp-*` 0; C: 11G. O subcomando de memória falhou (`ec=1`) exclusivamente porque o Bash expandiu `$o` antes do PowerShell (`unbound variable`).
+- Saída resumida: inspetor `inspetor-san312b-ciclo3-opus`, `LIBERADO COM RESSALVA`; autoriza a identidade C3 Codex Sol e o worktree `~/j12b-c3-c3r3-wt`; ramo remoto = PR = objeto; PR OPEN/não rascunho/MERGEABLE; `backend`, `backend-postgres`, `frontend` = `completed/success`; check-runs `14 total | 0 não-verdes | 0 pendentes`; `origin/main=merge-base=f076973921539165df8d406b8c061dbf4e4ee127`; worktree ausente; containers próprios 0; trabalhos Docker fora de `erp-*` 0; C: 11G. O subcomando de memória falhou (`ec=1`) exclusivamente porque o Bash expandiu `$o` antes do PowerShell (`unbound variable`).
 - Veredito parcial: legalidade e CI verdes; ressalvas aceitas (corpo genérico carregado do blob; plano de queda; Postgres só condicional). Memória ainda a reexecutar corretamente antes da instalação; nenhum item de mérito iniciado.
 
 ### Recursos e runtimes antes da instalação — 2026-10-28T12:35:26Z
 
 - Comando: `df -BG /c`; memória de commit livre via PowerShell invocado dentro do Git Bash; inspeção e execução dos binários absolutos de Node 22 e npm.
-- Saída resumida: C: `11G`; memória de commit livre `12,97 GB`; `C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe` = `v22.14.0`; npm CLI absoluto = `10.9.2`.
+- Saída resumida: C: `11G`; memória de commit livre `12,97 GB`; `~/AppData/Local/nvm/v22.14.0/node.exe` = `v22.14.0`; npm CLI absoluto = `10.9.2`.
 - Veredito parcial: pisos de 8,8 GB e 4 GB atendidos; Node 20 e Node 22 disponíveis por caminhos absolutos; `nvm use` não foi usado.
 
 ### Worktree e dependências próprias — 2026-10-28T12:39:06Z
 
-- Comando: `git worktree add --detach C:/Users/AMP/j12b-c3-c3r3-wt cfb19fd1`; prova de `.git`, `.env` e links; `npm ci` raiz e frontend com Node 22/npm CLI por caminhos absolutos.
+- Comando: `git worktree add --detach ~/j12b-c3-c3r3-wt cfb19fd1`; prova de `.git`, `.env` e links; `npm ci` raiz e frontend com Node 22/npm CLI por caminhos absolutos.
 - Saída resumida: head `cfb19fd115bac02ef65eb94202b01a64e6730854`; `.git` presente; `.env` ausente; junctions/symlinks `0`; raiz `326` pacotes; frontend `103` pacotes; `ec=0`; status Git `0`; C: `10G` ao fim. O npm reportou vulnerabilidades já representadas pelos lockfiles; nenhum `audit fix` foi executado.
 - Veredito parcial: terreno exclusivo pronto, sem junction, sem mutação rastreada e acima do piso de disco. Base viva não foi tocada; Postgres local não foi criado, pois a CI é a régua autorizada.
 
@@ -111,5 +111,5 @@ papel: cadeira C3 | identidade: jurado-san312b-ciclo3-c3-sol | executor: Codex C
 - Saída resumida: os dois status continuam `FECHADA`; cada uma das cinco pendências aparece `1` vez; cabeçalhos `670 -> 675`; caminhos proibidos `0`.
 - Comparação: saída idêntica à registrada em `Três vias, seções, desconto D-8, índice e pendências` e no mandato. A correção de registro continua presente no objeto.
 - Veredito da retomada: os três itens permanecem **FECHADOS — APROVADOS**. Nenhum defeito grave de produto (perda de dado, vazamento entre organizações, quebra de permissão ou erro de dinheiro) apareceu na amostragem; pela régua do ciclo 3, voto final `APROVADO`.
-- Teardown revalidado: `C:/Users/AMP/j12b-c3-c3r3-wt` ausente no disco e no registro de `git worktree`; processos estranhos com esse caminho `0`; nenhum container foi criado ou consultado nesta retomada; nenhum commit foi feito.
+- Teardown revalidado: `~/j12b-c3-c3r3-wt` ausente no disco e no registro de `git worktree`; processos estranhos com esse caminho `0`; nenhum container foi criado ou consultado nesta retomada; nenhum commit foi feito.
 

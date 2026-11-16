@@ -3,8 +3,8 @@ papel: planejador-mestre (ciclo 2, B-SAN3-11 / PR 401) | identidade: planejador-
 # PLANO-C2-B-SAN3-11 — medicoes do planejador do ciclo 2 (P1 incremental)
 
 > Quem escreve nao achou, nao desenvolveu e nao votou neste bloco. Insumos (R-1, ata, votos C1/C2/C3) sao RELATORIO de quem achou,
-> nunca fato: tudo que abaixo vira premissa foi re-medido por execucao propria no worktree detached C:/Users/AMP/w-plc2 (CRLF) e
-> C:/Users/AMP/w-plc2lf (LF, core.autocrlf=false). Hora em UTC. Logs longos ficam aqui, nunca na mensagem final.
+> nunca fato: tudo que abaixo vira premissa foi re-medido por execucao propria no worktree detached ~/w-plc2 (CRLF) e
+> ~/w-plc2lf (LF, core.autocrlf=false). Hora em UTC. Logs longos ficam aqui, nunca na mensagem final.
 
 ## Índice da trilha (esqueleto P2, preenchido item a item)
 - §0 Pré-voo do papel — MEDIDO (§0.1 refs/objeto/CI, §0.2 terreno/conflitos/KPI da main)
@@ -29,8 +29,8 @@ papel: planejador-mestre (ciclo 2, B-SAN3-11 / PR 401) | identidade: planejador-
 - check-runs: `gh api .../commits/653532f7/check-runs` → total/não-concluídos/não-success = `6	1	1`; em defa502e → `14	0	0`.
 
 ### 0.2 Terreno próprio — 2026-10-03T03:58Z→03:59Z
-- medido por: `git worktree add --detach C:/Users/AMP/w-plc2 653532f7` → ec=0, HEAD 653532f7, porcelain 0, **CRLF** (`tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` → **583**).
-- medido por: `git -c core.autocrlf=false worktree add --detach C:/Users/AMP/w-plc2lf 653532f7` → ec=0, HEAD 653532f7, porcelain 0, **LF** (CR no adapter → **0**). Checkouts futuros neste worktree sempre com `git -c core.autocrlf=false`.
+- medido por: `git worktree add --detach ~/w-plc2 653532f7` → ec=0, HEAD 653532f7, porcelain 0, **CRLF** (`tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` → **583**).
+- medido por: `git -c core.autocrlf=false worktree add --detach ~/w-plc2lf 653532f7` → ec=0, HEAD 653532f7, porcelain 0, **LF** (CR no adapter → **0**). Checkouts futuros neste worktree sempre com `git -c core.autocrlf=false`.
 - medido por: `npm ci --no-audit --no-fund` em `w-plc2/frontend` (12 s, 103 pacotes, 61 entradas) e em `w-plc2lf/frontend` (11 s, 103, 61) → ec=0 ambos; `npm ci --ignore-scripts` na raiz de `w-plc2` (15 s, 326 pacotes, 222 entradas; `playwright 1.60.0`) → ec=0. `dir /AL node_modules | grep -ciE 'JUNCTION|SYMLINK'` → **0** nos três (sem junction, §C7.1-ter(c)). Raiz de `w-plc2lf` sem `npm ci` (o gerador roda com `TS_ROOT=<frontend>`, D11).
 - Base viva (erp-postgres 5432 / erp-redis 6379): nenhum comando desta instância aponta para elas; nenhum cluster subiu (as medições deste ciclo são de componente e de AST).
 - medido por: `git merge-tree --write-tree --name-only origin/main 653532f7` → **6 conflitos**, todos de registro/KPI: `Kpis/app.js` · `Kpis/kpis-history.json` · `Kpis/kpis-latest.json` · `agent-orchestration/codex/log-execucao.md` · `agent-orchestration/controle/pendencias-indice.md` · `agent-orchestration/docs/status-geral.md` (`Kpis/kpis-history.md` e `pendencias.md` auto-mergeiam). **0 conflito em código/teste** → a integração do #404 é só registro (como a §15.10 previu para a classe).
@@ -40,7 +40,7 @@ papel: planejador-mestre (ciclo 2, B-SAN3-11 / PR 401) | identidade: planejador-
 ### 1.0 Baseline honesto nos dois terrenos — 04:04Z→04:09Z
 - medido por: `cd w-plc2/frontend && timeout 900 node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx` (CRLF, 583 CR) → ec=0, `# tests 16 · pass 16 · fail 0`, `grep -c 'morto por sinal'` = 0 (29 s).
 - medido por: idem em `w-plc2lf/frontend` (LF, 0 CR) → ec=0, **16/16**, 0 "morto por sinal" (39 s, com o gerador rodando em paralelo noutro terreno).
-- medido por: `TS_ROOT=C:/Users/AMP/w-plc2lf/frontend node scripts/san3-11-dossie-vistoria-censo.mjs .` no head → ec=0, `DESCARTADAS 0/0`, L3 = 2 pontos (`ChecklistRunsPanel.tsx:116` e `:119`, receptor `run`, consulta **sim**), `pontos sem consulta=0`.
+- medido por: `TS_ROOT=~/w-plc2lf/frontend node scripts/san3-11-dossie-vistoria-censo.mjs .` no head → ec=0, `DESCARTADAS 0/0`, L3 = 2 pontos (`ChecklistRunsPanel.tsx:116` e `:119`, receptor `run`, consulta **sim**), `pontos sem consulta=0`.
 
 ### 1.1 C2-01 — remoção de chave no emissor (DTO) não fica vermelha — RE-MEDIDO: **confirmado** — 04:12Z→04:14Z
 Terreno: `w-plc2` (CRLF). Mutações por `plc2/mut.mjs` (âncora única, casa em LF e grava no EOL original, prova por bytes/CR), restauração por `git checkout HEAD -- <dto>` com md5 EOL-neutro conferido (= `8201540f…`, IGUAL, porcelain 0) após CADA uma.
@@ -191,7 +191,7 @@ Custo: 2,4–7,3 s por execução nesta máquina (a 1ª leitura de cópia paga a
 ## 4. Limpeza do terreno — 2026-10-03T04:40:16Z
 - Sondas temporárias apagadas antes da remoção: `frontend/tests/zz-plc2-render.tsx`, `frontend/tests/zz-plc2-dto-probe.tsx` (no meu worktree; nunca na árvore do dev); `git status --porcelain` em `w-plc2` e `w-plc2lf` → **0** (todas as mutações restauradas por `git checkout HEAD -- <arquivo>` e conferidas por md5 EOL-neutro a cada passo).
 - medido por: `powershell.exe -Command "(Get-CimInstance Win32_Process | Where-Object { CommandLine -like '*w-plc2*' -and -notlike '*Get-CimInstance*' }).Count"` → **0** processos vivos (o `powershell` não está no PATH do Git Bash desta máquina — caminho completo `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe`; nota para o dev em §16.6).
-- medido por: `git worktree remove --force C:/Users/AMP/w-plc2` e `… w-plc2lf` → ec=0 ambos; `test -e` → removidos; `git worktree list | grep -ci plc2` → **0**; `%TEMP%/.tmp-censo-*` → 0.
+- medido por: `git worktree remove --force ~/w-plc2` e `… w-plc2lf` → ec=0 ambos; `test -e` → removidos; `git worktree list | grep -ci plc2` → **0**; `%TEMP%/.tmp-censo-*` → 0.
 - Árvore do dev `w-nuv11` (HEAD 653532f7): nenhum rastreado tocado por mim; nenhum commit; nenhum container, nenhum cluster, base viva intocada. Ficam no scratchpad da sessão (fora do repo): `plc2/` (mut.mjs, specs M1–M9/T13/T14, c1.cjs, censo-v2.mjs e logs `v2-*.log`, `censo-*.log`, `c1-head.json`, `dto-probe.log`, `panel-b1b3.html`) e `plc2-tap-{crlf,lf}.log` — evidência desta instância.
 - Uma linha: removi só o que criei (2 worktrees com `node_modules` próprios e 2 sondas); nada fora do scratchpad sobrou.
 
@@ -273,7 +273,7 @@ Custo: 2,4–7,3 s por execução nesta máquina (a 1ª leitura de cópia paga a
 T13/T14 ficam (T13: `DossiePrintDocument.tsx:<n> … NÃO`; T14: `DESCARTADAS pelo adapter (1)`). As cópias de T20–T22 copiam o mesmo que T13/T14 (`src/modules/impound/impound.checklist-link.dto.ts`, `frontend/src/**`, `package.json`); o gerador roda com `TS_ROOT=<frontend real>` — o `tsconfig.json` e o `typescript` vêm dali (medido na cópia sem `node_modules`: ec=0, 5,1 s).
 
 ### 16.6 Bateria do ciclo 2 — nos DOIS terrenos, `timeout` externo, `ec` por variável, nunca `tail -f`
-Terrenos do dev: `C:/Users/AMP/w-dev11c2` (CRLF; `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0 colado) e `C:/Users/AMP/w-dev11c2lf` (`git -c core.autocrlf=false worktree add --detach`; CR = 0 colado; checkouts sempre com `-c core.autocrlf=false`). `npm ci --no-audit --no-fund` em `frontend/` nos dois; raiz uma vez `npm ci --ignore-scripts` (guards do KPI; Playwright se quiser antecipar A27/A28). Sem junction. Removidos ao fim com **0 processo vivo** — contagem por `Get-CimInstance Win32_Process` via **`C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe`** (o `powershell` não está no PATH do Git Bash desta máquina — medido pelo planejador). Base viva nunca alvo. Mutações só por arquivo de spec + helper com âncora única e prova (bytes/CR antes→depois); conteúdo com barra invertida dupla **nunca por heredoc** (o transporte colapsa a dupla em simples — medido pelo planejador em 04:10Z) e comandos longos em partes ≤ 7 KB.
+Terrenos do dev: `~/w-dev11c2` (CRLF; `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0 colado) e `~/w-dev11c2lf` (`git -c core.autocrlf=false worktree add --detach`; CR = 0 colado; checkouts sempre com `-c core.autocrlf=false`). `npm ci --no-audit --no-fund` em `frontend/` nos dois; raiz uma vez `npm ci --ignore-scripts` (guards do KPI; Playwright se quiser antecipar A27/A28). Sem junction. Removidos ao fim com **0 processo vivo** — contagem por `Get-CimInstance Win32_Process` via **`C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe`** (o `powershell` não está no PATH do Git Bash desta máquina — medido pelo planejador). Base viva nunca alvo. Mutações só por arquivo de spec + helper com âncora única e prova (bytes/CR antes→depois); conteúdo com barra invertida dupla **nunca por heredoc** (o transporte colapsa a dupla em simples — medido pelo planejador em 04:10Z) e comandos longos em partes ≤ 7 KB.
 Em **cada** terreno:
 ```
 npm --prefix frontend run check ; ec=$?                                                                                 # 0
@@ -534,7 +534,7 @@ process.exitCode = total === 0 ? 0 : 1;
 
 ```
 
-**Saída no head `653532f7`** (`TS_ROOT=C:/Users/AMP/w-plc2lf/frontend node censo-v2.mjs .`, terreno LF, exit 0; a linha `# L3 arquivos varridos (26): …` elidida — igual à do Apêndice A):
+**Saída no head `653532f7`** (`TS_ROOT=~/w-plc2lf/frontend node censo-v2.mjs .`, terreno LF, exit 0; a linha `# L3 arquivos varridos (26): …` elidida — igual à do Apêndice A):
 
 ```
 # L0 DTO emite (12): id, templateId, templateName, templateVersion, status, relatedEntityType, relatedEntityId, startedAt, completedAt, reopenedFromRunId, supersededByRunId, currentRunId

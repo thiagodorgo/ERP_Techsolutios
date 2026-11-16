@@ -82,7 +82,7 @@
   "API http://127.0.0.1:3313/api/v1 (CORE_SAAS_PERSISTENCE=prisma, NODE_ENV=test); web http://127.0.0.1:5313 (VITE_USE_MOCKS=false, VITE_DEFAULT_TENANT_ID vazio)",
   "Protótipo file:///…/j-bsan301-c3/docs/claude-code-handoff/ERP%20Web.dc.html (chips Vazia / Erro de API / Sem permissão)"
  ],
- "evidencia_arquivo": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/C3-frontend-pixel-master-evidencia.md",
- "capturas": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/c3c2-shots/ (PNG + facts.json/facts2.json/facts3.json + sbs-estados.png); scripts em scratchpad/c3c2-measure*.cjs e c3c2-sbs.cjs",
+ "evidencia_arquivo": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/C3-frontend-pixel-master-evidencia.md",
+ "capturas": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/c3c2-shots/ (PNG + facts.json/facts2.json/facts3.json + sbs-estados.png); scripts em scratchpad/c3c2-measure*.cjs e c3c2-sbs.cjs",
  "limpeza": "servidores 3313 (PID 26700) e 5313 (PID 19440) encerrados por PID (taskkill), 0 LISTEN nas duas portas, 0 processo com j-bsan301-c3; docker rm -f j-bsan301-c3-pg j-bsan301-c3-redis → 0 restantes; git -C bsan301 worktree remove --force .../j-bsan301-c3 → ec 0, 0 na lista, diretório ausente; bsan301 intocado (HEAD 8adaaa31, porcelain 0); j-bsan301-c2-* (outra cadeira) não tocados; logs de servidor apagados; livre em C: 14 GB (95%)."
 }

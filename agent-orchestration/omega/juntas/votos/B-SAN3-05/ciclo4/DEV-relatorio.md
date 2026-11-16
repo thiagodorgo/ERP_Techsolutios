@@ -5,7 +5,7 @@
 - **Plano:** `docs/revisoes/SAN3/B-SAN3-05-plano.md`, seção "## Ciclo 4 — planejador-ciclo4-b-san3-05" (STATUS: COMPLETO).
 - **Fonte §A1.1:** `D-405-PROIBIR-VIEWS` (decisões, 2026-10-09).
 - **Head do disparo:** `7c63f920c996cf105535f345eec2ee10461c77a3` (= `ls-remote origin fix/runtime-role-sem-bypass`, medido 17:52Z).
-- **Worktree:** `C:/Users/AMP/w-o05` (ramo `fix/runtime-role-sem-bypass`). `scratchpad/` não rastreado não é meu: não apago nem commito.
+- **Worktree:** `~/w-o05` (ramo `fix/runtime-role-sem-bypass`). `scratchpad/` não rastreado não é meu: não apago nem commito.
 - **Terreno:** Postgres 16 e Node 20 só em contêineres Linux próprios, prefixo `dev05c4-`, rede própria, sem porta no host;
   `erp-postgres`, `erp-redis`, 5432 e 6379 nunca são alvo. Tudo sob `timeout`; sem `tail -f`.
 
@@ -189,7 +189,7 @@ Contêiner conferido no head `d66eb178` antes da bateria: md5 dos 5 arquivos de 
 ## Teardown (18:31Z)
 
 - **Comando:** `docker rm -f -v dev05c4-node dev05c4-pg dev05c4-redis` · `docker network rm dev05c4-net` · contagem por filtro de nome ·
-  `docker volume inspect` dos 2 volumes anônimos registrados antes · `ls /c/Users/AMP/t-dev05c4`.
+  `docker volume inspect` dos 2 volumes anônimos registrados antes · `ls ~/t-dev05c4`.
 - **Saída:** rm ec=0, network rm ec=0; contêineres `dev05c4` = 0, redes = 0; os 2 volumes anônimos removidos; árvore temporária ausente
   (já removida no setup); arquivo da senha descartável e saídas da B7 apagados do scratchpad da sessão; nenhum outro contêiner tocado;
   `erp-postgres`, `erp-redis`, 5432 e 6379 nunca foram alvo; disco 11 GB livres (igual ao início).

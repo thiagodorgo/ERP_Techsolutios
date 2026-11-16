@@ -482,7 +482,7 @@ true
 552d24b6ef32b69d0f61979c78285355  -
 ```
 
-O worktree `C:/Users/AMP/w-s05d` estava limpo e `HEAD = origin/fix/runtime-role-sem-bypass = 34f25122`. Autor local ja era
+O worktree `~/w-s05d` estava limpo e `HEAD = origin/fix/runtime-role-sem-bypass = 34f25122`. Autor local ja era
 `thiagodorgo <42915563+thiagodorgo@users.noreply.github.com>`. `where psql` e `where pg_ctl` nao acharam binarios nativos;
 `where docker` achou o Docker Desktop. A escolha entre Postgres nativo e contêiner fica para a medicao do terreno do cluster,
 sem tocar `erp-postgres:5432` nem `erp-redis:6379`.
@@ -778,7 +778,7 @@ do fechamento. O cluster próprio `san3-05-s2-pg` foi derrubado e removido; cont
 worker/teste com `w-s05d` no `CommandLine`, excluída esta sessão Codex: **0**.
 
 Depois do push fast-forward deste fechamento, a última ação local é remover o worktree por
-`git worktree remove --force C:/Users/AMP/w-s05d`, chamado da árvore principal. Inspetor, check-runs e junta pertencem ao
+`git worktree remove --force ~/w-s05d`, chamado da árvore principal. Inspetor, check-runs e junta pertencem ao
 orquestrador; os dois atos de staging/produção do §11 pertencem ao dono.
 
 ### SEXTA RETOMADA — push final — 2026-10-04T14:09:40Z
@@ -805,7 +805,7 @@ slots`. Isso mede por execução o mesmo privilégio sem abrir o pseudo-banco `r
 mutante que tira `rolreplication` da guarda. Não contradiz a propriedade nem o critério; corrige a premissa ambiental do
 método de evidência.
 
-O worktree foi recriado em `C:/Users/AMP/w-s05d`, com `core.autocrlf=true`, `npm ci` próprio (**326** pacotes) e sem
+O worktree foi recriado em `~/w-s05d`, com `core.autocrlf=true`, `npm ci` próprio (**326** pacotes) e sem
 junction. Cluster descartável próprio `san3-05-s2-pg`, PostgreSQL 16.14, porta 55405 provada livre, 107 migrações; a base
 viva não recebeu comando. A primeira execução após a edição encontrou duas falhas do próprio ensaio: Prisma não
 desserializa o retorno `void` de `pg_drop_replication_slot`, e o wrapper local entregou um socket MSYS convertido. Ambos

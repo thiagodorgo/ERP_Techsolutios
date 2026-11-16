@@ -54,5 +54,5 @@
     "P-CI-LISTA-CURADA-6-PRE-EXISTENTES, explicitamente fora do veredito pelo corpo, permanece com governança/CI",
     "superfície/listener/segredo/trava Ω6R-SEC-002 pertencem à cadeira (b′); cenários funcionais completos da atribuição pertencem à (c′)"
   ],
-  "teardown": "log_statement=none e prefixo padrão restaurado; containers próprios=0; worktree C:/Users/AMP/w-jc2-a removido por git worktree remove --force; scratch próprio removido; sem prune; base viva intocada; disco final 14,93 GB livres"
+  "teardown": "log_statement=none e prefixo padrão restaurado; containers próprios=0; worktree ~/w-jc2-a removido por git worktree remove --force; scratch próprio removido; sem prune; base viva intocada; disco final 14,93 GB livres"
 }

@@ -75,8 +75,8 @@ enxergar todas as vias.
 
 ### E1 — reexecução do gerador v2 (Apêndice A da v2, extraído do próprio plano por `awk`, sem edição) — P3
 
-- `git -C C:/Users/AMP/w-07c rev-parse HEAD origin/main` → `f7334f34…` · `c1cfdabe…`; o ramo só acrescenta `docs/revisoes/SAN3/B-O6R-07c-*` (`git diff --stat c1cfdabe..HEAD` → 2 arquivos, 1524 linhas).
-- cwd `C:/Users/AMP/w-07c`, Node v20.19.5, `env -u DATABASE_URL -u REDIS_URL`:
+- `git -C ~/w-07c rev-parse HEAD origin/main` → `f7334f34…` · `c1cfdabe…`; o ramo só acrescenta `docs/revisoes/SAN3/B-O6R-07c-*` (`git diff --stat c1cfdabe..HEAD` → 2 arquivos, 1524 linhas).
+- cwd `~/w-07c`, Node v20.19.5, `env -u DATABASE_URL -u REDIS_URL`:
   - `node --import tsx census-v2.mts c2.json` → `rotas registradas: 409 | camadas sem caminho de texto: 0 | alcançadas pelo campo: 146 (GET/HEAD 104 · mutantes 42)` (ec=0).
   - `node --import tsx census-sync-v2.mts c2.json s2.json` → `POST alcançáveis: 31 | lotes: 4 | arquivos: 758 | tipos: 439 | famílias: 147 | pares alcançados: 23 | curinga: 0 | template não resolvido: 4` (os 4 nomeados no plano).
   - `node classify-v2.cjs c2.json s2.json --gravar-snapshot snapshot-base.json` → `DESPACHO·07c-b=1 · EVIDENCIA-OS·07c-b=4 · LEITURA=104 · LOTE=4 · N=15 · OS·07a=3 · OS·07c-a=10 · R=10 · VISTORIA·07c-b=18 · total=169 · NA PROPRIEDADE: 48`.
@@ -195,7 +195,7 @@ enxergar todas as vias.
 
 ## Apêndice — sondas da r2, verbatim (P3: roteiro de reexecução)
 
-Rodadas com cwd = `C:/Users/AMP/w-07c` (head `f7334f34`, `src/` = `c1cfdabe`), `env -u DATABASE_URL -u REDIS_URL node --import tsx <arquivo>`, Node v20.19.5. Os geradores (`census-v2.mts`, `census-sync-v2.mts`, `tipos.mts`, `classify-v2.cjs`, `inject-prefixo.mts`, `prova-tipos.mts`) foram **extraídos do Apêndice A da v2 por `awk`, sem edição**; o `inject.mts` e o `probe-dispatch.mts` são os do apêndice da r1, sem edição. Ordem: `census-v2.mts <c2> [injeção]` → `census-sync-v2.mts <c2> <s2> [injeção]` → `classify-v2.cjs <c2> <s2> snapshot-base.json` (o instantâneo nasce de `classify-v2.cjs c2.json s2.json --gravar-snapshot snapshot-base.json` na linha de base). `inject-n1n2.mts` = `inject-novas.mts` com a linha do N9 (`r.post(["/work-orders/:workOrderId/via-array"], perm, ok);`) trocada por comentário. `inject-tipo-ctl.mts` = `inject-tipo.mts` com `"work_order.controle_r2"` acrescido ao `NOVOS` e a linha `if (action.type === "work_order.controle_r2") { … }` acrescida a `LINHAS`. `snapshot-malclass.json` = `snapshot-base.json` + 3 linhas (`GET …/aceitar-por-link: LEITURA`, `POST …/:id/fechar: N`, `POST …/:workOrderId/notas: N`).
+Rodadas com cwd = `~/w-07c` (head `f7334f34`, `src/` = `c1cfdabe`), `env -u DATABASE_URL -u REDIS_URL node --import tsx <arquivo>`, Node v20.19.5. Os geradores (`census-v2.mts`, `census-sync-v2.mts`, `tipos.mts`, `classify-v2.cjs`, `inject-prefixo.mts`, `prova-tipos.mts`) foram **extraídos do Apêndice A da v2 por `awk`, sem edição**; o `inject.mts` e o `probe-dispatch.mts` são os do apêndice da r1, sem edição. Ordem: `census-v2.mts <c2> [injeção]` → `census-sync-v2.mts <c2> <s2> [injeção]` → `classify-v2.cjs <c2> <s2> snapshot-base.json` (o instantâneo nasce de `classify-v2.cjs c2.json s2.json --gravar-snapshot snapshot-base.json` na linha de base). `inject-n1n2.mts` = `inject-novas.mts` com a linha do N9 (`r.post(["/work-orders/:workOrderId/via-array"], perm, ok);`) trocada por comentário. `inject-tipo-ctl.mts` = `inject-tipo.mts` com `"work_order.controle_r2"` acrescido ao `NOVOS` e a linha `if (action.type === "work_order.controle_r2") { … }` acrescida a `LINHAS`. `snapshot-malclass.json` = `snapshot-base.json` + 3 linhas (`GET …/aceitar-por-link: LEITURA`, `POST …/:id/fechar: N`, `POST …/:workOrderId/notas: N`).
 
 ### inject-novas.mts
 

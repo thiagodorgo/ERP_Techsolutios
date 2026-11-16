@@ -76,4 +76,4 @@ Nenhum desses nomes é `jurado-trc01-a`, `-b` ou `-c`.
 
 ## Limpeza
 
-O worktree `C:/Users/AMP/w-insp-trc01` foi removido pelo nome (`git worktree remove --force`, ec=0, não existe mais). Os temporários meus no scratchpad e o `/tmp/ca.txt` foram removidos. Um `du` órfão meu (PID 18528) foi encerrado. Não criei container, rede nem volume. A base viva e as portas do dono não foram tocadas. No w-trc01 escrevi só a evidência e este parecer. Disco: 16G livres.
+O worktree `~/w-insp-trc01` foi removido pelo nome (`git worktree remove --force`, ec=0, não existe mais). Os temporários meus no scratchpad e o `/tmp/ca.txt` foram removidos. Um `du` órfão meu (PID 18528) foi encerrado. Não criei container, rede nem volume. A base viva e as portas do dono não foram tocadas. No w-trc01 escrevi só a evidência e este parecer. Disco: 16G livres.

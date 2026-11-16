@@ -76,7 +76,7 @@
     "portas_proibidas_tocadas": false,
     "cluster": "PostgreSQL 16 descartável j03a-c2-pg em 127.0.0.1:60072, papel runtime NOSUPERUSER/NOBYPASSRLS/NOINHERIT.",
     "suites_db": "Sempre pelo teste-linux.sh em contêiner Linux isolado.",
-    "worktree_proprio": "C:/Users/AMP/w-j03a-c2",
+    "worktree_proprio": "~/w-j03a-c2",
     "restauro_final": "Status limpo antes da remoção; worktree removido; container removido; zero recurso com prefixo C2.",
     "disco_livre_final_gib": 25.84
   },
@@ -90,5 +90,5 @@
   "veto": false,
   "justificativa": "Os três itens do mandato foram medidos por execução independente, inclusive replay por ator, legado real, prova adulterada, códigos HTTP, lock concorrente, Postgres/RLS e 22 mutações no total. Nenhuma mutação permaneceu viva e nenhum caminho medido abriu escrita financeira, autorização cruzada ou perda de dado no objeto. O único ajuste é a ausência de denúncia antecipada para NEWTYPE, cujo runtime permaneceu fail-closed e sem escrita.\nVOTO: APROVADO",
   "finalizado_utc": "2026-10-13T22:26:33Z",
-  "evidencia": "C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/03a-C2-evidencia.md"
+  "evidencia": "~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/03a-C2-evidencia.md"
 }

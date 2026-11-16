@@ -6,7 +6,7 @@ Data da medição: 2026-09-11. Papel: inventariante (somente leitura).
 
 | Item | Valor |
 |---|---|
-| Worktree | `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b06` |
+| Worktree | `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b06` |
 | Branch | `fix/billing-durability` (PR **#385**, estado **OPEN** — o B-O6R-06 ainda NÃO está na `main`) |
 | Head | `ca5fd19a` (`git rev-parse --short HEAD`), árvore limpa (`git status --porcelain` vazio) |
 | Fontes | `docs/revisoes/O6R/achados.jsonl` (32 linhas), `PLANO_O6R.md`, `REGISTRO_ACHADOS_O6R.md`, `ATA_J6R.md`, `agent-orchestration/controle/pendencias.md`, `Kpis/kpis-latest.json` |

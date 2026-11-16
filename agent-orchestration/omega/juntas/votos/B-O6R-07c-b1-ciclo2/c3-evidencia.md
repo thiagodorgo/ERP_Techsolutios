@@ -4,13 +4,13 @@
 
 - `git show 7ff1e003:.claude/agents/especialistas/jurado-07cb1c2-c3-censo-escopo-e-regressao.md | tr -d '\r' | md5sum` → `44db36af06f249c1507324fe9da0d2a1` = esperado. `tr -d '\r' < 00-mandatos/cadeira-c3.md | md5sum` → `42b41847d49773ef445a99ae6291b84c` = esperado. OK.
 - Objeto por duas fontes: `git ls-remote origin refs/pull/440/head` → `7ff1e003…`; `gh pr view 440` → headRefOid `7ff1e003…`, OPEN, MERGEABLE. origin/main início `a26f8afe74b73d9379b4fae5deba312875c2427b`; `B = git merge-base origin/main 7ff1e003` = `c260d36201f6e835799e7f96a14bc9eb8889ca5a` (2026-10-18T18:57:48Z).
-- Inspetor `insp-07cb1c2-parecer.md`: **LIBERADO**, nomeia C3 `jurado-07cb1c2-c3-censo-escopo-e-regressao`, terreno `C:/Users/AMP/w-j07cb1c2-c3-*`, containers `j07cb1c2-c3-*`, CI 14/14 success. Identidade `jurado-07cb1c2-c3-opus` não consta na lista de inelegíveis do corpo.
-- Terreno: o disparo nomeia `C:/Users/AMP/w-j07cb1c2-c3` (sem sufixo); uso esse caminho, que é exclusivo desta cadeira. Docker no início: só `erp-postgres`, `erp-redis` (base viva, não acessada).
+- Inspetor `insp-07cb1c2-parecer.md`: **LIBERADO**, nomeia C3 `jurado-07cb1c2-c3-censo-escopo-e-regressao`, terreno `~/w-j07cb1c2-c3-*`, containers `j07cb1c2-c3-*`, CI 14/14 success. Identidade `jurado-07cb1c2-c3-opus` não consta na lista de inelegíveis do corpo.
+- Terreno: o disparo nomeia `~/w-j07cb1c2-c3` (sem sufixo); uso esse caminho, que é exclusivo desta cadeira. Docker no início: só `erp-postgres`, `erp-redis` (base viva, não acessada).
 - Veredito parcial: legal para votar.
 
 ## Terreno
 
-- `git worktree add --detach C:/Users/AMP/w-j07cb1c2-c3 7ff1e003…` → HEAD 7ff1e003; `npm ci` próprio ec=0 (326 pacotes); `find node_modules -maxdepth 1 -type l | wc -l` → 0; `dir /AL node_modules | grep -c JUNCTION` → 0; `git status --porcelain` → 0. `DATABASE_URL=postgresql://x:y@127.0.0.1:1/nada npm run db:generate` (fictício, sem conexão). Temporários só na subpasta `scratchpad/j07cb1c2-c3/`. Sem Docker até aqui (nenhum container `j07cb1c2-c3-*`).
+- `git worktree add --detach ~/w-j07cb1c2-c3 7ff1e003…` → HEAD 7ff1e003; `npm ci` próprio ec=0 (326 pacotes); `find node_modules -maxdepth 1 -type l | wc -l` → 0; `dir /AL node_modules | grep -c JUNCTION` → 0; `git status --porcelain` → 0. `DATABASE_URL=postgresql://x:y@127.0.0.1:1/nada npm run db:generate` (fictício, sem conexão). Temporários só na subpasta `scratchpad/j07cb1c2-c3/`. Sem Docker até aqui (nenhum container `j07cb1c2-c3-*`).
 
 ## Item 1 — censo regenerável e guards que podem falhar
 
@@ -126,5 +126,5 @@
 
 ## Fechamento e teardown (19:29Z)
 - Objeto no fim: `git ls-remote origin refs/pull/440/head` → `7ff1e003…` (não andou). origin/main no fim `a26f8afe…` (não andou); merge-base segue `c260d362`.
-- Mutações (MT11, M25, src de `b198fe35`) só no meu worktree, cada uma restaurada por `git checkout HEAD --` com `hash-object` = blob do objeto e `git status --porcelain` = 0 antes da remoção; `dist/` removido; `git worktree remove --force C:/Users/AMP/w-j07cb1c2-c3` ec=0 (`git worktree list` sem ela; diretório inexistente); subpasta `scratchpad/j07cb1c2-c3/` (logs da CI, TAPs, regenerações, classificador) apagada; nenhum container `j07cb1c2-c3-*` criado (`docker ps -a` → 0; havia 1 grupo alheio `j07cb1c2-c2-*` e a base `erp-*`, não tocados). Base viva e portas proibidas (5432, 6379, 3000, 5173, 5050, 8899) não usadas. Os ` M` em `.agents/**` do `w-07cb1` são preexistentes (fim de linha; o inspetor os registrou), não meus.
+- Mutações (MT11, M25, src de `b198fe35`) só no meu worktree, cada uma restaurada por `git checkout HEAD --` com `hash-object` = blob do objeto e `git status --porcelain` = 0 antes da remoção; `dist/` removido; `git worktree remove --force ~/w-j07cb1c2-c3` ec=0 (`git worktree list` sem ela; diretório inexistente); subpasta `scratchpad/j07cb1c2-c3/` (logs da CI, TAPs, regenerações, classificador) apagada; nenhum container `j07cb1c2-c3-*` criado (`docker ps -a` → 0; havia 1 grupo alheio `j07cb1c2-c2-*` e a base `erp-*`, não tocados). Base viva e portas proibidas (5432, 6379, 3000, 5173, 5050, 8899) não usadas. Os ` M` em `.agents/**` do `w-07cb1` são preexistentes (fim de linha; o inspetor os registrou), não meus.
 - Voto: `c3-voto.json` — APROVADO, com 2 achados `ajuste` de registro (não reprovam).

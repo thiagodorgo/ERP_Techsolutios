@@ -3,8 +3,8 @@
 > **Crítico:** `critico-trc02-flash` (2º Crítico em paralelo com Claude Opus; nível menor declarado).
 > **Modelo:** Gemini 3.8 Flash High via Antigravity.
 > **Papel:** Revisor adversarial independente de Segurança e Arquitetura. Só lê; não desenvolve; sem voto final de junta.
-> **Objeto julgado:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md` (Plano inicial do bloco B-TRC-02, pelo `planejador-trc02-fable`).
-> **Ref medida no repositório (§A7):** `origin/main` = `3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d` (após `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch -q origin`).
+> **Objeto julgado:** `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md` (Plano inicial do bloco B-TRC-02, pelo `planejador-trc02-fable`).
+> **Ref medida no repositório (§A7):** `origin/main` = `3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d` (após `git -C ~/Documents/GitHub/ERP_Techsolutios fetch -q origin`).
 > **Referência canônica do bloco:** `origin/main:docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §7 (B-TRC-02, ~l.1018).
 > **Data:** 2026-10-19.
 > **Regime:** Bloco de Ingestão do Traccar (Segurança máxima; junta 3/3 com poder de veto; §C7 item 8(4)).
@@ -43,9 +43,9 @@ Não foram identificadas falhas estruturais bloqueantes que justifiquem `VOLTA A
 - **Escopo:** `tests/traccar-event-ingestion-db.test.ts` (caso E5) e `src/integrations/traccar/traccar-ingestion.service.ts`.
 - **Comando que sustenta:**
   ```powershell
-  git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios show origin/main:tests/traccar-quarantine-db.test.ts
+  git -C ~/Documents/GitHub/ERP_Techsolutios show origin/main:tests/traccar-quarantine-db.test.ts
   ```
-  e a linha 659 de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
+  e a linha 659 de `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
 - **Fato medido:**
   No B-TRC-01, a quarentena possui uma suíte inteira de banco (`tests/traccar-quarantine-db.test.ts`, 13 testes) verificando a inserção real na tabela `traccar_quarantine_items` (`count === 1`, campos `first_fix_at`, `last_event_key`, `last_payload_digest`, e agregação de episódios via `delivery_count`).
   No B-TRC-02, o plano adapta `quarantineWithoutTenant` para receber `TraccarEventCommand` (via `toQuarantineSubject`), porém o único teste que valida o descarte de evento de dispositivo não mapeado é o caso E5 em `traccar-event-ingestion-db.test.ts`, cujo enunciado é:
@@ -60,9 +60,9 @@ Não foram identificadas falhas estruturais bloqueantes que justifiquem `VOLTA A
 - **Escopo:** `tests/traccar-event-contract.test.ts` (caso A8) e `tests/traccar-event-ingestion-db.test.ts` (caso E14).
 - **Comando que sustenta:**
   ```powershell
-  git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios show origin/main:tests/traccar-position-contract.test.ts | Select-Object -Skip 85 -First 15
+  git -C ~/Documents/GitHub/ERP_Techsolutios show origin/main:tests/traccar-position-contract.test.ts | Select-Object -Skip 85 -First 15
   ```
-  e as linhas 253-255, 651 e 659 de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
+  e as linhas 253-255, 651 e 659 de `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
 - **Fato medido:**
   No B-TRC-01, `position.attributes` era totalmente descartado pelo parser. No B-TRC-02, `position.attributes` passa a ser consumido pelo fluxo S para 7 grandezas veiculares, e `event.attributes.alarm` é consumido pelo fluxo E.
   O plano estabelece que chaves reservadas (`tenantId`, etc.) dentro de `attributes` não geram 422 (casos A8 e B3). O caso E14 testa apenas que `tenantId` no corpo de `event` (raiz) gera 422 e 0 escrita.
@@ -76,9 +76,9 @@ Não foram identificadas falhas estruturais bloqueantes que justifiquem `VOLTA A
 - **Escopo:** `tests/traccar-event-ingestion-db.test.ts` (Suite E).
 - **Comando que sustenta:**
   ```powershell
-  git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios show origin/main:tests/traccar-resolution-cost.test.ts | Select-Object -Skip 135 -First 10
+  git -C ~/Documents/GitHub/ERP_Techsolutios show origin/main:tests/traccar-resolution-cost.test.ts | Select-Object -Skip 135 -First 10
   ```
-  e a linha 239 de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
+  e a linha 239 de `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
 - **Fato medido:**
   O plano lista em §2.4 `resolution_budget_exceeded` como um dos motivos duráveis de quarentena (HTTP 202) da nova rota `/ingest/traccar/v1/events`.
   Entretanto, na Suite E (`tests/traccar-event-ingestion-db.test.ts`, casos E1..E15), são testados `unmapped_device` (E5), `fix_before_active_binding` e `fix_in_future` (E6), e `tenant_inactive` (E7). O caso de estouro do limite de busca de organizações ativas (> 500 tenants, regra fail-closed mandatória de multi-tenant do Traccar) não foi incluído entre os cenários de teste da nova rota de eventos.
@@ -90,7 +90,7 @@ Não foram identificadas falhas estruturais bloqueantes que justifiquem `VOLTA A
 - **Gravidade:** `ajuste`.
 - **Escopo:** `prisma/migrations/20260878000000_vehicle_telemetry_events/migration.sql` (comentário de rollback).
 - **Comando que sustenta:**
-  Linhas 356-361 de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
+  Linhas 356-361 de `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
 - **Fato medido:**
   O cabeçalho da Migração A prescreve o seguinte roteiro de rollback manual:
   ```sql
@@ -112,7 +112,7 @@ Não foram identificadas falhas estruturais bloqueantes que justifiquem `VOLTA A
 - **Escopo:** `docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs` (M-E08) e plano §6.1 l.637.
 - **Comando que sustenta:**
   ```powershell
-  git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios show origin/main:prisma/schema.prisma | Select-String -Pattern "model VehicleTrackingBinding" -Context 0,15
+  git -C ~/Documents/GitHub/ERP_Techsolutios show origin/main:prisma/schema.prisma | Select-String -Pattern "model VehicleTrackingBinding" -Context 0,15
   ```
 - **Fato medido:**
   A mutação M-E08 é descrita como: `"ingestEvent usa traccarDeviceId para achar a organização (pula a confirmação) → E5/E13"`.
@@ -126,7 +126,7 @@ Não foram identificadas falhas estruturais bloqueantes que justifiquem `VOLTA A
 - **Gravidade:** `ajuste`.
 - **Escopo:** `docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs` (M-E16) e plano §6.1 l.641.
 - **Comando que sustenta:**
-  Linha 641 de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
+  Linha 641 de `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
 - **Fato medido:**
   A mutação M-E16 propõe inserir a chamada `insertSample` dentro do helper `quarantined()` no fluxo de posição, esperando que o teste F3 falhe com 503 decorrente de violação da constraint `NOT NULL` de `receipt_id`.
   O teste F3 mede a propriedade: *"posição em quarentena por operador → 0 amostra, 0 recibo"*.
@@ -140,9 +140,9 @@ Não foram identificadas falhas estruturais bloqueantes que justifiquem `VOLTA A
 - **Escopo:** `tests/traccar-event-ingestion-db.test.ts` (caso E4) e mutação M-E10.
 - **Comando que sustenta:**
   ```powershell
-  git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios show origin/main:src/integrations/traccar/traccar-ingestion.repository.ts | Select-String -Pattern "afterBindingLocked" -Context 0,10
+  git -C ~/Documents/GitHub/ERP_Techsolutios show origin/main:src/integrations/traccar/traccar-ingestion.repository.ts | Select-String -Pattern "afterBindingLocked" -Context 0,10
   ```
-  e as linhas 639 e 659 de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
+  e as linhas 639 e 659 de `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`.
 - **Fato medido:**
   O caso E4 assere que duas entregas concorrentes do mesmo evento resultam em 1 recibo, 1 linha e ambas HTTP 204. A mutação M-E10 remove `ON CONFLICT DO NOTHING` para provocar erro 503 na entrega que perde a corrida.
   Contudo, se as duas requisições concorrentes forem disparadas via `Promise.all` simples sem travas de sincronização, em ambientes com event loop de thread única ou I/O serializado, a segunda requisição pode executar o passo 4 (`findReceipt`) somente após o commit da primeira, retornando 204 como `duplicate` sem jamais tentar o `insertReceipt` em conflito.

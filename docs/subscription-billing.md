@@ -304,9 +304,22 @@ com o `B-TRC-04`, por cadastro de módulos na versão do adicional.
 - **Um provedor ligado por kind (G14):** além do gate em código (`another_provider_enabled_for_kind`), o índice único parcial
   `billing_provider_configs_one_enabled_per_kind` (migração `20260901000000`) recusa o segundo com 23505 — para trocar,
   desliga-se o ligado antes.
+- **O ciclo do demonstrativo com o canal (B-ASS-08c1c):** com o canal LIGADO, fechar o mês (rota ou job) põe a cobrança na
+  fila na mesma transação (`charge_create` `PENDING`, o total recém-gravado, o vencimento do demonstrativo e o método do perfil);
+  com o canal desligado, nada é enfileirado e a conta antiga sai pelo botão (`/charge`). Reabrir lê a cobrança pela TABELA e
+  recusa a viva (`statement_charge_pending`) ou a em voo (`charge_in_flight`); a `PENDING` é pulada. Refechar tira a linha do
+  fechamento desfeito do conjunto vivo e enfileira a nova (`seq + 1`). A baixa manual que quita e o cancelamento tiram a conta
+  do "a cobrar" na hora: a `PENDING` é pulada e a cobrança `pending` no provedor ganha um `charge_cancel`; a baixa parcial não
+  mexe (Q4 (a)). O registro da cobrança relê o demonstrativo travado e cancela a cobrança criada sobre uma conta que mudou no
+  meio; a que o provedor já pagou nasce `confirmed`. O claim manda à conferência a linha parada há mais de 7 dias e a de conta
+  com pagamento parcial. A tabela de cobranças acompanha o provedor (pago, estorno, chargeback, disputa), o `poll-pending`
+  reconsulta pela tabela, o índice data a cobrança vigente, a recobrança depois de estorno total sai, e o cliente vê o link da
+  cobrança vigente (com o aviso `full_amount_charge_open` quando há pagamento parcial).
 - **Ainda não (pendências com dono):** ligar/desligar/testar/registrar webhook persistidos pela tela (F9 do B-ASS-08; hoje
-  nenhum caminho grava `enabled = true`); `GET /billing/subscription` do cliente ainda não lê `payUrl`/`invoicePdfAvailable`
-  das cobranças e notas (view do B-ASS-04); baixa manual → nota (T-FLX-13); `charge_cancel`/`refund` na outbox.
+  nenhum caminho grava `enabled = true`); `invoicePdfAvailable` das notas na visão do cliente; baixa manual → nota (T-FLX-13,
+  08c2); `refund` na outbox; a reconsulta da cobrança em estado desconhecido (`P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA`: hoje nenhum
+  escritor grava esse estado; desde o conserto da J-579, se ele aparecer, a baixa que quita, o `cancel()` e o `charge/cancel` pedem o
+  cancelamento, e o despacho lista primeiro).
 - **Rollback:** `BILLING_PROVIDERS_ENABLED=false` para o canal (a outbox fica visível); reverter o PR não apaga linhas. As
   migrações M5 e `20260901000000` são aditivas, com drill de rollback nos testes `-db`.
 

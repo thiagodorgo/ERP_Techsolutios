@@ -3,7 +3,7 @@
 - Identidade: `dev-ciclo2-b-san3-05`
 - Papel: desenvolvedor do ciclo 2; não achou, não planejou e não votou.
 - Modelo: GPT-5.6 Sol — substituição declarada por decisão do dono em 2026-10-08; o bloco não toca dinheiro e Fable/Astra ficam reservados a blocos de dinheiro.
-- Worktree exclusivo: `C:/Users/AMP/w-o05`
+- Worktree exclusivo: `~/w-o05`
 - Ramo: `fix/runtime-role-sem-bypass`
 - PR: #405
 
@@ -11,7 +11,7 @@
 
 ### P0.1 — head local × remoto
 
-**Comando:** `git -C C:/Users/AMP/w-o05 rev-parse HEAD`; `git -C C:/Users/AMP/w-o05 ls-remote origin refs/heads/fix/runtime-role-sem-bypass`
+**Comando:** `git -C ~/w-o05 rev-parse HEAD`; `git -C ~/w-o05 ls-remote origin refs/heads/fix/runtime-role-sem-bypass`
 
 **Saída resumida:** ambos devolveram `ebffaca889ce81e326a657921811e19f40ecc19f`.
 
@@ -63,7 +63,7 @@
 
 ### Retomada após PARADA-D4 — errata do orquestrador
 
-**Comando:** `git -C C:/Users/AMP/w-o05 pull --ff-only`; `git -C C:/Users/AMP/w-o05 rev-parse HEAD`; `git -C C:/Users/AMP/w-o05 ls-remote origin refs/heads/fix/runtime-role-sem-bypass`; leitura de `docs/revisoes/SAN3/B-SAN3-05-plano.md` no commit `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`.
+**Comando:** `git -C ~/w-o05 pull --ff-only`; `git -C ~/w-o05 rev-parse HEAD`; `git -C ~/w-o05 ls-remote origin refs/heads/fix/runtime-role-sem-bypass`; leitura de `docs/revisoes/SAN3/B-SAN3-05-plano.md` no commit `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`.
 
 **Saída resumida:** pull fast-forward já aplicado; HEAD local = remoto = `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`; a “Errata do orquestrador ao D4” substitui o aceite original pela opção (b).
 
@@ -324,7 +324,7 @@
 
 ### QUEDA DE USO E RETOMADA — 2026-10-08T21:07Z / 2026-10-09T01:42:50Z
 
-- **Comando:** `git -C C:/Users/AMP/w-o05 status --short`; `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass`.
+- **Comando:** `git -C ~/w-o05 status --short`; `git -C ~/w-o05 ls-remote origin fix/runtime-role-sem-bypass`.
 - **Saída resumida:** 5 arquivos modificados (`DEV-ciclo2-relatorio.md` e os 4 arquivos parciais de produto), `scratchpad/` não rastreado e preservado; remoto = `dee3f821a56ca99e11059e8e34a5d48438841329`.
 - **Ocorrência:** a sessão anterior caiu por limite de uso do Codex às `2026-10-08T21:07Z`; nenhuma mudança remota ocorreu durante a interrupção.
 - **Resultado:** PASSOU — retomada em `2026-10-09T01:42:50Z`, sem perda dos arquivos parciais e sem divergência do head remoto informado pelo dono.
@@ -341,7 +341,7 @@
 
 ### RESOLUÇÃO-PARADA-RC3 — autorização do orquestrador em 2026-10-09
 
-- **Comando:** `git -C C:/Users/AMP/w-o05 status --short`; `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass`.
+- **Comando:** `git -C ~/w-o05 status --short`; `git -C ~/w-o05 ls-remote origin fix/runtime-role-sem-bypass`.
 - **Saída resumida:** alterações locais somente na fatia parcial B3 e `scratchpad/` preservado; remoto = `b9a1dda3752f07de386bbd1430057b84b47b25c6`, conforme esperado.
 - **Decisão:** autorizado corrigir a discriminação por operação/tipo dos falsos candidatos (`role`, `yard`, `settlement` e semelhantes) e re-medir. O teto RC3 continua inalterado; inventário final acima de +20 exige nova parada, lista de chaves e motivo por chave.
 - **Resultado:** RETOMADO — sem relaxar o analisador e sem atualizar o congelado apenas para caber no teto.

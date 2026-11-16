@@ -1,8 +1,8 @@
 # B-SAN3-13 — Crítica adversarial do plano · rodada 1
 
 - **SUBSTITUIÇÃO DECLARADA:** este arquivo é de `crit-san313-opus` (Claude **Opus 5.5**, `claude-opus-5-5`, nível menor declarado, papel `critico-adversarial`), no lugar de `crit-san313-argon` (Antigravity Gemini 4 Argon), que caiu às 22:59Z de 24/10 por créditos esgotados **sem gravar nada** (não há parcial a re-executar — P3).
-- **Objeto:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-13-plano.md` (323 linhas, Fable) + medição `revisoes/B-SAN3-13-medicao.md`.
-- **Ref medida:** worktree só-leitura `C:/Users/AMP/w-plan21` detached em `origin/main` = `c76ec481`.
+- **Objeto:** `~/erp-pausa-2026-10-03/planos/B-SAN3-13-plano.md` (323 linhas, Fable) + medição `revisoes/B-SAN3-13-medicao.md`.
+- **Ref medida:** worktree só-leitura `~/w-plan21` detached em `origin/main` = `c76ec481`.
 - **Regra:** quem acha não propõe correção (§C7.4-bis). Cada achado: id · gravidade · escopo · evidência executada · motivo.
 
 ## Estado (P2 — esqueleto; cada item gravado ao ser medido)
@@ -15,10 +15,10 @@
 | Veredito | GRAVADO |
 
 ## Item 0 — ref e premissas (GRAVADO)
-- `git -C C:/Users/AMP/w-plan21 checkout -q --detach origin/main && git rev-parse HEAD` → `c76ec481ea9af23dea8cb58ce28fb72bf1965f2b`.
+- `git -C ~/w-plan21 checkout -q --detach origin/main && git rev-parse HEAD` → `c76ec481ea9af23dea8cb58ce28fb72bf1965f2b`.
 - `git diff --stat 7ab2fe71 c76ec481 -- src mobile tests` → **vazio**: o plano (medido em `7ab2fe71`) vale para o head atual.
 - Cópia de execução: `san313-medicao/src` × `w-plan21/src` por `cmp` arquivo a arquivo → 794 × 794, **0 diferenças**.
-- **Terreno declarado:** o `node_modules` de `san313-medicao` é um link para `C:/Users/AMP/w-agapi2/node_modules`, que **não existe mais** (`ls` → "No such file or directory"); a sonda falhava com `Cannot find package 'cors'`. Executei as sondas com um gancho de resolução (scratchpad `…/scratchpad/hook/hook.mjs`) que só redireciona pacote não achado para o `node_modules` da árvore principal (leitura). Nenhum `npm ci`, nenhum link criado, nada apagado.
+- **Terreno declarado:** o `node_modules` de `san313-medicao` é um link para `~/w-agapi2/node_modules`, que **não existe mais** (`ls` → "No such file or directory"); a sonda falhava com `Cannot find package 'cors'`. Executei as sondas com um gancho de resolução (scratchpad `…/scratchpad/hook/hook.mjs`) que só redireciona pacote não achado para o `node_modules` da árvore principal (leitura). Nenhum `npm ci`, nenhum link criado, nada apagado.
 - **Resíduo do caído:** existe `san313-critica/sonda-critica-r1.test.ts` (19:58 local) do `crit-san313-argon`, sem parecer gravado. Não é insumo (P3: conclusão sem comando registrado); ele **falha ao rodar** (`Cannot find module 'dotenv'`). Usei-o só como pista; cada achado abaixo foi medido por comando meu.
 - Minha sonda backend: `san313-medicao/tests/crit-opus-r1-backend.test.ts` (arquivo novo e declarado; nada da medição foi alterado).
 

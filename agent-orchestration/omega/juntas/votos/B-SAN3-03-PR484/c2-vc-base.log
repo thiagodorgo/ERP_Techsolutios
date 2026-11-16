@@ -13,7 +13,7 @@ ok 2 - usuario tenant comum nao acessa endpoints platform de allocation
 not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível
   ---
   duration_ms: 20.7516
-  location: 'C:\\Users\\thiag\\w-j484-c2\\tests\\cloud-cost-allocation-routes.test.ts:1:2156'
+  location: '~/w-j484-c2\\tests\\cloud-cost-allocation-routes.test.ts:1:2156'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -26,11 +26,11 @@ not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repe
   actual: 200
   operator: 'strictEqual'
   stack: |-
-    assertInvalidPeriod (C:\Users\thiag\w-j484-c2\tests\cloud-cost-allocation-routes.test.ts:196:10)
-    <anonymous> (C:\Users\thiag\w-j484-c2\tests\cloud-cost-allocation-routes.test.ts:88:5)
+    assertInvalidPeriod (~/w-j484-c2\tests\cloud-cost-allocation-routes.test.ts:196:10)
+    <anonymous> (~/w-j484-c2\tests\cloud-cost-allocation-routes.test.ts:88:5)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    async withAllocationApi (C:\Users\thiag\w-j484-c2\tests\cloud-cost-allocation-routes.test.ts:173:5)
-    async TestContext.<anonymous> (C:\Users\thiag\w-j484-c2\tests\cloud-cost-allocation-routes.test.ts:69:3)
+    async withAllocationApi (~/w-j484-c2\tests\cloud-cost-allocation-routes.test.ts:173:5)
+    async TestContext.<anonymous> (~/w-j484-c2\tests\cloud-cost-allocation-routes.test.ts:69:3)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...
@@ -68,13 +68,13 @@ ok 9 - T-SUM-6 · sem período → a mais nova com import, com runId e importId
 not ok 10 - T-SUM-7 · resumo recusa período com somente uma ponta
   ---
   duration_ms: 2.2793
-  location: 'C:\\Users\\thiag\\w-j484-c2\\tests\\san3-03-summary.test.ts:1:4427'
+  location: '~/w-j484-c2\\tests\\san3-03-summary.test.ts:1:4427'
   failureType: 'testCodeFailure'
   error: 'Missing expected rejection.'
   code: 'ERR_ASSERTION'
   name: 'AssertionError'
   stack: |-
-    async TestContext.<anonymous> (C:\Users\thiag\w-j484-c2\tests\san3-03-summary.test.ts:111:3)
+    async TestContext.<anonymous> (~/w-j484-c2\tests\san3-03-summary.test.ts:111:3)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...

@@ -16,7 +16,7 @@
 
 ### 1.1 Head e árvore
 
-- Comando: `git worktree add --detach C:/Users/AMP/w-insp-trc01 5abdf83...`; `git -C ... status --porcelain`; no worktree do PR, laço `git show HEAD:<arquivo> | tr -d '\r' | md5sum` × arquivo em disco para cada ` M` reportado.
+- Comando: `git worktree add --detach ~/w-insp-trc01 5abdf83...`; `git -C ... status --porcelain`; no worktree do PR, laço `git show HEAD:<arquivo> | tr -d '\r' | md5sum` × arquivo em disco para cada ` M` reportado.
 - Saída resumida: worktree detached em `5abdf83...`, status vazio. O worktree do PR aponta ao mesmo SHA; seu status traz 52 ` M` em `.agents/agents/**`, mas `git diff` é vazio e os 52 conteúdos têm hash EOL-neutro idêntico ao blob (`divergentes=0`): fantasmas de stat-cache, não mutação de conteúdo. Os únicos untracked relevantes são `.npmtest-503.log`, os dois artefatos da 1ª inspeção e os dois artefatos desta inspeção.
 - Veredito parcial: `VERDE` — objeto limpo no worktree detached e nenhum conteúdo rastreado divergente no worktree do dev.
 
@@ -100,7 +100,7 @@
 
 ## Limpeza
 
-- Comando: validação do alvo absoluto `C:\Users\AMP\w-insp-trc01`; `git worktree remove --force C:\Users\AMP\w-insp-trc01`; conferência por existência e `git worktree list`; remoção nominal dos dois logs `/tmp/insp-trc01-check*.log`.
+- Comando: validação do alvo absoluto `~/w-insp-trc01`; `git worktree remove --force ~/w-insp-trc01`; conferência por existência e `git worktree list`; remoção nominal dos dois logs `/tmp/insp-trc01-check*.log`.
 - Saída resumida: worktree existia no alvo exato, foi removido; `exists_after=False`, `listed_after=0`; logs temporários ausentes. Nenhum container, rede ou volume foi criado. Base viva, portas do dono e recursos da junta paralela não foram tocados.
 - Veredito parcial: `VERDE`.
 

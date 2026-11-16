@@ -6,11 +6,11 @@
 
 ## RETOMADA 1 — 2026-11-12T14:15:26-03:00
 
-- Comando: `git fetch origin`; verificação de worktrees/ramo/disco; `git worktree add -b feat/mobile-material-reenvio C:/Users/thiag/w-material origin/main`; `git status`; `git rev-parse HEAD`.
+- Comando: `git fetch origin`; verificação de worktrees/ramo/disco; `git worktree add -b feat/mobile-material-reenvio ~/w-material origin/main`; `git status`; `git rev-parse HEAD`.
 - Saída resumida: `origin/main` e o worktree em `ef4e98e76215d4ca9d2941f0bb5204b0c46ee881`; árvore limpa; ramo novo acompanhando `origin/main`; `C:` com 173 GB livres.
 - Estado: C-F0 iniciada; nenhum código alterado; nenhum cluster criado.
 - Head: `ef4e98e76215d4ca9d2941f0bb5204b0c46ee881`.
-- Próximo passo exato: `npm ci` em `C:/Users/thiag/w-material`, depois `npx prisma generate`, e `flutter pub get` em `mobile/flutter_app`.
+- Próximo passo exato: `npm ci` em `~/w-material`, depois `npx prisma generate`, e `flutter pub get` em `mobile/flutter_app`.
 
 ## RETOMADA 2 — 2026-11-12T14:16:02-03:00
 
@@ -60,7 +60,7 @@
 
 ## RETOMADA 4 — 2026-11-12T14:19:28-03:00
 
-- Comando: `bash C:/Users/thiag/erp-pausa-2026-10-03/ferramentas/checkup-conclusao.sh material`.
+- Comando: `bash ~/erp-pausa-2026-10-03/ferramentas/checkup-conclusao.sh material`.
 - Saída resumida: `checkup material: worktree-preservado(w-material)`.
 - Head antes deste apenso: `248d6603` (F0 registrada e ramo empurrado).
 - Próximo passo exato: aguardar a emenda escrita e revisada pelo orquestrador; não iniciar C-F1.
@@ -70,11 +70,11 @@
 - Comando: leitura integral de `CLAUDE.md`, `PROJECT_MEMORY.md`, das skills `ts-frontend-full`, `ui-ux-pro-max` e `saas-multi-tenant`, do §C e das Emendas C2/C2.1/C2.2; conferência de `HEAD`, remoto, branch, árvore e processos do terreno.
 - Saída resumida: `HEAD`, alvo e `origin/feat/mobile-material-reenvio` iguais a `7d1a392a205b1c3d6af8ae2f056f7241a002fc40`; branch correta; árvore inicialmente limpa; nenhum processo `node`, `dart` ou `flutter` ativo. As três divergências da F0 anterior estão endereçadas pelas emendas: custódia final no C, gate de módulos com casos por ação e `sync_action_labels.dart` no PERMITIDO. A aderência ainda depende da re-medição literal e das baselines fail-closed.
 - Head: `7d1a392a205b1c3d6af8ae2f056f7241a002fc40`.
-- Próximo passo exato: inicializar `C:/Users/thiag/pg-material`, gravar `timezone`/`log_timezone` UTC antes do start, subir em `127.0.0.1:55576`, criar/migrar/semear `bmat_base`, subir `material-redis` em `127.0.0.1:56576` e provar `SHOW timezone = UTC` + `PONG` antes das suítes.
+- Próximo passo exato: inicializar `~/pg-material`, gravar `timezone`/`log_timezone` UTC antes do start, subir em `127.0.0.1:55576`, criar/migrar/semear `bmat_base`, subir `material-redis` em `127.0.0.1:56576` e provar `SHOW timezone = UTC` + `PONG` antes das suítes.
 
 ## RETOMADA 6 — 2026-11-12T15:44:01-03:00 — PARADA NA F0 REFEITA
 
-- Comando: `initdb` em `C:/Users/thiag/pg-material`; configuração de `timezone = 'UTC'`, `log_timezone = 'UTC'`, `listen_addresses = '127.0.0.1'` e porta `55576` antes do primeiro start; `SHOW timezone`; criação de `bmat_base`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probe `PONG`; `prisma generate`; `prisma migrate deploy`; `prisma migrate status`; `npm run db:seed`; `npm test` com `DATABASE_URL`, `REDIS_URL` e `CORE_SAAS_PERSISTENCE=memory` exportados na mesma sessão, gravado em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/f0-material-npm-test.tap`.
+- Comando: `initdb` em `~/pg-material`; configuração de `timezone = 'UTC'`, `log_timezone = 'UTC'`, `listen_addresses = '127.0.0.1'` e porta `55576` antes do primeiro start; `SHOW timezone`; criação de `bmat_base`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probe `PONG`; `prisma generate`; `prisma migrate deploy`; `prisma migrate status`; `npm run db:seed`; `npm test` com `DATABASE_URL`, `REDIS_URL` e `CORE_SAAS_PERSISTENCE=memory` exportados na mesma sessão, gravado em `~/erp-pausa-2026-10-03/revisoes/f0-material-npm-test.tap`.
 - Saída resumida do terreno: Postgres aceitou conexão em `127.0.0.1:55576`; `SHOW timezone` e `SHOW log_timezone` deram `UTC`; 134 migrações aplicadas, status atualizado e seed concluído; Redis em `127.0.0.1:56576` respondeu `PONG`. As âncoras E5 continuam iguais a `ef4e98e7`: código relevante sem diff, blob de `inventory.actor-custody.ts` igual, seam ainda em BASE, gate `{inventory}`, 26 rótulos e os dois caminhos da tela já chamando o gancho.
 - Baseline backend: **INVÁLIDA / NÃO BATE** — `[run-backend-tests] 534 arquivo(s) · 5431 teste(s) · pass 5420 · fail 9 · skipped 2`, com piso de denominador por `tests/traccar-event-migration-drill-db.test.ts` sem registrar teste após `EBUSY` no `after`. Os outros não-verdes foram 5 subtestes de `san3-05-runtime-role-guard-db.test.ts` (quatro ligados à ausência de `setsid`/boot real e um T8d), mais o pai; e `san3-09-bootstrap-platform-admin-db.test.ts` (o subprocesso tentou executar o shim Bash `node_modules/.bin/prisma` como JavaScript), mais o pai. Não apareceu a classe `XX000`; portanto a repetição automática prevista em R-C21-04 não se aplica.
 - Baseline Flutter: **não medida**; a trava fail-closed da baseline backend exigiu parada antes de iniciar outra suíte. Nenhum arquivo de produto foi alterado; C-F1 não começou.
@@ -93,7 +93,7 @@
 
 ## RETOMADA 8 — 2026-11-12T19:42:53-03:00 — C-F1 CONCLUÍDA
 
-- Comando: worktree temporário `C:/Users/thiag/w-material-f1` em `origin/main` `ef4e98e7`, com `npm ci` e Prisma próprios; execução de `ataque.mts`, `censo.mts`, sondas `s02`/`s03` e controle Flutter descartável de RC5(1); remoção somente do worktree temporário com `git worktree remove --force` (sem `prune`).
+- Comando: worktree temporário `~/w-material-f1` em `origin/main` `ef4e98e7`, com `npm ci` e Prisma próprios; execução de `ataque.mts`, `censo.mts`, sondas `s02`/`s03` e controle Flutter descartável de RC5(1); remoção somente do worktree temporário com `git worktree remove --force` (sem `prune`).
 - Saída resumida de `ataque.mts`: G1 reproduzido (`get` simples deixa tecB ler a OS, `getForMutation` recusa); G4/S3 reproduzidos (mesma origem devolve o movimento de tecA para quantidade e ator divergentes); tipos antigos/contratos continuam como medidos. Exit 0.
 - Saída resumida de `censo.mts`: base com `violacoes: 0`; acrescentar `work_order_material.add` produz `NAO-CLASSIFICADA`; a regex `^work_order[.]` não casa. Exit 0.
 - Sondas C2.1: `s02` provou que o mutante BASE sobrevive aos quatro casos antigos e morre apenas em gerente/misto com cadastro; `s03` devolveu `rejected not_found` mas baixou saldo `5→3`, criou movimento `1→2` e deixou saída fantasma — oráculo literal verde, oráculo `resposta+saldo+razão` vermelho. Ambas exit 0.
@@ -163,21 +163,21 @@
 
 ## RETOMADA 16 — 2026-11-12T20:15:13-03:00 — CHECKUP FINAL
 
-- Comando: `pg_ctl -D C:/Users/thiag/pg-material stop -m fast`; duas tentativas de remoção do caminho absoluto validado (Git Bash e `Remove-Item -LiteralPath` nativo); `bash C:/Users/thiag/erp-pausa-2026-10-03/ferramentas/checkup-conclusao.sh material`; probes finais de container, árvore e refs.
-- Saída resumida: Postgres `material` parou (`server stopped`); as duas remoções do diretório foram recusadas pela política de execução antes de iniciar, portanto `C:/Users/thiag/pg-material` ficou **presente, mas parado**. Checkup: `containers worktree-preservado(w-material)`; `material-redis` não existe mais; worktree preservado; árvore limpa antes deste apenso; `HEAD` e remoto iguais a `d88976dfdf1c3b60e3827f1f2651221a13fe76de`.
-- Próximo passo exato: remover `C:/Users/thiag/pg-material` quando a política do host permitir; funcionalmente, aguardar a emenda revisada da C-F4 descrita na RETOMADA 15.
+- Comando: `pg_ctl -D ~/pg-material stop -m fast`; duas tentativas de remoção do caminho absoluto validado (Git Bash e `Remove-Item -LiteralPath` nativo); `bash ~/erp-pausa-2026-10-03/ferramentas/checkup-conclusao.sh material`; probes finais de container, árvore e refs.
+- Saída resumida: Postgres `material` parou (`server stopped`); as duas remoções do diretório foram recusadas pela política de execução antes de iniciar, portanto `~/pg-material` ficou **presente, mas parado**. Checkup: `containers worktree-preservado(w-material)`; `material-redis` não existe mais; worktree preservado; árvore limpa antes deste apenso; `HEAD` e remoto iguais a `d88976dfdf1c3b60e3827f1f2651221a13fe76de`.
+- Próximo passo exato: remover `~/pg-material` quando a política do host permitir; funcionalmente, aguardar a emenda revisada da C-F4 descrita na RETOMADA 15.
 
 ## RETOMADA 17 — 2026-11-13T00:35:13-03:00 — TERRENO DA C2.4 APROVADO
 
 - Executor: `dev-c4-cdx`, Codex GPT-5.6 Sol, conta 1, sucessor do `dev-c3-cdx`; não escreveu o plano, as emendas nem as críticas.
 - Comando: leitura integral do contrato, memória, skills aplicáveis, §C, Emendas C2–C2.4 e dos dois diários; `git fetch origin`; conferência de `HEAD`, remoto, branch, árvore e processos; sondas de `pg-material2`, portas 55576/56576 e `material-redis`.
-- Saída resumida: `HEAD = origin/feat/mobile-material-reenvio = 262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e`; ramo correto; árvore limpa; nenhum processo `node`, `dart` ou `flutter` ativo; `C:/Users/thiag/pg-material2` ausente; portas 55576/56576 livres; `material-redis` ausente. A Emenda C2.4 foi lida e resolve a contradição da RETOMADA 15 mantendo N4 e reescrevendo RC2(15), com RC2(15b) novo.
+- Saída resumida: `HEAD = origin/feat/mobile-material-reenvio = 262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e`; ramo correto; árvore limpa; nenhum processo `node`, `dart` ou `flutter` ativo; `~/pg-material2` ausente; portas 55576/56576 livres; `material-redis` ausente. A Emenda C2.4 foi lida e resolve a contradição da RETOMADA 15 mantendo N4 e reescrevendo RC2(15), com RC2(15b) novo.
 - Head: `262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e`.
-- Próximo passo exato: inicializar somente `C:/Users/thiag/pg-material2`, gravar UTC/127.0.0.1/porta 55576 antes do primeiro start, migrar e semear; subir somente `material-redis` em 127.0.0.1:56576 e provar `SHOW timezone = UTC`, `SHOW log_timezone = UTC` e `PONG`; então iniciar exclusivamente a C-F4.
+- Próximo passo exato: inicializar somente `~/pg-material2`, gravar UTC/127.0.0.1/porta 55576 antes do primeiro start, migrar e semear; subir somente `material-redis` em 127.0.0.1:56576 e provar `SHOW timezone = UTC`, `SHOW log_timezone = UTC` e `PONG`; então iniciar exclusivamente a C-F4.
 
 ## RETOMADA 18 — 2026-11-13T00:36:51-03:00 — POSTGRES E REDIS PRÓPRIOS PRONTOS
 
-- Comando: `initdb` em `C:/Users/thiag/pg-material2` com UTF8/locale C; configuração, antes do primeiro start, de `listen_addresses = '127.0.0.1'`, porta 55576, `timezone = 'UTC'` e `log_timezone = 'UTC'`; criação de `bmat_base`; `prisma generate`, `migrate deploy`, `migrate status` e `db:seed`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probes por `pg_isready`, `psql` e `redis-cli`.
+- Comando: `initdb` em `~/pg-material2` com UTF8/locale C; configuração, antes do primeiro start, de `listen_addresses = '127.0.0.1'`, porta 55576, `timezone = 'UTC'` e `log_timezone = 'UTC'`; criação de `bmat_base`; `prisma generate`, `migrate deploy`, `migrate status` e `db:seed`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probes por `pg_isready`, `psql` e `redis-cli`.
 - Saída resumida: Postgres aceitando somente em 127.0.0.1:55576; 134 migrações aplicadas, schema atualizado e seed concluído; `SHOW timezone = UTC`, `SHOW log_timezone = UTC`, banco `bmat_base|UTF8`; Redis próprio respondeu `PONG`. A primeira forma do probe `psql` rejeitou o parâmetro Prisma `?schema=public`; o probe foi repetido corretamente com `-h/-p/-U/-d` e ficou verde, sem mudança no banco.
 - Head: `262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e`.
 - Próximo passo exato: iniciar somente a C-F4: inspecionar o handler/add e os helpers do teste já presentes; escrever primeiro RC2(13),(14),(15 reescrito),(15b),(18) e os estornos RC8(3)/(6); implementar `work_order_material.remove` na ordem N4; provar M-C7 contra RC2(15b); executar testes da fatia, `npm run lint`, `npm run check` e `flutter analyze`; registrar, commitar e empurrar antes da C-F5.
@@ -203,8 +203,8 @@
 
 ## RETOMADA 21 — 2026-11-13T00:48:49-03:00 — LIMPEZA E ESTADO FINAL
 
-- Comando: `pg_ctl ... stop -m fast` no cluster exclusivo; resolução literal de `C:/Users/thiag/pg-material2`; tentativas de remoção por `Remove-Item -LiteralPath -Recurse` e por Git Bash; `checkup-conclusao.sh material`; probes finais de cluster, container, processos, árvore, refs e PR.
-- Saída resumida: Postgres em 55576 parou (`no server running`); o host bloqueou as duas tentativas de remover `C:/Users/thiag/pg-material2` antes da execução, apesar de o caminho resolvido ser exatamente o esperado, portanto o diretório ficou presente e parado. O antigo `C:/Users/thiag/pg-material` permaneceu intocado. Checkup: `containers worktree-preservado(w-material)`; `material-redis` não existe mais; nenhum processo `node`, `dart` ou `flutter` aponta para `w-material`; árvore limpa; PR #551 aberto em rascunho.
+- Comando: `pg_ctl ... stop -m fast` no cluster exclusivo; resolução literal de `~/pg-material2`; tentativas de remoção por `Remove-Item -LiteralPath -Recurse` e por Git Bash; `checkup-conclusao.sh material`; probes finais de cluster, container, processos, árvore, refs e PR.
+- Saída resumida: Postgres em 55576 parou (`no server running`); o host bloqueou as duas tentativas de remover `~/pg-material2` antes da execução, apesar de o caminho resolvido ser exatamente o esperado, portanto o diretório ficou presente e parado. O antigo `~/pg-material` permaneceu intocado. Checkup: `containers worktree-preservado(w-material)`; `material-redis` não existe mais; nenhum processo `node`, `dart` ou `flutter` aponta para `w-material`; árvore limpa; PR #551 aberto em rascunho.
 - Head: `c87a98ca520f01e8e535259406d70b781bd0388e`, igual ao remoto antes deste apenso.
 - Próximo passo exato: aguardar emenda revisada da C-F5; na retomada, confirmar terreno/head limpo, remover `pg-material2` se a política do host então permitir ou reinicializá-lo somente se estiver ausente, subir infra exclusiva e reexecutar o vermelho-controle T1/T8/T9/T14 antes de qualquer código.
 
@@ -214,11 +214,11 @@
 - Comando/medição: pelo Git Bash, conferência de `HEAD` local/remoto, árvore e processos; leitura integral do `CLAUDE.md`, `PROJECT_MEMORY.md`, skill `saas-multi-tenant`, §C, Emendas C2–C2.6, RETOMADAS 15–21, `rev-c26.json` e `sonda-c26/evidencia.md`; leitura do estado/controle/log aplicável.
 - Saída resumida: `HEAD = origin/feat/mobile-material-reenvio = 561bfc3fa25beaa2a1f35630d5e405c8daf1360d`; árvore inicialmente limpa; nenhum processo Node/Dart/Flutter associado ao `w-material`. A `rev-c26-cdx` aprovou a C2.6: V3 elimina T8/T9 sem mudar o guard; M-C39 e M-C40 restauram, isoladamente, só T9 e só T8. A autorização do dono para a C-F6b permite somente `SUITES="$SUITES tests/b-material-sync-db.test.ts"` em `.github/workflows/ci.yml`.
 - Head: `561bfc3fa25beaa2a1f35630d5e405c8daf1360d`.
-- Próximo passo exato: inicializar somente `C:/Users/thiag/pg-material2` em UTF8/locale C, gravar UTC/127.0.0.1/porta 55576 antes do primeiro start, migrar e semear; subir somente `material-redis` em 127.0.0.1:56576, provar timezone/log_timezone UTC e PONG; então executar o vermelho-controle do guard no head antes de editar a C-F5.
+- Próximo passo exato: inicializar somente `~/pg-material2` em UTF8/locale C, gravar UTC/127.0.0.1/porta 55576 antes do primeiro start, migrar e semear; subir somente `material-redis` em 127.0.0.1:56576, provar timezone/log_timezone UTC e PONG; então executar o vermelho-controle do guard no head antes de editar a C-F5.
 
 ## RETOMADA 23 — 2026-11-13T07:48:10-03:00 — INFRAESTRUTURA EXCLUSIVA PRONTA
 
-- Comando: `initdb` novo em `C:/Users/thiag/pg-material2`; configuração antes do primeiro start de `listen_addresses = '127.0.0.1'`, porta 55576, `timezone = 'UTC'` e `log_timezone = 'UTC'`; criação de `bmat_base`; `prisma generate`, `migrate deploy`, `migrate status` e `db:seed`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probes reais.
+- Comando: `initdb` novo em `~/pg-material2`; configuração antes do primeiro start de `listen_addresses = '127.0.0.1'`, porta 55576, `timezone = 'UTC'` e `log_timezone = 'UTC'`; criação de `bmat_base`; `prisma generate`, `migrate deploy`, `migrate status` e `db:seed`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probes reais.
 - Saída resumida: PostgreSQL aceitando em 127.0.0.1:55576, 134 migrações aplicadas, schema atualizado e seed concluído; `SHOW timezone = UTC`, `SHOW log_timezone = UTC`, `bmat_base|UTF8`; Redis exclusivo respondeu `PONG`.
 - Head: `561bfc3fa25beaa2a1f35630d5e405c8daf1360d`.
 - Próximo passo exato: executar `node --test --import tsx tests/o6r07c-census-guard.test.ts` sem editar produto; confirmar exatamente T1, T8, T9 e T14 vermelhos; então aplicar somente as duas regex, os dois pares da fixture e as duas linhas literais da E-C26.2/E-C26.3.
@@ -282,8 +282,8 @@
 
 ## RETOMADA 30 — 2026-11-13T08:37:59-03:00 — LIMPEZA DA PAUSA E CHECKUP
 
-- Comando: validação literal do cluster exclusivo e do nome do container; `pg_ctl ... stop -m fast`; `docker rm -f material-redis`; tentativas de remover somente `C:/Users/thiag/pg-material2`; `bash .../checkup-conclusao.sh material`; probes finais.
-- Saída resumida: PostgreSQL exclusivo parado (`pg_ctl: no server running`); `material-redis` removido e ausente; checkup `worktree-preservado(w-material)`. O host recusou antes da execução tanto `Remove-Item -LiteralPath` quanto `rm -rf` mesmo depois de o alvo resolver exatamente para `C:/Users/thiag/pg-material2`; o diretório ficou presente, parado, e nenhum outro cluster/container foi tocado.
+- Comando: validação literal do cluster exclusivo e do nome do container; `pg_ctl ... stop -m fast`; `docker rm -f material-redis`; tentativas de remover somente `~/pg-material2`; `bash .../checkup-conclusao.sh material`; probes finais.
+- Saída resumida: PostgreSQL exclusivo parado (`pg_ctl: no server running`); `material-redis` removido e ausente; checkup `worktree-preservado(w-material)`. O host recusou antes da execução tanto `Remove-Item -LiteralPath` quanto `rm -rf` mesmo depois de o alvo resolver exatamente para `~/pg-material2`; o diretório ficou presente, parado, e nenhum outro cluster/container foi tocado.
 - Head: `ee23c1966ad73336bae7cb992f033408405f4214`, igual ao remoto; PR #551 rascunho atualizado até C-F7 e com a pausa da C-F8 no corpo.
 - Próximo passo exato: obter a emenda revisada para o mapa de retenção; na retomada, não recriar o cluster sem antes remover/reinicializar somente `pg-material2`, preservar as mudanças locais da C-F8 e aplicar exclusivamente a ampliação autorizada.
 
@@ -384,7 +384,7 @@
 ## RETOMADA 38 — 2026-11-13T09:45:40-03:00 — C-F14: BATERIA LOCAL VERDE, SALVO O LAÇO G (ACHADO DA RETOMADA 33)
 
 - Executor da fatia: `dev-c6-cl`, Claude Opus 5.5 (nível menor declarado).
-- Terreno: cluster próprio `C:/Users/thiag/pg-material2` (`initdb` UTF8/locale C, `listen_addresses = '127.0.0.1'`, porta 55576, `timezone` e `log_timezone` = UTC gravados antes do primeiro start; `SHOW` = UTC/UTC); base `bmat_fim` UTF8; `prisma generate`, `migrate deploy` (134 migrações), `migrate status` ("Database schema is up to date!"), `db:seed`; Redis próprio `material-redis` em 127.0.0.1:56576, `PONG`.
+- Terreno: cluster próprio `~/pg-material2` (`initdb` UTF8/locale C, `listen_addresses = '127.0.0.1'`, porta 55576, `timezone` e `log_timezone` = UTC gravados antes do primeiro start; `SHOW` = UTC/UTC); base `bmat_fim` UTF8; `prisma generate`, `migrate deploy` (134 migrações), `migrate status` ("Database schema is up to date!"), `db:seed`; Redis próprio `material-redis` em 127.0.0.1:56576, `PONG`.
 - Flutter (RETOMADAS 34–35): `dart format` sem mudança nos arquivos do bloco (o único acusado pelo host 3.41.6 é `bsan313_minhas_os_escopo_test.dart`, fora do bloco; o CI 3.47.5 dá `0 changed`); `flutter analyze` = `No issues found!`; **`flutter test` = `+1190: All tests passed!` = M_f** (N_f 1170 do CI da `main` `ef4e98e7`; +20 ≥ +19).
 - Raiz: `npm run check` exit 0; `npm run lint` exit 0; `npm run build` exit 0; `node scripts/migration-transaction-guard.mjs` = `migrações: 134 · anteriores: 112 · novas: 22 · violações: 0` (o bloco não tem migração).
 - Suítes do bloco, forma memória (`CORE_SAAS_PERSISTENCE=memory`, URL e Redis próprios exportados): `b-material-exit-source`, `b-material-sync`, `b-material-custodia`, `mobile-backend-contracts`, `o6r07c-census-guard` = `# tests 96 · pass 96 · fail 0 · skipped 0`.
@@ -466,7 +466,7 @@
 ## RETOMADA 44 — 2026-11-13T11:04:54-03:00 — C-F14: BATERIA LOCAL VERDE NO HEAD `6e2a0e92`, INCLUSIVE O LAÇO G
 
 - Executor: `dev-c7-cl`, Claude Opus 5.5 (nível menor declarado).
-- Terreno: cluster próprio `C:/Users/thiag/pg-material2` (`initdb` UTF8/locale C; `listen_addresses = '127.0.0.1'`, porta 55576, `timezone` e `log_timezone` = UTC gravados antes do primeiro start; `SHOW` = UTC/UTC/127.0.0.1); base `bmat_fim`; `prisma generate`, `migrate deploy` (134 migrações), `migrate status` ("Database schema is up to date!"), `db:seed`. Redis próprio `material-redis` em 127.0.0.1:56576, `PONG`. Commit livre 31,0 GB; disco 161,9 GB.
+- Terreno: cluster próprio `~/pg-material2` (`initdb` UTF8/locale C; `listen_addresses = '127.0.0.1'`, porta 55576, `timezone` e `log_timezone` = UTC gravados antes do primeiro start; `SHOW` = UTC/UTC/127.0.0.1); base `bmat_fim`; `prisma generate`, `migrate deploy` (134 migrações), `migrate status` ("Database schema is up to date!"), `db:seed`. Redis próprio `material-redis` em 127.0.0.1:56576, `PONG`. Commit livre 31,0 GB; disco 161,9 GB.
 - Flutter (host 3.41.6): `dart format --output=none --set-exit-if-changed lib test` acusa só `test/features/bsan313_minhas_os_escopo_test.dart`, fora do bloco (a diferença de versão da RETOMADA 33; o CI 3.47.5 deu `0 changed`); `flutter analyze` = `No issues found!`; **`flutter test` = `+1191: All tests passed!`** (1190 da RETOMADA 40 + 1 do RC4b; baseline da `main` 1170, +21 ≥ +19).
 - Raiz: `npm run check` exit 0; `npm run lint` exit 0; `npm run build` exit 0; `node scripts/migration-transaction-guard.mjs` = `migrações: 134 · anteriores: 112 · novas: 22 · violações: 0`.
 - Suítes do bloco, forma memória (URL e Redis próprios exportados): `b-material-exit-source`, `b-material-sync`, `b-material-custodia`, `mobile-backend-contracts`, `o6r07c-census-guard` e o novo `b-material-payload-contract` = `# tests 98 · pass 98 · fail 0 · skipped 0` (96 + 2 do RC4b).
@@ -505,7 +505,7 @@
 ## RETOMADA 47 — 2026-11-13T12:30:29-03:00 — MERGE DA `main` `eeccdd27` (#546) NO RAMO: HEAD `d03be37b`; COORDENADOR COM AS DUAS PROPRIEDADES; CI VERDE NOS DOIS RUNS
 
 - Executor: `merge-551-cl`, Claude Opus 5.5 (subagente da sessão, nível menor declarado), dev de integração. Só juntou a `main` ao ramo; nenhum comportamento de um dos lados mudou.
-- Terreno conferido antes: `C:/Users/thiag/w-material` em `a2d1d5da`, `git status` vazio, `core.autocrlf=false`; base comum `ef4e98e7`. Sem `git worktree prune`; nenhum outro worktree nem o `.env` tocados.
+- Terreno conferido antes: `~/w-material` em `a2d1d5da`, `git status` vazio, `core.autocrlf=false`; base comum `ef4e98e7`. Sem `git worktree prune`; nenhum outro worktree nem o `.env` tocados.
 - `git merge origin/main` (`eeccdd27`): 5 conflitos, mais 1 arquivo mesclado sozinho que os dois lados tocam (`work_order_repository.dart`).
   - **`mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart`** — os dois lados inseriram um `try/catch` isolado no mesmo ponto (depois do replay de OS, antes do `downloadPendingRuns`). Ficaram os dois, nesta ordem: OS → **material** (`inventorySyncReplayServiceProvider.replayTenant`) → **pré-carga** (`checklistRepo.prefetchRunsForOpenTowWorkOrders()`) → `downloadPendingRuns`. É a única ordem em que as duas frases escritas valem juntas: o plano do C (`B-REENVIOS-plano.md`, C2 item 14) pede o material "logo depois do replay de OS e antes de `downloadPendingRuns`", e a Emenda 1 do plano 14 (linha 20) pede a pré-carga "logo antes do `downloadPendingRuns`". Não houve decisão de ordem nem de comportamento: os dois blocos são domínios independentes (estoque × vistoria), cada um engole a própria falha, e nenhum lê o que o outro escreve. Prova: `git diff a2d1d5da d03be37b -- <coordenador>` = só o bloco da pré-carga (+7); `git diff eeccdd27 d03be37b -- <coordenador>` = só o bloco do material (+7).
   - `work_order_repository.dart` (mesclado sem conflito): o ramo acrescenta `work_order_material.remove` ao mapa de chaves; a `main` torna `deliveryComplete` obrigatório em `completeWorkOrder`. O ramo não acrescenta chamada nova a `completeWorkOrder` (`git diff ef4e98e7 a2d1d5da -- '*.dart' | grep '^+.*completeWorkOrder'` = 0), então nada quebra.

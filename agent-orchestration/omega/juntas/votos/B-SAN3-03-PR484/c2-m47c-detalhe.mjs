@@ -1,7 +1,7 @@
 // C2: qual asserção a M47-c derruba? E a variante só-listagem (recusa acrescentada em parseRunFilters, serviço intacto).
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-const root = "C:/Users/thiag/w-j484-c2";
+const root = "~/w-j484-c2";
 const service = "src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts";
 const routes = "src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts";
 const orig = new Map([service, routes].map((f) => [f, fs.readFileSync(`${root}/${f}`, "utf8")]));

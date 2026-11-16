@@ -24,5 +24,5 @@
   "achados": [],
   "criterios_que_nao_puderam_falhar": [],
   "pendencias_que_aceito": ["enumeração tipada/contrato pertencem à C2′; registro e escopo pertencem à C3′; não foram julgados por esta cadeira"],
-  "teardown": "Vite wrapper 56216/listener 45200 e descendentes parados; porta 5327 livre; processos com w-s11k2a=0; mutações restauradas com hash-object=blob; sondas removidas e status vazio; worktree C:/Users/AMP/w-s11k2a removido por git worktree remove --force ec=0 com node_modules próprios; scratch validado e descartado; base viva nunca tocada; somente C1c2-evidencia.md e C1c2-voto.json persistidos"
+  "teardown": "Vite wrapper 56216/listener 45200 e descendentes parados; porta 5327 livre; processos com w-s11k2a=0; mutações restauradas com hash-object=blob; sondas removidas e status vazio; worktree ~/w-s11k2a removido por git worktree remove --force ec=0 com node_modules próprios; scratch validado e descartado; base viva nunca tocada; somente C1c2-evidencia.md e C1c2-voto.json persistidos"
 }

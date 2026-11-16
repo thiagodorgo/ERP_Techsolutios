@@ -16,7 +16,7 @@ Verificador: `conf-avreal-sol` — Codex GPT-5.6 Sol, nível menor declarado, id
 
 ## Item 2 — terreno exclusivo e dependências
 
-- Comando: `git ... worktree add --detach C:/Users/thiag/w-confav 1181537e...`; no worktree, `git rev-parse HEAD`, `git status --porcelain`, `stat node_modules` e `npm ci`.
+- Comando: `git ... worktree add --detach ~/w-confav 1181537e...`; no worktree, `git rev-parse HEAD`, `git status --porcelain`, `stat node_modules` e `npm ci`.
 - Saída resumida: worktree criado em detached HEAD `1181537e1a5a0cae3f862abd36cb77a55d38a126`; status inicial vazio; `node_modules` inicialmente ausente; `npm ci` próprio adicionou 326 pacotes em 23 s. Nenhuma junction/symlink foi usada.
 - Veredito parcial: **VERDE** — terreno independente e objeto correto.
 
@@ -181,6 +181,6 @@ Verificador: `conf-avreal-sol` — Codex GPT-5.6 Sol, nível menor declarado, id
 
 ## Item 29 — limpeza final
 
-- Comando: `git -C C:/Users/thiag/Documents/GitHub/ERP_Techsolutios worktree remove --force C:/Users/thiag/w-confav`; conferir registro e existência do caminho.
+- Comando: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force ~/w-confav`; conferir registro e existência do caminho.
 - Saída resumida: `WORKTREE_REMOVED`; caminho inexistente e sem registro em `git worktree list`.
 - Veredito parcial: **VERDE** — worktree próprio e seus artefatos foram removidos como exigido.

@@ -4,11 +4,11 @@ Modelo: Claude Opus 5.5 (`claude-opus-5-5`), nível menor, como COBERTURA do Cod
 
 > **Papel:** `critico-adversarial` · **identidade:** `critico-b-o6r-03a-r2-opus` (instância nova; não é a r1 nem a tentativa caída anterior) · **ref julgada:** `10e8ce63` (ramo `fix/expense-sync-atomic`) · **estado:** CONCLUÍDO.
 > **Limite do papel:** ataque ao plano antes de código; nenhum conserto ou plano substituto (§C7.4-bis).
-> A tentativa anterior desta rodada (esqueleto "GPT-5.6 Sol", ref `f80dec91`) caiu; cópia em `C:/Users/AMP/erp-pausa-2026-10-03/03a-parcial/`. Nada dela é herdado como fato.
+> A tentativa anterior desta rodada (esqueleto "GPT-5.6 Sol", ref `f80dec91`) caiu; cópia em `~/erp-pausa-2026-10-03/03a-parcial/`. Nada dela é herdado como fato.
 
 ## 0. Terreno
 
-**Comandos executados:** `git worktree add --detach C:/Users/AMP/w-crit03a-r2 10e8ce63`; `git rev-parse HEAD`; `git diff --stat 9b611468 10e8ce63 -- src tests prisma mobile frontend scripts .github`; `timeout 900 npm ci --no-audit --no-fund` (próprio); `cmd /c dir /AL C:\Users\AMP\w-crit03a-r2` (procura de junction); `uname -a`; `docker run --detach --name crit03a2-pg --publish 127.0.0.1:58431:5432 ... postgres:16` (senha descartável aleatória, fora do parecer); `DATABASE_URL=<crit03a2-pg> timeout 300 node node_modules/prisma/build/index.js migrate deploy`; `SELECT count(*) FROM _prisma_migrations; SHOW default_transaction_isolation`.
+**Comandos executados:** `git worktree add --detach ~/w-crit03a-r2 10e8ce63`; `git rev-parse HEAD`; `git diff --stat 9b611468 10e8ce63 -- src tests prisma mobile frontend scripts .github`; `timeout 900 npm ci --no-audit --no-fund` (próprio); `cmd /c dir /AL ~/w-crit03a-r2` (procura de junction); `uname -a`; `docker run --detach --name crit03a2-pg --publish 127.0.0.1:58431:5432 ... postgres:16` (senha descartável aleatória, fora do parecer); `DATABASE_URL=<crit03a2-pg> timeout 300 node node_modules/prisma/build/index.js migrate deploy`; `SELECT count(*) FROM _prisma_migrations; SHOW default_transaction_isolation`.
 
 **Saída resumida:** HEAD `10e8ce6338df3f371e1150cc87b20e6db391b444`, árvore limpa; entre a base `9b611468` e o objeto só mudaram 3 arquivos de `docs/revisoes/SAN3/` (plano v2, r1, pré-crítica) — **zero diff de produto/teste/schema**. `npm ci` ec 0, 326 pacotes; nenhuma junction no worktree. Máquina `MINGW64_NT-10.0-22631` (Windows do dono, local). Banco próprio `crit03a2-pg` em `127.0.0.1:58431`; `migrate deploy` ec 0; **108** migrações; `read committed`. Base viva (`erp-postgres`, `erp-redis`) não foi tocada.
 

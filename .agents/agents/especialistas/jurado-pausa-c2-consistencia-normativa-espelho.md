@@ -28,7 +28,7 @@ regra errada — ou não conseguir executar nenhuma.
 ## Quem escreveu este corpo, e por que isso importa
 
 Escrito pela `agente-fabrica`, **sem `Bash`**: nada aqui foi executado por quem escreveu. Os números de linha foram
-**lidos** no disco de `C:/Users/AMP/w-pausa` em 2026-10-01 e são **[A RE-VERIFICAR]** — o head pode ter andado
+**lidos** no disco de `~/w-pausa` em 2026-10-01 e são **[A RE-VERIFICAR]** — o head pode ter andado
 (E2/E3/E4 do plano). O orquestrador escreveu o texto julgado; o `planejador-b-gov-pausa` **escolheu o padrão e a
 população** da lista de lugares vivos (§4) e enumerou os achados S-01…S-14 (§5). População e padrão escolhidos por
 quem mede para quem julga são exatamente onde a prova vizinha se esconde: **gere os seus da fonte**, e use os do plano
@@ -105,15 +105,15 @@ item não concluído é "não consigo medir".
 - **`MSYS_NO_PATHCONV=1` só como prefixo POR COMANDO — nunca `export`** (plano §8). Ambiente exportado vaza para a
   medição: em 28–30/09 um `export` desses fez `git -C /c/…` nunca resolver no pré-voo de outro bloco. Com o prefixo,
   `git.exe`, `node.exe` e `python.exe` recusam `/c/…` — use sempre `C:/…`.
-- **Head resolvido por você, nunca digitado:** `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch origin`;
+- **Head resolvido por você, nunca digitado:** `git -C ~/Documents/GitHub/ERP_Techsolutios fetch origin`;
   `git rev-parse origin/docs/gov-pausa-grava-e-para` **e** `gh pr view 397 --json headRefOid,isDraft,mergeable` — os
   dois 40 hex têm de coincidir. O plano mediu `c9eda7bb…` (texto E1); se o ramo foi emendado, o head andou e o §0 do
   plano é linha de base **anterior**. Re-resolva no fim: se o head andou durante a sua medição, declare os dois e qual
   você mediu. Merge-base: `git merge-base origin/main <head>`.
 - **Worktree PRÓPRIO, detached, em caminho CURTO:**
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-jur-pz2 <head>`, e
-  **prove** `test -e C:/Users/AMP/w-jur-pz2/.git`. No scratchpad o `worktree add` falha com *Filename too long* e **não
-  cria o diretório** — e a falha silenciosa já fez comando rodar na árvore principal. Se `C:/Users/AMP/w-jur-pz2` já
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-jur-pz2 <head>`, e
+  **prove** `test -e ~/w-jur-pz2/.git`. No scratchpad o `worktree add` falha com *Filename too long* e **não
+  cria o diretório** — e a falha silenciosa já fez comando rodar na árvore principal. Se `~/w-jur-pz2` já
   existir, é resíduo alheio: reporte e use `w-jur-pz2b`. `node scripts/sync-agent-agents.mjs --check`, se você o rodar,
   é `node` puro (sem `npm ci`); se precisar de dependência, `npm ci` **próprio**.
 - **Leia pelos BLOBS** (`MSYS_NO_PATHCONV=1 git show <ref>:<caminho> > "$SCRATCH/<nome>.<ref>"`) e busque pela **árvore
@@ -125,13 +125,13 @@ item não concluído é "não consigo medir".
   (1) copiar o pristino; (2) mutar **por script** (`python`), nunca à mão; (3) **provar a substituição** — `diff`
   pristino × mutante **não vazio** (âncora escrita com `\n` num arquivo CRLF não substitui nada); (4) medir;
   (5) descartar a cópia.
-- **Somente leitura.** `C:/Users/AMP/w-pausa` é o worktree do ramo (outro agente pode estar emendando nele): a sua
+- **Somente leitura.** `~/w-pausa` é o worktree do ramo (outro agente pode estar emendando nele): a sua
   **única** escrita lá são os seus dois arquivos de votos. **PROIBIDO:** `git stash`, `git clean`, `git checkout`/
   `git reset` do que você não criou, `git worktree prune`, `rm -rf` de worktree, `git commit`/`git push` (quem commita
   evidência e voto é o orquestrador), e rodar `node scripts/sync-agent-agents.mjs` **sem** `--check` (ele escreve).
   Resíduo alheio — `w-devs393`, `w-devt393`, `w-devt4`, `w-mandato`, `w-pv397`, `.claude/worktrees/*`, o ` M` fantasma
   por CRLF — **se reporta, não se varre**. Você remove só o que criou, pelo nome:
-  `git worktree remove --force C:/Users/AMP/w-jur-pz2` (identificador do bloco, `pz`; nunca por nome de cadeira).
+  `git worktree remove --force ~/w-jur-pz2` (identificador do bloco, `pz`; nunca por nome de cadeira).
 - **Sem banco, sem Docker.** A base viva `erp-postgres` (5432) / `erp-redis` (6379) **nunca** é alvo, nem de leitura;
   nenhum item seu precisa de banco. **Junction/symlink de `node_modules` entre worktrees é PROIBIDA** (§C7.1-ter(c)).
 - **`timeout` em tudo que executa** (`timeout 300 <cmd>`; mais, só declarado). **Nunca `tail -f`, `watch` ou leitura
@@ -141,7 +141,7 @@ item não concluído é "não consigo medir".
   `tail`). **Caminho absoluto sempre.**
 - **Evidência e voto em arquivo, por `Bash`** — você não tem `Write` **por desenho** (jurado que escreve conserta o que
   achou, §C7.4-bis). Diretório: o que o seu mandato de disparo nomear; padrão do briefing §11:
-  `C:/Users/AMP/w-pausa/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/`, arquivos `c2-evidencia.md` e
+  `~/w-pausa/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/`, arquivos `c2-evidencia.md` e
   `c2-voto.json`. Nunca no seu worktree de medição.
 
 **Modelo de mandato (§C7.7, com a linha `[P7]`; `<cadeira>` = `c2`):**
@@ -348,7 +348,7 @@ arquivo de trilha". Nomeie a **propriedade ausente**:
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou, ou recall não encontrado — achado contra este corpo, declarado antes do veredito" ],
  "pendencias_que_aceito": [ "o que é da C1/C3 (nomeie a cadeira) · o que o plano já nomeou com bloco dono · achados pre-existentes com bloco dono" ],
- "teardown": "worktree C:/Users/AMP/w-jur-pz2 removido por `git worktree remove --force` (só o meu) · cópias de $SCRATCH descartadas · nenhum arquivo rastreado tocado · base viva nunca tocada · resíduo ALHEIO apenas reportado"
+ "teardown": "worktree ~/w-jur-pz2 removido por `git worktree remove --force` (só o meu) · cópias de $SCRATCH descartadas · nenhum arquivo rastreado tocado · base viva nunca tocada · resíduo ALHEIO apenas reportado"
 }
 ```
 

@@ -1,9 +1,9 @@
 # B-DASH-PERFIL — relatório do dev do ciclo 2
 
 - **Identidade:** `dev-dash-ciclo2-opus` (nova; não foi jurado nem planejador do B-DASH). **Modelo:** Claude Opus (nível menor declarado, §C7.6; cobre o Codex, ocupado).
-- **Mandato:** Parte 2 de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-ciclo2-auditoria-e-plano.md` (planejador `planejador-dash-ciclo2-fable`).
+- **Mandato:** Parte 2 de `~/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-ciclo2-auditoria-e-plano.md` (planejador `planejador-dash-ciclo2-fable`).
 - **Nome do arquivo:** o plano (§2.4 linha D e §2.6) nomeia `docs/revisoes/TELAS/B-DASH-PERFIL-ciclo2-dev.md`; o disparo do orquestrador citou `B-DASH-PERFIL-dev-ciclo2.md`. Usei o nome do plano, que é o caminho PERMITIDO que a junta confere (§A2: divergência registrada, não escolhida em silêncio).
-- **Terreno:** worktree `C:/Users/AMP/w-dash`, ramo `fix/dash-perfil`.
+- **Terreno:** worktree `~/w-dash`, ramo `fix/dash-perfil`.
 - **Gravado aos poucos (P1):** cada passo é apensado ao ser medido. Todos os itens medidos; nenhum ficou pendente.
 
 ## 0. Terreno
@@ -48,11 +48,11 @@
 - `npm run lint` → ec 0 · `npm run build` → ec 0.
 - Artefatos `frontend/dist`, `dist`, `frontend/tsconfig.tsbuildinfo` (todos gitignored) removidos logo em seguida, antes do contêiner.
 
-**Item 6 — contêiner Linux** (`C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh`; Postgres 16 + Redis 7 + runner `erp-teste-linux:1` numa rede própria `tl<epoch><pid>-net`, **zero porta publicada**, removidos pelo nome no `trap`; base viva `erp-postgres`/`erp-redis` não tocada; um trabalho por vez).
+**Item 6 — contêiner Linux** (`~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh`; Postgres 16 + Redis 7 + runner `erp-teste-linux:1` numa rede própria `tl<epoch><pid>-net`, **zero porta publicada**, removidos pelo nome no `trap`; base viva `erp-postgres`/`erp-redis` não tocada; um trabalho por vez).
 - Antes: `Get-CimInstance Win32_OperatingSystem` → **10,20 GB** de memória de commit livre (≥ 3 GB) → OK para subir.
-- 6a: `teste-linux.sh C:/Users/AMP/w-dash "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"` → `# tests 19 · pass 19 · fail 0 · skipped 0`, `teste-linux ec=0`; depois `docker ps -a | grep -c '^tl'` → 0 → **OK**.
+- 6a: `teste-linux.sh ~/w-dash "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"` → `# tests 19 · pass 19 · fail 0 · skipped 0`, `teste-linux ec=0`; depois `docker ps -a | grep -c '^tl'` → 0 → **OK**.
 
-- 6b: `teste-linux.sh C:/Users/AMP/w-dash "npm test"` (memória de commit livre antes: 9,28 GB) → `# tests 3708 · pass 3697 · fail 9 · cancelled 0 · skipped 2 · todo 0`, `teste-linux ec=1`. **As 9 falhas são todas de `tests/traccar-dev-topology.test.ts`** (`not ok` 2970–2977 e 2979), **forma:** `error: 'B-TRC-01 topologia: não foi possível executar "docker compose" (spawnSync docker ENOENT) …'` 9×, em `runComposeConfig (tests/traccar-dev-topology.test.ts:77)`; **causa:** a imagem `erp-teste-linux:1` não tem `docker`/Compose e o teste falha em vez de se declarar pulado — **C3-05, pré-existente** (`c1485c94`; Parte 3 item 4 do plano; dono: a ferramenta do terreno). **Zero falha fora desse arquivo.** Ciclo 1 (C3): 3706 testes, 3695 pass, 9 fail na mesma forma; agora 3708 = +2 líquidos (+4 HTTP −2 forma em `auth-active-tenant-permissions`) → coerente.
+- 6b: `teste-linux.sh ~/w-dash "npm test"` (memória de commit livre antes: 9,28 GB) → `# tests 3708 · pass 3697 · fail 9 · cancelled 0 · skipped 2 · todo 0`, `teste-linux ec=1`. **As 9 falhas são todas de `tests/traccar-dev-topology.test.ts`** (`not ok` 2970–2977 e 2979), **forma:** `error: 'B-TRC-01 topologia: não foi possível executar "docker compose" (spawnSync docker ENOENT) …'` 9×, em `runComposeConfig (tests/traccar-dev-topology.test.ts:77)`; **causa:** a imagem `erp-teste-linux:1` não tem `docker`/Compose e o teste falha em vez de se declarar pulado — **C3-05, pré-existente** (`c1485c94`; Parte 3 item 4 do plano; dono: a ferramenta do terreno). **Zero falha fora desse arquivo.** Ciclo 1 (C3): 3706 testes, 3695 pass, 9 fail na mesma forma; agora 3708 = +2 líquidos (+4 HTTP −2 forma em `auth-active-tenant-permissions`) → coerente.
 - Depois: os contêineres deste trabalho foram removidos pelo `trap` (o nome do meu não é impresso pela ferramenta). Em `docker ps -a` aparecem 3 contêineres `tl179240460423571-{pg,redis,run}` + rede `tl179240460423571-net` **criados às 07:10 -03, depois do meu `npm test` ter terminado — de outro trabalho/sessão; não os toquei** (registro, não varredura).
 
 **Item 7 — espelhos e fechamento.** `node scripts/sync-agent-agents.mjs --check` → `OK — 73 agentes, espelho consistente`, ec 0 · `node scripts/sync-agent-skills.mjs --check` → `OK — 12 skills, 39 arquivos, espelho idêntico`, ec 0 · `git diff --check` → ec 0 → **OK**.

@@ -26,7 +26,7 @@ repositório em memória, as mutações restantes nem o registro. Isso é da **C
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor, declarado), **sem executar nada** do que está aqui:
 a fábrica não tem `Bash`.
-- **Onde e quando leu.** No disco de `C:/Users/AMP/w-03a`, em 2026-10-11.
+- **Onde e quando leu.** No disco de `~/w-03a`, em 2026-10-11.
 - **A ref.** A ref local e a de rastreio do ramo estavam em `6798a76ffd6ab4e33dcd5cb50e43309354191941`. A fábrica as leu nos
   arquivos de ref, não por `git`.
 - **O reflog local**, lido pela fábrica:
@@ -256,21 +256,21 @@ achado contra este corpo ou contra a régua, declarado antes do veredito. Item c
     - a porta escolhida e a prova de que ela está livre;
     - o ambiente: shell, cwd e as variáveis que você definiu, **nunca** valores de segredo.
 - **Arquivos de saída:** os que o seu mandato nomear. O padrão deste corpo é
-  `C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/C1-evidencia.md` e `…/C1-voto.json`.
+  `~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/C1-evidencia.md` e `…/C1-voto.json`.
   - Nunca grave no seu worktree de medição.
   - As quedas vão para `votos/B-O6R-03a/00-quedas.md` pelo **orquestrador** (P6), não por você.
 - **Saída colada na evidência: LF, sem espaço no fim de linha.** Passe cada trecho colado por `sed -E 's/[[:space:]]+$//'`.
   Antes da mensagem final, `grep -cE '[[:space:]]+$'` nos seus dois arquivos tem de dar **0** (publique o número).
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** `C:/Users/AMP/w-j03a-c1` (ou o que o mandato nomear).
-  - Crie por `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j03a-c1 <objeto>`.
-  - **Prove** `test -e C:/Users/AMP/w-j03a-c1/.git`: num caminho longo, a criação falha em silêncio e o comando seguinte roda
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** `~/w-j03a-c1` (ou o que o mandato nomear).
+  - Crie por `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j03a-c1 <objeto>`.
+  - **Prove** `test -e ~/w-j03a-c1/.git`: num caminho longo, a criação falha em silêncio e o comando seguinte roda
     na árvore errada. Se o caminho já existir, é resíduo alheio: reporte e use o sufixo `b`.
   - Instale com `timeout 900 npm ci --no-audit --no-fund` **próprio**, e gere o cliente Prisma com `DATABASE_URL` apontando
     só para o seu cluster.
   - **Junction ou symlink de `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)). Prove a ausência com
-    `cmd //c dir //AL C:\\Users\\AMP\\w-j03a-c1`.
+    `cmd //c dir //AL ~/w-j03a-c1`.
 - **Árvores intocáveis.**
-  - `C:/Users/AMP/w-03a` é a árvore do **desenvolvedor** e do orquestrador. A sua **única** escrita lá são os seus dois
+  - `~/w-03a` é a árvore do **desenvolvedor** e do orquestrador. A sua **única** escrita lá são os seus dois
     arquivos de saída.
   - Os worktrees de outros agentes (`w-j03a-c2`, `w-j03a-c3`, `w-traccar` e qualquer `w-*` que não seja o seu) você não toca.
 - **Postgres descartável, SEU:**
@@ -327,7 +327,7 @@ achado contra este corpo ou contra a régua, declarado antes do veredito. Item c
   - **Containers:** `docker rm -f -v j03a-c1-pg`; confira que a contagem `j03a-c1-` deu 0.
   - **Worktree:** antes de removê-lo, conte os processos vivos que têm o caminho na linha de comando:
     `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-j03a-c1*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`
-    (aspas **simples** por fora). Depois, `git worktree remove --force C:/Users/AMP/w-j03a-c1`.
+    (aspas **simples** por fora). Depois, `git worktree remove --force ~/w-j03a-c1`.
   - **Nunca `prune`.**
 - **Saída para arquivo e exit por variável:** `cmd > "$LOG" 2>&1; ec=$?`. **Nunca `| tail`.** **Caminho absoluto sempre.**
 - **Evidência e voto em arquivo, por `Bash`.** Você não tem `Write`, por desenho (§C7.4-bis). Um script com barra invertida dupla
@@ -679,7 +679,7 @@ Voto (JSON):
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou — achado contra este corpo, declarado antes do veredito · critério que não pode PASSAR por construção — achado contra a régua" ],
  "pendencias_que_aceito": [ "o que é da C2/C3 (nomeie a cadeira) · o 03b e as P-O6R-B03-* abertas · N-01/N-02 · o que este corpo declara reprovação por construção" ],
- "teardown": "arquivos mutados ou trocados restaurados (hash-object = blob do objeto) e git status --porcelain vazio no meu worktree · gatilhos e travas consultivas meus removidos (contagem 0) · fixtures j03a_c1_* removidas (criadas N, removidas N) · container j03a-c1-pg removido por nome com -v (contagem j03a-c1- = 0) · 0 processos com w-j03a-c1 na linha de comando · worktree C:/Users/AMP/w-j03a-c1 removido por `git worktree remove --force` · sondas e cópias de $SCRATCH apagadas · base viva (erp-postgres/erp-redis) nunca tocada · w-03a só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
+ "teardown": "arquivos mutados ou trocados restaurados (hash-object = blob do objeto) e git status --porcelain vazio no meu worktree · gatilhos e travas consultivas meus removidos (contagem 0) · fixtures j03a_c1_* removidas (criadas N, removidas N) · container j03a-c1-pg removido por nome com -v (contagem j03a-c1- = 0) · 0 processos com w-j03a-c1 na linha de comando · worktree ~/w-j03a-c1 removido por `git worktree remove --force` · sondas e cópias de $SCRATCH apagadas · base viva (erp-postgres/erp-redis) nunca tocada · w-03a só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
 }
 ```
 

@@ -2,11 +2,11 @@
 
 **Cadeira:** C2 — consistência normativa · **identidade:** `jurado-semteto-c2-consistencia-normativa` (2ª instância; a 1ª caiu sem veredito — NADA herdado, nem o parcial de 1,7 KB, que NÃO foi aberto)
 **Modelo:** Opus 5.5 (claude-opus-5-5), rodando como `general-purpose` (tem Write/Edit, que o corpo nega: Edit NÃO usado; Write usado SÓ para 3 fragmentos de texto no scratchpad, apensados a este arquivo por Bash — nada escrito no repositório nem em worktree)
-**Corpo aplicado:** `C:/Users/AMP/w-teto/.claude/agents/especialistas/jurado-semteto-c2-consistencia-normativa.md` · md5 EOL-neutro `635f79df868b907d5b8a1843f9646855` (cru idêntico: o arquivo não tem CR) — CONFERE com o mandato
+**Corpo aplicado:** `~/w-teto/.claude/agents/especialistas/jurado-semteto-c2-consistencia-normativa.md` · md5 EOL-neutro `635f79df868b907d5b8a1843f9646855` (cru idêntico: o arquivo não tem CR) — CONFERE com o mandato
 **Não li** `VOTO-394-C1.md`, `VOTO-394-C3.md`, nem nenhum `c1-*`/`c3-*`, nem o parcial da 1ª instância.
 
 ## Divergências corpo × mandato do orquestrador (declaradas, não escolhidas em silêncio)
-- worktree: corpo diz `w-stc2`; mandato diz `w-jst2` → usei `C:/Users/AMP/w-jst2` (mandato é quem me lança; `w-stc2` não existia).
+- worktree: corpo diz `w-stc2`; mandato diz `w-jst2` → usei `~/w-jst2` (mandato é quem me lança; `w-stc2` não existia).
 - gravação: corpo manda `c2-evidencia.md`/`c2-voto.json` em `votos/B-GOV-SEM-TETO/`; mandato proíbe escrever no repo → evidência única aqui no scratchpad.
 - população do item 2: uso a UNIÃO (corpo: contratos + 5 gates ×2 + README + extensão gerada; mandato: + PROTOCOLO-JUNTA-RESILIENTE, EXECUTION_MODEL, comando-template, skills, todos os corpos).
 - item 1: corpo cobre só o item 4; mandato cobre §C7.1-bis + item 4 + §C7.7 → meço os três.
@@ -19,7 +19,7 @@
 ## Terreno (P1)
 - `gh pr view 394 --json headRefOid` = `7ad08690bad5e9cbc4d34fe6905b14c6ac634046`; `git ls-remote origin refs/heads/docs/sem-teto-auditoria-no-3` = `7ad08690bad5e9cbc4d34fe6905b14c6ac634046` → COINCIDEM. Head NÃO andou.
 - `origin/main` = `fc3363e38aabd77f54e6b53034128182f8000571`; `git merge-base origin/main 7ad08690` = `fc3363e3…` (= a própria main).
-- worktree: `git worktree add --detach C:/Users/AMP/w-jst2 7ad08690…` ec=0; `test -e C:/Users/AMP/w-jst2/.git` → existe; HEAD = 7ad08690.
+- worktree: `git worktree add --detach ~/w-jst2 7ad08690…` ec=0; `test -e ~/w-jst2/.git` → existe; HEAD = 7ad08690.
 - Objeto = head (o mandato diz "head inspecionado 7ad08690"), logo delta objeto→head vazio por identidade de commit.
 
 ## ITEM 1 — espelho (P1)
@@ -128,7 +128,7 @@ Duas leituras, **ações opostas**. Nada no objeto prescreve que um bloco em cic
 {
  "jurado": "jurado-semteto-c2-consistencia-normativa — 2ª INSTÂNCIA (identidade nova; nada de briefing, plano, ata ou do parcial da 1ª instância herdado como fato)",
  "modelo": "Opus 5.5 (claude-opus-5-5) — frontmatter do corpo diz `opus`",
- "corpo_aplicado": "C:/Users/AMP/w-teto/.claude/agents/especialistas/jurado-semteto-c2-consistencia-normativa.md · md5 EOL-neutro 635f79df868b907d5b8a1843f9646855 (= mandato)",
+ "corpo_aplicado": "~/w-teto/.claude/agents/especialistas/jurado-semteto-c2-consistencia-normativa.md · md5 EOL-neutro 635f79df868b907d5b8a1843f9646855 (= mandato)",
  "cadeira": "C2 — consistência normativa",
  "head_medido": "7ad08690bad5e9cbc4d34fe6905b14c6ac634046 (gh pr view 394 = git ls-remote, medido no início e no fim — NÃO andou) · objeto = head · merge-base fc3363e38aabd77f54e6b53034128182f8000571 (= origin/main)",
  "leitura_de_outras_cadeiras": "não li VOTO-394-C1.md, VOTO-394-C3.md, nenhum c1-*/c3-*, nem o parcial da 1ª instância",
@@ -158,7 +158,7 @@ Duas leituras, **ações opostas**. Nada no objeto prescreve que um bloco em cic
 }
 ```
 
-**Limpeza (teardown):** worktree `C:/Users/AMP/w-jst2` (só o meu; nenhum processo com `w-jst2` na linha de comando, conferido por Get-CimInstance) removido por `git worktree remove --force` ec=0 — `test -e` confirma ausência e `worktree list` não o lista · cópias mutantes, JSONs e blobs extraídos em `scratchpad/c2v2/` descartados; ficam só os scripts (`extract.py mut1.py sym.py gen.py classify.py item3.py trava.py`) e os logs, como roteiro de re-execução (P3) · nenhum arquivo rastreado tocado; nada escrito no repositório nem no `w-teto` (só li o corpo lá) · base viva (5432/6379) nunca tocada · resíduo ALHEIO apenas reportado: `w-teto` com 22 ` M` cujo `git diff --stat` e `--ignore-cr-at-eol` saem vazios (stat-cache CRLF, fantasma); `w-e4`/`w-devs2` (c32f77b5), `w-devs393`, `w-devt393`, `w-mandato` e os worktrees de `.claude/worktrees/` não foram tocados.
+**Limpeza (teardown):** worktree `~/w-jst2` (só o meu; nenhum processo com `w-jst2` na linha de comando, conferido por Get-CimInstance) removido por `git worktree remove --force` ec=0 — `test -e` confirma ausência e `worktree list` não o lista · cópias mutantes, JSONs e blobs extraídos em `scratchpad/c2v2/` descartados; ficam só os scripts (`extract.py mut1.py sym.py gen.py classify.py item3.py trava.py`) e os logs, como roteiro de re-execução (P3) · nenhum arquivo rastreado tocado; nada escrito no repositório nem no `w-teto` (só li o corpo lá) · base viva (5432/6379) nunca tocada · resíduo ALHEIO apenas reportado: `w-teto` com 22 ` M` cujo `git diff --stat` e `--ignore-cr-at-eol` saem vazios (stat-cache CRLF, fantasma); `w-e4`/`w-devs2` (c32f77b5), `w-devs393`, `w-devt393`, `w-mandato` e os worktrees de `.claude/worktrees/` não foram tocados.
 
 **Justificativa (resumo):** ITEM 1 — §C7.1-bis (CLAUDE 391–409 / AGENTS 419–437, 19 linhas, 0 CR, md5 615ded3e…), item 4 (413–445 / 441–473, 33 linhas, 0 CR, db96a8bd…) e §C7.7 (524–576 / 552–604, 53 linhas, 0 CR, 7c9294e6…) byte-idênticos cru e EOL-neutro; borda provada pelas mutações de cauda nas três; diff 64×64 linhas +/-, zero assimetria. ITEM 2 — população N=138, sementes com/sem -i (cegueira de caixa medida no merge-base: 6 ocorrências), 638 n-gramas gerados, padrão de classe publicado; R1–R5 achados (R2 só pela camada gerada); a lista VIVA contraditória gerada pela propriedade é exatamente V-07…V-11 (11 linhas, 5 regras), todas pré-existentes por git blame (2026-07-08 a 2026-07-28) e na pendência com linha e data; V-01…V-06 ausentes no objeto (contagem zero); critério discrimina (M2.1 VIVO/contradiz × M2.2/M2.3 HISTÓRICO). ITEM 3 — linhas i–vi presentes (vi parcial, faltas nomeadas com dono), 5 perguntas com instrumento no objeto, trava do ciclo 4 PROVADA pelo texto do corpo (BLOQUEADO; 4 vermelhos-controle), e a mutação nova mostrou que a trava depende de o head julgado carregar o contrato pós-#394 (ajuste C2-3-1).
 
