@@ -559,10 +559,6 @@
   "classe": "LEITURA",
   "n": 1
  },
- "ROTA GET /api/v1/mobile/inventory/availability": {
-  "classe": "LEITURA",
-  "n": 1
- },
  "ROTA GET /api/v1/mobile/technician/stock": {
   "classe": "LEITURA",
   "n": 1
@@ -2073,18 +2069,6 @@
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist_run.create": {
   "classe": "OS·SEM-ALCANCE",
-  "n": 1
- },
- "PAR /api/v1/mobile/sync/inventory-actions · inventory.consume": {
-  "classe": "SEM-ALCANCE-CAMPO",
-  "n": 1
- },
- "PAR /api/v1/mobile/sync/inventory-actions · inventory.reserve": {
-  "classe": "SEM-ALCANCE-CAMPO",
-  "n": 1
- },
- "PAR /api/v1/mobile/sync/inventory-actions · inventory.shortage_report": {
-  "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/inventory-actions · work_order_material.add": {

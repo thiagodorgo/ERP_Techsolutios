@@ -493,11 +493,10 @@ test("T4.1 · C2B-01 — o canário: a enumeração acha a regra em uma linha e 
 const ordenado = (xs: readonly string[]) => [...xs].sort();
 
 test("T4.1 — cada regra do app é a régua exportada pela rota do servidor (chaves, modo e módulos)", async () => {
-  const [{ classifyRoute }, checklist, workOrders, estoque, syncChecklist] = await Promise.all([
+  const [{ classifyRoute }, checklist, workOrders, syncChecklist] = await Promise.all([
     import("../src/modules/navigation/route-modules.js"),
     import("../src/modules/checklists/checklist.permissions.js"),
     import("../src/modules/work-orders/work-order.routes.js"),
-    import("../src/modules/mobile/mobile-inventory-sync.js"),
     import("../src/modules/mobile/mobile-checklist-sync.js"),
   ]);
   const mod = (metodo: string, caminho: string): string[] => {
@@ -510,11 +509,6 @@ test("T4.1 — cada regra do app é a régua exportada pela rota do servidor (ch
     return valor;
   };
   const C = checklist.CHECKLIST_PERMISSIONS;
-  const leitura = exportado((estoque as Record<string, unknown>).MOBILE_INVENTORY_READ_PERMISSIONS, "MOBILE_INVENTORY_READ_PERMISSIONS") as readonly string[];
-  const acaoDeEstoque = exportado(
-    (estoque as Record<string, unknown>).MOBILE_INVENTORY_STOCK_ACTION_PERMISSION,
-    "MOBILE_INVENTORY_STOCK_ACTION_PERMISSION",
-  ) as string;
   const acoesDeChecklist = exportado(
     (syncChecklist as Record<string, unknown>).MOBILE_CHECKLIST_ACTION_PERMISSIONS,
     "MOBILE_CHECKLIST_ACTION_PERMISSIONS",
@@ -523,14 +517,12 @@ test("T4.1 — cada regra do app é a régua exportada pela rota do servidor (ch
   const esperado: Record<string, Omit<Regra, "nome">> = {
     G1: { modulos: mod("GET", "/mobile/checklists/available"), modoModulo: "any", chaves: [C.readRuns, C.createRuns], modo: "any" },
     G1b: { modulos: mod("POST", "/mobile/sync/checklist-actions"), modoModulo: "any", chaves: [acoesDeChecklist["checklist.item_answer"]], modo: "all" },
-    G2: { modulos: mod("GET", "/mobile/inventory/availability"), modoModulo: "any", chaves: [...leitura], modo: "any" },
-    G3: { modulos: mod("POST", "/mobile/sync/inventory-actions"), modoModulo: "any", chaves: [acaoDeEstoque], modo: "all" },
     G4: { modulos: mod("POST", "/approvals/x/approve"), modoModulo: "any", chaves: [workOrders.WORK_ORDER_PERMISSIONS.approve], modo: "all" },
   };
   assert.deepEqual(mod("POST", "/approvals/x/approve").sort(), ["approvals", "work_orders"], "G4: a rota de aprovar mudou de módulos");
 
   const regras = lerRegras();
-  assert.deepEqual([...regras.keys()].sort(), Object.keys(esperado).sort(), "o conjunto de regras do app é fechado: G1, G1b, G2, G3, G4");
+  assert.deepEqual([...regras.keys()].sort(), Object.keys(esperado).sort(), "o conjunto de regras do app é fechado: G1, G1b, G4 (G2 e G3 saíram no B-O6R-04b)");
   assert.deepEqual([...lerRegrasDaLinha().keys()].sort(), [...regras.keys()].sort(), "regra de mobile_gates.dart fora do formato de uma linha");
   for (const [nome, e] of Object.entries(esperado)) {
     const r = regras.get(nome)!;

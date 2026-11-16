@@ -59,8 +59,8 @@ type MobileInventoryActionResult = {
 export type MobileInventorySyncResponse = {
   readonly contract: {
     readonly name: "mobile_inventory_actions_sync";
-    readonly version: "2026-11.b-material-reenvio";
-    readonly status: "partial";
+    readonly version: "2026-11.b-o6r-04b";
+    readonly status: "implemented";
   };
   readonly client_batch_id: string | null;
   readonly tenant_id: string;
@@ -127,8 +127,8 @@ export async function syncMobileInventoryActions(
   return {
     contract: {
       name: "mobile_inventory_actions_sync",
-      version: "2026-11.b-material-reenvio",
-      status: "partial",
+      version: "2026-11.b-o6r-04b",
+      status: "implemented",
     },
     client_batch_id: request.client_batch_id,
     tenant_id: actor.tenantId,
