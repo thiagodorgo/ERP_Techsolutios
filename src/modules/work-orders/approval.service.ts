@@ -1,14 +1,18 @@
+import { env } from "../../config/env.js";
 import {
   createDefaultNotificationService,
   createMemoryNotificationService,
   type NotificationService,
 } from "../notifications/notification.service.js";
 import {
-  InMemoryApprovalRepository,
+  getMemoryApprovalRepository,
+  readMemoryApprovalAudit,
+  recordMemoryApprovalAudit,
   type ApprovalRepository,
 } from "./approval.repository.js";
 import type {
   ApprovalActorContext,
+  ApprovalAuditContext,
   ApprovalAuditEvent,
   ApprovalEntityType,
   DecideOperationalApprovalInput,
@@ -26,21 +30,9 @@ export class ApprovalService {
   async request(input: RequestOperationalApprovalInput): Promise<OperationalApproval> {
     assertEntityType(input.entityType);
     const pendingReason = requiredText(input.pendingReason, "pendingReason");
-    const approval = await this.repository.request({ ...input, pendingReason });
-    recordApprovalAudit({
-      action: "approval.requested",
-      tenantId: input.tenantId,
-      actorId: input.requestedByUserId,
-      approvalId: approval.id,
-      entityType: approval.entityType,
-      entityId: approval.entityId,
-      outcome: "success",
-      metadata: {
-        status: approval.status,
-        work_order_id: approval.workOrderId,
-      },
-    });
-    return approval;
+    // B-APROVACOES-DURAVEIS — a trilha do pedido é do repositório: em memória, o vetor de sempre; em banco, a linha
+    // `approval.requested` em audit_logs, na mesma transação da linha da aprovação.
+    return this.repository.request({ ...input, pendingReason });
   }
 
   listPending(actor: ApprovalActorContext, query: Record<string, unknown> = {}) {
@@ -58,29 +50,38 @@ export class ApprovalService {
     return approval;
   }
 
-  approve(actor: ApprovalActorContext, approvalId: string, body: Record<string, unknown>) {
-    return this.decide(actor, {
-      tenantId: actor.tenantId,
-      approvalId,
-      actorUserId: actor.userId,
-      decision: "approved",
-      note: optionalText(body.note),
-    });
+  approve(actor: ApprovalActorContext, approvalId: string, body: Record<string, unknown>, context?: ApprovalAuditContext) {
+    return this.decide(
+      actor,
+      {
+        tenantId: actor.tenantId,
+        approvalId,
+        actorUserId: actor.userId,
+        decision: "approved",
+        note: optionalText(body.note),
+      },
+      context,
+    );
   }
 
-  reject(actor: ApprovalActorContext, approvalId: string, body: Record<string, unknown>) {
-    return this.decide(actor, {
-      tenantId: actor.tenantId,
-      approvalId,
-      actorUserId: actor.userId,
-      decision: "rejected",
-      reason: requiredText(body.reason, "reason"),
-    });
+  reject(actor: ApprovalActorContext, approvalId: string, body: Record<string, unknown>, context?: ApprovalAuditContext) {
+    return this.decide(
+      actor,
+      {
+        tenantId: actor.tenantId,
+        approvalId,
+        actorUserId: actor.userId,
+        decision: "rejected",
+        reason: requiredText(body.reason, "reason"),
+      },
+      context,
+    );
   }
 
   private async decide(
     actor: ApprovalActorContext,
     input: DecideOperationalApprovalInput,
+    context?: ApprovalAuditContext,
   ): Promise<OperationalApproval> {
     const current = await this.get(actor, input.approvalId);
 
@@ -95,7 +96,7 @@ export class ApprovalService {
     // A comparação é por `requestedByUserId` (o agregado já o carrega — approval.types.ts). Nenhum campo
     // novo, nenhuma migração.
     if (actor.userId === current.requestedByUserId) {
-      recordApprovalAudit({
+      recordMemoryApprovalAudit({
         action: "approval.self_decision_denied",
         tenantId: current.tenantId,
         actorId: actor.userId,
@@ -131,26 +132,21 @@ export class ApprovalService {
       );
     }
 
-    const approval = await this.repository.decide(input);
+    // B-APROVACOES-DURAVEIS — o CAS: grava só se ainda estiver pendente. Casou 0 linhas → relê: não existe é 404; existe
+    // (outro decisor chegou antes) é 409 `approval_already_decided`. A trilha da decisão é do repositório.
+    const approval = await this.repository.decide(input, context);
     if (!approval) {
-      throw new ApprovalError(404, "APPROVAL_NOT_FOUND", "not_found", "Approval was not found.");
+      const reread = await this.repository.findById(input.tenantId, input.approvalId);
+      if (!reread) {
+        throw new ApprovalError(404, "APPROVAL_NOT_FOUND", "not_found", "Approval was not found.");
+      }
+      throw new ApprovalError(
+        409,
+        "APPROVAL_ALREADY_DECIDED",
+        "approval_already_decided",
+        "Approval already has a final decision.",
+      );
     }
-
-    recordApprovalAudit({
-      action: approval.status === "approved" ? "approval.approved" : "approval.rejected",
-      tenantId: approval.tenantId,
-      actorId: actor.userId,
-      approvalId: approval.id,
-      entityType: approval.entityType,
-      entityId: approval.entityId,
-      outcome: "success",
-      metadata: {
-        status: approval.status,
-        work_order_id: approval.workOrderId,
-        reason_provided: Boolean(approval.rejectionReason),
-        note_provided: Boolean(approval.decisionNote),
-      },
-    });
 
     await this.notifyDecision(approval);
     return approval;
@@ -181,9 +177,8 @@ export class ApprovalService {
   }
 }
 
-const memoryRepository = new InMemoryApprovalRepository();
+const memoryRepository = getMemoryApprovalRepository();
 let defaultServicePromise: Promise<ApprovalService> | undefined;
-const auditEvents: ApprovalAuditEvent[] = [];
 
 export function createMemoryApprovalService(): ApprovalService {
   return new ApprovalService(memoryRepository, createMemoryNotificationService());
@@ -196,16 +191,19 @@ export async function createDefaultApprovalService(): Promise<ApprovalService> {
 
 export function resetApprovalRuntimeForTests(): void {
   memoryRepository.reset();
-  auditEvents.length = 0;
   defaultServicePromise = undefined;
 }
 
 export function getApprovalAuditEventsForTests(): readonly ApprovalAuditEvent[] {
-  return auditEvents.map((event) => ({ ...event, metadata: { ...event.metadata } }));
+  return readMemoryApprovalAudit();
 }
 
+// B-APROVACOES-DURAVEIS — a escolha por `CORE_SAAS_PERSISTENCE`, como o serviço de OS: `prisma` grava na tabela
+// `operational_approvals` (isolada por organização); qualquer outro valor usa a memória do processo.
 async function createRuntimeApprovalService(): Promise<ApprovalService> {
-  return new ApprovalService(memoryRepository, await createDefaultNotificationService());
+  const repository: ApprovalRepository =
+    env.CORE_SAAS_PERSISTENCE === "prisma" ? await (await import("./approval-prisma.repository.js")).createPrismaApprovalRepository() : memoryRepository; // B-APROV:fabrica-runtime
+  return new ApprovalService(repository, await createDefaultNotificationService());
 }
 
 function assertEntityType(value: string): asserts value is ApprovalEntityType {
@@ -224,34 +222,4 @@ function requiredText(value: unknown, field: string): string {
 
 function optionalText(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function recordApprovalAudit(
-  input: Omit<ApprovalAuditEvent, "metadata" | "createdAt"> & {
-    readonly metadata?: Readonly<Record<string, unknown>>;
-  },
-): void {
-  auditEvents.push({
-    ...input,
-    metadata: sanitizeAuditMetadata(input.metadata ?? {}),
-    createdAt: new Date().toISOString(),
-  });
-}
-
-const unsafeAuditKeys = /authorization|bearer|token|base64|file_data|local_path|path|bucket|storage_?key/i;
-
-function sanitizeAuditMetadata(metadata: Readonly<Record<string, unknown>>) {
-  return Object.fromEntries(
-    Object.entries(metadata)
-      .filter(([key]) => !unsafeAuditKeys.test(key))
-      .map(([key, value]) => [key, sanitizeAuditValue(value)]),
-  );
-}
-
-function sanitizeAuditValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sanitizeAuditValue);
-  if (value && typeof value === "object") {
-    return sanitizeAuditMetadata(value as Readonly<Record<string, unknown>>);
-  }
-  return value;
 }

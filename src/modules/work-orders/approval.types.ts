@@ -50,6 +50,17 @@ export type DecideOperationalApprovalInput = {
   readonly reason?: string;
 };
 
+// B-APROVACOES-DURAVEIS (item 67) — o contexto da requisição que acompanha a linha durável de auditoria da decisão e da
+// recusa (o mesmo que `extractAuditRequestContext` tira da requisição e que a linha de antes, gravada por fora pelo
+// controller, já levava). Nenhum texto livre do usuário entra aqui.
+export type ApprovalAuditContext = {
+  readonly actorEmail?: string;
+  readonly requestId?: string;
+  readonly correlationId?: string;
+  readonly ipAddress?: string;
+  readonly userAgent?: string;
+};
+
 export type ApprovalAuditEvent = {
   readonly action:
     | "approval.requested"

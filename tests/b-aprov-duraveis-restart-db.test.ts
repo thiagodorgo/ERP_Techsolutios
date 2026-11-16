@@ -87,7 +87,9 @@ function rodarProcesso(args: readonly string[]): Record<string, unknown> {
 }
 
 // Teardown ESCOPADO à organização descartável: toda tabela com `tenant_id` uuid, pelo id que o caso semeou, com gatilhos
-// de FK em modo réplica; depois, zero linha residual.
+// de FK em modo réplica; depois, zero linha residual. A notificação da decisão grava o uso de nuvem DEPOIS de responder
+// (`recordCloudUsageBestEffort`, sem espera): uma linha pode chegar depois da limpeza. Por isso a limpeza repete até a
+// contagem dar zero em todas as tabelas (no máximo 20 voltas de 100 ms), e só então afirma.
 async function teardown(client: any, tenantId: string): Promise<void> {
   const tabelas: Array<{ table_name: string }> = await client.$queryRawUnsafe(
     `SELECT c.table_name FROM information_schema.columns c
@@ -95,15 +97,26 @@ async function teardown(client: any, tenantId: string): Promise<void> {
       WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND c.data_type = 'uuid' AND t.table_type = 'BASE TABLE'
       ORDER BY c.table_name`,
   );
-  await client.$transaction(async (tx: any) => {
-    await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
+  const residuo = async (): Promise<string[]> => {
+    const sobras: string[] = [];
     for (const { table_name } of tabelas) {
-      await tx.$executeRawUnsafe(`DELETE FROM "${table_name}" WHERE tenant_id = $1::uuid`, tenantId);
+      const [{ n }]: Array<{ n: number }> = await client.$queryRawUnsafe(`SELECT count(*)::int AS n FROM "${table_name}" WHERE tenant_id = $1::uuid`, tenantId);
+      if (n > 0) sobras.push(`${table_name}=${n}`);
     }
-    await tx.$executeRawUnsafe("DELETE FROM tenants WHERE id = $1::uuid", tenantId);
-  });
-  for (const { table_name } of tabelas) {
-    const [{ n }]: Array<{ n: number }> = await client.$queryRawUnsafe(`SELECT count(*)::int AS n FROM "${table_name}" WHERE tenant_id = $1::uuid`, tenantId);
-    assert.equal(n, 0, `teardown deixou ${n} linha(s) em ${table_name} da organização descartável`);
+    return sobras;
+  };
+  let sobras: string[] = [];
+  for (let volta = 0; volta < 20; volta += 1) {
+    await client.$transaction(async (tx: any) => {
+      await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
+      for (const { table_name } of tabelas) {
+        await tx.$executeRawUnsafe(`DELETE FROM "${table_name}" WHERE tenant_id = $1::uuid`, tenantId);
+      }
+      await tx.$executeRawUnsafe("DELETE FROM tenants WHERE id = $1::uuid", tenantId);
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    sobras = await residuo();
+    if (sobras.length === 0) break;
   }
+  assert.deepEqual(sobras, [], `teardown deixou linha(s) da organização descartável: ${sobras.join(", ")}`);
 }

@@ -1,20 +1,47 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  ApprovalAuditContext,
+  ApprovalAuditEvent,
   DecideOperationalApprovalInput,
   OperationalApproval,
   RequestOperationalApprovalInput,
 } from "./approval.types.js";
 
 export interface ApprovalRepository {
+  // B-APROVACOES-DURAVEIS (emenda 1 §3.6) — as 3 propriedades que o B-SAN3-16 usa e as duas implementações preservam:
+  // (1) a repetição com a mesma (organização, tipo, entidade) pendente devolve a pendente que existe, sem linha nova;
+  // (2) a falha de gravação propaga o erro — nunca sucesso sem linha; (3) o `id` devolvido é o da linha gravada.
   request(input: RequestOperationalApprovalInput): Promise<OperationalApproval>;
   findById(tenantId: string, approvalId: string): Promise<OperationalApproval | null>;
   listPending(input: {
     readonly tenantId: string;
     readonly workOrderId?: string;
   }): Promise<readonly OperationalApproval[]>;
-  decide(input: DecideOperationalApprovalInput): Promise<OperationalApproval | null>;
+  // A decisão é um CAS sobre `status = 'pending_approval'`: devolve `null` se a aprovação não existe OU já foi decidida
+  // (quem chama relê para distinguir 404 de 409). Duas decisões simultâneas: 1 passa, a outra recebe `null`.
+  decide(input: DecideOperationalApprovalInput, context?: ApprovalAuditContext): Promise<OperationalApproval | null>;
   reset(): void;
+}
+
+// A trilha da memória: o mesmo vetor de módulo que os testes de regressão leem por `getApprovalAuditEventsForTests`.
+// Em banco, a trilha é a tabela `audit_logs` (approval-prisma.repository.ts).
+const memoryAuditEvents: ApprovalAuditEvent[] = [];
+
+export function recordMemoryApprovalAudit(
+  input: Omit<ApprovalAuditEvent, "metadata" | "createdAt"> & {
+    readonly metadata?: Readonly<Record<string, unknown>>;
+  },
+): void {
+  memoryAuditEvents.push({
+    ...input,
+    metadata: sanitizeAuditMetadata(input.metadata ?? {}),
+    createdAt: new Date().toISOString(),
+  });
+}
+
+export function readMemoryApprovalAudit(): readonly ApprovalAuditEvent[] {
+  return memoryAuditEvents.map((event) => ({ ...event, metadata: { ...event.metadata } }));
 }
 
 export class InMemoryApprovalRepository implements ApprovalRepository {
@@ -28,9 +55,8 @@ export class InMemoryApprovalRepository implements ApprovalRepository {
         approval.entityId === input.entityId &&
         approval.status === "pending_approval",
     );
-    if (existing) return existing;
-
-    const approval: OperationalApproval = {
+    // Em memória, o comportamento de antes não muda (emenda 1 §3.6, E1-C): a repetição também registra o pedido.
+    const approval: OperationalApproval = existing ?? {
       id: `approval_${randomUUID().replaceAll("-", "")}`,
       tenantId: input.tenantId,
       entityType: input.entityType,
@@ -41,7 +67,20 @@ export class InMemoryApprovalRepository implements ApprovalRepository {
       requestedAt: new Date(),
       pendingReason: input.pendingReason,
     };
-    this.approvals.set(approval.id, approval);
+    if (!existing) this.approvals.set(approval.id, approval);
+    recordMemoryApprovalAudit({
+      action: "approval.requested",
+      tenantId: input.tenantId,
+      actorId: input.requestedByUserId,
+      approvalId: approval.id,
+      entityType: approval.entityType,
+      entityId: approval.entityId,
+      outcome: "success",
+      metadata: {
+        status: approval.status,
+        work_order_id: approval.workOrderId,
+      },
+    });
     return approval;
   }
 
@@ -63,7 +102,8 @@ export class InMemoryApprovalRepository implements ApprovalRepository {
 
   async decide(input: DecideOperationalApprovalInput): Promise<OperationalApproval | null> {
     const current = await this.findById(input.tenantId, input.approvalId);
-    if (!current) return null;
+    // O mesmo CAS do banco: num processo só, o tique é atômico, e a 2ª decisão encontra a 1ª já gravada.
+    if (!current || current.status !== "pending_approval") return null;
 
     const updated: OperationalApproval = {
       ...current,
@@ -74,10 +114,52 @@ export class InMemoryApprovalRepository implements ApprovalRepository {
       rejectionReason: input.reason,
     };
     this.approvals.set(updated.id, updated);
+    recordMemoryApprovalAudit({
+      action: updated.status === "approved" ? "approval.approved" : "approval.rejected",
+      tenantId: updated.tenantId,
+      actorId: input.actorUserId,
+      approvalId: updated.id,
+      entityType: updated.entityType,
+      entityId: updated.entityId,
+      outcome: "success",
+      metadata: {
+        status: updated.status,
+        work_order_id: updated.workOrderId,
+        reason_provided: Boolean(updated.rejectionReason),
+        note_provided: Boolean(updated.decisionNote),
+      },
+    });
     return updated;
   }
 
   reset(): void {
     this.approvals.clear();
+    memoryAuditEvents.length = 0;
   }
+}
+
+// O armazém de aprovações da memória, ÚNICO no processo: o serviço de aprovações o lê, e o repositório de OS em memória
+// grava nele o pedido da conclusão, no mesmo tique do status (B-APROVACOES-DURAVEIS, plano §3.6).
+const memoryApprovalRepository = new InMemoryApprovalRepository();
+
+export function getMemoryApprovalRepository(): InMemoryApprovalRepository {
+  return memoryApprovalRepository;
+}
+
+const unsafeAuditKeys = /authorization|bearer|token|base64|file_data|local_path|path|bucket|storage_?key/i;
+
+export function sanitizeAuditMetadata(metadata: Readonly<Record<string, unknown>>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(metadata)
+      .filter(([key]) => !unsafeAuditKeys.test(key))
+      .map(([key, value]) => [key, sanitizeAuditValue(value)]),
+  );
+}
+
+function sanitizeAuditValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeAuditValue);
+  if (value && typeof value === "object") {
+    return sanitizeAuditMetadata(value as Readonly<Record<string, unknown>>);
+  }
+  return value;
 }
