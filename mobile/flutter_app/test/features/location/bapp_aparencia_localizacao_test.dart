@@ -8,8 +8,10 @@ import 'package:erp_techsolutions_mobile/core/appearance/app_appearance.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/location/location_consent_store.dart';
 import 'package:erp_techsolutions_mobile/features/location/ui/location_consent_screen.dart';
+import 'package:erp_techsolutions_mobile/shared/theme/erp_mobile_theme.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/mobile_kit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../capturas/captura_helper.dart';
@@ -497,6 +499,145 @@ void main() {
         });
       }
     }
+  });
+
+  // Conferência visual do orquestrador (conf-visual-583-orq.md, CV-1 a CV-6):
+  // cada ajuste preso por um teste novo.
+  group('conferência visual', () {
+    testWidgets('CV-1. B sem decisão: "SUA DECISÃO" diz "Consentimento '
+        'pendente", sem bolinha', (t) async {
+      await _pump(t, AppAppearance.b);
+      final block = find.byKey(const Key('consent-status-card'));
+      expect(
+        t.widget<MobileStatusBlock>(block).value,
+        'Consentimento pendente',
+      );
+      expect(
+        find.descendant(
+          of: block,
+          matching: find.byKey(const Key('mobile-status-block-dot')),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('consent-b-block-gps')),
+          matching: find.byKey(const Key('mobile-status-block-dot')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    group('com a Roboto', () {
+      setUpAll(loadRoboto);
+      for (final size in const [Size(390, 812), Size(360, 740)]) {
+        testWidgets('CV-1b. B sem decisão a ${size.width.toInt()}: '
+            '"Consentimento" inteiro numa linha (nunca quebra no meio)', (
+          t,
+        ) async {
+          fixarTela(t, size);
+          await _pump(t, AppAppearance.b);
+          final paragraph = t.renderObject<RenderParagraph>(
+            find.text('Consentimento pendente'),
+          );
+          // O começo e o fim da palavra ficam na mesma linha.
+          final start = paragraph.getOffsetForCaret(
+            const TextPosition(offset: 0),
+            Rect.zero,
+          );
+          final end = paragraph.getOffsetForCaret(
+            const TextPosition(
+              offset: 'Consentimento'.length,
+              affinity: TextAffinity.upstream,
+            ),
+            Rect.zero,
+          );
+          expect(end.dy, start.dy);
+        });
+      }
+    });
+
+    testWidgets('CV-2. B: "Agora não" neutro (texto escuro, borda clara)', (
+      t,
+    ) async {
+      await _pump(t, AppAppearance.b);
+      final style = t
+          .widget<OutlinedButton>(find.byKey(const Key('consent-decline')))
+          .style;
+      expect(style?.foregroundColor?.resolve({}), ErpMobileTheme.ink);
+      expect(style?.side?.resolve({})?.color, ErpMobileTheme.cardBorder);
+    });
+
+    testWidgets('CV-2c. C: "Agora não" continua no azul do tema', (t) async {
+      await _pump(t, AppAppearance.c);
+      final style = t
+          .widget<OutlinedButton>(find.byKey(const Key('consent-decline')))
+          .style;
+      expect(style?.foregroundColor, isNull);
+    });
+
+    testWidgets('CV-3. B: a lista usa o ✓ simples, neutro', (t) async {
+      await _pump(t, AppAppearance.b);
+      for (final id in ['uso', 'quando', 'fechado', 'mudar']) {
+        final icon = t.widget<Icon>(find.byKey(Key('consent-row-check-$id')));
+        expect(icon.icon, Icons.check);
+        expect(icon.color, ErpMobileTheme.ink);
+      }
+    });
+
+    testWidgets('CV-4. B concedido: a faixa "Registrado…" no verde-claro de '
+        'sucesso', (t) async {
+      await _pump(t, AppAppearance.b, state: 'concedido');
+      final box = t
+          .widgetList<Container>(
+            find.descendant(
+              of: find.byKey(const Key('consent-b-organization-banner')),
+              matching: find.byType(Container),
+            ),
+          )
+          .first;
+      final deco = box.decoration! as BoxDecoration;
+      expect(deco.color, const Color(0xFFECFDF5));
+      expect((deco.border! as Border).top.color, const Color(0xFFA7F3D0));
+    });
+
+    for (final ap in [AppAppearance.a, AppAppearance.c]) {
+      testWidgets('CV-5${ap.letter}. "Com o app fechado, nada" com o ícone ⊘', (
+        t,
+      ) async {
+        await _pump(t, ap);
+        final icon = t
+            .widgetList<Icon>(
+              find.descendant(
+                of: find.byKey(const Key('consent-row-fechado')),
+                matching: find.byType(Icon),
+              ),
+            )
+            .first;
+        expect(icon.icon, Icons.block_outlined);
+      });
+    }
+
+    testWidgets('CV-6 (medida). Aberta pelo Perfil, a tela tem a seta de '
+        'voltar nas 3 aparências', (t) async {
+      for (final ap in AppAppearance.values) {
+        final w = AparWorld(prefs: {_key: ap});
+        await t.pumpWidget(aparApp(w, initial: '/profile'));
+        await t.pumpAndSettle();
+        // Na A, a linha de Privacidade é a de hoje (o texto "Localização");
+        // na B e na C, a linha nova.
+        final link = ap == AppAppearance.a
+            ? find.text('Localização')
+            : find.byKey(Key('profile-location-row-${ap.letter}'));
+        await t.ensureVisible(link);
+        await t.pumpAndSettle();
+        await t.tap(link);
+        await t.pumpAndSettle();
+        expect(find.byType(LocationConsentScreen), findsOneWidget);
+        expect(find.byType(BackButton), findsOneWidget, reason: ap.letter);
+        await t.pumpWidget(const SizedBox());
+      }
+    });
   });
 }
 

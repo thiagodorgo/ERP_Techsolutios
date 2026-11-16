@@ -303,7 +303,7 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
       ),
       const _UsageRow(
         id: 'fechado',
-        icon: Icons.lock_outline,
+        icon: Icons.block_outlined,
         title: 'Com o app fechado, nada',
         lines: [locationConsentClosedAppText],
       ),

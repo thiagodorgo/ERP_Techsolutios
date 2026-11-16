@@ -254,10 +254,10 @@ class LocationConsentUsageList extends StatelessWidget {
               onToggle: () => onToggle(row.id),
               leading: checkRows.contains(row.id)
                   ? Icon(
-                      Icons.check_circle_outline,
+                      Icons.check,
                       key: Key('consent-row-check-${row.id}'),
                       size: 20,
-                      color: ErpMobileTheme.success,
+                      color: ErpMobileTheme.ink,
                     )
                   : Icon(row.icon, size: 20, color: ErpMobileTheme.inkMuted),
               trailing: row.trailing,
@@ -390,15 +390,32 @@ class LocationConsentPermitButton extends StatelessWidget {
 
 /// "Agora não" (as mesmas chave e ação da A).
 class LocationConsentDeclineButton extends StatelessWidget {
-  const LocationConsentDeclineButton({required this.props, super.key});
+  const LocationConsentDeclineButton({
+    required this.props,
+    this.neutral = false,
+    super.key,
+  });
 
   final LocationConsentViewProps props;
+
+  /// O "Agora não" neutro da opção B (texto escuro, borda clara); a C fica no
+  /// azul do tema.
+  final bool neutral;
 
   @override
   Widget build(BuildContext context) => OutlinedButton(
     key: const Key('consent-decline'),
     onPressed: props.onDecline,
-    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+    style: neutral
+        ? OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            foregroundColor: ErpMobileTheme.ink,
+            side: const BorderSide(color: ErpMobileTheme.cardBorder),
+            textStyle: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          )
+        : OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
     child: const Text('Agora não'),
   );
 }

@@ -1054,11 +1054,20 @@ class MobileStatusBlock extends StatelessWidget {
     this.tone = PillTone.neutral,
     this.onTap,
     this.selected = false,
+    this.showDot = true,
+    this.valueFontSize = 13,
     super.key,
   });
 
   final String label;
   final String value;
+
+  /// Sem a bolinha do tom (o "Sua decisão" da opção B, como a maquete).
+  final bool showDot;
+
+  /// O tamanho do valor (13 px; menos quando a palavra mais longa não cabe:
+  /// [mobileStatusBlockFontSize]).
+  final double valueFontSize;
 
   /// [PillTone.done] verde, [PillTone.warning] âmbar, [PillTone.danger]
   /// vermelho; o resto, neutro.
@@ -1105,19 +1114,23 @@ class MobileStatusBlock extends StatelessWidget {
           const SizedBox(height: 2),
           Row(
             children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 5),
+              if (showDot) ...[
+                Container(
+                  key: const Key('mobile-status-block-dot'),
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 5),
+              ],
               Flexible(
                 child: Text(
                   value,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: valueFontSize,
                     fontWeight: FontWeight.w800,
-                    height: 17 / 13,
+                    letterSpacing: 0,
+                    height: 17 / valueFontSize,
                     color: text,
                   ),
                 ),
@@ -1136,6 +1149,45 @@ class MobileStatusBlock extends StatelessWidget {
       child: block,
     );
   }
+}
+
+/// O tamanho do valor de um [MobileStatusBlock] com [blockWidth] de largura:
+/// 13 px, ou menos (até 10,5 px) quando a palavra mais longa não cabe. Assim a
+/// palavra nunca quebra no meio (CV-1 da conferência visual do #583:
+/// "Consentimento" em 3 colunas a 360 px). Quem monta a fileira de blocos mede
+/// a largura (`LayoutBuilder` por fora do `IntrinsicHeight`).
+double mobileStatusBlockFontSize(
+  BuildContext context,
+  String value, {
+  required double blockWidth,
+  bool showDot = true,
+}) {
+  const size = 13.0;
+  // o recuo interno (10 + 10), a borda (1 + 1), a bolinha (7 + 5) e 2 px de
+  // folga para o arredondamento do texto
+  final maxWidth = blockWidth - 24 - (showDot ? 12 : 0);
+  if (!maxWidth.isFinite || maxWidth <= 0) return size;
+  const style = TextStyle(
+    fontSize: size,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0,
+  );
+  var widest = 0.0;
+  for (final word in value.split(' ')) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: word,
+        style: DefaultTextStyle.of(context).style.merge(style),
+      ),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    if (painter.width > widest) widest = painter.width;
+    painter.dispose();
+  }
+  if (widest <= maxWidth) return size;
+  return (size * maxWidth / widest).clamp(10.5, size);
 }
 
 /// O cartão de situação (opção B, depois da decisão): verde, com o ícone num
@@ -1266,6 +1318,75 @@ class MobileDangerOutlineButton extends StatelessWidget {
       style: style,
       icon: icon,
       label: Text(label),
+    );
+  }
+}
+
+/// A faixa de aviso clara da opção B da localização (o `b-faixa` da maquete):
+/// fundo e borda claros do tom, texto escuro do tom e ícone. [PillTone.done]
+/// verde, [PillTone.warning] âmbar, [PillTone.danger] vermelho; o resto, azul.
+class MobileNoticeBanner extends StatelessWidget {
+  const MobileNoticeBanner({
+    required this.icon,
+    required this.message,
+    this.tone = PillTone.neutral,
+    super.key,
+  });
+
+  final IconData icon;
+  final String message;
+  final PillTone tone;
+
+  (Color, Color, Color) get _palette => switch (tone) {
+    PillTone.done => (
+      MobilePill.colorsFor(PillTone.done).$1,
+      const Color(0xFFA7F3D0),
+      const Color(0xFF065F46),
+    ),
+    PillTone.warning || PillTone.scheduled => (
+      MobilePill.colorsFor(PillTone.warning).$1,
+      const Color(0xFFFDE68A),
+      ErpMobileTheme.warningInk,
+    ),
+    PillTone.danger => (
+      MobilePill.colorsFor(PillTone.danger).$1,
+      const Color(0xFFFECACA),
+      ErpMobileTheme.dangerInk,
+    ),
+    _ => (
+      MobilePill.colorsFor(PillTone.info).$1,
+      const Color(0xFFBFDBFE),
+      const Color(0xFF1E3A8A),
+    ),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, border, ink) = _palette;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 16, color: ink),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(fontSize: 12.5, height: 17 / 12.5, color: ink),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -83,7 +83,7 @@ class LocationConsentViewB extends StatelessWidget {
             LocationConsentPermitButton(props: props),
             if (props.askDecline) ...[
               const SizedBox(height: 8),
-              LocationConsentDeclineButton(props: props),
+              LocationConsentDeclineButton(props: props, neutral: true),
               const SizedBox(height: 8),
               const Text(
                 locationConsentLaterNote,
@@ -114,32 +114,43 @@ class LocationConsentViewB extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: MobileStatusBlock(
-                    key: const Key('consent-status-card'),
-                    label: 'Sua decisão',
-                    value: props.decisionShort,
-                    selected: props.openRow == 'mudar',
-                    onTap: () => props.onOpenRow('mudar'),
+          LayoutBuilder(
+            builder: (context, constraints) => IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: MobileStatusBlock(
+                      key: const Key('consent-status-card'),
+                      label: 'Sua decisão',
+                      value: props.decisionTitle,
+                      showDot: false,
+                      valueFontSize: mobileStatusBlockFontSize(
+                        context,
+                        props.decisionTitle,
+                        blockWidth: (constraints.maxWidth - 16) / 3,
+                        showDot: false,
+                      ),
+                      selected: props.openRow == 'mudar',
+                      onTap: () => props.onOpenRow('mudar'),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: _organizationBlock()),
-                const SizedBox(width: 8),
-                Expanded(child: _gpsBlock()),
-              ],
+                  const SizedBox(width: 8),
+                  Expanded(child: _organizationBlock()),
+                  const SizedBox(width: 8),
+                  Expanded(child: _gpsBlock()),
+                ],
+              ),
             ),
           ),
           if (props.showReconfirm)
             Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: LocationConsentStateBanner(
+              child: MobileNoticeBanner(
                 key: const Key('consent-b-reconfirm-banner'),
-                props: props,
+                icon: props.organizationIcon,
+                message: props.organizationLine,
+                tone: props.organizationTone,
               ),
             ),
         ],
@@ -177,9 +188,11 @@ class LocationConsentViewB extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        LocationConsentStateBanner(
+        MobileNoticeBanner(
           key: const Key('consent-b-organization-banner'),
-          props: props,
+          icon: props.organizationIcon,
+          message: props.organizationLine,
+          tone: props.organizationTone,
         ),
         _usageList(),
         _actions(),
