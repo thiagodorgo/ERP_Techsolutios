@@ -1025,7 +1025,7 @@ test("SC4 revogado pelo titular: a 2a execucao sai 5 e nao re-liga", async () =>
   }
 });
 
-test("SC4b desligado pelo gestor (PATCH false): a 2a execucao sai 5 e nao re-liga", async () => {
+test("SC4b desligado ou editado pelo gestor: a 2a execucao sai 5 e nao re-liga", async () => {
   const api = criarApi();
   const d = prepararDir(api);
   try {
@@ -1041,6 +1041,23 @@ test("SC4b desligado pelo gestor (PATCH false): a 2a execucao sai 5 e nao re-lig
     assert.equal(perfil.trackingConsent, false);
   } finally {
     d.limpar();
+  }
+  // A mudanca de cadastro sozinha tambem para: o aceite caiu (503) antes de ligar, entao nao ha decisao do titular na
+  // trilha, e o gestor mexeu no perfil. So `operator_profile.updated` separa este caso do da retomada (SC5).
+  const api2 = criarApi({ aceite503UmaVez: true });
+  const d2 = prepararDir(api2);
+  try {
+    assert.equal((await rodarMotor(api2, d2.argv())).codigo, 1);
+    const perfil = perfilDaTecnica(api2);
+    assert.equal(await comoUsuario(api2, EMAIL_GESTOR, "PATCH", `/operator-profiles/${perfil.id}`, { phone: "(11) 90000-0001" }), 200);
+    const antes = api2.chamadas.length;
+    const r2 = await rodarMotor(api2, d2.argv());
+    assert.equal(r2.codigo, 5, r2.saida);
+    assert.match(r2.saida, MSG_TRILHA);
+    assert.equal(posts(api2.chamadas.slice(antes), "/mobile/location-consent").length, 0, "aceite depois da mudanca de cadastro");
+    assert.equal(perfil.trackingConsent, false);
+  } finally {
+    d2.limpar();
   }
 });
 
