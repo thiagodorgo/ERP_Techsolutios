@@ -317,12 +317,15 @@ export class AuthSessionService {
       return;
     }
 
+    // B-APP-SESSAO-RENOVA (S2) — o token assinado prova a sessão (`session_id` e usuário do payload): o "Sair" revoga
+    // a SESSÃO inteira, mesmo que o token já tenha sido trocado, conferindo que ela é do mesmo usuário.
     await this.runWithTenantContext(payload.tenant_id, async (tx) => {
-      const revoked = await new AuthSessionRepository(tx).revokeById(
-        payload.session_id,
-        payload.tenant_id,
-        hashRefreshToken(refreshToken),
-      );
+      const repository = new AuthSessionRepository(tx);
+      const owned = await repository.findByIdForTenant(payload.session_id, payload.tenant_id);
+      const revoked =
+        owned && owned.user_id === payload.user_id
+          ? await repository.revokeByIdForTenant(payload.session_id, payload.tenant_id) // a sessão inteira, mesmo com o token já trocado
+          : { count: 0 };
       const outcome = revoked.count === 1 ? "success" : "failure";
 
       await this.recordAudit(tx, {

@@ -91,3 +91,40 @@ test("[C2] o corpo da renovação tem as chaves do fixture do app; token inváli
     await close(server);
   }
 });
+
+test("[C2b] o \"Sair\" diz a verdade: falha interna 503, sem token 400, sucesso 200", async () => {
+  let fail = false;
+  const seen: string[] = [];
+  const { baseUrl, server } = await startRouter({
+    async refreshSession() {
+      return { ok: false, reason: "invalid" };
+    },
+    async logout(refreshToken: string) {
+      seen.push(refreshToken);
+      if (fail) throw new Error("falha interna simulada");
+    },
+  });
+
+  try {
+    fail = true;
+    const broken = await post(baseUrl, "/api/v1/auth/logout", { refreshToken: "R-qualquer" });
+    assert.equal(broken.status, 503);
+    assert.equal(broken.body.error.reason, "logout_failed");
+    assert.equal(broken.body.data, undefined, "a falha interna não diz revoked:true");
+
+    const missing = await post(baseUrl, "/api/v1/auth/logout", {});
+    assert.equal(missing.status, 400);
+    assert.equal(missing.body.error.reason, "refresh_token_required");
+
+    const noBody = await post(baseUrl, "/api/v1/auth/logout");
+    assert.equal(noBody.status, 400);
+
+    fail = false;
+    const ok = await post(baseUrl, "/api/v1/auth/logout", { refreshToken: "R-qualquer" });
+    assert.equal(ok.status, 200);
+    assert.deepEqual(ok.body, { data: { revoked: true } });
+    assert.deepEqual(seen, ["R-qualquer", "R-qualquer"], "sem token, o serviço nem é chamado");
+  } finally {
+    await close(server);
+  }
+});

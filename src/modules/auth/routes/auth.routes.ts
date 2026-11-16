@@ -605,24 +605,24 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
     },
   );
 
+  // B-APP-SESSAO-RENOVA (S1) — o "Sair" diz a verdade: 200 `{revoked:true}` só quando este token não renova mais
+  // nenhuma sessão (revogado agora, já revogado, vencido ou inválido); sem token, 400; falha interna, 503.
   router.post("/logout", async (request, response) => {
-    try {
-      const refreshToken = parseRefreshTokenRequestBody(request.body);
+    const refreshToken = parseRefreshTokenRequestBody(request.body);
 
-      if (refreshToken) {
-        await (await resolveSessionService()).logout(refreshToken);
-      }
-
-      response.status(200).json({
-        data: {
-          revoked: true,
-        },
+    if (!refreshToken) { // sem token não há o que revogar
+      response.status(400).json({
+        error: { code: "BAD_REQUEST", reason: "refresh_token_required", message: "refreshToken is required." },
       });
+      return;
+    }
+
+    try {
+      await (await resolveSessionService()).logout(refreshToken);
+      response.status(200).json({ data: { revoked: true } });
     } catch {
-      response.status(200).json({
-        data: {
-          revoked: true,
-        },
+      response.status(503).json({ // a falha interna não vira 200
+        error: { code: "SERVICE_UNAVAILABLE", reason: "logout_failed", message: "Unable to revoke the session." },
       });
     }
   });
