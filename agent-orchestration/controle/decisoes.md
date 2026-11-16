@@ -5527,3 +5527,107 @@ O dono aprovou as 3 opções da tela de custo e margem da plataforma: *"aprovo a
 7. **CR17R2-05 (2), o 409 `consent_subject_mismatch`: NÃO adotado** (orquestrador, 14/11), pela `D-DONO-1411-ACESSO-PESSOAL` e pela CR17R2E-01. O resíduo fica declarado em `P-17-CONSENT-SUBJECT-MISMATCH` (BAIXA). A CR17R2-05 (1), a ordem sem `await` no app, foi cumprida.
 8. **`.github/workflows/ci.yml`**, PROIBIDO no mandato do dev, foi aberto pelo orquestrador (14/11) só para a linha comentada da suíte `-db` do bloco no `SUITES=` (a A1 da abertura, sob a `D-DONO-1311-RECOMENDACOES`): 4 linhas, só acréscimo.
 9. **`B-LOC-DECISAO-COM-HORA` registrado como bloco proposto** (Emenda 1.1, CR17R2E-02), dono único das pendências da ordem das decisões, da prova do consentimento, da leitura do estado, do cadastro já marcado e da caixa da tela Profissionais. Não é item do portão; não tem plano ainda.
+
+## D-DONO-1411-SO-PRA-FRENTE-E-DEMO (2026-11-14 14:24 SP) — a varredura dos caminhos locais fica só para frente, e o desenvolvimento pausa para a demonstração
+
+- **Fato (decisão do dono):** às 14:24 SP de 14/11, respondendo à pergunta sobre o histórico da `D-DONO-1411-CAMINHOS-LOCAIS`, o dono disse: *"so pra frente agora, preciso que suba o sistema, preciso mostrar. pause o desenvolvimento"* (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 14/11 14:24).
+- **O que vale:**
+  - a varredura dos caminhos locais fica **só para frente** (o `chore/repo-sem-caminho-local`, PR #572, mais o guarda `tests/repo-sem-caminho-local.test.ts`); o histórico da `main` **não** é reescrito;
+  - o desenvolvimento pausou (P7) para a demonstração: os agentes Claude gravaram a `## PAUSA`, e o Codex 2 e o DeepSeek foram parados pelo orquestrador. A demonstração subiu às 14:32 SP (web, API e portal do dono, com `health` e `ready` em 200), a partir da `main` `eeac48a3`.
+- **Corte:** o registro de 14/11 tarde (#570) parou às 14:03 e deixou esta resposta "para o próximo registro"; ela entra aqui. **Leitura do redator (`reg-1611-cl`), declarada (§A6):** o mandato deste registro começa às 14/11 21:08; as linhas de 14:24 a 20:43 da fonte, que nenhum PR levou, entram para não ficar buraco.
+
+## D-PORTAO-ITEM-68-SESSAO-APP (2026-11-14 21:08 SP) — a sessão do app que não renova entra no portão como item 68
+
+- **Fato (decisão do dono):** às 21:08 SP de 14/11, depois de ver a página "Decisões pendentes do dono" com 4 recomendações, o dono respondeu: *"aprovo suas recomendacoes"* (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 14/11 21:08). Para o item 68 a recomendação era SIM. As outras três respostas da mesma fala já estão neste arquivo: `D-ASS11-MAQUETE-APROVADA` (PA-1) e `D-CI-DOCKER-ESPERA-E2E` (P2 do plano 42); a 4ª é a entrada seguinte.
+- **O que vale:**
+  - a `P-APP-SEM-RENOVACAO-DE-TOKEN` (ALTA) entra no portão como **item 68**, e o portão passa de 67 para 68 itens. O número estava livre desde que o antigo 68 (a posição sem dono em celular compartilhado) saiu pela `D-DONO-1411-ACESSO-PESSOAL`;
+  - a causa, medida em 14/11 às 20:4x SP: os clientes de OS (`work_order_remote_api.dart:90`), do estoque do técnico, das opções de cadastro e do bootstrap (2 chamadas) usam `createExpenseHttpClient`, sem o `AuthRefreshInterceptor`;
+  - o bloco é o `B-APP-SESSAO-RENOVA`, que também olha a `P-APP-401-FICA-SINCRONIZANDO` e a `P-APP-TELEMETRIA-422`.
+- **Linha do portão:** `docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1, item 68 (registro de 16/11).
+
+## D-O6R-04B-RETIRADA · confirmação do dono (2026-11-14 21:08 SP) — "Nova Entrada", "Nova Saída" e a lista inventada saem do app
+
+- **Fato (decisão do dono):** a mesma fala de 21:08 (*"aprovo suas recomendacoes"*) respondeu a P1 do plano do item 31 (`B-O6R-04b`) com a recomendação (a): "Nova Entrada", "Nova Saída" e a lista inventada saem do app. A resposta deixa de valer só pela `D-DONO-1311-RECOMENDACOES` e passa a ter a confirmação explícita do dono, que viu a recomendação na página.
+- **O que vale:** a retirada (a); as P2, P3 e P4 do plano 31 seguem pela recomendação (a). A Emenda 1 do plano (14/11 13:34) estendeu a retirada à `P-MOBILE-SYNC-ESTOQUE-TIPOS` e à `P-MOBILE-CATALOGO-MODULOS-INERTE`.
+- **Nota do redator:** o ID `D-O6R-04B-RETIRADA` é citado pelo plano 31 e pelas emendas, fora do repositório; na `main` de 16/11 ele não aparecia em `agent-orchestration` nem em `docs` (`git grep` = 0). Esta é a 1ª entrada com ele.
+
+## D-DONO-1311-RECOMENDACOES · complemento: o "4.item60" e o "3.extra" (2026-11-13 ~23:12 SP)
+
+Complementa a entrada de mesmo ID acima, com duas respostas da lista que a transcrição do orquestrador guardou e que o porteiro do #569 (R-1) e o do #567 (R-4) pediram no registro.
+
+- **Fato:** na lista de 13/11 (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 13/11 23:23): "**Cobrança:** […] 4.item60 fecha pronta e DESLIGADA, e ligar é ato do dono" e "**Custo e margem:** […] 3.extra separar as telas".
+- **O que vale:**
+  - **4.item60:** o item 60 do portão fecha com o canal pronto e DESLIGADO; ligar a cobrança é ato do dono. O item segue PARCIAL até o merge e a porteira do `B-ASS-08c3`; o #569 (`B-ASS-08c1b`) e o #579 (`B-ASS-08c1c`) não o fecham (`porteiro-569`, 15/11 02:57);
+  - **3.extra:** a tela de custo e margem (`B-ASS-10b`, T5, #567) e a de Provedores ficam separadas; a de Provedores vai para o `B-ASS-10c`.
+
+## D-ORQ-16B-RECIBO (2026-11-14 22:41 SP) — o recibo da fila do app em memória passa ao B-SAN3-16b
+
+- **Fato (decisão do orquestrador, declarada §A6):** a `P-SYNC-OS-RECIBO-EM-MEMORIA` e a outra pendência que o #570 deu ao "`B-SAN3-16` pela Emenda 2" passam ao **`B-SAN3-16b`**. A Emenda 2 do 16 nunca foi escrita, e a pendência já previa o 16b.
+- **O que vale:** o `B-SAN3-16` mantém o escopo (14 de 19 fatias feitas às 22:41; o PR #580 entregou as 19 em 15/11 21:23). O 16b é o recibo durável da fila do app: o reenvio depois de reiniciar a API não cria OS em dobro. O plano dele (Emenda 1.1, 40 testes e 25 mutações) está pronto e espera o 16 entrar.
+- **Pergunta ao dono, aberta e que não bloqueia:** `P-DONO-16B-OPCAO` (em `pendencias.md`).
+
+## D-ORQ-568-CONSENTIMENTO-SO-PELO-APP (2026-11-15 05:57 SP) — o consentimento para localização só se liga no app, pelo titular
+
+- **Fato (decisão do orquestrador, declarada §A6; o dono pode reverter):** na crítica da Emenda 1.7 do #568, o E17-01 mostrou que o titular com `operator_profiles:update` desfazia a própria revogação pelo formulário web. O orquestrador decidiu: o consentimento para localização é dado pessoal; ele só se liga por ato explícito do titular, no app; o formulário web pode desligar, nunca ligar.
+- **O que vale:** a Emenda 1.8 do `B-SAN3-17` (#568, na `main` em `80f5b4d9`); a regra está escrita em `docs/field-operator-location-map.md:112`. A J-568 (C3-05) pediu este registro.
+- **Desdobramento, também do orquestrador (15/11 07:00):** a CRIAÇÃO de perfil com consentimento também passa a "só pelo app", num bloco próprio, o `B-SAN3-17-W`, porque muda a semeadura de 10 criações em 4 arquivos de teste de outros blocos. A pendência foi consolidada na `P-LOCALIZACAO-GESTOR-MARCA-CONSENTIMENTO` (J-568, C3-02).
+
+## D-ORQ-568-E111 e D-ORQ-568-E111-PISO (2026-11-15 16:28 e 17:08 SP) — o prazo da trava do consentimento
+
+- **D-ORQ-568-E111 (decisão do orquestrador, declarada §A6):** depois da leva A da J-568, o CI do `backend` ficou vermelho no guard 3 (`set_config` fora de `rls.ts`). O prazo da trava do consentimento passa a usar o `withTenantRlsBudget` (a saída (i) do dev), e entra 1 chave nova no `NOVAS` do T13, no molde da Emenda 1.10. Medido antes: 46/46 nos guardas, a mutação da entrada vermelha e o `-db` 24/24 três vezes. A emenda foi à crítica `crit-17-e111-cl`.
+- **D-ORQ-568-E111-PISO:** a crítica deu APROVADO COM AJUSTES (E111-01, a âncora; E111-02, o prazo sem piso, com 2 mutações vivas; E111-03, o §3 sem medição). O E111-02 foi consertado na mesma leva, com um piso de 2,5 s no teste que nasceu nela, em vez de virar pendência.
+- **Lição, para o molde do plano:** toda bateria de conserto roda o `npm test` INTEIRO; a do dev pulou o guard 3.
+
+## D-ORQ-573-N2-UMA-CADEIRA-FORA (2026-11-15 09:00 SP) — a J-573 pede ao menos 1 cadeira fora do Claude, e não 2
+
+- **Fato (decisão do orquestrador, declarada §A6):** a N2 da Emenda 1.1 §3 do `B-ASS-12`, escrita pelo orquestrador, pedia ≥ 2 cadeiras fora do Claude; passou a ≥ 1, porque o Codex 2 e o 3 estavam com a semana esgotada, o Argon sem cota e o DeepSeek sem saldo. Vale a regra do dono de 03/11, "cruzamento só com limite".
+- **O que aconteceu:** a cadeira fora seria a C1 (o dinheiro), no Codex 1, depois da F9; ele ficou sem janela, e a C1 foi ao Claude pela regra "Cobrir NA HORA" (09/11). A J-573 rodou sem cadeira fora do Claude, e a ata declara (`J-573-b-ass-12`).
+
+## D-ORQ-579-C2-01-LATENTE, D-ORQ-579-REFAZ-C2 e D-ORQ-579-PEND-BAIXA (2026-11-15 18:35 e 20:57 SP) — a triagem do grave da J-579
+
+- **D-ORQ-579-C2-01-LATENTE (decisão do orquestrador, declarada §A6, sobre a auditoria de topo `topo-579-op`):** o C2-01 fica "não grave no objeto, defeito latente de desenho, conserto obrigatório nesta leva". A auditoria mediu que nenhum caminho alcançável grava `needs_review`, `failed` ou `none` na tabela (a adoção filtra o `unknown`); a premissa "a cobrança adotada com `unknown`" foi herdada do plano sem ser medida. A causa (C2-03, a regra "cobrança viva" em 7 literais) é real e vira alcançável no 08c1u e no 08c3. O desenho aceito é o (b): uma tabela-verdade única e exaustiva.
+- **D-ORQ-579-REFAZ-C2:** só a C2 se refaz, com o mandato estreito do §3.5 do plano, porque o conserto muda a regra de dinheiro em 3 caminhos fora do achado (o 1º caso do §C7 10(4)). A C2 refeita (`j579-c2r-fechamento-cl`) APROVOU.
+- **D-ORQ-579-PEND-BAIXA (20:57):** a `P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA` vai a BAIXA, pela leitura do topo, aceita pelo orquestrador. O `pendencias.md` do #579 já cita este ID; a conferência `conf-579-cl` (CONF-01) pediu o registro aqui.
+- **Lição, para o molde do plano:** premissa sobre "qual estado existe na tabela" se mede pelo censo de escritores antes de virar requisito.
+
+## D-DONO-1511-COBRIR-CODEX (2026-11-15 20:14 SP) — não esperar o Codex voltar: o Claude cobre
+
+- **Fato (decisão do dono):** às 20:14 SP de 15/11, o dono disse: *"não espere o codex retornar o limite. Avance, cubra o codex"* (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 15/11 20:14).
+- **O que vale:** o que esperava braço externo sem limite passa ao Claude na hora, com identidade nova e o cruzamento declarado como ausente (§C7 11(2)). Em 15/11: a F9 v12 do item 44 (`demo-exec-10b-cl`, que não escreveu o roteiro nem as emendas), o dev do `B-SAN3-16`, a verificação da Emenda 1 do 04b (item 31) e a atualização do #572. O despertador das 23:17 foi cancelado.
+- **Relação com o que já existe:** reforça a regra "Cobrir NA HORA" de 09/11 (memória do orquestrador) e a `D-IAS-EXTERNAS-PRIMEIRO` (§C7 6); não muda o cruzamento quando há limite.
+
+## D-ORQ-44-MOTOR-ACOMPANHA-PRODUTO (2026-11-15 20:24 SP) — o motor da demonstração cria o perfil e o consentimento pelas rotas do produto
+
+- **Fato (decisão do orquestrador, declarada §A6):** a F9 v12 parou na semeadura (ET6: 422 `operator_profile_required`), porque o #568 passou a exigir o perfil de operador e o consentimento antes de gravar a posição, e o motor `scripts/demo-isolado/semear.mjs` não cria nenhum dos dois. A F9 NÃO se fixa numa ref antiga: o motor passa a criar o perfil e o consentimento pelas rotas do produto (o consentimento pelo app, `POST /mobile/location-consent`, como a técnica).
+- **Bloco:** `B-SAN3-10b-SEED-CONSENT` (PR #581). A Emenda 1 do plano troca a régua da retomada pela TRILHA do perfil, fail-closed: só retoma com `operator_profile.created` e nada mais, para o motor nunca religar contra a decisão da técnica nem a do gestor.
+- **Lição:** o bloco que muda uma pré-condição de escrita roda o motor da demonstração na bateria (a semente não está no CI).
+
+## D-ORQ-APARAPP-LEITURAS e D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA (2026-11-15 20:39 e 20:45 SP) — as aparências do app
+
+- **Contexto, medido na `origin/main` `80f5b4d9`:** o app NÃO tem o seletor de aparência por usuário; o Perfil só tem o tema (Sistema, Claro, Escuro, Contraste). As 4 telas do app com 3 opções aprovadas (troca de senha, consentimento, atendimento do prestador, entrega do guincho) saíram só com a A (`P-APARENCIA-APP-SELETOR`). O plano do `B-APP-APARENCIA` tem 4 fatias em série: F1 (o seletor no Perfil e a localização), F2 (a entrega do guincho), F3 (o atendimento do prestador) e F4 (a troca de senha); F1 a F3 em revisão simples, a F4 em junta completa (autenticação).
+- **D-ORQ-APARAPP-LEITURAS (decisão do orquestrador, declarada §A6):** as 6 leituras do planejador ficam aceitas.
+- **D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA (decisão do dono):** resposta do dono à P1 do plano, a opção (a): a troca de senha do app abre na aparência que a pessoa escolheu no Perfil daquele aparelho; sem escolha, abre na A. O diário registra a opção escolhida, não a frase literal. **Fato a declarar ao dono (crítica do plano, A3, 21:00):** a maquete (l.377) diz que, na web, a sessão restrita abre sempre na A, e a resposta (a) foi dada com a opção (b) rotulada "Igual ao web: sempre na A"; a resposta fica mantida, e o fato vai para a emenda e para o dono.
+
+## D-DONO-1511-68-NAO-DESLOGAR (2026-11-15 21:21 SP; confirmada às 23:36) — o técnico não é deslogado quando a rede entrega fora de ordem
+
+- **Fato (decisão do dono):** resposta do dono à P3 do plano do item 68 (`B-APP-SESSAO-RENOVA`): fica o comportamento da v3.3, e o técnico não é deslogado quando a rede entrega fora de ordem. O diário registra a escolha, não a frase literal.
+- **O resíduo aceito, em linguagem de dono:** quem já intercepta o 1º envio dentro do tráfego criptografado recebe um token válido até a próxima renovação legítima. A v3.4 escreve esse resíduo e o prende com teste (VER68V33CL-01) e torna a emenda reproduzível na letra (VER68V33CL-02).
+- **Correção, declarada (23:36):** a v3.4 mediu que a renovação legítima NÃO derruba a cópia na hora; o acesso dela dura até 15 min. O orquestrador tinha dito ao dono o contrário; corrigiu, perguntou de novo com o resíduo medido, e **o dono manteve a v3.3**. Lição: antes de pôr um risco na pergunta ao dono, medir o desfecho.
+
+## REGISTRO-DECISOES-ORQ-1411-1511 (2026-11-14 21:08 a 2026-11-15 23:43 SP) — as decisões do orquestrador sem ID próprio, uma linha cada
+
+Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o dono pode reverter qualquer uma. Cada linha aponta onde o efeito ficou.
+
+- **15/11 01:02 — `P-ASS12-PULO-SEM-AVISO`:** fecha com o teste novo da tela (o selo "Sem preço" com o detalhe), sem alerta próprio.
+- **15/11 02:07 — dono da `P-PALETA-SEM-MAPA-DE-PERMISSAO`:** o B-ASS-11 Parte T; às 03:59 (REV576-02) passou a um bloco próprio de paleta e permissão, a abrir, porque o conserto fica em `command-palette/**`, fora do §7.1 da Parte T.
+- **15/11 02:52 — passo 4.7 da F9 (E-AMB-4):** a leitura da tela de Saúde ("Sistema pronto") é decidida pelo orquestrador junto com a porteira, sobre as 2 leituras que o executor registra.
+- **15/11 03:27 — `P-E2E-DESPACHOS-SEM-TECNICO`:** a cobertura do teste 5 do e2e, que só vê a lista vazia porque a semente não tem técnico, fica ratificada como pendência.
+- **15/11 03:49 — VER567-1 do #567:** o não grave que sobra depois da conferência vira pendência com dono, e o bloco segue (§C7 10(4)).
+- **15/11 05:35 — `B-SMOKE-LISTA`:** abre antes de qualquer bloco que acrescente teste ao smoke, porque a linha do `test:smoke` tinha 14 caracteres de margem no `cmd.exe` (PR #577, na `main` em `3601fa2f`).
+- **15/11 06:53 — corpo do #571:** a seção "Números medidos" é atualizada no conserto ou no merge e não segura a junta.
+- **15/11 07:00 — ordem de merge #575 → #577:** o #575 entra primeiro, porque é o item 42; o #577 absorve a `main` por união e mergeia sem nova revisão, só com a conferência do delta.
+- **15/11 07:10 — CONF-575-1:** é artefato do mandato do orquestrador, não defeito.
+- **15/11 08:34 — J-571, a G4 nova:** se acusar o `traccar-ingest.app.ts`, o dev PARA; às 08:47 (Emenda 1.7) a trava ganhou a lista FECHADA de exceções, e a aceitação genérica de "qualquer tratador de 4 argumentos" foi recusada por reconhecer a forma.
+- **15/11 09:27 — #568:** NÃO há 5ª rodada de crítica (o corpo do `critico-adversarial` prevê no máximo 2; foram 4, cada uma com informação nova); o dev aplica as Emendas 1.6 a 1.9 e a conferência por execução re-roda as sondas das 3 críticas.
+- **15/11 10:09 — plano 68, v3.3:** sem 3ª tentativa Claude depois de 2 identidades cortadas pelo filtro de segurança; a v3.3 foi ao Codex 1 (o plano com o Codex, a crítica com o Claude, §C7 11(1)). Problema registrado: `P-ORQ-FILTRO-SEGURANCA-PLANO-68`.
+- **15/11 15:22 — J-568:** a `P-17-FILA-RESIDUAL` fica ACEITA como risco residual, com a junta (a Emenda 1.7 §3 dava a decisão à junta do 17).
