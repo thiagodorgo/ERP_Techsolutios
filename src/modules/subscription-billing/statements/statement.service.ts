@@ -17,7 +17,7 @@ import type { PaymentMethod } from "../providers/payment/payment-provider.port.j
 import { eagerPlan, refechamentoPlan, reopenLiveCheck } from "./statement-charge-lines.js";
 import type { StatementResolveOptions, StatementVersionPin } from "./statement.inputs.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
-import type { InvoiceIntents } from "./statement-settlement.service.js";
+import { writeInvoiceIssueIntentInTx, type InvoiceIntents } from "./statement-settlement.service.js";
 import {
   StatementError,
   type CreditReason,
@@ -254,10 +254,12 @@ export class StatementService {
   }
 
   /** B-ASS-08c1c (plano §4.3 e §10 item 2): o que a baixa manual faz depois do `saveStatement`, na MESMA transação. A ordem é
-   * trava → pagamento → `saveStatement` → marcação imediata (aqui) → [08c2: a intenção de nota] → trilha. Baixa PARCIAL não
-   * mexe na cobrança aberta (Q4 (a)). */
-  async #afterManualSettle(tx: StatementTx, _before: SubscriptionStatement, statement: SubscriptionStatement, input: { readonly now: Date; readonly actorId: string | null }): Promise<void> {
+   * trava → pagamento → `saveStatement` → marcação imediata (aqui) → a intenção de nota e o índice (B-ASS-08c2, P12) → trilha.
+   * Baixa PARCIAL não mexe na cobrança aberta (Q4 (a)) nem grava nota. A linha da nota nasce com `occurred_at = input.now`, o
+   * MESMO instante do `paid_at` que o `saveStatement` gravou (A9b do v2): é ele que marca a época da intenção. */
+  async #afterManualSettle(tx: StatementTx, before: SubscriptionStatement, statement: SubscriptionStatement, input: { readonly now: Date; readonly actorId: string | null }, intents: InvoiceIntents | undefined): Promise<void> {
     if (statement.status === "paid") await this.#eagerOnMove(tx, statement, "statement_paid", input.now); // [EAGER-01]
+    if (intents && before.status !== "paid" && statement.status === "paid") await writeInvoiceIssueIntentInTx(tx, intents, { statement, now: input.now, mode: "auto" }); // [NOTA-01]
   }
 
   /** Reabrir (regra 5): só sem pagamento, sem cobrança viva e sem nota viva; vira `reopened`. */
@@ -321,6 +323,8 @@ export class StatementService {
     if (!Number.isSafeInteger(input.amountCents) || input.amountCents <= 0) {
       throw new StatementError(400, "invalid_amount", "amount must be a positive amount of cents.");
     }
+    // B-ASS-08c2 (P12): para onde vai a intenção de nota, ANTES da transação (nunca rede nem cofre dentro dela).
+    const intents = await this.channel.invoiceIntents?.resolve();
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
       const current = await this.lockOrNotFound(tx, input.statementId);
       if (current.status !== "closed") {
@@ -348,7 +352,7 @@ export class StatementService {
         status: paidCents >= current.totalCents ? "paid" : "closed",
         paidAt: paidCents >= current.totalCents ? input.now : current.paidAt,
       });
-      await this.#afterManualSettle(tx, current, statement, input);
+      await this.#afterManualSettle(tx, current, statement, input, intents);
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
