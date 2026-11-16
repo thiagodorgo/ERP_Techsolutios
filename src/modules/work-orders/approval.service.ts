@@ -7,7 +7,6 @@ import {
 import {
   getMemoryApprovalRepository,
   readMemoryApprovalAudit,
-  recordMemoryApprovalAudit,
   type ApprovalRepository,
 } from "./approval.repository.js";
 import type {
@@ -96,24 +95,9 @@ export class ApprovalService {
     // A comparação é por `requestedByUserId` (o agregado já o carrega — approval.types.ts). Nenhum campo
     // novo, nenhuma migração.
     if (actor.userId === current.requestedByUserId) {
-      recordMemoryApprovalAudit({
-        action: "approval.self_decision_denied",
-        tenantId: current.tenantId,
-        actorId: actor.userId,
-        approvalId: current.id,
-        entityType: current.entityType,
-        entityId: current.entityId,
-        outcome: "denied",
-        // §2.8 (allowlist) — nada de PII nova: `decision` é o enum approved|rejected e o ator já é o
-        // `actorId` do próprio evento. O id do solicitante NÃO é repetido em metadata (seria a mesma
-        // pessoa, dita duas vezes).
-        metadata: {
-          reason: "self_decision",
-          decision: input.decision,
-          status: current.status,
-          work_order_id: current.workOrderId,
-        },
-      });
+      // B-APROVACOES-DURAVEIS — a recusa é gravada ANTES do 403 (em banco, 1 linha durável em audit_logs). Se a gravação
+      // falhar, o erro propaga: a resposta é erro, nunca aceite.
+      await this.repository.recordDenied({ approval: current, actorUserId: actor.userId, decision: input.decision }, context); // B-APROV:trilha-recusa
 
       throw new ApprovalError(
         403,

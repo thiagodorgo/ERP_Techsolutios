@@ -5,6 +5,7 @@ import type {
   ApprovalAuditEvent,
   DecideOperationalApprovalInput,
   OperationalApproval,
+  RecordApprovalDeniedInput,
   RequestOperationalApprovalInput,
 } from "./approval.types.js";
 
@@ -21,6 +22,9 @@ export interface ApprovalRepository {
   // A decisão é um CAS sobre `status = 'pending_approval'`: devolve `null` se a aprovação não existe OU já foi decidida
   // (quem chama relê para distinguir 404 de 409). Duas decisões simultâneas: 1 passa, a outra recebe `null`.
   decide(input: DecideOperationalApprovalInput, context?: ApprovalAuditContext): Promise<OperationalApproval | null>;
+  // A recusa por segregação de função deixa 1 linha de trilha (em banco, durável, numa transação curta própria). Se a
+  // gravação falhar, o erro propaga: o serviço responde erro, nunca aceite.
+  recordDenied(input: RecordApprovalDeniedInput, context?: ApprovalAuditContext): Promise<void>;
   reset(): void;
 }
 
@@ -153,6 +157,26 @@ export class InMemoryApprovalRepository implements ApprovalRepository {
       },
     });
     return updated;
+  }
+
+  async recordDenied(input: RecordApprovalDeniedInput): Promise<void> {
+    recordMemoryApprovalAudit({
+      action: "approval.self_decision_denied",
+      tenantId: input.approval.tenantId,
+      actorId: input.actorUserId,
+      approvalId: input.approval.id,
+      entityType: input.approval.entityType,
+      entityId: input.approval.entityId,
+      outcome: "denied",
+      // §2.8 (allowlist) — nada de PII nova: `decision` é o enum approved|rejected e o ator já é o `actorId` do próprio
+      // evento. O id do solicitante NÃO é repetido em metadata (seria a mesma pessoa, dita duas vezes).
+      metadata: {
+        reason: "self_decision",
+        decision: input.decision,
+        status: input.approval.status,
+        work_order_id: input.approval.workOrderId,
+      },
+    });
   }
 
   reset(): void {

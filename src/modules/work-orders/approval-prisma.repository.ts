@@ -10,6 +10,7 @@ import type {
   ApprovalStatus,
   DecideOperationalApprovalInput,
   OperationalApproval,
+  RecordApprovalDeniedInput,
   RequestOperationalApprovalInput,
 } from "./approval.types.js";
 import { isWorkOrderUuid } from "./work-order.validators.js";
@@ -109,7 +110,7 @@ export class PrismaApprovalRepository implements ApprovalRepository {
     return records.map(mapApprovalRecord);
   }
 
-  async decide(input: DecideOperationalApprovalInput, _context?: ApprovalAuditContext): Promise<OperationalApproval | null> {
+  async decide(input: DecideOperationalApprovalInput, context?: ApprovalAuditContext): Promise<OperationalApproval | null> {
     if (!isWorkOrderUuid(input.approvalId)) return null;
     const now = new Date();
     // CAS da casa (o `changeStatus` da OS): grava só se a aprovação ainda estiver pendente. Quem chega 2º re-avalia o
@@ -129,7 +130,42 @@ export class PrismaApprovalRepository implements ApprovalRepository {
         updated_at: now,
       },
     });
-    return updated[0] ? mapApprovalRecord(updated[0]) : null;
+    if (!updated[0]) return null;
+    const approval = mapApprovalRecord(updated[0]);
+    // A linha da decisão nasce NA MESMA TRANSAÇÃO do CAS (antes, o controller a gravava por fora, depois do fato e
+    // engolindo o erro): 1 linha por decisão, com o contexto da requisição.
+    await this.writeAudit({
+      action: approval.status === "approved" ? "approval.approved" : "approval.rejected",
+      actorId: input.actorUserId,
+      approval,
+      outcome: "success",
+      severity: approval.status === "approved" ? "info" : "warning",
+      metadata: {
+        status: approval.status,
+        work_order_id: approval.workOrderId,
+        reason_provided: Boolean(approval.rejectionReason),
+        note_provided: Boolean(approval.decisionNote),
+      },
+      context,
+    });
+    return approval;
+  }
+
+  async recordDenied(input: RecordApprovalDeniedInput, context?: ApprovalAuditContext): Promise<void> {
+    await this.writeAudit({
+      action: "approval.self_decision_denied",
+      actorId: input.actorUserId,
+      approval: input.approval,
+      outcome: "denied",
+      severity: "warning",
+      metadata: {
+        reason: "self_decision",
+        decision: input.decision,
+        status: input.approval.status,
+        work_order_id: input.approval.workOrderId,
+      },
+      context,
+    });
   }
 
   // A trilha durável: 1 linha em `audit_logs` pela MESMA transação (`this.client`), com o serviço de auditoria da casa
@@ -211,6 +247,11 @@ export class RlsPrismaApprovalRepository implements ApprovalRepository {
 
   decide(input: DecideOperationalApprovalInput, context?: ApprovalAuditContext): Promise<OperationalApproval | null> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaApprovalRepository(tx).decide(input, context));
+  }
+
+  // A recusa numa transação curta própria, sob o contexto da organização da aprovação.
+  recordDenied(input: RecordApprovalDeniedInput, context?: ApprovalAuditContext): Promise<void> {
+    return withTenantRls(this.prismaClient, input.approval.tenantId, (tx) => new PrismaApprovalRepository(tx).recordDenied(input, context));
   }
 
   reset(): void {}

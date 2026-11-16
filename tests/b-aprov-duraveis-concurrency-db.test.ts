@@ -75,6 +75,11 @@ if (!baseConnection) {
 
           const [linha] = await c.sql("SELECT status, decided_by_user_id::text AS decisor FROM operational_approvals WHERE tenant_id = $1::uuid AND id = $2::uuid", [c.tenantId, aprovacao]);
           assert.deepEqual({ status: linha.status, decisor: linha.decisor }, { status: sucessos[0].status, decisor: sucessos[0].decisor }, `rodada ${rodada}: a linha não é a do vencedor`);
+          const [{ n }] = await c.sql(
+            "SELECT count(*)::int AS n FROM audit_logs WHERE tenant_id = $1::uuid AND action IN ('approval.approved', 'approval.rejected') AND metadata->>'approvalId' = $2",
+            [c.tenantId, aprovacao],
+          );
+          assert.equal(n, 1, `rodada ${rodada}: ${n} linhas de auditoria de decisão para 1 decisão`);
         }
       });
     });

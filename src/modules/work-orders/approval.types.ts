@@ -61,6 +61,13 @@ export type ApprovalAuditContext = {
   readonly userAgent?: string;
 };
 
+// A recusa por segregação de função, gravada pelo repositório antes do 403 (B-APROVACOES-DURAVEIS, plano §3.5).
+export type RecordApprovalDeniedInput = {
+  readonly approval: OperationalApproval;
+  readonly actorUserId: string;
+  readonly decision: "approved" | "rejected";
+};
+
 export type ApprovalAuditEvent = {
   readonly action:
     | "approval.requested"
