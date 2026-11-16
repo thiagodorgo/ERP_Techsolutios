@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/appearance/app_appearance.dart';
 import '../../core/auth/role_labels.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
@@ -138,6 +139,13 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
               const LocationConsentStatus.withoutOwner())
         : const LocationConsentStatus.withoutOwner();
     final showLocationCard = canSendLocation && consentStatus.needsDecision;
+    // B-APP-APARENCIA (F1): na B e na C, o aviso sobe para logo depois do
+    // cartão do usuário; enquanto a escolha carrega, ele não aparece.
+    final locationAppearance = showLocationCard
+        ? locationConsentHomeAppearance(ref)
+        : null;
+    final locationCardOnTop =
+        locationAppearance != null && locationAppearance != AppAppearance.a;
 
     final today = DateTime.now();
     final allTenantOrders = woRepository.workOrders
@@ -199,6 +207,12 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                             networkStatus == NetworkStatus.unknown,
                       ),
                       const SizedBox(height: 14),
+                      if (locationCardOnTop) ...[
+                        LocationConsentHomeEntry(
+                          appearance: locationAppearance,
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       if (networkStatus != NetworkStatus.online &&
                           networkStatus != NetworkStatus.unknown) ...[
@@ -287,8 +301,10 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                       ),
                       const SizedBox(height: 18),
 
-                      if (showLocationCard) ...[
-                        const LocationConsentHomeCard(),
+                      if (locationAppearance == AppAppearance.a) ...[
+                        const LocationConsentHomeEntry(
+                          appearance: AppAppearance.a,
+                        ),
                         const SizedBox(height: 18),
                       ],
 
