@@ -142,8 +142,11 @@ void main() {
     });
 
     test('S12. o registro tem só as telas desta fatia, com 3 opções', () {
-      expect(appAppearanceScreens.map((s) => s.key), [_key]);
-      final screen = appAppearanceScreens.single;
+      expect(appAppearanceScreens.map((s) => s.key), [
+        _key,
+        kExecucaoGuinchoAppearanceKey,
+      ]);
+      final screen = appAppearanceScreens.firstWhere((s) => s.key == _key);
       expect(screen.label, 'Localização e consentimento');
       expect(screen.options.map((o) => o.label), [
         'Cartões de hoje',

@@ -59,8 +59,27 @@ Nenhum. Nenhuma rota, payload ou código de resposta novo; as 3 aparências de c
   `agent-orchestration/controle/pendencias.md` (apenso e pendências novas do bloco) e `pendencias-indice.md` (só
   regenerado pelo gerador).
 
-**F2, F3a, F3b e F4:** o PERMITIDO de cada uma está no plano (§3.2), trocado pelas Emendas 1 (A1, A4, A7) e 2 (R2-4).
+**F3a, F3b e F4:** o PERMITIDO de cada uma está no plano (§3.2), trocado pelas Emendas 1 (A1, A4, A7) e 2 (R2-4).
 Cada fatia acrescenta aqui a sua seção ao nascer.
+
+## Escopo PERMITIDO — F2 (a execução do guincho, seção Vistorias)
+
+Plano §2.2 e §3.2, com a Emenda 1 (A1: o despacho no `ErpScaffold` da tela carregada; A4) e a Emenda 2 (R2-4).
+- novos: `mobile/flutter_app/lib/features/work_orders/ui/aparencias/{execucao_guincho_view_b,execucao_guincho_view_c,execucao_guincho_aparencias_shared}.dart`;
+- `mobile/flutter_app/lib/features/work_orders/ui/work_order_execute_screen.dart`: o despacho no `ErpScaffold` da tela
+  carregada, só para OS de guincho, e o estado pronto das vistas (`_towViewProps`); carregando, erro e acesso não
+  permitido continuam um `ErpScaffold` só; e, pela `P-APP-TEMA-SUCESSO-TERTIARY` (§2.2), o título dos cartões da A;
+- `mobile/flutter_app/lib/features/work_orders/ui/work_order_stepper.dart`: só as cores do passo concluído;
+- `mobile/flutter_app/lib/core/appearance/app_appearance.dart`: só a entrada `execucao-guincho` do registro;
+- `mobile/flutter_app/lib/shared/ui/mobile_kit.dart`: acréscimo no fim e o `supportingText` opcional da `MobileStickyBar`;
+- testes novos: `test/features/work_orders/bapp_aparencia_guincho_test.dart`, `test/capturas/bapp_capturas_f2_test.dart`;
+  `test/capturas/captura_helper.dart` só por acréscimo;
+- `COMPONENT_LIBRARY.md` e o registro, como na F1.
+- **Emenda 4 (`E-APARAPP-REGISTRO`):** em `bapp_aparencia_store_test.dart` (S12) e `bapp_aparencia_perfil_test.dart` (PF1, PF9),
+  só as linhas que prendem o registro a uma tela: S12 com a lista EXATA `[_key, kExecucaoGuinchoAppearanceKey]` (cada
+  fatia seguinte acrescenta a sua chave no fim) e `firstWhere`; PF1 com `findsNWidgets(appAppearanceScreens.length)`.
+- **Emenda 5 (`E-APARAPP-ACENTOS`):** `lib/features/work_orders/domain/work_order_steps.dart`, só "Início" e "Conclusão",
+  e os literais desses rótulos em `test/features/work_orders/b116_execution_stepper_test.dart`.
 
 ## Escopo PROIBIDO (todas as fatias)
 
@@ -97,6 +116,20 @@ Cada uma: âncora com contagem 1 no arquivo da mutação, aplicada sozinha, vist
 
 As mutações do dev (MD1 a MD11), que cobrem testes-dono que as do plano não derrubam, ficam no corpo do PR.
 
+## Mutações literais da F2 (Emenda 1 A5, Emenda 2 R2-3(b))
+
+| # | Arquivo | Trocar | Por |
+|---|---|---|---|
+| M2.1 | `work_order_execute_screen.dart` | `AppAppearance.c => ExecucaoGuinchoViewC(` | `AppAppearance.c => ExecucaoGuinchoViewB(` |
+| M2.2 | `work_order_execute_screen.dart` | `bool get deliveryGateOpen => !deliveryRequired \|\| isDeliveryComplete;` | `bool get deliveryGateOpen => true;` |
+| M2.3 | `work_order_execute_screen.dart` | `bool get canCompare => bothPhasesKnown && sameModel;` | `bool get canCompare => bothPhasesKnown;` |
+| M2.4 | `work_order_execute_screen.dart` | `final towAppearance = data.isTow ? chosen : AppAppearance.a;` | `final towAppearance = chosen;` |
+| M2.5 | `work_order_stepper.dart` | `circleBg = ErpMobileTheme.success;` | `circleBg = scheme.tertiary;` |
+| M2.6 | `work_order_execute_screen.dart` | `wo.checklistId == null \|\| (isCollectionComplete && deliveryGateOpen);` | `true;` |
+| M2.7 | `work_order_execute_screen.dart` | `final showComparePreview = data.canCompare && data.isCollectionComplete && data.isDeliveryComplete;` | `final showComparePreview = data.canCompare && data.isCollectionComplete;` |
+
+As mutações do dev da F2 (MD1 a MD36) e as da conferência visual (MV1 a MV4) ficam no diário do dev e no corpo do PR.
+
 ## Bateria de validação (§9, Flutter)
 
 ```bash
@@ -116,12 +149,22 @@ git diff --check
 
 Capturas (fora do repositório, sob pedido): `ERP_CAPTURAS_DIR=<pasta> ERP_CAPTURAS_ICONES=<MaterialIcons-Regular.otf do SDK> flutter test test/capturas/bapp_capturas_f1_test.dart`.
 
+**F2:** os testes do bloco são `flutter test test/features/work_orders/bapp_aparencia_guincho_test.dart`; as regressões, os
+10 arquivos acima e os 6 da F1 (`test/core/appearance`, `test/features/appearance`, `bapp_aparencia_localizacao_test.dart`,
+`bapp_aparencia_localizacao_contexto_test.dart`, `bapp_kit_aparencias_test.dart`, `bapp_capturas_f1_test.dart`); as
+capturas, `flutter test test/capturas/bapp_capturas_f2_test.dart` com as mesmas variáveis.
+
 ## Estados obrigatórios (§7)
 
 Os 14 da tabela da maquete da localização, iguais nas 3 aparências: sem decisão; confirme de novo; concedido e
 registrado; concedido sem conexão; sem cadastro; falha ao registrar; revogado; revogado sem conexão; não permitido;
 desatualizado; GPS desligado; carregando; acesso não permitido; acesso não permitido com consentimento. O vazio não se
 aplica (a tela não lista dado).
+
+**F2 (execução do guincho):** os 13 da maquete, iguais nas 3 aparências — coleta em andamento; rota de entrega;
+entrega em andamento; entrega concluída; entrega em andamento sem sinal; entrega concluída sem sinal (na fila); entrega
+não verificada; aguardando despacho; OS antiga sem entrega; dados desatualizados; carregando; erro ao carregar; acesso
+não permitido — mais o "verificando" da A. A trava é a mesma nas 3 ("Concluir OS" desabilitado onde a A desabilita).
 
 ## KPIs
 
@@ -145,3 +188,4 @@ trava sobe `lib/features/auth/`).
 ## Rastreabilidade (§C6)
 
 - **ID:** B-APP-APARENCIA · **F1:** branch `feat/mobile-b-app-aparencia-1-seletor` · PR: (preencher) · merge: (pós-merge).
+- **F2:** branch `feat/mobile-b-app-aparencia-2-guincho` · PR: (preencher) · merge: (pós-merge).

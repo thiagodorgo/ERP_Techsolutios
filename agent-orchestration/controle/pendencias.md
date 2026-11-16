@@ -12705,6 +12705,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 - **apenso (2026-11-14, `B-SAN3-17`, PR #568):** os rótulos próprios do cartão de localização da OS seguem sem acento (achado 5 de quem montou a maquete); o cartão é PROIBIDO no bloco.
 - **apenso (2026-11-15, `B-APP-APARENCIA` F1):** também "Sessao expirada" no `_ExpiredSessionView` do Perfil (`profile_screen.dart`), fora do PERMITIDO da F1 (plano §4).
+- **apenso (2026-11-16, `B-APP-APARENCIA` F2, Emenda 5 `E-APARAPP-ACENTOS`):** os passos da OS passam a "Início" e "Conclusão" (`work_order_steps.dart`), nas 3 aparências da execução; o `b116_execution_stepper_test.dart` mudou só esses literais. O resto desta lista continua aqui.
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -13433,6 +13434,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **apenso (2026-11-14, `B-SAN3-17`, PR #568):** a tela de consentimento de localização saiu só com a aparência A (6.5 do dono); a B e a C entram com o seletor do app, e o aviso sobre o bloco "Captura" da C vai junto.
 - **dono:** `B-APP-APARENCIA` (plano de 15/11, 4 fatias em série: F1 o seletor no Perfil e a localização; F2 a entrega do guincho; F3 o atendimento do prestador; F4 a troca de senha, em junta completa) · **PR-alvo:** o PR de cada fatia — procedência: registro de 16/11 (`reg-1611-cl`), pelo diário de 15/11 20:14 e 20:39; a F4 segue a `D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA`.
 - **apenso (2026-11-15, `B-APP-APARENCIA` F1, ramo `feat/mobile-b-app-aparencia-1-seletor`):** o app ganhou o seletor (Perfil › Aparência › Telas, por tela e por pessoa, no aparelho) e a localização nas aparências B e C, com o Perfil e o Início acompanhando a escolha; o bloco "Captura" da C diz "Com o app aberto", "Só no aparelho" ou "Desligada", pela conferência de envio que já existe (`positionsStillAllowed`). Continua ABERTA: fecha no merge da F4 (as B e C da troca de senha, `D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA`).
+- **apenso (2026-11-16, `B-APP-APARENCIA` F2, ramo `feat/mobile-b-app-aparencia-2-guincho`):** a execução do guincho entra no seletor (`execucao-guincho`: "Fiel à tela de hoje", "Guiada por fases", "Coleta × Entrega lado a lado") e entrega a B e a C nos 13 estados da maquete, só para OS de guincho; a trava de conclusão é a mesma nas 3. Continua ABERTA: fecha no merge da F4.
 
 ## P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste mínimo — MÉDIA (gravidade: leitura do redator)
 
@@ -15061,6 +15063,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **N e forma:** N=2 cores, medidas por golden contra a maquete e por uma sonda de geometria: o passo concluído em `colorScheme.tertiary` (roxo) contra o verde #059669 da A; o título dos cartões em #1A1B21 (o do `ListTile` do tema, `size=16.0 color=0xFF1A1B21`) contra #0F172A da A.
 - **causa:** o stepper usa o `tertiary` do esquema gerado pelo Material 3, e o título herda a cor do `ListTile` do tema, em vez dos tokens da opção A.
 - **critério de encerramento:** o passo concluído no verde de sucesso e o título no tom da A, por token do tema do app; golden contra a A.
+- **resolução (2026-11-16, `B-APP-APARENCIA` F2, ramo `feat/mobile-b-app-aparencia-2-guincho`):** o passo concluído do `work_order_stepper.dart` usa `ErpMobileTheme.success` (#059669) no círculo e no rótulo, e o título dos cartões da seção "Vistorias" usa `ErpMobileTheme.ink` (#0F172A). Muda também a A, como a pendência pede. O "golden contra a A" virou teste de cor do widget, porque o app não usa golden (plano §2.2): GX3 em `test/features/work_orders/bapp_aparencia_guincho_test.dart`, que cai com a M2.5 (`circleBg = scheme.tertiary;`) e com as mutações do rótulo e do título. Fica RESOLVIDA no merge da F2.
 
 ## P-APP-KIT-CONTRASTE-AA (2026-11-13) — chips, pílula, barra inferior e o "Concluir OS" do app abaixo do contraste AA — MÉDIA
 
@@ -16646,6 +16649,12 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `_NavRow` de `profile_screen.dart` na `origin/main` `80f5b4d9`: padding 13 + texto) · **dono:** o bloco de acessibilidade do app · **bloqueia:** não.
 - **origem:** `B-APP-APARENCIA` F1: o `androidTapTargetGuideline` no Perfil mede 356 × 46 em "Trocar de organização" e na "Localização" da aparência A. As linhas novas da F1 (a seção "Telas" e a "Localização" B e C) têm 48 px.
 - **critério de encerramento:** as linhas do Perfil com alvo de pelo menos 48 px, com o `androidTapTargetGuideline` verde no Perfil inteiro.
+
+## P-APP-GUINCHO-VEICULO-ATENDIDO (2026-11-16) — o cartão da OS da opção B do guincho sai sem a placa e o modelo do veículo atendido — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a OS do app não tem placa nem modelo do veículo atendido: `vehiclePlate` é a VIATURA, comentário de `work_order_models.dart` na `origin/main` `a2c44d1c`; do veículo atendido só vêm os 2 últimos caracteres da placa, `checkinPlateTail`, B-SAN3-26) · **dono:** o bloco que levar o veículo atendido (placa, modelo e cor) à lista de OS do app, com a regra de exposição da placa · **bloqueia:** não.
+- **origem:** `B-APP-APARENCIA` F2. A Emenda 1 (A2) pede, no cartão da OS da opção B, "código, pílula do tipo, cliente, placa, modelo, endereço" (maquete `execucao-guincho-3opcoes.reference.html`, `telaB`). O cartão sai com código, "Guincho", cliente, serviço, viatura e equipe quando houver, e endereço; a maquete leu `vehiclePlate` como o veículo atendido.
+- **critério de encerramento:** a OS do app recebe a placa e o modelo do veículo atendido (com a regra do servidor sobre a placa inteira), e o cartão da opção B os mostra, com teste.
 
 ## P-AUTH-REFRESH-VINCULO-APARELHO (2026-11-16) — o token de renovação não é amarrado ao aparelho — BAIXA
 
