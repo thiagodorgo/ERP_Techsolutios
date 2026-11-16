@@ -3,7 +3,8 @@
 // T1 (widget): cada gate de tela e de botão, para cada um dos 9 papéis, com a sessão montada do BOOTSTRAP GERADO
 // PELO SERVIDOR (`test/fixtures/mobile_gate_matrix.json`, escrito por `tests/mobile-gate-chave-matriz.test.ts`;
 // nunca uma lista à mão). O esperado de cada célula é o veredito da rota, lido da mesma fixture.
-// T3 (unidade): `MobileGates.<g>.permite(sessão) == libera[g]` em todas as células e nos 7 casos de módulo.
+// T3 (unidade): `MobileGates.<g>.permite(sessão) == libera[g]` em todas as células e nos 5 casos de módulo.
+// B-O6R-04b: G2 e G3 (as telas de estoque fabricado) saíram do app com o módulo `lib/features/inventory/**`.
 // T5 (widget): as duas entradas de Diagnóstico da tela inicial só aparecem com `modoDev`.
 import 'dart:convert';
 import 'dart:io';
@@ -20,12 +21,6 @@ import 'package:erp_techsolutions_mobile/features/checklists/domain/checklist_mo
 import 'package:erp_techsolutions_mobile/features/checklists/ui/checklist_available_screen.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_repository.dart';
-import 'package:erp_techsolutions_mobile/features/inventory/data/inventory_local_store.dart';
-import 'package:erp_techsolutions_mobile/features/inventory/data/inventory_repository.dart';
-import 'package:erp_techsolutions_mobile/features/inventory/domain/inventory_models.dart';
-import 'package:erp_techsolutions_mobile/features/inventory/ui/inventory_list_screen.dart';
-import 'package:erp_techsolutions_mobile/features/inventory/ui/stock_entry_screen.dart';
-import 'package:erp_techsolutions_mobile/features/inventory/ui/stock_exit_screen.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/erp_components.dart';
@@ -49,7 +44,7 @@ const _papeis = [
   'auditor',
   'support',
 ];
-const _gates = ['G1', 'G1b', 'G2', 'G3', 'G4'];
+const _gates = ['G1', 'G1b', 'G4'];
 
 final Map<String, dynamic> _fixture =
     jsonDecode(File('test/fixtures/mobile_gate_matrix.json').readAsStringSync())
@@ -72,18 +67,6 @@ BootstrapSession _sessaoDoPapel(String papel) =>
 
 BootstrapSession _sessaoDoCaso(String nome) =>
     _sessaoDe(_caso(nome)['bootstrap'] as Map<String, dynamic>);
-
-/// REV66-02 (c): o papel `inventory` com o módulo `inventory` desligado. As permissões são as do bootstrap do
-/// servidor para o papel; só o módulo sai da lista (o servidor recusa toda rota do módulo, T2 `G3_sem_modulo`).
-BootstrapSession _sessaoInventorySemModulo() {
-  final bootstrap = Map<String, dynamic>.from(
-    _celula('inventory')['bootstrap'] as Map<String, dynamic>,
-  );
-  bootstrap['modules'] = (bootstrap['modules'] as List<dynamic>)
-      .where((m) => (m as Map<String, dynamic>)['key'] != 'inventory')
-      .toList();
-  return _sessaoDe(bootstrap);
-}
 
 // ── montagem das telas ───────────────────────────────────────────────────────
 
@@ -115,58 +98,6 @@ Widget _telaChecklists(BootstrapSession sessao) {
               isRequired: true,
               schemaVersion: 'v1',
               status: 'active',
-            ),
-          ],
-        ),
-      ),
-      syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore([])),
-    ],
-    child: MaterialApp.router(routerConfig: router),
-  );
-}
-
-const _nomeDoItem = 'Cabo de reboque 5 m';
-
-Widget _telaEstoque(BootstrapSession sessao, String local) {
-  final tenant = sessao.activeTenant.tenantId;
-  final router = GoRouter(
-    initialLocation: local,
-    routes: [
-      GoRoute(
-        path: '/inventory',
-        builder: (_, _) => const InventoryListScreen(),
-        routes: [
-          GoRoute(
-            path: 'entry',
-            builder: (_, state) => StockEntryScreen(
-              preselectedItemId: state.uri.queryParameters['itemId'],
-            ),
-          ),
-          GoRoute(
-            path: 'exit',
-            builder: (_, state) => StockExitScreen(
-              preselectedItemId: state.uri.queryParameters['itemId'],
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-  return ProviderScope(
-    overrides: [
-      bootstrapSessionProvider.overrideWithValue(AsyncData(sessao)),
-      inventoryLocalStoreProvider.overrideWithValue(
-        InMemoryInventoryLocalStore(
-          items: [
-            InventoryItem(
-              id: 'inv-gate-1',
-              tenantId: tenant,
-              code: 'IT-GATE-1',
-              name: _nomeDoItem,
-              category: 'Reboque',
-              quantity: 6,
-              unit: 'un.',
-              minQuantity: 1,
             ),
           ],
         ),
@@ -246,7 +177,7 @@ Finder get _botaoDoCard =>
     find.descendant(of: find.byType(Card), matching: find.byType(FilledButton));
 
 void main() {
-  test('a fixture tem os 9 papéis, os 5 gates e os 7 casos de módulo', () {
+  test('a fixture tem os 9 papéis, os 3 gates e os 5 casos de módulo', () {
     expect((_fixture['papeis'] as Map).keys.toSet(), _papeis.toSet());
     for (final papel in _papeis) {
       expect(
@@ -255,7 +186,7 @@ void main() {
         reason: papel,
       );
     }
-    expect((_fixture['modulos'] as Map).length, 7);
+    expect((_fixture['modulos'] as Map).length, 5);
   });
 
   group('T1 — G1, tela Checklists da OS', () {
@@ -284,38 +215,6 @@ void main() {
     }
   });
 
-  group('T1 — G2, tela Estoque', () {
-    for (final papel in _papeis) {
-      testWidgets('G2 · $papel', (tester) async {
-        await _montar(
-          tester,
-          _telaEstoque(_sessaoDoPapel(papel), '/inventory'),
-        );
-        final libera = _libera(papel, 'G2');
-        expect(_bloqueado, libera ? findsNothing : findsOneWidget);
-        expect(find.text(_nomeDoItem), libera ? findsOneWidget : findsNothing);
-      });
-    }
-  });
-
-  group('T1 — G3, botões Entrada e Saída', () {
-    // A4: o rótulo do botão de saída é "Saida", sem acento; conta-se por tipo e confere-se "Entrada".
-    for (final papel in _papeis) {
-      testWidgets('G3 · $papel', (tester) async {
-        await _montar(
-          tester,
-          _telaEstoque(_sessaoDoPapel(papel), '/inventory'),
-        );
-        final libera = _libera(papel, 'G3');
-        expect(
-          find.byType(OutlinedButton),
-          libera ? findsNWidgets(2) : findsNothing,
-        );
-        expect(find.text('Entrada'), libera ? findsOneWidget : findsNothing);
-      });
-    }
-  });
-
   group('T1 — G4, tela Aprovações', () {
     for (final papel in _papeis) {
       testWidgets('G4 · $papel', (tester) async {
@@ -330,7 +229,7 @@ void main() {
     }
   });
 
-  group('T1 — os 7 casos de módulo (R2.1/R2.2)', () {
+  group('T1 — os 5 casos de módulo (R2.1/R2.2)', () {
     testWidgets('G1_sem_modulo', (tester) async {
       await _montar(tester, _telaChecklists(_sessaoDoCaso('G1_sem_modulo')));
       expect(_caso('G1_sem_modulo')['libera'], isFalse);
@@ -340,22 +239,6 @@ void main() {
       await _montar(tester, _telaChecklists(_sessaoDoCaso('G1b_sem_modulo')));
       expect(_caso('G1b_sem_modulo')['libera'], isFalse);
       expect(_botaoDoCard, findsNothing);
-    });
-    testWidgets('G2_sem_modulo', (tester) async {
-      await _montar(
-        tester,
-        _telaEstoque(_sessaoDoCaso('G2_sem_modulo'), '/inventory'),
-      );
-      expect(_caso('G2_sem_modulo')['libera'], isFalse);
-      expect(_bloqueado, findsOneWidget);
-    });
-    testWidgets('G3_sem_modulo', (tester) async {
-      await _montar(
-        tester,
-        _telaEstoque(_sessaoDoCaso('G3_sem_modulo'), '/inventory'),
-      );
-      expect(_caso('G3_sem_modulo')['libera'], isFalse);
-      expect(find.byType(OutlinedButton), findsNothing);
     });
     for (final nome in const [
       'G4_so_approvals',
@@ -415,38 +298,11 @@ void main() {
     }
   });
 
-  group('T1 — telas Nova Entrada e Nova Saída (A5, REV66-02)', () {
-    for (final local in const ['/inventory/entry', '/inventory/exit']) {
-      testWidgets('$local · inventory vê o formulário', (tester) async {
-        await _montar(tester, _telaEstoque(_sessaoDoPapel('inventory'), local));
-        expect(_bloqueado, findsNothing);
-        expect(find.byType(TextField), findsWidgets);
-      });
-      testWidgets('$local · field_technician vê o bloqueio', (tester) async {
-        await _montar(
-          tester,
-          _telaEstoque(_sessaoDoPapel('field_technician'), local),
-        );
-        expect(_bloqueado, findsOneWidget);
-        expect(find.byType(TextField), findsNothing);
-      });
-      testWidgets('$local · inventory sem o módulo vê o bloqueio', (
-        tester,
-      ) async {
-        await _montar(tester, _telaEstoque(_sessaoInventorySemModulo(), local));
-        expect(_bloqueado, findsOneWidget);
-        expect(find.byType(TextField), findsNothing);
-      });
-    }
-  });
-
   // ── T3: a régua do app é a da rota, célula a célula ───────────────────────
 
   const regraDoGate = <String, MobileGate>{
     'G1': MobileGates.checklistsDaOs,
     'G1b': MobileGates.responderChecklist,
-    'G2': MobileGates.estoque,
-    'G3': MobileGates.movimentarEstoque,
     'G4': MobileGates.aprovacoes,
   };
 
@@ -464,8 +320,6 @@ void main() {
     for (final nome in const [
       'G1_sem_modulo',
       'G1b_sem_modulo',
-      'G2_sem_modulo',
-      'G3_sem_modulo',
       'G4_so_approvals',
       'G4_so_work_orders',
       'G4_nenhum',

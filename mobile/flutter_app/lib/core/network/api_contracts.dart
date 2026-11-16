@@ -132,19 +132,15 @@ class ChecklistSyncActionTypes {
 class InventoryApiEndpoints {
   const InventoryApiEndpoints._();
 
-  static const items = '/api/v1/mobile/inventory/items';
-  static const movements = '/api/v1/mobile/inventory/movements';
   static const sync = '/api/v1/mobile/sync/inventory-actions';
   static const technicianStock = '/api/v1/mobile/technician/stock';
-
-  static String item(String id) => '/api/v1/mobile/inventory/items/$id';
-  static String workOrderMaterials(String workOrderId) =>
-      '/api/v1/mobile/work-orders/$workOrderId/materials';
 }
 
 class InventorySyncActionTypes {
   const InventorySyncActionTypes._();
 
+  // B-O6R-04b: legado. Os dois tipos abaixo não são mais produzidos pelo app (as telas Nova Entrada e Nova Saída
+  // saíram, e o servidor os recusa). Ficam só para reconhecer e encerrar uma ação antiga que já estava na fila.
   static const entryCreate = 'inventory_entry.create';
   static const exitCreate = 'inventory_exit.create';
   static const materialAdd = 'work_order_material.add';

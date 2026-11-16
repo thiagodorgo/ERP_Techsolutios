@@ -56,8 +56,6 @@ abstract final class MobileGates {
   // dart format off
   static const checklistsDaOs = MobileGate(nome: 'G1', modulos: ['tenant_checklist'], modoModulo: Modo.any, chaves: ['checklist_runs:read', 'checklist_runs:create'], modo: Modo.any);
   static const responderChecklist = MobileGate(nome: 'G1b', modulos: ['tenant_checklist'], modoModulo: Modo.any, chaves: ['checklist_runs:update'], modo: Modo.all);
-  static const estoque = MobileGate(nome: 'G2', modulos: ['inventory'], modoModulo: Modo.any, chaves: ['inventory.read', 'inventory.manage'], modo: Modo.any);
-  static const movimentarEstoque = MobileGate(nome: 'G3', modulos: ['inventory'], modoModulo: Modo.any, chaves: ['inventory.manage'], modo: Modo.all);
   static const aprovacoes = MobileGate(nome: 'G4', modulos: ['approvals', 'work_orders'], modoModulo: Modo.any, chaves: ['work_orders:approve'], modo: Modo.all);
   // dart format on
 }

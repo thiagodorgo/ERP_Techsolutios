@@ -275,7 +275,8 @@ const PISO_POR_CLASSE: Readonly<Record<Classe, number>> = {
   perms: 8,
   permissions_const: 12,
   permission_set: 12,
-  mobile_gates: 7,
+  // B-O6R-04b: os 4 usos de G2/G3 (as 3 telas de estoque fabricado) saíram com elas; ficam os de G1, G1b e G4.
+  mobile_gates: 4,
   // J-561, C2B-03 (medido no conserto, 14/11/2026): o `.permissions.contains('field_location:send')` da telemetria e as
   // 2 posições não literais da definição do primitivo (`permission_resolver.dart`, exceção nomeada).
   contains: 3,
