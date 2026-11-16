@@ -351,6 +351,10 @@ jobs:
           # sem perfil ou sem consentimento, auditoria com allowlist, a decisão velha não religa e a viatura fica no mapa ao vivo (D1-D7);
           # a fila e o prazo do titular, o aceite decidido na escrita e o prazo da trava (os T-17 das Emendas 1.5 a 1.8 e da J-568).
           SUITES="$SUITES tests/bsan317-consentimento-localizacao-db.test.ts"
+          # B-APP-SESSAO-RENOVA (item 68 do portão) — a renovação da sessão do app sob papel efêmero sem BYPASSRLS: o "Sair" que
+          # diz a verdade e revoga a sessão inteira com qualquer token dela, o reenvio com prova de posse e a corrida, o reuso que
+          # derruba a família, a ordem invertida (R-3c) e o perdedor que relê (SV2 a SV21b, P-68-PERDEDOR-RELE-401).
+          SUITES="$SUITES tests/app-sessao-revogacao-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
