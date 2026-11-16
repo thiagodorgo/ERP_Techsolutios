@@ -609,6 +609,9 @@ export async function createPrismaStatementRuntime(): Promise<StatementRuntime> 
         return { provider: on.provider, method: closingMethodOf((await billingProfiles.find(tenantId))?.paymentMethod) };
       },
     },
+    // B-ASS-08c2 (plano §4.1 item 2): a intenção de nota da baixa manual, do estorno, da varredura e do `/invoice`, pelo MESMO
+    // predicado das portas (`invoiceIntentsNow`). Import dinâmico, como o `closingCharge`: `vault/` e `outbox/` sem ciclo.
+    invoiceIntents: { resolve: async () => (await import("../outbox/channel-state.js")).invoiceIntentsNow(await (await import("../vault/vault.factory.js")).createDefaultVaultRuntime()) }, // [NOTA-INTENTS]
   };
   return {
     service: new StatementService(repository, inputs, audit, channel),

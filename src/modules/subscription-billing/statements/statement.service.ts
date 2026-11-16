@@ -17,6 +17,7 @@ import type { PaymentMethod } from "../providers/payment/payment-provider.port.j
 import { eagerPlan, refechamentoPlan, reopenLiveCheck } from "./statement-charge-lines.js";
 import type { StatementResolveOptions, StatementVersionPin } from "./statement.inputs.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
+import type { InvoiceIntents } from "./statement-settlement.service.js";
 import {
   StatementError,
   type CreditReason,
@@ -67,8 +68,14 @@ export type ClosingChargeResolver = {
   resolve(tenantId: string): Promise<{ readonly provider: string; readonly method: PaymentMethod } | null>;
 };
 
-/** B-ASS-08c1c (plano §4.0 item 5): o 4º parâmetro do serviço, um OBJETO de opções. O 08c2 acrescenta `invoiceIntents` aqui. */
-export type StatementChannel = { readonly closingCharge?: ClosingChargeResolver };
+/** B-ASS-08c2 (plano de abertura §4.1 item 2): para onde vai a intenção de nota AGORA (o provedor da emissão e os ligados).
+ * Resolvido ANTES da transação, como o `closingCharge` (v2 §10 D3: a leitura do cofre e da configuração é de plataforma e não
+ * entra no `tx` de RLS); nunca faz rede. */
+export type InvoiceIntentsResolver = { resolve(): Promise<InvoiceIntents> };
+
+/** B-ASS-08c1c (plano §4.0 item 5): o 4º parâmetro do serviço, um OBJETO de opções. O 08c2 acrescenta `invoiceIntents`: sem ele
+ * (os testes que constroem o serviço sem canal), nenhuma intenção de nota é gravada pelo serviço. */
+export type StatementChannel = { readonly closingCharge?: ClosingChargeResolver; readonly invoiceIntents?: InvoiceIntentsResolver };
 
 export type CloseOutcome =
   | { readonly kind: "closed"; readonly statement: SubscriptionStatement; readonly alreadyClosed: false }
