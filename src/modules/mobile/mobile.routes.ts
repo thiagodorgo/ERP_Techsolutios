@@ -10,7 +10,7 @@ import { createDefaultWorkOrderService } from "../work-orders/work-order.service
 import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
 import { syncMobileEvidenceActions } from "./mobile-evidence-sync.js";
 import { uploadMobileEvidenceFile } from "./mobile-evidence-upload.js";
-import { getMobileInventoryAvailability, syncMobileInventoryActions } from "./mobile-inventory-sync.js";
+import { syncMobileInventoryActions } from "./mobile-inventory-sync.js";
 import { syncMobileTelemetry } from "./mobile-telemetry-sync.js";
 import { syncMobileWorkOrderActions } from "./mobile-work-order-sync.js";
 
@@ -159,15 +159,6 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     handleAsyncRoute(async (request, response) => {
       response.json({
         data: await syncMobileChecklistActions(request.tenantContext, request.body ?? {}),
-      });
-    }),
-  );
-
-  router.get(
-    "/mobile/inventory/availability",
-    handleAsyncRoute(async (request, response) => {
-      response.json({
-        data: getMobileInventoryAvailability(request.tenantContext, request.query ?? {}),
       });
     }),
   );
