@@ -659,12 +659,27 @@ class _IconLine extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class MobileStickyBar extends StatelessWidget {
-  const MobileStickyBar({required this.children, super.key});
+  const MobileStickyBar({
+    required this.children,
+    this.supportingText,
+    this.supportingTextColor,
+    super.key,
+  });
 
   final List<Widget> children;
 
+  /// B-APP-APARENCIA (F2) — o texto de apoio, centrado acima das ações (a
+  /// barra da opção B da execução do guincho). Sem ele, a barra desenha como
+  /// antes.
+  final String? supportingText;
+
+  /// A cor do texto de apoio; o padrão é o cinza das frases do kit.
+  final Color? supportingTextColor;
+
   @override
   Widget build(BuildContext context) {
+    final row = Row(children: children);
+    final text = supportingText;
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -676,7 +691,25 @@ class MobileStickyBar extends StatelessWidget {
         color: Colors.white,
         border: Border(top: BorderSide(color: ErpMobileTheme.cardBorder)),
       ),
-      child: Row(children: children),
+      child: text == null
+          ? row
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 16 / 12,
+                    color: supportingTextColor ?? _textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                row,
+              ],
+            ),
     );
   }
 }
@@ -1387,6 +1420,715 @@ class MobileNoticeBanner extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// B-APP-APARENCIA (F2) — peças das aparências B e C da execução do guincho
+// (`execucao-guincho-3opcoes.reference.html`). Cada uma tem 1 linha em
+// COMPONENT_LIBRARY.md.
+// ---------------------------------------------------------------------------
+
+/// O estado de um nó da [MobilePhaseTimeline] (e de uma fase da opção C).
+enum MobilePhaseState {
+  /// A fase terminou: marca verde com o visto.
+  done,
+
+  /// A fase é a de agora: marca azul.
+  active,
+
+  /// A fase ainda não começou: marca cinza.
+  todo,
+
+  /// A fase está travada (a conclusão espera outra): marca âmbar.
+  locked,
+}
+
+extension MobilePhaseStateLabel on MobilePhaseState {
+  /// O estado dito pelo leitor de tela.
+  String get spoken => switch (this) {
+    MobilePhaseState.done => 'concluída',
+    MobilePhaseState.active => 'atual',
+    MobilePhaseState.todo || MobilePhaseState.locked => 'pendente',
+  };
+}
+
+/// Um nó da [MobilePhaseTimeline]: a marca, o título com as pílulas, a linha
+/// de apoio, o progresso opcional e uma peça embaixo (a ação curta ou a linha
+/// de comparação).
+class MobilePhaseNode {
+  const MobilePhaseNode({
+    required this.title,
+    required this.state,
+    required this.marker,
+    this.pills = const <Widget>[],
+    this.meta,
+    this.progress,
+    this.progressLabel,
+    this.footer,
+    this.key,
+  });
+
+  final String title;
+  final MobilePhaseState state;
+  final IconData marker;
+  final List<Widget> pills;
+  final String? meta;
+
+  /// De 0 a 1: a barra de progresso embaixo da linha de apoio.
+  final double? progress;
+
+  /// O nome da barra de progresso para o leitor de tela.
+  final String? progressLabel;
+  final Widget? footer;
+  final Key? key;
+}
+
+/// A linha do tempo das fases (opção B da execução do guincho): um título em
+/// caixa alta e os nós ligados por um fio, verde até onde já foi feito.
+class MobilePhaseTimeline extends StatelessWidget {
+  const MobilePhaseTimeline({
+    required this.title,
+    required this.nodes,
+    this.titleTrailing,
+    super.key,
+  });
+
+  final String title;
+  final List<MobilePhaseNode> nodes;
+  final Widget? titleTrailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                    color: ErpMobileTheme.inkMuted,
+                  ),
+                ),
+              ),
+              ?titleTrailing,
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < nodes.length; i++)
+            _PhaseNodeView(node: nodes[i], last: i == nodes.length - 1),
+        ],
+      ),
+    );
+  }
+}
+
+/// As cores da marca de uma fase: fundo, ícone e, na travada, a borda.
+(Color, Color, Color?) _phaseMarkerColors(MobilePhaseState state) =>
+    switch (state) {
+      MobilePhaseState.done => (ErpMobileTheme.success, Colors.white, null),
+      MobilePhaseState.active => (ErpMobileTheme.primary, Colors.white, null),
+      MobilePhaseState.todo => (
+        ErpMobileTheme.cardBorder,
+        ErpMobileTheme.inkMuted,
+        null,
+      ),
+      MobilePhaseState.locked => (
+        const Color(0xFFFFFBEB),
+        ErpMobileTheme.warning,
+        const Color(0xFFFCD34D),
+      ),
+    };
+
+class _PhaseNodeView extends StatelessWidget {
+  const _PhaseNodeView({required this.node, required this.last});
+
+  final MobilePhaseNode node;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg, border) = _phaseMarkerColors(node.state);
+    final todo = node.state == MobilePhaseState.todo;
+    final progress = node.progress;
+    return IntrinsicHeight(
+      key: node.key,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 26,
+            child: Column(
+              children: [
+                ExcludeSemantics(
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: bg,
+                      shape: BoxShape.circle,
+                      border: border == null
+                          ? null
+                          : Border.all(color: border, width: 1.5),
+                    ),
+                    child: Icon(node.marker, size: 15, color: fg),
+                  ),
+                ),
+                if (!last)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.only(top: 4, bottom: 2),
+                      decoration: BoxDecoration(
+                        color: node.state == MobilePhaseState.done
+                            ? const Color(0xFFA7F3D0)
+                            : ErpMobileTheme.cardBorder,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: last ? 4 : 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 26),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            node.title,
+                            semanticsLabel:
+                                '${node.title}, ${node.state.spoken}',
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.25,
+                              fontWeight: FontWeight.w700,
+                              color: todo
+                                  ? ErpMobileTheme.inkMuted
+                                  : ErpMobileTheme.ink,
+                            ),
+                          ),
+                        ),
+                        for (final pill in node.pills) ...[
+                          const SizedBox(width: 6),
+                          pill,
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (node.meta != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      node.meta!,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        height: 17 / 12.5,
+                        color: _textSecondary,
+                      ),
+                    ),
+                  ],
+                  if (progress != null) ...[
+                    const SizedBox(height: 8),
+                    Semantics(
+                      label: node.progressLabel,
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 4,
+                        borderRadius: BorderRadius.circular(2),
+                        backgroundColor: ErpMobileTheme.cardBorder,
+                        color: ErpMobileTheme.primary,
+                      ),
+                    ),
+                  ],
+                  if (node.footer != null) ...[
+                    const SizedBox(height: 4),
+                    node.footer!,
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// O cartão de uma fase em meia largura (opção C da execução do guincho): o
+/// nome em caixa alta e a pílula; o número grande ("12/12"), o progresso, a
+/// linha de apoio e a ação curta; ou, sem número, uma frase.
+class MobilePhaseCard extends StatelessWidget {
+  const MobilePhaseCard({
+    required this.label,
+    required this.statusLabel,
+    required this.statusTone,
+    this.current = false,
+    this.value,
+    this.valueSuffix,
+    this.progress,
+    this.meta,
+    this.metaEmphasis,
+    this.message,
+    this.actionLabel,
+    this.actionSemanticLabel,
+    this.actionIcon,
+    this.onAction,
+    this.width,
+    super.key,
+  });
+
+  final String label;
+  final String statusLabel;
+  final PillTone statusTone;
+
+  /// A largura do cartão, quando quem o põe na tela a conhece (a opção C a
+  /// mede por fora do `IntrinsicHeight`, que não aceita `LayoutBuilder`
+  /// dentro): com ela, a pílula que não cabe nem a 75 % desce para a linha de
+  /// baixo. Sem ela, a pílula só encolhe.
+  final double? width;
+
+  /// A fase de agora: borda azul.
+  final bool current;
+
+  /// O número grande ("7/12") e o que ele conta ("obrigatórios").
+  final String? value;
+  final String? valueSuffix;
+
+  /// De 0 a 1; completo fica verde.
+  final double? progress;
+  final String? meta;
+
+  /// Um trecho em destaque depois da linha de apoio ("na fila").
+  final String? metaEmphasis;
+
+  /// A frase no lugar do número (a entrega que o servidor não confirmou).
+  final String? message;
+
+  /// O texto curto do botão ("Ver", "Abrir", "Continuar") e o nome inteiro
+  /// para o leitor de tela ("Ver vistoria de coleta").
+  final String? actionLabel;
+  final String? actionSemanticLabel;
+  final IconData? actionIcon;
+
+  /// Nulo desabilita a ação.
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = (progress ?? 0) >= 1;
+    final action = actionLabel;
+    return Container(
+      padding: EdgeInsets.all(current ? 11.5 : 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: current ? ErpMobileTheme.primary : ErpMobileTheme.cardBorder,
+          width: current ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // O nome e a pílula na mesma linha (CV2-2 da conferência da F2). No
+          // aperto, a pílula encolhe até 75 %; abaixo disso, desce inteira para
+          // a linha de baixo. Nunca quebra no meio da palavra.
+          _PhaseCardHeader(
+            label: label,
+            statusLabel: statusLabel,
+            statusTone: statusTone,
+            maxWidth: width == null
+                ? null
+                : width! - 2 * (current ? 11.5 : 12) - 2 * (current ? 1.5 : 1),
+          ),
+          const SizedBox(height: 6),
+          if (message != null)
+            Text(
+              message!,
+              style: const TextStyle(
+                fontSize: 12.5,
+                height: 17 / 12.5,
+                color: _textSecondary,
+              ),
+            )
+          else ...[
+            if (value != null)
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: value,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        height: 1.1,
+                        fontWeight: FontWeight.w800,
+                        color: ErpMobileTheme.ink,
+                      ),
+                    ),
+                    if (valueSuffix != null)
+                      TextSpan(
+                        text: ' $valueSuffix',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: _textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            if (progress != null) ...[
+              const SizedBox(height: 6),
+              Semantics(
+                label: label,
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  borderRadius: BorderRadius.circular(2),
+                  backgroundColor: ErpMobileTheme.cardBorder,
+                  color: done ? ErpMobileTheme.success : ErpMobileTheme.primary,
+                ),
+              ),
+            ],
+            if (meta != null) ...[
+              const SizedBox(height: 6),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: meta),
+                    if (metaEmphasis != null)
+                      TextSpan(
+                        text: ' · $metaEmphasis',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: ErpMobileTheme.warningInk,
+                        ),
+                      ),
+                  ],
+                ),
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 16 / 12,
+                  color: _textSecondary,
+                ),
+              ),
+            ],
+          ],
+          if (action != null) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: onAction,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              icon: Icon(actionIcon ?? Icons.checklist_outlined, size: 18),
+              label: Text(
+                action,
+                semanticsLabel: actionSemanticLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// O estado de um item da [MobileRequirementList].
+enum MobileRequirementState {
+  /// Atendido: visto verde.
+  met,
+
+  /// Ainda falta: círculo âmbar.
+  pending,
+
+  /// Não atendido: o x vermelho.
+  unmet,
+
+  /// Só informa (não é exigido): cinza.
+  info,
+
+  /// Na fila do aparelho: o sincronizar âmbar.
+  queued,
+}
+
+/// Um item da [MobileRequirementList]: o estado, o texto e, se quiser, outro
+/// ícone (o de "informa" muda com a situação).
+class MobileRequirement {
+  const MobileRequirement(this.state, this.text, {this.icon});
+
+  final MobileRequirementState state;
+  final String text;
+  final IconData? icon;
+}
+
+/// A lista do que é preciso (opção C da execução do guincho, "Para concluir a
+/// OS"; a troca de senha B reaproveita): um ícone por estado e o texto, com o
+/// estado dito ao leitor de tela.
+class MobileRequirementList extends StatelessWidget {
+  const MobileRequirementList({required this.items, super.key});
+
+  final List<MobileRequirement> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          _RequirementRow(item: items[i]),
+        ],
+      ],
+    );
+  }
+}
+
+class _RequirementRow extends StatelessWidget {
+  const _RequirementRow({required this.item});
+
+  final MobileRequirement item;
+
+  @override
+  Widget build(BuildContext context) {
+    final (
+      IconData icon,
+      Color iconColor,
+      Color ink,
+      String spoken,
+    ) = switch (item.state) {
+      MobileRequirementState.met => (
+        Icons.check_circle,
+        ErpMobileTheme.success,
+        ErpMobileTheme.ink,
+        ' (feito)',
+      ),
+      MobileRequirementState.pending => (
+        Icons.radio_button_unchecked,
+        ErpMobileTheme.warning,
+        ErpMobileTheme.warningInk,
+        ' (falta)',
+      ),
+      MobileRequirementState.unmet => (
+        Icons.cancel_outlined,
+        ErpMobileTheme.danger,
+        ErpMobileTheme.dangerInk,
+        ' (não atendido)',
+      ),
+      MobileRequirementState.info => (
+        Icons.info_outline,
+        ErpMobileTheme.inkFaint,
+        _textSecondary,
+        '',
+      ),
+      MobileRequirementState.queued => (
+        Icons.sync_outlined,
+        ErpMobileTheme.warning,
+        ErpMobileTheme.ink,
+        '',
+      ),
+    };
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ExcludeSemantics(
+          child: Icon(item.icon ?? icon, size: 20, color: iconColor),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            item.text,
+            semanticsLabel: '${item.text}$spoken',
+            style: TextStyle(fontSize: 13.5, height: 19 / 13.5, color: ink),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A borda tracejada de cantos redondos (a linha "Comparar coleta × entrega"
+/// da opção B do guincho, `m-row` da maquete): cada traço é desenhado à parte.
+class MobileDashedBorder extends StatelessWidget {
+  const MobileDashedBorder({
+    required this.child,
+    this.color = const Color(0xFFBFDBFE),
+    this.radius = 10,
+    this.dash = 4,
+    this.gap = 3,
+    this.strokeWidth = 1,
+    super.key,
+  });
+
+  final Widget child;
+  final Color color;
+  final double radius;
+  final double dash;
+  final double gap;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      foregroundPainter: _DashedRRectPainter(
+        color: color,
+        radius: radius,
+        dash: dash,
+        gap: gap,
+        strokeWidth: strokeWidth,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _DashedRRectPainter extends CustomPainter {
+  const _DashedRRectPainter({
+    required this.color,
+    required this.radius,
+    required this.dash,
+    required this.gap,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double radius;
+  final double dash;
+  final double gap;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    final half = strokeWidth / 2;
+    final outline = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            half,
+            half,
+            size.width - strokeWidth,
+            size.height - strokeWidth,
+          ),
+          Radius.circular(radius),
+        ),
+      );
+    for (final metric in outline.computeMetrics()) {
+      var start = 0.0;
+      while (start < metric.length) {
+        final end = start + dash;
+        canvas.drawPath(metric.extractPath(start, end), paint);
+        start = end + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedRRectPainter old) =>
+      old.color != color ||
+      old.radius != radius ||
+      old.dash != dash ||
+      old.gap != gap ||
+      old.strokeWidth != strokeWidth;
+}
+
+/// O cabeçalho do [MobilePhaseCard]: o nome em caixa alta e a pílula.
+class _PhaseCardHeader extends StatelessWidget {
+  const _PhaseCardHeader({
+    required this.label,
+    required this.statusLabel,
+    required this.statusTone,
+    this.maxWidth,
+  });
+
+  final String label;
+  final String statusLabel;
+  final PillTone statusTone;
+  final double? maxWidth;
+
+  static const _labelStyle = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.6,
+    color: ErpMobileTheme.inkMuted,
+  );
+
+  /// O menor tamanho da pílula antes de ela descer para a linha de baixo.
+  static const minPillScale = 0.75;
+
+  @override
+  Widget build(BuildContext context) {
+    final upper = label.toUpperCase();
+    final pill = MobilePill(label: statusLabel, tone: statusTone);
+    final text = Text(
+      upper,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: _labelStyle,
+    );
+    final row = Row(
+      children: [
+        text,
+        const SizedBox(width: 6),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(fit: BoxFit.scaleDown, child: pill),
+          ),
+        ),
+      ],
+    );
+    final available = maxWidth;
+    if (available == null) return row;
+    final base = DefaultTextStyle.of(context).style;
+    final scaler = MediaQuery.textScalerOf(context);
+    double measure(String value, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: value, style: base.merge(style)),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final w = painter.width;
+      painter.dispose();
+      return w;
+    }
+
+    const gap = 6.0;
+    // A pílula: o texto (11 px, w700) mais 9 + 9 de margem.
+    final pillWidth =
+        measure(
+          statusLabel,
+          const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+        ) +
+        18;
+    final room = available - measure(upper, _labelStyle) - gap;
+    if (pillWidth * minPillScale <= room) return row;
+    return Wrap(
+      spacing: gap,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [text, pill],
     );
   }
 }

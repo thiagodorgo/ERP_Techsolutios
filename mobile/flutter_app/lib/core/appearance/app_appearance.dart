@@ -67,6 +67,10 @@ const kLocationConsentAppearanceKey = 'localizacao-consentimento';
 /// Privacidade do Perfil).
 const kLocationConsentAppearanceLabel = 'Localização e consentimento';
 
+/// A chave da execução do guincho, seção Vistorias
+/// (`execucao-guincho-3opcoes.reference.html`; F2).
+const kExecucaoGuinchoAppearanceKey = 'execucao-guincho';
+
 /// As telas do app que já entregam as 3 aparências. Cada fatia registra só as
 /// telas que ela entrega (plano §1.5).
 const List<AppAppearanceScreen> appAppearanceScreens = [
@@ -77,6 +81,15 @@ const List<AppAppearanceScreen> appAppearanceScreens = [
       AppAppearanceOption(AppAppearance.a, 'Cartões de hoje'),
       AppAppearanceOption(AppAppearance.b, 'Como o protótipo'),
       AppAppearanceOption(AppAppearance.c, 'Resumo e ações fixas'),
+    ],
+  ),
+  AppAppearanceScreen(
+    key: kExecucaoGuinchoAppearanceKey,
+    label: 'Execução do guincho',
+    options: [
+      AppAppearanceOption(AppAppearance.a, 'Fiel à tela de hoje'),
+      AppAppearanceOption(AppAppearance.b, 'Guiada por fases'),
+      AppAppearanceOption(AppAppearance.c, 'Coleta × Entrega lado a lado'),
     ],
   ),
 ];
