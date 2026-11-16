@@ -25,6 +25,8 @@ UNION ALL SELECT 'custody_events', count(*) FROM custody_events WHERE tenant_id 
 UNION ALL SELECT 'attachments', count(*) FROM attachments WHERE tenant_id IN (SELECT id FROM org)
 UNION ALL SELECT 'process_charges', count(*) FROM process_charges WHERE tenant_id IN (SELECT id FROM org)
 UNION ALL SELECT 'field_operator_locations', count(*) FROM field_operator_locations WHERE tenant_id IN (SELECT id FROM org)
+UNION ALL SELECT 'operator_profiles', count(*) FROM operator_profiles WHERE tenant_id IN (SELECT id FROM org)
+UNION ALL SELECT 'operator_profiles_consentidos', count(*) FROM operator_profiles WHERE tenant_id IN (SELECT id FROM org) AND tracking_consent
 UNION ALL SELECT 'work_orders', count(*) FROM work_orders WHERE tenant_id IN (SELECT id FROM org)
 UNION ALL SELECT 'work_order_events', count(*) FROM work_order_events WHERE tenant_id IN (SELECT id FROM org)
 UNION ALL SELECT 'financial_accounts', count(*) FROM financial_accounts WHERE tenant_id IN (SELECT id FROM org)
