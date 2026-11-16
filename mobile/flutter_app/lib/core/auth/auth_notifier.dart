@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -55,6 +57,30 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   int get epoch => _epoch;
 
+  /// D3b: a época sobe de forma síncrona no 1º passo de cada ciclo da sessão
+  /// (login, "Sair", troca de senha, expiração) e esquece a renovação em voo.
+  void _bumpEpoch() {
+    _epoch++;
+    _inFlight = null;
+  }
+
+  /// D3b: a trava de sessão (molde de `_enterMaterialLock`). Toda escrita da
+  /// sessão, no armazenamento e no estado, passa por ela. Não é reentrante:
+  /// nada que roda dentro dela a pede de novo. `null` = ociosa.
+  Future<void>? _sessionTail;
+
+  Future<void Function()> _enterSessionLock() async {
+    final previous = _sessionTail;
+    final done = Completer<void>();
+    final mine = done.future;
+    _sessionTail = mine;
+    if (previous != null) await previous;
+    return () {
+      done.complete();
+      if (identical(_sessionTail, mine)) _sessionTail = null;
+    };
+  }
+
   /// O token de acesso da sessão autenticada de agora, para o interceptador.
   String? get liveAccessToken {
     final current = state.asData?.value;
@@ -101,7 +127,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String password,
     String? tenantId,
   }) async {
+    _bumpEpoch(); // ciclo: login
     state = const AsyncValue.loading();
+    final release = await _enterSessionLock();
     try {
       final repo = ref.read(authRepositoryProvider);
       final session = await repo.login(
@@ -131,6 +159,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       });
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    } finally {
+      release();
     }
   }
 
@@ -141,29 +171,36 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String currentPassword,
     required String newPassword,
   }) async {
+    _bumpEpoch(); // ciclo: troca de senha
     final repo = ref.read(authRepositoryProvider);
+    final release = await _enterSessionLock();
     try {
-      await repo.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
-    } on PasswordChangeError catch (e) {
-      if (e.failure == PasswordChangeFailure.sessionExpired) {
-        state = AsyncValue.data(
-          AuthState(status: AuthStatus.expired, safeError: e.safeMessage),
+      try {
+        await repo.changePassword(
+          currentPassword: currentPassword,
+          newPassword: newPassword,
         );
+      } on PasswordChangeError catch (e) {
+        if (e.failure == PasswordChangeFailure.sessionExpired) {
+          state = AsyncValue.data(
+            AuthState(status: AuthStatus.expired, safeError: e.safeMessage),
+          );
+        }
+        rethrow;
       }
-      rethrow;
+      state = const AsyncValue.data(
+        AuthState(
+          status: AuthStatus.unauthenticated,
+          safeNotice: kPasswordChangedNotice,
+        ),
+      );
+    } finally {
+      release();
     }
-    state = const AsyncValue.data(
-      AuthState(
-        status: AuthStatus.unauthenticated,
-        safeNotice: kPasswordChangedNotice,
-      ),
-    );
   }
 
   Future<void> logout() async {
+    _bumpEpoch(); // ciclo: logout
     // Ω4C PR-13 — hook de ciclo: logout → APP_DISCONNECT (antes de limpar a
     // sessao, para ainda conhecer o tenant). Best-effort.
     // B-USERS-ACESSO-SEG (T2): só sessão autenticada registrou APP_CONNECT; o
@@ -179,18 +216,24 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
     // B-APP-SESSAO-RENOVA (D2): o "Sair" entrega ao servidor o token de
     // renovação VIGENTE guardado, e só depois limpa o aparelho. O servidor
-    // revoga a sessão inteira com esse token (S2).
-    final storedRefreshToken = await _readStoredRefreshToken();
-    if (storedRefreshToken != null) {
-      // dart format off
-      await ref.read(authRepositoryProvider).revokeRefreshToken(storedRefreshToken);
-      // dart format on
+    // revoga a sessão inteira com esse token (S2). Dentro da trava (D3b): uma
+    // renovação que gravou antes lê aqui o token que acabou de gravar.
+    final release = await _enterSessionLock();
+    try {
+      final storedRefreshToken = await _readStoredRefreshToken();
+      if (storedRefreshToken != null) {
+        // dart format off
+        await ref.read(authRepositoryProvider).revokeRefreshToken(storedRefreshToken);
+        // dart format on
+      }
+      final repo = ref.read(authRepositoryProvider);
+      await repo.logout();
+      state = const AsyncValue.data(
+        AuthState(status: AuthStatus.unauthenticated),
+      );
+    } finally {
+      release();
     }
-    final repo = ref.read(authRepositoryProvider);
-    await repo.logout();
-    state = const AsyncValue.data(
-      AuthState(status: AuthStatus.unauthenticated),
-    );
   }
 
   Future<String?> _readStoredRefreshToken() async {
@@ -222,6 +265,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     String? failedAccessToken,
     int requestEpoch,
   ) {
+    // dart format off
+    if (requestEpoch != _epoch) return Future.value(const SessionSuperseded()); // pedido de outra sessão nunca usa o token desta
+    // dart format on
     final current = liveAccessToken;
     if (current == null) return Future.value(const SessionSuperseded());
     // dart format off
@@ -231,7 +277,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
     final inFlight = _inFlight;
     if (inFlight != null) return inFlight; // uma renovação por vez
-    final renewal = _renew();
+    final renewal = _renew(_epoch);
     _inFlight = renewal;
     return renewal.whenComplete(() {
       if (identical(_inFlight, renewal)) _inFlight = null;
@@ -240,16 +286,16 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   /// O pedido repetido também levou 401: o servidor não aceita mais a sessão.
   Future<void> expireSession(int requestEpoch) async {
-    await _expire();
+    await _expireIfEpoch(requestEpoch);
   }
 
-  Future<SessionRenewalOutcome> _renew() async {
+  Future<SessionRenewalOutcome> _renew(int epoch) async {
     final repo = ref.read(authRepositoryProvider);
     final AuthSession fresh;
     try {
       fresh = await repo.refresh();
     } on ApiUnauthorizedError {
-      return _expire();
+      return _expireIfEpoch(epoch);
     } on ApiError {
       return const SessionUnreachable();
     } catch (error) {
@@ -258,40 +304,70 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       return const SessionRenewalFailed(); // falha local: a sessão fica
       // dart format on
     }
-    await repo.commitRefreshed(fresh);
-    state = AsyncData(
-      AuthState(status: AuthStatus.authenticated, session: fresh),
-    );
-    return SessionRenewed(fresh.tokens.accessToken);
-  }
-
-  /// A única transição de "sessão morta": só a recusa do servidor chega aqui.
-  /// Não chama `/auth/logout`: o servidor já recusou.
-  Future<SessionRenewalOutcome> _expire() async {
-    final sub = state.asData?.value.session?.user.sub;
-    _epoch++;
-    _inFlight = null;
-    final repo = ref.read(authRepositoryProvider);
-    try {
-      await repo.clearSession();
-    } catch (error) {
-      _reportLocalFailure(error);
-    }
+    // D3b: a gravação da renovação, dentro da trava, só vale para a época que
+    // a começou. Superada antes de gravar: não grava nada (o servidor cobre o
+    // token novo, S2/S3). Superada depois de gravar: não publica; quem mudou a
+    // época, e espera a trava, sobrescreve ou limpa o armazenamento.
+    final release = await _enterSessionLock();
     try {
       // dart format off
-        await ref.read(authTokenStorageProvider).clearBootstrap(); // expirou: o cache morre com a sessão
+      if (epoch != _epoch) return const SessionSuperseded(); // gravação: a época ainda vale?
       // dart format on
-    } catch (error) {
-      _reportLocalFailure(error);
+      try {
+        await repo.commitRefreshed(fresh);
+      } catch (error) {
+        _reportLocalFailure(error);
+        // dart format off
+        return const SessionRenewalFailed(); // gravação falhou: a sessão em memória não muda
+        // dart format on
+      }
+      // dart format off
+      if (epoch != _epoch) return const SessionSuperseded(); // superada depois de gravar: quem mudou a época limpa
+      // dart format on
+      state = AsyncData(
+        AuthState(status: AuthStatus.authenticated, session: fresh),
+      );
+      return SessionRenewed(fresh.tokens.accessToken);
+    } finally {
+      release();
     }
-    state = AsyncData(
-      AuthState(
-        status: AuthStatus.expired,
-        safeError: kSessionExpiredMessage,
-        expiredOwnerSub: sub,
-      ),
-    );
-    return const SessionDead();
+  }
+
+  /// A única transição de "sessão morta": só a recusa do servidor chega aqui,
+  /// e só para a própria época. Não chama `/auth/logout`: o servidor já
+  /// recusou.
+  Future<SessionRenewalOutcome> _expireIfEpoch(int epoch) async {
+    // dart format off
+    if (epoch != _epoch) return const SessionSuperseded(); // expirar só a própria época
+    // dart format on
+    final sub = state.asData?.value.session?.user.sub;
+    _bumpEpoch();
+    final release = await _enterSessionLock();
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      try {
+        await repo.clearSession();
+      } catch (error) {
+        _reportLocalFailure(error);
+      }
+      try {
+        // dart format off
+        await ref.read(authTokenStorageProvider).clearBootstrap(); // expirou: o cache morre com a sessão
+        // dart format on
+      } catch (error) {
+        _reportLocalFailure(error);
+      }
+      state = AsyncData(
+        AuthState(
+          status: AuthStatus.expired,
+          safeError: kSessionExpiredMessage,
+          expiredOwnerSub: sub,
+        ),
+      );
+      return const SessionDead();
+    } finally {
+      release();
+    }
   }
 
   Future<void> _clearDevice(AuthRepository repo) async {

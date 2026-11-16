@@ -64,6 +64,17 @@ class Terreno {
   Completer<void>? portaoLento;
   String sairModo = 'ok';
 
+  /// F3a: segura a RESPOSTA da renovação depois de o servidor já ter decidido
+  /// (trocado ou reenviado); os tokens da resposta ficam os daquele instante.
+  Completer<void>? portaoResposta;
+
+  /// F3a: segura o "Sair" antes de o servidor o processar.
+  Completer<void>? portaoSair;
+
+  /// F3a: o login abre uma família nova (outra pessoa ou a mesma).
+  int logins = 0;
+  int trocasSenha = 0;
+
   int get gs => gets.values.fold(0, (a, b) => a + b);
 
   Future<void> start() async {
@@ -78,6 +89,11 @@ class Terreno {
     final raw = await utf8.decoder.bind(r).join();
     if (path == '/api/v1/auth/refresh') return _refresh(r, raw);
     if (path == '/api/v1/auth/logout') return _logout(r, raw);
+    if (path == '/api/v1/auth/login') return _login(r, raw);
+    if (path == '/api/v1/auth/password') {
+      trocasSenha++;
+      return _json(r, 200, {'data': <String, dynamic>{}});
+    }
     gets[path] = (gets[path] ?? 0) + 1;
     if (path == '/lento' && portaoLento != null) await portaoLento!.future;
     final bearer = r.headers.value('authorization');
@@ -139,6 +155,9 @@ class Terreno {
       if (usados.contains(token)) revogada = true;
       return _recusa(r);
     }
+    final acessoDaResposta = acesso;
+    final vigenteDaResposta = vigente;
+    if (portaoResposta != null) await portaoResposta!.future;
     if (passo == 'fecha') {
       final socket = await r.response.detachSocket(writeHeaders: false);
       socket.destroy();
@@ -149,13 +168,42 @@ class Terreno {
     }
     return _json(r, 200, {
       'data': {
-        'access_token': acesso,
-        'accessToken': acesso,
+        'access_token': acessoDaResposta,
+        'accessToken': acessoDaResposta,
         'token_type': 'Bearer',
         'expires_in': 900,
-        'refresh_token': vigente,
-        'refreshToken': vigente,
+        'refresh_token': vigenteDaResposta,
+        'refreshToken': vigenteDaResposta,
         'session_id': 's1',
+      },
+    });
+  }
+
+  /// O login abre uma família nova: `RL<n>` e `AL<n>`; o usuário sai do e-mail
+  /// (`b@t1.test` → `b`) e da organização pedida (`t1` sem pedido).
+  Future<void> _login(HttpRequest r, String raw) async {
+    final corpo = _corpo(raw);
+    logins++;
+    revogada = false;
+    anterior = null;
+    vinculo = '';
+    usados.clear();
+    vigente = 'RL$logins';
+    acesso = 'AL$logins';
+    final email = corpo['email'] as String? ?? 'x@t1.test';
+    return _json(r, 200, {
+      'data': {
+        'access_token': acesso,
+        'refresh_token': vigente,
+        'expires_in': 900,
+        'user': {
+          'id': email.split('@').first,
+          'email': email,
+          'tenant_id': corpo['tenantId'] as String? ?? 't1',
+        },
+        'roles': [
+          {'key': 'field_technician'},
+        ],
       },
     });
   }
@@ -171,6 +219,7 @@ class Terreno {
   Future<void> _logout(HttpRequest r, String raw) async {
     final corpo = _corpo(raw);
     corposSair.add(corpo);
+    if (portaoSair != null) await portaoSair!.future;
     if (sairModo == '503') {
       return _json(r, 503, {
         'error': {'reason': 'logout_failed'},
@@ -247,6 +296,7 @@ class ArmazenamentoInstavel extends InMemoryAuthTokenStorage {
   bool lancaAoGravar = false;
   bool lancaAoLimparBootstrap = false;
   int gravacoes = 0;
+  final gravados = <String?>[];
   Completer<void>? portaoGravacao;
 
   @override
@@ -258,6 +308,7 @@ class ArmazenamentoInstavel extends InMemoryAuthTokenStorage {
   @override
   Future<void> saveSession(AuthSession session) async {
     gravacoes++;
+    gravados.add(session.tokens.refreshToken);
     if (portaoGravacao != null) await portaoGravacao!.future;
     if (lancaAoGravar) throw StateError('armazenamento indisponível');
     return super.saveSession(session);
@@ -650,6 +701,75 @@ void main() {
       expect(await pedir(dio2), isA<ApiSessionExpiredError>());
       expect(app2.estado?.status, AuthStatus.expired);
       expect(t2.revogada, isTrue, reason: 'o token velho derrubou a família');
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  // ── F3a: a gravação da renovação que falha (N22) ───────────────────────────
+
+  test(
+    '[T10c] o saveSession lança na gravação: estado e sessão em memória intactos, com relato; com a janela fechada, o token velho derruba a família e o estado vai a expired',
+    () async {
+      terreno.janelaAberta = false;
+      await app.storage.saveSession(sessaoGuardada());
+      await app.abrir();
+      final dio = app.cliente();
+      app.storage.lancaAoGravar = true;
+
+      final r = await pedir(dio);
+
+      expect(r, isA<ApiServerError>());
+      expect((r as ApiServerError).safeMessage, kSessionCheckFailedMessage);
+      expect(app.estado?.status, AuthStatus.authenticated);
+      expect(app.estado?.session?.tokens.refreshToken, 'R0');
+      expect(app.reportes, ['StateError']);
+      expect(terreno.trocas, 1, reason: 'o servidor já trocou');
+
+      app.storage.lancaAoGravar = false;
+      final r2 = await pedir(dio);
+
+      expect(r2, isA<ApiSessionExpiredError>());
+      expect(app.estado?.status, AuthStatus.expired);
+      expect(
+        terreno.revogada,
+        isTrue,
+        reason: 'o reuso do R0 derrubou a família',
+      );
+      final r1 = await createExpenseHttpClient(ApiConfig(baseUrl: terreno.base))
+          .post<dynamic>(
+            '/api/v1/auth/refresh',
+            data: {'refreshToken': 'R1'},
+            options: Options(validateStatus: (_) => true),
+          );
+      expect(r1.statusCode, 401, reason: 'o R1 não renova mais');
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test(
+    '[T10d] o saveSession lança na gravação; com a janela aberta e o armazenamento bom, o pedido seguinte recebe o mesmo sucessor e grava: 0 expired, 0 revogação',
+    () async {
+      await app.storage.saveSession(sessaoGuardada());
+      await app.abrir();
+      final dio = app.cliente();
+      final estados = <AuthStatus>[];
+      app.container.listen<AsyncValue<AuthState>>(authStateProvider, (_, n) {
+        final s = n.asData?.value.status;
+        if (s != null) estados.add(s);
+      });
+      app.storage.lancaAoGravar = true;
+
+      expect(await pedir(dio), isA<ApiServerError>());
+      app.storage.lancaAoGravar = false;
+      expect(await pedir(dio), 200);
+
+      expect(terreno.trocas, 1);
+      expect(terreno.reenvios, 1, reason: 'o mesmo sucessor');
+      expect(terreno.revogada, isFalse);
+      expect(app.estado?.status, AuthStatus.authenticated);
+      expect(app.estado?.session?.tokens.refreshToken, 'R1');
+      expect((await app.storage.loadSession())?.tokens.refreshToken, 'R1');
+      expect(estados, isNot(contains(AuthStatus.expired)));
     },
     timeout: const Timeout(Duration(seconds: 20)),
   );
