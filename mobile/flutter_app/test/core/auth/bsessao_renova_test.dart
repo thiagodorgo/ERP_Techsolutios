@@ -20,6 +20,7 @@ import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_repository.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
 import 'package:erp_techsolutions_mobile/core/auth/session_http_client.dart';
+import 'package:erp_techsolutions_mobile/core/auth/session_renewal.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
@@ -661,6 +662,41 @@ void main() {
       });
     },
     timeout: const Timeout(Duration(seconds: 30)),
+  );
+
+  // ── F5: renovar não recarrega as telas (D6) ────────────────────────────────
+
+  test(
+    '[T6] renovação com o mesmo usuário e o mesmo identificador: 0 reconstrução dos clientes e 0 notificação do bootstrap',
+    () async {
+      await app.storage.saveSession(sessaoGuardada(sessionNonce: 'n-t6'));
+      await app.abrir(extras: [remoteAuthModeProvider.overrideWithValue(true)]);
+      final c = app.container;
+      expect(c.read(workOrderRemoteApiProvider), isNotNull);
+      await c.read(bootstrapNotifierProvider.future);
+      await c.read(bootstrapSessionProvider.future);
+      final configs = <Object?>[];
+      final clientes = <Object?>[];
+      final bootstraps = <Object?>[];
+      c.listen(authenticatedApiConfigProvider, (_, n) => configs.add(n));
+      c.listen(workOrderRemoteApiProvider, (_, n) => clientes.add(n));
+      c.listen(bootstrapNotifierProvider, (_, n) => bootstraps.add(n));
+      c.listen(bootstrapSessionProvider, (_, n) => bootstraps.add(n));
+
+      final r = await app.notifier.renewAfterUnauthorized(
+        'A-vencido',
+        app.notifier.epoch,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(r, isA<SessionRenewed>());
+      expect(app.estado?.session?.tokens.accessToken, 'A1');
+      expect(app.estado?.session?.sessionNonce, 'n-t6');
+      expect(configs, isEmpty, reason: 'o config não muda');
+      expect(clientes, isEmpty, reason: '0 reconstrução dos clientes');
+      expect(bootstraps, isEmpty, reason: '0 notificação do bootstrap');
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
   );
 
   test('[T8] as frases do 401, do 403 e da senha errada', () {

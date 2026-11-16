@@ -426,12 +426,36 @@ final routerNotifierProvider = Provider<RouterNotifier>((ref) {
 // B-USERS-ACESSO-SEG (T2): o token só sai para o resto do app com sessão
 // AUTENTICADA. O token da sessão restrita (senha provisória) só serve à troca
 // de senha, que o repositório de auth envia por conta própria.
+//
+// B-APP-SESSAO-RENOVA (D6): vigia só a CHAVE da sessão (`sessionKeyProvider`),
+// nunca o token. Renovar troca o token e não muda a chave: nenhum cliente é
+// reconstruído. O token daqui só serve para saber se há sessão; o cliente
+// autenticado põe o token VIVO em cada pedido (`sessionHttpClient`).
 final authenticatedApiConfigProvider = Provider<ApiConfig>((ref) {
-  final authState = ref.watch(authStateProvider);
-  final token = authState.maybeWhen(
-    data: (state) =>
-        state.isAuthenticated ? state.session?.tokens.accessToken : null,
-    orElse: () => null,
-  );
-  return ApiConfig(accessToken: token);
+  // dart format off
+  final key = ref.watch(sessionKeyProvider); // só a identidade, nunca o token
+  // dart format on
+  if (key == null) return const ApiConfig();
+  final session = ref.read(authStateProvider).asData?.value.session;
+  return ApiConfig(accessToken: session?.tokens.accessToken);
 });
+
+/// B-APP-SESSAO-RENOVA (D6): a chave da sessão autenticada
+/// (`sessionKeyOf`), ou `null` sem sessão autenticada. Muda no login, no "Sair",
+/// na expiração e na troca de pessoa, organização ou sessão; não muda na
+/// renovação.
+final sessionKeyProvider = Provider<String?>((ref) {
+  return ref.watch(
+    authStateProvider.select((async) => _sessionKey(async.asData?.value)),
+  );
+});
+
+String? _sessionKey(AuthState? state) {
+  final session = state?.session;
+  if (state == null || !state.isAuthenticated || session == null) return null;
+  return sessionKeyOf(session);
+}
+
+/// Para quem precisa esperar a sessão (os dois `build` do bootstrap): a chave
+/// da sessão autenticada, pelo `selectAsync`.
+String? sessionKeyOfState(AuthState state) => _sessionKey(state);

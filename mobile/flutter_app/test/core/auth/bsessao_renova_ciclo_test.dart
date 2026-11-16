@@ -68,8 +68,15 @@ Override bootstrapNoTerreno(Terreno t, AuthTokenStorage storage) =>
       bootstrapRemoto(t, storage),
     );
 
-Future<BootstrapSession> bootstrapDe(ProviderContainer c) =>
-    c.read(bootstrapNotifierProvider.future);
+/// O bootstrap de agora. Desde a F5 (D6) o bootstrap segue só a CHAVE da
+/// sessão (`selectAsync`), e a troca de sessão chega a ele na microtarefa
+/// seguinte: uma leitura na mesma continuação do `login()` ainda vê o valor
+/// anterior (medido; registrado no diário do bloco). A leitura espera essa
+/// microtarefa.
+Future<BootstrapSession> bootstrapDe(ProviderContainer c) async {
+  await Future<void>.delayed(Duration.zero);
+  return c.read(bootstrapNotifierProvider.future);
+}
 
 /// O app local (sem servidor): o repositório e o bootstrap de desenvolvimento.
 ProviderContainer appLocal(AuthTokenStorage storage) => ProviderContainer(

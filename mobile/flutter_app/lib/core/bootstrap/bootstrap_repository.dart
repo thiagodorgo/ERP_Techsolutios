@@ -556,16 +556,18 @@ final mobileBootstrapRepositoryProvider = Provider<MobileBootstrapRepository>((
 // HomeScreen now watches bootstrapNotifierProvider for retry/switchTenant.
 
 final bootstrapSessionProvider = FutureProvider<BootstrapSession>((ref) async {
-  final authState = await ref.watch(authStateProvider.future);
+  // B-APP-SESSAO-RENOVA (D6): só a chave da sessão; renovar não recarrega.
+  final key = await ref.watch(authStateProvider.selectAsync(sessionKeyOfState));
+  final session = ref.read(authStateProvider).asData?.value.session;
   final repo = ref.watch(mobileBootstrapRepositoryProvider);
 
-  if (authState.isAuthenticated && authState.session != null) {
+  if (key != null && session != null) {
     final cached = await repo.restoreCached();
-    if (cached != null && bootstrapBelongsTo(cached, authState.session!)) {
+    if (cached != null && bootstrapBelongsTo(cached, session)) {
       return cached;
     }
 
-    final fetched = await repo.fetch(authState.session);
+    final fetched = await repo.fetch(session);
     await repo.cache(fetched);
     return fetched;
   }
@@ -589,16 +591,20 @@ class BootstrapNotifier extends AsyncNotifier<BootstrapSession> {
 
   @override
   Future<BootstrapSession> build() async {
-    final authState = await ref.watch(authStateProvider.future);
+    // B-APP-SESSAO-RENOVA (D6): só a chave da sessão; renovar não recarrega.
+    final key = await ref.watch(
+      authStateProvider.selectAsync(sessionKeyOfState),
+    );
+    final session = ref.read(authStateProvider).asData?.value.session;
     final repo = ref.watch(mobileBootstrapRepositoryProvider);
 
-    if (authState.isAuthenticated && authState.session != null) {
+    if (key != null && session != null) {
       final cached = await repo.restoreCached();
-      if (cached != null && bootstrapBelongsTo(cached, authState.session!)) {
+      if (cached != null && bootstrapBelongsTo(cached, session)) {
         return cached;
       }
 
-      final fetched = await repo.fetch(authState.session);
+      final fetched = await repo.fetch(session);
       await repo.cache(fetched);
       return fetched;
     }
