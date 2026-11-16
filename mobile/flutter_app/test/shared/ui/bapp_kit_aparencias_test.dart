@@ -2,6 +2,8 @@
 // igual a antes sem os parâmetros novos e botão com eles; MobileIntroHeader,
 // MobileStatusBlock, MobileStatusCard e MobileDangerOutlineButton, com o
 // contraste AA isolado.
+import 'dart:ui' show Tristate;
+
 import 'package:erp_techsolutions_mobile/shared/theme/erp_mobile_theme.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/mobile_kit.dart';
 import 'package:flutter/material.dart';
@@ -77,10 +79,9 @@ void main() {
         ),
       ),
     );
-    expect(
-      t.getSemantics(find.byKey(const Key('tile'))),
-      containsSemantics(isButton: true, isSelected: true),
-    );
+    final flags = t.getSemantics(find.byKey(const Key('tile'))).flagsCollection;
+    expect(flags.isButton, isTrue);
+    expect(flags.isSelected, Tristate.isTrue);
     await t.tap(find.byKey(const Key('tile')));
     expect(taps, 1);
     Focus.of(t.element(find.text('GPS'))).requestFocus();
