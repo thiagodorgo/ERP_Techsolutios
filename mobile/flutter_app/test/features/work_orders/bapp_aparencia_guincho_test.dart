@@ -3,6 +3,8 @@
 // escolha do Perfil, só para OS de guincho; os 13 estados da maquete (mais o
 // "verificando" da A) na B e na C; a trava, a prévia da comparação, a cor do
 // passo concluído (`P-APP-TEMA-SUCESSO-TERTIARY`) e as peças novas do kit.
+import 'dart:math' as math;
+
 import 'package:erp_techsolutions_mobile/core/appearance/app_appearance.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
@@ -99,6 +101,14 @@ MobileRequirement _req(WidgetTester t, String prefix) => t
     .widget<MobileRequirementList>(find.byType(MobileRequirementList))
     .items
     .firstWhere((r) => r.text.startsWith(prefix));
+
+/// O contraste WCAG de [c] sobre o branco.
+double _contrastOnWhite(Color c) {
+  double ch(double x) =>
+      x <= 0.03928 ? x / 12.92 : math.pow((x + 0.055) / 1.055, 2.4).toDouble();
+  final l = 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+  return 1.05 / (l + 0.05);
+}
 
 const _noColeta = Key('guincho-b-no-coleta');
 const _noEntrega = Key('guincho-b-no-entrega');
@@ -897,6 +907,49 @@ void main() {
         ),
       );
       await expectLater(t, meetsGuideline(textContrastGuideline));
+      // O `textContrastGuideline` pula o texto com `semanticsLabel` (medido:
+      // um `Text` com rótulo próprio e cor de 1,9:1 passa). Então o contraste
+      // de cada texto das peças novas é medido também pela cor, contra o
+      // branco do cartão: 4,5:1 (AA, texto pequeno). Fora da conta: a pílula
+      // o botão cheio, que são do kit de antes, e os
+      // ícones (glifos, não texto).
+      final pieces = find.byWidgetPredicate(
+        (w) =>
+            w is MobilePhaseTimeline ||
+            w is MobilePhaseCard ||
+            w is MobileRequirementList ||
+            w is MobileStickyBar,
+      );
+      final low = <String>[];
+      for (final p in t.renderObjectList<RenderParagraph>(
+        find.descendant(of: pieces, matching: find.byType(RichText)),
+      )) {
+        final excluded = find.ancestor(
+          of: find.byElementPredicate((e) => e.renderObject == p),
+          matching: find.byWidgetPredicate(
+            (w) => w is MobilePill || w is FilledButton || w is Icon,
+          ),
+        );
+        if (excluded.evaluate().isNotEmpty) continue;
+        void visit(InlineSpan span, Color? inherited) {
+          final color = span.style?.color ?? inherited;
+          if (span is TextSpan) {
+            final text = span.text ?? '';
+            if (text.trim().isNotEmpty && color != null) {
+              final ratio = _contrastOnWhite(color);
+              if (ratio < 4.5) {
+                low.add('"$text" ${ratio.toStringAsFixed(2)}:1');
+              }
+            }
+            for (final c in span.children ?? const <InlineSpan>[]) {
+              visit(c, color);
+            }
+          }
+        }
+
+        visit(p.text, null);
+      }
+      expect(low, isEmpty, reason: low.join(r' | '));
       handle.dispose();
     });
   });
