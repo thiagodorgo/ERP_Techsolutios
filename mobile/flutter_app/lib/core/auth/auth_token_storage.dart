@@ -11,6 +11,7 @@ class _K {
   static const tokenExpiryMs = 'erp.token_expiry_ms';
   static const userJson = 'erp.user_safe_json';
   static const bootstrapJson = 'erp.bootstrap_json';
+  static const sessionNonce = 'erp.session_nonce';
 }
 
 abstract class AuthTokenStorage {
@@ -48,6 +49,9 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
       key: _K.userJson,
       value: jsonEncode(_userToSafeJson(session.user)),
     );
+    // dart format off
+    if (session.sessionNonce != null) await _storage.write(key: _K.sessionNonce, value: session.sessionNonce); // a sessão guardada leva o identificador
+    // dart format on
   }
 
   @override
@@ -69,6 +73,9 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
       final userJson = jsonDecode(userJsonStr) as Map<String, dynamic>;
       final user = _userFromSafeJson(userJson);
       final refreshToken = await _storage.read(key: _K.refreshToken);
+      // dart format off
+      final sessionNonce = await _storage.read(key: _K.sessionNonce); // o identificador volta com a sessão
+      // dart format on
 
       return AuthSession(
         tokens: AuthTokens(
@@ -77,6 +84,7 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
           expiresAt: expiresAt,
         ),
         user: user,
+        sessionNonce: sessionNonce,
       );
     } catch (_) {
       // Corrupted storage — clear silently and force re-login
@@ -92,6 +100,7 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
       _storage.delete(key: _K.refreshToken),
       _storage.delete(key: _K.tokenExpiryMs),
       _storage.delete(key: _K.userJson),
+      _storage.delete(key: _K.sessionNonce),
     ]);
   }
 

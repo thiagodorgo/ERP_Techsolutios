@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 
 import '../network/api_error.dart';
 import '../network/http_client.dart';
@@ -283,6 +284,9 @@ class LocalDevAuthRepository implements AuthRepository {
         ],
         scope: 'tenant',
       ),
+      // dart format off
+      sessionNonce: const Uuid().v4(), // cada login é uma sessão nova (local)
+      // dart format on
     );
   }
 }
@@ -411,6 +415,9 @@ class DioAuthRepository implements AuthRepository {
         // Ausente conta como sessão inteira. Nunca no `_sessionFromJson`, que o
         // `refresh()` também usa: o refresh mantém a sessão que renova.
         mustChangePassword: _loginBody(json)['must_change_password'] == true,
+        // dart format off
+        sessionNonce: const Uuid().v4(), // cada login é uma sessão nova (remoto)
+        // dart format on
       );
       _current = session;
       if (session.mustChangePassword) {

@@ -23,6 +23,7 @@ class BootstrapSessionCodec {
     'mobilePolicy': _mobilePolicyToJson(s.mobilePolicy),
     'expenseCategories': s.expenseCategories.map(_categoryToJson).toList(),
     'expensePolicy': _expensePolicyToJson(s.expensePolicy),
+    'ownerKey': s.ownerKey,
   };
 
   static Map<String, Object?> _tenantToJson(TenantContext t) => {
@@ -88,6 +89,7 @@ class BootstrapSessionCodec {
     expensePolicy: _expensePolicyFromJson(
       j['expensePolicy'] as Map<String, dynamic>,
     ),
+    ownerKey: j['ownerKey'] as String?,
   );
 
   static TenantContext _tenantFromJson(Map<String, dynamic> j) => TenantContext(

@@ -24,6 +24,7 @@ import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 // ── O terreno: o servidor local com o contrato novo ──────────────────────────
@@ -75,6 +76,13 @@ class Terreno {
   int logins = 0;
   int trocasSenha = 0;
 
+  /// F3b: o bootstrap do servidor (`GET /mobile/bootstrap`): a pessoa e a
+  /// organização do token de acesso (o login as registra), a organização
+  /// pedida na troca, e as permissões de agora.
+  final contas = <String, (String, String)>{};
+  List<String> permissoesBootstrap = const ['work_orders:read'];
+  int bootstraps = 0;
+
   int get gs => gets.values.fold(0, (a, b) => a + b);
 
   Future<void> start() async {
@@ -90,6 +98,7 @@ class Terreno {
     if (path == '/api/v1/auth/refresh') return _refresh(r, raw);
     if (path == '/api/v1/auth/logout') return _logout(r, raw);
     if (path == '/api/v1/auth/login') return _login(r, raw);
+    if (path == '/api/v1/mobile/bootstrap') return _bootstrap(r);
     if (path == '/api/v1/auth/password') {
       trocasSenha++;
       return _json(r, 200, {'data': <String, dynamic>{}});
@@ -191,6 +200,10 @@ class Terreno {
     vigente = 'RL$logins';
     acesso = 'AL$logins';
     final email = corpo['email'] as String? ?? 'x@t1.test';
+    contas[acesso] = (
+      email.split('@').first,
+      corpo['tenantId'] as String? ?? 't1',
+    );
     return _json(r, 200, {
       'data': {
         'access_token': acesso,
@@ -236,6 +249,27 @@ class Terreno {
     }
     return _json(r, 200, {
       'data': {'revoked': true},
+    });
+  }
+
+  Future<void> _bootstrap(HttpRequest r) {
+    bootstraps++;
+    final bearer = r.headers.value('authorization') ?? '';
+    final token = bearer.startsWith('Bearer ') ? bearer.substring(7) : '';
+    final (sub, tenantDoLogin) = contas[token] ?? ('u1', 't1');
+    final tenant = r.uri.queryParameters['tenantId'] ?? tenantDoLogin;
+    return _json(r, 200, {
+      'user': {
+        'sub': sub,
+        'email': '$sub@$tenant.test',
+        'tenantRole': 'field_technician',
+        'tenantRoles': ['field_technician'],
+        'permissions': permissoesBootstrap,
+      },
+      'activeTenant': {
+        'tenantId': tenant,
+        'displayName': 'Organização $tenant',
+      },
     });
   }
 
@@ -349,7 +383,10 @@ class Aparelho {
   late final Provider<Dio> _cliente;
 
   /// Abre o app (o `build` do notifier corre aqui).
-  Future<AuthState> abrir({String? authBase}) async {
+  Future<AuthState> abrir({
+    String? authBase,
+    List<Override> extras = const [],
+  }) async {
     authDio = createExpenseHttpClient(
       ApiConfig(
         baseUrl: authBase ?? terreno.base,
@@ -364,6 +401,7 @@ class Aparelho {
           repositorioRemoto(authDio, storage),
         ),
         authFailureReporterProvider.overrideWithValue(reportes.add),
+        ...extras,
       ],
     );
     _cliente = Provider<Dio>(

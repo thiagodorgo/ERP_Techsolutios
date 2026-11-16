@@ -1,4 +1,12 @@
 // B-APP-SESSAO-RENOVA (item 68 do portão) — os tipos da renovação da sessão.
+import '../../features/auth/auth_models.dart';
+
+/// D6c: a chave da SESSÃO (`sub|organização|identificador do login`): o dono
+/// do bootstrap guardado. Duas sessões da mesma pessoa na mesma organização
+/// têm chaves diferentes.
+// dart format off
+String sessionKeyOf(AuthSession s) => '${s.user.sub}|${s.user.tenantId}|${s.sessionNonce ?? ''}'; // a chave é da sessão, não só da pessoa
+// dart format on
 
 /// A renovação recebeu uma resposta que o app não conseguiu ler, ou o
 /// aparelho falhou ao guardar a sessão. É falha LOCAL: a sessão não expira
