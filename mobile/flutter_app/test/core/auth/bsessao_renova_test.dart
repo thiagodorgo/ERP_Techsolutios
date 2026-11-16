@@ -270,9 +270,21 @@ class ArmazenamentoInstavel extends InMemoryAuthTokenStorage {
   }
 }
 
-/// Monta o repositório remoto do app sobre o terreno.
-DioAuthRepository repositorioRemoto(Dio dio, AuthTokenStorage storage) =>
-    DioAuthRepository(client: dio, storage: storage);
+/// Monta o repositório remoto do app sobre o terreno (os reenvios em ms).
+DioAuthRepository repositorioRemoto(
+  Dio dio,
+  AuthTokenStorage storage, {
+  List<Duration> delays = const [
+    Duration(milliseconds: 50),
+    Duration(milliseconds: 150),
+  ],
+  Duration deadline = const Duration(seconds: 2),
+}) => DioAuthRepository(
+  client: dio,
+  storage: storage,
+  renewalRetryDelays: delays,
+  renewalRetryDeadline: deadline,
+);
 
 class Aparelho {
   Aparelho(this.terreno, {ArmazenamentoInstavel? storage})
@@ -640,5 +652,219 @@ void main() {
       expect(t2.revogada, isTrue, reason: 'o token velho derrubou a família');
     },
     timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  // ── F2b: o reenvio do mesmo token (D1b) e a prova de posse (D1c) ───────────
+
+  Future<(DioAuthRepository, Dio)> repoSobre(
+    Terreno t, {
+    List<Duration> delays = const [
+      Duration(milliseconds: 50),
+      Duration(milliseconds: 150),
+    ],
+    Duration deadline = const Duration(seconds: 2),
+  }) async {
+    final storage = InMemoryAuthTokenStorage();
+    await storage.saveSession(sessaoGuardada());
+    final dio = createExpenseHttpClient(
+      ApiConfig(baseUrl: t.base, connectTimeoutMs: 1000, receiveTimeoutMs: 500),
+    );
+    return (
+      repositorioRemoto(dio, storage, delays: delays, deadline: deadline),
+      dio,
+    );
+  }
+
+  test(
+    '[T11] o servidor troca e fecha a conexão: o app reenvia o mesmo token, recebe o mesmo sucessor, e o pedido repete com 200',
+    () async {
+      terreno.roteiro.add('fecha');
+      await app.storage.saveSession(sessaoGuardada());
+      await app.abrir();
+
+      expect(await pedir(app.cliente()), 200);
+      expect(terreno.trocas, 1);
+      expect(terreno.reenvios, 1);
+      expect(app.estado?.status, AuthStatus.authenticated);
+      expect(app.estado?.session?.tokens.refreshToken, 'R1');
+      expect(terreno.revogada, isFalse);
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test(
+    '[T11b] 400, 401 e 403 na renovação: 1 pedido em cada, e nenhum reenvio',
+    () async {
+      for (final status in ['400', '401', '403']) {
+        final t = Terreno();
+        await t.start();
+        try {
+          t.roteiro.add(status);
+          final (repo, _) = await repoSobre(t);
+          await expectLater(
+            repo.refresh(),
+            throwsA(isA<ApiSessionExpiredError>()),
+          );
+          expect(t.renovacoes, 1, reason: status);
+        } finally {
+          await t.stop();
+        }
+      }
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test(
+    '[T11c] três 503: 3 pedidos e para; a sessão fica (D7)',
+    () async {
+      terreno.roteiro.addAll(['503', '503', '503', '503']);
+      final (repo, _) = await repoSobre(terreno);
+      await expectLater(repo.refresh(), throwsA(isA<ApiServerError>()));
+      expect(terreno.renovacoes, 3);
+
+      await app.storage.saveSession(sessaoGuardada());
+      terreno.roteiro
+        ..clear()
+        ..addAll(['503', '503', '503']);
+      await app.abrir();
+      expect(await pedir(app.cliente()), isA<ApiNetworkError>());
+      expect(app.estado?.status, AuthStatus.authenticated);
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test(
+    '[T11d] com esperas de 50 ms e 150 ms e prazo de 120 ms: 2 pedidos',
+    () async {
+      terreno.roteiro.addAll(['503', '503', '503']);
+      final (repo, _) = await repoSobre(
+        terreno,
+        deadline: const Duration(milliseconds: 120),
+      );
+      await expectLater(repo.refresh(), throwsA(isA<ApiServerError>()));
+      expect(terreno.renovacoes, 2);
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test('[T11e] a tabela do renewalCanRetry', () {
+    final options = RequestOptions(path: '/api/v1/auth/refresh');
+    DioException sem(DioExceptionType type) =>
+        DioException(requestOptions: options, type: type);
+    DioException com(int status) => DioException(
+      requestOptions: options,
+      type: DioExceptionType.badResponse,
+      response: Response(requestOptions: options, statusCode: status),
+    );
+    const delays = [Duration(seconds: 1), Duration(seconds: 3)];
+    const deadline = Duration(seconds: 20);
+    bool pode(DioException e, {int attempt = 0, Duration? elapsed}) =>
+        renewalCanRetry(e, attempt, elapsed ?? Duration.zero, delays, deadline);
+
+    for (final type in [
+      DioExceptionType.unknown,
+      DioExceptionType.connectionError,
+      DioExceptionType.connectionTimeout,
+      DioExceptionType.sendTimeout,
+      DioExceptionType.receiveTimeout,
+    ]) {
+      expect(pode(sem(type)), isTrue, reason: type.name);
+    }
+    for (final type in [
+      DioExceptionType.cancel,
+      DioExceptionType.badCertificate,
+    ]) {
+      expect(pode(sem(type)), isFalse, reason: type.name);
+    }
+    for (final s in [500, 502, 503, 504]) {
+      expect(pode(com(s)), isTrue, reason: '$s');
+    }
+    for (final s in [400, 401, 403, 404, 409, 422]) {
+      expect(pode(com(s)), isFalse, reason: '$s');
+    }
+    expect(pode(com(503), attempt: 2), isFalse, reason: '3ª tentativa');
+    expect(
+      pode(com(503), elapsed: const Duration(seconds: 19, milliseconds: 500)),
+      isFalse,
+      reason: 'prazo estourado',
+    );
+  });
+
+  test(
+    '[T11f] a resposta se perde: o 1º corpo leva só o compromisso; o reenvio só a prova, que abre o compromisso; o mesmo R1',
+    () async {
+      terreno.roteiro.add('fecha');
+      final (repo, _) = await repoSobre(terreno);
+
+      final fresh = await repo.refresh();
+
+      expect(fresh.tokens.refreshToken, 'R1');
+      expect(terreno.trocas, 1);
+      expect(terreno.reenvios, 1);
+      expect(terreno.revogada, isFalse);
+      final c0 = terreno.corposRenovacao[0];
+      final c1 = terreno.corposRenovacao[1];
+      expect(c0.keys.toSet(), {'refreshToken', 'renewalCommit'});
+      expect(c1.keys.toSet(), {'refreshToken', 'renewalProof'});
+      expect(commitDaProva(c1['renewalProof'] as String), c0['renewalCommit']);
+      expect((c0['renewalCommit'] as String).length, 43);
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test(
+    '[T11g] a renovação esgota as tentativas (D7); a seguinte do mesmo token leva a prova e recebe o mesmo R1',
+    () async {
+      terreno.roteiro.addAll(['fecha', '503', '503']);
+      final (repo, _) = await repoSobre(terreno);
+      await expectLater(repo.refresh(), throwsA(isA<ApiServerError>()));
+      expect(terreno.trocas, 1);
+
+      final second = await repo.refresh();
+
+      expect(second.tokens.refreshToken, 'R1');
+      expect(terreno.corposRenovacao.last.keys.toSet(), {
+        'refreshToken',
+        'renewalProof',
+      });
+      expect(terreno.revogada, isFalse);
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test(
+    '[T11h] token novo, nonce novo: o 1º envio do token novo volta a levar o compromisso, outro',
+    () async {
+      final storage = InMemoryAuthTokenStorage();
+      await storage.saveSession(sessaoGuardada());
+      final dio = createExpenseHttpClient(ApiConfig(baseUrl: terreno.base));
+      final repo = repositorioRemoto(dio, storage);
+      final r1 = await repo.refresh();
+      await repo.commitRefreshed(r1);
+      final r2 = await repo.refresh();
+
+      expect(r2.tokens.refreshToken, 'R2');
+      final c0 = terreno.corposRenovacao[0];
+      final c1 = terreno.corposRenovacao[1];
+      expect(c0.keys.toSet(), {'refreshToken', 'renewalCommit'});
+      expect(c1.keys.toSet(), {'refreshToken', 'renewalCommit'});
+      expect(c1['renewalCommit'], isNot(c0['renewalCommit']));
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  test(
+    '[T11i] o vetor fixo: o nonce 0..31 dá o compromisso e a prova do C5',
+    () {
+      final nonce = List<int>.generate(32, (i) => i);
+      expect(renewalBindingFields(nonce, firstSend: true), {
+        'renewalCommit': 'Yw3NKWbEM2aRElRIu7JbT_QSpJxzLbLIq8G4WBvXEN0',
+      });
+      expect(renewalBindingFields(nonce, firstSend: false), {
+        'renewalProof': 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8',
+      });
+      expect(renewalNonce(), hasLength(32));
+      expect(renewalNonce(), isNot(renewalNonce()));
+    },
   );
 }

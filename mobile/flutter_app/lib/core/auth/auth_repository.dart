@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
 import '../network/api_error.dart';
@@ -326,14 +330,61 @@ ApiError mapLoginError(DioException e) {
   return mapDioError(e);
 }
 
+// ── B-APP-SESSAO-RENOVA (D1b, D1c): o reenvio do mesmo token e a prova de posse ──
+
+/// O segredo de 32 bytes que prende o sucessor ao aparelho (S5). Vive só em
+/// memória, junto do token que ele acompanha.
+List<int> renewalNonce() {
+  final random = Random.secure();
+  // dart format off
+  return List<int>.generate(32, (_) => random.nextInt(256)); // 32 bytes do gerador seguro
+  // dart format on
+}
+
+/// O 1º envio de um token leva só o compromisso (o SHA-256 do segredo); todo
+/// envio seguinte do mesmo token leva a prova (o segredo), em base64url sem `=`.
+// dart format off
+Map<String, String> renewalBindingFields(List<int> nonce, {required bool firstSend}) => firstSend
+    ? {'renewalCommit': base64Url.encode(sha256.convert(nonce).bytes).replaceAll('=', '')} // o 1º envio só compromete
+    : {'renewalProof': base64Url.encode(nonce).replaceAll('=', '')}; // o reenvio prova a posse
+// dart format on
+
+/// A renovação sem resposta, ou com 5xx, se repete com o MESMO token (o
+/// servidor devolve o mesmo sucessor, S4); a recusa (4xx) nunca se repete; e
+/// nenhuma tentativa começa depois do prazo.
+// dart format off
+bool renewalCanRetry(DioException e, int attempt, Duration elapsed, List<Duration> delays, Duration deadline) {
+  if (attempt >= delays.length || elapsed + delays[attempt] > deadline) return false; // o prazo cabe na janela do servidor
+  final status = e.response?.statusCode;
+  if (status != null) return status >= 500; // com resposta, só o 5xx se repete; a recusa (4xx) não
+  return e.type != DioExceptionType.cancel && e.type != DioExceptionType.badCertificate; // sem resposta, inclusive unknown: pode ter trocado no servidor
+}
+// dart format on
+
 class DioAuthRepository implements AuthRepository {
-  DioAuthRepository({required Dio client, required AuthTokenStorage storage})
-    : _client = client,
-      _storage = storage;
+  DioAuthRepository({
+    required Dio client,
+    required AuthTokenStorage storage,
+    List<Duration> renewalRetryDelays = kRenewalRetryDelays,
+    Duration renewalRetryDeadline = kRenewalRetryDeadline,
+  }) : _client = client,
+       _storage = storage,
+       _renewalRetryDelays = renewalRetryDelays,
+       _renewalRetryDeadline = renewalRetryDeadline;
+
+  // dart format off
+  static const kRenewalRetryDelays = <Duration>[Duration(seconds: 1), Duration(seconds: 3)]; // reenvio do mesmo token
+  static const kRenewalRetryDeadline = Duration(seconds: 20); // nenhuma tentativa começa depois disto; a janela do servidor é 60 s
+  // dart format on
 
   final Dio _client;
   final AuthTokenStorage _storage;
+  final List<Duration> _renewalRetryDelays;
+  final Duration _renewalRetryDeadline;
   AuthSession? _current;
+  // dart format off
+  ({String token, List<int> nonce, bool sent})? _renewalBinding; // a prova do reenvio: só em memória, nunca gravada
+  // dart format on
 
   @override
   Future<AuthSession> login({
@@ -418,17 +469,33 @@ class DioAuthRepository implements AuthRepository {
     if (refreshToken == null) throw const ApiSessionExpiredError(); // sem credencial: o 401 do servidor fica
     // dart format on
     final stored = loaded!;
-    final Response<dynamic> response;
-    try {
-      response = await _client.post(
-        '/api/v1/auth/refresh',
-        data: {'refreshToken': refreshToken},
-      );
-    } on DioException catch (e) {
-      throw _refreshFailure(e);
+    // dart format off
+    final binding = _renewalBinding?.token == refreshToken ? _renewalBinding! : (token: refreshToken, nonce: renewalNonce(), sent: false); // um nonce por token
+    // dart format on
+    final clock = Stopwatch()..start();
+    Response<dynamic>? received;
+    for (var attempt = 0; received == null; attempt++) {
+      // dart format off
+      final fields = renewalBindingFields(binding.nonce, firstSend: attempt == 0 && !binding.sent);
+      _renewalBinding = (token: refreshToken, nonce: binding.nonce, sent: true); // daqui em diante, só a prova
+      // dart format on
+      try {
+        // dart format off
+        final response = await _client.post('/api/v1/auth/refresh', data: {'refreshToken': refreshToken, ...fields}); // o token e a prova
+        // dart format on
+        received = response;
+      } on DioException catch (e) {
+        // dart format off
+        if (renewalCanRetry(e, attempt, clock.elapsed, _renewalRetryDelays, _renewalRetryDeadline)) { // o mesmo token: o servidor devolve o mesmo sucessor (S4)
+          // dart format on
+          await Future<void>.delayed(_renewalRetryDelays[attempt]);
+          continue;
+        }
+        throw _refreshFailure(e);
+      }
     }
     try {
-      final tokens = _refreshedTokens(response.data);
+      final tokens = _refreshedTokens(received.data);
       // dart format off
       final session = AuthSession(tokens: tokens, user: stored.user, sessionNonce: stored.sessionNonce); // o refresh mantém a sessão que renova
       // dart format on
