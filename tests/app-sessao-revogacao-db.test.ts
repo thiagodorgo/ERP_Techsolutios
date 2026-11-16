@@ -13,6 +13,7 @@ import "dotenv/config";
 // [SV4]…[SV5c], [SV7] o reenvio e a corrida recebem o MESMO sucessor (S4); a troca é condicional.
 // [SV14], [SV14b] a borda exata das janelas, em milissegundos, com relógio controlado (`Date.now`).
 // [SV11]…[SV11c], [SV16], [SV17] a rota passa a prova de posse ao serviço (S5).
+// [SV3], [SV3b], [SV4c], [SV4d], [SV6], [SV8], [SV12], [SV12c], [SV12p] o reuso derruba a família (S3).
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import type { Server } from "node:http";
@@ -376,6 +377,151 @@ if (!connectionString) {
       assert.equal(tok(odd), tok(r1));
     });
 
+    const reuseAudit = async (sessionId: string) => {
+      const rows = await audit(sessionId);
+      return {
+        reuse: rows.filter(
+          (row) => row.action === "auth.refresh.failed" && (row.metadata as { reason?: string } | null)?.reason === "reuse_detected",
+        ).length,
+        revokedRows: rows.filter((row) => row.action === "auth.session.revoked").length,
+      };
+    };
+
+    it("[SV3] R0 → R1 → R2, e o R0 de novo: 401, a família cai, o R2 dá 401; auditoria do reuso", async () => {
+      const s = await newSession();
+      const r1 = await refresh(s.refreshToken);
+      const r2 = await refresh(tok(r1) as string);
+      assert.equal(r2.status, 200);
+      const reuse = await refresh(s.refreshToken);
+      assert.equal(reuse.status, 401);
+      assert.equal(tok(reuse), undefined);
+      assert.equal(await revoked(s.sessionId), true, "a sessão foi revogada");
+      assert.equal((await refresh(tok(r2) as string)).status, 401, "o R2 não renova mais");
+      assert.deepEqual(await reuseAudit(s.sessionId), { reuse: 1, revokedRows: 1 });
+    });
+
+    it("[SV3b] a cadeia normal (cada token usado uma vez) não revoga nada", async () => {
+      const s = await newSession();
+      let current = s.refreshToken;
+      for (let i = 0; i < 3; i++) {
+        const r = await refresh(current, { renewalCommit: par().commit });
+        assert.equal(r.status, 200);
+        current = tok(r) as string;
+      }
+      assert.equal(await revoked(s.sessionId), false);
+      assert.deepEqual(await reuseAudit(s.sessionId), { reuse: 0, revokedRows: 0 });
+    });
+
+    it("[SV4c] o reenvio servido, o R1 usado, e o R0 de volta: 401 e a família cai", async () => {
+      const s = await newSession();
+      const r1 = await refresh(s.refreshToken);
+      const again = await refresh(s.refreshToken);
+      assert.equal(tok(again), tok(r1), "o reenvio foi servido");
+      assert.equal((await refresh(tok(r1) as string)).status, 200, "o R1 foi usado");
+      const back = await refresh(s.refreshToken);
+      assert.equal(back.status, 401);
+      assert.equal(await revoked(s.sessionId), true);
+    });
+
+    it("[SV4d] fora da janela (serviço com janelas de 1 s): o R0 2,5 s depois dá 401, a família cai, o R1 dá 401", async () => {
+      const short = await buildService({ replayWindowSeconds: 1, raceWindowSeconds: 1 });
+      const s = await newSession(short);
+      const T0 = realNow();
+      try {
+        fake = T0;
+        const r1 = await short.refreshSession(s.refreshToken);
+        assert.equal(r1.ok, true);
+        fake = T0 + 2500;
+        const late = await short.refreshSession(s.refreshToken);
+        assert.equal(late.ok, false);
+        assert.equal(await revoked(s.sessionId), true);
+        const withR1 = await short.refreshSession((r1 as { refreshToken: string }).refreshToken);
+        assert.equal(withR1.ok, false);
+      } finally {
+        fake = null;
+      }
+    });
+
+    it("[SV6] isolamento: o reuso na sessão A derruba só A", async () => {
+      const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const colleague = await admin.user.create({
+        data: { tenant_id: org.tenantId, name: "Colega", email: `colega-${suffix}@example.com`, status: "active" },
+      });
+      await admin.userRoleAssignment.create({ data: { tenant_id: org.tenantId, user_id: colleague.id, role_id: org.roleId } });
+      const colleagueFixture: OrgFixture = { ...org, userId: colleague.id, email: colleague.email };
+      const otherOrg = await createOrgWithUser(admin, {
+        name: `Sessao Renova SV6 ${suffix}`,
+        slug: `sessao-renova-sv6-${suffix}`,
+        email: `sessao-renova-sv6-${suffix}@example.com`,
+        password: "SenhaRenova123!",
+      });
+      tenantIds.push(otherOrg.tenantId);
+
+      const a = await newSession();
+      const sameUser = await newSession();
+      const mate = await newSession(literal, colleagueFixture);
+      const foreign = await newSession(literal, otherOrg);
+      const a1 = await refresh(a.refreshToken);
+      await refresh(tok(a1) as string);
+      const mate1 = await refresh(mate.refreshToken);
+      const mateRetry = await refresh(mate.refreshToken);
+      assert.equal(tok(mateRetry), tok(mate1), "o colega teve um reenvio servido");
+
+      assert.equal((await refresh(a.refreshToken)).status, 401, "o reuso na sessão A");
+      assert.equal(await revoked(a.sessionId), true);
+
+      for (const [name, sess, token] of [
+        ["outra sessão do mesmo usuário", sameUser, sameUser.refreshToken],
+        ["outro usuário da mesma organização", mate, tok(mate1) as string],
+        ["outra organização", foreign, foreign.refreshToken],
+      ] as const) {
+        assert.equal(await revoked(sess.sessionId), false, name);
+        assert.equal((await refresh(token)).status, 200, name);
+      }
+    });
+
+    it("[SV8] o \"Sair\" com o R1, depois o R0 dentro da janela: 401 e a sessão revogada", async () => {
+      const s = await newSession();
+      const r1 = await refresh(s.refreshToken);
+      assert.equal((await logout(tok(r1) as string)).status, 200);
+      const back = await refresh(s.refreshToken);
+      assert.equal(back.status, 401);
+      assert.equal(tok(back), undefined);
+      assert.equal(await revoked(s.sessionId), true);
+    });
+
+    it("[SV12] o app troca com compromisso; o R0 sem prova, na corrida: 401, sem token, a família cai, o R1 do app dá 401", async () => {
+      const s = await newSession();
+      const p = par();
+      const app = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      assert.equal(app.status, 200);
+      const thief = await refresh(s.refreshToken);
+      assert.equal(thief.status, 401);
+      assert.equal(tok(thief), undefined);
+      assert.equal(await revoked(s.sessionId), true);
+      assert.equal((await refresh(tok(app) as string, { renewalCommit: par().commit })).status, 401);
+    });
+
+    it("[SV12c] o R0 com o compromisso copiado: 401, sem token, a família cai", async () => {
+      const s = await newSession();
+      const p = par();
+      assert.equal((await refresh(s.refreshToken, { renewalCommit: p.commit })).status, 200);
+      const copy = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      assert.equal(copy.status, 401);
+      assert.equal(tok(copy), undefined);
+      assert.equal(await revoked(s.sessionId), true);
+    });
+
+    it("[SV12p] o R0 com uma prova inventada: 401, sem token, a família cai", async () => {
+      const s = await newSession();
+      const p = par();
+      assert.equal((await refresh(s.refreshToken, { renewalCommit: p.commit })).status, 200);
+      const forged = await refresh(s.refreshToken, { renewalProof: par().proof });
+      assert.equal(forged.status, 401);
+      assert.equal(tok(forged), undefined);
+      assert.equal(await revoked(s.sessionId), true);
+    });
+
     // A borda exata (v3.3 §4.2): troca em T0; reenvio em T0 + W·1000 + d, d ∈ {−1, 0, +1} ms. T0 cai no meio de um
     // segundo, para que o arredondamento antigo em segundos (MP5x) aceite o +1 ms e morra aqui.
     const borda = async (
@@ -383,7 +529,7 @@ if (!connectionString) {
       first: (p: { commit: string; proof: string }) => Record<string, string>,
       second: (p: { commit: string; proof: string }) => Record<string, string>,
     ) => {
-      const out: { d: number; ok: boolean; same: boolean }[] = [];
+      const out: { d: number; ok: boolean; same: boolean; revoked: boolean }[] = [];
       for (const d of [-1, 0, 1]) {
         const s = await newSession();
         const p = par();
@@ -393,7 +539,7 @@ if (!connectionString) {
           const r1 = await literal.refreshSession(s.refreshToken, first(p));
           fake = T0 + W * 1000 + d;
           const re = await literal.refreshSession(s.refreshToken, second(p));
-          out.push({ d, ok: re.ok, same: r1.ok && re.ok && re.refreshToken === r1.refreshToken });
+          out.push({ d, ok: re.ok, same: r1.ok && re.ok && re.refreshToken === r1.refreshToken, revoked: await revoked(s.sessionId) });
         } finally {
           fake = null;
         }
@@ -410,8 +556,8 @@ if (!connectionString) {
       for (const [mode, first, second] of modes) {
         const out = await borda(60, first, second);
         assert.deepEqual(
-          out.map((o) => [o.d, o.ok, o.same]),
-          [[-1, true, true], [0, true, true], [1, false, false]],
+          out.map((o) => [o.d, o.ok, o.same, o.revoked]),
+          [[-1, true, true, false], [0, true, true, false], [1, false, false, true]],
           mode,
         );
       }
@@ -425,8 +571,8 @@ if (!connectionString) {
       for (const [mode, first, second] of modes) {
         const out = await borda(10, first, second);
         assert.deepEqual(
-          out.map((o) => [o.d, o.ok, o.same]),
-          [[-1, true, true], [0, true, true], [1, false, false]],
+          out.map((o) => [o.d, o.ok, o.same, o.revoked]),
+          [[-1, true, true, false], [0, true, true, false], [1, false, false, true]],
           mode,
         );
       }

@@ -143,6 +143,32 @@ export class AuthSessionService {
       if (!openedCommit) candidates.push({ binding: "", windowSeconds: shortWindow }); // S33E
       let replay = await successorReplay(session, payload, refreshToken, refreshTokenHash, candidates); // o antecessor imediato, dentro da janela do candidato
 
+      // B-APP-SESSAO-RENOVA (S3) — um token assinado de uma sessão viva do mesmo usuário, que não é o vigente nem um
+      // reenvio servido, é REUSO: a sessão inteira (a família) cai, e a resposta é 401, como antes.
+      if (!replay && session && session.user_id === payload.user_id && !session.revoked_at && !safeEqual(session.refresh_token_hash, refreshTokenHash)) { // reuso: derruba a família
+        await repository.revokeByIdForTenant(session.id, payload.tenant_id); // reuso detectado
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.refresh.failed",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "failure",
+          severity: "warning",
+          metadata: { reason: "reuse_detected" },
+        });
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.session.revoked",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "success",
+          severity: "warning",
+        });
+        return { ok: false, reason: "revoked" };
+      }
+
       if (!session || (!replay && (session.user_id !== payload.user_id || !safeEqual(session.refresh_token_hash, refreshTokenHash)))) {
         await this.recordAudit(tx, {
           tenantId: payload.tenant_id,
