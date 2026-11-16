@@ -5,6 +5,7 @@
 // (c2): a perna da NOTA entra pelos mesmos 4 jobs — `invoice_issue`/`invoice_cancel` no dispatch, o webhook do provedor de
 // nota no reconcile, a nota `pending` sem retorno no poll-pending e a `cancel_pending` no poll-settled.
 
+import { createLogger } from "../../../infra/logging/logger.js";
 import type { InvoiceProviderPort } from "../providers/invoice/invoice-provider.port.js";
 import type { PaymentProviderPort } from "../providers/payment/payment-provider.port.js";
 import { CHARGE_RULES } from "../charges/charge-rules.js";
@@ -23,6 +24,7 @@ import {
   type ReconcileOutcome,
 } from "../webhooks/reconcile.service.js";
 import { InvoiceOutboxHandler, type InvoiceIssueContextResolver } from "./invoice.dispatch.js";
+import { runInvoiceRecoverySweep } from "./invoice-sweep.js";
 import { runDispatchOutbox, type DispatcherDeps, type DispatchRunResult } from "./outbox.dispatcher.js";
 import type { OutboxRepository } from "./outbox.repository.js";
 
@@ -52,8 +54,15 @@ export type ChannelDeps = {
   readonly resolveIssueContext?: InvoiceIssueContextResolver;
   readonly resolveExpectedCustomerId?: ReconcileDeps["resolveExpectedCustomerId"];
   readonly resolveKeepInvoice?: ReconcileDeps["resolveKeepInvoice"];
+  /** B-ASS-08c2 (plano §4.5, §4.6): as organizações da plataforma (sem a de sistema), para a varredura da nota e o poll da
+   * nota por organização. OBRIGATÓRIO: no caminho de produção a varredura sempre roda quando há perna de nota. */
+  readonly listTenantIds: () => Promise<readonly string[]>;
+  /** B-ASS-08c2 (plano §4.5): as intenções de nota que faltam numa organização, sob a trava de cada demonstrativo. */
+  readonly invoiceRecovery: { recoverInvoiceIntents(tenantId: string, now: Date): Promise<{ readonly inserted: number }> };
   readonly now?: () => Date;
 };
+
+const logger = createLogger();
 
 function reconcileDepsOf(deps: ChannelDeps): ReconcileDeps {
   return {
@@ -82,13 +91,21 @@ export async function runBillingDispatch(deps: ChannelDeps): Promise<DispatchRun
     await deps.charges.insert(charge, at);
     await deps.refs.setExternalChargeId(charge.statementId, charge.externalChargeId, at);
   });
-  return runDispatchOutbox({
+  // B-ASS-08c2 (plano §4.5): com perna de nota, a varredura de recuperação SEMPRE vai ao despacho (que a roda antes do claim).
+  const invoiceSweep = invoices
+    ? (now: Date) => runInvoiceRecoverySweep({ listTenantIds: deps.listTenantIds, sweepTenant: (tenantId, at) => deps.invoiceRecovery.recoverInvoiceIntents(tenantId, at), now })
+    : undefined;
+  const result = await runDispatchOutbox({
     repo: deps.outbox,
     ports: deps.ports,
     resolveCustomer: deps.resolveCustomer,
     ...(invoices ? { invoices } : {}),
+    ...(invoiceSweep ? { invoiceSweep } : {}),
     ...(deps.now ? { now: deps.now } : {}),
   });
+  // A trilha do despacho ainda não tem destino em produção (`P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO`): o log mostra a falha.
+  for (const failure of result.invoiceSweep?.failures ?? []) logger.warn({ tenantId: failure.tenantId, code: failure.code }, "billing.dispatch-outbox: a varredura da nota falhou; as emissões da rodada ficam adiadas");
+  return result;
 }
 
 /** `billing.reconcile-webhook`: um evento aceito → reconsulta e efeito (R-WH-4/5) — de cobrança ou de nota. */

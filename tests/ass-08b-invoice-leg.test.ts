@@ -151,6 +151,8 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
     resolveIssueContext,
     settlement,
     statements,
+    listTenantIds: async () => [TENANT],
+    invoiceRecovery: service,
     now: () => clock.now,
   };
   return { deps, statements, settlement, outbox, invoices, refs, events, clock };

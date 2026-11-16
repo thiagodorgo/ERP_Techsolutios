@@ -63,7 +63,8 @@ function toDomain(row: Row): SubscriptionStatementInvoice {
   };
 }
 
-const LIVE_SQL = `status IN ('pending', 'authorized', 'cancel_pending')`;
+/** A vida da nota em SQL, a UMA fonte (B-ASS-08c2, GN1): as consultas novas a interpolam, nunca repetem o literal. */
+export const LIVE_SQL = `status IN ('pending', 'authorized', 'cancel_pending')`;
 
 /** §2.1 do conserto-c2 / §11 (k): o DEMONSTRATIVO PRIMEIRO. Toda transação da nota trava o demonstrativo antes de mexer na
  * linha da nota (o INSERT da nota toma KEY SHARE no demonstrativo pela FK, e o espelho, depois, um UPDATE: sem a trava antes,

@@ -110,7 +110,7 @@ export type InvoiceDispatchResult =
   | { readonly kind: "needs_review"; readonly code: string }
   | { readonly kind: "skipped"; readonly reason: OutboxSkipReason }
   /** (C) A nota ainda está pendente: a linha é ADIADA, sem gastar tentativa, até a reconsulta decidir a nota. */
-  | { readonly kind: "deferred"; readonly code: "invoice_still_processing" };
+  | { readonly kind: "deferred"; readonly code: "invoice_still_processing" | "invoice_sweep_failed" };
 
 function payloadSeq(row: BillingOutboxRow): number {
   const value = row.payload.seq;

@@ -14,6 +14,7 @@ import { enqueueChargeCancelInTx, enqueueChargeCreateInTx } from "../charges/cha
 import { CHARGE_RULES } from "../charges/charge-rules.js";
 import type { OutboxSkipReason } from "../outbox/outbox.types.js";
 import type { PaymentMethod } from "../providers/payment/payment-provider.port.js";
+import { INVOICE_BACKFILL_CUTOFF } from "../invoices/invoice-intent-rules.js";
 import { eagerPlan, refechamentoPlan, reopenLiveCheck } from "./statement-charge-lines.js";
 import type { StatementResolveOptions, StatementVersionPin } from "./statement.inputs.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
@@ -625,6 +626,27 @@ export class StatementService {
       return writtenOff;
     });
     return saved;
+  }
+
+  /**
+   * B-ASS-08c2 (plano §4.5) — a varredura de recuperação da nota numa organização: os demonstrativos pagos desde o corte do dono
+   * que ficaram sem intenção de nota da época (a baixa manual de antes do 08c2, por exemplo). A consulta ENCONTRA; cada um é
+   * travado PRIMEIRO, numa transação própria, e a regra decide sob a trava (a releitura vê a baixa que commitou no meio). O
+   * INSERT na fila vem depois da trava; a linha nasce com `occurred_at = now`, e a época fica com a sua intenção.
+   */
+  async recoverInvoiceIntents(tenantId: string, now: Date): Promise<{ readonly inserted: number }> {
+    const intents = await this.channel.invoiceIntents?.resolve();
+    if (!intents) return { inserted: 0 };
+    const cutoff = INVOICE_BACKFILL_CUTOFF; // [SWEEP-CUT]
+    let inserted = 0;
+    for (const statementId of await this.repository.listInvoiceIntentCandidates(tenantId, cutoff)) {
+      const outcome = await this.repository.transaction(tenantId, async (tx) => {
+        const statement = await this.lockOrNotFound(tx, statementId); // [SWEEP-LOCK]
+        return writeInvoiceIssueIntentInTx(tx, intents, { statement, now, mode: "auto", cutoff });
+      });
+      if (outcome.kind === "created") inserted += 1;
+    }
+    return { inserted };
   }
 
   private async lockOrNotFound(tx: StatementTx, statementId: string): Promise<SubscriptionStatement> {

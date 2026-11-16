@@ -178,6 +178,19 @@ export function issueContextResolver(vault: VaultRuntime, statements: StatementR
   };
 }
 
+/** B-ASS-08c2 (plano §4.5, §4.6): as organizações da plataforma, sem a de sistema (o precedente do fechamento,
+ * `subscription-billing.jobs.ts`). É leitura de PLATAFORMA da tabela de organizações (sem dado de organização); o que vem
+ * depois roda sob a RLS de cada uma. No modo memória, as organizações que têm demonstrativo no dublê. */
+async function listPlatformTenantIds(statements: StatementRepository): Promise<readonly string[]> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    if (!(statements instanceof InMemoryStatementRepository)) throw new Error("channel_memory_composition_mismatch");
+    return statements.tenantIds();
+  }
+  const { prisma } = await import("../../../database/prisma.js");
+  const tenants = await prisma.tenant.findMany({ select: { id: true, slug: true }, orderBy: { created_at: "asc" } });
+  return tenants.filter((tenant) => (tenant.slug ?? "").toLowerCase() !== "platform").map((tenant) => tenant.id);
+}
+
 /** Monta as dependências de UMA rodada de job (as portas refletem os provedores ligados AGORA). */
 export async function createChannelRuntime(): Promise<ChannelDeps> {
   const [vault, statements] = await Promise.all([createDefaultVaultRuntime(), createDefaultStatementRuntime()]);
@@ -199,5 +212,8 @@ export async function createChannelRuntime(): Promise<ChannelDeps> {
     resolveIssueContext: issueContextResolver(vault, statements),
     // R-WH-5: o cliente do provedor tem de ser o do perfil da organização dona do demonstrativo (o id guardado — G12).
     resolveExpectedCustomerId: (tenantId, provider) => repos.customers.get(tenantId, provider),
+    // B-ASS-08c2 (plano §4.5): a varredura da nota no despacho e o poll da nota por organização.
+    listTenantIds: () => listPlatformTenantIds(statements.repository),
+    invoiceRecovery: statements.service,
   };
 }

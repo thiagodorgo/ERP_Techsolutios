@@ -35,6 +35,7 @@ import {
   type StatementClaimSnapshot,
 } from "./outbox.types.js";
 import type { InvoiceDispatchResult, InvoiceOutboxHandler } from "./invoice.dispatch.js";
+import type { InvoiceSweepResult } from "./invoice-sweep.js";
 import { leaseOf, type AdoptionFacts, type OutboxLease, type OutboxRepository } from "./outbox.repository.js";
 
 // [CLAIMED-BY] Uma identidade por processo impede duas instâncias de compartilharem a mesma lease nominal.
@@ -51,13 +52,16 @@ export type DispatchOutcome =
   | "record_failed"
   | "lease_lost";
 
-export type DispatchAuditEvent = {
-  readonly tenantId: string;
-  readonly statementId: string;
-  readonly kind: OutboxKind;
-  readonly action: "billing_outbox.failed" | "billing_outbox.needs_review" | "billing_outbox.lease_lost" | "billing_outbox.record_failed";
-  readonly code: string;
-};
+export type DispatchAuditEvent =
+  | {
+      readonly tenantId: string;
+      readonly statementId: string;
+      readonly kind: OutboxKind;
+      readonly action: "billing_outbox.failed" | "billing_outbox.needs_review" | "billing_outbox.lease_lost" | "billing_outbox.record_failed";
+      readonly code: string;
+    }
+  /** B-ASS-08c2 (plano §4.5): a varredura de recuperação da nota falhou numa organização (`null` = na enumeração). Só o código. */
+  | { readonly tenantId: string | null; readonly action: "billing_outbox.invoice_sweep_failed"; readonly code: string };
 
 /** R-PRF-1 (conserto J-522, C3-02): o cliente no provedor, resolvido pelo PERFIL — nunca pelo payload da linha. */
 export type CustomerResolution =
@@ -75,6 +79,9 @@ export type DispatcherDeps = {
   readonly resolveCustomer: (row: BillingOutboxRow, port: PaymentProviderPort) => Promise<CustomerResolution>;
   /** B-ASS-08b — a perna da NOTA (`invoice_issue`/`invoice_cancel`), com as portas dos provedores de nota LIGADOS. */
   readonly invoices?: InvoiceOutboxHandler;
+  /** B-ASS-08c2 (plano §4.5; Emenda 1 §3.1): a varredura de recuperação da nota, ANTES do claim, só com provedor de nota
+   * ligado. Com falha (`ok = false`), as EMISSÕES não órfãs da rodada são adiadas (a perna de nota do `dispatchOne`). */
+  readonly invoiceSweep?: (now: Date) => Promise<InvoiceSweepResult>;
   readonly now?: () => Date;
   readonly claimedBy?: string;
   readonly orphanMs?: number;
@@ -84,6 +91,8 @@ export type DispatcherDeps = {
 export type DispatchRunResult = {
   readonly processed: number;
   readonly outcomes: Readonly<Record<DispatchOutcome, number>>;
+  /** B-ASS-08c2: o resultado da varredura de recuperação da nota, quando ela rodou nesta rodada (vai ao log do job). */
+  readonly invoiceSweep?: InvoiceSweepResult;
 };
 
 function rateLimitRetryMs(error: unknown): number | null {
@@ -284,6 +293,12 @@ export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchR
     lease_lost: 0,
   };
 
+  // B-ASS-08c2 (plano §4.5): a varredura roda ANTES da visibilidade e do claim, só com provedor de nota ligado; as intenções
+  // que ela cria saem nesta mesma rodada. A visibilidade e o claim continuam com a lista INTEIRA (Emenda 1 §3.1).
+  const sweep = deps.invoiceSweep && (deps.invoices?.providers.length ?? 0) > 0 ? await deps.invoiceSweep(clock()) : undefined;
+  for (const failure of sweep?.failures ?? []) await deps.onAudit?.({ tenantId: failure.tenantId, action: "billing_outbox.invoice_sweep_failed", code: failure.code });
+  const sweepFailed = sweep !== undefined && !sweep.ok;
+
   await deps.repo.markDisabledProvidersVisible(enabledProviders, clock());
 
   let processed = 0;
@@ -304,11 +319,11 @@ export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchR
       await deps.onAudit?.({ tenantId: claimed.row.tenantId, statementId: claimed.row.statementId, kind: claimed.row.kind, action: "billing_outbox.needs_review", code: claimed.code });
       continue;
     }
-    const outcome = await dispatchOne(deps, claimed.row, claimed.wasOrphan, clock);
+    const outcome = await dispatchOne(deps, claimed.row, claimed.wasOrphan, clock, sweepFailed);
     outcomes[outcome] += 1;
   }
 
-  return { processed, outcomes };
+  return { processed, outcomes, ...(sweep ? { invoiceSweep: sweep } : {}) };
 }
 
 async function dispatchOne(
@@ -316,6 +331,7 @@ async function dispatchOne(
   row: BillingOutboxRow,
   wasOrphan: boolean,
   clock: () => Date,
+  sweepFailed: boolean,
 ): Promise<DispatchOutcome> {
   const lease = leaseOf(row);
   // B-ASS-08b — a perna da NOTA vem ANTES da de cobrança (§11 (a) do conserto-c2): o provedor de nota não está em `ports`.
@@ -324,6 +340,9 @@ async function dispatchOne(
       if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock(), lease))) return leaseLost(deps, row);
       return "needs_review";
     }
+    // B-ASS-08c2 (Emenda 1 §3.1): com a varredura vermelha, a EMISSÃO não órfã volta a PENDING em +15 min, sem gastar tentativa e
+    // sem rede; o cancelamento e a órfã (que reconsulta antes de qualquer POST) seguem.
+    if (sweepFailed && row.kind === "invoice_issue" && !wasOrphan) return await registerInvoiceResult(deps, row, { kind: "deferred", code: "invoice_sweep_failed" }, clock); // [SWEEP-FAILCLOSED]
     try {
       const result = row.kind === "invoice_issue" ? await deps.invoices.issue(row, wasOrphan, clock()) : await deps.invoices.cancel(row, clock());
       return await registerInvoiceResult(deps, row, result, clock);

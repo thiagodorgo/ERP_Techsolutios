@@ -903,6 +903,8 @@ if (!connectionString) {
             resolveCustomer: async () => ({ ok: true as const, customerId: "cus_san305" }),
             settlement: new StatementSettlementService(runtimeCanal.repository, runtimeCanal.service),
             statements: runtimeCanal.repository,
+            listTenantIds: async () => orgs,
+            invoiceRecovery: runtimeCanal.service,
             now: () => agoraCanal,
           };
           const projetarDemonstrativos = async () =>

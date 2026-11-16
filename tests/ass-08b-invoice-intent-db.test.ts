@@ -153,6 +153,8 @@ if (!connectionString) {
         serviceDescription: `Assinatura — competência ${statement.period}`,
       }),
       resolveExpectedCustomerId: (tenantId, provider) => customers.get(tenantId, provider),
+      listTenantIds: async () => tenantIds,
+      invoiceRecovery: service,
     };
     return { deps, statements, service, settlement, outbox, invoices, focusServer, focusPort };
   }

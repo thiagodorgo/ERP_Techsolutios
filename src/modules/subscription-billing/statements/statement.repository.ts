@@ -8,7 +8,9 @@ import type { ChargeIntentAuditEvent, ChargeIntentTx } from "../charges/charge-i
 import { CHARGE_RULES } from "../charges/charge-rules.js";
 import type { InMemoryStatementChargeRepository } from "../charges/charges.repository.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
+import { INVOICE_ISSUE_LINE_RULES } from "../invoices/invoice-intent-rules.js";
 import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
+import { LIVE_INVOICE_STATUSES } from "../invoices/invoices.types.js";
 import type { InMemoryOutboxRepository, OutboxRepository } from "../outbox/outbox.repository.js";
 import { idempotencyKeyOf, type BillingOutboxRow, type NewOutboxRow } from "../outbox/outbox.types.js";
 import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.repository.js";
@@ -95,7 +97,14 @@ export type StatementRepository = {
   /** B-ASS-08c1c (P11b, plano §4.9): a cobrança `pending` da tabela que o cliente pode pagar — a do fechamento VIGENTE (a
    * `charge_create` SENT dela nasceu depois da última reabertura, com o total atual) e sem `charge_cancel` vivo. */
   findPayableCharge(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined>;
+  /** B-ASS-08c2 (plano §4.5): os demonstrativos `paid` com total > 0, pagos desde o `cutoff`, sem nota viva, sem `invoice_issue`
+   * em voo e sem `invoice_issue` da época (`occurred_at >= paid_at`), em ordem de `paid_at`, no máximo 200. A consulta ENCONTRA;
+   * quem DECIDE é a regra, sob a trava de cada um. */
+  listInvoiceIntentCandidates(tenantId: string, cutoff: Date): Promise<readonly string[]>;
 };
+
+/** B-ASS-08c2 (plano §4.5): o teto de candidatos por organização e rodada da varredura (o resto sai na rodada seguinte). */
+export const INVOICE_SWEEP_LIMIT = 200;
 
 export function emptyStatement(input: NewStatement, now: Date): SubscriptionStatement {
   return {
@@ -370,6 +379,31 @@ export class InMemoryStatementRepository implements StatementRepository {
 
   async listCredits(tenantId: string) {
     return [...this.credits.values()].filter((row) => row.tenantId === tenantId);
+  }
+
+  /** B-ASS-08c2 (plano §4.6): as organizações que têm demonstrativo no dublê (a enumeração do modo memória). */
+  tenantIds(): readonly string[] {
+    return [...new Set([...this.statements.values()].map((row) => row.tenantId))];
+  }
+
+  /** B-ASS-08c2 (plano §4.5): a MESMA busca da consulta do Prisma, sobre as lojas do canal. Sem as lojas não há onde olhar a
+   * fila nem a nota: falha fechado (a varredura daquela organização falha e as emissões da rodada esperam). */
+  async listInvoiceIntentCandidates(tenantId: string, cutoff: Date): Promise<readonly string[]> {
+    const channel = this.channel;
+    if (!channel) throw new Error("invoice_intent_tx_unsupported");
+    const found: SubscriptionStatement[] = [];
+    for (const statement of this.statements.values()) {
+      if (statement.tenantId !== tenantId || statement.status !== "paid" || statement.totalCents <= 0 || !statement.paidAt || statement.paidAt.getTime() < cutoff.getTime()) continue;
+      const live = await channel.invoices.findLive(tenantId, statement.id);
+      if (live && (LIVE_INVOICE_STATUSES as readonly string[]).includes(live.status)) continue;
+      const lines = (await channel.outbox.listByStatement(tenantId, statement.id)).filter((row) => row.kind === "invoice_issue");
+      if (lines.some((row) => INVOICE_ISSUE_LINE_RULES[row.status].inFlight || row.occurredAt.getTime() >= statement.paidAt!.getTime())) continue;
+      found.push(statement);
+    }
+    return found
+      .sort((a, b) => a.paidAt!.getTime() - b.paidAt!.getTime() || a.id.localeCompare(b.id))
+      .slice(0, INVOICE_SWEEP_LIMIT)
+      .map((row) => row.id);
   }
 
   /** Só para testes: força o estado da cobrança/nota (o canal do B-ASS-06..08 ainda não existe). */

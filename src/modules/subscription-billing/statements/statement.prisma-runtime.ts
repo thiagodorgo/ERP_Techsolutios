@@ -28,12 +28,14 @@ import { prismaChargeIntentTx } from "../charges/charge-intent.prisma.js";
 import { sqlStatusList } from "../charges/charge-rules.js";
 import { listByStatementInTx as listChargesByStatementInTx } from "../charges/charges.prisma.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
+import { invoiceLineSqlList } from "../invoices/invoice-intent-rules.js";
+import { LIVE_SQL } from "../invoices/invoices.prisma.js";
 import { enqueueInTx, listByStatementInTx as listOutboxByStatementInTx } from "../outbox/outbox.prisma.js";
 import { computeStatement, type StatementSnapshot } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
 import { RepositoryStatementInputsProvider, type BindingsSource, type UsageSource } from "./statement.inputs-provider.js";
 import type { UsageDayRow, VehicleBindingWindow } from "./statement.inputs.js";
-import { emptyStatement, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
+import { emptyStatement, INVOICE_SWEEP_LIMIT, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
 import { closingMethodOf } from "./statement-charge-lines.js";
 import { StatementService, type StatementAuditSink, type StatementChannel } from "./statement.service.js";
 import type {
@@ -469,6 +471,26 @@ export class PrismaStatementRepository implements StatementRepository {
       const id = rows[0]?.id;
       if (!id) return undefined;
       return (await listChargesByStatementInTx(tx, statementId)).find((charge) => charge.id === id);
+    });
+  }
+
+  /** B-ASS-08c2 (plano §4.5): os candidatos da varredura da nota, numa leitura sob a RLS da organização. A vida da nota vem do
+   * `LIVE_SQL` e a da linha da tabela `INVOICE_ISSUE_LINE_RULES` (a lista gerada): nenhum literal novo decide. */
+  listInvoiceIntentCandidates(tenantId: string, cutoff: Date): Promise<readonly string[]> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT s.id FROM subscription_statements s
+          WHERE s.tenant_id = $1::uuid AND s.status = 'paid' AND s.total_amount > 0 AND s.paid_at >= $2
+            AND NOT EXISTS (SELECT 1 FROM subscription_statement_invoices i WHERE i.statement_id = s.id AND i.tenant_id = s.tenant_id AND i.${LIVE_SQL})
+            AND NOT EXISTS (SELECT 1 FROM billing_outbox o WHERE o.statement_id = s.id AND o.tenant_id = s.tenant_id AND o.kind = 'invoice_issue'
+                              AND (o.status IN (${invoiceLineSqlList("inFlight")})
+                                   OR o.occurred_at >= s.paid_at))
+          ORDER BY s.paid_at, s.id
+          LIMIT ${INVOICE_SWEEP_LIMIT}`,
+        tenantId,
+        cutoff,
+      )) as Array<{ id: string }>;
+      return rows.map((row) => row.id);
     });
   }
 }
