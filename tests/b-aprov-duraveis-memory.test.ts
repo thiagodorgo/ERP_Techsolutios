@@ -15,12 +15,19 @@ import { fileURLToPath } from "node:url";
 // pedido passa a nascer na unidade que conclui (o `changeStatus` do repositório), e as duas portas chamam o mesmo
 // `WorkOrderService.changeStatus`.
 //
+// T2b (emenda 1 §3.4, F4c, com o B-SAN3-16 na main): com um pedido do técnico pendente (enviado pelo lote
+// `work_order.approval_request`), concluir a OS por cada uma das 2 portas → 2 pendentes para a OS: 1 com `entity_id` = id
+// da OS e o motivo da conclusão, 1 com o motivo do técnico. Aprovar a do técnico deixa a da conclusão pendente. O vermelho
+// é a MB21 do 16 (`entityId: fieldApprovalEntityId(…)` → `entityId: workOrder.id,` em mobile-work-order-sync.ts),
+// aplicada e revertida sem commit: com ela, o pedido do técnico e o da conclusão se fundem num só.
+//
 // Em memória: as linhas abaixo rodam ANTES de qualquer módulo de src (o `env` é congelado no 1º import).
 process.env.CORE_SAAS_PERSISTENCE = "memory";
 process.env.LOG_LEVEL = "silent";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MOTIVO_DA_CONCLUSAO = "Ordem de servico concluida e pronta para validacao operacional.";
+const MOTIVO_DO_TECNICO = "Troca de peça fora do orçamento";
 
 async function montar() {
   const [
@@ -122,7 +129,74 @@ async function montar() {
   const fechar = () =>
     new Promise<void>((resolve, reject) => server.close((error?: Error) => (error ? reject(error) : resolve())));
 
-  return { tenantId: tenant.id, gestorId: gestor.id, criarOsEmAtendimento, concluirPelaRota, concluirPelaFila, pendentesDaOs, fechar, service, gestao };
+  // T2b — o técnico da OS (id cru, como no arnês do B-SAN3-16: o contexto do ator vem do token) e a OS atribuída a ele,
+  // levada a "Em atendimento" pelo repositório.
+  const tecnicoId = randomUUID();
+  const campo = {
+    tenantId: tenant.id,
+    userId: tecnicoId,
+    roles: ["field_technician"],
+    permissions: resolvePermissionsForRoles(["field_technician"]),
+    explicitPermissions: true,
+  };
+  const criarOsDoTecnico = async (): Promise<string> => {
+    const os = await service.create(gestao as never, { title: "Reboque leve B-APROV do técnico" });
+    const atribuida = await service.assign(gestao as never, os.id, { userId: tecnicoId });
+    const repo = workOrders.getMemoryWorkOrderRepositoryForTests();
+    let from = atribuida.status;
+    const caminho = ["assigned", "accepted", "on_route", "on_site", "in_progress"] as const;
+    for (const status of caminho.slice(caminho.indexOf(from as (typeof caminho)[number]) + 1)) {
+      const atual = await repo.findById(tenant.id, os.id);
+      assert.ok(atual);
+      const feito = await repo.changeStatus({
+        tenantId: tenant.id,
+        workOrderId: os.id,
+        status,
+        expectedStatus: from,
+        actorUserId: gestor.id,
+        message: "preparo do teste",
+        ...(status === "on_site" ? { checkin: verifyCheckin(gestao as never, atual, null, {}, "http_status_route") } : {}),
+      } as never);
+      assert.ok(feito, `o arnês levou a OS a ${status}`);
+      from = status;
+    }
+    return os.id;
+  };
+  // O pedido do técnico pelo lote do app (B-SAN3-16), com a fila de Aprovações PADRÃO (a memória que `pendentesDaOs` lê).
+  const pedirPeloLote = (workOrderId: string) =>
+    sync.syncMobileWorkOrderActions(
+      campo as never,
+      {
+        client_batch_id: randomUUID(),
+        actions: [
+          {
+            client_action_id: randomUUID(),
+            type: "work_order.approval_request",
+            local_created_at: "2026-11-17T12:00:00.000Z",
+            payload: { work_order_id: workOrderId, reason: MOTIVO_DO_TECNICO, urgency: "normal" },
+          },
+        ],
+      },
+      async () => service,
+    );
+  const aprovar = async (approvalId: string) =>
+    (await approvals.createDefaultApprovalService()).approve(gestao as never, approvalId, { note: "ok" });
+
+  return {
+    tenantId: tenant.id,
+    gestorId: gestor.id,
+    tecnicoId,
+    criarOsEmAtendimento,
+    criarOsDoTecnico,
+    pedirPeloLote,
+    aprovar,
+    concluirPelaRota,
+    concluirPelaFila,
+    pendentesDaOs,
+    fechar,
+    service,
+    gestao,
+  };
 }
 
 async function comCenario(corpo: (c: Awaited<ReturnType<typeof montar>>) => Promise<void>): Promise<void> {
@@ -178,6 +252,46 @@ test("T2 · a 2ª conclusão da mesma OS não duplica o pedido (rota, depois fil
     assertPedidoDaConclusao(await c.pendentesDaOs(os), os, c.gestorId);
   });
 });
+
+for (const porta of ["rota", "fila"] as const) {
+  test(`T2b · ${porta} — com o pedido do técnico pendente, concluir a OS gera o 2º pendente (o da conclusão); aprovar o do técnico deixa o da conclusão pendente`, async () => {
+    await comCenario(async (c) => {
+      const os = await c.criarOsDoTecnico();
+      const lote = await c.pedirPeloLote(os);
+      assert.equal(lote.accepted.length, 1, `o lote recusou o pedido do técnico: ${JSON.stringify(lote)}`);
+      assert.equal((await c.pendentesDaOs(os)).length, 1, "o pedido do técnico não ficou pendente");
+
+      if (porta === "rota") {
+        const resposta = await c.concluirPelaRota(os);
+        assert.equal(resposta.status, 200, JSON.stringify(resposta.body));
+      } else {
+        assert.equal((await c.concluirPelaFila(os)).accepted.length, 1, "a fila não concluiu");
+      }
+      assert.equal((await c.service.get(c.gestao as never, os)).status, "completed");
+
+      const pendentes = await c.pendentesDaOs(os);
+      assert.equal(pendentes.length, 2, `esperava 2 pendentes para a OS (o do técnico e o da conclusão), veio ${pendentes.length}`);
+      const daConclusao = pendentes.find((p) => p.entityId === os);
+      const doTecnico = pendentes.find((p) => p.entityId !== os);
+      assert.ok(daConclusao, "falta o pedido da conclusão (entity_id = id da OS)");
+      assert.ok(doTecnico, "falta o pedido do técnico");
+      assert.equal(daConclusao.pendingReason, MOTIVO_DA_CONCLUSAO);
+      assert.equal(daConclusao.requestedByUserId, c.gestorId);
+      assert.equal(doTecnico.pendingReason, MOTIVO_DO_TECNICO);
+      assert.equal(doTecnico.requestedByUserId, c.tecnicoId);
+      assert.equal(doTecnico.workOrderId, os);
+      assert.match(doTecnico.entityId, /^pedido-app:[0-9a-f]{32}$/);
+
+      await c.aprovar(doTecnico.id);
+      const sobra = await c.pendentesDaOs(os);
+      assert.deepEqual(
+        sobra.map((p) => ({ entityId: p.entityId, pendingReason: p.pendingReason })),
+        [{ entityId: os, pendingReason: MOTIVO_DA_CONCLUSAO }],
+        "aprovar o pedido do técnico mexeu no pedido da conclusão",
+      );
+    });
+  });
+}
 
 test("T2 · work-order.controller.ts não pede mais a aprovação por fora da unidade que conclui", () => {
   const fonte = readFileSync(path.join(REPO_ROOT, "src/modules/work-orders/work-order.controller.ts"), "utf8");
