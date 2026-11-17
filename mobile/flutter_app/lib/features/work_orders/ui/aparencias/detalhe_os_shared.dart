@@ -427,7 +427,7 @@ class DetalheOsHero extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.4,
                     color: ErpMobileTheme.primary,
-                    fontFamily: 'monospace',
+                    fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
@@ -609,7 +609,7 @@ class _Kv extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: ErpMobileTheme.ink,
           letterSpacing: mono ? 1 : 0,
-          fontFamily: mono ? 'monospace' : null,
+          fontFeatures: mono ? const [FontFeature.tabularFigures()] : null,
         ),
       ),
     ],
@@ -1057,7 +1057,8 @@ class DetalheOsMais extends StatelessWidget {
           color: ErpMobileTheme.inkMuted,
         ),
         title: 'Histórico',
-        meta: detalheOsHistoricoResumo(p.historico),
+        // O meta começa com " · ", como nas outras linhas do kit.
+        meta: ' · ${detalheOsHistoricoResumo(p.historico)}',
         expanded: aberta == 'historico',
         onToggle: () => onToggle('historico'),
         detail: DetalheOsHistoricoLista(eventos: p.historico),
@@ -1177,6 +1178,9 @@ class DetalheOsBarra extends StatelessWidget {
     final mapa = OutlinedButton.icon(
       key: const Key('work-order-map-action'),
       onPressed: p.onMap,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+      ),
       icon: const Icon(Icons.location_on_outlined),
       label: const Text('Mapa'),
     );
@@ -1198,9 +1202,9 @@ class DetalheOsBarra extends StatelessWidget {
                   else if (acao == null)
                     Expanded(child: mapa)
                   else ...[
-                    Expanded(flex: 2, child: mapa),
+                    Expanded(flex: 3, child: mapa),
                     const SizedBox(width: 10),
-                    Expanded(flex: 5, child: acao),
+                    Expanded(flex: 7, child: acao),
                   ],
                 ],
               ),

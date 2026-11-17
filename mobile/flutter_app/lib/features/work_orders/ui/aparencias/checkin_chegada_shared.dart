@@ -336,7 +336,7 @@ class CheckinOsCard extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.4,
                     color: ErpMobileTheme.primary,
-                    fontFamily: 'monospace',
+                    fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
               ),

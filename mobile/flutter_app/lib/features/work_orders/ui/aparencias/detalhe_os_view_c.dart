@@ -196,7 +196,8 @@ class _Linhas extends StatelessWidget {
       key: Key('detalhe-os-linha-$id'),
       leading: _icone(icon),
       title: title,
-      meta: meta,
+      // O meta começa com " · ", como nas outras linhas do kit.
+      meta: meta == null ? null : ' · $meta',
       trailing: trailing,
       expanded: aberta == id,
       onToggle: () => onToggle(id),

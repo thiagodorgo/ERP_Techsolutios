@@ -1057,12 +1057,17 @@ void main() {
     final skip = capturasDir == null;
     const aparelho = Size(390, 812);
 
+    // As fontes carregam fora do relógio falso do teste (ler arquivo dentro dele não termina).
+    setUpAll(() async {
+      if (skip) return;
+      await loadRoboto();
+      await loadMaterialIcons();
+    });
+
     for (final ap in AppAppearance.values) {
       testWidgets('detalhe-os-${ap.letter} (o app de hoje)', skip: skip, (
         t,
       ) async {
-        await loadRoboto();
-        await loadMaterialIcons();
         fixarTela(t, aparelho);
         final m = _Mundo(
           _order(
@@ -1081,8 +1086,6 @@ void main() {
         'detalhe-os-${ap.letter} (com o dado do B-GUI-D1)',
         skip: skip,
         (t) async {
-          await loadRoboto();
-          await loadMaterialIcons();
           fixarTela(t, aparelho);
           await t.pumpWidget(
             RepaintBoundary(
@@ -1105,8 +1108,6 @@ void main() {
         ('local', WorkOrderStatus.arrived),
       ]) {
         testWidgets('checkin-${ap.letter}-$nome', skip: skip, (t) async {
-          await loadRoboto();
-          await loadMaterialIcons();
           fixarTela(t, aparelho);
           final m = _Mundo(
             _order(
