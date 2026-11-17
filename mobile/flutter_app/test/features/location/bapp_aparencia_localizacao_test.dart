@@ -89,7 +89,7 @@ void main() {
     });
 
     testWidgets('D5. sem sessão autenticada (sessão carregando), a tela '
-        'desenha a A', (t) async {
+        'desenha o padrão da tela (B)', (t) async {
       final w = AparWorld(prefs: {_key: AppAppearance.c});
       await t.pumpWidget(
         aparApp(
@@ -99,20 +99,20 @@ void main() {
         ),
       );
       await t.pumpAndSettle();
-      _expectOnly(_rootA);
+      _expectOnly(_rootB);
     });
 
     testWidgets('D6. keystore que não responde: em até 3 s a tela sai do '
-        'carregamento na A', (t) async {
+        'carregamento no padrão da tela (B)', (t) async {
       final w = AparWorld(appearanceStore: PendingAppAppearanceStore());
       await t.pumpWidget(aparApp(w));
       await t.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       await t.pump(const Duration(milliseconds: 2900));
-      expect(find.byKey(_rootA), findsNothing);
+      expect(find.byKey(_rootB), findsNothing);
       await t.pump(const Duration(milliseconds: 150));
       await t.pump();
-      _expectOnly(_rootA);
+      _expectOnly(_rootB);
     });
 
     testWidgets('D7. keystore que não responde e a tela fechada antes do teto: '
