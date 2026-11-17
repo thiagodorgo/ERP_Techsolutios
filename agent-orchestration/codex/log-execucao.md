@@ -5299,3 +5299,11 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Comando: `agent-orchestration/codex/comandos/B-SAN3-25-faturar-os.md`. PR #559 (rascunho até a pré-revisão). Diários fora do repositório, na pasta do orquestrador (`revisoes/b-san3-25/`).
 - Registro: `P-WEB-FATURAR-OS-SEM-TELA`, `P-SAN3-02-TELA-DELTA` e `P-SAN3-02-PAI-CANCELADO` (regra Q4 = A e o `[T-C10]`) fecham, por acréscimo; nota na `P-Ω4-3-CURRENCY-BRL`; 5 novas (`P-SAN3-25-BRACO-PROVISIONADO-FORA-DA-CI`, `P-SAN3-25-ADAPTADOR-DE-TITULO-DUPLICADO`, `P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO`, `P-SAN3-25-PREVIA-DO-COMPLEMENTAR`, `P-FRONT-TESTE-FORA-DO-SMOKE`); `D-SAN3-25-RESPOSTAS-DO-DONO` e `D-SAN3-25-ORDEM`; notas nas linhas do item 50 e do bloco no `PLANO_SAN3.md`. Índice regenerado pelo gerador.
 - Sem `src/**`, `prisma/**`, `.github/**`, `Kpis/**`, lockfiles ou `.env`.
+
+## 2026-11-15 a 2026-11-17 — B-O6R-04b (`dev-04b-cl`, `dev-04b-e1-cl`)
+
+- Executores: `dev-04b-cl` (F0 a F3, 15/11) e o sucessor `dev-04b-e1-cl` (F4 e F5, 17/11), Claude Opus 5.5 (subagentes da sessão; nível menor declarado), cobrindo o Codex por ordem do dono; sem cruzamento, declarado.
+- Base `origin/main@80f5b4d9` (#568); merge da `main` `00e46347` (#580, o 16) em commit próprio, antes da F4. Worktree próprio, `npm ci` próprio, sem junction; Postgres 16 descartável, `timezone='UTC'`, só em 127.0.0.1.
+- Fatias: F0 `ca88de58` (registro do conflito e comando), F1 `0afd407e` (D1, D2, D4), F2 `9aba4f89` (D3, D5, instantâneos), F3 `332392d1` (D6, D7), merge `4c96cd21`, F4 `36c0b7dd` (D8, Q1 a Q4, MQ1), F5 (documentos e registro). Mutações MS1 a MS6, MS2b, MA1 a MA3 e MQ1, cada uma vermelha pela asserção e restaurada.
+- Comando: `agent-orchestration/codex/comandos/B-O6R-04b-mobile-inventory-sync.md`. PR #582 (rascunho até a pré-revisão). Diário fora do repositório, na pasta do orquestrador (`revisoes/b-o6r-04b/`).
+- Sem `prisma/**`, `src/modules/inventory/**`, `.github/**`, `Kpis/**`, lockfiles, `pubspec.*` ou `.env`.
