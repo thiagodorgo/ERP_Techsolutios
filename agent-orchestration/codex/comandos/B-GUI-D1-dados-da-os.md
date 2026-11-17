@@ -56,3 +56,5 @@ do aparelho, onde mora a fila ainda não enviada (perda de dado sem volta). As 3
 ## Conserto
 
 Conserto da J-597 (17/11): D2 residencial (MYA/MYB), fim da placa por outro campo (MYD), comentários de fixture, registro C1-03/C3-N1, merge da main 89cf79fe.
+
+Emenda 1.2 (17/11): D7a com `ui/checkin_confirm_dialog.dart` no lugar de `ui/work_order_detail_screen.dart` e D7b pelo fluxo de chegada do FID1 nas 3 aparências; MD6 ancora em `_maskedHint()` de `checkin_confirm_dialog.dart`.

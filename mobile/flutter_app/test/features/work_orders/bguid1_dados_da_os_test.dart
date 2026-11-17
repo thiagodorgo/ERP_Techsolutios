@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:erp_techsolutions_mobile/core/appearance/app_appearance.dart';
+import 'package:erp_techsolutions_mobile/core/appearance/app_appearance_providers.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/app_database.dart';
@@ -15,15 +17,23 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_action_store.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
+import 'package:erp_techsolutions_mobile/features/checklists/data/checklist_local_store.dart';
+import 'package:erp_techsolutions_mobile/features/checklists/data/checklist_repository.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_conflict_resolution_service.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_remote_api.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_detail_screen.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_execute_screen.dart';
+import 'package:erp_techsolutions_mobile/shared/theme/erp_mobile_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../capturas/captura_helper.dart'
+    show GuinchoChecklistRepository, GuinchoRemote, GuinchoRemoteApi, fixarTela;
 
 // B-GUI-D1 — o app lê, guarda e preserva o destino, o veículo atendido e o prazo da OS (lista de OS do servidor).
 // Plano: `plano-APP-GUINCHO-emenda1.md` §5.4 + `plano-B-GUI-D1-emenda1.md` + `-emenda1.1.md` (prevalece).
@@ -188,9 +198,11 @@ GoRouter _router(WorkOrder wo) => GoRouter(
       builder: (_, state) =>
           WorkOrderDetailScreen(workOrderId: state.pathParameters['id']!),
     ),
+    // Emenda 1.2 (depois do B-GUI-FID1): a chegada vive na tela de execução, como no teste do FID1.
     GoRoute(
       path: '/work-orders/:id/execute',
-      builder: (_, _) => const Scaffold(body: Text('Execute')),
+      builder: (_, state) =>
+          WorkOrderExecuteScreen(workOrderId: state.pathParameters['id']!),
     ),
     GoRoute(
       path: '/work-orders/:id/approval-request',
@@ -207,11 +219,12 @@ GoRouter _router(WorkOrder wo) => GoRouter(
   ],
 );
 
-Widget _detalhe(WorkOrder wo) {
+Widget _detalhe(WorkOrder wo, {AppAppearance aparencia = AppAppearance.a}) {
   final store = InMemoryWorkOrderLocalStore([wo]);
+  final queue = InMemorySyncQueueRepository();
   final repo = WorkOrderRepository(
     session: _session,
-    syncQueue: InMemorySyncQueueRepository(),
+    syncQueue: queue,
     actionFactory: SyncActionFactory(),
     localStore: store,
     seedWorkOrders: [wo],
@@ -223,8 +236,27 @@ Widget _detalhe(WorkOrder wo) {
       syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore([])),
       workOrderRepositoryProvider.overrideWithValue(repo),
       gpsAvailableProvider.overrideWith((_) async => true),
+      // Emenda 1.2: o mesmo arnês do `bguifid1_detalhe_e_checkin_test.dart` (vistoria, conflito e as 3 aparências).
+      workOrderConflictResolutionServiceProvider.overrideWithValue(
+        WorkOrderConflictResolutionService(queue: queue, store: store),
+      ),
+      checklistRepositoryProvider.overrideWithValue(
+        GuinchoChecklistRepository(
+          localStore: InMemoryChecklistLocalStore(),
+          remoteApi: GuinchoRemoteApi(GuinchoRemote.ok),
+        ),
+      ),
+      screenAppearanceProvider(
+        kDetalheOsAppearanceKey,
+      ).overrideWithValue(AsyncValue.data(aparencia)),
+      screenAppearanceProvider(
+        kExecucaoGuinchoAppearanceKey,
+      ).overrideWithValue(AsyncValue.data(aparencia)),
     ],
-    child: MaterialApp.router(routerConfig: _router(wo)),
+    child: MaterialApp.router(
+      theme: ErpMobileTheme.light(),
+      routerConfig: _router(wo),
+    ),
   );
 }
 
@@ -417,46 +449,64 @@ void main() {
                 padrao.hasMatch(f.readAsStringSync()))
               f.path.replaceAll(r'\', '/'),
         ]..sort();
-        // Um leitor novo do fim obriga a mudar esta lista no PR, e o revisor vê. O B-GUI-FID1 troca a lista quando
-        // extrair o diálogo (nota do plano do D1).
+        // Um leitor novo do fim obriga a mudar esta lista no PR, e o revisor vê. Emenda 1.2: o B-GUI-FID1 (#595) extraiu
+        // o diálogo de chegada; o 5º arquivo passa a ser `ui/checkin_confirm_dialog.dart` (medido na main 60c0704a).
         expect(achados, <String>[
           'lib/core/local_db/app_database.dart',
           'lib/core/local_db/drift_work_order_local_store.dart',
           'lib/features/work_orders/data/work_order_remote_api.dart',
           'lib/features/work_orders/domain/work_order_models.dart',
-          'lib/features/work_orders/ui/work_order_detail_screen.dart',
+          'lib/features/work_orders/ui/checkin_confirm_dialog.dart',
         ]);
       },
     );
 
-    testWidgets(
-      'D7b — com plateMasked ABC1D** e fim ZQ, nenhum texto do detalhe nem do diálogo de chegada traz ZQ',
-      (t) async {
-        // "ZQ": letras que nenhum id, código ou data tem (sentinela do B-SAN3-26).
-        final wo = _woCompleta(
-          status: WorkOrderStatus.enRoute,
-          checkinPlateTail: 'ZQ',
-        );
-        await t.pumpWidget(_detalhe(wo));
-        await t.pumpAndSettle();
-        for (final texto in _textosNaTela(t)) {
-          expect(texto.contains('ZQ'), isFalse, reason: 'detalhe: "$texto"');
-        }
-        final chegada = find.byKey(const Key('checkin-arrived'));
-        await t.scrollUntilVisible(
-          chegada,
-          300,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await t.tap(chegada);
-        await t.pumpAndSettle();
-        expect(find.byKey(const Key('plate-input')), findsOneWidget);
-        final textos = _textosNaTela(t);
-        expect(textos, isNotEmpty);
-        for (final texto in textos) {
-          expect(texto.contains('ZQ'), isFalse, reason: 'diálogo: "$texto"');
-        }
-      },
-    );
+    // Emenda 1.2 — o percurso do B-GUI-FID1: detalhe → "Iniciar atendimento" → tela de chegada → "Iniciar rota" →
+    // "Cheguei ao local" → diálogo com a dica `plate-masked-hint`. Nas 3 aparências (o arnês do FID1 expõe a troca).
+    for (final ap in AppAppearance.values) {
+      testWidgets(
+        'D7b — ${ap.letter}: com plateMasked ABC1D** e fim ZQ, nenhum texto do detalhe, da chegada nem do diálogo traz ZQ',
+        (t) async {
+          fixarTela(t, const Size(390, 1800));
+          // "ZQ": letras que nenhum id, código ou data tem (sentinela do B-SAN3-26).
+          final wo = _woCompleta(
+            status: WorkOrderStatus.dispatched,
+            checkinPlateTail: 'ZQ',
+          ).copyWith(serviceType: WorkOrderServiceType.tow);
+          Future<void> tocar(Finder f) async {
+            await t.ensureVisible(f);
+            await t.pumpAndSettle();
+            await t.tap(f);
+            await t.pumpAndSettle();
+          }
+
+          void semFim(String onde) {
+            final textos = _textosNaTela(t);
+            expect(textos, isNotEmpty, reason: onde);
+            for (final texto in textos) {
+              expect(texto.contains('ZQ'), isFalse, reason: '$onde: "$texto"');
+            }
+          }
+
+          await t.pumpWidget(_detalhe(wo, aparencia: ap));
+          await t.pumpAndSettle();
+          semFim('detalhe');
+          await tocar(find.byKey(const Key('detalhe-os-iniciar')));
+          expect(
+            find.byKey(Key('aparencia-checkin-${ap.letter}')),
+            findsOneWidget,
+          );
+          semFim('chegada');
+          await tocar(find.byKey(const Key('checkin-start-route')));
+          semFim('chegada em rota');
+          await tocar(find.byKey(const Key('checkin-arrived')));
+          expect(find.byKey(const Key('plate-input')), findsOneWidget);
+          final dica = find.byKey(const Key('plate-masked-hint'));
+          expect(dica, findsOneWidget);
+          expect(t.widget<Text>(dica).data, isNot(contains('ZQ')));
+          semFim('diálogo');
+        },
+      );
+    }
   });
 }
