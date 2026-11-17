@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1236** |
-| IDs distintos | 1225 |
-| **ABERTAS** | **958** |
+| Cabecalhos `## P-` | **1244** |
+| IDs distintos | 1233 |
+| **ABERTAS** | **966** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **897** |
+| — das quais **ativas nesta rodada** | **905** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 274 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1236 cabecalhos para 1225 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1244 cabecalhos para 1233 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 370
+## ABERTAS · balde A — material — 375
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -444,8 +444,13 @@
 | `P-ASS08C-REQUISITOS-DAS-ABERTURAS` | 16619 | MÉDIA | sim | P-ASS08C-REQUISITOS-DAS-ABERTURAS (2026-11-15) — os requisitos que o #569 deixou "para a |
 | `P-579-MERGE-EDITOU-PENDENCIA` | 16627 | MÉDIA | sim | P-579-MERGE-EDITOU-PENDENCIA (2026-11-16) — o merge de absorção do #579 trouxe 9 linhas  |
 | `P-APP-TELAS-SEM-3-OPCOES` | 16647 | MÉDIA | sim | P-APP-TELAS-SEM-3-OPCOES (2026-11-15) — as telas do app sem maquete de 3 opções — MÉDIA |
+| `P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA` | 16719 | MÉDIA | sim | P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor c |
+| `P-K11H-INTERMITENTE` | 16726 | MÉDIA | sim | P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA |
+| `P-T17-FILA-INTERMITENTE` | 16733 | MÉDIA | sim | P-T17-FILA-INTERMITENTE (2026-11-16) — o `[T-17-FILA-db] (b)` cai intermitentemente — MÉ |
+| `P-APP-CHECKLIST-MODELO-DEMO-NO-REAL` | 16747 | MÉDIA | sim | P-APP-CHECKLIST-MODELO-DEMO-NO-REAL (2026-11-16) — os modelos de vistoria de demonstraçã |
+| `P-APP-TEXTOS-SEM-ACENTO` | 16754 | MÉDIA | sim | P-APP-TEXTOS-SEM-ACENTO (2026-11-16) — textos do app sem acento — MÉDIA |
 
-## ABERTAS · balde B — processo/registro — 527
+## ABERTAS · balde B — processo/registro — 530
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -976,6 +981,9 @@
 | `P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP` | 16685 | BAIXA | sim | P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP (2026-11-15) — na web, o campo "Registro" do d |
 | `P-SAN3-16-CARTAO-APROVACOES-DA-HOME` | 16692 | BAIXA | sim | P-SAN3-16-CARTAO-APROVACOES-DA-HOME (2026-11-15) — o cartão de Aprovações da tela inicia |
 | `P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA` | 16699 | BAIXA | sim | P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA (2026-11-15) — `docs/mobile-sync-contracts.md` ainda ci |
+| `P-572-GUARDA-PULA-NUL` | 16740 | BAIXA | sim | P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto c |
+| `P-APP-LISTA-OS-ERRO-COM-200` | 16761 | BAIXA | sim | P-APP-LISTA-OS-ERRO-COM-200 (2026-11-16) — a lista de OS mostra erro mesmo com resposta  |
+| `P-KPI-APPEND-FLUTTER-OUTRAS` | 16769 | BAIXA | sim | P-KPI-APPEND-FLUTTER-OUTRAS (2026-11-17) — o anexador de histórico de KPI não lê o fim d |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

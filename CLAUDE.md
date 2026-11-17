@@ -125,6 +125,9 @@ e pagou o preço.
 - **Norma citada que não existe na ref julgada não se aplica.** Bloquear por cláusula que não está escrita é
   reprovação por construção — a patologia que a auditoria de 2026-08-28 mediu em **11 de 16** bloqueantes.
 
+## A8. Decisão ao dono vai em artefato (decisão do dono, 2026-11-16, `D-DONO-1611-DECISAO-EM-ARTEFATO`)
+Nas palavras do dono: *"A partir de agora para minhas decisoes vc tem que montar um artefato, com imagens, geficos e tudo mais para melhorar meu entendimento como analise e recomendacao de cada ponto. documente e espalhe a noficia."* **O que vale:** toda decisão que o orquestrador pede ao dono vai num artefato com gráficos e imagens, análise e recomendação por ponto, e o que vale se ele não responder; o chat fica curto.
+
 ---
 
 # PARTE B — Guia de implementação do MVP

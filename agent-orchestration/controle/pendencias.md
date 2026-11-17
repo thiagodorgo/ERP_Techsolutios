@@ -16715,3 +16715,60 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
 - **fato:** `tests/bsan317-consentimento-localizacao-db.test.ts:696` chama `waitForOwnBlockedOrSettled` sem `blockedBy` e sem filtrar o pid de R: B, que espera atrás de R (a ordem certa), conta como "R presa pela posição nova". O helper (`tests/helpers/pg-barrier.ts`) não tem filtro pelo pid do perdedor. Os dois arquivos são de fora do `B-SAN3-16` (teste existente e helper), e o bloco proíbe editar teste existente.
 - **critério de encerramento:** a checagem olha só a sessão de R (o pid dela), sem mudar nenhuma asserção do comportamento; 0 queda em N ≥ 50 execuções.
+
+## P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor cancela a nota quando o pagamento dele é todo devolvido, mesmo com outro valor ainda pago no demonstrativo — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
+- **origem:** Emenda 1 do plano do `B-ASS-08c2` (§9, fora do repositório); a pergunta ao dono vai ao artefato quando o 08c3 começar.
+- **fato:** no estorno pelo provedor, a nota é cancelada quando aquele pagamento é todo devolvido, mesmo que o demonstrativo ainda tenha outro valor pago (o caso realista: parte paga pelo provedor, o resto à mão, e o provedor devolve a parte dele). A pergunta ao dono: (a) continuar cancelando, como hoje, ou (b) seguir a regra do estorno manual (só alerta, sem cancelar, até todo o dinheiro ser devolvido). Recomendação: (b). Sem resposta: (a).
+- **critério de encerramento:** a resposta do dono decide (a) ou (b), e o `B-ASS-08c3` implementa o caminho decidido com teste, antes de ligar a nota.
+
+## P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (o teste é de dinheiro; sobe e desce até a causa sair) · **escopo:** `pre-existente` (fora do bloco) · **dono:** o próximo bloco do financeiro de títulos, com o conserto da premissa do arnês · **bloqueia:** não.
+- **origem:** `dp-prerev-08c2-l1` (CI-01). Aberta como BAIXA na Emenda 2 do 08c2, subiu de gravidade na reclassificação do orquestrador (18:41) e voltou para MÉDIA depois do diagnóstico `dp-diag-k11h` (20:25).
+- **N e forma:** 1 queda no CI do 08c2 (o re-run ficou verde). Diagnóstico `dp-diag-k11h`: 50/50 verdes (30 rodadas sozinho, 10 com carga e 10 com carga pesada); o `changeStatus` é um `UPDATE … WHERE status=<lido> … RETURNING` atômico, a sonda ao vivo recusa o perdedor obsoleto, e o "aceitou" do CI só se explica por um estado intermediário legítimo na releitura — aponta para a premissa de ordem no arnês, não para defeito de dinheiro.
+- **critério de encerramento:** a premissa de ordem do arnês é consertada (ou a causa é medida), e o `T-K11h` deixa de cair de forma intermitente.
+
+## P-T17-FILA-INTERMITENTE (2026-11-16) — o `[T-17-FILA-db] (b)` cai intermitentemente — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (fora do bloco) · **dono:** o próximo bloco que tocar o consentimento (`bsan317-consentimento-localizacao-db`) · **bloqueia:** não.
+- **origem:** push do item 67 (`dev-67-e2-cl`, PR #586): a tentativa 1 caiu no `T-17-FILA-db (b)` (`bsan317-consentimento-localizacao-db`), fora do bloco, que já falhou e passou antes.
+- **N e forma:** 1 queda no push, já vista antes passar e falhar; o re-run ficou verde.
+- **critério de encerramento:** o teste deixa de cair de forma intermitente, com a causa medida e consertada (ou o flake listado com dono).
+
+## P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto com byte NUL nos 8000 primeiros bytes — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** o guarda do repositório (ferramenta do #572) · **dono:** o próximo bloco que tocar o guarda · **bloqueia:** não.
+- **origem:** revisão do refresh do #572 (`rev-572-refresh-cl`), que pediu o registro no próximo PR de registro.
+- **fato:** o guarda pula arquivo de texto que tenha um byte NUL nos 8000 primeiros bytes.
+- **critério de encerramento:** o guarda não pula mais o arquivo com byte NUL (ou documenta o pulo como aceite), com teste.
+
+## P-APP-CHECKLIST-MODELO-DEMO-NO-REAL (2026-11-16) — os modelos de vistoria de demonstração são gravados quando a 1ª busca falha, também no modo real — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (`checklist_repository.dart:163-205`) · **dono:** o bloco que tocar `checklist_repository.dart:163-205` (leitura do redator; o plano do app guincho marca como "de outro bloco", e o `B-GUI-03` declara a dependência no PR) · **bloqueia:** não.
+- **origem:** retrato do app de campo de 16/11 ("App de Campo Hoje"), a confirmar por execução; decisão F (a) do dono: os outros 2 achados do retrato (os de organização) entram no portão, e este vira pendência.
+- **fato:** o app grava modelos de vistoria de demonstração quando a 1ª busca falha, também no modo real.
+- **critério de encerramento:** no modo real, a 1ª busca falha não grava modelo de demonstração, com teste.
+
+## P-APP-TEXTOS-SEM-ACENTO (2026-11-16) — textos do app sem acento — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** app de campo (`pre-existente`) · **dono:** os blocos do app guincho, cada um acentuando o que reescreve (leitura do redator; o `B-GUI-01` só acentua as frases que ele mesmo reescreve) · **bloqueia:** não.
+- **origem:** retrato do app de campo de 16/11 ("App de Campo Hoje"); decisão F (a) do dono: os outros 2 achados do retrato entram no portão, e este vira pendência.
+- **fato:** literais sem acento no app: "Nao foi possivel", "sessao", "alteracoes", "Gestao".
+- **critério de encerramento:** os literais do app saem acentuados (PT-BR de negócio), sem regressão de texto.
+
+## P-APP-LISTA-OS-ERRO-COM-200 (2026-11-16) — a lista de OS mostra erro mesmo com resposta 200 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** app de campo · **dono:** o próximo bloco que tocar a lista de OS do app · **bloqueia:** não.
+- **origem:** item 68 (PR #588), F0 a F7; achado novo no registro do PR.
+- **fato:** a lista de OS mostra "Não foi possível atualizar suas ordens agora." mesmo com a resposta 200. É provavelmente o que o dono viu no Pixel; a causa não foi medida.
+- **critério de encerramento:** a lista de OS não mostra erro com resposta 200, com teste.
+
+
+## P-KPI-APPEND-FLUTTER-OUTRAS (2026-11-17) — o anexador de histórico de KPI não lê o fim de saída do Flutter — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** ferramenta (`scripts/kpi-history-append.mjs`) · **dono:** um PR de ferramenta próprio · **bloqueia:** não.
+- **origem:** marco de KPI (PR #590, `kpi-1711-grava-cl`), na retomada de 17/11; a proposta foi do DeepSeek Flash e a redação do Claude.
+- **N e forma:** o anexador só lê `+N: All tests passed!`, mas o Flutter termina em `+N ~M: All other tests passed!` desde o #583; o redator gravou 5 entradas com uma cópia fora do repositório, declarada no `backfill_note`.
+- **critério de encerramento:** o anexador lê o fim de saída do Flutter (`+N ~M: All other tests passed!`) e deixa de pular essas entradas, com teste.
