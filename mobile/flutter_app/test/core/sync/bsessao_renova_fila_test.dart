@@ -13,6 +13,7 @@ import 'package:erp_techsolutions_mobile/core/evidence/evidence_sync.dart';
 import 'package:erp_techsolutions_mobile/core/evidence/evidence_upload.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/app_database.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/database_provider.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/drift_sync_action_store.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/drift_work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/core/location/field_location_api.dart';
 import 'package:erp_techsolutions_mobile/core/location/field_location_service.dart';
@@ -493,6 +494,69 @@ void main() {
             expect(d.lastErrorCode, 'SESSION_EXPIRED');
             expect(d.userId, 'u1');
           }
+        },
+      );
+    }
+  });
+
+  // J588-C3-A1: a fila aqui é a do app (a persistente sobre o banco local), sem
+  // o override da fila em memória, e a leitura de conferência vem do banco por
+  // um store novo, fora do container. Assim tanto um "Sair" que apague as
+  // pending do store quanto um que as marque synced pela fila ficam vermelhos.
+  group('[T5d] o "Sair" não tira da fila a ação que ainda não subiu', () {
+    Map<String, Object?> retrato(SyncAction a) => {
+      'clientActionId': a.clientActionId,
+      'tenantId': a.tenantId,
+      'userId': a.userId,
+      'type': a.type,
+      'payload': a.payload,
+      'status': a.status,
+      'retryCount': a.retryCount,
+      'createdAt': a.createdAt.toIso8601String(),
+      'lastErrorCode': a.lastErrorCode,
+      'lastSafeError': a.lastSafeError,
+      'processedAt': a.processedAt?.toIso8601String(),
+    };
+
+    for (final servidor in const ['online', 'fora do ar']) {
+      test(
+        '[T5d] com o servidor $servidor: depois do "Sair", as 2 ações pending continuam pending e iguais no banco local',
+        () async {
+          await app.storage.saveSession(sessaoGuardada(acesso: 'A0'));
+          await app.abrir(
+            extras: [
+              ...clientesNoTerreno(terreno),
+              appDatabaseProvider.overrideWithValue(db),
+            ],
+          );
+          expect(app.estado?.status, AuthStatus.authenticated);
+          final fila = app.container.read(syncQueueRepositoryProvider);
+          final banco = DriftSyncActionStore(db); // a conferência, fora do app
+          await fila.enqueue(
+            _acao('d-sair', ExpenseSyncActionTypes.reportCreate, {
+              'local_id': 'rel-sair',
+              'title': 'Despesa',
+            }, retryCount: 1),
+          );
+          await fila.enqueue(
+            _acao('o-sair', WorkOrderSyncActionTypes.create, {
+              'local_id': 'wo-sair',
+              'title': 'OS',
+            }, lastErrorCode: 'SESSION_EXPIRED'),
+          );
+          final antes = [for (final a in await banco.load()) retrato(a)];
+          expect(antes, hasLength(2));
+          expect(
+            antes.map((a) => a['status']),
+            everyElement(SyncStatus.pending),
+          );
+          if (servidor == 'fora do ar') await terreno.stop();
+
+          await app.notifier.logout();
+
+          expect(app.estado?.status, AuthStatus.unauthenticated);
+          final depois = [for (final a in await banco.load()) retrato(a)];
+          expect(depois, antes);
         },
       );
     }

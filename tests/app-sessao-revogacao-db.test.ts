@@ -138,9 +138,9 @@ if (!connectionString) {
     const acc = (r: Http) => r.body?.data?.access_token as string | undefined;
     const passa = async (access: string | undefined) =>
       (await fetch(`${baseUrl}/api/v1/portao`, { headers: { authorization: `Bearer ${access ?? "x"}` } })).status !== 401;
-    // Duas conexões abertas no pool do papel antes de prender a linha: a 2ª renovação não espera conexão nova.
-    const warmPool = () =>
-      Promise.all([0, 1].map(() => role.client.$transaction(async (tx) => tx.$queryRaw`SELECT pg_sleep(0.2)::text AS x`)));
+    // Conexões abertas no pool do papel antes de prender a linha (2 por padrão): a renovação seguinte não espera conexão nova.
+    const warmPool = (n = 2) =>
+      Promise.all(Array.from({ length: n }, () => role.client.$transaction(async (tx) => tx.$queryRaw`SELECT pg_sleep(0.2)::text AS x`)));
     // O serviço direto, no formato da rota (status e corpo), para as corridas presas na trava da linha.
     const direct = async (token: string, binding: Record<string, string> = {}, service: Service = literal): Promise<Http> => {
       const r = await service.refreshSession(token, binding);
@@ -256,21 +256,51 @@ if (!connectionString) {
       assert.equal((await refresh(tok(results[0]) as string)).status, 200);
     });
 
-    it("[SV5] 2 renovações em voo com o R0: 2 × 200, o mesmo token, e o R1 renova", async () => {
+    // [SV5], [SV5b] (J588-C1-01): a barreira causal do [SV5c], pela rota. A linha da sessão fica presa; cada onda de
+    // renovações só sai depois que TODAS as anteriores esperam a trava (pg_stat_activity) e mais 1,2 s, então cada
+    // onda calcula o sucessor noutro segundo. Só com todas presas a trava solta. Sem a troca condicional, cada onda
+    // gravaria o seu sucessor, e os tokens seriam mais de um (o `Promise.all` solto não distinguia: duas trocas no
+    // mesmo segundo calculam o mesmo token).
+    const presasNaTrava = async (sessionId: string, ondas: number[], mandar: () => Promise<Http>): Promise<Http[]> => {
+      await warmPool(ondas.reduce((soma, n) => soma + n, 0));
+      const voo: Promise<Http>[] = [];
+      await admin.$transaction(
+        async (tx) => {
+          await tx.$queryRaw`SELECT id FROM auth_sessions WHERE id = ${sessionId}::uuid FOR UPDATE`;
+          for (const [k, n] of ondas.entries()) {
+            if (k > 0) await new Promise((resolve) => setTimeout(resolve, 1200));
+            for (let j = 0; j < n; j++) voo.push(mandar());
+            for (let i = 0; ; i++) {
+              const waiting = await tx.$queryRaw<{ n: bigint }[]>`
+                SELECT count(*)::bigint AS n FROM pg_stat_activity
+                WHERE usename = ${role.roleName} AND wait_event_type = 'Lock'`;
+              if (Number(waiting[0].n) >= voo.length) break;
+              assert.ok(i < 300, `as ${voo.length} renovações não chegaram a esperar a trava`);
+              await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+          }
+        },
+        { timeout: 60_000, maxWait: 10_000 },
+      );
+      return Promise.all(voo);
+    };
+
+    it("[SV5] 2 renovações em voo com o R0, presas na trava e 1,2 s uma da outra: 2 × 200, o mesmo token, e o R1 renova", async () => {
       const s = await newSession();
-      const [a, b] = await Promise.all([refresh(s.refreshToken), refresh(s.refreshToken)]);
+      const [a, b] = await presasNaTrava(s.sessionId, [1, 1], () => refresh(s.refreshToken));
       assert.deepEqual([a.status, b.status], [200, 200]);
-      assert.equal(tok(a), tok(b));
+      assert.equal(tok(a), tok(b), "o mesmo token nas duas");
       assert.equal(await revoked(s.sessionId), false);
-      assert.equal((await refresh(tok(a) as string)).status, 200);
+      assert.equal((await refresh(tok(a) as string)).status, 200, "o R1 renova");
     });
 
-    it("[SV5b] 10 em voo: 10 × 200, 1 token, e o R1 renova", async () => {
+    it("[SV5b] 10 em voo, presas na trava, em 2 ondas de 5 a 1,2 s: 10 × 200, 1 token, e o R1 renova", async () => {
       const s = await newSession();
-      const all = await Promise.all(Array.from({ length: 10 }, () => refresh(s.refreshToken)));
+      const all = await presasNaTrava(s.sessionId, [5, 5], () => refresh(s.refreshToken));
       assert.deepEqual(all.map((r) => r.status), Array(10).fill(200));
-      assert.equal(new Set(all.map(tok)).size, 1);
-      assert.equal((await refresh(tok(all[0]) as string)).status, 200);
+      assert.equal(new Set(all.map(tok)).size, 1, "1 token nas 10");
+      assert.equal(await revoked(s.sessionId), false);
+      assert.equal((await refresh(tok(all[0]) as string)).status, 200, "o R1 renova");
     });
 
     it("[SV5c] 2 com o R0, a 2ª 1,2 s depois, presas na trava da linha: o mesmo token, e o R1 renova", async () => {
