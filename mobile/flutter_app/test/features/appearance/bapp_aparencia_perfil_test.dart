@@ -43,7 +43,8 @@ String _meta(WidgetTester t) =>
 
 void main() {
   testWidgets('PF1. a seção "Telas" lista só as telas registradas, com a '
-      'escolha atual no meta', (t) async {
+      'escolha atual no meta (sem escolha, o padrão: a B na Localização, '
+      'B-GUI-00)', (t) async {
     await _profile(t);
     expect(find.text('Telas'), findsOneWidget);
     expect(
@@ -51,12 +52,12 @@ void main() {
       findsNWidgets(appAppearanceScreens.length),
     );
     expect(find.text('Localização e consentimento'), findsOneWidget);
-    expect(_meta(t), ' · A · Cartões de hoje');
+    expect(_meta(t), ' · B · Como o protótipo');
   });
 
   testWidgets('PF2. escolher B grava B e o meta mostra "B · Como o '
       'protótipo"', (t) async {
-    final w = await _profile(t);
+    final w = await _profile(t, prefs: {_key: AppAppearance.a});
     await _open(t);
     await _choose(t, AppAppearance.b);
     expect(_meta(t), ' · B · Como o protótipo');
@@ -74,14 +75,13 @@ void main() {
     expect(_meta(t), ' · C · Resumo e ações fixas');
   });
 
-  testWidgets('PF4. o selo "padrão" fica na A, e a nota pessoal aparece', (
-    t,
-  ) async {
+  testWidgets('PF4. o selo "padrão" fica na B (o desenho aprovado, B-GUI-00), '
+      'e a nota pessoal aparece', (t) async {
     await _profile(t);
     await _open(t);
     expect(
       find.descendant(
-        of: find.byKey(Key('aparencia-opcao-$_key-A')),
+        of: find.byKey(Key('aparencia-opcao-$_key-B')),
         matching: find.text('padrão'),
       ),
       findsOneWidget,
@@ -110,7 +110,7 @@ void main() {
       'vale na sessão', (t) async {
     await _profile(t, store: RefusingAppAppearanceStore());
     await _open(t);
-    await _choose(t, AppAppearance.b);
+    await _choose(t, AppAppearance.c);
     expect(
       find.text(
         'Não foi possível guardar a escolha neste aparelho. Ela vale até '
@@ -118,7 +118,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(_meta(t), ' · B · Como o protótipo');
+    expect(_meta(t), ' · C · Resumo e ações fixas');
   });
 
   testWidgets('PF7. com o aparelho guardando, nenhum aviso', (t) async {
