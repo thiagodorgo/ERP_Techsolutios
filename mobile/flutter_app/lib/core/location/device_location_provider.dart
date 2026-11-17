@@ -40,9 +40,7 @@ class DeviceLocationResult {
     return DeviceLocationResult._(
       isAvailable: false,
       safeMessage:
-          safeMessage ??
-          'Localizacao do dispositivo indisponivel nesta versao. '
-              'Mapa e sincronizacao preparados para o adapter GPS nativo pendente.',
+          safeMessage ?? 'Não foi possível obter a localização deste aparelho.',
     );
   }
 
