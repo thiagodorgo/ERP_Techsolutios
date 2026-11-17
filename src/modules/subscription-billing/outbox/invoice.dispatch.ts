@@ -145,7 +145,7 @@ export class InvoiceOutboxHandler {
     const context = await this.deps.resolveIssueContext({ tenantId: row.tenantId, statementId: row.statementId, provider: row.provider, statement });
     if ("reason" in context) return { kind: "needs_review", code: context.reason };
 
-    let begun: { readonly invoice: SubscriptionStatementInvoice; readonly statementPaid: boolean };
+    let begun: { readonly invoice: SubscriptionStatementInvoice; readonly created: boolean; readonly statementPaid: boolean };
     try {
       begun = await this.deps.invoices.beginIssue(
         { tenantId: row.tenantId, statementId: row.statementId, seq: payloadSeq(row), provider: row.provider, environment: context.environment, serie: context.serie },
@@ -163,8 +163,10 @@ export class InvoiceOutboxHandler {
     if (!begun.statementPaid) return this.#resolveWithoutIssuing(row, invoice, port, now);
 
     // Órfã de crash, ou emissão que já chegou ao provedor: RECONSULTA pela `ref` ANTES de repetir (G8). `unknown` = nunca
-    // chegou → emitir (e a `ref` repetida é recusada pelo provedor como `already_issued`, idempotente).
-    if (wasOrphan || invoice.providerInvoiceId) {
+    // chegou → emitir (e a `ref` repetida é recusada pelo provedor como `already_issued`, idempotente). B-ASS-08c2 (Emenda 1
+    // §4.1): também a RETENTATIVA de uma nota já começada (`created: false`) — o POST anterior pode ter chegado e a resposta se
+    // perdido; sem a reconsulta, uma duplicidade com texto não reconhecido viraria nota `rejected` (o NOTA-VAL) e uma 2ª nota.
+    if (wasOrphan || invoice.providerInvoiceId || !begun.created) { // [NOTA-RETRY]
       const lookup = await port.getInvoice(invoice.externalRef);
       if (lookup.status !== "unknown") {
         await this.#applyLookup(invoice, lookup, port, now);
