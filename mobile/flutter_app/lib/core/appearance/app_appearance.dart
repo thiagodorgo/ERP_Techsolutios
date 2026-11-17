@@ -71,6 +71,11 @@ const kLocationConsentAppearanceLabel = 'Localização e consentimento';
 /// (`execucao-guincho-3opcoes.reference.html`; F2).
 const kExecucaoGuinchoAppearanceKey = 'execucao-guincho';
 
+/// A chave do detalhe da OS (`os-detalhe-app-3opcoes.reference.html`;
+/// B-GUI-FID1). O check-in e a chegada moram na execução e seguem a escolha da
+/// execução do guincho ([kExecucaoGuinchoAppearanceKey]).
+const kDetalheOsAppearanceKey = 'detalhe-os';
+
 /// As telas do app que já entregam as 3 aparências. Cada fatia registra só as
 /// telas que ela entrega (plano §1.5).
 const List<AppAppearanceScreen> appAppearanceScreens = [
@@ -90,6 +95,15 @@ const List<AppAppearanceScreen> appAppearanceScreens = [
       AppAppearanceOption(AppAppearance.a, 'Fiel à tela de hoje'),
       AppAppearanceOption(AppAppearance.b, 'Guiada por fases'),
       AppAppearanceOption(AppAppearance.c, 'Coleta × Entrega lado a lado'),
+    ],
+  ),
+  AppAppearanceScreen(
+    key: kDetalheOsAppearanceKey,
+    label: 'Detalhe da OS',
+    options: [
+      AppAppearanceOption(AppAppearance.a, 'Fiel ao desenho aprovado'),
+      AppAppearanceOption(AppAppearance.b, 'Prazo e etapas à vista'),
+      AppAppearanceOption(AppAppearance.c, 'Resumo em blocos e linhas'),
     ],
   ),
 ];

@@ -1,11 +1,11 @@
 import type { Request } from "express";
 
-import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-context.js";
+import { extractAuditRequestContext } from "../core-saas/audit/audit-request-context.js";
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
 import type { ApprovalService } from "./approval.service.js";
 import { createDefaultApprovalService } from "./approval.service.js";
-import type { OperationalApproval } from "./approval.types.js";
+import type { ApprovalAuditContext, OperationalApproval } from "./approval.types.js";
 
 export type ApprovalServiceResolver = () => Promise<ApprovalService>;
 
@@ -33,8 +33,8 @@ export class ApprovalController {
       actor,
       readRouteParam(request.params.approvalId),
       request.body ?? {},
+      auditContextOf(request),
     );
-    await this.recordDecisionAudit(request, approval);
     return { data: toApprovalDto(approval) };
   }
 
@@ -44,8 +44,8 @@ export class ApprovalController {
       actor,
       readRouteParam(request.params.approvalId),
       request.body ?? {},
+      auditContextOf(request),
     );
-    await this.recordDecisionAudit(request, approval);
     return { data: toApprovalDto(approval) };
   }
 
@@ -53,20 +53,20 @@ export class ApprovalController {
     return Promise.all([this.resolveService(), Promise.resolve(requireTenantContext(request))]);
   }
 
-  private recordDecisionAudit(request: Request, approval: OperationalApproval) {
-    return recordRequestAuditBestEffort(request, {
-      action: approval.status === "approved" ? "approval.approved" : "approval.rejected",
-      resourceType: approval.entityType,
-      resourceId: approval.entityId,
-      outcome: "success",
-      severity: approval.status === "approved" ? "info" : "warning",
-      metadata: {
-        approvalId: approval.id,
-        status: approval.status,
-        workOrderId: approval.workOrderId,
-      },
-    });
-  }
+}
+
+// B-APROVACOES-DURAVEIS (plano §3.5) — a auditoria da decisão e da recusa deixou de ser gravada aqui, por fora e depois do
+// fato: ela nasce na transação da decisão (ou, na recusa, numa transação própria antes do 403). O controller só entrega o
+// contexto da requisição, os mesmos campos que a linha de antes levava.
+function auditContextOf(request: Request): ApprovalAuditContext {
+  const context = extractAuditRequestContext(request);
+  return {
+    actorEmail: context.actorEmail,
+    requestId: context.requestId,
+    correlationId: context.correlationId,
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
+  };
 }
 
 export function toApprovalDto(approval: OperationalApproval) {

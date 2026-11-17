@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
 
+import {
+  assertApprovalRequestOnlyOnCompletion,
+  completionApprovalRequestInput,
+  getMemoryApprovalRepository,
+  type ApprovalRepository,
+} from "./approval.repository.js";
+
 import type {
   AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
@@ -107,6 +114,10 @@ export type FieldRequestUnit = {
   readonly status: WorkOrderStatus;
   listTimeline(): Promise<readonly WorkOrderEvent[]>;
   createEvent(input: Omit<CreateWorkOrderEventInput, "tenantId" | "workOrderId">): Promise<WorkOrderEvent>;
+  // B-APROVACOES-DURAVEIS (Emenda 3, E-67-TRAVA) — a fila de Aprovações DENTRO da unidade: em banco, o MESMO `tx` da
+  // trava, da linha do tempo e do evento (a aprovação e o evento ficam os dois, ou nenhum); em memória, o armazém que o
+  // serviço de aprovações lê (sem rollback: o limite E13-03 do 16 continua valendo só ali).
+  readonly approvals: Pick<ApprovalRepository, "request">;
 };
 
 export type CreateWorkOrderEventInput = {
@@ -121,6 +132,10 @@ export type CreateWorkOrderEventInput = {
 };
 
 export class InMemoryWorkOrderRepository implements WorkOrderRepository {
+  // B-APROVACOES-DURAVEIS (plano §3.6) — o armazém de aprovações em que a conclusão grava o pedido: por padrão, o MESMO
+  // que o serviço de aprovações em memória lê.
+  constructor(private readonly approvals: Pick<ApprovalRepository, "request"> = getMemoryApprovalRepository()) {}
+
   private readonly workOrders = new Map<string, WorkOrder>();
   private readonly events = new Map<string, WorkOrderEvent>();
   private readonly assignments = new Map<string, WorkOrderAssignment>();
@@ -462,6 +477,7 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     if (input.status === "cancelled" && input.financialCancellationDecision == null) {
       throw new WorkOrderError(422, "WORK_ORDER_UNPROCESSABLE", "cancel_requires_decision", "A cancelled work order requires a financial decision.");
     }
+    assertApprovalRequestOnlyOnCompletion(input);
     const now = new Date();
     const updated: WorkOrder = {
       ...current,
@@ -480,7 +496,20 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       completedAt: input.status === "completed" ? now : current.completedAt,
       cancelledAt: input.status === "cancelled" ? now : current.cancelledAt,
     };
+    // B-APROVACOES-DURAVEIS — o pedido da conclusão no MESMO tique do status: o corpo síncrono do `request` da memória
+    // grava o pedido antes do primeiro `await`, sem intervalo entre o status e o pedido.
+    let pedido: Promise<unknown> | undefined;
+    if (input.approvalRequest) pedido = this.approvals.request(completionApprovalRequestInput(input, input.approvalRequest)); // B-APROV:pedido-na-unidade-memoria
     this.workOrders.set(updated.id, updated);
+    if (pedido) {
+      try {
+        await pedido;
+      } catch (error) {
+        // Tudo ou nada também na memória: sem o pedido, a OS volta ao que era.
+        this.workOrders.set(current.id, current);
+        throw error;
+      }
+    }
 
     return updated;
   }
@@ -689,6 +718,7 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
         status: workOrder.status,
         listTimeline: () => this.listTimeline(tenantId, workOrderId),
         createEvent: (input) => this.createEvent({ ...input, tenantId, workOrderId }),
+        approvals: this.approvals,
       });
     });
     const settled = current.then(

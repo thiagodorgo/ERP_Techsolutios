@@ -37,7 +37,7 @@ class ExpenseSubmitScreen extends ConsumerWidget {
                   FilledButton.icon(
                     onPressed: null,
                     icon: const Icon(Icons.send_outlined),
-                    label: const Text('Submeter localmente'),
+                    label: const Text('Enviar para aprovação'),
                   ),
                 ],
               ),
@@ -93,7 +93,7 @@ class ExpenseSubmitScreen extends ConsumerWidget {
                           }
                         },
                   icon: const Icon(Icons.send_outlined),
-                  label: const Text('Submeter localmente'),
+                  label: const Text('Enviar para aprovação'),
                 ),
               ],
             ),

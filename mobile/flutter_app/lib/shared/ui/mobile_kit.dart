@@ -2132,3 +2132,94 @@ class _PhaseCardHeader extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// B-GUI-FID1 — os passos curtos da barra fixa do check-in (opção A,
+// `checkin-chegada.png`; `checkin-app-3opcoes.reference.html`, `ck-short`).
+// 1 linha em COMPONENT_LIBRARY.md.
+// ---------------------------------------------------------------------------
+
+/// Os passos curtos ("Iniciar · Em rota · Cheguei · Serviço · Concluir") acima
+/// do botão da barra fixa: o feito com o visto verde, o de agora azul, o resto
+/// cinza; o leitor de tela diz o estado de cada um. Só mostra: não é botão.
+class MobileShortSteps extends StatelessWidget {
+  const MobileShortSteps({
+    required this.labels,
+    required this.current,
+    super.key,
+  });
+
+  final List<String> labels;
+
+  /// O passo de agora (0 é o primeiro); os anteriores estão feitos.
+  final int current;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 0; i < labels.length; i++)
+          Expanded(
+            child: Semantics(
+              label:
+                  '${labels[i]}, '
+                  '${i < current
+                      ? 'feito'
+                      : i == current
+                      ? 'atual'
+                      : 'a fazer'}',
+              excludeSemantics: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 22,
+                    height: 22,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i < current
+                          ? ErpMobileTheme.success
+                          : i == current
+                          ? ErpMobileTheme.primary
+                          : Colors.white,
+                      border: i > current
+                          ? Border.all(color: ErpMobileTheme.cardBorder)
+                          : null,
+                    ),
+                    child: i < current
+                        ? const Icon(Icons.check, size: 13, color: Colors.white)
+                        : Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              color: i == current
+                                  ? Colors.white
+                                  : ErpMobileTheme.inkMuted,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    labels[i],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: i == current
+                          ? FontWeight.w800
+                          : FontWeight.w600,
+                      color: i == current
+                          ? ErpMobileTheme.primary
+                          : _textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}

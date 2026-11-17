@@ -11,10 +11,12 @@ import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import {
   duplicateWorkOrderError,
   InMemoryWorkOrderRepository,
+  type FieldRequestUnit,
   type WorkOrderRepository,
 } from "./work-order.repository.js";
 import { buildGeocodeQueryString, GeocoderUnavailableError, type Geocoder } from "./geocoding/geocoder.js";
 import { NoopGeocoder } from "./geocoding/noop-geocoder.js";
+import { getMemoryApprovalRepository } from "./approval.repository.js";
 import { createDefaultGeocoder } from "./geocoding/geocoder.factory.js";
 import {
   assertCheckinReferenceUnchanged,
@@ -1632,10 +1634,11 @@ export class WorkOrderService {
    *  5. validação (400 `required_field`, `invalid_urgency`, `field_too_long`);
    *  6. OS terminal → 422 `work_order_closed`, sobre a situação RELIDA sob a trava (E13-01);
    *  7. só o pedido de aprovação: a fila de Aprovações PRIMEIRO, pelo efeito do caller (este serviço não importa a
-   *     fila), com a trava tomada. Se ela falhar, a unidade volta sem evento, e o reenvio cai na mesma pendência (a
-   *     chave é determinística). Se ela grava e o evento ou o commit falham depois, a pendência fica na fila (em
-   *     memória, item 67) sem evento, e o reenvio se corrige: não acha o evento, recebe a MESMA pendência e grava o
-   *     evento (E13-03; a atomicidade completa entre os dois só vem com a fila durável);
+   *     fila), com a trava tomada, e a fila é a DA UNIDADE (`unit.approvals`). Em banco, ela grava na MESMA transação
+   *     do evento (item 67, Emenda 3): se a fila, o evento ou o commit falham, nada fica, e o reenvio grava os dois.
+   *     Em memória, não há rollback: se ela grava e o evento falha depois, a pendência fica sem evento, e o reenvio se
+   *     corrige (não acha o evento, recebe a MESMA pendência pela chave determinística e grava o evento; o limite
+   *     E13-03);
    *  8. o evento, com metadados por lista fechada (§2.8: o ator vem do token, nunca do corpo) e o `approval_id`.
    * O status da OS NÃO muda. Devolve também quem atribuiu a OS por último (o destinatário do aviso do "não iniciou",
    * P8) e o motivo como ficou gravado (rotulado).
@@ -1676,7 +1679,7 @@ export class WorkOrderService {
           );
         }
 
-        const approvalId = await effects.openApproval?.(target, parsed.reason);
+        const approvalId = await effects.openApproval?.(target, parsed.reason, unit.approvals);
         await unit.createEvent({
           eventType,
           actorUserId: actor.userId,
@@ -1776,6 +1779,10 @@ export class WorkOrderService {
       workOrderId: current.id,
       cancellationReason,
       actorUserId: actor.userId,
+      // B-APROVACOES-DURAVEIS (item 67; plano §3.6) — toda conclusão, por qualquer porta (rota de status e fila do app
+      // chamam este método), leva o pedido de validação para dentro da escrita; a 1ª gravação e a regravação depois da
+      // releitura saem desta mesma montagem.
+      ...(nextStatus === "completed" ? { approvalRequest: { requestedByUserId: actor.userId, pendingReason: "Ordem de servico concluida e pronta para validacao operacional." } } : {}), // B-APROV:pedido-do-servico
     };
     const statusWrite = (verdict: CheckinVerdict | undefined, expectedStatus: WorkOrderStatus) => {
       const message = verdict
@@ -2530,7 +2537,8 @@ function checklistPhaseSubject(label: string | null, role: WorkOrderChecklistRol
   return phase ? `${named} ${phase}` : named;
 }
 
-const memoryRepository = new InMemoryWorkOrderRepository();
+// B-APROVACOES-DURAVEIS — a memória da OS grava o pedido da conclusão no MESMO armazém que o serviço de aprovações lê.
+const memoryRepository = new InMemoryWorkOrderRepository(getMemoryApprovalRepository());
 
 // B-O6R-09 · fatia 6 (emenda 1.1 EM1-07) — o escopo de escrita da memória sobre o MESMO armazém deste módulo, para a OS
 // criada dentro da aprovação do orçamento (que o recebe pelo import dinâmico que já usa).
@@ -3027,9 +3035,16 @@ function statusEventType(status: WorkOrderStatus) {
 
 // ─── B-SAN3-16 (item 5) — os auxiliares de `recordFieldRequest` ─────────────────────────────────────────────────
 
-/** O efeito que o caller injeta: a fila de Aprovações, chamada ANTES do evento (Emenda 1.1 §2.4). Devolve o id dela. */
+/**
+ * O efeito que o caller injeta: a fila de Aprovações, chamada ANTES do evento (Emenda 1.1 §2.4). Devolve o id dela.
+ * O 3º argumento é a fila da própria unidade (item 67, Emenda 3): em banco, o mesmo `tx` do evento.
+ */
 export type FieldRequestEffects = {
-  readonly openApproval?: (workOrder: WorkOrder, reason: string) => Promise<string>;
+  readonly openApproval?: (
+    workOrder: WorkOrder,
+    reason: string,
+    approvals: FieldRequestUnit["approvals"],
+  ) => Promise<string>;
 };
 
 export type FieldRequestOutcome = {

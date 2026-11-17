@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { publicErrorMessage } from "../../infra/logging/public-error.js";
 import { createDefaultNotificationService, type NotificationService } from "../notifications/notification.service.js";
-import { createDefaultApprovalService, type ApprovalService } from "../work-orders/approval.service.js";
+import type { ApprovalRepository } from "../work-orders/approval.repository.js";
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
 import {
   createDefaultWorkOrderService,
@@ -55,12 +55,12 @@ type MobileWorkOrderActionResult = {
  * serviços de runtime. A rota (`mobile.routes.ts`) não muda.
  */
 export type MobileWorkOrderSyncDeps = {
-  readonly approvals?: () => Promise<Pick<ApprovalService, "request">>;
+  readonly approvals?: (unit: Pick<ApprovalRepository, "request">) => Promise<Pick<ApprovalRepository, "request">>;
   readonly notifications?: () => Promise<Pick<NotificationService, "createNotification">>;
 };
 
 type ResolvedMobileWorkOrderSyncDeps = {
-  readonly approvals: () => Promise<Pick<ApprovalService, "request">>;
+  readonly approvals: (unit: Pick<ApprovalRepository, "request">) => Promise<Pick<ApprovalRepository, "request">>;
   readonly notifications: () => Promise<Pick<NotificationService, "createNotification">>;
 };
 
@@ -111,7 +111,7 @@ export async function syncMobileWorkOrderActions(
   const request = parseSyncRequest(body);
   const service = await resolveService();
   const resolvedDeps: ResolvedMobileWorkOrderSyncDeps = {
-    approvals: deps.approvals ?? createDefaultApprovalService,
+    approvals: deps.approvals ?? (async (unit) => unit),
     notifications: deps.notifications ?? createDefaultNotificationService,
   };
   const accepted: MobileWorkOrderActionResult[] = [];
@@ -313,8 +313,8 @@ async function processAction(
         action.payload,
         action.client_action_id,
         {
-          openApproval: (workOrder, reason) =>
-            openFieldApproval(deps, actor, workOrder, action.client_action_id, reason),
+          openApproval: (workOrder, reason, unitApprovals) =>
+            openFieldApproval(deps, actor, workOrder, action.client_action_id, reason, unitApprovals),
         },
       );
 
@@ -372,18 +372,20 @@ function fieldApprovalEntityId(workOrderId: string, userId: string, clientAction
   return `pedido-app:${digest.slice(0, 32)}`;
 }
 
-// B-SAN3-16 (Emenda 1.1 §2.4) — a fila de Aprovações é chamada ANTES do evento, pela porta pública (o item 67 a torna
-// durável sem editar esta regra). Falha da fila → 503 `approval_unavailable`, com mensagem fixa (o texto do erro
-// nunca sai): o app reenvia, e a chave determinística devolve a pendência que já existir.
+// B-SAN3-16 (Emenda 1.1 §2.4) — a fila de Aprovações é chamada ANTES do evento. Item 67 (Emenda 3): a fila padrão é a
+// DA UNIDADE do pedido (em banco, o mesmo `tx` da trava e do evento: ficam os dois, ou nenhum). Falha da fila → 503
+// `approval_unavailable`, com mensagem fixa (o texto do erro nunca sai): o app reenvia, e a chave determinística
+// devolve a pendência que já existir.
 async function openFieldApproval(
   deps: ResolvedMobileWorkOrderSyncDeps,
   actor: AuthenticatedActor,
   workOrder: WorkOrder,
   clientActionId: string,
   reason: string,
+  unitApprovals: Pick<ApprovalRepository, "request">,
 ): Promise<string> {
   try {
-    const approvals = await deps.approvals();
+    const approvals = await deps.approvals(unitApprovals);
     const approval = await approvals.request({
       tenantId: actor.tenantId,
       entityType: "work_order",

@@ -67,6 +67,7 @@ export const CENSORED_TENANT_TABLES = [
   "maintenance_orders",
   "mobile_action_receipts",
   "notifications",
+  "operational_approvals",
   "operator_profiles",
   "pois",
   "portal_access_logs",
