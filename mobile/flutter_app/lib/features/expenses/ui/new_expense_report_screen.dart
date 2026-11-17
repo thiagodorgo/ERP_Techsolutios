@@ -16,7 +16,8 @@ class _NewExpenseReportScreenState extends State<NewExpenseReportScreen> {
   final _titleController = TextEditingController(
     text: 'Prestação de Contas atendimento campo',
   );
-  final _advanceController = TextEditingController(text: '80.00');
+  // B-GUI-01a (PH-08): o adiantamento abre vazio, sem valor de exemplo.
+  final _advanceController = TextEditingController();
 
   @override
   void dispose() {
