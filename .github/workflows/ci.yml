@@ -356,6 +356,19 @@ jobs:
           # drill de RLS com papel efêmero e o aviso a quem atribuiu a OS (D1 a D4). Medida a lista inteira 3× nesta forma antes
           # de entrar (74 arquivos, banco migrado e semeado): 625/625, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/bsan316-fila-os-db.test.ts"
+          # B-APP-SESSAO-RENOVA (item 68 do portão) — a renovação da sessão do app sob papel efêmero sem BYPASSRLS: o "Sair" que
+          # diz a verdade e revoga a sessão inteira com qualquer token dela, o reenvio com prova de posse e a corrida, o reuso que
+          # derruba a família, a ordem invertida (R-3c) e o perdedor que relê (SV2 a SV21b, P-68-PERDEDOR-RELE-401).
+          SUITES="$SUITES tests/app-sessao-revogacao-db.test.ts"
+          # B-APROVACOES-DURAVEIS (item 67) — as aprovações operacionais gravadas no banco, isoladas por organização: o pedido sobrevive
+          # ao reinício, nasce na mesma transação da conclusão, a decisão é CAS (1 vence), RLS sob papel efêmero sem BYPASSRLS, drill da
+          # migração por prefixo e a recusa por segregação de função com auditoria durável (T1, T3 a T7).
+          SUITES="$SUITES tests/b-aprov-duraveis-restart-db.test.ts"
+          SUITES="$SUITES tests/b-aprov-duraveis-atomic-db.test.ts"
+          SUITES="$SUITES tests/b-aprov-duraveis-concurrency-db.test.ts"
+          SUITES="$SUITES tests/b-aprov-duraveis-rls-db.test.ts"
+          SUITES="$SUITES tests/b-aprov-duraveis-migration-drill-db.test.ts"
+          SUITES="$SUITES tests/b-aprov-duraveis-sod-audit-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

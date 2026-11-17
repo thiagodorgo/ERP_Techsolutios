@@ -18,6 +18,8 @@ const textEncoder = new TextEncoder();
 type JwtServiceOptions = {
   readonly secret?: string;
   readonly expiresIn?: string;
+  readonly jti?: string; // o sucessor do token tem jti derivado
+  readonly issuedAt?: number; // e o instante da troca
 };
 
 export async function signAccessToken(
@@ -54,7 +56,7 @@ export async function signRefreshToken(
 ): Promise<string> {
   const secret = options.secret ?? env.JWT_REFRESH_SECRET;
   const expiresInSeconds = getRefreshTokenExpiresInSeconds(options.expiresIn);
-  const issuedAt = Math.floor(Date.now() / 1000);
+  const issuedAt = options.issuedAt ?? Math.floor(Date.now() / 1000);
 
   return new SignJWT({
     session_id: input.session_id,
@@ -64,7 +66,7 @@ export async function signRefreshToken(
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setSubject(input.session_id)
-    .setJti(randomUUID())
+    .setJti(options.jti ?? randomUUID())
     .setIssuedAt(issuedAt)
     .setExpirationTime(issuedAt + expiresInSeconds)
     .setIssuer(accessTokenIssuer)

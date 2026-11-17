@@ -100,7 +100,7 @@ void main() {
       });
       final prefs = await store.read(_t1u1);
       expect(prefs, isEmpty);
-      expect(resolveAppAppearance(prefs, _key), AppAppearance.a);
+      expect(resolveAppAppearance(prefs, _key), defaultAppAppearanceFor(_key));
     });
 
     test('S7. sem dono a leitura é o vazio', () async {
@@ -109,7 +109,7 @@ void main() {
       expect(await store.read(null), isEmpty);
       expect(
         resolveAppAppearance(await store.read(null), _key),
-        AppAppearance.a,
+        defaultAppAppearanceFor(_key),
       );
     });
 
@@ -125,9 +125,10 @@ void main() {
       expect(await store.read(_t1u1), {_key: AppAppearance.b});
     });
 
-    test('S10. sem escolha abre A, em toda tela', () {
-      expect(defaultAppAppearanceFor(_key), AppAppearance.a);
-      expect(resolveAppAppearance(const {}, _key), AppAppearance.a);
+    test('S10. sem escolha abre o padrão: a B na Localização (o desenho '
+        'aprovado, B-GUI-00) e a A nas outras telas', () {
+      expect(defaultAppAppearanceFor(_key), AppAppearance.b);
+      expect(resolveAppAppearance(const {}, _key), AppAppearance.b);
       expect(defaultAppAppearanceFor('troca-senha'), AppAppearance.a);
     });
 
@@ -159,7 +160,8 @@ void main() {
   });
 
   group('providers', () {
-    test('P1. sem sessão autenticada (sessão carregando): A, como dado', () {
+    test('P1. sem sessão autenticada (sessão carregando): o padrão da tela, '
+        'como dado (a B na Localização, B-GUI-00)', () {
       final container = _container(
         store: InMemoryAppAppearanceStore()
           ..seed(aparOwner, {_key: AppAppearance.c}),
@@ -167,7 +169,7 @@ void main() {
         bootstrap: Completer<BootstrapSession>().future,
       );
       final value = container.read(screenAppearanceProvider(_key));
-      expect(value, const AsyncValue<AppAppearance>.data(AppAppearance.a));
+      expect(value, const AsyncValue<AppAppearance>.data(AppAppearance.b));
     });
 
     test(

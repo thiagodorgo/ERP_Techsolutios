@@ -1,9 +1,21 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 
 import '../network/api_error.dart';
 import '../network/http_client.dart';
 import 'auth_token_storage.dart';
+import 'session_renewal.dart';
 import '../../features/auth/auth_models.dart';
+
+/// B-APP-SESSAO-RENOVA (D11): o desfecho de um "Sair" no servidor.
+/// - `revoked`: 2xx; o servidor garante que o token não renova mais (S1);
+/// - `discard`: 400; tentar de novo não resolve;
+/// - `retry`: 5xx, rede, tempo esgotado ou qualquer outra resposta.
+enum RevocationOutcome { revoked, discard, retry }
 
 abstract class AuthRepository {
   Future<AuthSession> login({
@@ -11,7 +23,23 @@ abstract class AuthRepository {
     required String password,
     String? tenantId,
   });
+
+  /// B-APP-SESSAO-RENOVA (D1): pede ao servidor a sessão renovada e a
+  /// DEVOLVE, sem gravar nada. Só o notifier grava, dentro da trava
+  /// ([commitRefreshed]). A recusa do servidor (400, 401, 403) e a falta de
+  /// token guardado viram [ApiSessionExpiredError]; um 200 ilegível vira
+  /// [SessionRenewalLocalError]; o resto passa por `mapDioError`.
   Future<AuthSession> refresh();
+
+  /// Guarda a sessão renovada. Só o notifier chama, dentro da trava.
+  Future<void> commitRefreshed(AuthSession session);
+
+  /// O único `POST /auth/logout` do app: entrega ao servidor o token de
+  /// renovação que deve morrer (o servidor revoga a sessão inteira). Nunca
+  /// lança: devolve [RevocationOutcome] (D11).
+  Future<RevocationOutcome> revokeRefreshToken(String refreshToken);
+
+  /// Limpa só o aparelho (sessão e bootstrap). Quem revoga é o notifier.
   Future<void> logout();
   Future<AuthSession?> restoreSession();
   AuthSession? currentSession();
@@ -170,16 +198,29 @@ class LocalDevAuthRepository implements AuthRepository {
   @override
   Future<AuthSession> refresh() async {
     final stored = await _storage.loadSession();
-    if (stored == null) throw const ApiUnauthorizedError();
+    if (stored == null) throw const ApiSessionExpiredError();
 
     final refreshed = _buildDevSession(
       email: stored.user.email,
       tenantId: stored.user.tenantId,
     );
-    _current = refreshed;
-    await _storage.saveSession(refreshed);
-    return refreshed;
+    return AuthSession(
+      tokens: refreshed.tokens,
+      user: refreshed.user,
+      sessionNonce: stored.sessionNonce,
+    );
   }
+
+  @override
+  Future<void> commitRefreshed(AuthSession session) async {
+    _current = session;
+    await _storage.saveSession(session);
+  }
+
+  /// Sem servidor no modo de desenvolvimento: não há token a revogar.
+  @override
+  Future<RevocationOutcome> revokeRefreshToken(String refreshToken) async =>
+      RevocationOutcome.revoked;
 
   @override
   Future<void> logout() async {
@@ -251,6 +292,9 @@ class LocalDevAuthRepository implements AuthRepository {
         ],
         scope: 'tenant',
       ),
+      // dart format off
+      sessionNonce: const Uuid().v4(), // cada login é uma sessão nova (local)
+      // dart format on
     );
   }
 }
@@ -291,17 +335,74 @@ ApiError mapLoginError(DioException e) {
     );
   }
 
+  // dart format off
+  if (status == 401) return const ApiUnauthorizedError(kLoginRefusedMessage); // senha errada não é sessão expirada
+  // dart format on
+
   return mapDioError(e);
 }
 
+// ── B-APP-SESSAO-RENOVA (D1b, D1c): o reenvio do mesmo token e a prova de posse ──
+
+/// O segredo de 32 bytes que prende o sucessor ao aparelho (S5). Vive só em
+/// memória, junto do token que ele acompanha.
+List<int> renewalNonce() {
+  final random = Random.secure();
+  // dart format off
+  return List<int>.generate(32, (_) => random.nextInt(256)); // 32 bytes do gerador seguro
+  // dart format on
+}
+
+/// O 1º envio de um token leva só o compromisso (o SHA-256 do segredo); todo
+/// envio seguinte do mesmo token leva a prova (o segredo), em base64url sem `=`.
+// dart format off
+Map<String, String> renewalBindingFields(List<int> nonce, {required bool firstSend}) => firstSend
+    ? {'renewalCommit': base64Url.encode(sha256.convert(nonce).bytes).replaceAll('=', '')} // o 1º envio só compromete
+    : {'renewalProof': base64Url.encode(nonce).replaceAll('=', '')}; // o reenvio prova a posse
+// dart format on
+
+/// A renovação sem resposta, ou com 5xx, se repete com o MESMO token (o
+/// servidor devolve o mesmo sucessor, S4); a recusa (4xx) nunca se repete; e
+/// nenhuma tentativa começa depois do prazo.
+// dart format off
+bool renewalCanRetry(DioException e, int attempt, Duration elapsed, List<Duration> delays, Duration deadline) {
+  if (attempt >= delays.length || elapsed + delays[attempt] > deadline) return false; // o prazo cabe na janela do servidor
+  final status = e.response?.statusCode;
+  if (status != null) return status >= 500; // com resposta, só o 5xx se repete; a recusa (4xx) não
+  return e.type != DioExceptionType.cancel && e.type != DioExceptionType.badCertificate; // sem resposta, inclusive unknown: pode ter trocado no servidor
+}
+// dart format on
+
 class DioAuthRepository implements AuthRepository {
-  DioAuthRepository({required Dio client, required AuthTokenStorage storage})
-    : _client = client,
-      _storage = storage;
+  DioAuthRepository({
+    required Dio client,
+    required AuthTokenStorage storage,
+    List<Duration> renewalRetryDelays = kRenewalRetryDelays,
+    Duration renewalRetryDeadline = kRenewalRetryDeadline,
+    Stopwatch Function() renewalClock = Stopwatch.new,
+  }) : _client = client,
+       _storage = storage,
+       _renewalRetryDelays = renewalRetryDelays,
+       _renewalRetryDeadline = renewalRetryDeadline,
+       _renewalClock = renewalClock;
+
+  // dart format off
+  static const kRenewalRetryDelays = <Duration>[Duration(seconds: 1), Duration(seconds: 3)]; // reenvio do mesmo token
+  static const kRenewalRetryDeadline = Duration(seconds: 20); // nenhuma tentativa começa depois disto; a janela do servidor é 60 s
+  // dart format on
 
   final Dio _client;
   final AuthTokenStorage _storage;
+  final List<Duration> _renewalRetryDelays;
+  final Duration _renewalRetryDeadline;
+
+  /// O relógio do prazo do reenvio (Emenda 3.6: os testes passam um relógio
+  /// controlado; no app é o `Stopwatch`).
+  final Stopwatch Function() _renewalClock;
   AuthSession? _current;
+  // dart format off
+  ({String token, List<int> nonce, bool sent})? _renewalBinding; // a prova do reenvio: só em memória, nunca gravada
+  // dart format on
 
   @override
   Future<AuthSession> login({
@@ -328,6 +429,9 @@ class DioAuthRepository implements AuthRepository {
         // Ausente conta como sessão inteira. Nunca no `_sessionFromJson`, que o
         // `refresh()` também usa: o refresh mantém a sessão que renova.
         mustChangePassword: _loginBody(json)['must_change_password'] == true,
+        // dart format off
+        sessionNonce: const Uuid().v4(), // cada login é uma sessão nova (remoto)
+        // dart format on
       );
       _current = session;
       if (session.mustChangePassword) {
@@ -380,33 +484,107 @@ class DioAuthRepository implements AuthRepository {
 
   @override
   Future<AuthSession> refresh() async {
-    final stored = await _storage.loadSession();
-    final refreshToken = stored?.tokens.refreshToken;
-    if (refreshToken == null) throw const ApiUnauthorizedError();
+    final loaded = await _storage.loadSession();
+    final refreshToken = loaded?.tokens.refreshToken;
+    // dart format off
+    if (refreshToken == null) throw const ApiSessionExpiredError(); // sem credencial: o 401 do servidor fica
+    // dart format on
+    final stored = loaded!;
+    // dart format off
+    final binding = _renewalBinding?.token == refreshToken ? _renewalBinding! : (token: refreshToken, nonce: renewalNonce(), sent: false); // um nonce por token
+    // dart format on
+    final clock = _renewalClock()..start();
+    Response<dynamic>? received;
+    for (var attempt = 0; received == null; attempt++) {
+      // dart format off
+      final fields = renewalBindingFields(binding.nonce, firstSend: attempt == 0 && !binding.sent);
+      _renewalBinding = (token: refreshToken, nonce: binding.nonce, sent: true); // daqui em diante, só a prova
+      // dart format on
+      try {
+        // dart format off
+        final response = await _client.post('/api/v1/auth/refresh', data: {'refreshToken': refreshToken, ...fields}); // o token e a prova
+        // dart format on
+        received = response;
+      } on DioException catch (e) {
+        // dart format off
+        if (renewalCanRetry(e, attempt, clock.elapsed, _renewalRetryDelays, _renewalRetryDeadline)) { // o mesmo token: o servidor devolve o mesmo sucessor (S4)
+          // dart format on
+          await Future<void>.delayed(_renewalRetryDelays[attempt]);
+          continue;
+        }
+        throw _refreshFailure(e);
+      }
+    }
     try {
-      final response = await _client.post(
-        '/api/v1/auth/refresh',
-        data: {'refreshToken': refreshToken},
-      );
-      final session = _sessionFromJson(response.data as Map<String, dynamic>);
-      _current = session;
-      await _storage.saveSession(session);
+      final tokens = _refreshedTokens(received.data);
+      // dart format off
+      final session = AuthSession(tokens: tokens, user: stored.user, sessionNonce: stored.sessionNonce); // o refresh mantém a sessão que renova
+      // dart format on
       return session;
+    } catch (_) {
+      // dart format off
+      throw const SessionRenewalLocalError(); // 200 ilegível: falha local
+      // dart format on
+    }
+  }
+
+  @override
+  Future<void> commitRefreshed(AuthSession session) async {
+    _current = session;
+    await _storage.saveSession(session);
+  }
+
+  @override
+  Future<RevocationOutcome> revokeRefreshToken(String refreshToken) async {
+    try {
+      // dart format off
+      await _client.post('/api/v1/auth/logout', data: {'refreshToken': refreshToken}); // Sair revoga
+      return RevocationOutcome.revoked; // 2xx: o servidor garante que o token não renova mais
+      // dart format on
     } on DioException catch (e) {
-      throw mapDioError(e);
+      // dart format off
+      if (e.response?.statusCode == 400) return RevocationOutcome.discard; // pedido sem token: tentar de novo não resolve
+      // dart format on
+      return RevocationOutcome.retry;
+    } catch (_) {
+      return RevocationOutcome.retry;
     }
   }
 
   @override
   Future<void> logout() async {
-    try {
-      await _client.post('/api/v1/auth/logout');
-    } catch (_) {
-      // Best-effort server logout; always clear locally regardless
-    }
     _current = null;
     await _storage.clearSession();
     await _storage.clearBootstrap();
+  }
+
+  /// A recusa do servidor (400, 401, 403) é sessão morta; o resto não é.
+  ApiError _refreshFailure(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 400 || status == 401 || status == 403) {
+      return const ApiSessionExpiredError();
+    }
+    return mapDioError(e);
+  }
+
+  /// Só os tokens do corpo da renovação (`auth.routes.ts`, o fixture do C1):
+  /// o servidor não manda o usuário, e o app não o exige.
+  AuthTokens _refreshedTokens(Object? data) {
+    final json = data as Map<String, dynamic>;
+    final envelopeData = json['data'];
+    final body = envelopeData is Map<String, dynamic> ? envelopeData : json;
+    final tokenJson = body['tokens'] as Map<String, dynamic>? ?? body;
+    final expiresIn =
+        tokenJson['expiresIn'] as int? ??
+        tokenJson['expires_in'] as int? ??
+        900;
+    return AuthTokens(
+      accessToken:
+          (tokenJson['accessToken'] ?? tokenJson['access_token']) as String,
+      refreshToken:
+          (tokenJson['refreshToken'] ?? tokenJson['refresh_token']) as String,
+      expiresAt: DateTime.now().toUtc().add(Duration(seconds: expiresIn)),
+    );
   }
 
   @override

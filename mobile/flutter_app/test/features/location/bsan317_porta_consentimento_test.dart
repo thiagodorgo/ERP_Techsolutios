@@ -4,6 +4,8 @@
 // abertura e Emenda 1 da abertura). Todos montam `theme: ErpMobileTheme.light()`.
 import 'dart:io';
 
+import 'package:erp_techsolutions_mobile/core/appearance/app_appearance.dart';
+import 'package:erp_techsolutions_mobile/core/appearance/app_appearance_providers.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
@@ -270,7 +272,14 @@ void main() {
   testWidgets('W2. Início, sem decisão e com permissão de enviar: o cartão '
       'aparece e leva à tela de localização', (t) async {
     final w = _World();
-    await t.pumpWidget(_app(w, initial: '/', extra: _homeOverrides()));
+    final aparenciaA = [
+      screenAppearanceProvider(
+        kLocationConsentAppearanceKey,
+      ).overrideWithValue(const AsyncValue.data(AppAppearance.a)),
+    ]; // B-GUI-00: a A da Localização
+    await t.pumpWidget(
+      _app(w, initial: '/', extra: [..._homeOverrides(), ...aparenciaA]),
+    );
     await t.pumpAndSettle();
 
     expect(find.byType(LocationConsentHomeCard), findsOneWidget);
@@ -307,8 +316,13 @@ void main() {
   testWidgets('W5. na tela, Revogar → a decisão pendente é "não" e o plugin '
       'não é mais chamado', (t) async {
     final w = _World();
+    final aparenciaA = [
+      screenAppearanceProvider(
+        kLocationConsentAppearanceKey,
+      ).overrideWithValue(const AsyncValue.data(AppAppearance.a)),
+    ]; // B-GUI-00: a A da Localização
     await w.sync.accept(_tenant);
-    await t.pumpWidget(_app(w));
+    await t.pumpWidget(_app(w, extra: aparenciaA));
     await t.pumpAndSettle();
     final container = ProviderScope.containerOf(
       t.element(find.byType(LocationConsentScreen)),
@@ -429,8 +443,13 @@ void main() {
       '"Permitir" e depois "Revogar" é "Revogado"; depois de "Confirme de '
       'novo", "Agora não" é "Não permitido"', (t) async {
     // (i)
+    final aparenciaA = [
+      screenAppearanceProvider(
+        kLocationConsentAppearanceKey,
+      ).overrideWithValue(const AsyncValue.data(AppAppearance.a)),
+    ]; // B-GUI-00: a A da Localização
     final w1 = _World();
-    await t.pumpWidget(_app(w1));
+    await t.pumpWidget(_app(w1, extra: aparenciaA));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('consent-decline')));
     await t.pumpAndSettle();
@@ -438,7 +457,7 @@ void main() {
 
     // (ii)
     final w2 = _World();
-    await t.pumpWidget(_app(w2));
+    await t.pumpWidget(_app(w2, extra: aparenciaA));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('consent-accept')));
     await t.pumpAndSettle();
@@ -455,7 +474,7 @@ void main() {
       ),
     );
     await w3.sync.accept(_tenant);
-    await t.pumpWidget(_app(w3));
+    await t.pumpWidget(_app(w3, extra: aparenciaA));
     await t.pumpAndSettle();
     expect(
       find.text(

@@ -108,8 +108,16 @@ const List<AppAppearanceScreen> appAppearanceScreens = [
   ),
 ];
 
-/// O padrão de cada tela: A em todas (`D-APARENCIA-RESPOSTAS` (b)).
-AppAppearance defaultAppAppearanceFor(String screenKey) => AppAppearance.a;
+/// O padrão de cada tela, para quem nunca escolheu: o desenho aprovado do
+/// protótipo (decisão H do dono, 16/11; B-GUI-00). Na Localização ele é a B,
+/// "Como o protótipo"; nas outras telas do registro é a A. Atualiza a
+/// `D-APARENCIA-RESPOSTAS` (b), "A em todas" (conflito
+/// `C-GUI-PADRAO-DO-SELETOR`). A escolha guardada continua valendo
+/// (`resolveAppAppearance`).
+AppAppearance defaultAppAppearanceFor(String screenKey) => switch (screenKey) {
+  kLocationConsentAppearanceKey => AppAppearance.b,
+  _ => AppAppearance.a,
+};
 
 /// A escolha guardada de cada tela: `{"<tela>": A | B | C}`.
 typedef AppAppearancePrefs = Map<String, AppAppearance>;

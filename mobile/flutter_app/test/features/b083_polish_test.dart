@@ -544,7 +544,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final submitBtn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Submeter localmente'),
+        find.widgetWithText(FilledButton, 'Enviar para aprovação'),
       );
       expect(submitBtn.onPressed, isNull);
     });

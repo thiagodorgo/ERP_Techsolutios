@@ -1,13 +1,20 @@
+import 'package:erp_techsolutions_mobile/core/appearance/app_appearance.dart';
+import 'package:erp_techsolutions_mobile/core/appearance/app_appearance_providers.dart';
 import 'package:erp_techsolutions_mobile/core/location/gps_service.dart';
 import 'package:erp_techsolutions_mobile/core/location/location_consent_store.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/features/location/ui/location_consent_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-Widget _wrap(LocationConsentStore store, {bool gps = true}) {
+Widget _wrap(
+  LocationConsentStore store, {
+  bool gps = true,
+  List<Override> extra = const [],
+}) {
   final router = GoRouter(
     initialLocation: '/location',
     routes: [
@@ -21,6 +28,7 @@ Widget _wrap(LocationConsentStore store, {bool gps = true}) {
     overrides: [
       locationConsentStoreProvider.overrideWithValue(store),
       gpsAvailableProvider.overrideWith((_) async => gps),
+      ...extra,
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -67,7 +75,12 @@ void main() {
 
     testWidgets('4. estado concedido permite revogar', (t) async {
       final store = InMemoryLocationConsentStore(accepted: true);
-      await t.pumpWidget(_wrap(store));
+      final aparenciaA = [
+        screenAppearanceProvider(
+          kLocationConsentAppearanceKey,
+        ).overrideWithValue(const AsyncValue.data(AppAppearance.a)),
+      ]; // B-GUI-00: a A da Localização
+      await t.pumpWidget(_wrap(store, extra: aparenciaA));
       await t.pumpAndSettle();
 
       expect(find.byKey(const Key('consent-revoke')), findsOneWidget);

@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_repository.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
+import 'package:erp_techsolutions_mobile/core/auth/session_renewal.dart';
 import 'package:erp_techsolutions_mobile/core/config/app_config.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
@@ -150,8 +151,18 @@ Dio _authedDio({
 }) {
   final dio = createAuthenticatedHttpClient(
     ApiConfig(baseUrl: 'https://test.local', accessToken: accessToken),
-    onRefresh: onRefresh,
-    onClearSession: onClearSession,
+    // B-APP-SESSAO-RENOVA (D4): a fábrica recebe a porta; o dublê é o mesmo de antes.
+    renew: (failed, epoch) async {
+      final token = await onRefresh();
+      if (token == null) {
+        await onClearSession();
+        return const SessionDead();
+      }
+      return SessionRenewed(token);
+    },
+    expire: (epoch) => onClearSession(),
+    currentAccessToken: () => null,
+    currentEpoch: () => 0,
   );
   dio.transformer = SyncTransformer();
   dio.httpClientAdapter = adapter;
@@ -508,8 +519,27 @@ void main() {
 
   // ── Group 5: AuthNotifier — expired state ─────────────────────────────────
   group('AuthNotifier — expired state after refresh failure', () {
+    test('t14 — renewal refused sets status to AuthStatus.expired', () async {
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_ThrowingAuthRepository()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // B-APP-SESSAO-RENOVA (D3): `tryRefresh` saiu; a porta é o
+      // `renewAfterUnauthorized`, que só renova sessão autenticada.
+      await container.read(authStateProvider.future);
+      final notifier = container.read(authStateProvider.notifier);
+      await notifier.login(email: 'u@t.test', password: 'pw');
+      await notifier.renewAfterUnauthorized(null, notifier.epoch);
+
+      final state = container.read(authStateProvider).asData!.value;
+      expect(state.status, AuthStatus.expired);
+    });
+
     test(
-      't14 — tryRefresh failure sets status to AuthStatus.expired',
+      't15 — renewal refused: safeError is non-null and contains no token',
       () async {
         final container = ProviderContainer(
           overrides: [
@@ -518,28 +548,10 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        // build() completes: empty storage → unauthenticated
         await container.read(authStateProvider.future);
-
-        await container.read(authStateProvider.notifier).tryRefresh();
-
-        final state = container.read(authStateProvider).asData!.value;
-        expect(state.status, AuthStatus.expired);
-      },
-    );
-
-    test(
-      't15 — tryRefresh failure safeError is non-null and contains no token',
-      () async {
-        final container = ProviderContainer(
-          overrides: [
-            authRepositoryProvider.overrideWithValue(_ThrowingAuthRepository()),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await container.read(authStateProvider.future);
-        await container.read(authStateProvider.notifier).tryRefresh();
+        final notifier = container.read(authStateProvider.notifier);
+        await notifier.login(email: 'u@t.test', password: 'pw');
+        await notifier.renewAfterUnauthorized(null, notifier.epoch);
 
         final state = container.read(authStateProvider).asData!.value;
         expect(state.safeError, isNotNull);
