@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/auth/auth_notifier.dart';
+import '../../../core/auth/session_http_client.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/local_db/database_provider.dart';
@@ -402,7 +403,7 @@ final technicianStockRemoteApiProvider = Provider<TechnicianStockRemoteApi?>((
   if (!ref.watch(remoteAuthModeProvider)) return null;
   final config = ref.watch(authenticatedApiConfigProvider);
   if (config.accessToken == null) return null;
-  return DioTechnicianStockRemoteApi.create(config);
+  return DioTechnicianStockRemoteApi(sessionHttpClient(ref, config));
 });
 
 final technicianStockCacheProvider = Provider<TechnicianStockCache>((ref) {

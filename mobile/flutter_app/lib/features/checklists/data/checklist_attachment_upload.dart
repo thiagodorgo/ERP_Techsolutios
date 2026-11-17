@@ -13,6 +13,7 @@ import '../../../core/network/http_client.dart';
 import '../../../core/sync/sync_models.dart';
 import '../domain/checklist_models.dart';
 import 'checklist_local_store.dart';
+import '../../../core/auth/session_http_client.dart';
 
 // PR-B (D-CHK-DISPATCH-CREATE) — o BINÁRIO da foto de checklist NÃO cabe no JSON
 // de sync: o `attachment.attach` é só o metadado/ordenação. O binário sobe pelo
@@ -272,21 +273,7 @@ final checklistAttachmentUploadApiProvider =
       if (config.accessToken == null) {
         return const PendingChecklistAttachmentUploadApi();
       }
-      return DioChecklistAttachmentUploadApi(
-        createAuthenticatedHttpClient(
-          config,
-          onRefresh: () async {
-            await ref.read(authStateProvider.notifier).tryRefresh();
-            return ref
-                .read(authStateProvider)
-                .maybeWhen(
-                  data: (s) => s.session?.tokens.accessToken,
-                  orElse: () => null,
-                );
-          },
-          onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-        ),
-      );
+      return DioChecklistAttachmentUploadApi(sessionHttpClient(ref, config));
     });
 
 final checklistAttachmentUploadServiceProvider =
