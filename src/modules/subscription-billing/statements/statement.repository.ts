@@ -8,11 +8,11 @@ import type { ChargeIntentAuditEvent, ChargeIntentTx } from "../charges/charge-i
 import { CHARGE_RULES } from "../charges/charge-rules.js";
 import type { InMemoryStatementChargeRepository } from "../charges/charges.repository.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
-import { INVOICE_ISSUE_LINE_RULES } from "../invoices/invoice-intent-rules.js";
+import { INVOICE_ISSUE_LINE_RULES, seqOfIdempotencyKey } from "../invoices/invoice-intent-rules.js";
 import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
-import { LIVE_INVOICE_STATUSES } from "../invoices/invoices.types.js";
+import { LIVE_INVOICE_STATUSES, type StatementInvoiceStatus } from "../invoices/invoices.types.js";
 import type { InMemoryOutboxRepository, OutboxRepository } from "../outbox/outbox.repository.js";
-import { idempotencyKeyOf, type BillingOutboxRow, type NewOutboxRow } from "../outbox/outbox.types.js";
+import { idempotencyKeyOf, type BillingOutboxRow, type NewOutboxRow, type OutboxSkipReason, type OutboxStatus } from "../outbox/outbox.types.js";
 import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.repository.js";
 import type {
   ChargeStatus,
@@ -35,6 +35,15 @@ export type InvoiceIntentFacts = {
   readonly lines: readonly Pick<BillingOutboxRow, "kind" | "status" | "idempotencyKey" | "occurredAt" | "skipReason">[];
   readonly maxInvoiceSeq: number;
   readonly live: LiveInvoiceRef | undefined;
+};
+
+/** B-ASS-08c2 (plano §4.9): os fatos de uma linha do backlog da nota — o demonstrativo, se há nota viva, a última `invoice_issue`
+ * da fila e a última nota. A categoria é da regra pura (`backlogCategory`); esta leitura não decide nada. */
+export type InvoiceBacklogFacts = {
+  readonly statement: Pick<SubscriptionStatement, "id" | "period" | "status" | "invoiceStatus" | "totalCents" | "paidAt">;
+  readonly live: boolean;
+  readonly lastLine: { readonly status: OutboxStatus; readonly skipReason: OutboxSkipReason | null; readonly occurredAt: Date; readonly seq: number; readonly lastError: string | null } | undefined;
+  readonly lastInvoice: { readonly seq: number; readonly status: StatementInvoiceStatus } | undefined;
 };
 
 /** Operações dentro de UMA transação da organização. */
@@ -101,6 +110,9 @@ export type StatementRepository = {
    * em voo e sem `invoice_issue` da época (`occurred_at >= paid_at`), em ordem de `paid_at`, no máximo 200. A consulta ENCONTRA;
    * quem DECIDE é a regra, sob a trava de cada um. */
   listInvoiceIntentCandidates(tenantId: string, cutoff: Date): Promise<readonly string[]>;
+  /** B-ASS-08c2 (plano §4.9): o backlog da nota da organização — os demonstrativos `paid`, mais os NÃO pagos com nota viva, com
+   * a última `invoice_issue` e a última nota de cada um, em ordem de período. Uma leitura, sem trava. */
+  listInvoiceBacklog(tenantId: string): Promise<readonly InvoiceBacklogFacts[]>;
 };
 
 /** B-ASS-08c2 (plano §4.5): o teto de candidatos por organização e rodada da varredura (o resto sai na rodada seguinte). */
@@ -404,6 +416,32 @@ export class InMemoryStatementRepository implements StatementRepository {
       .sort((a, b) => a.paidAt!.getTime() - b.paidAt!.getTime() || a.id.localeCompare(b.id))
       .slice(0, INVOICE_SWEEP_LIMIT)
       .map((row) => row.id);
+  }
+
+  /** B-ASS-08c2 (plano §4.9): a MESMA leitura do Prisma, sobre as lojas do canal. Sem a fila e a lista das notas não há como
+   * calcular o backlog: falha fechado (`invoice_intent_tx_unsupported`), em vez de "backlog vazio". */
+  async listInvoiceBacklog(tenantId: string): Promise<readonly InvoiceBacklogFacts[]> {
+    const channel = this.channel;
+    const listInvoices = channel?.invoices.listByStatement?.bind(channel.invoices);
+    if (!channel || !listInvoices) throw new Error("invoice_intent_tx_unsupported");
+    const rows: InvoiceBacklogFacts[] = [];
+    const statements = [...this.statements.values()].filter((row) => row.tenantId === tenantId).sort((a, b) => a.period.localeCompare(b.period) || a.id.localeCompare(b.id));
+    for (const statement of statements) {
+      const found = await channel.invoices.findLive(tenantId, statement.id);
+      const live = found !== undefined && (LIVE_INVOICE_STATUSES as readonly string[]).includes(found.status);
+      if (statement.status !== "paid" && !live) continue;
+      const lines = (await channel.outbox.listByStatement(tenantId, statement.id)).filter((row) => row.kind === "invoice_issue");
+      const last = lines.reduce<BillingOutboxRow | undefined>((best, row) => (!best || row.occurredAt.getTime() > best.occurredAt.getTime() || (row.occurredAt.getTime() === best.occurredAt.getTime() && seqOfIdempotencyKey(row.idempotencyKey) > seqOfIdempotencyKey(best.idempotencyKey)) ? row : best), undefined);
+      const invoices = await listInvoices(tenantId, statement.id);
+      const lastInvoice = invoices.reduce<(typeof invoices)[number] | undefined>((best, row) => (!best || row.seq > best.seq ? row : best), undefined);
+      rows.push({
+        statement: { id: statement.id, period: statement.period, status: statement.status, invoiceStatus: statement.invoiceStatus, totalCents: statement.totalCents, paidAt: statement.paidAt },
+        live,
+        lastLine: last ? { status: last.status, skipReason: last.skipReason, occurredAt: last.occurredAt, seq: seqOfIdempotencyKey(last.idempotencyKey), lastError: last.lastError } : undefined,
+        lastInvoice: lastInvoice ? { seq: lastInvoice.seq, status: lastInvoice.status } : undefined,
+      });
+    }
+    return rows;
   }
 
   /** Só para testes: força o estado da cobrança/nota (o canal do B-ASS-06..08 ainda não existe). */

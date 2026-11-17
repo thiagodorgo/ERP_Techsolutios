@@ -141,6 +141,8 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.findStatement#withTenantRls": "cenario:runtime.findStatement",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.findPayableCharge#withTenantRls": "cenario:runtime.findPayableCharge",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listCredits#withTenantRls": "cenario:runtime.listCredits",
+  // B-ASS-08c2 (plano §4.9, §4.17): o backlog da nota, uma leitura sob a RLS da organização, sem trava.
+  "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listInvoiceBacklog#withTenantRls": "cenario:runtime.listInvoiceBacklog",
   // B-ASS-08c2 (plano §4.5, §4.17): os candidatos da varredura da nota, uma leitura sob a RLS da organização, sem trava.
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listInvoiceIntentCandidates#withTenantRls": "cenario:runtime.listInvoiceIntentCandidates",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listPayments#withTenantRls": "cenario:runtime.listPayments",
@@ -156,6 +158,8 @@ const FROZEN: Readonly<Record<string, string>> = {
   // B-ASS-08c2 (plano §4.5, §4.17): a varredura da nota, uma transação por candidato, com o demonstrativo travado PRIMEIRO.
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.recoverInvoiceIntents#.transaction": "cenario:service.recoverInvoiceIntents",
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.reopen#.transaction": "cenario:service.reopen",
+  // B-ASS-08c2 (plano §4.9, §4.17): o /invoice do operador, com o demonstrativo travado PRIMEIRO (o marcador INVOICE-LOCK).
+  "src/modules/subscription-billing/statements/statement.service.ts#StatementService.requestInvoiceIssue#.transaction": "cenario:service.requestInvoiceIssue",
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.reverseManualPayment#.transaction": "cenario:service.reverseManualPayment",
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.writeOffCredit#.transaction": "cenario:service.writeOffCredit",
   "src/modules/subscription-billing/subscription-billing.jobs.ts#runSubscriptionMeasureDaily#withTenantRlsBudget": "sem-tabela-do-mapa",
@@ -643,6 +647,14 @@ if (!connectionString) {
     await scenario("service.recoverInvoiceIntents", async () => {
       swept = await withIntents.recoverInvoiceIntents(v.tenantId, NOW);
     });
+    // B-ASS-08c2 (plano §4.9): o backlog da nota (uma leitura) e o /invoice do operador sobre um pago sem intenção.
+    const w = await seedStatement("c2-invoice", { refs: false });
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'paid', paid_amount = total_amount, paid_at = now() WHERE id = $1::uuid`, w.statementId);
+    await scenario("runtime.listInvoiceBacklog", () => rt.repository.listInvoiceBacklog(w.tenantId));
+    let requested: unknown;
+    await scenario("service.requestInvoiceIssue", async () => {
+      requested = await withIntents.requestInvoiceIssue({ tenantId: w.tenantId, statementId: w.statementId, actorId: "usr_lk2", now: NOW });
+    });
     const mine = runs.slice(before);
     assert.deepEqual(mine.filter((run) => run.error !== null).map((run) => `${run.name}: ${run.error}`), [], "os cenários do 08c2 rodam os caminhos de sucesso");
     assert.deepEqual(swept, { inserted: 1 }, "a varredura executou o INSERT da intenção");
@@ -650,6 +662,14 @@ if (!connectionString) {
     for (const transaction of mine.find((run) => run.name === "service.recoverInvoiceIntents")!.transactions.filter((t) => t.events.some((event) => effectsOf(event, context) !== "unknown" && (effectsOf(event, context) as unknown[]).length > 0))) {
       const first = transaction.events.map((event) => effectsOf(event, context)).find((effects) => effects !== "unknown" && effects.length > 0);
       assert.ok(first !== undefined && first !== "unknown" && first[0]!.table === "subscription_statements" && first[0]!.strong, "service.recoverInvoiceIntents: a 1ª trava não é a do demonstrativo");
+    }
+    assert.deepEqual(requested, { statementId: w.statementId, seq: 1, providerDisabled: false }, "o /invoice executou o INSERT da intenção");
+    // a 1ª trava da transação do /invoice é o demonstrativo (forte), antes da fila e do índice: o marcador INVOICE-LOCK
+    const invoiceTransactions = mine.find((run) => run.name === "service.requestInvoiceIssue")!.transactions.filter((t) => t.events.some((event) => effectsOf(event, context) !== "unknown" && (effectsOf(event, context) as unknown[]).length > 0));
+    assert.ok(invoiceTransactions.length > 0, "service.requestInvoiceIssue: a transação gravada tem efeito");
+    for (const transaction of invoiceTransactions) {
+      const first = transaction.events.map((event) => effectsOf(event, context)).find((effects) => effects !== "unknown" && effects.length > 0);
+      assert.ok(first !== undefined && first !== "unknown" && first[0]!.table === "subscription_statements" && first[0]!.strong, "service.requestInvoiceIssue: a 1ª trava não é a do demonstrativo");
     }
   });
 

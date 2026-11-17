@@ -97,6 +97,9 @@ export function invoiceIntentDecision(input: InvoiceIntentDecisionInput): Invoic
 
 export type InvoiceBacklogCategory = "live_on_unpaid" | "before_cutoff" | "awaiting_provider" | "needs_review" | "no_intent";
 
+/** A ordem de precedência do §4.9 (a mesma do `backlogCategory`): o backlog lista nesta ordem, o alerta primeiro. */
+export const INVOICE_BACKLOG_ORDER = ["live_on_unpaid", "before_cutoff", "awaiting_provider", "needs_review", "no_intent"] as const satisfies readonly InvoiceBacklogCategory[];
+
 export type InvoiceBacklogInput = {
   readonly statement: { readonly status: StatementStatus; readonly totalCents: number; readonly paidAt: Date | null };
   readonly live: boolean;

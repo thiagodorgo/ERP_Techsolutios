@@ -676,6 +676,36 @@ export class StatementService {
     return { inserted };
   }
 
+  /**
+   * B-ASS-08c2 (P16, plano §4.9) — o operador pede a nota de um demonstrativo pago: a reemissão depois da rejeição, ou a que a
+   * automática não criou. A intenção é resolvida ANTES da transação; o demonstrativo é travado PRIMEIRO (o id de outra organização
+   * dá 404 pela RLS, e nada é gravado), e a MESMA função da baixa decide sob a trava, no modo `operator` (a linha em conferência
+   * barra; a época, não). O índice nasce por ela, depois da trava e com a organização da linha travada.
+   */
+  async requestInvoiceIssue(input: { readonly tenantId: string; readonly statementId: string; readonly actorId: string; readonly now: Date }): Promise<{ readonly statementId: string; readonly seq: number; readonly providerDisabled: boolean }> {
+    const intents = await this.channel.invoiceIntents?.resolve();
+    if (!intents) throw new Error("invoice_intent_tx_unsupported");
+    const outcome = await this.repository.transaction(input.tenantId, async (tx) => {
+      const statement = await this.lockOrNotFound(tx, input.statementId); // [INVOICE-LOCK]
+      return writeInvoiceIssueIntentInTx(tx, intents, { statement, now: input.now, mode: "operator" });
+    });
+    if (outcome.kind === "created") return { statementId: input.statementId, seq: outcome.seq, providerDisabled: outcome.providerDisabled };
+    switch (outcome.reason) {
+      case "not_paid":
+      case "zero_total":
+        throw new StatementError(422, "statement_not_paid", "Only a paid statement can have its invoice requested.");
+      case "live_invoice":
+        throw new StatementError(422, "invoice_already_live", "The statement already has a live invoice.");
+      case "in_flight":
+      case "in_review":
+        throw new StatementError(422, "invoice_issue_pending", "An invoice request is in flight or awaiting review.");
+      case "epoch_has_intent":
+      case "before_cutoff":
+        // O modo `operator` não pergunta a época nem o corte: chegar aqui é defeito, e falha fechado.
+        throw new Error(`invoice_request_unexpected_${outcome.reason}`);
+    }
+  }
+
   private async lockOrNotFound(tx: StatementTx, statementId: string): Promise<SubscriptionStatement> {
     const statement = await tx.lockById(statementId);
     if (!statement) throw new StatementError(404, "statement_not_found", "Statement not found.");

@@ -19,10 +19,12 @@ import {
 import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCancel, requestChargeCreate, requestUnknownChargeCancel } from "../charges/charge-request.service.js";
 import { paymentProviderOn } from "../outbox/channel-state.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
+import { backlogCategory, INVOICE_BACKFILL_CUTOFF, INVOICE_BACKLOG_ORDER, type InvoiceBacklogCategory } from "../invoices/invoice-intent-rules.js";
 import { createChannelRuntime, createChargeIntentRepository } from "../outbox/channel.runtime.js";
 import { OUTBOX_STATUSES, type BillingOutboxRow, type OutboxStatus } from "../outbox/outbox.types.js";
 import { createDefaultVaultRuntime } from "../vault/vault.factory.js";
 import { createDefaultStatementRuntime } from "./statement.factory.js";
+import type { InvoiceBacklogFacts } from "./statement.repository.js";
 import { StatementError, type StatementPayment, type SubscriptionCredit, type SubscriptionStatement } from "./statement.types.js";
 
 const UUID_OR_ID = /^[A-Za-z0-9_-]{1,64}$/;
@@ -189,6 +191,21 @@ export function fullAmountChargeNotice(
 ): "full_amount_charge_open" | null {
   if (statement.status === "closed" && statement.paidCents > 0 && charges.some((charge) => charge.status === "pending")) return "full_amount_charge_open"; // [Q4-NOTICE]
   return null;
+}
+
+/** B-ASS-08c2 (plano §4.9, §4.17): uma linha do backlog da nota, numa lista FECHADA de campos. Nunca o id da nota no provedor, a
+ * referência externa, URL, organização nem corpo de provedor (§2.8); o total como texto de dinheiro. */
+function toInvoiceBacklogDto(facts: InvoiceBacklogFacts, category: InvoiceBacklogCategory) {
+  return {
+    statementId: facts.statement.id,
+    period: facts.statement.period,
+    status: facts.statement.status,
+    category,
+    invoiceStatus: facts.statement.invoiceStatus,
+    lastLineStatus: facts.lastLine?.status ?? null,
+    lastLineError: facts.lastLine?.lastError ?? null,
+    totalAmount: money(facts.statement.totalCents),
+  };
 }
 
 function toCreditDto(credit: SubscriptionCredit) {
@@ -408,6 +425,37 @@ export function createStatementsPlatformRouter(): Router {
         ...(confirmInvoiceCancel === undefined ? {} : { confirmInvoiceCancel }),
       });
       response.status(200).json({ data: { statement: toStatementDto(result.statement), payment: toPaymentDto(result.payment), invoice: result.invoice } });
+    }),
+  );
+
+  // B-ASS-08c2 (P16, plano §4.9): o operador pede a nota de um demonstrativo pago (a reemissão depois da rejeição, ou a que a
+  // automática não criou). O serviço trava o demonstrativo primeiro e decide pela regra da baixa, no modo `operator`.
+  router.post(
+    "/statements/:statementId/invoice",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const { service } = await createDefaultStatementRuntime();
+      const result = await service.requestInvoiceIssue({ tenantId, statementId: readRouteParam(request.params.statementId), actorId: actorId(request), now: new Date() });
+      response.status(200).json({ data: { statementId: result.statementId, seq: result.seq, providerDisabled: result.providerDisabled } });
+    }),
+  );
+
+  // B-ASS-08c2 (P16, plano §4.9): o backlog da nota da organização, calculado pelo ESTADO (a regra pura), uma categoria por
+  // demonstrativo, na ordem de precedência (o alerta primeiro); o que não casa em categoria nenhuma não aparece.
+  router.get(
+    "/invoices/backlog",
+    requirePlatformPermission("platform:billing:read"),
+    handleAsyncRoute(async (request, response) => {
+      const tenantId = requireTenantId(request.query.tenantId);
+      const { repository } = await createDefaultStatementRuntime();
+      const facts = await repository.listInvoiceBacklog(tenantId);
+      const rows = facts
+        .map((row) => ({ row, category: backlogCategory({ statement: row.statement, live: row.live, ...(row.lastLine ? { lastLine: row.lastLine } : {}), ...(row.lastInvoice ? { lastInvoice: row.lastInvoice } : {}), cutoff: INVOICE_BACKFILL_CUTOFF }) }))
+        .filter((item): item is { row: InvoiceBacklogFacts; category: InvoiceBacklogCategory } => item.category !== null)
+        .sort((a, b) => INVOICE_BACKLOG_ORDER.indexOf(a.category) - INVOICE_BACKLOG_ORDER.indexOf(b.category));
+      response.status(200).json({ data: rows.map((item) => toInvoiceBacklogDto(item.row, item.category)) });
     }),
   );
 

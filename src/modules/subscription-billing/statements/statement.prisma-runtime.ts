@@ -28,14 +28,14 @@ import { prismaChargeIntentTx } from "../charges/charge-intent.prisma.js";
 import { sqlStatusList } from "../charges/charge-rules.js";
 import { listByStatementInTx as listChargesByStatementInTx } from "../charges/charges.prisma.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
-import { invoiceLineSqlList } from "../invoices/invoice-intent-rules.js";
+import { invoiceLineSqlList, seqOfIdempotencyKey } from "../invoices/invoice-intent-rules.js";
 import { LIVE_SQL } from "../invoices/invoices.prisma.js";
 import { enqueueInTx, listByStatementInTx as listOutboxByStatementInTx } from "../outbox/outbox.prisma.js";
 import { computeStatement, type StatementSnapshot } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
 import { RepositoryStatementInputsProvider, type BindingsSource, type UsageSource } from "./statement.inputs-provider.js";
 import type { UsageDayRow, VehicleBindingWindow } from "./statement.inputs.js";
-import { emptyStatement, INVOICE_SWEEP_LIMIT, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
+import { emptyStatement, INVOICE_SWEEP_LIMIT, type InvoiceBacklogFacts, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
 import { closingMethodOf } from "./statement-charge-lines.js";
 import { StatementService, type StatementAuditSink, type StatementChannel } from "./statement.service.js";
 import type {
@@ -491,6 +491,41 @@ export class PrismaStatementRepository implements StatementRepository {
         cutoff,
       )) as Array<{ id: string }>;
       return rows.map((row) => row.id);
+    });
+  }
+
+  /** B-ASS-08c2 (plano §4.9): o backlog da nota, UMA leitura sob `withTenantRls` (sem trava): os `paid`, mais os não pagos com
+   * nota viva (pela MESMA `LIVE_SQL`), com a última `invoice_issue` e a última nota de cada um. Quem categoriza é a regra pura. */
+  listInvoiceBacklog(tenantId: string): Promise<readonly InvoiceBacklogFacts[]> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT s.id, s.period, s.status, s.invoice_status, round(s.total_amount * 100)::int AS total_cents, s.paid_at,
+                (lv.one IS NOT NULL) AS live,
+                ll.status AS line_status, ll.skip_reason AS line_skip_reason, ll.occurred_at AS line_occurred_at, ll.idempotency_key AS line_key, ll.last_error AS line_last_error,
+                ln.seq AS invoice_seq, ln.status AS invoice_last_status
+           FROM subscription_statements s
+           LEFT JOIN LATERAL (SELECT 1 AS one FROM subscription_statement_invoices i WHERE i.statement_id = s.id AND i.tenant_id = s.tenant_id AND i.${LIVE_SQL} LIMIT 1) lv ON true
+           LEFT JOIN LATERAL (SELECT o.status, o.skip_reason, o.occurred_at, o.idempotency_key, o.last_error FROM billing_outbox o
+                               WHERE o.statement_id = s.id AND o.tenant_id = s.tenant_id AND o.kind = 'invoice_issue'
+                               ORDER BY o.occurred_at DESC, o.created_at DESC LIMIT 1) ll ON true
+           LEFT JOIN LATERAL (SELECT n.seq, n.status FROM subscription_statement_invoices n
+                               WHERE n.statement_id = s.id AND n.tenant_id = s.tenant_id ORDER BY n.seq DESC LIMIT 1) ln ON true
+          WHERE s.tenant_id = $1::uuid AND (s.status = 'paid' OR lv.one IS NOT NULL)
+          ORDER BY s.period, s.id`,
+        tenantId,
+      )) as Array<{
+        id: string; period: string; status: string; invoice_status: string; total_cents: number; paid_at: Date | null; live: boolean;
+        line_status: string | null; line_skip_reason: string | null; line_occurred_at: Date | null; line_key: string | null; line_last_error: string | null;
+        invoice_seq: number | null; invoice_last_status: string | null;
+      }>;
+      return rows.map((row) => ({
+        statement: { id: row.id, period: row.period, status: row.status as InvoiceBacklogFacts["statement"]["status"], invoiceStatus: row.invoice_status as InvoiceBacklogFacts["statement"]["invoiceStatus"], totalCents: Number(row.total_cents), paidAt: row.paid_at },
+        live: row.live === true,
+        lastLine: row.line_status !== null && row.line_key !== null && row.line_occurred_at !== null
+          ? { status: row.line_status as NonNullable<InvoiceBacklogFacts["lastLine"]>["status"], skipReason: row.line_skip_reason as NonNullable<InvoiceBacklogFacts["lastLine"]>["skipReason"], occurredAt: row.line_occurred_at, seq: seqOfIdempotencyKey(row.line_key), lastError: row.line_last_error }
+          : undefined,
+        lastInvoice: row.invoice_seq !== null && row.invoice_last_status !== null ? { seq: Number(row.invoice_seq), status: row.invoice_last_status as NonNullable<InvoiceBacklogFacts["lastInvoice"]>["status"] } : undefined,
+      }));
     });
   }
 }
