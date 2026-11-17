@@ -28,8 +28,9 @@ export class WorkOrderAuditLogService {
     limit?: number,
   ): Promise<readonly WorkOrderAuditLogEntry[]> {
     // Valida a OS in-tenant (404 cross-tenant / inexistente). WorkOrderError(404) sobe direto — o
-    // handler HTTP já o traduz para 404 (não inventamos erro novo).
-    const workOrder = await this.workOrderService.get(actor, workOrderId);
+    // handler HTTP já o traduz para 404 (não inventamos erro novo). B-WO-LEITURA: pela porta de leitura — o papel de
+    // campo só lê a auditoria da OS dele; a alheia é o 404 do inexistente.
+    const workOrder = await this.workOrderService.getForRead(actor, workOrderId); // B-WO-LEITURA:auditoria-lista
     return this.repository.listByEntity(
       actor.tenantId,
       WORK_ORDER_AUDIT_ENTITY,

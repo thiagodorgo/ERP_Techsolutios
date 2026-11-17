@@ -36,7 +36,7 @@ export class WorkOrderCommentService {
   ) {}
 
   async listComments(actor: WorkOrderCommentActorContext, workOrderId: string): Promise<readonly WorkOrderCommentWithTags[]> {
-    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    const workOrder = await this.assertWorkOrderForRead(actor, workOrderId); // B-WO-LEITURA:comentario-lista
     const comments = await this.repository.listByWorkOrder(actor.tenantId, workOrder.id);
     return Promise.all(comments.map((comment) => this.withTags(actor, comment)));
   }
@@ -123,6 +123,16 @@ export class WorkOrderCommentService {
   private async assertWorkOrder(actor: WorkOrderCommentActorContext, workOrderId: string) {
     try {
       return await this.workOrderService.get(actor, workOrderId);
+    } catch (error) {
+      throw toCommentWorkOrderError(error);
+    }
+  }
+
+  // B-WO-LEITURA — a OS para LER: `getForRead` (o papel de campo só lê a OS dele; a alheia é o 404 do inexistente). A
+  // conversão do 404 é a mesma de `assertWorkOrder`, e por isso o alheio e o inexistente respondem igual.
+  private async assertWorkOrderForRead(actor: WorkOrderCommentActorContext, workOrderId: string) {
+    try {
+      return await this.workOrderService.getForRead(actor, workOrderId);
     } catch (error) {
       throw toCommentWorkOrderError(error);
     }
