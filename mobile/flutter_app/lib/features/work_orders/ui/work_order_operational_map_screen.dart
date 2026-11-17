@@ -82,13 +82,18 @@ class WorkOrderOperationalMapScreen extends ConsumerWidget {
               if (workOrder != null)
                 OperationalLocationCard(session: session, workOrder: workOrder)
               else
-                const Card(
-                  child: ListTile(
-                    leading: Icon(Icons.info_outline),
-                    title: Text('OS nao selecionada'),
-                    subtitle: Text(
-                      'Abra o mapa a partir de uma OS para registrar localizacao operacional.',
-                    ),
+                // B-GUI-01a (PH-11): a aba Mapa abre a OS em andamento
+                // (`mapTabDestination`); sem nenhuma, o estado honesto.
+                EmptyState(
+                  key: const Key('field-map-sem-os'),
+                  icon: Icons.local_shipping_outlined,
+                  title: 'Nenhuma OS em andamento',
+                  message:
+                      'Quando você estiver a caminho ou em atendimento, o mapa '
+                      'da OS aparece aqui.',
+                  action: FilledButton(
+                    onPressed: () => context.go('/work-orders'),
+                    child: const Text('Ver minhas OS'),
                   ),
                 ),
             ],
@@ -156,7 +161,7 @@ class _OperationalLocationCardState
       if (result.status == FieldLocationCaptureStatus.unavailable) {
         _safeMessage =
             result.safeMessage ??
-            'Localizacao do dispositivo indisponivel nesta versao.';
+            'Não foi possível obter a localização deste aparelho.';
       } else {
         await service.syncTenant(widget.session.activeTenant.tenantId);
         _safeMessage = 'Localizacao operacional enfileirada para sync.';
