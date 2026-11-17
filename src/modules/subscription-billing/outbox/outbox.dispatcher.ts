@@ -344,7 +344,7 @@ async function dispatchOne(
     // sem rede; o cancelamento e a órfã (que reconsulta antes de qualquer POST) seguem.
     if (sweepFailed && row.kind === "invoice_issue" && !wasOrphan) return await registerInvoiceResult(deps, row, { kind: "deferred", code: "invoice_sweep_failed" }, clock); // [SWEEP-FAILCLOSED]
     try {
-      const result = row.kind === "invoice_issue" ? await deps.invoices.issue(row, wasOrphan, clock()) : await deps.invoices.cancel(row, clock());
+      const result = row.kind === "invoice_issue" ? await deps.invoices.issue(row, wasOrphan, clock(), { confirm: () => deps.repo.confirmLease(row.tenantId, row.id, lease) }) : await deps.invoices.cancel(row, clock());
       return await registerInvoiceResult(deps, row, result, clock);
     } catch (error) {
       return registerFailure(deps, row, error, clock);
@@ -557,6 +557,9 @@ async function registerInvoiceResult(deps: DispatcherDeps, row: BillingOutboxRow
       // [INTX-11r]
       if (!(await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + INVOICE_DEFER_MS), result.code, clock(), lease, { refundAttempt: true }))) return leaseLost(deps, row);
       return "retry";
+    case "lease_lost":
+      // B-ASS-08c2 (plano §4.12): o `[LEASE-03]` viu a posse perdida antes do POST — 0 escrita, a trilha de sempre.
+      return leaseLost(deps, row);
   }
 }
 
