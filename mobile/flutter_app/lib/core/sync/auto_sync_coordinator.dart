@@ -10,6 +10,7 @@ import '../network/api_error.dart';
 import '../network/connectivity_repository.dart';
 import '../telemetry/telemetry_providers.dart';
 import 'expense_sync_pass.dart';
+import 'sync_action_routing.dart';
 import 'sync_providers.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -148,6 +149,11 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       } catch (_) {
         // Resgate falho nao bloqueia os demais dominios de sincronizacao.
       }
+      if (superseded()) return;
+      // B-SAN3-16 (P5): o que nao tem como sair vira erro visivel, com saida.
+      try {
+        await ref.read(syncActionRoutingSweepProvider).sweepTenant(tenantId);
+      } catch (_) {}
       if (superseded()) return;
 
       try {

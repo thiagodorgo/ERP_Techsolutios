@@ -207,6 +207,8 @@ export async function waitForOwnBlockedOrSettled(
     readonly blockedBy?: number;
     readonly minBlocked?: number;
     readonly loser: Promise<unknown>;
+    /** B-SAN3-16, Emenda 1.2: o pid de quem espera; quando vem, só essa sessão conta como bloqueada. */
+    readonly loserPid?: number;
     readonly label: string;
     readonly timeoutMs?: number;
   },
@@ -224,7 +226,21 @@ export async function waitForOwnBlockedOrSettled(
   const blockedBy = options.blockedBy ?? null;
   const deadline = Date.now() + (options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   for (;;) {
-    const rows = (await client.$queryRaw`
+    const rows = (options.loserPid !== undefined
+      ? await client.$queryRaw`
+      SELECT left(a.query, 160) AS query
+      FROM pg_stat_activity a
+      WHERE a.pid <> pg_backend_pid()
+        AND a.pid = ${options.loserPid}::int
+        AND a.application_name = ${options.applicationName}
+        AND a.state = 'active'
+        AND a.wait_event_type = 'Lock'
+        AND (
+          (${blockedBy}::int IS NULL AND cardinality(pg_blocking_pids(a.pid)) > 0)
+          OR (${blockedBy}::int = ANY(pg_blocking_pids(a.pid)))
+        )
+    `
+      : await client.$queryRaw`
       SELECT left(a.query, 160) AS query
       FROM pg_stat_activity a
       WHERE a.pid <> pg_backend_pid()

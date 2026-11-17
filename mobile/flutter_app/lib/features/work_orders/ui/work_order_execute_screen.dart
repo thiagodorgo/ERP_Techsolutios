@@ -12,6 +12,7 @@ import '../../../core/evidence/evidence_picker.dart';
 import '../../../core/network/api_error.dart';
 import '../../../core/network/connectivity_repository.dart';
 import '../../../core/permissions/permission_resolver.dart';
+import '../../../core/sync/sync_action_routing.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_components.dart';
@@ -304,6 +305,11 @@ class _WorkOrderExecuteScreenState
     );
   }
 
+  // B-SAN3-16 (P7, Pergunta 3 = A) — "Solicitar aprovação" leva ao pedido de aprovação que o servidor recebe (a mesma
+  // rota do detalhe da OS). Não enfileira mudança de status: o servidor não tem "aguardando aprovação".
+  void _openApprovalRequest(WorkOrder wo) =>
+      context.go('/work-orders/${wo.localId}/approval-request');
+
   void _openComparison(_ExecData data) {
     context.push(
       checklistComparisonLocation(
@@ -407,6 +413,7 @@ class _WorkOrderExecuteScreenState
     required WorkOrderRepository woRepo,
     required List<WorkOrderStatus> regularTransitions,
     required bool canComplete,
+    required bool canApprovalRequest,
   }) {
     final wo = data.wo;
     final showVistorias =
@@ -563,6 +570,16 @@ class _WorkOrderExecuteScreenState
           ? _towRequirements(data, offline: offline, unverified: unverified)
           : const [],
       transitions: transitions,
+      // B-SAN3-16 (E-580-APARENCIA-2) — a mesma condição e o mesmo toque do
+      // botão próprio "Solicitar aprovação" da opção A.
+      onApprovalRequest:
+          regularTransitions.isNotEmpty &&
+              canApprovalRequest &&
+              wo.status.allowedTransitions.contains(
+                WorkOrderStatus.pendingApproval,
+              )
+          ? () => _openApprovalRequest(wo)
+          : null,
     );
   }
 
@@ -599,6 +616,15 @@ class _WorkOrderExecuteScreenState
         : const PermissionResolver().has(
             session.permissions,
             'work_orders:status',
+          );
+
+    // B-SAN3-16 (CRIT5-04) — pedir aprovação exige `work_orders:update`, a mesma permissão da tela de pedido e do lote no
+    // servidor. Sem ela o botão some (nunca um 2º "Ação não permitida" nesta tela).
+    final canApprovalRequest = session == null
+        ? false
+        : const PermissionResolver().has(
+            session.permissions,
+            'work_orders:update',
           );
 
     if (!canStatus) {
@@ -654,8 +680,11 @@ class _WorkOrderExecuteScreenState
         final data = snapshot.data!;
         final wo = data.wo;
         final allTransitions = wo.status.allowedTransitions.toList();
+        // B-SAN3-16 (P7) — "Ag. aprovação", "Aprovada" e "Exceção" não existem no servidor (o lote os recusa,
+        // `invalid_status`): saem dos botões de status. O pedido de aprovação tem botão próprio, abaixo.
         final regularTransitions = allTransitions
             .where((t) => t != WorkOrderStatus.completed)
+            .where((t) => !kStatusSemEquivalenteNoServidor.contains(t.name))
             .toList();
         final canComplete = allTransitions.contains(WorkOrderStatus.completed);
         // C3-F2 — sem conexão: a rede está fora, ou a pré-carga não saiu.
@@ -671,6 +700,7 @@ class _WorkOrderExecuteScreenState
           woRepo: woRepo,
           regularTransitions: regularTransitions,
           canComplete: canComplete,
+          canApprovalRequest: canApprovalRequest,
         );
         final Widget? aparencia = switch (towAppearance) {
           AppAppearance.a => null,
@@ -815,6 +845,15 @@ class _WorkOrderExecuteScreenState
                               isLoading: _isLoading,
                               onPressed: () => _doTransition(woRepo, wo, next),
                             ),
+                          ),
+                        if (canApprovalRequest &&
+                            allTransitions.contains(
+                              WorkOrderStatus.pendingApproval,
+                            ))
+                          OutlinedButton.icon(
+                            onPressed: () => _openApprovalRequest(wo),
+                            icon: const Icon(Icons.approval_outlined),
+                            label: const Text('Solicitar aprovação'),
                           ),
                         const SizedBox(height: 8),
                       ],
