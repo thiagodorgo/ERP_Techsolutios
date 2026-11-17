@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1252** |
-| IDs distintos | 1241 |
-| **ABERTAS** | **960** |
+| Cabecalhos `## P-` | **1253** |
+| IDs distintos | 1242 |
+| **ABERTAS** | **961** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **899** |
+| — das quais **ativas nesta rodada** | **900** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 288 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1252 cabecalhos para 1241 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1253 cabecalhos para 1242 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -449,7 +449,7 @@
 | `P-08C2-CLOSE-POOL-PRESO` | 16835 | MÉDIA | sim | P-08C2-CLOSE-POOL-PRESO (2026-11-17) — 10 fechamentos concorrentes de um demonstrativo n |
 | `P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR` | 16842 | ALTA | sim | P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fil |
 
-## ABERTAS · balde B — processo/registro — 525
+## ABERTAS · balde B — processo/registro — 526
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -978,6 +978,7 @@
 | `P-ASS08C2-TELA-AVISO-ESTORNO-CANCELA-NOTA` | 16763 | BAIXA | sim | P-ASS08C2-TELA-AVISO-ESTORNO-CANCELA-NOTA (2026-11-17) — a tela do estorno manual ainda  |
 | `P-572-GUARDA-PULA-NUL` | 16785 | BAIXA | sim | P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto c |
 | `P-GUI00-ERRO-ESCOLHE-A-DIRETO` | 16828 | BAIXA | sim | P-GUI00-ERRO-ESCOLHE-A-DIRETO (2026-11-17) — no caminho de erro, três telas do app escol |
+| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 16849 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — o corte da varredura na composição em  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

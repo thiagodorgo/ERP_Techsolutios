@@ -16845,3 +16845,10 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** os achados das maquetes da 1ª onda (16/11 20:35, item (2)); a Emenda 1 do `B-GUI-02` (§8) a criou; a revisão r2 do plano `cx1-crit-gui02-e11` (Codex, VOLTA, A1 ALTA: aviso na tela não é controle) levou o conserto ao servidor, por decisão do orquestrador, declarada (17/11 11:3x), e a Emenda 2 (§5) a absorve (`plano-B-GUI-02-emenda1.md`, `plano-B-GUI-02-emenda2.md`, fora do repositório).
 - **N e forma:** 1 caminho do servidor: a vistoria incluída entra ao fim da fila (`order_index`), e o despacho toma a 1ª linha como coleta.
 - **critério de encerramento:** o servidor reconhece a coleta e a entrega pela etapa (`collection` sempre primária), com o T1 e o T7 do `B-GUI-02` verdes nas duas formas, memória e `-db`.
+
+## P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — o corte da varredura na composição em memória não é exercido por teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (produção roda em `prisma`; o mesmo limite no SQL é coberto pelos `-db`) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (fatias F7/F8), fora da leva julgada · **dono:** `B-ASS-08c3` (fatias F7/F8) · **bloqueia:** não.
+- **origem:** a pré-revisão `prerev-08c2-l6-cl` (achado L6-01, mutação própria ML6-b), 17/11; registrada pelo `dev-08c2-m-cl` na integração da `main` no PR #587.
+- **N e forma:** a composição em memória da varredura (`statement.repository.ts:408`, `<` vs `<=` no corte `paidAt` × `cutoff`) não é exercida por teste; a mutação ML6-b (`<` → `<=`) sobrevive 31/31 (`varredura-db` + `nota-manual-db`). Só os `-db` cobrem a varredura (a ML6-a, o mesmo limite no SQL, morre no VR4-linha). Risco: as duas composições (memória e `prisma`) derivarem.
+- **critério de encerramento:** um teste da composição em memória que fica vermelho com a ML6-b.
