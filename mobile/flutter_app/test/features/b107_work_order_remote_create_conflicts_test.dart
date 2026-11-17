@@ -524,10 +524,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Conflito'), findsOneWidget);
-      expect(find.text('Status local: Agendada'), findsOneWidget);
+      expect(find.text('Situação no aparelho: A iniciar'), findsOneWidget);
       expect(find.text('Manter local e tentar novamente'), findsOneWidget);
       expect(find.text('Aceitar estado do servidor'), findsOneWidget);
-      expect(find.text('Marcar para revisao manual'), findsOneWidget);
+      expect(find.text('Marcar para revisão manual'), findsOneWidget);
     });
 
     testWidgets('sync screen agrupa conflito de OS', (tester) async {

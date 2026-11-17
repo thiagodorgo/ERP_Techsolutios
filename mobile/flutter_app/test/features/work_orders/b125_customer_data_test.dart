@@ -130,10 +130,10 @@ void main() {
       );
       await t.pumpAndSettle();
 
+      // B-GUI-FID1 — o documento no bloco do cliente; o telefone no cartão "Contato".
       expect(find.text('Documento'), findsOneWidget);
       expect(find.text('123.456.789-00'), findsOneWidget);
-      expect(find.text('Telefone'), findsOneWidget);
-      expect(find.text('(11) 98888-7777'), findsOneWidget);
+      expect(find.text('Telefone · (11) 98888-7777'), findsOneWidget);
     });
 
     testWidgets('2. OS sem documento/telefone renderiza sem quebrar', (
@@ -143,10 +143,10 @@ void main() {
       await t.pumpAndSettle();
 
       // Nome do cliente sempre presente; linhas opcionais omitidas.
-      expect(find.text('Cliente'), findsOneWidget);
+      expect(find.text('Solicitante do atendimento'), findsOneWidget);
       expect(find.text('Cliente D2'), findsOneWidget);
       expect(find.text('Documento'), findsNothing);
-      expect(find.text('Telefone'), findsNothing);
+      expect(find.byKey(const Key('detalhe-os-contato')), findsNothing);
       expect(t.takeException(), isNull);
     });
 
@@ -160,7 +160,7 @@ void main() {
 
       expect(find.text('Documento'), findsOneWidget);
       expect(find.text('00.000.000/0001-91'), findsOneWidget);
-      expect(find.text('Telefone'), findsNothing);
+      expect(find.byKey(const Key('detalhe-os-contato')), findsNothing);
     });
 
     testWidgets('4. Strings vazias sao tratadas como ausentes (offline-safe)', (
@@ -172,7 +172,7 @@ void main() {
       await t.pumpAndSettle();
 
       expect(find.text('Documento'), findsNothing);
-      expect(find.text('Telefone'), findsNothing);
+      expect(find.byKey(const Key('detalhe-os-contato')), findsNothing);
     });
   });
 

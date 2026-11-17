@@ -520,11 +520,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Scroll ate o botao Checklist (abaixo dos cards de info)
-        final checklistButton = find.widgetWithText(
-          OutlinedButton,
-          'Checklist',
-        );
+        // B-GUI-FID1 — a linha "Vistoria" de "Mais desta OS" (abaixo dos cartões); sem vistoria vinculada, abre a lista
+        final checklistButton = find.byKey(const Key('detalhe-os-vistoria'));
         await tester.scrollUntilVisible(checklistButton, 120);
         await tester.ensureVisible(checklistButton);
         await tester.pumpAndSettle();
