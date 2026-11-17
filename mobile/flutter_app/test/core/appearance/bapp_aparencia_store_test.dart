@@ -146,6 +146,7 @@ void main() {
       expect(appAppearanceScreens.map((s) => s.key), [
         _key,
         kExecucaoGuinchoAppearanceKey,
+        kDetalheOsAppearanceKey,
       ]);
       final screen = appAppearanceScreens.firstWhere((s) => s.key == _key);
       expect(screen.label, 'Localização e consentimento');

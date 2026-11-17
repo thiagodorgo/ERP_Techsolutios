@@ -5666,3 +5666,105 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Re-varredura da F0 (R14, 15/11):** os padrões do M05 da Emenda 1, sobre a `origin/main` `80f5b4d9`, dão os mesmos 18 cabeçalhos de pendência. Nenhuma pendência nova cita o que o bloco remove.
 - **Se o dono mudar a P1 para (b)** ("construir as telas de verdade"): a Parte A e as duas primeiras linhas da Parte B deixam de valer, e o bloco é replanejado.
 - **Comando do bloco:** `agent-orchestration/codex/comandos/B-O6R-04b-mobile-inventory-sync.md`. Plano: `plano-B-O6R-04b.md` e as Emendas 1, 1.1 e 1.2, fora do repositório.
+
+## D-DONO-1611-DEEPSEEK-FAZ-TUDO (2026-11-16 ~13:5x SP) — o DeepSeek faz tudo; só o visual fica com o Claude
+
+- **Fato (decisão do dono):** resposta à pergunta sobre a regra de 13/11 ("DeepSeek fora de dinheiro e permissão"). Fala literal: *"Deepseek faz tudo, só o visual que só confio em ti que ele não faz"* (transcrição no registro fora do repositório, `REGISTRO-PENDENTE.md`, 16/11).
+- **O que vale:** o DeepSeek pode ocupar qualquer papel, inclusive em bloco de dinheiro e de permissão: dev, crítica, cadeira, inspetor, revisão, conferência e porteiro. Revoga a recomendação 7.1 de 13/11. A conferência visual e as telas seguem só com o Claude (`D-DESIGN-SO-CLAUDE`). Continuam valendo o horário fora do pico e o cruzamento.
+- **Relação:** o conflito `C-08C2-DEEPSEEK-DINHEIRO` (§7 do plano do 08c2) fica resolvido por esta decisão.
+
+## D-DONO-1611-DECISAO-EM-ARTEFATO (2026-11-16 15:0x SP) — toda decisão pedida ao dono vai num artefato
+
+- **Fato (decisão do dono):** fala literal: *"A partir de agora para minhas decisoes vc tem que montar um artefato, com imagens, geficos e tudo mais para melhorar meu entendimento como analise e recomendacao de cada ponto. documente e espalhe a noficia."* Veio junto de *"eu nao entendi a ultima saida"*.
+- **A regra:** toda decisão pedida ao dono vem antes num artefato publicado, com um cartão por ponto: o que é, em linguagem de dono; um gráfico ou desenho; as opções, com prós e contras; o risco; a recomendação do orquestrador; e o que acontece se o dono não responder. Nenhuma sigla nem número de PR vai sem explicação.
+- **No chat:** poucas linhas e o link.
+- **Perguntas de planejadores e auditores:** chegam ao dono pelo artefato do orquestrador.
+- **Regra no contrato:** este PR de registro leva a regra para o `CLAUDE.md` e para o `AGENTS.md` (espelho, `D-INTEROP-CLAUDE-CODEX`), como item novo da Parte A (`A8`), com o mesmo texto nos dois.
+
+## D-DONO-1611-SUITES-REGRA-FIXA (2026-11-16 15:2x SP) — suíte `-db` nova entra no `SUITES=` sem pedir
+
+- **Fato (decisão do dono):** resposta ao artefato "Decisões do Dono" (decisões A, B e C). Fala literal: *"pode ir nas recomendacoes, pode usar o deepseek do jeito que quiser, se quiser testatr antes, teste, valide, eu te dei ele para ser um braco, valide ele e use, ele ja esta com uma bela avaliacao sua, se quiser vade mais, se estiver suave, agilize... tenho pressa"*.
+- **A, SIM:** as 6 linhas `SUITES=` do item 67 e a 1 do item 68 no job `backend-postgres` de `.github/workflows/ci.yml`.
+- **B, SIM, como regra fixa:** toda suíte `-db` nova de um bloco entra no `SUITES=` sem pedir. Vale só para acréscimo no fim da lista, com o comentário de praxe e a medição 3×. Qualquer outra mudança em `.github/**` continua pedindo autorização. O revisor de cada PR confere que só entrou linha na lista.
+- **C, mantida:** a tabela `operational_approvals` entra no `censored-tables.ts` pelo gerador (`E-67-CENSO`).
+- **DeepSeek, uso livre:** o dono reforça a `D-DONO-1611-DEEPSEEK-FAZ-TUDO` e pede pressa.
+
+## D-DONO-1611-APP-SO-GUINCHO (2026-11-16 18:46 SP) — o app de campo passa a ser só de guincho
+
+- **Fato (decisão do dono, ditada por voz):** *"o app de campo está destonado da finalidade agora. Falha minha, esqueci de te informar. O app de campo vai ser voltado exclusivamente para guincho. Lá nos modelos aprovados, tem várias telas que eu aprovei para o modelo de guincho. Vamos focar, faça o seguinte, me mostre aqui as telas que você vai consegue achar lá nas telas aprovadas [...] Me mostra aqui que eu vou dizer a você quais são as telas."*
+- **Efeito imediato (leitura do orquestrador, declarada):** a F3 do `B-APP-APARENCIA` (prestador) fica SUSPENSA e não começa; o que é só de prestador (atendimento, diagnóstico e peças, estoque do técnico, conclusão do prestador) entra em revisão de escopo; nada é apagado até o dono escolher as telas.
+- **Próximo passo:** o artefato "Telas do App Guincho", com as 39 telas aprovadas do app (`screen-refs/mobile/`) e as referências de 3 aparências, para o dono escolher pelo número.
+
+## D-DONO-1611-APP-GUINCHO-ESCOPO (2026-11-16 19:27 SP) — as telas do guincho e o estudo do GPS
+
+- **Fato (decisão do dono, ditada por voz):** *"notícia boa. É o seguinte, a gente estava implementando as telas que eu queria mesmo no app de campo. O que acontece é que tem uma parte lá de checklist na web que o operador monta o checklist. Esse checklist vai chegar para o app de campo e, por exemplo, a vistoria de coleta só vai estar disponível se ele enviar. Aí vai estar disponível no app de campo. Evidências e foto, mesma coisa. A gente tem que preparar a tela para quando o servidor pedir esses dados, a gente ter esses dados. O resto vamos implementar todo o resto. E só lembrando que pode tirar os placeholders que não tem nada a ver com o app de campo para guincho. E outra coisa, me deu faça uma análise de como a gente implementa a navegação via GPS dentro do app. Eu quero fazer um estudo sobre isso. Pode estudar em Fable. Eu quero estudar sobre isso porque se não haver viabilidade, a gente vai excluir essa opção no app de campo."*
+- **Leituras do orquestrador, declaradas (§A6):** as vistorias de coleta e de entrega e as evidências e fotos aparecem só quando o servidor as pede, conforme o checklist montado pelo operador na web; "todo o resto" são as telas aprovadas do guincho e as comuns que ainda não existem no app, menos o fluxo do prestador; saem os placeholders sem relação com o guincho, e o planejador lista cada um para o artefato; a F3 do `B-APP-APARENCIA` (prestador) fica CANCELADA, e a F4 (troca de senha) continua.
+- **Estudo do GPS:** autorizado em Fable, com o resultado em artefato e a recomendação viável ou não viável.
+- **Plano do app guincho:** `planejador-mestre` (topo).
+
+## D-DONO-1611-PRESTADOR-E-GUINCHEIRO (2026-11-16 19:30 SP) — o prestador pode ser guincheiro sem contrato CLT
+
+- **Fato (decisão do dono):** *"Calma, Claude. O prestador pode ser um guincheiro que não tem contrato CLT com o pátio."*
+- **O que vale:** o prestador admite o guincheiro avulso, sem contrato CLT com o pátio; corrige o sentido de "prestador" da `D-DONO-1611-APP-SO-GUINCHO`.
+- **Efeitos (leitura do orquestrador, declarada):** o app atende o guincheiro CLT e o guincheiro prestador; a F3 do `B-APP-APARENCIA` volta de CANCELADA para SUSPENSA, até o plano do app guincho dizer se ela fica (depois, a `D-DONO-1611-GUINCHO-P1-P8` a pôs de volta em ativa).
+
+## D-DONO-1611-GPS-G1-G5 (2026-11-16 19:47 SP) — a navegação no app responde G1 a G5
+
+- **Fato (decisão do dono, resposta ao artefato "Navegação GPS no App"):** *"G1, vou com você. Sigo sua recomendação. G2, sigo sua recomendação. G3, também, sigo sua recomendação. G4, sigo a recomendação. G5, também. Só quero que você me diga uma coisa, o Amazon Location é possível a gente implementar navegação com ele?"*
+- **G1, SIM:** o botão "Ir para a coleta / Ir para a entrega" abre o app de mapa do celular pelo link genérico do Android; entra como bloco do app guincho, depois das telas aprovadas. Se surgir pacote novo, para e volta ao dono.
+- **G2:** o aviso automático de chegada fica para depois do MVP; a chegada continua pelo "Cheguei ao local".
+- **G3:** a rota de caminhão NÃO é obrigatória no MVP; é reavaliada na 2ª etapa.
+- **G4, SIM às consultas sem contratar:** ao Google (veículo grande), à HERE (cotação Navigate) e o teste do motor de rota da Amazon; os textos vão ao dono ANTES de qualquer envio a empresa de fora.
+- **G5:** as premissas de atendimentos por dia e de dias por mês ficam até o dono trazer o número real.
+- **Pergunta nova:** dá para fazer navegação com o Amazon Location? A pesquisa foi lançada (`pesq-amazon-location`).
+
+## D-DONO-1611-GUINCHO-P1-P8 (2026-11-16 20:05 SP) — as respostas P1 a P8 do plano do app guincho
+
+- **Fato (decisão do dono, ditada por voz):** *"P1, o Hugo encher o só reboca ou também faz socorro no local? Reboque e socorro. P2, vai na recomendação. P3, na recomendação. P4, na recomendação. P5, na recomendação. Você acertou. P6, também na recomendação. A leitura da placa não estava nem previsto. Era para pegar isso aí, era para um prestador de serviço de outro tipo de serviço. Era para pegar número de série dos equipamentos e tal, mas isso aí fica fora entra depois. Isso aí fica fora. Isso não está nem previsto. P8, editar perfil, vai na recomendação."* Na transcrição por voz, "Hugo encher" é "o guincheiro".
+- **P1 (b), reboque E socorro:** as 4 telas de socorro (diagnóstico, execução, peças do técnico e resumo) FICAM e ganham as aparências B e C; a F3 do `B-APP-APARENCIA` volta de suspensa para ativa.
+- **P2 (a):** nada muda no app entre o guincheiro CLT e o prestador; a diferença fica no financeiro da web, e o campo de vínculo entra quando houver regra de dinheiro diferente.
+- **P3 (a):** o operador escolhe a vistoria à mão, em cada OS.
+- **P4 (a):** só as fotos pedidas.
+- **P5 (a):** a tela Aprovações SAI do app; o gestor aprova na web.
+- **P6 (a):** o chat fica para depois da 1ª onda, com plano próprio.
+- **P7, FORA (não estava previsto):** a leitura por câmera era pensada para outro tipo de serviço (o número de série de equipamentos); sai do escopo e entra depois, como item futuro; a tela 3 (`ocr-placa`) sai do inventário do guincho.
+- **P8 (a):** no "Editar perfil", só o telefone.
+- **A seguir:** a Emenda 1 do plano do app guincho, com as respostas e a crítica do DeepSeek.
+
+## D-DONO-1611-H-APROVADO-E-PADRAO (2026-11-16 20:20 SP) — o desenho aprovado vira a opção padrão de cada tela do app
+
+- **Fato (decisão do dono):** *"siga"* (resposta ao artefato "App Contra o Aprovado").
+- **A decisão H fica SIM:** o desenho aprovado do protótipo vira a opção padrão de cada tela do app, as outras 2 nascem em cima dele, e a fidelidade vem junto da 1ª onda. Ordem: detalhe da OS e check-in, depois sincronização e finanças, e por último o Início.
+
+## D-DONO-1611-DS-TERMINA-NO-PICO (2026-11-16 20:28 SP) — a tarefa DeepSeek em voo termina mesmo no pico
+
+- **Fato (decisão do dono):** *"para não deixar trabalho no meio, o DeepSeek que está fazendo o trabalho mais custoso, ele termina mesmo que passe do horário de pico. E você manda o relatório para mim, beleza?"*
+- **O que vale:** a tarefa DeepSeek que já está em voo às 22h TERMINA, mesmo dentro do pico; a guarda `guarda-pico-tarefas.sh` foi parada nesta sessão. Lançamento NOVO de DeepSeek continua só fora do pico (`feedback-deepseek-fora-do-pico`). O relatório vai ao dono quando a tarefa acabar. Leitura declarada: para a tarefa terminar, o PC precisa ficar ligado até ela acabar.
+
+## D-DONO-1711-RETOMADA-APROVA-TUDO (2026-11-17 09:2x SP) — o plano de retomada de 17/11 aprovado
+
+- **Fato (decisão do dono):** *"aprovo tudo, siga, ligue o painel e vamos..."*
+- **Efeito, ponto a ponto do artefato "Plano de Retomada 17/11":**
+  1. o reinício pelo plano está autorizado;
+  2. a recarga do DeepSeek é ato do dono, que aprovou; até o saldo subir, o orquestrador segue e declara a falta de cruzamento se ele acabar;
+  3. as 3 maquetes do app guincho estão APROVADAS, as 3 opções de cada (detalhe da OS e check-in no app; vistorias da OS na web); pela `D-APARENCIA-POR-USUARIO`, as 3 viram aparências e vão para `screen-refs/` no bloco que as implementar;
+  4. as perguntas P9 a P12, E e F seguem a recomendação: P9 o mínimo de fotos vale no app; P10 sem serviço de endereço para mapa agora; P11 a aba Mapa com aviso honesto; P12 tipo de veículo e janela fora agora; E só alertar; F (a): os 2 achados de organização (`P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA` e `P-APP-TROCA-ORG-NAO-TROCA`) entram no portão como itens 69 e 70 (de 68 para 70 itens), e os outros 2 achados do retrato do app viram pendência;
+  5. a etapa 1 da AWS segue sendo ato do dono, até 18/11.
+
+## C-GUI-PADRAO-DO-SELETOR (registro de CONFLITO, §A2, 2026-11-16) — o padrão do seletor de aparência do app
+
+- **Os dois lados:** a decisão `D-APARENCIA-RESPOSTAS` (b) ("o padrão é a A") contra a decisão H (`D-DONO-1611-H-APROVADO-E-PADRAO`, "o padrão é o desenho aprovado"). Hoje o seletor abre toda tela na A (`core/appearance/app_appearance.dart:97-98`), e na Localização a A é "Cartões de hoje" e a B é "Como o protótipo"; com a H, o padrão da Localização passa a ser a B.
+- **Estado:** RESOLVIDO pela H. O dono a confirmou em 16/11 às 20:20 (`D-DONO-1611-H-APROVADO-E-PADRAO`, *"siga"*), e o bloco `B-GUI-00` anda (PR #594).
+- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §3 e §8.
+
+## C-GUI-G1-DEPOIS-DAS-TELAS (registro de CONFLITO, §A2, 2026-11-16) — o botão de rota do G1
+
+- **Os dois lados:** o G1 pede o botão "depois das telas aprovadas", e os desenhos aprovados do detalhe e do check-in já trazem o botão de rota.
+- **Estado:** resolvido na Emenda 1 do plano do app guincho — o lugar é desenhado na M-H, e o botão só aparece quando o `B-GUI-15` entrar.
+- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
+
+## C-GUI-PLACA-NA-LISTA (registro de CONFLITO, §A2, 2026-11-16) — a placa na lista de OS do app
+
+- **Os dois lados:** o `B-SAN3-26` deixou a placa fora da lista de propósito, e o desenho aprovado pede a placa (com o fim escondido) no detalhe.
+- **Estado:** o `B-GUI-D1` leva isso à junta completa.
+- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.

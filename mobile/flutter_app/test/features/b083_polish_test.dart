@@ -1,3 +1,5 @@
+import 'package:erp_techsolutions_mobile/core/appearance/app_appearance.dart';
+import 'package:erp_techsolutions_mobile/core/appearance/app_appearance_providers.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
@@ -21,6 +23,7 @@ import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_list
 import 'package:erp_techsolutions_mobile/shared/ui/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -106,6 +109,7 @@ Widget _wrapWo(
   Widget child, {
   BootstrapSession session = _sessionFull,
   List<WorkOrder> seed = const [],
+  List<Override> extra = const [],
 }) {
   final router = GoRouter(
     initialLocation: '/',
@@ -118,6 +122,7 @@ Widget _wrapWo(
         InMemoryWorkOrderLocalStore(seed),
       ),
       syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore([])),
+      ...extra,
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -291,6 +296,12 @@ void main() {
         _wrapWo(
           const WorkOrderDetailScreen(workOrderId: 'det1'),
           seed: [_wo(id: 'det1')],
+          // B-GUI-FID1 — as etapas moram na aparência B do detalhe ("Prazo e etapas à vista"), com acento.
+          extra: [
+            screenAppearanceProvider(
+              kDetalheOsAppearanceKey,
+            ).overrideWithValue(const AsyncValue.data(AppAppearance.b)),
+          ],
         ),
       );
       await tester.pumpAndSettle();
@@ -298,8 +309,8 @@ void main() {
       expect(find.text('Agendada'), findsWidgets);
       expect(find.text('Em rota'), findsWidgets);
       expect(find.text('No local'), findsWidgets);
-      expect(find.text('Em exec.'), findsWidgets);
-      expect(find.text('Concluida'), findsWidgets);
+      expect(find.text('Em atendimento'), findsWidgets);
+      expect(find.text('Concluída'), findsWidgets);
     });
 
     testWidgets('9. botoes Checklist / Mapa presentes', (tester) async {
@@ -311,9 +322,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Botoes estao abaixo do fold — rolar ate ficarem visiveis
-      await tester.scrollUntilVisible(find.text('Checklist'), 300);
-      expect(find.text('Checklist'), findsOneWidget);
+      // B-GUI-FID1 — a vistoria mora em "Mais desta OS" (abaixo do fold) e o "Mapa" na barra fixa.
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('detalhe-os-vistoria')),
+        300,
+      );
+      expect(find.byKey(const Key('detalhe-os-vistoria')), findsOneWidget);
+      expect(find.byKey(const Key('work-order-map-action')), findsOneWidget);
       // "Mapa" agora aparece também como aba da barra inferior (Início/OS/Mapa/…),
       // por isso findsWidgets em vez de findsOneWidget.
       expect(find.text('Mapa'), findsWidgets);

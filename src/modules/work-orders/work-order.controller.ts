@@ -9,7 +9,6 @@ import {
   toWorkOrderListDto,
   toWorkOrderMapStartPointsDto,
 } from "./work-order.dto.js";
-import { createDefaultApprovalService } from "./approval.service.js";
 import type { WorkOrderService } from "./work-order.service.js";
 
 export type WorkOrderServiceResolver = () => Promise<WorkOrderService>;
@@ -120,18 +119,6 @@ export class WorkOrderController {
     const workOrder = await service.changeStatus(actor, readRouteParam(request.params.workOrderId), request.body ?? {}, {
       entry: "http_status_route",
     });
-
-    if (workOrder.status === "completed") {
-      const approvals = await createDefaultApprovalService();
-      await approvals.request({
-        tenantId: actor.tenantId,
-        entityType: "work_order",
-        entityId: workOrder.id,
-        workOrderId: workOrder.id,
-        requestedByUserId: actor.userId,
-        pendingReason: "Ordem de servico concluida e pronta para validacao operacional.",
-      });
-    }
 
     await recordRequestAuditBestEffort(request, {
       action: statusAuditAction(workOrder.status),

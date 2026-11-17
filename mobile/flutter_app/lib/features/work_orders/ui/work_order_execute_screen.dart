@@ -9,6 +9,7 @@ import '../../../core/appearance/app_appearance_providers.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/evidence/evidence_picker.dart';
+import '../../../core/location/gps_service.dart';
 import '../../../core/network/api_error.dart';
 import '../../../core/network/connectivity_repository.dart';
 import '../../../core/permissions/permission_resolver.dart';
@@ -27,9 +28,15 @@ import '../data/work_order_repository.dart';
 import '../domain/work_order_conclusion.dart';
 import '../domain/work_order_models.dart';
 import '../domain/work_order_steps.dart';
+import 'aparencias/checkin_chegada_shared.dart';
+import 'aparencias/checkin_chegada_view_a.dart';
+import 'aparencias/checkin_chegada_view_b.dart';
+import 'aparencias/checkin_chegada_view_c.dart';
 import 'aparencias/execucao_guincho_aparencias_shared.dart';
 import 'aparencias/execucao_guincho_view_b.dart';
 import 'aparencias/execucao_guincho_view_c.dart';
+import 'checkin_confirm_dialog.dart';
+import 'work_order_detail_screen.dart' show WorkOrderConflictResolutionPanel;
 import 'work_order_operational_map_screen.dart';
 import 'work_order_stepper.dart';
 
@@ -404,6 +411,107 @@ class _WorkOrderExecuteScreenState
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // B-GUI-FID1 — o check-in, a 1ª etapa da execução (antes vivia no detalhe da OS). A regra é a de hoje, gravada na
+  // F0 (`bguifid1_f0_caracterizacao_test.dart`): as mesmas mudanças de situação, a mesma conferência da placa.
+  // ---------------------------------------------------------------------------
+
+  Future<void> _checkinStatus(
+    WorkOrder wo,
+    WorkOrderStatus next, {
+    String? lastDigits,
+  }) async {
+    setState(() => _isLoading = true);
+    try {
+      await ref
+          .read(workOrderRepositoryProvider)
+          .updateStatus(wo.localId, next, lastDigits: lastDigits);
+    } on StateError catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _dataFuture = null;
+        });
+      }
+    }
+  }
+
+  /// "Cheguei ao local": o GPS é lido antes de abrir o diálogo da placa; quem confere a placa é o servidor.
+  Future<void> _checkinArrive(WorkOrder wo) async {
+    final gpsOk = await readGpsAvailability(ref);
+    if (!mounted) return;
+    final confirmation = await showArrivalConfirmationDialog(
+      context,
+      wo,
+      gpsOk: gpsOk,
+    );
+    if (confirmation == null || !mounted) return;
+    await _checkinStatus(
+      wo,
+      WorkOrderStatus.arrived,
+      lastDigits: confirmation.lastDigits,
+    );
+  }
+
+  Future<void> _checkinUnableToStart(WorkOrder wo) => showUnableToStartSheet(
+    context,
+    onSubmit: (reason, note) async {
+      await ref
+          .read(workOrderRepositoryProvider)
+          .reportUnableToStart(localId: wo.localId, reason: reason, note: note);
+      if (!mounted) return;
+      context.go('/work-orders');
+    },
+  );
+
+  Widget _checkinView({
+    required _ExecData data,
+    required CheckinFase fase,
+    required AppAppearance appearance,
+    required bool offline,
+    required WorkOrderRepository woRepo,
+  }) {
+    final wo = data.wo;
+    final props = CheckinChegadaViewProps(
+      wo: wo,
+      fase: fase,
+      onBack: () => context.go('/work-orders/${widget.workOrderId}'),
+      stepper: WorkOrderStepper(serviceType: wo.serviceType, status: wo.status),
+      onPrimary: switch (fase) {
+        CheckinFase.inicio => () => _checkinStatus(wo, WorkOrderStatus.enRoute),
+        CheckinFase.rota => () => _checkinArrive(wo),
+        CheckinFase.local => () => _checkinStatus(
+          wo,
+          WorkOrderStatus.inService,
+        ),
+      },
+      // O B-GUI-D1 traz o veículo atendido e o prazo; hoje o app não os recebe (F2).
+      vehicle: null,
+      slaDueAt: null,
+      gpsOk: ref.watch(gpsAvailableProvider).asData?.value,
+      offline: offline,
+      pendingSync: wo.syncStatus == SyncStatus.pending,
+      conflictPanel: wo.syncStatus == SyncStatus.conflict
+          ? WorkOrderConflictResolutionPanel(workOrder: wo, repository: woRepo)
+          : null,
+      safeError: _safeError,
+      busy: _isLoading,
+      onUnableToStart: fase == CheckinFase.rota
+          ? () => _checkinUnableToStart(wo)
+          : null,
+    );
+    return switch (appearance) {
+      AppAppearance.a => CheckinChegadaViewA(props: props),
+      AppAppearance.b => CheckinChegadaViewB(props: props),
+      AppAppearance.c => CheckinChegadaViewC(props: props),
+    };
+  }
+
   // B-APP-APARENCIA (F2) — o estado pronto das aparências B e C, calculado uma
   // vez aqui a partir do `_ExecData` (Emenda 1, A4): as vistas só desenham.
   ExecucaoGuinchoViewProps _towViewProps({
@@ -693,6 +801,17 @@ class _WorkOrderExecuteScreenState
         // B-APP-APARENCIA (F2): B e C só para OS de guincho; o resto desenha a
         // A, seja qual for a escolha. A A é o corpo de hoje, sem mudança.
         final towAppearance = data.isTow ? chosen : AppAppearance.a;
+        // B-GUI-FID1 — antes do atendimento, a execução abre no check-in ("Início", "Rota de coleta", "Coleta").
+        final checkinFase = checkinFaseDe(wo.status);
+        if (checkinFase != null) {
+          return _checkinView(
+            data: data,
+            fase: checkinFase,
+            appearance: towAppearance,
+            offline: offline,
+            woRepo: woRepo,
+          );
+        }
         ExecucaoGuinchoViewProps props() => _towViewProps(
           data: data,
           offline: offline,
