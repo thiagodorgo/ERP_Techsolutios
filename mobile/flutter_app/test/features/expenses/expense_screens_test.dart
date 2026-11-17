@@ -43,18 +43,19 @@ void main() {
     expect(find.text('Adicionar item'), findsOneWidget);
   });
 
-  testWidgets('new item screen renders receipt placeholder control', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const _TestApp(initialLocation: '/expenses/PC-local-1/items/new'),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'new item screen renders without receipt placeholder (B-GUI-01a)',
+    (tester) async {
+      await tester.pumpWidget(
+        const _TestApp(initialLocation: '/expenses/PC-local-1/items/new'),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Novo item'), findsOneWidget);
-    expect(find.text('Recibo anexado estruturalmente'), findsOneWidget);
-    expect(find.text('Salvar item e enfileirar sync'), findsOneWidget);
-  });
+      expect(find.text('Novo item'), findsOneWidget);
+      expect(find.text('Recibo anexado estruturalmente'), findsNothing);
+      expect(find.text('Salvar gasto'), findsOneWidget);
+    },
+  );
 
   testWidgets('submit screen blocks report with policy violations', (
     tester,
@@ -65,7 +66,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final submitButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Submeter localmente'),
+      find.widgetWithText(FilledButton, 'Enviar para aprovação'),
     );
 
     expect(submitButton.onPressed, isNull);

@@ -21,6 +21,7 @@ import 'package:dio/dio.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/evidence/evidence_blob_store.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_contracts.dart';
+import 'package:erp_techsolutions_mobile/core/auth/session_renewal.dart';
 import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
 import 'package:erp_techsolutions_mobile/core/sync/expense_receipt_sync.dart';
@@ -88,10 +89,18 @@ class _Session {
 Dio _client(_UploadServer server, _Session session, {String? refreshTo}) {
   final dio = createAuthenticatedHttpClient(
     const ApiConfig(baseUrl: 'https://test.local', accessToken: 'token-velho'),
-    onRefresh: () async => refreshTo,
-    onClearSession: () async {
-      session.clears++;
+    // B-APP-SESSAO-RENOVA (D4): a fábrica recebe a porta; o dublê é o mesmo de antes.
+    renew: (failed, epoch) async {
+      final token = await Future<String?>.value(refreshTo);
+      if (token == null) {
+        await Future<void>.sync(() => session.clears++);
+        return const SessionDead();
+      }
+      return SessionRenewed(token);
     },
+    expire: (epoch) => Future<void>.sync(() => session.clears++),
+    currentAccessToken: () => null,
+    currentEpoch: () => 0,
   );
   dio.transformer = SyncTransformer();
   dio.httpClientAdapter = server;

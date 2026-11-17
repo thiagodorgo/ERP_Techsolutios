@@ -152,20 +152,6 @@ class _WorkOrderApprovalRequestScreenState
                     ? null
                     : (v) => setState(() => _urgency = v ?? 'normal'),
               ),
-              const SizedBox(height: 8),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.attach_file_outlined),
-                  title: const Text('Anexos'),
-                  subtitle: const Text(
-                    'Upload de evidencias disponivel em bloco futuro.',
-                  ),
-                  trailing: const OperationalStatusChip(
-                    label: 'Futuro',
-                    status: 'info',
-                  ),
-                ),
-              ),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: _isLoading ? null : () => _doSubmit(repo),

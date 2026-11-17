@@ -91,7 +91,7 @@ class FieldLocationSyncService {
     if (!reading.isAvailable || reading.fix == null) {
       return FieldLocationCaptureResult.unavailable(
         reading.safeMessage ??
-            'Localizacao do dispositivo indisponivel nesta versao.',
+            'Não foi possível obter a localização deste aparelho.',
       );
     }
 

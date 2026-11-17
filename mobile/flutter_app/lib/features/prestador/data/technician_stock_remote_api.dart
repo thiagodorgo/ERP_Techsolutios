@@ -31,9 +31,6 @@ class DioTechnicianStockRemoteApi implements TechnicianStockRemoteApi {
 
   final Dio _dio;
 
-  static DioTechnicianStockRemoteApi create(ApiConfig config) =>
-      DioTechnicianStockRemoteApi(createExpenseHttpClient(config));
-
   @override
   Future<TechnicianStockResponse> fetchTechnicianStock() async {
     try {

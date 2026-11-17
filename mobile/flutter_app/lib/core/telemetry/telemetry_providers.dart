@@ -4,13 +4,13 @@ import '../auth/auth_notifier.dart';
 import '../bootstrap/bootstrap_repository.dart';
 import '../local_db/database_provider.dart';
 import '../location/location_consent_store.dart';
-import '../network/http_client.dart';
 import '../sync/sync_providers.dart';
 import 'telemetry_api.dart';
 import 'telemetry_capture_service.dart';
 import 'telemetry_local_store.dart';
 import 'telemetry_signal_source.dart';
 import 'telemetry_sync_service.dart';
+import '../auth/session_http_client.dart';
 
 /// Buffer Drift dedicado (D-Ω4C-TELE-FLUTTER-BUFFER). Fallback in-memory quando o
 /// banco não está montado (espelha o field-location).
@@ -40,21 +40,7 @@ final telemetryApiProvider = Provider<TelemetryApi>((ref) {
   if (config.accessToken == null) {
     return const PendingTelemetryApi();
   }
-  return DioTelemetryApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioTelemetryApi(sessionHttpClient(ref, config));
 });
 
 /// Serviço de captura — long-lived (mantém o timer de foreground). O gate de

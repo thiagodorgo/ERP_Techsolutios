@@ -1,4 +1,4 @@
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, hkdfSync, randomUUID, timingSafeEqual } from "node:crypto";
 
 import type { Prisma } from "@prisma/client";
 
@@ -56,10 +56,22 @@ type RoleAssignmentRecord = {
   };
 };
 
+// B-APP-SESSAO-RENOVA (S4, S5) — o antecessor imediato do token vigente, reapresentado dentro da janela e com o
+// sucessor ainda sem uso, recebe o MESMO sucessor (a resposta que se perdeu, a corrida de renovações em voo).
+export const REFRESH_REPLAY_WINDOW_SECONDS = 60; // o reenvio com prova de posse: a resposta que se perdeu
+export const REFRESH_RACE_WINDOW_SECONDS = 10; // o reenvio sem prova: só a corrida de renovações em voo
+
+type AuthSessionServiceOptions = { readonly replayWindowSeconds?: number; readonly raceWindowSeconds?: number };
+
+// O vínculo do 1º envio (`renewalCommit`, o SHA-256 de um segredo do aparelho) e a prova dos reenvios
+// (`renewalProof`, o próprio segredo). Nenhum dos dois é guardado: o sucessor é refeito a partir deles.
+export type RenewalBinding = { readonly commit?: string; readonly proof?: string };
+
 export class AuthSessionService {
   constructor(
     private readonly runWithTenantContext: PrismaTenantContextRunner,
     private readonly createAuditLogRepository?: AuditLogRepositoryFactory,
+    private readonly options: AuthSessionServiceOptions = {}, // as janelas, para os testes
   ) {}
 
   async createSession(input: CreateSessionInput): Promise<AuthSessionTokenResult> {
@@ -107,7 +119,7 @@ export class AuthSessionService {
     };
   }
 
-  async refreshSession(refreshToken: string): Promise<RefreshSessionResult> {
+  async refreshSession(refreshToken: string, binding: RenewalBinding = {}): Promise<RefreshSessionResult> {
     const payload = await parseRefreshToken(refreshToken);
 
     if (!payload) {
@@ -119,7 +131,45 @@ export class AuthSessionService {
       const session = await repository.findByIdForTenant(payload.session_id, payload.tenant_id);
       const refreshTokenHash = hashRefreshToken(refreshToken);
 
-      if (!session || session.user_id !== payload.user_id || !safeEqual(session.refresh_token_hash, refreshTokenHash)) {
+      // S6 — os candidatos de reenvio, cada um com a sua janela. O domínio (`commit:`/`proof:`) diz QUAL envio fez a
+      // troca; o vazio é o cliente sem vínculo (web, app antigo), só na janela curta.
+      const openedCommit = binding.proof ? proofCommit(binding.proof) : ""; // só a prova abre o reenvio longo
+      const longWindow = this.options.replayWindowSeconds ?? REFRESH_REPLAY_WINDOW_SECONDS;
+      const shortWindow = this.options.raceWindowSeconds ?? REFRESH_RACE_WINDOW_SECONDS;
+      const candidates: ReplayCandidate[] = [];
+      if (openedCommit) candidates.push({ binding: `commit:${openedCommit}`, windowSeconds: longWindow }); // S33B
+      if (openedCommit) candidates.push({ binding: `proof:${openedCommit}`, windowSeconds: longWindow }); // S33C
+      if (!openedCommit && binding.commit) candidates.push({ binding: `proof:${binding.commit}`, windowSeconds: longWindow }); // S33D
+      if (!openedCommit) candidates.push({ binding: "", windowSeconds: shortWindow }); // S33E
+      let replay = await successorReplay(session, payload, refreshToken, refreshTokenHash, candidates); // o antecessor imediato, dentro da janela do candidato
+
+      // B-APP-SESSAO-RENOVA (S3) — um token assinado de uma sessão viva do mesmo usuário, que não é o vigente nem um
+      // reenvio servido, é REUSO: a sessão inteira (a família) cai, e a resposta é 401, como antes.
+      if (!replay && session && session.user_id === payload.user_id && !session.revoked_at && !safeEqual(session.refresh_token_hash, refreshTokenHash)) { // reuso: derruba a família
+        await repository.revokeByIdForTenant(session.id, payload.tenant_id); // reuso detectado
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.refresh.failed",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "failure",
+          severity: "warning",
+          metadata: { reason: "reuse_detected" },
+        });
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.session.revoked",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "success",
+          severity: "warning",
+        });
+        return { ok: false, reason: "revoked" };
+      }
+
+      if (!session || (!replay && (session.user_id !== payload.user_id || !safeEqual(session.refresh_token_hash, refreshTokenHash)))) {
         await this.recordAudit(tx, {
           tenantId: payload.tenant_id,
           actorId: payload.user_id,
@@ -253,19 +303,36 @@ export class AuthSessionService {
         session_id: refreshedSessionId,
       });
       const refreshTokenExpiresIn = getRefreshTokenExpiresInSeconds();
-      const refreshTokenExpiresAt = new Date(Date.now() + refreshTokenExpiresIn * 1000);
-      const nextRefreshToken = await signRefreshToken({
-        session_id: payload.session_id,
-        tenant_id: payload.tenant_id,
-        user_id: payload.user_id,
-      });
-
-      const updated = await repository.rotateRefreshToken(
-        payload.session_id,
-        payload.tenant_id,
-        hashRefreshToken(nextRefreshToken),
-        refreshTokenExpiresAt,
-      );
+      let refreshTokenExpiresAt: Date;
+      let nextRefreshToken: string;
+      let updated = { count: 1 };
+      if (replay) {
+        nextRefreshToken = replay.token; // o MESMO sucessor; nada troca
+        refreshTokenExpiresAt = replay.expiresAt;
+      } else {
+        const rotatedAtMs = Date.now();
+        refreshTokenExpiresAt = new Date(rotatedAtMs + refreshTokenExpiresIn * 1000); // o instante da troca, em ms, fica recuperável
+        const rotationBinding = binding.commit ? `commit:${binding.commit}` : openedCommit ? `proof:${openedCommit}` : ""; // S33A: qual envio trocou primeiro
+        nextRefreshToken = await deriveSuccessor(payload, refreshToken, rotationBinding, Math.floor(rotatedAtMs / 1000)); // o sucessor é refeito, nunca guardado
+        updated = await repository.rotateRefreshToken(payload.session_id, payload.tenant_id, refreshTokenHash, hashRefreshToken(nextRefreshToken), refreshTokenExpiresAt); // troca condicional
+        if (updated.count !== 1) {
+          const current = await repository.findByIdForTenant(payload.session_id, payload.tenant_id);
+          replay = await successorReplay(current, payload, refreshToken, refreshTokenHash, candidates); // outra renovação trocou primeiro: o mesmo sucessor
+          if (replay) {
+            nextRefreshToken = replay.token;
+            refreshTokenExpiresAt = replay.expiresAt;
+            updated = { count: 1 };
+          }
+          // P-68-PERDEDOR-RELE-401 — quem perde a troca e relê sem casar candidato não é do aparelho (todo perdedor
+          // legítimo casa um: SV21b); cai no S3 como no caminho sequencial, com as mesmas duas linhas de auditoria.
+          if (!replay && current && current.user_id === payload.user_id && !current.revoked_at) { // S34M: o perdedor que relê e não casa candidato é reuso
+            await repository.revokeByIdForTenant(current.id, payload.tenant_id);
+            await this.recordAudit(tx, { tenantId: payload.tenant_id, actorId: payload.user_id, action: "auth.refresh.failed", resourceType: "auth_session", resourceId: payload.session_id, outcome: "failure", severity: "warning", metadata: { reason: "reuse_detected" } });
+            await this.recordAudit(tx, { tenantId: payload.tenant_id, actorId: payload.user_id, action: "auth.session.revoked", resourceType: "auth_session", resourceId: payload.session_id, outcome: "success", severity: "warning" });
+            return { ok: false, reason: "revoked" };
+          }
+        }
+      }
 
       if (updated.count !== 1) {
         await this.recordAudit(tx, {
@@ -295,6 +362,7 @@ export class AuthSessionService {
         metadata: {
           roleCount: roleKeys.length,
           expiresAt: refreshTokenExpiresAt,
+          ...(replay ? { reason: "retry_within_window" } : {}),
         },
       });
 
@@ -317,12 +385,15 @@ export class AuthSessionService {
       return;
     }
 
+    // B-APP-SESSAO-RENOVA (S2) — o token assinado prova a sessão (`session_id` e usuário do payload): o "Sair" revoga
+    // a SESSÃO inteira, mesmo que o token já tenha sido trocado, conferindo que ela é do mesmo usuário.
     await this.runWithTenantContext(payload.tenant_id, async (tx) => {
-      const revoked = await new AuthSessionRepository(tx).revokeById(
-        payload.session_id,
-        payload.tenant_id,
-        hashRefreshToken(refreshToken),
-      );
+      const repository = new AuthSessionRepository(tx);
+      const owned = await repository.findByIdForTenant(payload.session_id, payload.tenant_id);
+      const revoked =
+        owned && owned.user_id === payload.user_id
+          ? await repository.revokeByIdForTenant(payload.session_id, payload.tenant_id) // a sessão inteira, mesmo com o token já trocado
+          : { count: 0 };
       const outcome = revoked.count === 1 ? "success" : "failure";
 
       await this.recordAudit(tx, {
@@ -362,6 +433,44 @@ export class AuthSessionService {
 
     await new EnterpriseAuditLogService(this.createAuditLogRepository(tx)).record(input);
   }
+}
+
+// O sucessor de um token é DETERMINÍSTICO (S4) e PRESO AO VÍNCULO (S5, S6): jti = HMAC(chave do sucessor, token
+// apresentado + domínio e vínculo); iat = o instante da troca, que se recupera de expires_at. Nada novo é guardado.
+const successorKey = hkdfSync("sha256", env.JWT_REFRESH_SECRET, "", "erp-refresh-sucessor-v1", 32); // chave só para o sucessor
+
+export function proofCommit(proof: string): string {
+  return createHash("sha256").update(Buffer.from(proof, "base64url")).digest("base64url"); // o compromisso que a prova abre
+}
+
+function deriveSuccessor(
+  payload: { session_id: string; tenant_id: string; user_id: string },
+  presentedToken: string,
+  binding: string,
+  issuedAt: number,
+): Promise<string> {
+  const jti = createHmac("sha256", Buffer.from(successorKey)).update(presentedToken + "\n" + binding).digest("hex"); // o jti do sucessor, preso à prova
+  return signRefreshToken({ session_id: payload.session_id, tenant_id: payload.tenant_id, user_id: payload.user_id }, { jti, issuedAt });
+}
+
+type SessionRow = { user_id: string; revoked_at: Date | null; refresh_token_hash: string; expires_at: Date } | null;
+type ReplayCandidate = { readonly binding: string; readonly windowSeconds: number };
+
+async function successorReplay(
+  row: SessionRow,
+  payload: { session_id: string; tenant_id: string; user_id: string },
+  presentedToken: string,
+  presentedHash: string,
+  candidates: readonly ReplayCandidate[],
+): Promise<{ token: string; expiresAt: Date } | null> {
+  if (!row || row.user_id !== payload.user_id || row.revoked_at || safeEqual(row.refresh_token_hash, presentedHash)) return null; // só o antecessor, numa sessão viva do mesmo usuário
+  const rotatedAtMs = row.expires_at.getTime() - getRefreshTokenExpiresInSeconds() * 1000; // o instante da última troca, em ms
+  for (const item of candidates) {
+    if (Date.now() - rotatedAtMs > item.windowSeconds * 1000) continue; // S33F: borda exata por candidato
+    const candidate = await deriveSuccessor(payload, presentedToken, item.binding, Math.floor(rotatedAtMs / 1000));
+    if (safeEqual(row.refresh_token_hash, hashRefreshToken(candidate))) return { token: candidate, expiresAt: row.expires_at }; // o sucessor ainda não foi usado
+  }
+  return null; // nenhum candidato: reuso
 }
 
 export function hashRefreshToken(refreshToken: string): string {

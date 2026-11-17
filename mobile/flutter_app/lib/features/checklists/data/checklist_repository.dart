@@ -11,7 +11,6 @@ import '../../../core/local_db/database_provider.dart';
 import '../../../core/local_db/drift_checklist_local_store.dart';
 import '../../../core/network/api_contracts.dart';
 import '../../../core/network/api_error.dart';
-import '../../../core/network/http_client.dart';
 import '../../../core/sync/sync_action_factory.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../core/sync/sync_providers.dart';
@@ -24,6 +23,7 @@ import '../domain/checklist_comparison.dart';
 import '../domain/checklist_models.dart';
 import 'checklist_local_store.dart';
 import 'checklist_remote_api.dart';
+import '../../../core/auth/session_http_client.dart';
 
 enum ChecklistPullOutcome { success, cached, error, pulling }
 
@@ -1033,21 +1033,7 @@ final checklistRemoteApiProvider = Provider<ChecklistRemoteApi>((ref) {
   if (config.accessToken == null) {
     return const PendingBackendChecklistRemoteApi();
   }
-  return DioChecklistRemoteApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (s) => s.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioChecklistRemoteApi(sessionHttpClient(ref, config));
 });
 
 final checklistRepositoryProvider = Provider<ChecklistRepository>((ref) {

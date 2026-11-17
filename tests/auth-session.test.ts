@@ -154,7 +154,8 @@ if (!connectionString) {
       const oldRefresh = await requestJson(baseUrl, "/api/v1/auth/refresh", {
         refreshToken: login.body.data.refresh_token,
       });
-      assert.equal(oldRefresh.status, 401);
+      assert.equal(oldRefresh.status, 200); // o antecessor imediato, sem prova, dentro da corrida: o mesmo sucessor (S4)
+      assert.equal(oldRefresh.body.data.refresh_token, refresh.body.data.refresh_token);
 
       const invalidRefresh = await requestJson(baseUrl, "/api/v1/auth/refresh", {
         refreshToken: "invalid.refresh.token",

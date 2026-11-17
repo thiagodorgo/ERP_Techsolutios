@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/auth/auth_notifier.dart';
+import '../../../core/auth/session_http_client.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/config/app_config.dart';
@@ -1072,7 +1073,7 @@ final workOrderRemoteApiProvider = Provider<WorkOrderRemoteApi?>((ref) {
   if (!ref.watch(remoteAuthModeProvider)) return null;
   final config = ref.watch(authenticatedApiConfigProvider);
   if (config.accessToken == null) return null;
-  return DioWorkOrderRemoteApi.create(config);
+  return DioWorkOrderRemoteApi(sessionHttpClient(ref, config));
 });
 
 final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {

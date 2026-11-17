@@ -5300,6 +5300,15 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Registro: `P-WEB-FATURAR-OS-SEM-TELA`, `P-SAN3-02-TELA-DELTA` e `P-SAN3-02-PAI-CANCELADO` (regra Q4 = A e o `[T-C10]`) fecham, por acréscimo; nota na `P-Ω4-3-CURRENCY-BRL`; 5 novas (`P-SAN3-25-BRACO-PROVISIONADO-FORA-DA-CI`, `P-SAN3-25-ADAPTADOR-DE-TITULO-DUPLICADO`, `P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO`, `P-SAN3-25-PREVIA-DO-COMPLEMENTAR`, `P-FRONT-TESTE-FORA-DO-SMOKE`); `D-SAN3-25-RESPOSTAS-DO-DONO` e `D-SAN3-25-ORDEM`; notas nas linhas do item 50 e do bloco no `PLANO_SAN3.md`. Índice regenerado pelo gerador.
 - Sem `src/**`, `prisma/**`, `.github/**`, `Kpis/**`, lockfiles ou `.env`.
 
+## 2026-11-16 — B-APP-SESSAO-RENOVA (`dev-68-cl`, `dev-68-e1-cl`, `dev-68-e2-cl`)
+
+- Executores: `dev-68-cl` (F0 a F2, e o código da F2b), `dev-68-e1-cl` (a re-execução e o commit da F2b, F3a a F5, a linha de `SUITES`, o merge da `main` e o formato do CI) e `dev-68-e2-cl` (F6 e F7). Todos Claude Opus 5.5, identidades novas, nível menor declarado; os dois sucessores retomaram pelo diário (P3).
+- Base `origin/main@60b4b122` (#579); merges da `main` em commit próprio: `0cbf7874` (#583, #584, #585) e `0cee6741` (#581, #572). Worktree próprio, `npm ci` e `flutter pub get` próprios, sem junction; Postgres 16 descartável do bloco, `timezone='UTC'`, só em 127.0.0.1; os testes `-db` sob papel efêmero `NOSUPERUSER NOBYPASSRLS`.
+- Fatias: F0 `bc54dd45`, F1 `3ab884fd`, FS1 `6a8de957`, FS2a a FS3b, FS3c `da880652`, F2 `5d15d713`, F2b `fc55c4a8`, F3a `1d125771`, F3b `fe348e33`, F3c `1a9e00fd`, F4 `027603d4`, F5 `c5f01520`, `ci.yml` `ed41d712` (só a linha de `SUITES`, `D-DONO-1611-SUITES-REGRA-FIXA`), F6 `d910e67c`, F7 (o registro `566173bf`, o `[T11d]` com relógio controlado `55dbccc2` e a prova no emulador na pilha `b10b-f4` do 44-B3, Emenda 3.6). Cada fatia com vermelho antes, as mutações do plano uma a uma (todas vermelhas e restauradas) e a contagem das linhas literais.
+- Comando: `agent-orchestration/codex/comandos/B-APP-SESSAO-RENOVA.md`. PR #588 (rascunho até a pré-revisão). Diário fora do repositório, na pasta do orquestrador (`revisoes/b-app-sessao-renova/`).
+- Registro: `P-APP-SEM-RENOVACAO-DE-TOKEN` (item 68), `P-68-PERDEDOR-RELE-401` e `P-APP-401-FICA-SINCRONIZANDO` fecham (vale no merge, o porteiro confere); 3 novas (`P-AUTH-REFRESH-VINCULO-APARELHO`, `P-WEB-SAIR-SEM-NOVA-TENTATIVA`, `P-APP-LISTA-OS-ERRO-COM-200`).
+- Sem `prisma/**`, `migrations/**`, `frontend/**`, `Kpis/**`, lockfiles, `pubspec.*` ou `.env`; `.github/**` só a linha de `SUITES`.
+
 ## 2026-11-15 a 2026-11-17 — B-O6R-04b (`dev-04b-cl`, `dev-04b-e1-cl`)
 
 - Executores: `dev-04b-cl` (F0 a F3, 15/11) e o sucessor `dev-04b-e1-cl` (F4 e F5, 17/11), Claude Opus 5.5 (subagentes da sessão; nível menor declarado), cobrindo o Codex por ordem do dono; sem cruzamento, declarado.
