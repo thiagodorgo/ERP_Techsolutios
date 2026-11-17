@@ -687,7 +687,10 @@ export class StatementService {
     if (!intents) throw new Error("invoice_intent_tx_unsupported");
     const outcome = await this.repository.transaction(input.tenantId, async (tx) => {
       const statement = await this.lockOrNotFound(tx, input.statementId); // [INVOICE-LOCK]
-      return writeInvoiceIssueIntentInTx(tx, intents, { statement, now: input.now, mode: "operator" });
+      const decided = await writeInvoiceIssueIntentInTx(tx, intents, { statement, now: input.now, mode: "operator" });
+      // A trilha do pedido do operador (§4.9), no MESMO `tx` e só no desfecho `created`; metadata pela allowlist (§3.6).
+      if (decided.kind === "created") await this.trail(tx, { tenantId: input.tenantId, actorId: input.actorId, action: "subscription_statement.invoice_requested", entityId: statement.id, metadata: { seq: decided.seq, period: statement.period, status: statement.status } }); // [INVOICE-TRAIL]
+      return decided;
     });
     if (outcome.kind === "created") return { statementId: input.statementId, seq: outcome.seq, providerDisabled: outcome.providerDisabled };
     switch (outcome.reason) {

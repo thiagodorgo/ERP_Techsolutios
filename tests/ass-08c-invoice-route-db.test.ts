@@ -274,6 +274,9 @@ if (!connectionString) {
     assert.deepEqual((await refsOf(f.statementId)).map((row) => [row.tenant_id, row.provider]), [[f.tenantId, null]], "o índice da organização da linha travada");
     assert.equal(response.status, 200, JSON.stringify(response.body));
     assert.deepEqual(response.body.data, { statementId: f.statementId, seq: 2, providerDisabled: false });
+    // Emenda 4 §1: a trilha do pedido, gravada no MESMO tx, com metadata só pela allowlist (ids, período, status).
+    const trails = await q(`SELECT tenant_id, metadata FROM audit_logs WHERE action = 'subscription_statement.invoice_requested' AND entity_id = $1`, f.statementId);
+    assert.deepEqual(trails.map((row) => [row.tenant_id, row.metadata.seq, row.metadata.period, row.metadata.status, row.metadata.resourceId]), [[f.tenantId, 2, "2026-10", "paid", f.statementId]], "1 trilha invoice_requested");
     await dispatch(f.tenantId);
     assert.equal(postsWithRef(H.focus, `${f.statementId}:2`), 1, "1 POST com ref=<id>:2");
     assert.equal(postsWithRef(H.focus, `${f.statementId}:1`) + postsWithRef(H.focusRejected, `${f.statementId}:1`), 1, "a nota 1 não foi de novo");
