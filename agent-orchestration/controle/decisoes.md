@@ -5686,6 +5686,7 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 
 - **Fato (decisão do dono):** *"Calma, Claude. O prestador pode ser um guincheiro que não tem contrato CLT com o pátio."*
 - **O que vale:** o prestador admite o guincheiro avulso, sem contrato CLT com o pátio; corrige o sentido de "prestador" da `D-DONO-1611-APP-SO-GUINCHO`.
+- **Efeitos (leitura do orquestrador, declarada):** o app atende o guincheiro CLT e o guincheiro prestador; a F3 do `B-APP-APARENCIA` volta de CANCELADA para SUSPENSA, até o plano do app guincho dizer se ela fica (depois, a `D-DONO-1611-GUINCHO-P1-P8` a pôs de volta em ativa).
 
 ## D-DONO-1611-GPS-G1-G5 (2026-11-16 19:47 SP) — a navegação no app responde G1 a G5
 
@@ -5733,7 +5734,7 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 ## C-GUI-PADRAO-DO-SELETOR (registro de CONFLITO, §A2, 2026-11-16) — o padrão do seletor de aparência do app
 
 - **Os dois lados:** a decisão `D-APARENCIA-RESPOSTAS` (b) ("o padrão é a A") contra a decisão H (`D-DONO-1611-H-APROVADO-E-PADRAO`, "o padrão é o desenho aprovado"). Hoje o seletor abre toda tela na A (`core/appearance/app_appearance.dart:97-98`), e na Localização a A é "Cartões de hoje" e a B é "Como o protótipo"; com a H, o padrão da Localização passa a ser a B.
-- **Estado:** vale a H, quando o dono confirmar; o bloco `B-GUI-00` só anda com o "sim" do dono à H.
+- **Estado:** RESOLVIDO pela H. O dono a confirmou em 16/11 às 20:20 (`D-DONO-1611-H-APROVADO-E-PADRAO`, *"siga"*), e o bloco `B-GUI-00` anda (PR #594).
 - **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §3 e §8.
 
 ## C-GUI-G1-DEPOIS-DAS-TELAS (registro de CONFLITO, §A2, 2026-11-16) — o botão de rota do G1
