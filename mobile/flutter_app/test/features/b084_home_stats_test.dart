@@ -237,6 +237,7 @@ void main() {
 
       // Navegou para detalhe — o bloco branco exibe o codigo (B-GUI-FID1: codigo e titulo em linhas proprias)
       expect(find.text('OS-B084-nav1'), findsOneWidget);
+      expect(find.text('Instalacao nav1'), findsOneWidget);
       expect(find.byKey(const Key('aparencia-detalhe-os-A')), findsOneWidget);
     });
   });

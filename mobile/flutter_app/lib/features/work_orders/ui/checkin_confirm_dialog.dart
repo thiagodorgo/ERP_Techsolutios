@@ -327,12 +327,15 @@ class _BlockSheet extends StatefulWidget {
 }
 
 class _BlockSheetState extends State<_BlockSheet> {
-  static const _reasons = [
-    'Cliente ausente no local',
-    'Endereço não localizado',
-    'Veículo inacessível / impedimento',
-    'Condições de segurança',
-    'Outro motivo',
+  // B-GUI-FID1 (R1 da revisão do #595) — o VALOR de cada motivo é dado da ação (`payload.reason` de
+  // `work_order.unable_to_start` e `refusal_reason` da telemetria) e continua na grafia que o servidor e a telemetria
+  // já conhecem (`UNABLE_TO_START_REASON_LABELS` no servidor). Só o rótulo da tela leva acento.
+  static const _reasons = <(String, String)>[
+    ('Cliente ausente no local', 'Cliente ausente no local'),
+    ('Endereco nao localizado', 'Endereço não localizado'),
+    ('Veiculo inacessivel / impedimento', 'Veículo inacessível / impedimento'),
+    ('Condicoes de seguranca', 'Condições de segurança'),
+    ('Outro motivo', 'Outro motivo'),
   ];
 
   String? _reason;
@@ -414,7 +417,7 @@ class _BlockSheetState extends State<_BlockSheet> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  for (final r in _reasons)
+                  for (final (r, label) in _reasons)
                     GestureDetector(
                       onTap: () => setState(() => _reason = r),
                       child: Container(
@@ -464,7 +467,7 @@ class _BlockSheetState extends State<_BlockSheet> {
                             const SizedBox(width: 11),
                             Expanded(
                               child: Text(
-                                r,
+                                label,
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),

@@ -640,6 +640,29 @@ void main() {
       expect(await m.acoes(), isEmpty);
     });
 
+    testWidgets('C2a: sem dígitos a confirmação fica travada', (t) async {
+      _telaAlta(t);
+      final m = _Mundo(_order(WorkOrderStatus.enRoute));
+      await t.pumpWidget(m.app(initial: '/work-orders/$_wo/execute'));
+      await t.pumpAndSettle();
+      await _tocar(t, find.byKey(const Key('checkin-arrived')));
+      expect(
+        t
+            .widget<FilledButton>(find.byKey(const Key('plate-confirm')))
+            .onPressed,
+        isNull,
+      );
+      await t.enterText(find.byKey(const Key('plate-input')), '2');
+      await t.pump();
+      expect(
+        t
+            .widget<FilledButton>(find.byKey(const Key('plate-confirm')))
+            .onPressed,
+        isNull,
+      );
+      expect(await m.acoes(), isEmpty);
+    });
+
     testWidgets('C2c: GPS desligado trava a confirmação', (t) async {
       _telaAlta(t);
       final m = _Mundo(_order(WorkOrderStatus.enRoute), gps: false);
@@ -720,7 +743,12 @@ void main() {
   // F5 — continuam alcançáveis
   // -------------------------------------------------------------------------
   group('F5 continuam alcançáveis', () {
-    Future<void> naoFoiPossivel(WidgetTester t, _Mundo m) async {
+    Future<void> naoFoiPossivel(
+      WidgetTester t,
+      _Mundo m, {
+      String motivo = 'Cliente ausente no local',
+      String? rotulo,
+    }) async {
       final entrada = find.byKey(const Key('checkin-block'));
       final menu = find.byKey(const Key('checkin-b-mais-acoes'));
       if (entrada.evaluate().isEmpty && menu.evaluate().isNotEmpty) {
@@ -728,16 +756,48 @@ void main() {
       }
       expect(entrada, findsOneWidget, reason: '"Não foi possível iniciar"');
       await _tocar(t, entrada);
-      await t.tap(
-        find.byKey(const Key('block-reason-Cliente ausente no local')),
-      );
+      // A chave é o VALOR enviado (a grafia de antes); o rótulo da tela tem acento.
+      if (rotulo != null) {
+        expect(find.text(rotulo), findsOneWidget, reason: 'o rótulo na tela');
+        if (rotulo != motivo) {
+          expect(find.text(motivo), findsNothing, reason: 'sem acento na tela');
+        }
+      }
+      final linha = find.byKey(Key('block-reason-$motivo'));
+      await t.ensureVisible(linha);
+      await t.tap(linha);
       await t.pump();
       await t.enterText(find.byKey(const Key('block-note')), 'Portão fechado');
       await t.pump();
+      await t.ensureVisible(find.byKey(const Key('block-submit')));
       await t.tap(find.byKey(const Key('block-submit')));
       await t.pumpAndSettle();
-      expect(await m.acoes(), [_f0NaoFoiPossivel]);
+      expect(await m.acoes(), [
+        {..._f0NaoFoiPossivel, 'reason': motivo},
+      ]);
       expect(m.visited.last, '/work-orders');
+    }
+
+    // R1 da revisão do #595 — os 5 motivos, com o VALOR que o servidor e a telemetria já conhecem
+    // (`UNABLE_TO_START_REASON_LABELS`, src/modules/work-orders/work-order.service.ts) e o rótulo acentuado na tela.
+    const motivos = <(String, String)>[
+      ('Cliente ausente no local', 'Cliente ausente no local'),
+      ('Endereco nao localizado', 'Endereço não localizado'),
+      (
+        'Veiculo inacessivel / impedimento',
+        'Veículo inacessível / impedimento',
+      ),
+      ('Condicoes de seguranca', 'Condições de segurança'),
+      ('Outro motivo', 'Outro motivo'),
+    ];
+    for (final (valor, rotulo) in motivos) {
+      testWidgets('motivo "$rotulo": a ação leva "$valor"', (t) async {
+        _telaAlta(t);
+        final m = _Mundo(_order(WorkOrderStatus.enRoute));
+        await t.pumpWidget(m.app(initial: '/work-orders/$_wo/execute'));
+        await t.pumpAndSettle();
+        await naoFoiPossivel(t, m, motivo: valor, rotulo: rotulo);
+      });
     }
 
     for (final ap in AppAppearance.values) {
