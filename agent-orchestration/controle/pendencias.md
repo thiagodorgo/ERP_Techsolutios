@@ -16715,3 +16715,24 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
 - **fato:** `tests/bsan317-consentimento-localizacao-db.test.ts:696` chama `waitForOwnBlockedOrSettled` sem `blockedBy` e sem filtrar o pid de R: B, que espera atrás de R (a ordem certa), conta como "R presa pela posição nova". O helper (`tests/helpers/pg-barrier.ts`) não tem filtro pelo pid do perdedor. Os dois arquivos são de fora do `B-SAN3-16` (teste existente e helper), e o bloco proíbe editar teste existente.
 - **critério de encerramento:** a checagem olha só a sessão de R (o pid dela), sem mudar nenhuma asserção do comportamento; 0 queda em N ≥ 50 execuções.
+
+## P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entrega sem cidade, estado e CEP — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o item da lista nunca levou `serviceCity`; o B-GUI-D1 acrescenta `destinationAddress` no mesmo molde) · **dono:** `B-GUI-15` ("Ir para a coleta" / "Ir para a entrega") · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.1 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toWorkOrderListDto` (`src/modules/work-orders/work-order.dto.ts`) manda `serviceAddress` e `destinationAddress`, sem `*City`, `*State` e `*ZipCode`. Sem a cidade, o botão do mapa pode levar o app de mapa ao lugar errado quando a OS não tem coordenada.
+- **critério de encerramento:** o `B-GUI-15` decide se a lista passa a mandar cidade, estado e CEP (aditivo), com teste, ou registra por que a coordenada basta.
+
+## P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo atendido chega ao app sem modelo e cor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o formulário da web, `frontend/src/modules/work-orders/components/WorkOrderForm.tsx`, só pede `vehicle` e `color` no socorro) · **dono:** um bloco de formulário da web, a abrir · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.2 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** numa OS de reboque criada pela web, `serviceDetails` só tem `plate`. Com o B-GUI-D1, `attendedVehicle.model` e `.color` saem `null`, e o cartão Veículo do detalhe fiel (B-GUI-FID1) mostra só a placa mascarada.
+- **critério de encerramento:** o formulário da web pede modelo e cor também no reboque, com teste.
+
+## P-OS-PLACA-NO-TEXTO-LIVRE (2026-11-17) — dois residuais do filtro de placa no modelo e na cor do veículo atendido — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a web aceita qualquer texto em `vehicle` e `color`; o B-GUI-D1 filtra na saída) · **dono:** o bloco de formulário da web que recebe a `P-OS-REBOQUE-SEM-MODELO-E-COR` · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1.1 §1.4 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toAttendedVehicleDto` (`src/modules/work-orders/work-order.attended-vehicle.ts`) anula o modelo ou a cor que traga uma placa (regra do check-in) ou a placa desta OS (dobrada). Passam, medidos: (1) duas placas no texto, nenhuma desta OS (`Uno ABC1234 e DEF5678`), que não mostra o fim desta OS, só perde minimização; (2) o fim sozinho (`Onix final 23`), que ninguém distingue de `Onix 2023` sem apagar modelo legítimo.
+- **critério de encerramento:** a web recusa placa nos campos de modelo e cor (o conserto de raiz), com teste.

@@ -5646,3 +5646,12 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 6. **VER5-02 (Emenda 1.1.1, item 2), medida antes do código.** `src/modules/work-orders/approval.controller.ts` grava a auditoria da decisão (`approval.approved`/`approval.rejected`) com `resourceId: approval.entityId` (`:56-60` em `eeac48a3`); a recusa por segregação (`approval.self_decision_denied`) é gravada em `approval.service.ts` com `entityId: current.entityId`. Os dois arquivos estão no PROIBIDO do 16 (`src/modules/work-orders/approval.*.ts`, Emenda 1 §6) e fora da lista de permitidos (Emenda 1.1 §5). **Vale o 2º caso:** a correção (com OS, a decisão e a recusa também gravam `resourceId = work_order_id`, com a chave opaca nos metadados) vai para a seção 3 do plano do 67, como **item 11**. O orquestrador a repassa.
 - **Cruzamento:** o dev é Claude; a pré-revisão é da outra casa quando houver crédito (§C7 11(1)), ou identidade Claude nova, com "sem cruzamento" declarado.
 - **Gravado por:** `dev-16-cl` (Claude Opus 5.5, dev do bloco), em 14/11/2026.
+
+## C-GUI-PLACA-NA-LISTA (registro de CONFLITO, §A2, 2026-11-17) — "nunca a placa inteira" (#534) × o prefixo da placa no desenho aprovado
+
+- **Lados:** o corpo do PR #534 (B-SAN3-26, merge `68a208ad`): "a lista leva só o modo do check-in e os 2 caracteres finais da placa; nunca a placa inteira nem `serviceDetails`"; × o desenho aprovado do detalhe (`os-detalhe.png`), que mostra `ABC-1D**`, levado à lista pelo B-GUI-D1 como `attendedVehicle.plateMasked`.
+- **Fato medido:** com o B-GUI-D1, o item da lista traz o prefixo (`ABC1D**`) e o fim (`checkinPlateTail`), e a placa fica remontável no item. Nenhum campo a traz inteira. O fim nunca chega à tela (D3, D3c, D7).
+- **Leitura do planejador (`plano-guid1-e1-cl`), declarada (§A6):** a minimização do #534 não protegia um segredo (o risco 3 do plano dele diz que o controle prova atenção, não sigilo). Os mesmos atores já leem a placa inteira no detalhe. A conferência é do servidor.
+- **Crítica (`crit-guid1-e1-cl`):** aceita, com as condições "o fim nunca na tela" e este registro. Mandar só `ABC****` não compra segurança, só minimização.
+- **Quem decide:** a junta completa do B-GUI-D1. A saída alternativa custa uma linha no auxiliar (o prefixo só com as 3 letras).
+- **Registrado por:** `dev-guid1-cl`, no PR do B-GUI-D1 (texto do §5 da emenda 1.1, só acrescentado).

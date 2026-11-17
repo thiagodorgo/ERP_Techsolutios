@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1236** |
-| IDs distintos | 1225 |
-| **ABERTAS** | **958** |
+| Cabecalhos `## P-` | **1239** |
+| IDs distintos | 1228 |
+| **ABERTAS** | **961** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **897** |
+| — das quais **ativas nesta rodada** | **900** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 274 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1236 cabecalhos para 1225 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1239 cabecalhos para 1228 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -445,7 +445,7 @@
 | `P-579-MERGE-EDITOU-PENDENCIA` | 16627 | MÉDIA | sim | P-579-MERGE-EDITOU-PENDENCIA (2026-11-16) — o merge de absorção do #579 trouxe 9 linhas  |
 | `P-APP-TELAS-SEM-3-OPCOES` | 16647 | MÉDIA | sim | P-APP-TELAS-SEM-3-OPCOES (2026-11-15) — as telas do app sem maquete de 3 opções — MÉDIA |
 
-## ABERTAS · balde B — processo/registro — 527
+## ABERTAS · balde B — processo/registro — 530
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -976,6 +976,9 @@
 | `P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP` | 16685 | BAIXA | sim | P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP (2026-11-15) — na web, o campo "Registro" do d |
 | `P-SAN3-16-CARTAO-APROVACOES-DA-HOME` | 16692 | BAIXA | sim | P-SAN3-16-CARTAO-APROVACOES-DA-HOME (2026-11-15) — o cartão de Aprovações da tela inicia |
 | `P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA` | 16699 | BAIXA | sim | P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA (2026-11-15) — `docs/mobile-sync-contracts.md` ainda ci |
+| `P-OS-LISTA-SEM-CIDADE` | 16719 | BAIXA | sim | P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entre |
+| `P-OS-REBOQUE-SEM-MODELO-E-COR` | 16726 | BAIXA | sim | P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo |
+| `P-OS-PLACA-NO-TEXTO-LIVRE` | 16733 | BAIXA | sim | P-OS-PLACA-NO-TEXTO-LIVRE (2026-11-17) — dois residuais do filtro de placa no modelo e n |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
