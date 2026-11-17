@@ -54,7 +54,15 @@ export const WORK_ORDER_EVENTS = [
   // WorkOrderComment). Este membro fica só para os eventos `work_order_comment` HISTÓRICOS já
   // persistidos (inertes, sem backfill) e para o filtro P-034 do dashboard, que segue os excluindo.
   "work_order_comment",
+  // B-SAN3-16 (item 5) — os dois pedidos do técnico que chegam pela fila do app (`work_order.approval_request` e
+  // `work_order.unable_to_start`): ficam gravados de forma durável na linha do tempo da OS. O status da OS não muda.
+  // O app já traduz o primeiro ("Aprovação solicitada"); o segundo mostra a mensagem do evento. Sem migração (sem CHECK).
+  "work_order_approval_requested",
+  "work_order_unable_to_start",
 ] as const;
+
+/** B-SAN3-16 — o pedido do técnico pela fila do app, gravado por `WorkOrderService.recordFieldRequest`. */
+export type FieldRequestKind = "approval_request" | "unable_to_start";
 
 export type WorkOrderStatus = (typeof WORK_ORDER_STATUSES)[number];
 export type WorkOrderPriority = (typeof WORK_ORDER_PRIORITIES)[number];

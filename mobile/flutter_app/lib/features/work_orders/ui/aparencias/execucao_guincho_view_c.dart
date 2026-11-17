@@ -159,7 +159,8 @@ class ExecucaoGuinchoViewC extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 p.locationCard,
-                if (p.transitions.isNotEmpty) ...[
+                if (p.transitions.isNotEmpty ||
+                    p.onApprovalRequest != null) ...[
                   const SizedBox(height: 16),
                   Text('Próxima ação', style: titleStyle),
                   const SizedBox(height: 8),
@@ -172,6 +173,21 @@ class ExecucaoGuinchoViewC extends StatelessWidget {
                         icon: Icon(t.icon),
                         label: Text(t.label),
                         style: FilledButton.styleFrom(backgroundColor: t.color),
+                      ),
+                    ),
+                  // B-SAN3-16 — o pedido de aprovação, pelo mesmo caminho do
+                  // botão próprio da opção A.
+                  if (p.onApprovalRequest != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: FilledButton.icon(
+                        key: const Key('guincho-solicitar-aprovacao'),
+                        onPressed: p.busy ? null : p.onApprovalRequest,
+                        icon: const Icon(Icons.approval_outlined),
+                        label: const Text('Solicitar aprovação'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: ErpMobileTheme.primary,
+                        ),
                       ),
                     ),
                 ],
