@@ -815,10 +815,20 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
       select: { status: true },
     });
     if (!locked) return undefined;
+    // B-APROVACOES-DURAVEIS (Emenda 3, E-67-TRAVA) — a fila de Aprovações da unidade é o repositório construído com O
+    // MESMO `tx` (forma A de N1, como no `changeStatus`): a aprovação do pedido do técnico não abre outra conexão, logo
+    // não espera a própria trava, e commita (ou volta) junto com o evento. Sem o repositório, falha fechada — mas só
+    // quando o pedido usa a fila (o "não consegui iniciar" não depende dela).
     return work({
       status: locked.status as WorkOrderStatus,
       listTimeline: () => this.listTimeline(tenantId, workOrderId),
       createEvent: (input) => this.createEvent({ ...input, tenantId, workOrderId }),
+      approvals: {
+        request: (input) => {
+          if (!this.approvals) throw new Error("The approval repository is required inside the field request unit.");
+          return this.approvals.request(input); // B-APROV:pedido-tecnico-na-unidade
+        },
+      },
     });
   }
 }
@@ -938,13 +948,15 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
 
   // B-SAN3-16 (Emenda 1.3) — a unidade do pedido de campo sob RLS, numa transação só (a do `withTenantRls`), sem
   // superusuário: a trava, a releitura, a linha do tempo e o evento commitam juntos, ou nada.
+  // B-APROVACOES-DURAVEIS (Emenda 3) — e a aprovação do pedido do técnico também: o repositório de aprovações nasce
+  // com o MESMO `tx` (a forma A do `changeStatus`).
   runFieldRequestUnit<T>(
     tenantId: string,
     workOrderId: string,
     work: (unit: FieldRequestUnit) => Promise<T>,
   ): Promise<T | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaWorkOrderRepository(tx).runFieldRequestUnit(tenantId, workOrderId, work),
+      new PrismaWorkOrderRepository(tx, new PrismaApprovalRepository(tx)).runFieldRequestUnit(tenantId, workOrderId, work),
     );
   }
 }

@@ -11,6 +11,7 @@ import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import {
   duplicateWorkOrderError,
   InMemoryWorkOrderRepository,
+  type FieldRequestUnit,
   type WorkOrderRepository,
 } from "./work-order.repository.js";
 import { buildGeocodeQueryString, GeocoderUnavailableError, type Geocoder } from "./geocoding/geocoder.js";
@@ -1621,10 +1622,11 @@ export class WorkOrderService {
    *  5. validação (400 `required_field`, `invalid_urgency`, `field_too_long`);
    *  6. OS terminal → 422 `work_order_closed`, sobre a situação RELIDA sob a trava (E13-01);
    *  7. só o pedido de aprovação: a fila de Aprovações PRIMEIRO, pelo efeito do caller (este serviço não importa a
-   *     fila), com a trava tomada. Se ela falhar, a unidade volta sem evento, e o reenvio cai na mesma pendência (a
-   *     chave é determinística). Se ela grava e o evento ou o commit falham depois, a pendência fica na fila (em
-   *     memória, item 67) sem evento, e o reenvio se corrige: não acha o evento, recebe a MESMA pendência e grava o
-   *     evento (E13-03; a atomicidade completa entre os dois só vem com a fila durável);
+   *     fila), com a trava tomada, e a fila é a DA UNIDADE (`unit.approvals`). Em banco, ela grava na MESMA transação
+   *     do evento (item 67, Emenda 3): se a fila, o evento ou o commit falham, nada fica, e o reenvio grava os dois.
+   *     Em memória, não há rollback: se ela grava e o evento falha depois, a pendência fica sem evento, e o reenvio se
+   *     corrige (não acha o evento, recebe a MESMA pendência pela chave determinística e grava o evento; o limite
+   *     E13-03);
    *  8. o evento, com metadados por lista fechada (§2.8: o ator vem do token, nunca do corpo) e o `approval_id`.
    * O status da OS NÃO muda. Devolve também quem atribuiu a OS por último (o destinatário do aviso do "não iniciou",
    * P8) e o motivo como ficou gravado (rotulado).
@@ -1665,7 +1667,7 @@ export class WorkOrderService {
           );
         }
 
-        const approvalId = await effects.openApproval?.(target, parsed.reason);
+        const approvalId = await effects.openApproval?.(target, parsed.reason, unit.approvals);
         await unit.createEvent({
           eventType,
           actorUserId: actor.userId,
@@ -3000,9 +3002,16 @@ function statusEventType(status: WorkOrderStatus) {
 
 // ─── B-SAN3-16 (item 5) — os auxiliares de `recordFieldRequest` ─────────────────────────────────────────────────
 
-/** O efeito que o caller injeta: a fila de Aprovações, chamada ANTES do evento (Emenda 1.1 §2.4). Devolve o id dela. */
+/**
+ * O efeito que o caller injeta: a fila de Aprovações, chamada ANTES do evento (Emenda 1.1 §2.4). Devolve o id dela.
+ * O 3º argumento é a fila da própria unidade (item 67, Emenda 3): em banco, o mesmo `tx` do evento.
+ */
 export type FieldRequestEffects = {
-  readonly openApproval?: (workOrder: WorkOrder, reason: string) => Promise<string>;
+  readonly openApproval?: (
+    workOrder: WorkOrder,
+    reason: string,
+    approvals: FieldRequestUnit["approvals"],
+  ) => Promise<string>;
 };
 
 export type FieldRequestOutcome = {

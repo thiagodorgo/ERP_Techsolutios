@@ -113,6 +113,10 @@ export type FieldRequestUnit = {
   readonly status: WorkOrderStatus;
   listTimeline(): Promise<readonly WorkOrderEvent[]>;
   createEvent(input: Omit<CreateWorkOrderEventInput, "tenantId" | "workOrderId">): Promise<WorkOrderEvent>;
+  // B-APROVACOES-DURAVEIS (Emenda 3, E-67-TRAVA) — a fila de Aprovações DENTRO da unidade: em banco, o MESMO `tx` da
+  // trava, da linha do tempo e do evento (a aprovação e o evento ficam os dois, ou nenhum); em memória, o armazém que o
+  // serviço de aprovações lê (sem rollback: o limite E13-03 do 16 continua valendo só ali).
+  readonly approvals: Pick<ApprovalRepository, "request">;
 };
 
 export type CreateWorkOrderEventInput = {
@@ -713,6 +717,7 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
         status: workOrder.status,
         listTimeline: () => this.listTimeline(tenantId, workOrderId),
         createEvent: (input) => this.createEvent({ ...input, tenantId, workOrderId }),
+        approvals: this.approvals,
       });
     });
     const settled = current.then(
