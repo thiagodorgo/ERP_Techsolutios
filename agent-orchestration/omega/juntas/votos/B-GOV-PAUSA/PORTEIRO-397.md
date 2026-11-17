@@ -4,7 +4,7 @@ papel: porteiro-pos-merge · modelo: Fable (claude-fable-5-1, o do frontmatter; 
 
 Instância nova, nascida no merge do PR 397. Aberto em 2026-10-01T20:52Z (UTC). Parecer incremental: cada item é gravado ao ser medido (P1/P2); itens não medidos ficariam marcados como em apuração — ao encerramento, nenhum restou.
 
-Ambiente declarado: Windows 11, Git Bash (MINGW64), `MSYS_NO_PATHCONV` NÃO exportada (o `git show ref:caminho` sofre conversão de caminho — contornado por `git ls-tree` + `git cat-file` do blob). Base viva 5432/6379 não é alvo. Medição em worktree detached próprio `C:/Users/AMP/w-port397` (removido pelo nome ao fim).
+Ambiente declarado: Windows 11, Git Bash (MINGW64), `MSYS_NO_PATHCONV` NÃO exportada (o `git show ref:caminho` sofre conversão de caminho — contornado por `git ls-tree` + `git cat-file` do blob). Base viva 5432/6379 não é alvo. Medição em worktree detached próprio `~/w-port397` (removido pelo nome ao fim).
 
 ## 0. Identidade e mandato — MEDIDO 20:52Z
 
@@ -21,7 +21,7 @@ Ambiente declarado: Windows 11, Git Bash (MINGW64), `MSYS_NO_PATHCONV` NÃO expo
 - `git merge-base --is-ancestor 67c2c280 5fed0a55` → SIM. `git log 67c2c280..5fed0a55` → exatamente 1 commit: `5fed0a55 docs(junta): ata da junta do B-GOV-PAUSA (APROVADO 3x0), votos, evidencias e parecer do inspetor`. `git diff --stat 67c2c280 5fed0a55` → 9 arquivos, todos em `agent-orchestration/omega/juntas/` (ata, inspetor, quedas, C1/C2/C3 evidência+voto), 1397 inserções, 0 remoções — o objeto julgado (`67c2c280`) chegou à main sem alteração; só o registro da própria junta entrou depois do voto, como a §C7.1 exige.
 - `git merge-base 5fed0a55 5b6e1036` = `5b6e1036` → o PR partiu da main imediatamente anterior ao merge (sem rebase pendente).
 - `refs/pull/397/head` buscado → `FETCH_HEAD=5fed0a55` (confirma o head pelo GitHub, não só pelo objeto local).
-- Worktree próprio: `git worktree add --detach C:/Users/AMP/w-port397 513937b0` → HEAD `513937b0`, `git status --porcelain` vazio.
+- Worktree próprio: `git worktree add --detach ~/w-port397 513937b0` → HEAD `513937b0`, `git status --porcelain` vazio.
 
 ## 2. Promessa × entregue — MEDIDO 21:03Z · CONFERE COM 1 RESSALVA (corpo do PR desatualizado)
 
@@ -67,7 +67,7 @@ O bloco não toca código nem teste (stat do merge: nenhum arquivo em `src/ test
 - `Kpis/kpis-latest.json` @ `513937b0`: `release.pr=397`, `release.merge_commit=null`, `release.approved_head=null`, `status=published_per_pr`, `snapshot_date=2026-10-01`, `version=B-GOV-PAUSA`. `backfill_note` presente ("null NA AUTORIA por contrato (§C3.5) e recebem backfill…").
 - `Kpis/kpis-history.json` última entrada: `pr 397`, `merge_commit null`, `approved_head null`. Entrada anterior (`pr 394`): `merge_commit b3f0af5f`, `approved_head 7ad08690` — já pagos pelo #395 (precedente: o PR de registro seguinte paga o backfill).
 - Depois do merge, `null` nos dois campos é **dívida** (§C3.5, corpo do porteiro item 4). O valor REAL a gravar: `merge_commit = 513937b0555e2a6175e7e89d8ae9e44dbc995f8a`, `approved_head = 67c2c280612cb644f246af0b5410cab59afe028d` (§1, §5).
-- Onde a dívida vai ser paga: a ata l.98-100 nomeia "o PR de registro seguinte ao merge (o que versiona o parecer do porteiro e paga o backfill de `merge_commit`/`approved_head` deste PR)". Esse ramo existe: `docs/registro-397` em `C:/Users/AMP/w-reg397`, head `db2bc81d` = `origin/main` + 2 commits (esqueleto do parecer `bc1ae0ed` + mandato do porteiro `db2bc81d`), porcelain 0, merge-base = `origin/main`. Medido nele: `latest release: pr 397 merge_commit None approved_head None`; history `pr 397: (None, None)` → **o backfill ainda NÃO está no ramo** (esperado: o ramo está no começo; o mandato l.44 diz que é ele que paga).
+- Onde a dívida vai ser paga: a ata l.98-100 nomeia "o PR de registro seguinte ao merge (o que versiona o parecer do porteiro e paga o backfill de `merge_commit`/`approved_head` deste PR)". Esse ramo existe: `docs/registro-397` em `~/w-reg397`, head `db2bc81d` = `origin/main` + 2 commits (esqueleto do parecer `bc1ae0ed` + mandato do porteiro `db2bc81d`), porcelain 0, merge-base = `origin/main`. Medido nele: `latest release: pr 397 merge_commit None approved_head None`; history `pr 397: (None, None)` → **o backfill ainda NÃO está no ramo** (esperado: o ramo está no começo; o mandato l.44 diz que é ele que paga).
 - `Kpis/index.html`/`app.js`: `FROZEN` atualizado para `snapshot_date 2026-10-01 / version B-GOV-PAUSA` (diff de 2 linhas), `kpi-freeze --check` em dia (§3).
 
 **Achado A2 (RESSALVA, viaja para o PR de registro):** `merge_commit`/`approved_head` `null` em `origin/main` pós-merge. Dono nomeado pela ata: `docs/registro-397`. Valores a gravar acima.
@@ -99,7 +99,7 @@ O bloco não toca código nem teste (stat do merge: nenhum arquivo em `src/ test
 
 ## 7. Limpeza (§C5) — MEDIDO 20:59Z–21:14Z · CONFERE
 
-Medido na árvore principal (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios`, `main` @ `513937b0`):
+Medido na árvore principal (`~/Documents/GitHub/ERP_Techsolutios`, `main` @ `513937b0`):
 - Branch remota do PR: `git ls-remote origin refs/heads/docs/gov-pausa-grava-e-para | wc -l` → **0** (apagada).
 - Branch local do PR: `git branch --list "docs/gov-pausa*"` → vazio.
 - Locais já mergeadas: `git branch --merged main` filtrando `main` → vazio.
@@ -111,7 +111,7 @@ Medido na árvore principal (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios`, `
 - Base viva: `docker ps` → só `erp-postgres` (5432) e `erp-redis` (6379), `Up 4 days (healthy)`; nenhum container de teste sobrou; o bloco não mexeu em banco (nenhum caminho de `prisma/` ou `src/` no diff) → sem resíduo de teste a conferir na base viva. `docker volume ls -q | wc -l` = 27 (não medi o conteúdo: não é alvo).
 - `scripts/post-merge-cleanup.sh` **não rodou** (declaração do orquestrador no mandato l.46-48: o `docker volume prune` derrubaria o cluster de KPI de um dev vivo do PR 393). Eu não o executo (não conserto). O que o script faria de relevante para §C5 — branches mergeadas, prune, artefatos — está **medido limpo** acima; o que falta é só a parte de docker, que é a razão declarada. Sem dívida de resultado.
 - Disco: `df -h /c` → **19 GB livres** (93% usado). Acima do piso de ~10 GB → `DEEP_CLEAN=1` **não** é exigido agora; fica a nota de que está a 9 GB do piso.
-- Meu próprio worktree `C:/Users/AMP/w-port397` (detached @ `513937b0`, `npm ci` próprio sem junction): removido pelo nome ao fim (`git worktree remove --force C:/Users/AMP/w-port397`) — resultado na linha "Teardown" após o veredito.
+- Meu próprio worktree `~/w-port397` (detached @ `513937b0`, `npm ci` próprio sem junction): removido pelo nome ao fim (`git worktree remove --force ~/w-port397`) — resultado na linha "Teardown" após o veredito.
 
 ## 8. O próximo bloco pode começar? — MEDIDO 21:05Z–21:14Z · SIM, com ressalvas que viajam
 
@@ -135,14 +135,14 @@ Ambiente: Windows 11, Git Bash; `MSYS_NO_PATHCONV` não exportada (o `git show r
 
 1. `tr -d "\r" < …/00-mandatos/porteiro.md | md5sum` → `d937cf1c…` (confere) · `git ls-tree origin/main -- .claude/agents/porteiro-pos-merge.md` → blob `00d75b02` · `git cat-file -p | tr -d "\r" | md5sum` → `374b1b0d…`.
 2. `git fetch origin --prune` · `git log origin/main -3` · `git cat-file -p 513937b0` (1 pai) · `gh pr view 397 --json state,mergeCommit,headRefOid,mergedAt,…` · `git fetch origin refs/pull/397/head` · `git rev-parse 5fed0a55^{tree}` = `513937b0^{tree}` · `git diff --stat 5fed0a55 513937b0` (vazio) · `git merge-base --is-ancestor 67c2c280 5fed0a55` · `git log 67c2c280..5fed0a55` · `git diff --stat 67c2c280 5fed0a55`.
-3. `git worktree add --detach C:/Users/AMP/w-port397 513937b0` · `npm ci` próprio (326 pacotes, 27 s, sem junction).
+3. `git worktree add --detach ~/w-port397 513937b0` · `npm ci` próprio (326 pacotes, 27 s, sem junction).
 4. `gh pr view 397 --json body` · `git show --stat 513937b0` · diff-dos-diffs CLAUDE.md × AGENTS.md · `grep` dos 3 comandos de "Como testar" · `git diff --check 5b6e1036 513937b0` (4 violações = as 4 exceções da ata) · contagem CR/LF nos 4 textos · `node scripts/sync-agent-agents.mjs --check` (OK 29) · md5 dos 3 corpos de jurado.
 5. `node --check Kpis/app.js` · `node scripts/kpi-freeze.mjs --check` · `node --test --import tsx tests/kpi-dashboard-charts.test.ts` (17/17) · `…kpi-achados-paridade…` (6/6) · `…kpi-dashboard-contraste…` (6/6) · `blocks_completed` em `5b6e1036` (168) × `513937b0` (169) · trilhas carregadas × entrada #394 · `git diff --numstat … Kpis/kpis-history.json` (13/0) + prefixo das 164 entradas idêntico (UTF-8).
 6. Ata `J-B-GOV-PAUSA.md`; `C{1,2,3}-voto.json` (voto, head_medido, mandato_md5, corpo_md5, modelo, achados, pausa); `00-quedas.md`; `00-inspetor-terreno.md` l.1 e l.123; `gh api …/commits/<sha>/check-runs` para `67c2c280` (14/14), `5fed0a55` (14/14), `513937b0` (8: 7 success + deploy=skipped).
 7. `git show 513937b0 -- pendencias.md` (+20/−0, 2 cabeçalhos, 0 FECHAD/RESOLVID) e `pendencias-indice.md`; corpo das 2 pendências; `grep` das 2 pendências da ata em `origin/main` e em `w-reg397` (`docs/registro-397` @ `db2bc81d`, porcelain 0, merge-base = origin/main; latest/history ainda `null`).
 8. Limpeza: `git ls-remote origin refs/heads/docs/gov-pausa-grava-e-para` (0) · `git branch --list` · `git branch --merged main` · `git status --porcelain | grep "^ D"` · `git remote prune origin --dry-run` · `git worktree list` · artefatos de build · `docker ps` · `docker volume ls -q | wc -l` · `df -h /c` (19 GB).
 9. §8: enumeração por script dos cabeçalhos `## P-` com `BLOQUEIA`/`bloqueia:` e dos que nomeiam os alvos; `PLANO_SAN3.md` l.120-123, 167, 192-193, 253-271; `decisoes.md:2777` (`D-DEMO-UX-NUVEM`); `conhecimento-de-terreno.md` §1.2; `gh pr view 393`; `git fetch origin refs/pull/393/head` → `26730e2b`; `git ls-tree -r` do head do 393 (auditoria ciclo 3, §8, §8.6); `kpis-latest/history` desse head.
-10. Teardown: `git worktree remove --force C:/Users/AMP/w-port397` + `git worktree prune` — resultado na linha "Teardown" após o veredito.
+10. Teardown: `git worktree remove --force ~/w-port397` + `git worktree prune` — resultado na linha "Teardown" após o veredito.
 
 **Não executado (declarado, não presumido):** suítes backend (`npm test`), smoke do frontend e Flutter — o bloco não tocou nenhuma dessas trilhas (stat do merge sem `src/ tests/ frontend/ mobile/ prisma/ scripts/ .github/`) e os valores são CARREGADOS com nota por §C3.3; `scripts/post-merge-cleanup.sh` (não é do porteiro executar; o resultado que ele produziria em branches/prune/artefatos está medido limpo); conteúdo dos 27 volumes docker (não é alvo).
 
@@ -159,6 +159,6 @@ Ambiente: Windows 11, Git Bash; `MSYS_NO_PATHCONV` não exportada (o `git show r
 
 Encerrado em 2026-10-01T21:14Z (UTC); carimbos por item = hora da gravação, ao minuto. Nenhuma `PAUSA` recebida.
 
-Teardown (medido 21:14:30Z): `git worktree remove --force C:/Users/AMP/w-port397` ec=0 · `git worktree prune` · diretório ausente · 0 entradas `w-port397` em `git worktree list` · árvore principal em `513937b0`, 0 rastreados apagados · processos no caminho: não medido (PowerShell indisponível no shell; a remoção foi forçada só sobre o meu próprio worktree, criado nesta sessão).
+Teardown (medido 21:14:30Z): `git worktree remove --force ~/w-port397` ec=0 · `git worktree prune` · diretório ausente · 0 entradas `w-port397` em `git worktree list` · árvore principal em `513937b0`, 0 rastreados apagados · processos no caminho: não medido (PowerShell indisponível no shell; a remoção foi forçada só sobre o meu próprio worktree, criado nesta sessão).
 
 LIBERADO COM RESSALVA: ciclo 4 do PR 393 (B-GOV-MANDATO) e as tarefas de nuvem de B-SAN3-05, B-SAN3-09 e B-SAN3-11 | no PR de registro `docs/registro-397` (o que versiona este parecer): (1) backfill §C3.5 em `Kpis/kpis-latest.json` e na entrada `pr 397` de `kpis-history.json` — `merge_commit 513937b0555e2a6175e7e89d8ae9e44dbc995f8a`, `approved_head 67c2c280612cb644f246af0b5410cab59afe028d`; (2) abrir `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` e `P-GOV-PAUSA-CASO-SEM-FONTE` em `pendencias.md` com dono, prova, escopo, `bloqueia` e teste de encerramento, índice pelo gerador; (3) corrigir ou anotar o corpo do PR 397 ("Kpis/* intocados" e "junta ainda não convocada" contradizem o diff). E, no #393 antes do merge dele: recontar `blocks_completed` para 170 com a entrada própria por último.

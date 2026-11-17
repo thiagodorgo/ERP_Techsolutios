@@ -38,7 +38,7 @@ O que **sobrevive** e pode virar requisito explícito do plano v2:
 | A7 | ajuste | dentro-do-plano (E8) | "Mudar o status [do despacho] escreve na **linha do tempo da OS**" é falso. O evento vai para `fieldDispatchEvent`, que nada fora de `field-dispatch/` lê. A conclusão (despacho é subrecurso) sobrevive por outra evidência: o despacho aparece na aba Mobile da OS e na ação da lista | Premissa falsa citada como prova (§A6: separar fato de hipótese) |
 | A8 | nota | pre-existente: `P-SAN3-04A-CHECKLIST-POR-ESCOPO-ESCRITORIO` (`pendencias.md:9724`, 2026-09-18, dono `B-SAN3-22`) | O §1 diz que `operator` e `manager` "passam sempre" e que "a matriz diz o mesmo", mas a `RBAC_MATRIX.md:44` lhes dá "…-**by-scope**" na vistoria | A tensão já tem dono. Falta só o plano citá-la em vez de afirmar concordância |
 | A9 | nota | pre-existente: `f7219abf`, 2026-07-22, #270 (E6) | O `POST /damages` da classe R **debita o extrato de um colega**. O técnico escolhe o responsável e o valor (−900 medido). O plano manda registrar a classe R como MÉDIA com a causa "`work_order_id` do corpo não passa pelo escopo" | Fora da propriedade do 07c, mas o texto de pendência que o plano dita erra a classe (é dinheiro, não vínculo a OS) e a gravidade. Não há registro disso em `pendencias.md`/`achados.jsonl` |
-| A10 | ajuste | dentro-do-plano (E8) | O §5.2 proíbe `C:/Users/AMP/w-389j`, que não existe; o worktree vivo é `C:/Users/AMP/w-389`. E o §5.2 diz que o #389 "só toca inventory", mas ele toca também `prisma/**`, `ci.yml` e um teste de catálogo | A proibição escrita não alcança o caminho real |
+| A10 | ajuste | dentro-do-plano (E8) | O §5.2 proíbe `~/w-389j`, que não existe; o worktree vivo é `~/w-389`. E o §5.2 diz que o #389 "só toca inventory", mas ele toca também `prisma/**`, `ci.yml` e um teste de catálogo | A proibição escrita não alcança o caminho real |
 | A11 | nota | dentro-do-plano | Tamanho G e divisão (ver a seção seguinte) | — |
 | A12 | nota | pre-existente: `.github/workflows/ci.yml:116-121` (o job `backend-postgres` existe porque as permissões no banco divergiram do catálogo 3 vezes) | O censo mede o alcance só em memória (catálogo em código). A `-db` do plano roda no job `backend`, não no subconjunto com permissões provisionadas, e o `.github/**` é PROIBIDO no bloco | O alcance real em produção (permissões do banco) não é medido pelo censo. É risco conhecido da casa, não defeito do plano |
 
@@ -105,10 +105,10 @@ D-07c-DESPACHO-ALVO, a tensão `coordenador-de-acessos` × inelegibilidade e a d
 
 ### E1 — reexecução dos geradores do Apêndice A (P3)
 
-- `git -C C:/Users/AMP/w-07c rev-parse HEAD` → `00109988…`; `origin/main` → `c1cfdabe…`; o diff do head sobre a main
+- `git -C ~/w-07c rev-parse HEAD` → `00109988…`; `origin/main` → `c1cfdabe…`; o diff do head sobre a main
   é só o plano (`git show --stat HEAD` → 1 arquivo, 907 linhas).
 - Extraí `census.mts` (linhas 717–782), `census-sync.mts` (788–841) e `classify.cjs` (847–906) do próprio plano
-  para o scratchpad; cwd = `C:/Users/AMP/w-07c`, Node v20.19.5, sem `DATABASE_URL`/`REDIS_URL`.
+  para o scratchpad; cwd = `~/w-07c`, Node v20.19.5, sem `DATABASE_URL`/`REDIS_URL`.
 - `node --import tsx census.mts` → `rotas montadas: 409 | routers aninhados: 12 | mutantes: 223 | alcançam: 42` (ec=0).
 - `node --import tsx census-sync.mts` → `endpoints: 5 | arquivos: 758 | literais: 335 | pares: 1675 | alcançados: 23` (ec=0).
 - `node classify.cjs` → `OS=13 · VISTORIA=18 · DESPACHO=1 · EVIDENCIA-OS=4 · R=10 · N=15 · NAO-CLASSIFICADA=0 · total=61`;
@@ -244,7 +244,7 @@ D-07c-DESPACHO-ALVO, a tensão `coordenador-de-acessos` × inelegibilidade e a d
 - O §5.2 afirma que o #389 "só toca `src/modules/inventory/**` e testes de estoque": medido, o #389 também toca
   `prisma/schema.prisma`, uma migração, `.github/workflows/ci.yml` (+4 suítes no `backend-postgres`) e
   `tests/db-catalog-write-guard.test.ts`. Sem efeito nos arquivos do 07c, mas a afirmação é falsa.
-- O §5.2 proíbe `C:/Users/AMP/w-389j`; `git worktree list` → o worktree vivo é `C:/Users/AMP/w-389`
+- O §5.2 proíbe `~/w-389j`; `git worktree list` → o worktree vivo é `~/w-389`
   (`ae863e1a`, `fix/inventory-consistency`). A proibição nomeia um caminho que não existe e deixa o real sem trava
   escrita. → achado **A10** (ajuste).
 - O §2.2 justifica o despacho como subrecurso porque "escreve na **linha do tempo da OS** (`createEvent` com
@@ -276,7 +276,7 @@ D-07c-DESPACHO-ALVO, a tensão `coordenador-de-acessos` × inelegibilidade e a d
 
 ## Apêndice — as sondas do crítico, verbatim (P3: roteiro de reexecução)
 
-Rodadas com cwd = `C:/Users/AMP/w-07c` (head `00109988`), `node --import tsx <arquivo>`, sem `DATABASE_URL`/`REDIS_URL`.
+Rodadas com cwd = `~/w-07c` (head `00109988`), `node --import tsx <arquivo>`, sem `DATABASE_URL`/`REDIS_URL`.
 Os geradores do plano (`census.mts`, `census-sync.mts`, `classify.cjs`) são os do Apêndice A do plano, sem
 edição; as variantes `*-forms*.mts` são os mesmos arquivos com **uma** linha a mais logo depois do `createApp`:
 `await (await import("<inject.mts>")).inject(app);` (e, no `census-forms2`, também `emulateMountLiteral("/mobile")`).

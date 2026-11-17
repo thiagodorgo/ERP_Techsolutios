@@ -7,7 +7,7 @@
 - **Branch:** `feat/evidence-clamav-scanner`
 - **Autor:** `dev-avreal-sol` (Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou)
 - **Plano:** `docs/revisoes/SAN3/B-AV-REAL-plano.md` (v2)
-- **Parecer prevalente:** `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/rev-plano-avreal-v2-parecer.md`
+- **Parecer prevalente:** `~/erp-pausa-2026-10-03/revisoes/rev-plano-avreal-v2-parecer.md`
 
 ## Objetivo
 

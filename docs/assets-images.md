@@ -11,7 +11,7 @@ mobile/flutter_app/assets/images
 No checkout atual, o caminho completo e:
 
 ```text
-C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\mobile\flutter_app\assets\images
+~/Documents\GitHub\ERP_Techsolutios\mobile\flutter_app\assets\images
 ```
 
 Dentro do app Flutter, os caminhos devem ser referenciados a partir da raiz do pacote:

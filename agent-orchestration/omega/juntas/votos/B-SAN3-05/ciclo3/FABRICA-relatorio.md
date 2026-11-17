@@ -4,7 +4,7 @@
   não toca dinheiro e o Fable está reservado a bloco de dinheiro (`D-FABLE-ASTRA-SO-DINHEIRO`, decisão do dono de 2026-10-08,
   `agent-orchestration/controle/decisoes.md` l.2982 no disco). O frontmatter dos três corpos continua `model: fable`: o fallback é de
   quem lança.
-- **Quando e onde li:** 2026-10-09, à tarde (UTC), no disco de `C:/Users/AMP/w-o05`; ref local e de rastreio de
+- **Quando e onde li:** 2026-10-09, à tarde (UTC), no disco de `~/w-o05`; ref local e de rastreio de
   `fix/runtime-role-sem-bypass` = `91d794956309f6e63511bdfd76cbfddd8bf45c40` (lidas nos arquivos de ref; reflog: "docs(plano): ciclo 3
   do B-SAN3-05 — A2 (grave) e A3, …"). **O dev do ciclo 3 (Codex) editava a árvore durante a leitura** (os subtestes do arquivo de
   guarda andaram ~138 linhas entre duas leituras; o cabeçalho do script já estava novo e a SQL da trava ainda era a do ciclo 2). Por
@@ -29,7 +29,7 @@
 Comum aos três: regra da junta (l.2026-2035: unanimidade de 3 com veto, ciclo 3 só grave, objeto = head empurrado com check-runs, HC = H0,
 P1–P7, ≤ 3 itens, **uma cadeira por vez no Claude**, prefixos `j05c3-c1-/c2-/c3-`, Opus declarado ou GPT-6 Astra); inelegíveis por
 nome (l.2048-2059); **reprovação por construção copiada verbatim** (l.2061-2080) em blockquote nos três corpos; terreno pedido pelo
-orquestrador (worktree `C:/Users/AMP/w-j05c3cN`, imagem `erp-junta-node20-pg16:local`, receita `C:/Users/AMP/erp-terreno/receita-pg16.sh`,
+orquestrador (worktree `~/w-j05c3cN`, imagem `erp-junta-node20-pg16:local`, receita `~/erp-terreno/receita-pg16.sh`,
 base viva e 5432/6379/55432 nunca, `docker rm -f -v` só dos seus); saídas em `votos/B-SAN3-05/ciclo3/C{N}-evidencia.md` e
 `C{N}-voto.json`; P1/P2/P7; sem `tail -f`; tudo sob `timeout`; classificação gravidade × escopo × classe.
 

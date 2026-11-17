@@ -7,10 +7,10 @@ Onde o corpo (escrito para o ciclo 1) diverge do mandato do ciclo 3 (ciclo, obje
 ## Terreno e legalidade
 - `git show <O>:.claude/agents/especialistas/jurado-san313-c3-regressao-escopo-registro.md | tr -d '\r' | md5sum` → 170a5f5a…; disco de w-san313 igual; espelho `.agents/` presente no objeto (`git cat-file -e`).
 - Objeto por duas fontes: `git ls-remote origin refs/heads/fix/mobile-minhas-os` = `gh pr view 460` = f382422514fb2bd0f8363a191a46035c4cf7e865 (OPEN, isDraft=false, MERGEABLE). HEAD de w-san313 = objeto, 0 modificação rastreada. origin/main (ref local) no início = b08c755719a6cb0ed192fa04e549ac5fc67a3e67 = merge-base.
-- Parecer `insp-san313c3-parecer.md`: **LIBERADO COM RESSALVA** (R1 corpo do blob — cumprido acima; R2 monocultura: esta cadeira também roda em Claude Opus, declarado → junta 3/3 Opus; R3 disco: sem npm ci; R4 carga condicional: objeto não andou, medido acima). O parecer nomeia `jurado-san313-c3c-opus` (4 ocorrências) e o worktree `C:/Users/AMP/j13c3-c3-wt`.
+- Parecer `insp-san313c3-parecer.md`: **LIBERADO COM RESSALVA** (R1 corpo do blob — cumprido acima; R2 monocultura: esta cadeira também roda em Claude Opus, declarado → junta 3/3 Opus; R3 disco: sem npm ci; R4 carga condicional: objeto não andou, medido acima). O parecer nomeia `jurado-san313-c3c-opus` (4 ocorrências) e o worktree `~/j13c3-c3-wt`.
 - Inelegibilidade: `jurado-san313-c3c-opus` ≠ todos os nomes inelegíveis do mandato; não achou, não planejou, não desenvolveu.
 - Recursos (P8 (c)): memória de commit livre 14,58 GB (≥ 4) · disco livre C: 9,8 GB (≥ 7) · trabalhos Docker fora de `erp-*`: 0 · node v20.19.5. Sem Docker, sem Postgres, sem base viva, sem as portas 5432/6379/3000/5173/5050/8899/55432 (proposta do redator aceita pelo inspetor).
-- Worktree próprio `C:/Users/AMP/j13c3-c3-wt`: `git worktree add --detach … <O>`; `.git` é arquivo; `.env` ausente; `node_modules` ausente (sem npm ci → zero junction); status vazio. $SCRATCH = C:/Users/AMP/erp-pausa-2026-10-03/j13c3-c3/.
+- Worktree próprio `~/j13c3-c3-wt`: `git worktree add --detach … <O>`; `.git` é arquivo; `.env` ausente; `node_modules` ausente (sem npm ci → zero junction); status vazio. $SCRATCH = ~/erp-pausa-2026-10-03/j13c3-c3/.
 - Votos/evidências de C1 e C2b NÃO lidos (de ciclo nenhum). Roteiro P3: `B-SAN3-13-ciclo2/c3-evidencia.md` (só leitura).
 
 ## Item 1 de 3 — C3-01 fechado (CA-c3-1, CA-c3-2, CA-c3-3)
@@ -51,7 +51,7 @@ Leituras por `git show <ref>:docs/claude-code-handoff/API_CONTRACTS.md | tr -d '
 - Nenhum defeito de produto grave (perda de dado, vazamento entre organizações, quebra de permissão, dinheiro). C3-02/03/04 não reabertos (notas pelo §D).
 
 ## Teardown
-- `git worktree remove --force C:/Users/AMP/j13c3-c3-wt` → ec=0; diretório ausente; 0 na `worktree list` (nenhum processo meu nele: só git/cmp, sem npm). $SCRATCH esvaziado por nome de arquivo (só o que criei) e removido. 0 container `j13*`; nenhum Docker/Postgres subido; base viva não tocada.
+- `git worktree remove --force ~/j13c3-c3-wt` → ec=0; diretório ausente; 0 na `worktree list` (nenhum processo meu nele: só git/cmp, sem npm). $SCRATCH esvaziado por nome de arquivo (só o que criei) e removido. 0 container `j13*`; nenhum Docker/Postgres subido; base viva não tocada.
 - Objeto no fim: `ls-remote` = f382422514fb2bd0f8363a191a46035c4cf7e865 (não andou); `main` remota = b08c755719a6cb0ed192fa04e549ac5fc67a3e67 (= merge-base). w-san313: 0 rastreado modificado; minha escrita só `c3c-evidencia.md` e `c3c-voto.json`. Sem commit.
 
 VOTO: APROVADO — C3-01 fechado (CA-c3-1 4/4 no objeto e 0/4 em <O>~4; CA-c3-2 cmp igual 1473 B; CA-c3-3 FALTA vazio dos 8 motivos do bloco, 4 em <O>~4; condições = código); delta <O>~4..<O> com 5 caminhos todos no PERMITIDO do §C, PROIBIDO 0, só anexo no plano/dev, 1 linha no contrato, 0 merge, 4 commits = declarados; CODIGO-IDENTICO ao ciclo 2 e 14/14 check-runs completed success, backend 345·3981·3979·0·2, backend-postgres 493/493, flutter +905 = ciclo 2; nenhum defeito grave; nota: C3c-N1.

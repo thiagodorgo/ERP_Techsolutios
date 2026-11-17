@@ -23,16 +23,16 @@ executor: subagente genérico Claude Code (inspetor-san322) · modelo: Claude Op
 - comando: awk sobre cada mandato — toda linha `medido por:` seguida de bloco ``` não vazio
 - saída: c1 19/0, c2 20/0, c3 21/0, inspetor 21/0 (unidades/sem-saída)
 - veredito parcial: nenhuma unidade MEDIDO sem saída colada
-- comando: existência de cada caminho absoluto `C:/Users/AMP/...` citado nos 4 mandatos
-- saída: ausentes só (a) saídas a criar pelas cadeiras (cN-evidencia.md, cN-voto.json, c3-capturas/), (b) worktrees/pastas de sonda a criar (j22-cN-wt, erp-pausa-2026-10-03/j22-cN/, j22-insp-s0), (c) `C:/Users/AMP/w-trc02` (o RAIZ declarado ausente) e (d) cortes de regex em texto com `$(...)`/glob — conferidos à mão: `checklist-editor-estados-3opcoes.reference.html` e `frontend/tests/checklists-*.tsx` existem
+- comando: existência de cada caminho absoluto `~/...` citado nos 4 mandatos
+- saída: ausentes só (a) saídas a criar pelas cadeiras (cN-evidencia.md, cN-voto.json, c3-capturas/), (b) worktrees/pastas de sonda a criar (j22-cN-wt, erp-pausa-2026-10-03/j22-cN/, j22-insp-s0), (c) `~/w-trc02` (o RAIZ declarado ausente) e (d) cortes de regex em texto com `$(...)`/glob — conferidos à mão: `checklist-editor-estados-3opcoes.reference.html` e `frontend/tests/checklists-*.tsx` existem
 - veredito parcial: nenhum caminho de insumo inexistente
 - comando: corpo das 3 cadeiras — `git show O:.claude/agents/especialistas/<f>` × `git show O:.agents/agents/especialistas/<f>` sem frontmatter e sem bloco "Papel para o Codex", `tr -d '\r'`, md5; disco w-san322 × blob; disco da sessão (ERP_Techsolutios, HEAD 539b078e)
 - saída: c1 440ea193=440ea193, c2 7930ff1c=7930ff1c, c3 e2c9e7ed=e2c9e7ed (IDENTICO); disco w-san322 = blob nos 3; na sessão os 3 corpos AUSENTES (sessão em 539b078e, antes da fábrica)
 - veredito parcial: espelhos idênticos; as cadeiras NÃO podem ser carregadas como tipo da sessão — têm de ser subagente genérico lendo o corpo do blob, que é o que os 3 mandatos mandam ("carregado do blob do objeto", "vale este mandato" onde divergir)
-- comando: `git worktree add --detach C:/Users/AMP/j22-insp-wt <O>`; `node scripts/sync-agent-agents.mjs --check`; `git ls-tree -r` dos dois espelhos, conjunto de .md (sem README Codex) comparado com comm
+- comando: `git worktree add --detach ~/j22-insp-wt <O>`; `node scripts/sync-agent-agents.mjs --check`; `git ls-tree -r` dos dois espelhos, conjunto de .md (sem README Codex) comparado com comm
 - saída: wt HEAD = O, status 0 linhas; `[agents-sync] OK — 92 agentes, espelho consistente.` ec=0; 92 × 93 (o extra é o README), só-em-um vazio nos dois sentidos (recursivo, inclui especialistas/)
 - veredito parcial: S0 verde
-- comando: baseline `npm run check` (tsc --noEmit) em C:/Users/AMP/w-san322, `ec=$?`, `git status --porcelain` antes × depois
+- comando: baseline `npm run check` (tsc --noEmit) em ~/w-san322, `ec=$?`, `git status --porcelain` antes × depois
 - saída: check ec=0; status inalterado
 - veredito parcial: baseline verde, sem escrita
 
@@ -60,8 +60,8 @@ executor: subagente genérico Claude Code (inspetor-san322) · modelo: Claude Op
 - comando: `git -C w-san322 rev-parse HEAD`; `git status --porcelain --untracked-files=no | wc -l`; `git status --short`
 - saída: HEAD = objeto; 0 rastreado modificado; único não rastreado `agent-orchestration/omega/juntas/votos/B-SAN3-22/` (mandatos + os 2 arquivos deste inspetor)
 - veredito parcial: árvore no objeto, sem mutação viva
-- comando: `docker ps -a --format '{{.Names}} {{.Status}}'`; contagem de `j22`; vivos fora de `erp-*`; `git worktree list | grep -i -E 'j22|san322'`; `ls -d C:/Users/AMP/j22*`; `ls -d erp-pausa-2026-10-03/j22*`
-- saída: `agv3-proxy Exited (0) 22 hours ago` (inerte, alheio), `erp-postgres`/`erp-redis` Up (base viva); 0 container j22; 0 trabalho vivo fora de erp-*; worktrees: só `C:/Users/AMP/j22-insp-wt` (o meu, a remover) e `w-san322`; 0 pasta j22 no diretório de pausa
+- comando: `docker ps -a --format '{{.Names}} {{.Status}}'`; contagem de `j22`; vivos fora de `erp-*`; `git worktree list | grep -i -E 'j22|san322'`; `ls -d ~/j22*`; `ls -d erp-pausa-2026-10-03/j22*`
+- saída: `agv3-proxy Exited (0) 22 hours ago` (inerte, alheio), `erp-postgres`/`erp-redis` Up (base viva); 0 container j22; 0 trabalho vivo fora de erp-*; worktrees: só `~/j22-insp-wt` (o meu, a remover) e `w-san322`; 0 pasta j22 no diretório de pausa
 - veredito parcial: nenhum resíduo de jurado; agv3-proxy parado é resíduo inerte alheio (reportado, não varrido)
 - comando: `netstat -ano -p tcp` LISTENING × {47921 47922 47932 47941 5432 6379 3000 5173 5050 8899 55432 56379 47322}; `netsh interface ipv4 show excludedportrange protocol=tcp` em 47000–48500
 - saída: em uso só 5432 e 6379 (base viva, proibidas); candidatas 47921/47922/47932/47941 livres; 0 faixa reservada
@@ -76,6 +76,6 @@ executor: subagente genérico Claude Code (inspetor-san322) · modelo: Claude Op
 - veredito parcial: baseline honesto verde; nenhuma junction no terreno
 
 ## Limpeza (13:36Z)
-- comando: `git worktree remove --force C:/Users/AMP/j22-insp-wt`; `test -d`; `git worktree list | grep -c j22`; `git ls-remote origin refs/heads/fix/checklist-trava-versao`; remoção dos meus temporários do scratchpad (pv-*.txt, st0.txt, check.txt)
+- comando: `git worktree remove --force ~/j22-insp-wt`; `test -d`; `git worktree list | grep -c j22`; `git ls-remote origin refs/heads/fix/checklist-trava-versao`; remoção dos meus temporários do scratchpad (pv-*.txt, st0.txt, check.txt)
 - saída: removido; 0 worktree j22; head remoto = 44d9cbb3… (não andou); w-san322 com 0 rastreado modificado
 - veredito parcial: nenhum resíduo meu; veredito final no parecer: LIBERADO COM RESSALVA

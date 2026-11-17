@@ -217,7 +217,7 @@ PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
   O efeito da corrida, sem a (ii), é este: a ação já enviada fica `syncing`, o resgate R3 a devolve a `pending`, e ela é reenviada quando o dono volta. O servidor é idempotente por `client_action_id`, então não se perde dado. Isso fica como residual declarado, abaixo.
 
 ### Passo 1 — vermelho primeiro, sobre `71861445` limpo
-- Worktree temporário meu: `git worktree add --detach C:/Users/thiag/w-filausr-ctrl 71861445`, `flutter pub get --offline`, e cópia só do teste novo.
+- Worktree temporário meu: `git worktree add --detach ~/w-filausr-ctrl 71861445`, `flutter pub get --offline`, e cópia só do teste novo.
 - `flutter test --no-pub test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart` → `+1 -3: Some tests failed.`:
   - `A1(1)` (legada `user_id` nulo + Assumir) VERMELHO: `Expected: null / Actual: 'Falha na sincronização. Tente novamente.'`, "Nenhum SyncOwnershipError pode abortar o passe do coordenador";
   - `A1(2)` (dependente de u1, sessão u2 + login de u1) VERMELHO: `Expected: null / Actual: 'Falha na sincronização. Tente novamente.'`, "Replay de u2 não pode abortar com SyncOwnershipError";

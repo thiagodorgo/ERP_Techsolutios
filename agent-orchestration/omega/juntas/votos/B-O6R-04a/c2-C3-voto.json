@@ -13,7 +13,7 @@
   "check_runs": "14/14 completed/success no SHA (ultimo 2026-10-10T08:21:49Z)",
   "inspetor": "LIBERADO COM RESSALVA (insp-c2-parecer.md, head julgado ae863e1a; delta ae863e1a..35ef85be = 6 arquivos de registro em votos/B-O6R-04a, produto identico)",
   "regua": "ciclo 2 COMPLETA — unanimidade de 3 com veto; gravidade+escopo em todo achado; pre-existente so com evidencia de data/origem; nao consigo medir = REPROVADO; KPI nao se cobra; nao propoe correcao",
-  "terreno": "worktree proprio detached C:/Users/AMP/w-j389c3 @35ef85be com npm ci proprio (326 pacotes); container j389-c3-runner (erp-junta-node20-pg16:local, psql 16.14) + j389-c3-pg (postgres:16) + j389-c3-redis (redis:7) na rede j389-c3-net, sem porta publicada, banco recriado antes de cada medicao -db; base viva e portas do dono nao tocadas; disco 11G → 9,6G (teto 7G nao atingido)",
+  "terreno": "worktree proprio detached ~/w-j389c3 @35ef85be com npm ci proprio (326 pacotes); container j389-c3-runner (erp-junta-node20-pg16:local, psql 16.14) + j389-c3-pg (postgres:16) + j389-c3-redis (redis:7) na rede j389-c3-net, sem porta publicada, banco recriado antes de cada medicao -db; base viva e portas do dono nao tocadas; disco 11G → 9,6G (teto 7G nao atingido)",
   "itens": {
     "1_integracao": {
       "status": "APROVADO",
@@ -75,7 +75,7 @@
     "a ata consigna as quedas de 00-quedas.md (inspetor instancia 1, 429 de sessao) e que a C3 rodou em Fable sem fallback",
     "a ocorrencia 1/3 do T15 (dev) entra em P-SAN3-05-T15-TETO-DE-RELOGIO no proximo registro (emenda 7-mm)"
   ],
-  "limpeza": "CONCLUIDA — docker rm -f -v j389-c3-runner j389-c3-pg j389-c3-redis + docker network rm j389-c3-net (pelo nome; nunca prune; 0 containers/redes/volumes j389-c3 restantes; erp-postgres/erp-redis/erp-postgres-alt/pastrack e a imagem erp-junta-node20-pg16:local intocados); git worktree remove --force C:/Users/AMP/w-j389c3 apos conferir processo vivo (nenhum alem desta cadeira) → lista 0, diretorio ausente; disco ao fim 9,5 G livres; logs brutos no scratchpad da sessao (pipeline.log, guards.log, mem7.log, kpi-guards.log, t13-gen.out)",
+  "limpeza": "CONCLUIDA — docker rm -f -v j389-c3-runner j389-c3-pg j389-c3-redis + docker network rm j389-c3-net (pelo nome; nunca prune; 0 containers/redes/volumes j389-c3 restantes; erp-postgres/erp-redis/erp-postgres-alt/pastrack e a imagem erp-junta-node20-pg16:local intocados); git worktree remove --force ~/w-j389c3 apos conferir processo vivo (nenhum alem desta cadeira) → lista 0, diretorio ausente; disco ao fim 9,5 G livres; logs brutos no scratchpad da sessao (pipeline.log, guards.log, mem7.log, kpi-guards.log, t13-gen.out)",
   "gravado_em": "2026-10-10T09:33:30Z",
   "evidencia": "agent-orchestration/omega/juntas/votos/B-O6R-04a/c2-C3-evidencia.md"
 }

@@ -2,13 +2,13 @@
 
 > Esqueleto gravado em 2026-10-01 (P2 — nasce com os itens `EM APURAÇÃO` e cada seção é gravada ao ser medida).
 > Objeto: PR 397, ramo `docs/gov-pausa-grava-e-para`, head medido `c9eda7bb64a6ff352a35e6a4afcc071bc91530fb`.
-> Worktree de medição: `C:/Users/AMP/w-pl397` (detached no head), removido pelo nome ao fim.
+> Worktree de medição: `~/w-pl397` (detached no head), removido pelo nome ao fim.
 
 ## 0. Abertura — MEDIDO / HIPOTESE
 
 **Separação de papéis (§C7.4-bis):** o **orquestrador** escreveu o texto do #397 (é o dev do bloco e **parte interessada**). Eu **planejo, não desenvolvo, não voto, não emendo**. Quem julga é a junta do §8; quem emenda é um dev de identidade nova. Nenhuma linha deste plano propõe redação nova do contrato — nomeia o que falta e quem decide.
 
-### MEDIDO (comando → saída; cwd `C:/Users/AMP/w-pl397`, head `c9eda7bb`)
+### MEDIDO (comando → saída; cwd `~/w-pl397`, head `c9eda7bb`)
 
 | # | o quê | comando | saída |
 |---|---|---|---|
@@ -33,7 +33,7 @@
 - **H0.1** Nenhuma cadeira precisa de banco nem Docker; `erp-postgres` 5432 / `erp-redis` 6379 nunca são alvo — derruba: um briefing ou mandato de cadeira que peça `psql`/`docker`.
 - **H0.2** O CI do head que a ata nomear estará 14/14 concluído — derruba: `gh api …/commits/<head>/check-runs` com `pendentes>0` ou `nao-verdes>0`.
 - **H0.3** `npm run check` e os guards de KPI passam no head — **não executei** (`w-pl397` sem `node_modules`; `npm ci` próprio custa disco e o bloco é documental); a referência "17/17 · 6/6 · 6/6" é a do #392 **herdada** — derruba: `npm ci && node --test --import tsx tests/kpi-*.test.ts` no worktree da cadeira C3.
-- **H0.4** O `w-pausa` só recebe os dois arquivos deste plano — derruba: `git -C C:/Users/AMP/w-pausa status --porcelain | grep -v 'B-GOV-PAUSA' | wc -l` ≠ 0 (mandato l.95).
+- **H0.4** O `w-pausa` só recebe os dois arquivos deste plano — derruba: `git -C ~/w-pausa status --porcelain | grep -v 'B-GOV-PAUSA' | wc -l` ≠ 0 (mandato l.95).
 
 ## 1. Objetivo e ator
 
@@ -223,7 +223,7 @@ O #397 tem as **três** propriedades do #394 e **nenhuma** das do #396. O preced
 - **Votam JUNTAS, nunca 2+1.** Cada cadeira **resolve o head por si** (`git rev-parse origin/docs/gov-pausa-grava-e-para` × `gh pr view 397 --json headRefOid`) e declara no voto o modelo e o md5 EOL-neutro do corpo aplicado.
 - **Inelegíveis, por nome** (inspetor 3.1/3.1-bis contra `OBITUARIO-IDENTIDADES.md` **e as atas**): o **orquestrador**; `planejador-b-gov-pausa`; `dev-pausa-emenda` (ou o nome que receber); `agente-fabrica`; os votantes do #394 — `jurado-semteto-c1-fidelidade-transcricao`, `jurado-semteto-c2-consistencia-normativa`, `jurado-semteto-c3-escopo-registro` (`J-B-GOV-SEM-TETO.md:21–23`; **não estão no OBITUARIO**, K2 = 0 — o inspetor confere **pela ata**) — e `dev-semteto-emenda`; as **50** linhas do OBITUARIO. **Por interesse (recomendação; o inspetor decide):** quem ocupou papel no ciclo 4 do #393 (o Dev-T4 é o caso narrado em T-14).
 - **Baseline N de testes do bloco: N = 0** (sem código nem teste); meta **M ≥ 2N = 0** por construção. Executáveis: `git diff --check` (ec=0 hoje) · `sync --check` (26 OK hoje) · `node --check Kpis/app.js` · `node scripts/kpi-freeze.mjs --check` · 3 guards de KPI após E3 (`npm ci` **próprio**; referência **herdada** 17/17 · 6/6 · 6/6 — a re-verificar) · check-runs **14/14** no head (0.11).
-- **Isolamento (inspetor 1.2), por escrito:** cadeiras **somente-leitura** — escrevem **apenas** `votos/B-GOV-PAUSA/<cadeira>-evidencia.md` e `<cadeira>-voto.json`. Leitura por `MSYS_NO_PATHCONV=1 git show <head>:<caminho>` (prefixo **por comando**, nunca exportado) ou **worktree próprio** em caminho curto (`git worktree add --detach C:/Users/AMP/w-jur-<id> <head>`), removido **só** por `git worktree remove --force`; **sem junction**; **sem banco** (`erp-postgres` 5432 / `erp-redis` 6379 nunca alvo); sem Docker; `timeout` no que executa; **nunca `tail -f`**. Resíduo alheio (0.14) **se reporta, não se varre**.
+- **Isolamento (inspetor 1.2), por escrito:** cadeiras **somente-leitura** — escrevem **apenas** `votos/B-GOV-PAUSA/<cadeira>-evidencia.md` e `<cadeira>-voto.json`. Leitura por `MSYS_NO_PATHCONV=1 git show <head>:<caminho>` (prefixo **por comando**, nunca exportado) ou **worktree próprio** em caminho curto (`git worktree add --detach ~/w-jur-<id> <head>`), removido **só** por `git worktree remove --force`; **sem junction**; **sem banco** (`erp-postgres` 5432 / `erp-redis` 6379 nunca alvo); sem Docker; `timeout` no que executa; **nunca `tail -f`**. Resíduo alheio (0.14) **se reporta, não se varre**.
 - **Perda de jurado — e PAUSA (inspetor 5.1; P1–P3; P7):** queda por infra **relança a MESMA identidade**; voto perdido **nunca** conta como aprovação; a junta **não fecha com menos de 3 votos de mérito**; sem suplente. **Esta é a primeira junta sob P7:** se o dono mandar pausar, o orquestrador repassa `PAUSA`; cada cadeira grava `## PAUSA <hora UTC>` na sua `-evidencia.md` e para sozinha; a retomada é pela **mesma identidade, do mesmo mandato**; a ata registra o que foi **re-executado** vs **medido de novo**.
 - **Regra de voto:** `gravidade` (`bloqueia`/`ajuste`/`nota`) **e** `escopo` (`dentro-do-bloco`/`pre-existente` **com evidência**; sem evidência = `dentro-do-bloco`). **"Não consigo medir" = REPROVADO.** **Nenhuma cadeira propõe correção.** Afirmações deste plano, do briefing e da fábrica são **hipóteses**.
 - **§C7.4-bis, por escrito (ciclo 1, preventivo):** (a) composição cobre a competência? **sim** — fidelidade · norma/espelho/mecanismo · escopo/registro/KPI; (b) quem achou consertou? **não se aplica ainda** — se reprovar, o dev do ciclo 2 é identidade nova e **não** o orquestrador; (c) dado podre? **tudo medido** em §0/§3/§4/§5/§6 ou marcado `[não-verif]`/hipótese (T-14; H0.3; H6.1).
@@ -253,7 +253,7 @@ O #397 tem as **três** propriedades do #394 e **nenhuma** das do #396. O preced
 | `gov-descuido` (0.13) conflita em 13 arquivos **com a main** | não é deste bloco; **reportado** para o orquestrador decidir a ordem — cobrar aqui é reprovação por construção |
 | Corpos das cadeiras não versionados → inspetor **BLOQUEADO** (2× em 2026-09-20) | `git add -f` nos dois espelhos + `sync --check` **antes** do inspetor; `git ls-tree <head>` lista 6 |
 | CRLF lido como mutação viva | 0.9: comandos EOL-neutros no briefing |
-| `w-devt4` (traço físico de T-14) é removido antes de a C1 medir | a C1 mede **primeiro** (somente leitura: `git -C C:/Users/AMP/w-devt4 status --porcelain`); se já não existir, T-14 fica `[não-verif]` integral — **não** é defeito do texto |
+| `w-devt4` (traço físico de T-14) é removido antes de a C1 medir | a C1 mede **primeiro** (somente leitura: `git -C ~/w-devt4 status --porcelain`); se já não existir, T-14 fica `[não-verif]` integral — **não** é defeito do texto |
 | Fable esgotado no meio da junta | Opus **com substituição declarada** na evidência e na ata; Opus esgotado → **para** e registra onde está (§C7.6-bis) — e, agora, pela forma de P7 |
 | Rollback | `git revert` do squash; só texto/KPI/registro mudam; as pendências E2c ficam (são verdadeiras com ou sem o PR) |
 
@@ -261,7 +261,7 @@ O #397 tem as **três** propriedades do #394 e **nenhuma** das do #396. O preced
 
 ## 10. Limpeza
 
-**Executado (comando → saída):** `git -C C:/Users/AMP/w-pl397 status --porcelain | wc -l` → **0** · `git worktree remove --force C:/Users/AMP/w-pl397; echo ec=$?` → **ec=0** · `git worktree prune` · `ls -d C:/Users/AMP/w-pl397` → *No such file or directory*. Temporários **próprios** apagados do scratchpad e de `$TEMP` (`sec0–9.md`, `brfA–D.md`, `splice.py`, `diff-397.txt`, `mm-*.txt`, `mt*.txt`). **Nada rastreado tocado; nada versionado nem empurrado.** `git -C C:/Users/AMP/w-pausa status --porcelain` → só os dois arquivos novos deste plano. **Resíduo alheio intacto e reportado** (§0.14): `w-devs393`, `w-devt393`, `w-devt4` (traço físico de T-14), `w-mandato`, `w-pv397`, `.claude/worktrees/{b04a,b11,gov-descuido}`; o scratchpad da sessão tem ~1,7 mil entradas de outros processos — **não varridas**.
+**Executado (comando → saída):** `git -C ~/w-pl397 status --porcelain | wc -l` → **0** · `git worktree remove --force ~/w-pl397; echo ec=$?` → **ec=0** · `git worktree prune` · `ls -d ~/w-pl397` → *No such file or directory*. Temporários **próprios** apagados do scratchpad e de `$TEMP` (`sec0–9.md`, `brfA–D.md`, `splice.py`, `diff-397.txt`, `mm-*.txt`, `mt*.txt`). **Nada rastreado tocado; nada versionado nem empurrado.** `git -C ~/w-pausa status --porcelain` → só os dois arquivos novos deste plano. **Resíduo alheio intacto e reportado** (§0.14): `w-devs393`, `w-devt393`, `w-devt4` (traço físico de T-14), `w-mandato`, `w-pv397`, `.claude/worktrees/{b04a,b11,gov-descuido}`; o scratchpad da sessão tem ~1,7 mil entradas de outros processos — **não varridas**.
 
 **Uma linha:** limpeza — worktree `w-pl397` removido pelo nome; 15 temporários próprios apagados; nada rastreado tocado.
 

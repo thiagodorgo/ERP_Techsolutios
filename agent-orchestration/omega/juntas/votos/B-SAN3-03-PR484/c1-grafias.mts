@@ -1,5 +1,5 @@
 // C1 J484 — sonda de grafias NOVAS contra o motor do objeto (worktree w-j484-c1).
-import { allocateCloudCosts } from "file:///C:/Users/thiag/w-j484-c1/src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts";
+import { allocateCloudCosts } from "file:///~/w-j484-c1/src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts";
 const ps = new Date("2026-11-01T00:00:00.000Z"), pe = new Date("2026-11-30T23:59:59.999Z");
 const P = { id: "platform-id", name: "Plataforma", slug: "platform" };
 function run(tag: string, tenants: any[], strategy = "direct_tag_then_usage_weighted_v1") {

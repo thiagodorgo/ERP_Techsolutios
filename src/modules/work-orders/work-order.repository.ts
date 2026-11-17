@@ -96,8 +96,24 @@ export interface WorkOrderRepository {
   ): Promise<boolean>;
   createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent>;
   listTimeline(tenantId: string, workOrderId: string): Promise<readonly WorkOrderEvent[]>;
+  // B-SAN3-16 (Emendas 1.3 e 1.3.1, DUP-580-CONCORRENTE) — a unidade do pedido de campo: a trava exclusiva da OS, a
+  // situação relida sob ela, e a leitura da linha do tempo e a gravação do evento na MESMA unidade. Dois envios da
+  // mesma ação serializam: o 2º espera a trava e relê. `undefined` quando a OS não existe na organização (o serviço
+  // traduz para 404), e aí `work` não roda.
+  runFieldRequestUnit<T>(
+    tenantId: string,
+    workOrderId: string,
+    work: (unit: FieldRequestUnit) => Promise<T>,
+  ): Promise<T | undefined>;
   reset?(): void;
 }
+
+export type FieldRequestUnit = {
+  /** A situação da OS relida SOB a trava (E13-01): é ela que decide a regra da OS terminal. */
+  readonly status: WorkOrderStatus;
+  listTimeline(): Promise<readonly WorkOrderEvent[]>;
+  createEvent(input: Omit<CreateWorkOrderEventInput, "tenantId" | "workOrderId">): Promise<WorkOrderEvent>;
+};
 
 export type CreateWorkOrderEventInput = {
   readonly tenantId: string;
@@ -123,6 +139,8 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   // aqui com o MESMO 409 que o banco produz, senão um bug de serviço passaria verde em memória e só apareceria
   // em produção.
   private readonly checklistLinks = new Map<string, WorkOrderChecklistLink>();
+  // B-SAN3-16 (Emenda 1.3) — a fila do pedido de campo por OS (organização + OS): o último elo de cada uma.
+  private readonly fieldRequestQueues = new Map<string, Promise<void>>();
 
   async nextCode(tenantId: string): Promise<string> {
     let sequence = [...this.workOrders.values()].filter((workOrder) => workOrder.tenantId === tenantId).length + 1;
@@ -679,7 +697,38 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
   }
 
+  // B-SAN3-16 (Emenda 1.3) — a mesma serialização da trava da OS, em memória: uma fila de promessas por OS. O trabalho
+  // seguinte só começa quando o anterior terminou (com sucesso ou não), e relê a linha do tempo e a situação.
+  async runFieldRequestUnit<T>(
+    tenantId: string,
+    workOrderId: string,
+    work: (unit: FieldRequestUnit) => Promise<T>,
+  ): Promise<T | undefined> {
+    const key = `${tenantId}\n${workOrderId}`;
+    const previous = this.fieldRequestQueues.get(key) ?? Promise.resolve();
+    const current = previous.then(async () => {
+      const workOrder = await this.findById(tenantId, workOrderId);
+      if (!workOrder) return undefined;
+      return work({
+        status: workOrder.status,
+        listTimeline: () => this.listTimeline(tenantId, workOrderId),
+        createEvent: (input) => this.createEvent({ ...input, tenantId, workOrderId }),
+      });
+    });
+    const settled = current.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.fieldRequestQueues.set(key, settled);
+    try {
+      return await current;
+    } finally {
+      if (this.fieldRequestQueues.get(key) === settled) this.fieldRequestQueues.delete(key);
+    }
+  }
+
   reset(): void {
+    this.fieldRequestQueues.clear();
     this.workOrders.clear();
     this.events.clear();
     this.assignments.clear();

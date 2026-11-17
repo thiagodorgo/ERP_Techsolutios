@@ -1,6 +1,6 @@
 // J484 C1b — ressalva R2: M13 e M16 do driver do dev, medidas no meu terreno; natureza do vermelho por teste.
 import fs from "node:fs"; import crypto from "node:crypto"; import { spawnSync } from "node:child_process";
-const root = "C:/Users/thiag/w-j484-c1b";
+const root = "~/w-j484-c1b";
 const prismaRepo = "src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts";
 const git = (a) => spawnSync("git", ["-C", root, ...a], { encoding: "utf8" });
 const hash = (s) => crypto.createHash("sha256").update(s.replace(/\r\n/g, "\n")).digest("hex");
@@ -16,7 +16,7 @@ function run(id, mutate) {
     if (mutate) mutate();
     const r = spawnSync(process.execPath, ["--test", "--import", "tsx", ...tests], { cwd: root, encoding: "utf8", timeout: 300000, maxBuffer: 32 << 20, env: process.env });
     const out = (r.stdout || "") + "\n" + (r.stderr || "");
-    fs.writeFileSync(`C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c1b-r2-${id}.log`, out);
+    fs.writeFileSync(`~/erp-pausa-2026-10-03/revisoes/j484/c1b-r2-${id}.log`, out);
     const lines = out.split(/\r?\n/);
     console.log("  exit=" + r.status + " | " + lines.filter((l) => /^# (tests|pass|fail|skipped)/.test(l)).join(" "));
     // natureza por bloco not ok

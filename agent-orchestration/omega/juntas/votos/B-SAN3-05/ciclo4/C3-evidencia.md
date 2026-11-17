@@ -10,14 +10,14 @@ papel: C3 | identidade: jurado-san305-c4-boot-e-suite | modelo: Claude Opus 5.5 
 - Host: `MINGW64_NT-10.0-22631 N3SOH82 3.6.6 x86_64 Msys` (Git Bash); Docker servidor 29.6.1 linux/amd64
 - Disco `df -h /c` no início: 13 GB livres (95% usado)
 - Ambiente do condutor: Git Bash, cwd variável por comando com caminho absoluto; nenhuma variável exportada; `MSYS_NO_PATHCONV` nunca exportada.
-- `$SCRATCH` = `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3`
+- `$SCRATCH` = `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3`
 - Outra cadeira viva no início (`docker ps`): `j05c4-c2-b7-pg`, `j05c4-c2-node`, `j05c4-c2-pg`, rede `j05c4-c2-net` — não são minhas, nunca tocadas. `erp-postgres`/`erp-redis` (Exited) e `erp-postgres-alt` (Exited) nunca alvo.
 
 ## 0. Legalidade (20:36–20:38Z)
 
 - `git ls-remote origin refs/heads/fix/runtime-role-sem-bypass` → `84831ad9796d8db29766b0ff6e0a1a894a9d45e7`; `gh pr view 405 --json headRefOid,baseRefName,state,isDraft,mergeable` → `{"baseRefName":"main","headRefOid":"84831ad9796d8db29766b0ff6e0a1a894a9d45e7","isDraft":true,"mergeable":"CONFLICTING","state":"OPEN"}` → coincidem.
 - `git diff --name-only 2400049b 84831ad9` → 6 arquivos, todos em `agent-orchestration/omega/juntas/votos/B-SAN3-05/` (`00-mandatos/C1c4.md`, `C2c4.md`, `C3c4.md`, `ciclo4/00-inspetor-terreno.md`, `ciclo4/C1-evidencia.md`, `ciclo4/C1-voto.json`) → delta = **só registro**. Nota de independência: o `git log --oneline 2400049b..84831ad9` que prova a delta mostra o assunto do commit 84831ad9 (que menciona o voto da C1); **não abri, não li e não citarei** nenhum `ciclo4/C1-*` nem `ciclo4/C2-*`.
-- Parecer do inspetor da junta 4: `ciclo4/00-inspetor-terreno.md` no blob do objeto (129 linhas) → `LIBERADO COM RESSALVA` (R1–R4), fechado 19:28Z, objeto `2400049b`; tabela da cadeira C3 = `jurado-san305-c4-boot-e-suite`, corpo `093e4690131a30b24c3e30ec2751252a` rastreado (`.agents` `2c86c959…`), worktree `C:/Users/AMP/w-j05c4c3` (livre), containers `j05c4-c3-*` sem porta. R4: objeto que andar → publicar `git diff --name-only 2400049b <objeto>` (só registro, feito acima) e começar só com check-runs concluídos.
+- Parecer do inspetor da junta 4: `ciclo4/00-inspetor-terreno.md` no blob do objeto (129 linhas) → `LIBERADO COM RESSALVA` (R1–R4), fechado 19:28Z, objeto `2400049b`; tabela da cadeira C3 = `jurado-san305-c4-boot-e-suite`, corpo `093e4690131a30b24c3e30ec2751252a` rastreado (`.agents` `2c86c959…`), worktree `~/w-j05c4c3` (livre), containers `j05c4-c3-*` sem porta. R4: objeto que andar → publicar `git diff --name-only 2400049b <objeto>` (só registro, feito acima) e começar só com check-runs concluídos.
 - `gh api repos/thiagodorgo/ERP_Techsolutios/commits/84831ad9…/check-runs?per_page=100` → total 7 | não-verdes 0 | pendentes 0 (filtro: não-verde = `completed` com conclusão ∉ {success, skipped, neutral}; pendente = status ≠ completed). `backend` completed/success 20:24:13Z; `backend-postgres` completed/success 20:20:26Z; docker, owner-portal, frontend, flutter, authority-portal success.
 - Corpo: `git ls-tree 84831ad9` → `.claude/…/jurado-san305-c4-boot-e-suite.md` blob `aed23254…` e `.agents/…` blob `33e46d03…` (os dois espelhos rastreados). md5 EOL-neutro `.claude` = `093e4690131a30b24c3e30ec2751252a` (= publicado); `.agents` = `2c86c959e3f7bb4ed365a36dd3b1cc13` (= o do inspetor).
 - Mandato: `tr -d '\r' < 00-mandatos/C3c4.md | md5sum` = `833b319da996789e790aa2428f55733d` = declarado no disparo.
@@ -30,8 +30,8 @@ papel: C3 | identidade: jurado-san305-c4-boot-e-suite | modelo: Claude Opus 5.5 
 
 ## Terreno (20:40Z–)
 
-- Worktree: `git -C C:/Users/AMP/w-o05 worktree add --detach C:/Users/AMP/w-j05c4c3 84831ad9…` → ec=0; `test -e C:/Users/AMP/w-j05c4c3/.git` ok; `rev-parse HEAD` = `84831ad9…`; `git status --short | wc -l` = 0. Só serve ao git (archive, show, diff): `node_modules` vive só dentro do container (`npm ci` próprio no container; nenhum `npm ci` nem junction no Windows — o corpo manda rodar tudo em Linux).
-- Receita copiada e adaptada: `$SCRATCH/condutor-setup.sh` md5 `4a7a9ede8eb9a8a3da0506ad3167a2d7` (receita original `C:/Users/AMP/erp-terreno/receita-pg16.sh` md5 `9861a2aaa55fc49fcf1c4263261a3668`; `diff | wc -l` = 242 linhas). Mudanças: prefixo fixo `j05c4-c3-` (rede/pg/node/redis); árvore temporária `/c/Users/AMP/t-j05c4c3-<rand>` com a remoção casando o MESMO prefixo (`case … /c/Users/AMP/t-j05c4c3-*`); `REPO` = meu worktree; `redis:7` próprio sem porta; **sem** `trap EXIT` de derrubada (containers de pé entre boots/testes/suíte; teardown pelo nome no fim); senha do postgres aleatória (48 hex), só por `export` em subshell e `-e NOME` sem valor; `TESTS`/`SAMPLE`/sonda de argv da receita não usados no setup.
+- Worktree: `git -C ~/w-o05 worktree add --detach ~/w-j05c4c3 84831ad9…` → ec=0; `test -e ~/w-j05c4c3/.git` ok; `rev-parse HEAD` = `84831ad9…`; `git status --short | wc -l` = 0. Só serve ao git (archive, show, diff): `node_modules` vive só dentro do container (`npm ci` próprio no container; nenhum `npm ci` nem junction no Windows — o corpo manda rodar tudo em Linux).
+- Receita copiada e adaptada: `$SCRATCH/condutor-setup.sh` md5 `4a7a9ede8eb9a8a3da0506ad3167a2d7` (receita original `~/erp-terreno/receita-pg16.sh` md5 `9861a2aaa55fc49fcf1c4263261a3668`; `diff | wc -l` = 242 linhas). Mudanças: prefixo fixo `j05c4-c3-` (rede/pg/node/redis); árvore temporária `~/t-j05c4c3-<rand>` com a remoção casando o MESMO prefixo (`case … ~/t-j05c4c3-*`); `REPO` = meu worktree; `redis:7` próprio sem porta; **sem** `trap EXIT` de derrubada (containers de pé entre boots/testes/suíte; teardown pelo nome no fim); senha do postgres aleatória (48 hex), só por `export` em subshell e `-e NOME` sem valor; `TESTS`/`SAMPLE`/sonda de argv da receita não usados no setup.
 
 ## Item 1 — boot real de produção (T9/T15)
 
@@ -48,7 +48,7 @@ papel: C3 | identidade: jurado-san305-c4-boot-e-suite | modelo: Claude Opus 5.5 
 ### Terreno — resultado do setup (20:41–20:43Z)
 - `timeout 2400 bash $SCRATCH/condutor-setup.sh` → ec=0. Log (`$SCRATCH/setup/setup.log`, resumo): imagem `erp-junta-node20-pg16:local` sha256:4203157f95ea; `postgres:16` 16.14; `redis:7` sha256:b2b95679e3b4 (imagem já local, sem pull).
 - Containers: `j05c4-c3-pg`, `j05c4-c3-redis`, `j05c4-c3-node` na rede `j05c4-c3-net`; `docker inspect -f '{{json .HostConfig.PortBindings}}'` = `{}` nos três (**sem porta publicada no host**; `docker ps` mostra só as portas expostas internas 5432/tcp e 6379/tcp).
-- Árvore: `git -c core.autocrlf=false archive 84831ad9` → blobs_no_objeto=3776, extraidos_byte_identicos=3776 (`git hash-object --no-filters` × `ls-tree`); no container `md5sum -c` de 3776 arquivos → 0 divergência; árvore temporária `/c/Users/AMP/t-j05c4c3-42422a` removida.
+- Árvore: `git -c core.autocrlf=false archive 84831ad9` → blobs_no_objeto=3776, extraidos_byte_identicos=3776 (`git hash-object --no-filters` × `ls-tree`); no container `md5sum -c` de 3776 arquivos → 0 divergência; árvore temporária `~/t-j05c4c3-42422a` removida.
 - Container: `Linux … 6.18.33.2-microsoft-standard-WSL2 x86_64`; node v20.20.2; npm 10.8.2; psql 16.14; typescript Version 5.9.3.
 - `npm ci` ec=0 (326 pacotes) · `prisma generate` ec=0 · `prisma migrate deploy` ec=0 (107 migrations) — tudo dentro do container, `DATABASE_URL` só no ambiente do container.
 - Catálogo pós-migração (public): tabelas 115 | FORCE 106 | views 0 | matviews 0. Redis `PONG`.
@@ -155,23 +155,23 @@ A variante `zz-j05c4c3-boot-redis.mjs` (md5 `ccdc86deb3255b38c6d0a8ea179a9440`) 
 
 ````
 #!/usr/bin/env bash
-# condutor-setup.sh — C3 da junta 4 do B-SAN3-05. Adaptado de C:/Users/AMP/erp-terreno/receita-pg16.sh (md5 9861a2aa...):
+# condutor-setup.sh — C3 da junta 4 do B-SAN3-05. Adaptado de ~/erp-terreno/receita-pg16.sh (md5 9861a2aa...):
 # mesmos passos 1-4 (rede propria, postgres:16 sem porta, git archive autocrlf=false + hash-object x ls-tree de TODOS os
 # blobs, copia para o container + md5sum -c de TODOS, npm ci + prisma generate + prisma migrate deploy DENTRO), com:
-#  - prefixo fixo j05c4-c3- (rede, pg, node, redis) e arvore temporaria /c/Users/AMP/t-j05c4c3-<rand> (remocao casa o MESMO prefixo);
-#  - REPO = o meu worktree C:/Users/AMP/w-j05c4c3; um redis:7 PROPRIO (sem porta) para a suite;
+#  - prefixo fixo j05c4-c3- (rede, pg, node, redis) e arvore temporaria ~/t-j05c4c3-<rand> (remocao casa o MESMO prefixo);
+#  - REPO = o meu worktree ~/w-j05c4c3; um redis:7 PROPRIO (sem porta) para a suite;
 #  - SEM trap EXIT de derrubada: os containers ficam de pe entre boots, testes e suite (teardown e outro script, pelo nome).
 #  - senha do postgres: aleatoria, so no ambiente (export em subshell) e no ambiente dos containers pg/node; nunca argv/log.
 set -uo pipefail
 SHA=84831ad9796d8db29766b0ff6e0a1a894a9d45e7
-REPO=C:/Users/AMP/w-j05c4c3
+REPO=~/w-j05c4c3
 IMAGE=erp-junta-node20-pg16:local
 PG_IMAGE=postgres:16
 P=j05c4-c3
 NET=$P-net; PGC=$P-pg; NODEC=$P-node; RDC=$P-redis
-S=/c/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3
+S=~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3
 OUT=$S/setup; mkdir -p "$OUT"; LOG=$OUT/setup.log
-TMP_TREE="/c/Users/AMP/t-j05c4c3-$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')"
+TMP_TREE="~/t-j05c4c3-$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')"
 dk() { MSYS_NO_PATHCONV=1 timeout "${DK_TIMEOUT:-120}" docker "$@"; }
 say() { printf '%s %s\n' "$(date -u +%H:%M:%SZ)" "$*" | tee -a "$LOG"; }
 fail() { say "FALHA: $*"; exit 1; }
@@ -201,7 +201,7 @@ say "arvore: blobs_no_objeto=$total extraidos_byte_identicos=$iguais"
 tar -C "$TMP_TREE" -cf - . | DK_TIMEOUT=300 dk exec -i $NODEC tar --no-same-owner -xf - -C /work || fail "copia"
 dk exec -i -w /work $NODEC md5sum -c --quiet < "$OUT/md5-arvore.lst" > "$OUT/md5-container.txt" 2>&1 || fail "md5 diverge no container"
 say "container: md5sum -c de $(wc -l < "$OUT/md5-arvore.lst") arquivos -> 0 divergencia"
-case "$TMP_TREE" in /c/Users/AMP/t-j05c4c3-*) rm -rf -- "$TMP_TREE";; esac
+case "$TMP_TREE" in ~/t-j05c4c3-*) rm -rf -- "$TMP_TREE";; esac
 [ -e "$TMP_TREE" ] && say "arvore temporaria PRESENTE" || say "arvore temporaria removida"
 say "versoes: node $(dk exec $NODEC node -v) npm $(dk exec $NODEC npm -v) $(dk exec $NODEC psql --version) uname: $(dk exec $NODEC uname -a)"
 DK_TIMEOUT=1200 dk exec -w /work $NODEC npm ci --no-audit --no-fund > "$OUT/npm-ci.log" 2>&1; ec=$?
@@ -521,8 +521,8 @@ if (process.argv.some((a) => a.endsWith("src/server.ts"))) {
 - Objeto no fim (21:08Z): `git ls-remote` = `gh pr view 405 headRefOid` = **`10fbbd983eb81243e424c011d4b922eb6434ccf2`** — andou. `git merge-base --is-ancestor 84831ad9 10fbbd98` → sim; `git log --format=%h 84831ad9..10fbbd98` = 1 commit; `git diff --name-only` = `ciclo4/C2-evidencia.md`, `ciclo4/C2-voto.json` (não abertos); fora de `agent-orchestration/` = 0 → delta só registro. **Medi `84831ad9`**; o produto de `10fbbd98` é o mesmo. `origin/main` no fim = `a9bbde382213627545e9d229c9ab616d83a0a840` (= início).
 - Cluster: processos `src/server.ts` vivos 0; papéis `zz_j05c4c3%` 0, `s305%` 0, views 0, bancos extras 0; arquivos de URL/senha apagados no container antes da remoção.
 - Containers: `docker rm -f -v` j05c4-c3-node / j05c4-c3-redis / j05c4-c3-pg → ec=0 ×3; `docker network rm j05c4-c3-net` ec=0; `docker ps -a --filter name=j05c4-c3-` = 0; redes = 0; volumes anônimos `8a2387444312…` (pg) e `a7bea646a896…` (redis) → removidos (`docker volume inspect` falha). Nenhum `volume prune`/`system prune`. `docker ps -a` no fim: só `erp-postgres-alt`, `pastrack-teste-banco-teste-1`, `erp-postgres`, `erp-redis` (Exited, nunca tocados).
-- Árvore temporária `/c/Users/AMP/t-j05c4c3-*`: 0.
-- Worktree: processos com `w-j05c4c3` na linha de comando (PowerShell `Get-CimInstance Win32_Process`) = **0**; `git status --short` = 0; `git -C C:/Users/AMP/w-o05 worktree remove --force C:/Users/AMP/w-j05c4c3` ec=0; diretório ausente; `worktree list | grep -ic w-j05c4c3` = 0 no `w-o05` e no checkout principal.
+- Árvore temporária `~/t-j05c4c3-*`: 0.
+- Worktree: processos com `w-j05c4c3` na linha de comando (PowerShell `Get-CimInstance Win32_Process`) = **0**; `git status --short` = 0; `git -C ~/w-o05 worktree remove --force ~/w-j05c4c3` ec=0; diretório ausente; `worktree list | grep -ic w-j05c4c3` = 0 no `w-o05` e no checkout principal.
 - `$SCRATCH` (`…/scratchpad/c3`) removido (sem segredo; textos e md5 no apêndice).
 - `w-o05`: novos meus = só `ciclo4/C3-evidencia.md` e `ciclo4/C3-voto.json`; os 33 ` M` são os fantasmas de `.agents/` sob autocrlf e o `scratchpad/` (pl05c2/pl05c2s) é resíduo alheio de 08/10 (R1 do inspetor) — reportado, não varrido.
 - Disco `df -h /c`: 13 GB no início · 12 GB depois do `npm ci` · 12 GB no fim.

@@ -55,4 +55,4 @@ O objeto da junta é **`c8bd4c28b0cd27061cf926e2756877348e89d770`**. Resolvi-o p
 
 ## Limpeza
 
-Criei o worktree `C:/Users/AMP/w-insp-07ca` e o removi pelo nome, com 0 processo vivo e porcelain 0; o diretório não existe mais. Não criei container (0 insp07ca). Apaguei do scratchpad os meus 5 temporários. Em `w-07ca` escrevi só estes 2 arquivos e não commitei. Não toquei a base viva, as portas do dono, `w-traccar`, `w-pvpr`, `w-03a` nem `w-govmod`.
+Criei o worktree `~/w-insp-07ca` e o removi pelo nome, com 0 processo vivo e porcelain 0; o diretório não existe mais. Não criei container (0 insp07ca). Apaguei do scratchpad os meus 5 temporários. Em `w-07ca` escrevi só estes 2 arquivos e não commitei. Não toquei a base viva, as portas do dono, `w-traccar`, `w-pvpr`, `w-03a` nem `w-govmod`.

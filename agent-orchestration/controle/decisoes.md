@@ -3029,7 +3029,7 @@ e a exigência de porteiro para PR de registro.
 
 - **D-PLANO-DIA-2026-10-09** — o dono pediu o plano do dia em Fable (*"use o fable para fazer o plano de hoje"*, exceção
   explícita à `D-FABLE-ASTRA-SO-DINHEIRO`) e aprovou as nove decisões dele: *"aprovo os 9, comece agora"* (plano em
-  `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-DIA-2026-10-09.md`): ciclo 3 do #405 só com A2 (grave) + A3; C2-A1 e
+  `~/erp-pausa-2026-10-03/PLANO-DIA-2026-10-09.md`): ciclo 3 do #405 só com A2 (grave) + A3; C2-A1 e
   C3-c2-05 num PR só de testes depois do merge (revisor + CI); C3-c2-01 pendência; dev no Codex Sol; porteiro no Claude
   se o gasto semanal ficar ≤ 25 %; veredito do B-SAN3-06b na 2ª janela do Codex; plano do Traccar amanhã; limpeza
   profunda abaixo de 10 GB sem volumes alheios; cota acabou → pausar, nunca descer de Opus. Também: *"ok, deixa quieto
@@ -3734,7 +3734,7 @@ O dev sucessor (`dev-b-o6r-07c-b1-opus`) deixou três perguntas no relatório; o
 
 ## Registro de 17/10/2026 (manhã) — as três perguntas do plano do ciclo 2 do `B-O6R-07c-b1`
 
-A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-O6R-07c-b1-ciclo2-auditoria-e-plano.md` §2.8) deixaram três perguntas com recomendação; o dono respondeu: ***"as 3 perguntas sigo suas recomendações"***.
+A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `~/erp-pausa-2026-10-03/planos/B-O6R-07c-b1-ciclo2-auditoria-e-plano.md` §2.8) deixaram três perguntas com recomendação; o dono respondeu: ***"as 3 perguntas sigo suas recomendações"***.
 - **`D-07CB1-CANCELAR-NO-LOCAL-SEM-AUTORIZACAO`.** Cancelar ou falhar um despacho que está em "No local", sem trocar o técnico, **não** exige autorização do superior no b1: encerramento não é troca; é ato explícito e auditado do despachante (ou do próprio técnico, no `failed`); **o b2 decide se o cancelamento em No local entra na mesma fila de autorização** (`P-07CB1-CANCELAR-EM-NO-LOCAL`, dono b2). No ciclo 2, a OS não muda de técnico por causa dele.
 - **`D-07CB1-ATRIBUICAO-WEB-REATRIBUI-NO-B2`.** A atribuição pela web/lote de uma OS que tem despacho ativo em OUTRO técnico (antes de "No local") passará a **reatribuir o despacho junto**, no `B-O6R-07c-b2` (ou no `B-TECNICO-ESCOPO-a`); no b1, a via web passa pela trava única do ciclo 2. Pendência `P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO` (dono: b2).
 - **`D-07CB1-EVIDENCIA-EXIGE-OS`.** `evidence.work_order_*` passa a exigir OS existente nesta organização para TODOS os papéis (inexistente ou alheia → `rejected not_found`) — o "um critério só" da `D1-07c`.
@@ -3772,7 +3772,7 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
 
 ## Registro de 19/10/2026 — o faturamento do delta, o teto do Gemini, os vigias e a madrugada
 
-- **`D-SAN3-02-TITULO-COMPLEMENTAR` (decisão do dono, 2026-10-19).** ***"sim para tudo"***, em resposta às três perguntas do plano do `B-SAN3-02` (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-02-plano.md` §2, apresentadas com recomendação "sim" em cada uma). Revê o MECANISMO da `D-Ω4-C2` (um título ativo por OS e direção); o MOTIVO dela (nunca faturar o mesmo item duas vezes) segue inteiro. A `D-Ω4-C1` (carimbo do item) não muda.
+- **`D-SAN3-02-TITULO-COMPLEMENTAR` (decisão do dono, 2026-10-19).** ***"sim para tudo"***, em resposta às três perguntas do plano do `B-SAN3-02` (`~/erp-pausa-2026-10-03/planos/B-SAN3-02-plano.md` §2, apresentadas com recomendação "sim" em cada uma). Revê o MECANISMO da `D-Ω4-C2` (um título ativo por OS e direção); o MOTIVO dela (nunca faturar o mesmo item duas vezes) segue inteiro. A `D-Ω4-C1` (carimbo do item) não muda.
   - **Q1 = sim:** os itens lançados depois do 1º faturamento da OS são faturados em **títulos complementares**, só com itens ainda sem carimbo; o título original e os itens já faturados ficam imutáveis. Replay sem delta segue 409 `already_invoiced`.
   - **Q2 = sim:** coluna aditiva e anulável `financial_titles.parent_title_id` (FK composta `(tenant_id, parent_title_id) → financial_titles(tenant_id, id)` RESTRICT), e o índice `financial_titles_wo_direction_active_key` passa a valer só para títulos originais (`parent_title_id IS NULL`). Autoriza `prisma/schema.prisma` e uma migração aditiva para isso, com o `agente-dba-guardiao`.
   - **Q3 = sim:** a fronteira do bloco amplia para `src/modules/financial-uow/{financial-uow.ts,financial-uow-prisma.ts,index.ts}`, só para pôr o repositório de itens de OS no contexto da unidade financeira (e o mapa de classificação e o journal de memória).
@@ -3785,7 +3785,7 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - ***"use o gemini free para ser um vigia inteligente lhe acordar e vc ver/decidir o que fazer"***;
   - ***"monte mais um vigia inteligente (gemini pro) para o painel, ele vai ver o que é verdade, se esta com mefição certa e lhe informar para ajustes"***;
   - ***"o gemini vigia deve ver se um modelo parou especialmente se vc parou por uso, e lhe acordar quando tiver limite"***.
-  - **Como ficou (DERIVADO, é o desenho do orquestrador, §A6):** duas ferramentas fora do repositório, em `C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/`:
+  - **Como ficou (DERIVADO, é o desenho do orquestrador, §A6):** duas ferramentas fora do repositório, em `~/erp-pausa-2026-10-03/ferramentas/`:
     - `vigia-inteligente.sh`: a cada 10 min monta o retrato dos agentes e pergunta ao **Gemini 3.8 Flash grátis** (Antigravity, login do dono) se o orquestrador deve acordar (terminou, caiu, travou, parou por limite). Regras duras sem IA: processo sumido ou tarefa terminada acordam do mesmo jeito. **Limites:** se o Claude parou por limite de uso (o registro da sessão grava `quotaLimits.status = rejected` com `resetsAt`), os avisos ficam segurados e o vigia acorda quando o limite renovar; se o Codex ("try again at") ou o Gemini (cota diária) parou por limite, acorda quando o limite dele renovar, para o orquestrador relançar o braço.
     - `auditor-painel.mjs`: a cada 20 min o **Gemini 3.8 Flash grátis** (Antigravity) compara o que o painel de acompanhamento afirma com os fatos medidos (processos, status, PRs, CI, containers) e acorda o orquestrador com a lista de ajustes. O 1º teste apontou 5 divergências: 2 reais e 3 erros de coleta ou de fuso, corrigidos na ferramenta.
   - Os dois só leem: nunca matam, lançam nem editam nada.
@@ -3794,7 +3794,7 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **Q1 = sim, contra a recomendação do planejador (que era "não neste bloco"):** quando a posição vai à quarentena porque ninguém tinha a viatura em despacho, ou o histórico é ambíguo, o ERP conserva mesmo assim a ignição e o odômetro para a viatura, sem pessoa. O desenho muda (recibo próprio para a amostra e 2º índice global): o plano ganha emenda antes do código (`D-EMENDA-ANTES-DO-CODIGO`).
   - **Q2 = sim:** a demonstração do Traccar concede, como `postgres`, `EXECUTE` em `public.auth_login_candidates(text)` ao papel de runtime, só na demo, como passo nomeado; produção não muda. Resolve `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE`.
   - **Q3 = sim:** o ERP conserva os 38 códigos de alarme do Traccar; o que vira notificação fica para o `B-TRC-05`.
-- **Plano da madrugada de 19/10 (aprovação do dono, não é regra):** ***"plano aprovado para madruga, boa noite"***, sobre `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-MADRUGADA-2026-10-19.md` (Codex, Gemini 3.1 Pro e Claude; metas: B-DASH mergeado, B-SAN3-02 em dev, plano do B-TRC-02 criticado, este registro).
+- **Plano da madrugada de 19/10 (aprovação do dono, não é regra):** ***"plano aprovado para madruga, boa noite"***, sobre `~/erp-pausa-2026-10-03/PLANO-MADRUGADA-2026-10-19.md` (Codex, Gemini 3.1 Pro e Claude; metas: B-DASH mergeado, B-SAN3-02 em dev, plano do B-TRC-02 criticado, este registro).
 
 - **`D-JUNTA-SO-CADEIRA-VERMELHA` (decisão do dono, 2026-10-20).**
   - **Proposta, nas palavras do dono:** ***"vamos fazer um upgrade na orquestração, quando uma junta votar e por exemplo duas cadeiras verdes e uma vermelha, somente a vermelha vai ser trabalhada, nao precisa fazer de novo o que ja esta certo, se de uma junta de tres, duas reprovarem, essas duas serao refeita e por ai em diante. o que achas?"***
@@ -3817,7 +3817,7 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **Pendente do dono:** aumentar o arquivo de paginação do Windows (configuração do sistema, exige reinício).
 
 - **Complemento da `D-SAN3-02-TITULO-COMPLEMENTAR` escrito pelo dev do bloco (2026-10-19; mesmo conteúdo decidido, com o detalhe da Q4 e a divergência da l.122 do `RBAC_MATRIX.md`)** — texto original:
-  - (decisão do dono, 2026-10-19 — revê o MECANISMO da `D-Ω4-C2`; o motivo e a `D-Ω4-C1` não mudam).** Entra pelo `B-SAN3-02` (faturamento atômico e título complementar), ramo `fix/faturamento-atomico-e-delta`. Fonte: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-02-respostas-do-dono.md`. Registro anexado pelo dev do bloco (`dev-san3-02-opus`); o orquestrador consolida.
+  - (decisão do dono, 2026-10-19 — revê o MECANISMO da `D-Ω4-C2`; o motivo e a `D-Ω4-C1` não mudam).** Entra pelo `B-SAN3-02` (faturamento atômico e título complementar), ramo `fix/faturamento-atomico-e-delta`. Fonte: `~/erp-pausa-2026-10-03/planos/B-SAN3-02-respostas-do-dono.md`. Registro anexado pelo dev do bloco (`dev-san3-02-opus`); o orquestrador consolida.
   - **(A) Palavras do dono.** Às Q1, Q2 e Q3 do plano: ***"sim para tudo"***. À Q4 da emenda v2.1: ***"Q4, sim"***.
     - **Q1 = SIM:** os itens lançados depois do 1º faturamento da OS são faturados em títulos COMPLEMENTARES, só os itens ainda sem carimbo; o título original e os itens já faturados ficam imutáveis.
     - **Q2 = SIM:** a coluna aditiva e anulável `financial_titles.parent_title_id` (FK composta RESTRICT), além da troca do índice `financial_titles_wo_direction_active_key` por um só para originais.
@@ -3831,7 +3831,7 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
 
 > Gravado pelo `registrador-trc02-opus` (Claude Opus, nível menor declarado, §C7.6), a quem o orquestrador delegou o registro do bloco (plano v2 §12). Ramo `feat/traccar-b-trc-02`, head de partida `0313353b`. O texto da `D-TRC02-RESPOSTAS` (registro de 19/10, acima) **não foi reescrito**: esta seção a revisa por acréscimo.
 
-- **`D-TRC02-Q1-NAO` (decisão do dono, 2026-10-19, ~22:15 BRT; revisa a Q1 da `D-TRC02-RESPOSTAS`).** ***"TRC-02 Q1 = Não"***. O dono perguntou "o que é TRC-02 Q1?"; o orquestrador explicou a pergunta e repetiu a recomendação do planejador e a dele: NÃO, por LGPD (decisão 4 do `PLANO_TRACCAR.md` §4, "privacidade vem antes de cobertura", e `P-TRC-LGPD` ABERTA). A fonte é `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-respostas-do-dono.md`, seção "Revisão da Q1 pelo dono", com cópia no repositório em `docs/revisoes/TRACCAR/B-TRC-02-respostas-do-dono.md`.
+- **`D-TRC02-Q1-NAO` (decisão do dono, 2026-10-19, ~22:15 BRT; revisa a Q1 da `D-TRC02-RESPOSTAS`).** ***"TRC-02 Q1 = Não"***. O dono perguntou "o que é TRC-02 Q1?"; o orquestrador explicou a pergunta e repetiu a recomendação do planejador e a dele: NÃO, por LGPD (decisão 4 do `PLANO_TRACCAR.md` §4, "privacidade vem antes de cobertura", e `P-TRC-LGPD` ABERTA). A fonte é `~/erp-pausa-2026-10-03/planos/B-TRC-02-respostas-do-dono.md`, seção "Revisão da Q1 pelo dono", com cópia no repositório em `docs/revisoes/TRACCAR/B-TRC-02-respostas-do-dono.md`.
   - **Q1 = NÃO.** Quando a posição vai à quarentena porque ninguém tinha a viatura em despacho, ou porque o histórico é ambíguo, o ERP **não** conserva amostra veicular (ignição, odômetro) nem recibo para a viatura. A amostra só nasce da posição aceita.
   - **Q2 = SIM e Q3 = SIM continuam** como na `D-TRC02-RESPOSTAS`. A revisão do dono tocou só a Q1.
   - **Quando foi:** antes do merge. Por isso vale a lista de remoção do §Q1.7 do plano v2 (`docs/revisoes/TRACCAR/B-TRC-02-plano.md`), conforme a R2-5 da emenda v2.1. O caminho de reversão depois do merge (R2-2 a R2-4, `D-TRC02-Q1-NAO-POS-MERGE`) **não se aplica**. A `D-TRC02-Q1-AMOSTRA-SEM-OPERADOR` (texto do §Q1.6) e as duas frases que a emenda v2.1 lhe acrescentava (§1.8 e §2.5) **não são gravadas**, porque só valiam com Q1 = SIM.
@@ -3840,7 +3840,7 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
     - saíram `SAMPLE_ON_QUARANTINE_REASONS`, a costura `sampleOnQuarantineReasons`, `sampleWithoutOperator`, a suíte `tests/traccar-event-sample-quarantine-db.test.ts` e as mutações M-Q1-*;
     - entrou a M-E16′: a F3 exige 0 recibo e 0 amostra na posição em quarentena;
     - contagens finais: 27 critérios, 97 testes novos e 434 no `backend-postgres`.
-  - **Pergunta do §Q1.6 sem registro.** O §Q1.6 do plano pedia que o orquestrador perguntasse ao dono, no mesmo ato, se o **evento** de viatura sem despacho (C-10) segue a mesma regra. Não encontrei essa pergunta nem resposta em `B-TRC-02-respostas-do-dono.md`, no relatório do dev nem em `C:/Users/AMP/erp-pausa-2026-10-03/` (busca por `C-10`). O código guarda o evento sem despacho, como manda o plano. Se o dono responder "também não", C-10 e E8 se invertem (evento sem despacho → 202 `no_operator_at_fix_time`) por **outra emenda**. O que se **exibe** desse evento continua sob `P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO`.
+  - **Pergunta do §Q1.6 sem registro.** O §Q1.6 do plano pedia que o orquestrador perguntasse ao dono, no mesmo ato, se o **evento** de viatura sem despacho (C-10) segue a mesma regra. Não encontrei essa pergunta nem resposta em `B-TRC-02-respostas-do-dono.md`, no relatório do dev nem em `~/erp-pausa-2026-10-03/` (busca por `C-10`). O código guarda o evento sem despacho, como manda o plano. Se o dono responder "também não", C-10 e E8 se invertem (evento sem despacho → 202 `no_operator_at_fix_time`) por **outra emenda**. O que se **exibe** desse evento continua sob `P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO`.
   - **Pendência que volta pelo §Q1.7:** `P-TRC02-AMOSTRA-SO-COM-POSICAO-ACEITA` (dono `B-TRC-03`). A `P-TRC02-FIX-CONTESTADO-ENTRE-KINDS` (emenda v2.1 §1.8) não nasce, porque não existe recibo `position_sample`.
 - **`D-TRC02-ESCOPO` (escopo do bloco, 2026-10-19/20; DERIVADO, §A6).** O desenho é dos planejadores (plano v2 §7.3, emenda v2.1 R3-4, emenda v2.2 §5.2) e a aprovação das emendas é do orquestrador. O dono não falou de caminhos. O `B-TRC-02` alarga o PERMITIDO do §7 do `PLANO_TRACCAR.md` (`:1022-1028`) nos caminhos abaixo. A cadeira (b) mede `git diff --name-only c1485c94..<objeto>` contra a união do §7 com esta lista, e não contra o §7.1 do plano (seria circular).
   1. `docker-compose.traccar.yml`: `event.forward.url`/`header`, `EVENT_STATUS_ENABLE` e `STATUS_TIMEOUT` só existem por ambiente (S-E4/S-E15). Sem eles o Traccar não encaminha evento, e é o mínimo para o evento existir. Nenhum `ports` novo.
@@ -4042,17 +4042,17 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 ## D-REGISTRO-RODADA-2026-10-24-A-26 (2026-10-26) — conciliações factuais dos porteiros, gate e ordem do B-SAN3-22
 
 - **Natureza:** registro de fatos já decididos/medidos; não cria regra de produto nem atribui fala nova ao dono.
-- **Divergência §A2 — início do B-SAN3-22:** o porteiro do #460 escreveu que o bloco só começaria depois do #461 (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-460-parecer.md:154-165`). Prevalece a resposta do dono à Q4 (b): seletor antes, com válvula; o bloco do seletor corre em paralelo ao **backend** do 22, que não depende dele (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-22-plano.md:432-433`). Resolvido: o backend segue em paralelo; a tela consome o seletor do #461, ou usa a válvula do plano (só o hook `useScreenAppearance("checklist-editor")`, padrão A, sem menu) se o seletor não estiver na `main` quando o 22 chegar à junta. Fato posterior: o #461 entrou na `main` em `b2f8e6cf` (`git log origin/main`), e a válvula deixou de ser necessária.
+- **Divergência §A2 — início do B-SAN3-22:** o porteiro do #460 escreveu que o bloco só começaria depois do #461 (`~/erp-pausa-2026-10-03/revisoes/porteiro-460-parecer.md:154-165`). Prevalece a resposta do dono à Q4 (b): seletor antes, com válvula; o bloco do seletor corre em paralelo ao **backend** do 22, que não depende dele (`~/erp-pausa-2026-10-03/planos/B-SAN3-22-plano.md:432-433`). Resolvido: o backend segue em paralelo; a tela consome o seletor do #461, ou usa a válvula do plano (só o hook `useScreenAppearance("checklist-editor")`, padrão A, sem menu) se o seletor não estiver na `main` quando o 22 chegar à junta. Fato posterior: o #461 entrou na `main` em `b2f8e6cf` (`git log origin/main`), e a válvula deixou de ser necessária.
 - **Régua do gate:** a tabela numerada do `PLANO_SAN3.md` tem 56 linhas; o painel usa 62 porque soma os **56 bloqueantes de código** (§4.1) aos **6 atos do dono** (§4.2), que estão dentro do gate. Medição: `Select-String '^\|\s*(\d+)\s*\|' docs/revisoes/SAN3/PLANO_SAN3.md | Measure-Object` → `Count: 56`; `Kpis/kpis-latest.json:59` declara `56 + 6 = 62`; `PLANO_SAN3.md:27,37,92,186` declara a mesma composição. Não há seis linhas faltantes e `Kpis/*` permanece intocado neste PR.
-- **Contagem do #460:** o corpo dizia 10 pendências novas; o diff registrou 11 cabeçalhos. É ressalva documental, sem perda de rastreabilidade (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-460-parecer.md:108,170-175`).
+- **Contagem do #460:** o corpo dizia 10 pendências novas; o diff registrou 11 cabeçalhos. É ressalva documental, sem perda de rastreabilidade (`~/erp-pausa-2026-10-03/revisoes/porteiro-460-parecer.md:108,170-175`).
 - **Fechamentos do #459 — 2 e não 3:** o porteiro do #459 pediu apensar o fechamento de três pendências (`porteiro-459-parecer.md:145,197`); a ata `J-B-SAN3-12a.md:39-41` autoriza o porteiro a fechar só duas, com o critério medido pela junta (`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`, C3 item 3; `P-SAN3-20-DELETE-TITULO-COM-CHEQUE`, C4b item 1). Prevalece a ata: a `P-SAN3-20-DESVINCULAR-DEPOSITADO` segue ABERTA, porque o critério dela (fluxo seguro para `deposited` com título já pago) não foi medido.
 - **Cadeira (a) do TRC-02 ciclo 2:** o `a-opus` de `00-quedas.md` não existiu (nenhum arquivo em `votos/B-TRC-02-ciclo2/`; `PLANO-RODADA-2026-10-24.md:81`); a cadeia corrigida está na ata `J-B-TRC-02-ciclo2.md`.
-- **Corpo do #454 defasado:** ficou com “DBA re-medindo”, `462/462` e sem citar a emenda v2.4 no escopo; o código/merge entregue foi revalidado, portanto a divergência é documental e BAIXA (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md:12,71-72,103`).
+- **Corpo do #454 defasado:** ficou com “DBA re-medindo”, `462/462` e sem citar a emenda v2.4 no escopo; o código/merge entregue foi revalidado, portanto a divergência é documental e BAIXA (`~/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md:12,71-72,103`).
 
 ## D-SAN3-12C-ABERTURA-E5 (2026-10-28) — B/C usam dados reais; KPI fica no marco #473
 
 - **Natureza:** versionamento da Emenda E5 planejada por `planejador-san312c-abertura-astra`; este DEV apenas registra e executa, sem criar decisão de produto.
-- **Ref medida:** `origin/main` = `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`; ramo `feat/web-financeiro-aparencias-b-c`, worktree isolado `C:/Users/AMP/w-san312c`.
+- **Ref medida:** `origin/main` = `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`; ramo `feat/web-financeiro-aparencias-b-c`, worktree isolado `~/w-san312c`.
 - **Interpretação §A2 declarada:** a maquete governa intenção/layout, mas valores ilustrativos, agência/número inexistentes e lista inversa de cheques não autorizam cálculo local, placeholder, UUID, mock ou N+1. A implementação usa somente contratos reais e estados honestos; as duas lacunas de dado têm pendências nomeadas.
 - **KPI:** `Kpis/**` permanece fora do PR funcional. O PR #473 fica em rascunho e recebe o 12c somente após merge + porteiro, pelo loop de marco vigente, com SHA/CI/contagens obtidos por comando.
 - **Régua:** apresentação e testes → um revisor independente + `cognicao-visual` + CI verde. Se surgir alteração de autorização, payload de escrita, CAS, idempotência, cálculo ou integridade, suspender, emendar/revisar o plano e reclassificar para junta completa.
@@ -4070,7 +4070,7 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 ## D-CODEX-DUAS-CONTAS (decisão do dono, 2026-10-28) — duas contas do Codex em paralelo
 
 - **Fala literal do dono:** *"usar as duas contas do codex"*.
-- **Leitura do orquestrador, declarada (§A6):** a conta 1 e a conta 2 (`CODEX_HOME=C:\Users\AMP\codex-conta2`) podem executar uma tarefa cada, em paralelo; o lançador distingue `-Conta 1|2`.
+- **Leitura do orquestrador, declarada (§A6):** a conta 1 e a conta 2 (`CODEX_HOME=~/codex-conta2`) podem executar uma tarefa cada, em paralelo; o lançador distingue `-Conta 1|2`.
 
 ## D-ANTIVIRUS-CLAMAV (decisão do dono, 2026-10-28) — ClamAV em container para a varredura de evidência
 
@@ -5527,3 +5527,122 @@ O dono aprovou as 3 opções da tela de custo e margem da plataforma: *"aprovo a
 7. **CR17R2-05 (2), o 409 `consent_subject_mismatch`: NÃO adotado** (orquestrador, 14/11), pela `D-DONO-1411-ACESSO-PESSOAL` e pela CR17R2E-01. O resíduo fica declarado em `P-17-CONSENT-SUBJECT-MISMATCH` (BAIXA). A CR17R2-05 (1), a ordem sem `await` no app, foi cumprida.
 8. **`.github/workflows/ci.yml`**, PROIBIDO no mandato do dev, foi aberto pelo orquestrador (14/11) só para a linha comentada da suíte `-db` do bloco no `SUITES=` (a A1 da abertura, sob a `D-DONO-1311-RECOMENDACOES`): 4 linhas, só acréscimo.
 9. **`B-LOC-DECISAO-COM-HORA` registrado como bloco proposto** (Emenda 1.1, CR17R2E-02), dono único das pendências da ordem das decisões, da prova do consentimento, da leitura do estado, do cadastro já marcado e da caixa da tela Profissionais. Não é item do portão; não tem plano ainda.
+
+## D-DONO-1411-SO-PRA-FRENTE-E-DEMO (2026-11-14 14:24 SP) — a varredura dos caminhos locais fica só para frente, e o desenvolvimento pausa para a demonstração
+
+- **Fato (decisão do dono):** às 14:24 SP de 14/11, respondendo à pergunta sobre o histórico da `D-DONO-1411-CAMINHOS-LOCAIS`, o dono disse: *"so pra frente agora, preciso que suba o sistema, preciso mostrar. pause o desenvolvimento"* (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 14/11 14:24).
+- **O que vale:**
+  - a varredura dos caminhos locais fica **só para frente** (o `chore/repo-sem-caminho-local`, PR #572, mais o guarda `tests/repo-sem-caminho-local.test.ts`); o histórico da `main` **não** é reescrito;
+  - o desenvolvimento pausou (P7) para a demonstração: os agentes Claude gravaram a `## PAUSA`, e o Codex 2 e o DeepSeek foram parados pelo orquestrador. A demonstração subiu às 14:32 SP (web, API e portal do dono, com `health` e `ready` em 200), a partir da `main` `eeac48a3`.
+- **Corte:** o registro de 14/11 tarde (#570) parou às 14:03 e deixou esta resposta "para o próximo registro"; ela entra aqui. **Leitura do redator (`reg-1611-cl`), declarada (§A6):** o mandato deste registro começa às 14/11 21:08; as linhas de 14:24 a 20:43 da fonte, que nenhum PR levou, entram para não ficar buraco.
+
+## D-PORTAO-ITEM-68-SESSAO-APP (2026-11-14 21:08 SP) — a sessão do app que não renova entra no portão como item 68
+
+- **Fato (decisão do dono):** às 21:08 SP de 14/11, depois de ver a página "Decisões pendentes do dono" com 4 recomendações, o dono respondeu: *"aprovo suas recomendacoes"* (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 14/11 21:08). Para o item 68 a recomendação era SIM. As outras três respostas da mesma fala já estão neste arquivo: `D-ASS11-MAQUETE-APROVADA` (PA-1) e `D-CI-DOCKER-ESPERA-E2E` (P2 do plano 42); a 4ª é a entrada seguinte.
+- **O que vale:**
+  - a `P-APP-SEM-RENOVACAO-DE-TOKEN` (ALTA) entra no portão como **item 68**, e o portão passa de 67 para 68 itens. O número estava livre desde que o antigo 68 (a posição sem dono em celular compartilhado) saiu pela `D-DONO-1411-ACESSO-PESSOAL`;
+  - a causa, medida em 14/11 às 20:4x SP: os clientes de OS (`work_order_remote_api.dart:90`), do estoque do técnico, das opções de cadastro e do bootstrap (2 chamadas) usam `createExpenseHttpClient`, sem o `AuthRefreshInterceptor`;
+  - o bloco é o `B-APP-SESSAO-RENOVA`, que também olha a `P-APP-401-FICA-SINCRONIZANDO` e a `P-APP-TELEMETRIA-422`.
+- **Linha do portão:** `docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1, item 68 (registro de 16/11).
+
+## D-O6R-04B-RETIRADA · confirmação do dono (2026-11-14 21:08 SP) — "Nova Entrada", "Nova Saída" e a lista inventada saem do app
+
+- **Fato (decisão do dono):** a mesma fala de 21:08 (*"aprovo suas recomendacoes"*) respondeu a P1 do plano do item 31 (`B-O6R-04b`) com a recomendação (a): "Nova Entrada", "Nova Saída" e a lista inventada saem do app. A resposta deixa de valer só pela `D-DONO-1311-RECOMENDACOES` e passa a ter a confirmação explícita do dono, que viu a recomendação na página.
+- **O que vale:** a retirada (a); as P2, P3 e P4 do plano 31 seguem pela recomendação (a). A Emenda 1 do plano (14/11 13:34) estendeu a retirada à `P-MOBILE-SYNC-ESTOQUE-TIPOS` e à `P-MOBILE-CATALOGO-MODULOS-INERTE`.
+- **Nota do redator:** o ID `D-O6R-04B-RETIRADA` é citado pelo plano 31 e pelas emendas, fora do repositório; na `main` de 16/11 ele não aparecia em `agent-orchestration` nem em `docs` (`git grep` = 0). Esta é a 1ª entrada com ele.
+
+## D-DONO-1311-RECOMENDACOES · complemento: o "4.item60" e o "3.extra" (2026-11-13 ~23:12 SP)
+
+Complementa a entrada de mesmo ID acima, com duas respostas da lista que a transcrição do orquestrador guardou e que o porteiro do #569 (R-1) e o do #567 (R-4) pediram no registro.
+
+- **Fato:** na lista de 13/11 (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 13/11 23:23): "**Cobrança:** […] 4.item60 fecha pronta e DESLIGADA, e ligar é ato do dono" e "**Custo e margem:** […] 3.extra separar as telas".
+- **O que vale:**
+  - **4.item60:** o item 60 do portão fecha com o canal pronto e DESLIGADO; ligar a cobrança é ato do dono. O item segue PARCIAL até o merge e a porteira do `B-ASS-08c3`; o #569 (`B-ASS-08c1b`) e o #579 (`B-ASS-08c1c`) não o fecham (`porteiro-569`, 15/11 02:57);
+  - **3.extra:** a tela de custo e margem (`B-ASS-10b`, T5, #567) e a de Provedores ficam separadas; a de Provedores vai para o `B-ASS-10c`.
+
+## D-ORQ-16B-RECIBO (2026-11-14 22:41 SP) — o recibo da fila do app em memória passa ao B-SAN3-16b
+
+- **Fato (decisão do orquestrador, declarada §A6):** a `P-SYNC-OS-RECIBO-EM-MEMORIA` e a outra pendência que o #570 deu ao "`B-SAN3-16` pela Emenda 2" passam ao **`B-SAN3-16b`**. A Emenda 2 do 16 nunca foi escrita, e a pendência já previa o 16b.
+- **O que vale:** o `B-SAN3-16` mantém o escopo (14 de 19 fatias feitas às 22:41; o PR #580 entregou as 19 em 15/11 21:23). O 16b é o recibo durável da fila do app: o reenvio depois de reiniciar a API não cria OS em dobro. O plano dele (Emenda 1.1, 40 testes e 25 mutações) está pronto e espera o 16 entrar.
+- **Pergunta ao dono, aberta e que não bloqueia:** `P-DONO-16B-OPCAO` (em `pendencias.md`).
+
+## D-ORQ-568-CONSENTIMENTO-SO-PELO-APP (2026-11-15 05:57 SP) — o consentimento para localização só se liga no app, pelo titular
+
+- **Fato (decisão do orquestrador, declarada §A6; o dono pode reverter):** na crítica da Emenda 1.7 do #568, o E17-01 mostrou que o titular com `operator_profiles:update` desfazia a própria revogação pelo formulário web. O orquestrador decidiu: o consentimento para localização é dado pessoal; ele só se liga por ato explícito do titular, no app; o formulário web pode desligar, nunca ligar.
+- **O que vale:** a Emenda 1.8 do `B-SAN3-17` (#568, na `main` em `80f5b4d9`); a regra está escrita em `docs/field-operator-location-map.md:112`. A J-568 (C3-05) pediu este registro.
+- **Desdobramento, também do orquestrador (15/11 07:00):** a CRIAÇÃO de perfil com consentimento também passa a "só pelo app", num bloco próprio, o `B-SAN3-17-W`, porque muda a semeadura de 10 criações em 4 arquivos de teste de outros blocos. A pendência foi consolidada na `P-LOCALIZACAO-GESTOR-MARCA-CONSENTIMENTO` (J-568, C3-02).
+
+## D-ORQ-568-E111 e D-ORQ-568-E111-PISO (2026-11-15 16:28 e 17:08 SP) — o prazo da trava do consentimento
+
+- **D-ORQ-568-E111 (decisão do orquestrador, declarada §A6):** depois da leva A da J-568, o CI do `backend` ficou vermelho no guard 3 (`set_config` fora de `rls.ts`). O prazo da trava do consentimento passa a usar o `withTenantRlsBudget` (a saída (i) do dev), e entra 1 chave nova no `NOVAS` do T13, no molde da Emenda 1.10. Medido antes: 46/46 nos guardas, a mutação da entrada vermelha e o `-db` 24/24 três vezes. A emenda foi à crítica `crit-17-e111-cl`.
+- **D-ORQ-568-E111-PISO:** a crítica deu APROVADO COM AJUSTES (E111-01, a âncora; E111-02, o prazo sem piso, com 2 mutações vivas; E111-03, o §3 sem medição). O E111-02 foi consertado na mesma leva, com um piso de 2,5 s no teste que nasceu nela, em vez de virar pendência.
+- **Lição, para o molde do plano:** toda bateria de conserto roda o `npm test` INTEIRO; a do dev pulou o guard 3.
+
+## D-ORQ-573-N2-UMA-CADEIRA-FORA (2026-11-15 09:00 SP) — a J-573 pede ao menos 1 cadeira fora do Claude, e não 2
+
+- **Fato (decisão do orquestrador, declarada §A6):** a N2 da Emenda 1.1 §3 do `B-ASS-12`, escrita pelo orquestrador, pedia ≥ 2 cadeiras fora do Claude; passou a ≥ 1, porque o Codex 2 e o 3 estavam com a semana esgotada, o Argon sem cota e o DeepSeek sem saldo. Vale a regra do dono de 03/11, "cruzamento só com limite".
+- **O que aconteceu:** a cadeira fora seria a C1 (o dinheiro), no Codex 1, depois da F9; ele ficou sem janela, e a C1 foi ao Claude pela regra "Cobrir NA HORA" (09/11). A J-573 rodou sem cadeira fora do Claude, e a ata declara (`J-573-b-ass-12`).
+
+## D-ORQ-579-C2-01-LATENTE, D-ORQ-579-REFAZ-C2 e D-ORQ-579-PEND-BAIXA (2026-11-15 18:35 e 20:57 SP) — a triagem do grave da J-579
+
+- **D-ORQ-579-C2-01-LATENTE (decisão do orquestrador, declarada §A6, sobre a auditoria de topo `topo-579-op`):** o C2-01 fica "não grave no objeto, defeito latente de desenho, conserto obrigatório nesta leva". A auditoria mediu que nenhum caminho alcançável grava `needs_review`, `failed` ou `none` na tabela (a adoção filtra o `unknown`); a premissa "a cobrança adotada com `unknown`" foi herdada do plano sem ser medida. A causa (C2-03, a regra "cobrança viva" em 7 literais) é real e vira alcançável no 08c1u e no 08c3. O desenho aceito é o (b): uma tabela-verdade única e exaustiva.
+- **D-ORQ-579-REFAZ-C2:** só a C2 se refaz, com o mandato estreito do §3.5 do plano, porque o conserto muda a regra de dinheiro em 3 caminhos fora do achado (o 1º caso do §C7 10(4)). A C2 refeita (`j579-c2r-fechamento-cl`) APROVOU.
+- **D-ORQ-579-PEND-BAIXA (20:57):** a `P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA` vai a BAIXA, pela leitura do topo, aceita pelo orquestrador. O `pendencias.md` do #579 já cita este ID; a conferência `conf-579-cl` (CONF-01) pediu o registro aqui.
+- **Lição, para o molde do plano:** premissa sobre "qual estado existe na tabela" se mede pelo censo de escritores antes de virar requisito.
+
+## D-DONO-1511-COBRIR-CODEX (2026-11-15 20:14 SP) — não esperar o Codex voltar: o Claude cobre
+
+- **Fato (decisão do dono):** às 20:14 SP de 15/11, o dono disse: *"não espere o codex retornar o limite. Avance, cubra o codex"* (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 15/11 20:14).
+- **O que vale:** o que esperava braço externo sem limite passa ao Claude na hora, com identidade nova e o cruzamento declarado como ausente (§C7 11(2)). Em 15/11: a F9 v12 do item 44 (`demo-exec-10b-cl`, que não escreveu o roteiro nem as emendas), o dev do `B-SAN3-16`, a verificação da Emenda 1 do 04b (item 31) e a atualização do #572. O despertador das 23:17 foi cancelado.
+- **Relação com o que já existe:** reforça a regra "Cobrir NA HORA" de 09/11 (memória do orquestrador) e a `D-IAS-EXTERNAS-PRIMEIRO` (§C7 6); não muda o cruzamento quando há limite.
+
+## D-ORQ-44-MOTOR-ACOMPANHA-PRODUTO (2026-11-15 20:24 SP) — o motor da demonstração cria o perfil e o consentimento pelas rotas do produto
+
+- **Fato (decisão do orquestrador, declarada §A6):** a F9 v12 parou na semeadura (ET6: 422 `operator_profile_required`), porque o #568 passou a exigir o perfil de operador e o consentimento antes de gravar a posição, e o motor `scripts/demo-isolado/semear.mjs` não cria nenhum dos dois. A F9 NÃO se fixa numa ref antiga: o motor passa a criar o perfil e o consentimento pelas rotas do produto (o consentimento pelo app, `POST /mobile/location-consent`, como a técnica).
+- **Bloco:** `B-SAN3-10b-SEED-CONSENT` (PR #581). A Emenda 1 do plano troca a régua da retomada pela TRILHA do perfil, fail-closed: só retoma com `operator_profile.created` e nada mais, para o motor nunca religar contra a decisão da técnica nem a do gestor.
+- **Lição:** o bloco que muda uma pré-condição de escrita roda o motor da demonstração na bateria (a semente não está no CI).
+
+## D-ORQ-APARAPP-LEITURAS e D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA (2026-11-15 20:39 e 20:45 SP) — as aparências do app
+
+- **Contexto, medido na `origin/main` `80f5b4d9`:** o app NÃO tem o seletor de aparência por usuário; o Perfil só tem o tema (Sistema, Claro, Escuro, Contraste). As 4 telas do app com 3 opções aprovadas (troca de senha, consentimento, atendimento do prestador, entrega do guincho) saíram só com a A (`P-APARENCIA-APP-SELETOR`). O plano do `B-APP-APARENCIA` tem 4 fatias em série: F1 (o seletor no Perfil e a localização), F2 (a entrega do guincho), F3 (o atendimento do prestador) e F4 (a troca de senha); F1 a F3 em revisão simples, a F4 em junta completa (autenticação).
+- **D-ORQ-APARAPP-LEITURAS (decisão do orquestrador, declarada §A6):** as 6 leituras do planejador ficam aceitas.
+- **D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA (decisão do dono):** resposta do dono à P1 do plano, a opção (a): a troca de senha do app abre na aparência que a pessoa escolheu no Perfil daquele aparelho; sem escolha, abre na A. O diário registra a opção escolhida, não a frase literal. **Fato a declarar ao dono (crítica do plano, A3, 21:00):** a maquete (l.377) diz que, na web, a sessão restrita abre sempre na A, e a resposta (a) foi dada com a opção (b) rotulada "Igual ao web: sempre na A"; a resposta fica mantida, e o fato vai para a emenda e para o dono.
+
+## D-DONO-1511-68-NAO-DESLOGAR (2026-11-15 21:21 SP; confirmada às 23:36) — o técnico não é deslogado quando a rede entrega fora de ordem
+
+- **Fato (decisão do dono):** resposta do dono à P3 do plano do item 68 (`B-APP-SESSAO-RENOVA`): fica o comportamento da v3.3, e o técnico não é deslogado quando a rede entrega fora de ordem. O diário registra a escolha, não a frase literal.
+- **O resíduo aceito, em linguagem de dono:** quem já intercepta o 1º envio dentro do tráfego criptografado recebe um token válido até a próxima renovação legítima. A v3.4 escreve esse resíduo e o prende com teste (VER68V33CL-01) e torna a emenda reproduzível na letra (VER68V33CL-02).
+- **Correção, declarada (23:36):** a v3.4 mediu que a renovação legítima NÃO derruba a cópia na hora; o acesso dela dura até 15 min. O orquestrador tinha dito ao dono o contrário; corrigiu, perguntou de novo com o resíduo medido, e **o dono manteve a v3.3**. Lição: antes de pôr um risco na pergunta ao dono, medir o desfecho.
+
+## REGISTRO-DECISOES-ORQ-1411-1511 (2026-11-14 21:08 a 2026-11-15 23:43 SP) — as decisões do orquestrador sem ID próprio, uma linha cada
+
+Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o dono pode reverter qualquer uma. Cada linha aponta onde o efeito ficou.
+
+- **15/11 01:02 — `P-ASS12-PULO-SEM-AVISO`:** fecha com o teste novo da tela (o selo "Sem preço" com o detalhe), sem alerta próprio.
+- **15/11 02:07 — dono da `P-PALETA-SEM-MAPA-DE-PERMISSAO`:** o B-ASS-11 Parte T; às 03:59 (REV576-02) passou a um bloco próprio de paleta e permissão, a abrir, porque o conserto fica em `command-palette/**`, fora do §7.1 da Parte T.
+- **15/11 02:52 — passo 4.7 da F9 (E-AMB-4):** a leitura da tela de Saúde ("Sistema pronto") é decidida pelo orquestrador junto com a porteira, sobre as 2 leituras que o executor registra.
+- **15/11 03:27 — `P-E2E-DESPACHOS-SEM-TECNICO`:** a cobertura do teste 5 do e2e, que só vê a lista vazia porque a semente não tem técnico, fica ratificada como pendência.
+- **15/11 03:49 — VER567-1 do #567:** o não grave que sobra depois da conferência vira pendência com dono, e o bloco segue (§C7 10(4)).
+- **15/11 05:35 — `B-SMOKE-LISTA`:** abre antes de qualquer bloco que acrescente teste ao smoke, porque a linha do `test:smoke` tinha 14 caracteres de margem no `cmd.exe` (PR #577, na `main` em `3601fa2f`).
+- **15/11 06:53 — corpo do #571:** a seção "Números medidos" é atualizada no conserto ou no merge e não segura a junta.
+- **15/11 07:00 — ordem de merge #575 → #577:** o #575 entra primeiro, porque é o item 42; o #577 absorve a `main` por união e mergeia sem nova revisão, só com a conferência do delta.
+- **15/11 07:10 — CONF-575-1:** é artefato do mandato do orquestrador, não defeito.
+- **15/11 08:34 — J-571, a G4 nova:** se acusar o `traccar-ingest.app.ts`, o dev PARA; às 08:47 (Emenda 1.7) a trava ganhou a lista FECHADA de exceções, e a aceitação genérica de "qualquer tratador de 4 argumentos" foi recusada por reconhecer a forma.
+- **15/11 09:27 — #568:** NÃO há 5ª rodada de crítica (o corpo do `critico-adversarial` prevê no máximo 2; foram 4, cada uma com informação nova); o dev aplica as Emendas 1.6 a 1.9 e a conferência por execução re-roda as sondas das 3 críticas.
+- **15/11 10:09 — plano 68, v3.3:** sem 3ª tentativa Claude depois de 2 identidades cortadas pelo filtro de segurança; a v3.3 foi ao Codex 1 (o plano com o Codex, a crítica com o Claude, §C7 11(1)). Problema registrado: `P-ORQ-FILTRO-SEGURANCA-PLANO-68`.
+- **15/11 15:22 — J-568:** a `P-17-FILA-RESIDUAL` fica ACEITA como risco residual, com a junta (a Emenda 1.7 §3 dava a decisão à junta do 17).
+## REGISTRO-B-SAN3-16 (2026-11-14) — K1 a K3 fechados, as respostas do dono aplicadas, a 12.1 respondida e a VER5-02 medida (§A2)
+
+**Registro da F0 do `B-SAN3-16` (item 5 do portão), feito pelo dev `dev-16-cl` (Claude Opus 5.5, identidade nova e declarada, §C7 11(6)).** Não cria decisão: transcreve as respostas que o dono já deu e registra o que a F0 mediu. Lei do bloco, fora do repositório (`erp-pausa-2026-10-03/planos/`): `plano-B-SAN3-16.md` (com a Emenda 1 da crítica r1) → `plano-B-SAN3-16-abertura-emenda1.md` → `-emenda1.1.md` → `-emenda1.1.1.md`, a mais nova prevalece. Diário: `erp-pausa-2026-10-03/revisoes/b-san3-16/dev-16-cl.md`. Ref medida: `origin/main` `eeac48a3` (#564).
+
+1. **K1, a fronteira do `PLANO_SAN3`.** A linha do bloco listava `work_order_repository.dart` (não é preciso: os produtores dos 2 tipos já gravam o que o servidor lê, e quem filtra é o codec) e não listava `work-order.service.ts`, `work-order.types.ts`, o censo do 07c, o coordenador, o arquivo novo das rotas, `sync_screen.dart`, a tela de atendimento, a suíte `-db` nem a linha do CI. **Fecha:** a fronteira passa a ser a lista de permitidos da Emenda 1.1 (§5, trava T1 a T4), gravada na linha do bloco (`PLANO_SAN3.md`, tabela da frente 4).
+2. **K2, a dependência `SAN3-15`.** Era ordem da frente, não arquivo nem dado. **Fecha:** a dependência passa a ser por arquivo, medida por `git diff --name-only origin/main...<ramo>` em 14/11: o #564 (15b) já está na `main` (`eeac48a3`); o `B-SAN3-17` (ramo `feat/mobile-consentimento-gps-17`, `fff3990a`, sem PR) mexe em `auto_sync_coordinator.dart`, `work-order.service.ts`, `tests/fixtures/o6r07c-classificacao-vias.json`, `.github/workflows/ci.yml`, `bsan319b_acesso_nao_permitido_test.dart`, `decisoes.md` e `PLANO_SAN3.md`. **Ordem de merge:** 17 → **16** → 67 → 04b. A fatia do coordenador (F4b) espera o 17; o censo é regerado depois do último rebase.
+3. **K3, "a aprovação existe no backend".** Existe, mas só na memória do servidor (`approval.service.ts`, `InMemoryApprovalRepository`). **Fecha pela P1 (A)** (`D-DONO-TODAS-RECOMENDACOES-1111` e `D-DONO-1311-RECOMENDACOES` (b)): o item 5 se cumpre com o pedido gravado de forma durável na linha do tempo da OS (`work_order_events`); a fila de Aprovações durável é o item 67 (`B-APROVACOES-DURAVEIS`).
+4. **As 3 respostas do dono** (`D-DONO-TODAS-RECOMENDACOES-1111`, 11/11, "Sim, todas (Recomendado)"), aplicadas no plano:
+   - **P1 = (A):** bloco próprio, item 67. `prisma/**`, `migrations/**` e `src/modules/work-orders/approval.*.ts` ficam proibidos no 16;
+   - **P2 = (B):** o "não consegui iniciar" fica gravado na OS e avisa no sino quem atribuiu a OS por último (que não seja o próprio técnico); sem esse evento, fica só o registro;
+   - **P3 = (A):** na tela de atendimento, "Solicitar aprovação" abre o pedido de aprovação (só para quem tem `work_orders:update`), e "Ag. aprovação" e "Exceção" saem dos botões de status. Fecha a `P-MOBILE-CODEC-FILA-STATUS-CRU` neste bloco.
+5. **A 12.1 da Emenda 1 (a suíte `-db` do bloco na lista do CI) = (A),** como nova aplicação da `D-DONO-1311-RECOMENDACOES`, no molde da (a) do `B-SAN3-17`: a suíte `tests/bsan316-fila-os-db.test.ts` entra no `SUITES=` do job `backend-postgres` de `.github/workflows/ci.yml`, com o comentário de praxe ("Medida a lista inteira 3× nesta forma antes de entrar …"). Só acréscimo; nada mais muda no arquivo. A pendência alternativa (`P-SAN316-DB-FORA-DO-CI`) não nasce. As Q2 a Q7 do §12.2 da Emenda 1 valem pela recomendação.
+6. **VER5-02 (Emenda 1.1.1, item 2), medida antes do código.** `src/modules/work-orders/approval.controller.ts` grava a auditoria da decisão (`approval.approved`/`approval.rejected`) com `resourceId: approval.entityId` (`:56-60` em `eeac48a3`); a recusa por segregação (`approval.self_decision_denied`) é gravada em `approval.service.ts` com `entityId: current.entityId`. Os dois arquivos estão no PROIBIDO do 16 (`src/modules/work-orders/approval.*.ts`, Emenda 1 §6) e fora da lista de permitidos (Emenda 1.1 §5). **Vale o 2º caso:** a correção (com OS, a decisão e a recusa também gravam `resourceId = work_order_id`, com a chave opaca nos metadados) vai para a seção 3 do plano do 67, como **item 11**. O orquestrador a repassa.
+- **Cruzamento:** o dev é Claude; a pré-revisão é da outra casa quando houver crédito (§C7 11(1)), ou identidade Claude nova, com "sem cruzamento" declarado.
+- **Gravado por:** `dev-16-cl` (Claude Opus 5.5, dev do bloco), em 14/11/2026.

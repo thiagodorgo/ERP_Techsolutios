@@ -5,8 +5,8 @@ papel: cadeira C3 (refeita, ciclo 2, regra (3) do §C7 item 9) | identidade: jur
 ## Terreno (início 2026-10-28T02:12:14Z)
 - Hora real do start (date -u): 2026-10-28T02:09:15Z.
 - origin/main no início: f076973921539165df8d406b8c061dbf4e4ee127 (= merge-base do mandato). ls-remote do ramo = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 = objeto.
-- $SCRATCH: C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/ (sondas e logs; nada no repo).
-- Worktree próprio: C:/Users/AMP/j12b-c2-c3r2-wt (nome do mandato específico; o genérico dizia j12b2-<cadeira>-wt — vale o mandato), detached em e77a5ac1, .git presente, .env ausente, status 0; npm ci próprio raiz e frontend; zero junction.
+- $SCRATCH: ~/erp-pausa-2026-10-03/j12b2-c3r2/ (sondas e logs; nada no repo).
+- Worktree próprio: ~/j12b-c2-c3r2-wt (nome do mandato específico; o genérico dizia j12b2-<cadeira>-wt — vale o mandato), detached em e77a5ac1, .git presente, .env ausente, status 0; npm ci próprio raiz e frontend; zero junction.
 - Recursos no start: memória de commit livre 12,4 GB (piso 4 GB); disco C: livre 12,54 GiB (piso C3 9,1 GiB; piso de parada 7,5 GB). Nota: o "livre em C: 225G" do MEDIDO do mandato é a coluna USADO do df, não a livre (df -BG: 238G tamanho, 225G usado, 13G livre) — só o número do redator, não o terreno.
 - Base viva: erp-postgres (5432) e erp-redis (6379) de pé, do dono — NUNCA alvo. Nenhum container j12b* existente no start. Portas da C3 pelo inspetor: Postgres 48124 (app 48125).
 - Legalidade: parecer insp-san312b-c2-parecer.md (inspetor-san312b-c2-sol, Codex Sol): LIBERADO COM RESSALVA (1 ressalva no arquivo: paralelismo condicionado à rechecagem dos pisos; "C3 começa somente após C2 terminar e limpar"). Medido no start: worktree j12b-c2-c2rev-wt ausente e fora de git worktree list; nenhum container j12b*; o codex.exe vivo é o app-server da extensão do VS Code (linha de comando lida), não a C2. A C1 está viva em paralelo por ordem do orquestrador; rechecagem dos pisos após a instalação (abaixo).
@@ -129,7 +129,7 @@ papel: cadeira C3 (refeita, ciclo 2, regra (3) do §C7 item 9) | identidade: jur
 
 ### 3.c R13 — ratificações e E2 versionadas e verbatim
 - Plano do objeto: `^## Ratificação do orquestrador` = 2 (14:35Z com os 2 itens + 14:40Z = as 3 ratificações), `^## Emenda E2` = 1; transcrições apensas (§4.1 + `POST /cheques/:chequeId/cancel`; §10 C3 julga F20–F22; F4 = 32) em l.1254ss., corpo v3 não editado.
-- Verbatim: trecho "Ratificação 14:35Z" até "Transcrições da E2" no plano do objeto × a cópia do orquestrador `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`: 182 × 182 linhas, 0 diferença (sem CR, sem espaço final, sem linha vazia).
+- Verbatim: trecho "Ratificação 14:35Z" até "Transcrições da E2" no plano do objeto × a cópia do orquestrador `~/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`: 182 × 182 linhas, 0 diferença (sem CR, sem espaço final, sem linha vazia).
 - R13-M1 (tirar a 2ª ratificação numa cópia) → contagem 1 (vermelho); ciclo 1 fc5ead6c → 0.
 - D-8 corrigido no relatório (l.198-202: Node 22.14.0 por caminho absoluto, nunca `nvm use`; CI Node 20; TAP 1475 nas duas versões). Pendências da E2.4 no objeto, 1 cabeçalho cada, status ABERTA, com dono e encerramento: P-SAN3-12B-BUSCA-TABELA-TITULOS, P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO, P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO, P-SAN3-12-CE4-BRACO1-NA-CI; e P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE e P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO abertas com dono.
 
@@ -153,7 +153,7 @@ papel: cadeira C3 (refeita, ciclo 2, regra (3) do §C7 item 9) | identidade: jur
 - raiz-lint | início 02:41:19Z | fim 02:41:34Z | ec=0 | 
 - raiz-build | início 02:41:34Z | fim 02:41:51Z | ec=0 | 
 - diff-check | início 02:41:51Z | fim 02:41:51Z | ec=0 | 
-- Node 22: o log do smoke 22 imprime `v22.14.0` duas vezes (raiz e `frontend/`), por `PATH=/c/Users/AMP/AppData/Local/nvm/v22.14.0:$PATH`, sem `nvm use`. D-8 verdadeiro: 1475/1475 nas duas versões (meta R14 ≥ 1453).
+- Node 22: o log do smoke 22 imprime `v22.14.0` duas vezes (raiz e `frontend/`), por `PATH=~/AppData/Local/nvm/v22.14.0:$PATH`, sem `nvm use`. D-8 verdadeiro: 1475/1475 nas duas versões (meta R14 ≥ 1453).
 - `git diff --check f0769739 e77a5ac1` → vazio (ec=0, log 0 byte). `git status --porcelain` depois da bateria → vazio (artefatos de build ignorados).
 - Testes do bloco de `frontend/` (1.a): 112/112, ≥ 84 da meta R14.
 - `npm test` da raiz não está na bateria do R14 e não foi rodado: o PR não toca `src/`, `prisma/`, `scripts/` (0 caminho) e o job `backend` da CI no objeto está `success` (4157 · 4155 · 0 · 2). Redução declarada; `arquivos_medidos` = `**` pelos check/build/test:smoke.
@@ -190,10 +190,10 @@ papel: cadeira C3 (refeita, ciclo 2, regra (3) do §C7 item 9) | identidade: jur
 - Containers `j12b2-c3r2-pg` e `j12b2-c3r2-redis` removidos por `docker rm -f -v` (nome exato); `docker ps -a --filter name=j12b2-c3r2- -q | wc -l` = 0. Bancos j12b2_c3r2_* sumiram com o container.
 - Senha: busca na evidência e no voto = 0; nos logs do $SCRATCH = 0; arquivo da senha apagado.
 - Toda mutação restaurada com `hash-object` = blob (DIFERENTE = 0 em todos os logs); checkout do ciclo 1 restaurado (status 0); sonda copiada apagada do worktree antes da bateria; `git status --porcelain` do worktree = 0 no fim.
-- Processos com o caminho do worktree = 0 (listagem do Win32_Process sem a própria consulta); `git worktree remove --force C:/Users/AMP/j12b-c2-c3r2-wt` ec=0, caminho ausente, fora do `git worktree list`.
+- Processos com o caminho do worktree = 0 (listagem do Win32_Process sem a própria consulta); `git worktree remove --force ~/j12b-c2-c3r2-wt` ec=0, caminho ausente, fora do `git worktree list`.
 - Objeto no fim: ls-remote do ramo = gh pr view 469 headRefOid = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 (não andou); origin/main no fim = f076973921539165df8d406b8c061dbf4e4ee127 (não andou); PR OPEN, MERGEABLE.
 - Base viva (erp-postgres, erp-redis, portas 5432/6379/3000/5173/5050/8899) nunca tocada. `w-san312b`: única escrita = c3r2-evidencia.md e c3r2-voto.json no diretório do ciclo 2. Nenhum commit.
-- $SCRATCH (C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/) fica com sondas, runner, listas de mutação, TAPs e logs — roteiro de re-execução (P3); sem senha.
+- $SCRATCH (~/erp-pausa-2026-10-03/j12b2-c3r2/) fica com sondas, runner, listas de mutação, TAPs e logs — roteiro de re-execução (P3); sem senha.
 - Disco C: 12,33 GiB livres no fim.
 
 VOTO: REPROVADO — (1) a trava do F8 deixa passar soma de dinheiro por `<chamada>(…).reduce(` / `(<expr>).reduce(` nos diretórios do bloco, forma que o `rg` ratificado acusa (C3R2-01); (2) o merge da main perdeu o fechamento de P-SAN3-20-RESUMO-CHEQUE-VINCULADO que a E2.5 manda conferir (C3R2-02) | escopo: dentro-do-bloco | classe: não grave | ciclo 2 | evidência: mutações C3R2-F8-filter/-values guard 4·4·0 com `git grep` = 9; status FECHADA→ABERTA em b5246e8d, seção do objeto = a da base. C3-05, C3-02, C3-07 e C3-01 fechados.

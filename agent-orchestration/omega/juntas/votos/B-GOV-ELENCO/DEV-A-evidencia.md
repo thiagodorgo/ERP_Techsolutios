@@ -4,7 +4,7 @@
 > `agent-orchestration/omega/planos/B-GOV-ELENCO-ciclo2-plano.md` e **não julgo a validade de nenhum achado**
 > do ciclo 1. Onde eu discordar, implemento assim mesmo e registro a discordância aqui (seção final).
 >
-> **Worktree:** `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`
+> **Worktree:** `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco`
 > **Branch:** `chore/gov-auditoria-elenco` · **Head de partida:** `c0cbfe10`
 > **Forma:** `node --version` = `v20.19.5` · `git config core.autocrlf` = `true` · plataforma win32 (Git Bash).
 > **Mutações:** todas em **cópia isolada** (`mktemp -d` + `cp -r`), fora do repo, sem `git worktree add`,

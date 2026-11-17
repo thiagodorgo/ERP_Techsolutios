@@ -45,7 +45,7 @@ Se coincidir, pare. O sucessor de um caído tem identidade NOVA e reexecuta toda
 
 ## Terreno próprio
 
-- **Worktree:** exclusivo em `C:/Users/AMP/w-jsan302-c3-<sufixo>`, com `npm ci` próprio e zero junction ou symlink de `node_modules`. Para rodar a base, use um **segundo** worktree próprio em `B` (`C:/Users/AMP/w-jsan302-c3b-<sufixo>`), também com `npm ci`. Remova os dois só por `git worktree remove --force`.
+- **Worktree:** exclusivo em `~/w-jsan302-c3-<sufixo>`, com `npm ci` próprio e zero junction ou symlink de `node_modules`. Para rodar a base, use um **segundo** worktree próprio em `B` (`~/w-jsan302-c3b-<sufixo>`), também com `npm ci`. Remova os dois só por `git worktree remove --force`.
 - **Memória por padrão.** Para a suíte inteira e os `-db`, use um Postgres 16 descartável próprio, com containers e rede `jsan302-c3-*` e sem porta publicada. A suíte roda num container Linux próprio na mesma rede. Porta de host, só se inevitável: alta, efêmera, em `127.0.0.1`. São proibidas a base viva e as portas `5432`, `6379`, `3000`, `5173`, `5050` e `8899`.
 - **Docker:** no máximo **2 trabalhos Docker** na máquina, incluindo o seu. Conte os grupos alheios antes, excluindo `erp-*`; se já houver 2, espere. Nunca toque container alheio nem rode `prune`.
 - **Conteúdo e mutações:** compare conteúdo por `git show`/`git hash-object`, nunca por `git archive | tar` sob `core.autocrlf=true`. Mutações só em cópia, com restauro provado por hash.

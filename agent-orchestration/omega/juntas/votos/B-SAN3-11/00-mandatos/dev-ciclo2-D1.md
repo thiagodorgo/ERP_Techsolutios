@@ -35,21 +35,21 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o dev do ciclo 2 do B-SAN3-11 (PR 401), identidade nova e local dev-ciclo2-b-san3-11 (Opus 5.5), que nao achou, nao planejou e
   nao vota (nao e o dev de nuvem nem o dev da errata), executando a fatia D1 da secao 16 do plano docs/revisoes/SAN3/B-SAN3-11-plano.md (a secao do ciclo 2, apensada
   verbatim pelo orquestrador); declara na 1a linha da sua secao do relatorio o papel, a identidade, o modelo e o mandato_md5 deste
-  arquivo derruba com: `grep -ic 'mandato_md5' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+  arquivo derruba com: `grep -ic 'mandato_md5' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
 Item 1: a origin/main de agora integrada ao ramo por merge e nunca por rebase, com conflitos so em registro e KPI resolvidos com as duas
   entradas e a deste bloco por ultimo (conflito fora disso e PARADA), e a entrega E10 da secao 16.3 (os links com afordancia, a ancora que
-  nao navega, o realce e o prefixo de id) derruba com: `grep -ic 'E10' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+  nao navega, o realce e o prefixo de id) derruba com: `grep -ic 'E10' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
-Item 2: a entrega E11 da secao 16.3 (o adapter fail-closed nas tres chaves de versao, com a classe de erro de contrato) derruba com: `grep -ic 'E11' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+Item 2: a entrega E11 da secao 16.3 (o adapter fail-closed nas tres chaves de versao, com a classe de erro de contrato) derruba com: `grep -ic 'E11' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
 Item 3: a entrega E12 da secao 16.3 (o gerador v2 igual ao Apendice E do plano, conferido pelo md5 EOL-neutro que a secao registra), cada
-  entrega num commit proprio derruba com: `grep -ic 'E12' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+  entrega num commit proprio derruba com: `grep -ic 'E12' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
-O terreno e as regras: worktrees proprios C:/Users/AMP/w-dc2 (CRLF) e C:/Users/AMP/w-dc2lf (LF, core.autocrlf=false), npm ci proprio sem
+O terreno e as regras: worktrees proprios ~/w-dc2 (CRLF) e ~/w-dc2lf (LF, core.autocrlf=false), npm ci proprio sem
   junction; commits locais em Conventional Commits com git diff --cached --check como trava, sem linha de atribuicao; so o escopo da secao
-  16.4; se a medicao contradisser a secao 16, grava e PARA; evidencia incremental com hora UTC em C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md (P1), mensagem final de 1 linha (P2);
-  nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo; base viva nunca alvo; sob PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'medido por' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+  16.4; se a medicao contradisser a secao 16, grava e PARA; evidencia incremental com hora UTC em ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md (P1), mensagem final de 1 linha (P2);
+  nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo; base viva nunca alvo; sob PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'medido por' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
 ## MEDIDO
 
@@ -57,7 +57,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-21: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/dev-ciclo2-D1.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/dev-ciclo2-D1.md
 ec=0
 head=653532f7abfffc1be738c9b111d78d54d6bc4ea1
 utc=2026-10-03T04:48:41Z

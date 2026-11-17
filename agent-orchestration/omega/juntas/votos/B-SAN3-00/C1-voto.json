@@ -6,7 +6,7 @@
   "objeto": "7822deaf9afabd076d1095eaf48a6dfb635e5401",
   "base_declarada": "aadaa6d51be950e152ca6a6f15327bc9989039de",
   "origin_main_no_momento_do_voto": "b8cd22df (B-SAN3-B1 / PR #391) - a main MUDOU depois da autoria, durante esta junta",
-  "worktree": "C:/Users/AMP/w-j-san300-c1 (detached, caminho curto conferido na saida de git worktree list, sem junction, sem conteiner, base viva nao recebeu um comando)",
+  "worktree": "~/w-j-san300-c1 (detached, caminho curto conferido na saida de git worktree list, sem junction, sem conteiner, base viva nao recebeu um comando)",
   "veredito": "REPROVADO",
   "achados": [
     {
@@ -70,7 +70,7 @@
       "titulo": "Residuo de OUTRAS sessoes - reporto, nao varro",
       "gravidade": "nota",
       "escopo": "pre-existente",
-      "evidencia": "git worktree list no momento do voto: arvore principal em demo/investidor@d1fab3bc com modificacao viva de outra sessao (ciclo 5 do B-O6R-02); worktrees alheios b04a (738ff531), b11 (43557a17), gov-descuido (497d360d), gov-elenco (15ef3fbe), sanb1 e w-s1 (27eae4b0). MUDANCA desde a inspecao, registrada: o worktree sanb1 andou de 3a0ea095 para 09dc4345 e o w-j-sanb1-c1 que o inspetor viu ja nao existe - a junta paralela do B-SAN3-B1 terminou e o PR #391 mergeou durante esta junta. A C2 reportou um worktree com prefixo de caminho anomalo C:/c/Users/AMP/w-j-sanb1-c3, que nao aparece mais na minha listagem.",
+      "evidencia": "git worktree list no momento do voto: arvore principal em demo/investidor@d1fab3bc com modificacao viva de outra sessao (ciclo 5 do B-O6R-02); worktrees alheios b04a (738ff531), b11 (43557a17), gov-descuido (497d360d), gov-elenco (15ef3fbe), sanb1 e w-s1 (27eae4b0). MUDANCA desde a inspecao, registrada: o worktree sanb1 andou de 3a0ea095 para 09dc4345 e o w-j-sanb1-c1 que o inspetor viu ja nao existe - a junta paralela do B-SAN3-B1 terminou e o PR #391 mergeou durante esta junta. A C2 reportou um worktree com prefixo de caminho anomalo C:~/w-j-sanb1-c3, que nao aparece mais na minha listagem.",
       "motivo": "Nada disso toca o objeto julgado: li 7822deaf por git show e pelo meu worktree proprio, e nao escrevi em arvore alheia nenhuma. Registro porque foi o movimento da main durante a junta que produziu A2, A3 e A4."
     }
   ],
@@ -99,5 +99,5 @@
     "o_que_NAO_e_achado": "Nao conto como achado: (i) a divergencia de denominador 41/138 contra 43/146 contra 80 - a emenda 2(a) ja decidiu, e a minha medicao independente com um terceiro denominador (80 fora da main, 316 blobs, 151 tips) confirma conjunto e veredito; (ii) o dev nao ter nomeado dono da pendencia do residuo, porque o comando manda a junta nomear; (iii) as 2 annotations do owner-portal, que sao de runner e tem path=.github, diretorio no escopo proibido do bloco.",
     "nao_proponho_correcao": "§C7.4-bis: reporto defeito, evidencia executada e motivo. Nao escrevi correcao nenhuma e nao toquei o objeto."
   },
-  "limpeza": "Criei UM worktree detached meu, C:/Users/AMP/w-j-san300-c1, em caminho curto CONFERIDO na saida de git worktree list - nao saiu o prefixo anomalo C:/c/ que ja aconteceu nesta rodada. Sem junction, sem npm ci (nao precisei: nao rodei suite, que e mandato da C3), sem conteiner nenhum, e a base viva NAO recebeu um comando. Nao escrevi na arvore principal, nem no worktree do dev (san300 segue em 7822deaf), nem em worktree alheio. Removido pelo nome ao fim. Logs brutos no scratchpad, fora da pasta de votos: c1-*.txt e c1-gen/."
+  "limpeza": "Criei UM worktree detached meu, ~/w-j-san300-c1, em caminho curto CONFERIDO na saida de git worktree list - nao saiu o prefixo anomalo C:/c/ que ja aconteceu nesta rodada. Sem junction, sem npm ci (nao precisei: nao rodei suite, que e mandato da C3), sem conteiner nenhum, e a base viva NAO recebeu um comando. Nao escrevi na arvore principal, nem no worktree do dev (san300 segue em 7822deaf), nem em worktree alheio. Removido pelo nome ao fim. Logs brutos no scratchpad, fora da pasta de votos: c1-*.txt e c1-gen/."
 }

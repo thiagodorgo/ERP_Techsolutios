@@ -29,6 +29,6 @@
     "Item 3: Financeiro e Estoque precisam cair em /finance e /inventory, com guards compatíveis; aprovado com vermelhos-controle separados."
   ],
   "pendencias_que_aceito": [],
-  "teardown": "Hashes de auth.routes.ts, PermissionProvider.tsx e landing-route.ts restaurados e iguais aos blobs do objeto; git status limpo e diff-check verde antes da remoção; node_modules próprios eram diretórios reais; processos iniciados=0; jdash-c1-* containers/redes/volumes=0; worktree C:/Users/AMP/w-jdash-c1-cdx desregistrado e pasta removida; base viva e portas 5432/6379/3000/5173/5050/8899 intocadas.",
+  "teardown": "Hashes de auth.routes.ts, PermissionProvider.tsx e landing-route.ts restaurados e iguais aos blobs do objeto; git status limpo e diff-check verde antes da remoção; node_modules próprios eram diretórios reais; processos iniciados=0; jdash-c1-* containers/redes/volumes=0; worktree ~/w-jdash-c1-cdx desregistrado e pasta removida; base viva e portas 5432/6379/3000/5173/5050/8899 intocadas.",
   "justificativa": "Os Itens 1 e 3 passaram por execução e mutação, mas o Item 2 viola a propriedade central: com session.user.permissions vazio, o PermissionProvider autoriza dashboard:view e até uma permissão arbitrária somente pelo rótulo Super Admin. Em bloco de PERMISSÃO no ciclo 1, um bloqueia dentro do bloco veta. VOTO: REPROVADO — PermissionProvider promove capacidades ausentes do array efetivo entregue pelo backend | escopo: dentro-do-bloco | classe: quebra de permissão | evidência: probe runtime N=2/2 retornou true com permissions=[]; ec=1"
 }

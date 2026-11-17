@@ -3,7 +3,7 @@ papel: cadeira C4 | identidade: jurado-san312a-c4-opus | corpo: jurado-san312a-c
 # Evidência — cadeira C4 — B-SAN3-12a (PR #459), ciclo 1, junta de DINHEIRO
 
 ## Terreno e legalidade (medido 2026-10-26 ~02:20Z)
-- `origin/main` no início: b2f8e6cf5bb1bd044887ab0829821b089530d9c5. `$SCRATCH` = C:/Users/AMP/erp-pausa-2026-10-03/j12a-c4/. node v20.19.5; docker server 29.6.1; `SELECT version()` = PostgreSQL 16.14 (container j12a-c4-pg, imagem postgres:16); Redis j12a-c4-redis (redis:7).
+- `origin/main` no início: b2f8e6cf5bb1bd044887ab0829821b089530d9c5. `$SCRATCH` = ~/erp-pausa-2026-10-03/j12a-c4/. node v20.19.5; docker server 29.6.1; `SELECT version()` = PostgreSQL 16.14 (container j12a-c4-pg, imagem postgres:16); Redis j12a-c4-redis (redis:7).
 - Disco: `df -h /c` → 12G livres antes do worktree; 11G depois do `npm ci` (≥ 7 GB). Memória de commit livre 13,86 GB (≥ 4). Docker fora de `erp-*` antes de subir: dev-san322-pg, dev-san322-redis = 1 trabalho; com o meu = 2 (teto). Portas 47743/47744: 0 ocorrências em netstat antes de subir.
 - Variáveis: DATABASE_URL, REDIS_URL, CORE_SAAS_PERSISTENCE, LOG_LEVEL — sempre como prefixo de comando, nunca `export`; senhas aleatórias só em arquivo do $SCRATCH (`***`).
 - Legalidade: `insp-san312a-parecer.md` (inspetor-san312a-opus, 2ª passada) → **LIBERADO COM RESSALVA**; ordem C2 → C4 → C1 → C3; nome `jurado-san312a-c4-opus`, worktree `j12a-c4-wt`, containers `j12a-c4-pg/redis`, portas 47743/47744 conferem. C2 já votou (só vi os nomes dos arquivos no `ls`; não li).
@@ -11,7 +11,7 @@ papel: cadeira C4 | identidade: jurado-san312a-c4-opus | corpo: jurado-san312a-c
 - Check-runs no objeto (`gh api …/commits/<objeto>/check-runs`): total=14 | não-verdes=0 | pendentes=0.
 - Head-base do bloco `<objeto>~14` = 8a7885f4c3bfab02e6c31b318c1111e262f2907c.
 - Corpo: `git show <objeto>:.claude/agents/especialistas/jurado-san312a-c4-isolamento-e-invariantes.md | tr -d '\r'` × corpo carregado (392 linhas) → IDENTICO; espelho .agents existe no objeto (398 linhas).
-- Worktree: `git worktree add --detach C:/Users/AMP/j12a-c4-wt <objeto>` (caminho não existia); `git status --porcelain` = 0; `npm ci` próprio → "added 326 packages", ec=0 (sem junction); `npx prisma generate` ec=0; `npx prisma migrate deploy` ec=0, última migração `20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions`.
+- Worktree: `git worktree add --detach ~/j12a-c4-wt <objeto>` (caminho não existia); `git status --porcelain` = 0; `npm ci` próprio → "added 326 packages", ec=0 (sem junction); `npx prisma generate` ec=0; `npx prisma migrate deploy` ec=0, última migração `20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions`.
 - Papéis: `select rolname, rolsuper, rolbypassrls` → postgres|t|t ; j12a_c4_rt|f|f (criado por mim: LOGIN NOSUPERUSER NOBYPASSRLS, GRANT CONNECT/USAGE schema/SELECT,INSERT,UPDATE,DELETE em todas as tabelas/USAGE,SELECT sequências — os grants de `scripts/db-runtime-role.sh` l.68-76).
 - RLS: financial_entries|t|t (relrowsecurity|relforcerowsecurity); cheques|t|t; financial_titles|t|t; financial_accounts|t|t; users|t|t; tenants|f|f. Política `financial_entries_tenant_isolation` ALL: `tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid` (USING e WITH CHECK); idem cheques e financial_titles.
 
@@ -97,9 +97,9 @@ Sondas `$SCRATCH/zz-j12ac4-p3.ts` (`PARTS=a21,a16`) e `$SCRATCH/zz-j12ac4-p4.ts`
 ## Teardown e fechamento
 - Objeto no fim: `git ls-remote` = `gh pr view 459 headRefOid` = 04b8a667780930050c8af2c77c323b81fe8794bb (igual ao do início).
 - `docker rm -f -v j12a-c4-pg j12a-c4-redis` → `docker ps -a | grep -c ^j12a-c4` = 0 (banco j12a_c4_main e papel j12a_c4_rt foram com o container).
-- Processos com `j12a-c4-wt` na linha de comando = 0; `git worktree remove --force C:/Users/AMP/j12a-c4-wt` ec=0; `git worktree list | grep -c j12a-c4` = 0.
+- Processos com `j12a-c4-wt` na linha de comando = 0; `git worktree remove --force ~/j12a-c4-wt` ec=0; `git worktree list | grep -c j12a-c4` = 0.
 - Mutações e checkouts: todos restaurados por `git checkout <objeto> -- <caminho>` com `hash-object` = blob; `git status --porcelain` = 0 antes da remoção.
-- Senhas: `.pw`/`.rpw` apagados; `grep -l -F <senha>` nos arquivos do $SCRATCH = 0 antes de apagar. Sondas e scripts mantidos em `C:/Users/AMP/erp-pausa-2026-10-03/j12a-c4/` (re-executáveis; os `run-probe.sh` precisam de `.pw`/`.rpw` novos).
+- Senhas: `.pw`/`.rpw` apagados; `grep -l -F <senha>` nos arquivos do $SCRATCH = 0 antes de apagar. Sondas e scripts mantidos em `~/erp-pausa-2026-10-03/j12a-c4/` (re-executáveis; os `run-probe.sh` precisam de `.pw`/`.rpw` novos).
 - Base viva (`erp-*`, 5432/6379) nunca tocada; `dev-san322-*` não tocados. Disco no fim: 11G livres.
 - Escrita em w-san312a: só `c4-evidencia.md` e `c4-voto.json`. Sem commit.
 - Achados: C4-01 ajuste (dentro, não grave) · **C4-02 bloqueia (dentro, não grave)** · **C4-03 bloqueia (dentro, grave: dinheiro)** · C4-04 ajuste (pré-existente; a pendência não fecha) · C4-05 nota (pré-existente).

@@ -3,7 +3,7 @@
 - **Ramo:** `fix/mobile-faxina-termos`
 - **Papel desta execução:** DEV; não planeja, não critica e não vota.
 - **Executor:** Claude Opus `dev-san319-opus` (nível menor, declarado). Verificador: Codex GPT-5.6 Sol (§C7 item 11).
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-SAN3-19-plano.md` (autor: orquestrador, Claude Opus 5.5, no papel de topo).
+- **Plano:** `~/erp-pausa-2026-10-03/planos/B-SAN3-19-plano.md` (autor: orquestrador, Claude Opus 5.5, no papel de topo).
 - **Nível:** revisão simples, mais CI e conferência visual por widget test (§C7 item 10(1)). Só texto exibido.
 - **Pendência:** `P-MOBILE-FAXINA-TERMOS-TECNICOS` (`PLANO_SAN3.md:173`, `:292`).
 

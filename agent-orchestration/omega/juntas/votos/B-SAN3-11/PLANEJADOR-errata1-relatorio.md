@@ -11,7 +11,7 @@ papel: planejador-mestre | identidade: planejador-errata1-b-san3-11 | modelo: Fa
 - Corpo do papel: `MSYS_NO_PATHCONV=1 git show origin/main:.claude/agents/planejador-mestre.md | tr -d '\r' | md5sum`
   → `4c912f69a93f07b14d8fd1c49539c778`; o corpo materializado no scratchpad dá o mesmo md5. `origin/main` = `4ab9d232`.
   Conclusão parcial: corpo íntegro.
-- Mandato: `tr -d '\r' < .../00-mandatos/planejador-errata1.md | md5sum` em `C:/Users/AMP/w-nuv11` (HEAD `12adb603`)
+- Mandato: `tr -d '\r' < .../00-mandatos/planejador-errata1.md | md5sum` em `~/w-nuv11` (HEAD `12adb603`)
   → `776045d90b81082597ff039dabc4677e`, 69 linhas. Conclusão parcial: mandato íntegro.
 - Separação de papéis (§C7.4-bis): quem achou = inspetor da junta 1 (parecer `INSPETOR-401.md`); quem planeja = esta
   identidade; quem desenvolve = identidade nova a nomear pelo orquestrador. Esta identidade não escreveu o plano,
@@ -82,10 +82,10 @@ Plano — o que vincula a errata:
 - §10: quem planeja = `planejador-mestre` (Fable obrigatório na revalidação pós-correção, §C7.6); quem desenvolve =
   identidade nova nomeada pelo orquestrador; quem acha = cadeiras/inspetor.
 
-## 3. Terreno próprio: worktree detached `C:/Users/AMP/w-pl11` + `npm ci` no frontend — 2026-10-02T15:22Z
+## 3. Terreno próprio: worktree detached `~/w-pl11` + `npm ci` no frontend — 2026-10-02T15:22Z
 
 - `git fetch origin fix/dossie-versao-da-vistoria` → FETCH_HEAD `12adb603` (o ramo andou 1 commit de registro além do objeto).
-- `git worktree add --detach C:/Users/AMP/w-pl11 5f6aaf56…` → `HEAD is now at 5f6aaf56`; `git status --porcelain | wc -l` → 0;
+- `git worktree add --detach ~/w-pl11 5f6aaf56…` → `HEAD is now at 5f6aaf56`; `git status --porcelain | wc -l` → 0;
   `git config core.autocrlf` → `true`; `.gitattributes` → ausente. **Checkout CRLF, o terreno do inspetor.**
 - `cd frontend && timeout 900 npm ci --no-audit --no-fund` → `added 103 packages in 19s`, ec=0 (15:22:09→15:22:29Z);
   `frontend/node_modules/typescript` presente; sem junction; árvore continua limpa (0 linhas).
@@ -156,12 +156,12 @@ Conclusões parciais:
 
 ### 5.1 Prova da PRESCRIÇÃO no checkout CRLF (sondador, não o teste) — 2026-10-02T15:36Z
 
-Comando: `cd w-pl11/frontend && timeout 600 node scratchpad/pl11-probe-prescricao.mjs C:/Users/AMP/w-pl11` (15:34:44→15:35:40Z; rodou
+Comando: `cd w-pl11/frontend && timeout 600 node scratchpad/pl11-probe-prescricao.mjs ~/w-pl11` (15:34:44→15:35:40Z; rodou
 em paralelo com o `npm ci` do worktree LF — contamina só o tempo bruto do gerador, não a cor). O sondador replica as fases de T13/T14 com
 o arnês e a mutação **prescritos** (seção 15): `runCensoPrescrito` sem teto e fail-closed em `error`/`status === null`; `mutate(path, fn)`
 que normaliza CRLF→LF, aplica, **prova** (`mutated !== original`, senão lança) e grava. Saída colada:
 ```
-{"terreno":"C:/Users/AMP/w-pl11","CR_no_adapter_em_disco":583,"checkout":"CRLF"}
+{"terreno":"~/w-pl11","CR_no_adapter_em_disco":583,"checkout":"CRLF"}
 {"caso":"T13'","mutacao":{"bytesAntes":4841,"bytesDepois":4926},"gerador_ms":31204,"exitCode":1,"pontos_sem_consulta":"1"}
 {"caso":"T14'","mutacao":{"bytesAntes":26093,"bytesDepois":25995},"gerador_ms":17129,"exitCode":1,"descartadas_adapter":"1"}
 {"caso":"VC1","resultado":"LANÇOU: mutação não aplicou (sem normalizar)"}
@@ -216,7 +216,7 @@ alvo numérico: `TETO=0 · NULL=0 · CP=1`, e toda linha `MUT` de fonte dentro d
 
 ## 7. Prova em checkout LF (`core.autocrlf=false`) — 2026-10-02T15:40Z
 
-Terreno: `git -c core.autocrlf=false worktree add --detach C:/Users/AMP/w-pl11lf 5f6aaf56` → HEAD `5f6aaf56`, `porcelain=0`;
+Terreno: `git -c core.autocrlf=false worktree add --detach ~/w-pl11lf 5f6aaf56` → HEAD `5f6aaf56`, `porcelain=0`;
 CR em disco: teste **0**, adapter **0** (checkout LF, como a CI); `cd frontend && npm ci --no-audit --no-fund` ec=0 (15:34:32→15:35:01Z), sem junction.
 
 **Arquivo isolado com o arnês DO HEAD, em LF** (`timeout 420 node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx`,
@@ -225,9 +225,9 @@ CR em disco: teste **0**, adapter **0** (checkout LF, como a CI); `cd frontend &
 ok 14 - T12 … duration_ms: 27825   ok 15 - T13 … duration_ms: 20450   ok 16 - T14 … duration_ms: 14389
 # tests 16 · # pass 16 · # fail 0 · ec=0
 ```
-**Prescrição em LF** (`node pl11-probe-prescricao.mjs C:/Users/AMP/w-pl11lf`, 15:37:57→15:39:03Z; saída colada):
+**Prescrição em LF** (`node pl11-probe-prescricao.mjs ~/w-pl11lf`, 15:37:57→15:39:03Z; saída colada):
 ```
-{"terreno":"C:/Users/AMP/w-pl11lf","CR_no_adapter_em_disco":0,"checkout":"LF"}
+{"terreno":"~/w-pl11lf","CR_no_adapter_em_disco":0,"checkout":"LF"}
 {"caso":"T13'","mutacao":{"bytesAntes":4841,"bytesDepois":4926},"gerador_ms":20882,"exitCode":1,"pontos_sem_consulta":"1"}
 {"caso":"T14'","mutacao":{"bytesAntes":26093,"bytesDepois":25995},"gerador_ms":36831,"exitCode":1,"descartadas_adapter":"1"}
 {"caso":"VC1","resultado":"aplicou sem normalizar (checkout LF)"}
@@ -246,7 +246,7 @@ Conclusões parciais:
 ## 8. Limpeza do terreno — 2026-10-02T15:41Z
 
 - Processos vivos com `w-pl11` na `CommandLine` (`Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'w-pl11' }`) → **0**.
-- `git worktree remove --force C:/Users/AMP/w-pl11` → ec=0, `test -e` → removido; idem `C:/Users/AMP/w-pl11lf` → ec=0, removido;
+- `git worktree remove --force ~/w-pl11` → ec=0, `test -e` → removido; idem `~/w-pl11lf` → ec=0, removido;
   `git worktree list | grep -c pl11` → 0; worktrees restantes: **19** (todos alheios; o inspetor contava 20 com o `w-insp402` de outro
   PR — reporto, não varro); árvore principal: `status --porcelain` **55 linhas antes e 55 depois** (nada meu); `%TEMP%/.tmp-censo-*` → **0**.
 - Nada escrito no repositório; nenhum commit; nenhum container/cluster criado; base viva 5432/6379 não tocada.
@@ -300,7 +300,7 @@ quem planeja = esta errata; quem desenvolve = identidade nova (§15.11).
 
 Cada item da tabela foi **medido por** esta instância, com o comando colado (coluna 2) e a saída resumida (coluna 3); nada abaixo é
 herdado do parecer do inspetor — M3 é a linha dele, citada como relatório de quem achou, e as demais são a re-medição.
-Terreno: worktrees detached próprios `C:/Users/AMP/w-pl11` (CRLF, `autocrlf=true`) e `C:/Users/AMP/w-pl11lf` (`git -c core.autocrlf=false
+Terreno: worktrees detached próprios `~/w-pl11` (CRLF, `autocrlf=true`) e `~/w-pl11lf` (`git -c core.autocrlf=false
 worktree add`, CR em disco = 0), ambos em `5f6aaf56`, `npm ci` próprio em `frontend/` (sem junction), Node v20.19.5 (`C:\nvm4w\nodejs\node.exe`,
 o mesmo `process.execPath` do runner). Tudo com `timeout` externo e `ec` por variável; removidos ao fim com 0 processo vivo.
 
@@ -466,8 +466,8 @@ CP=1`; `EOL` pode continuar 2 (a regex de T14 sobre texto normalizado e a do ger
 ### 15.8 Bateria da correção — nos DOIS terrenos, `timeout` externo, `ec` por variável
 
 Terrenos do dev (caminhos curtos, sem junction, removidos ao fim por `git worktree remove --force` com 0 processo vivo):
-`C:/Users/AMP/w-dev11` (checkout **CRLF**: `core.autocrlf=true`; conferir `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0)
-e `C:/Users/AMP/w-dev11lf` (`git -c core.autocrlf=false worktree add --detach …`; conferir `= 0`). `npm ci --no-audit --no-fund` próprio
+`~/w-dev11` (checkout **CRLF**: `core.autocrlf=true`; conferir `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0)
+e `~/w-dev11lf` (`git -c core.autocrlf=false worktree add --detach …`; conferir `= 0`). `npm ci --no-audit --no-fund` próprio
 em `frontend/` nos dois; na raiz, uma vez, `npm ci --ignore-scripts` para os guards do KPI (o `prisma generate` **não** é necessário para
 eles; se rodar `npm run check` da raiz, exporte uma `DATABASE_URL` fictícia só nesse comando — armadilha medida pelo inspetor, 4.2-raiz).
 

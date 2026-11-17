@@ -56,7 +56,7 @@
  "corpo_md5": "637aecf020d024a7e5c36a6ea5531d66 (blob .claude, EOL-neutro) · espelho .agents IDENTICO (medido no mandato) · recebido 637aecf020d024a7e5c36a6ea5531d66 · IDENTICO",
  "leitura_de_outras_cadeiras": "nao li c1-* nem c3-* deste ciclo; li c2-evidencia.md e c2-voto.json do ciclo 1 (roteiro P3)",
  "pausa": "nenhuma",
- "terreno_flutter": "flutter 3.41.6 · dart 3.11.4 · pub get ok · worktree C:/Users/AMP/j13c2-c2b-wt (o do disparo; o mandato dizia j13c2-c2-wt — divergencia declarada) removido",
+ "terreno_flutter": "flutter 3.41.6 · dart 3.11.4 · pub get ok · worktree ~/j13c2-c2b-wt (o do disparo; o mandato dizia j13c2-c2-wt — divergencia declarada) removido",
  "escopo": "dentro-do-bloco (todos os achados)",
  "gravidade": "maxima: ajuste (C2b-01); nenhum bloqueia",
  "classe": "nao grave (todos)",

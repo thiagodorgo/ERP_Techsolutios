@@ -160,7 +160,7 @@ cadeira, **nomeada**.
 ## Terreno — a condição de o seu voto significar alguma coisa
 
 - **Worktree PRÓPRIO, detached, no head do briefing**, com caminho curto:
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c2s <head>`.
+  `git -C ~/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c2s <head>`.
   **Nunca** meça no `b04a`, no worktree do titular, na árvore principal nem no worktree de outro jurado: nesses,
   **somente leitura**.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** e `npx prisma generate` com a `DATABASE_URL` só no ambiente do

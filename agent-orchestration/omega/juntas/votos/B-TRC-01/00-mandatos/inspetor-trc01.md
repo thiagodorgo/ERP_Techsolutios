@@ -33,25 +33,25 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed), instancia nova para a junta de SEGURANCA do bloco
   B-TRC-01 (PR 426, a primeira posicao do Traccar no mapa em dev), rodando no executor que o disparo nomeia (Codex em GPT-5.6 Sol por decisao do dono de 2026-10-12, ou Claude Code em Opus 5.5), no nivel menor por decisao do
   dono de 2026-10-10, declarado no parecer; usa o corpo de origin/main e declara na 1a linha do parecer o papel, o modelo, o
-  mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md | grep -ic 'mandato_md5'` (novo)
+  mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md | grep -ic 'mandato_md5'` (novo)
 
 O objeto e o head do PR 426 resolvido pelo proprio inspetor por git e por gh, so com os check-runs CONCLUIDOS (ausencia, pendente ou
   cancelado bloqueia; vermelho e insumo; o T15, o A11 e o falso vermelho do relogio no teste do Console do 06a, PR 427, sao conhecidos);
   os insumos estao na ref: o plano em docs/revisoes/TRACCAR (README, PLANO_TRACCAR.md secao 8 inteira e as emendas v2.2 e v2.3), o
   relatorio do dev em docs/revisoes/TRACCAR/B-TRC-01-dev.md e a decisao do orquestrador sobre o ratchet T13 e os dois literais
-  (L0 109 para 111 e tabelas_com_dml 115 para 118) em docs/revisoes/TRACCAR/B-TRC-01-DECISAO-T13.md derruba com: `grep -ic 'check-run' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md` (novo)
+  (L0 109 para 111 e tabelas_com_dml 115 para 118) em docs/revisoes/TRACCAR/B-TRC-01-DECISAO-T13.md derruba com: `grep -ic 'check-run' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md` (novo)
 
 O tabuleiro e o da secao 8.10 do plano: as tres cadeiras novas (jurado-trc01-a-rls-e-banco, jurado-trc01-b-superficie-e-segredo,
   jurado-trc01-c-contrato-e-atribuicao) rastreadas no head nos dois espelhos e S0 verde (node scripts/sync-agent-agents.mjs --check),
   corpo carregado e corpo julgado conferidos de forma EOL-neutra; inelegiveis o dev do bloco (dev-trc01-claude), os devs do conserto do 503 (dev-trc01-503-agy, dev-trc01-503-gemini, dev-trc01-503-flash), o revisor da API que achou os testes faltantes (rev-503-delta), o planejador do
   plano e os criticos r1 e r2; o agente-dba-guardiao revisa a migracao aditiva; um worktree e containers Linux descartaveis por
   cadeira com prefixo unico (jtrc01-a, jtrc01-b, jtrc01-c), imagem do Traccar so por digest, nunca a base viva nem os servidores
-  publicos de demonstracao; os containers trc01-* do dev isolados ou removidos; disco de pelo menos 10 GB derruba com: `grep -ic 'inelegib' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md` (novo)
+  publicos de demonstracao; os containers trc01-* do dev isolados ou removidos; disco de pelo menos 10 GB derruba com: `grep -ic 'inelegib' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md` (novo)
 
-O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; a evidencia e incremental com hora em C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-evidencia.md (novo)
-  e o parecer em C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md (novo), que o orquestrador versiona; worktree proprio detached C:/Users/AMP/w-insp-trc01
+O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; a evidencia e incremental com hora em ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-evidencia.md (novo)
+  e o parecer em ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md (novo), que o orquestrador versiona; worktree proprio detached ~/w-insp-trc01
   (novo), removido pelo nome; nunca tail -f; timeout no que executa; a base viva e as portas do servidor do dono nunca sao alvo;
-  PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md` (novo)
+  PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md` (novo)
 
 ## MEDIDO
 

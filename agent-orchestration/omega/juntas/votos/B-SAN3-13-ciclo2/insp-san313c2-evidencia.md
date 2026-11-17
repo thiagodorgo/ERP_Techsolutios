@@ -22,14 +22,14 @@ executor: subagente Claude Code genérico (o tipo `inspetor-de-terreno-da-junta`
 - saída: c1 15/15, c2b 16/16, c3 16/16, inspetor 21/21 unidades com saída; ausentes só os de saída a criar (c1/c2b/c3 -evidencia/-voto) e 3 prefixos truncados por variável ($c) — nenhum insumo ausente
 - comando: md5 EOL-neutro dos 3 corpos jurado-san313-{c1-escopo-e-cursor,c2-app-nunca-perde,c3-regressao-escopo-registro} no blob × disco do w-san313; diff .claude × .agents descontado o bloco Codex
 - saída: blob == disco (174e0578…, 637aecf0…, 170a5f5a…); espelho IDENTICO nos 3; os 3 corpos NÃO existem no diretório da sessão (ERP_Techsolutios na main) → as cadeiras têm de carregar o corpo do blob do objeto (os mandatos já mandam: "corpo carregado contra o blob, EOL-neutro")
-- comando: `git worktree add --detach C:/Users/AMP/j13c2-insp-s0 <O>`; `node .../scripts/sync-agent-agents.mjs --check`; `git worktree remove --force`
+- comando: `git worktree add --detach ~/j13c2-insp-s0 <O>`; `node .../scripts/sync-agent-agents.mjs --check`; `git worktree remove --force`
 - saída: `[agents-sync] OK — 85 agentes, espelho consistente.` ec=0; status 0 linhas; worktree removido, `worktree list | grep -c j13c2` = 0
 - veredito parcial: Item 1 VERDE. Ressalva informativa: corpos dos jurados ausentes do diretório da sessão — carga só pelo blob.
 
 ## Item 2 — identidades, papéis, cadeira vermelha, composição, briefing
 - comando: `git grep -l -i <id> <O>` para as 4 identidades; `grep -rl` no dir de votos do ciclo 1 e no R; `git show <O>:agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md | grep -c <id>`
 - saída: tracked=0 e obituário=0 para as 4 (obituário 301 linhas, 0 linhas com san313/san3-13); no dir do ciclo 1, `jurado-san313-c1-opus` (6) e `jurado-san313-c3-opus` (4) só aparecem como NOME PROPOSTO nos mandatos do ciclo 1 (cadeira-c1.md:132, cadeira-c3.md:175, inspetor-san313.md:138/181) e no parecer/evidência do inspetor do ciclo 1 — nunca como autor de voto/evidência; `inspetor-san313c2-opus` e `jurado-san313-c2b-opus` = 0
-- comando: `grep -i -E 'san313|SAN3-13|j13' C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/agentes-vivos.tsv` (registro P8 de quem foi lançado)
+- comando: `grep -i -E 'san313|SAN3-13|j13' ~/erp-pausa-2026-10-03/ferramentas/agentes-vivos.tsv` (registro P8 de quem foi lançado)
 - saída: lançados no bloco: planejador (Codex Astra caído; planejador-san313-fable), med-san313-argon, crit-san313-argon (caiu), crit-san313-opus, crit-san313-pro-r2 (caiu), crit-san313-opus-r2, dev-san313-opus, fábrica (fab-san313-opus), redator (ciclo 1), inspetor-san313-opus, insp2-san313-pro (Gemini, caiu), jurado-san313-c2-sol e -c3-sol (caíram), jurado-san313-c2-opus (REPROVADO), planejador ciclo 2 (Claude Fable, ae78bdbe…), dev-san313-c2-opus, redator-san313c2-opus, inspetor-san313c2-opus (eu, vivo). NENHUMA linha de jurado-san313-c1-opus nem -c3-opus → nunca lançados, nunca votaram.
 - inelegíveis regenerados (piso do mandato + registro): planejador-mestre/planejador-san313-fable, planejador-san313-c2-fable, crit-san313-{opus,opus-r2,argon,pro-r2}, med-san313-argon, dev-san313-opus, dev-san313-c2-opus, fab-san313-opus, redator-san313-opus, redator-san313c2-opus, inspetor-san313-opus, insp2-san313-pro, jurado-san313-c2-opus, jurado-san313-{c1,c2,c3}-sol, orquestrador. Interseção com {inspetor-san313c2-opus, jurado-san313-c1-opus, jurado-san313-c2b-opus, jurado-san313-c3-opus} = ∅; os 4 distintos entre si.
 - §C7.4-bis: achou jurado-san313-c2-opus (R l.4) ≠ auditou/planejou planejador-san313-c2-fable (plano l.459, Fable) ≠ desenvolveu dev-san313-c2-opus (dev.md l.235-237, Opus cobrindo o Codex Sol, declarado) ≠ julgam (4 nomes acima).
@@ -48,15 +48,15 @@ executor: subagente Claude Code genérico (o tipo `inspetor-de-terreno-da-junta`
 - saída: node_modules LinkType vazio (diretório real), frontend/node_modules ausente, .dart_tool diretório real; nenhum <JUNCTION>/<SYMLINK> → zero junction
 - comando: `docker ps -a` filtrando j13|san313|jur-|crit-|j13c2; vivos fora de `erp-*`
 - saída: 0 containers com esses radicais (vivos ou parados); 0 trabalhos fora de erp-*; 2 vivos `erp-*` (base viva, fora de alcance)
-- comando: `ls -d C:/Users/AMP/j13* C:/Users/AMP/erp-pausa-2026-10-03/j13*`; `git worktree list | grep j13|san313`
-- saída: nenhum C:/Users/AMP/j13*; só `erp-pausa-2026-10-03/j13-c2` e `j13-plan-c2` (sondas do ciclo 1 = roteiro P3, inertes, ficam); worktree único com o radical = w-san313
+- comando: `ls -d ~/j13* ~/erp-pausa-2026-10-03/j13*`; `git worktree list | grep j13|san313`
+- saída: nenhum ~/j13*; só `erp-pausa-2026-10-03/j13-c2` e `j13-plan-c2` (sondas do ciclo 1 = roteiro P3, inertes, ficam); worktree único com o radical = w-san313
 - comando: memória de commit livre (Win32_PerfFormattedData_PerfOS_Memory); `df -h /c`
 - saída: 13,71 GB livres (≥ 4); disco C: 9.9G livre (≥ 7, margem 2.9 GB)
 - comando: `netsh interface ipv4 show excludedportrange protocol=tcp` cruzado com 47613/47614/47633/47634; `netstat -ano | grep` nas mesmas
 - saída: 23 faixas reservadas, nenhuma contém as 4 candidatas; nenhuma escutando
 - comando: baseline `npm run check > arq 2>&1; ec=$?` no w-san313 (objeto, árvore limpa)
 - saída: ec=0 (`tsc -p tsconfig.json --noEmit`); Flutter: check-run `flutter` success nos 2 gatilhos do objeto (Item 1)
-- mandatos (lidos, linhas Terreno/Protocolo): C1 `C:/Users/AMP/j13c2-c1-wt` + `j13c2-c1-pg`/`-redis` em 127.0.0.1 (47613/47614); C2b `C:/Users/AMP/j13c2-c2-wt`, sem Docker (Drift em memória + SQLite na pasta própria); C3 `C:/Users/AMP/j13c2-c3-wt` + `j13c2-c3-pg`/`-redis` (47633/47634); `npm ci`/`flutter pub get` próprios, zero junction, remoção só por `git worktree remove --force`; base viva e 5432, 6379, 3000, 5173, 5050, 8899, 55432, 55313 proibidas; checagem de ≥4 GB, ≤2 trabalhos Docker, ≥7 GB antes de subir; P3 sucessor de identidade nova; Opus esgotado = PARE; uma cadeira por vez.
+- mandatos (lidos, linhas Terreno/Protocolo): C1 `~/j13c2-c1-wt` + `j13c2-c1-pg`/`-redis` em 127.0.0.1 (47613/47614); C2b `~/j13c2-c2-wt`, sem Docker (Drift em memória + SQLite na pasta própria); C3 `~/j13c2-c3-wt` + `j13c2-c3-pg`/`-redis` (47633/47634); `npm ci`/`flutter pub get` próprios, zero junction, remoção só por `git worktree remove --force`; base viva e 5432, 6379, 3000, 5173, 5050, 8899, 55432, 55313 proibidas; checagem de ≥4 GB, ≤2 trabalhos Docker, ≥7 GB antes de subir; P3 sucessor de identidade nova; Opus esgotado = PARE; uma cadeira por vez.
 - veredito parcial: Item 3 VERDE com ressalva R3 (margem de disco 2,9 GB: o worktree e os containers de cada cadeira saem antes da seguinte).
 
 ## Fechamento — 2026-10-25T20:28:34Z

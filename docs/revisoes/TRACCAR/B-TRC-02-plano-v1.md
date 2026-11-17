@@ -62,7 +62,7 @@
 | Testes do 01 | 15 suítes `tests/traccar-*.test.ts` (contagem estática de linhas `test(`: 7, 12, 9, 10, 18, 9, 3, 5, 13, 23, 7, 6, 9, 6, 1 = **138**); arnês `-db` (`createEphemeralRole`, `tests/helpers/auth-identity-fixture.ts:324-355`: papel `NOSUPERUSER NOBYPASSRLS`, limpeza escopada); `traccar-position-contract.test.ts:88-95` ("`attributes` é ignorado por inteiro"); `traccar-dev-topology.test.ts` (o que ele assere do overlay) | molde dos casos; o caso do 01 que **muda de enunciado** com este bloco (§6.4) |
 | CI | `.github/workflows/ci.yml` l.193-290 (`SUITES=` do `backend-postgres`; as 6 suítes `-db` do 01 em l.282-287; comentário "363/363" em l.282) | toda suíte `-db` nova entra na lista curada, medida 3× |
 | Contratos/docs | `API_CONTRACTS.md` l.72-100 (§2.1-bis); `docs/deployment.md` l.375-392 | onde a rota nova e as chaves de config entram |
-| Insumos de nível menor (conferidos, NÃO herdados) | `C:/Users/AMP/erp-pausa-2026-10-03/B-TRC-02-plano-api.md` (agente da API, Opus, 2026-10-11, ref `ca03638c`, **anterior ao código do 01**: "nada do B-TRC-01 existe ainda"); `PLANO-MADRUGADA-2026-10-19.md` (l.8-21: "plano do B-TRC-02 (Fable)", "pendência do login da demo") | boas ideias (recibo como idempotência da linha; CHECK alargado em duas migrações; mutações E-01..E-13) — **re-medidas aqui**; o que lá era HIPÓTESE sobre o 01 e sobre o fonte da tag é FATO ou HIPÓTESE com comando abaixo |
+| Insumos de nível menor (conferidos, NÃO herdados) | `~/erp-pausa-2026-10-03/B-TRC-02-plano-api.md` (agente da API, Opus, 2026-10-11, ref `ca03638c`, **anterior ao código do 01**: "nada do B-TRC-01 existe ainda"); `PLANO-MADRUGADA-2026-10-19.md` (l.8-21: "plano do B-TRC-02 (Fable)", "pendência do login da demo") | boas ideias (recibo como idempotência da linha; CHECK alargado em duas migrações; mutações E-01..E-13) — **re-medidas aqui**; o que lá era HIPÓTESE sobre o 01 e sobre o fonte da tag é FATO ou HIPÓTESE com comando abaixo |
 | Traccar 6.16.0 (fonte da tag) | `src/main/java/org/traccar/` → `forward/EventData.java`, `forward/EventForwarderJson.java`, `database/NotificationManager.java`, `model/{Event,Message,ExtendedModel,BaseModel,Position,Device}.java`, `session/ConnectionManager.java`, `handler/network/MainEventHandler.java`, `handler/events/{Ignition,Alarm,Motion,Overspeed,Base}EventHandler.java`, `ProcessingHandler.java`, `handler/PositionForwardingHandler.java`, `protocol/OsmAndProtocolDecoder.java`, `config/Keys.java`, `MainModule.java`, `schedule/{ScheduleManager,TaskSessionTimeout}.java` | os FATOS S-n de §0.2 |
 
 ### 0.2 FATOS medidos no código-fonte oficial da tag `v6.16.0` (novos; a pesquisa da PD só cobriu a posição)
@@ -594,7 +594,7 @@ qualquer outro bloco em voo (`w-*` alheios).
 | 3 | Carimbo `20260878000000` livre (H-8) | `git ls-tree -r --name-only origin/main prisma/migrations \| grep -c 20260878` → 0 |
 | 4 | A **fixture real de evento** foi capturada (H-1..H-7 fechadas) **antes** do contrato | `node scripts/traccar-capture-fixture.mjs --kind event` → 4 arquivos em `infra/traccar/fixtures/6.16.0/`; `B-TRC-02-evento-captura.md` com header names, `event.id`, datas, "2ª entrega: não" |
 | 5 | Baseline N executado (H-9) | 15 suítes do 01 + `tests/telemetry.test.ts` no container, `fail 0`, `skipped 0`, `# tests` publicado |
-| 6 | Disco ≥ 10 GB; no máximo **2 trabalhos** com Docker na máquina (`D-ATAQUE-AS-TRAVAS-17-10`); worktree próprio em caminho curto, `npm ci` próprio, sem junction | `df -h /c`; `docker ps`; `git worktree add C:/Users/AMP/w-trc02 -b feat/traccar-b-trc-02 origin/main` |
+| 6 | Disco ≥ 10 GB; no máximo **2 trabalhos** com Docker na máquina (`D-ATAQUE-AS-TRAVAS-17-10`); worktree próprio em caminho curto, `npm ci` próprio, sem junction | `df -h /c`; `docker ps`; `git worktree add ~/w-trc02 -b feat/traccar-b-trc-02 origin/main` |
 | 7 | As 3 perguntas de §9.3 ou foram respondidas em `decisoes.md`, ou o dev aplica a **recomendação** (nenhuma bloqueia) | `grep -n 'D-TRC02-' agent-orchestration/controle/decisoes.md` |
 
 ### 5.3 O achado da demo de 18/10 (login sem organização `inert_no_execute`) — NÃO é deste bloco
@@ -692,7 +692,7 @@ casa é "não mede", lição MUT-10/23/13 do 01).
 
 ### 6.6 Ordem de execução — testes primeiro (o dev registra comando → saída → veredito por passo em `B-TRC-02-dev.md`)
 
-0. **Gate e baseline** (§5.2): 7 linhas; N executado; `git worktree add C:/Users/AMP/w-trc02 -b feat/traccar-b-trc-02 origin/main`; `npm ci`
+0. **Gate e baseline** (§5.2): 7 linhas; N executado; `git worktree add ~/w-trc02 -b feat/traccar-b-trc-02 origin/main`; `npm ci`
    próprio; `npm run db:generate` com URL fictícia.
 1. **Comando do bloco** (`agent-orchestration/codex/comandos/B-TRC-02-traccar-eventos-e-telemetria.md`, molde do 01) e a cópia deste plano em
    `docs/revisoes/TRACCAR/B-TRC-02-plano.md`.
@@ -716,7 +716,7 @@ casa é "não mede", lição MUT-10/23/13 do 01).
 13. **Limpeza e PR** (§6.7 passos 9-11).
 
 ### 6.7 Bateria de validação exata (§9 do CLAUDE.md, padrão backend/raiz; o que é `-db` roda em container Linux próprio —
-`bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-trc02 "<comando>"`: Postgres 16 + Redis 7 descartáveis,
+`bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-trc02 "<comando>"`: Postgres 16 + Redis 7 descartáveis,
 `npm ci` e `migrate deploy` dentro, removidos pelo nome — **nunca** a base viva nem as portas 5432/6379/3000/5173/5050/8899)
 
 1. `timeout -k 15 600 npm run check` · `timeout -k 15 600 npm run lint`.
@@ -882,7 +882,7 @@ número de testes do 01, é a contagem da ata (executada) ou do `grep` (estátic
 
 **Limpeza:** nada a remover no repositório (nada foi criado lá). No scratchpad da sessão ficam `traccar-src/` (30 arquivos `.java` baixados
 da tag, ~0,3 MB — insumo de medição, apagável) e nenhum outro artefato. Este arquivo é a entrega, em
-`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`; o dev o copia para `docs/revisoes/TRACCAR/B-TRC-02-plano.md` no PR
+`~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`; o dev o copia para `docs/revisoes/TRACCAR/B-TRC-02-plano.md` no PR
 (§6.6 passo 1).
 
 **Estado: COMPLETO** (§0–§10 gravados; nenhuma seção `EM APURAÇÃO`). Critérios: **18** (C-01..C-18). Testes novos previstos: **73**

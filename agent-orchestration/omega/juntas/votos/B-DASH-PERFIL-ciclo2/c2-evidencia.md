@@ -3,7 +3,7 @@ executor efetivo: jurado-dash2-c2-opus (identidade NOVA) · Claude Code · model
 # Evidência — C2 (troca de organização) — B-DASH-PERFIL ciclo 2
 
 ## Legalidade (22:29Z)
-- cmd: `cat .../insp-dash2-parecer.md` → LIBERADO COM RESSALVA, emitido por inspetor-dash2b-opus, sucessor P3 declarado de inspetor-dash2-opus (R3 do disparo); nomeia C2 = jurado-dash2-c2-opus, Claude Code / Claude Opus, worktree C:/Users/AMP/w-jdash2-c2-*, cluster jdash2-c2-* só se precisar (sem banco). Objeto faad24ce, 14/14 check-runs success.
+- cmd: `cat .../insp-dash2-parecer.md` → LIBERADO COM RESSALVA, emitido por inspetor-dash2b-opus, sucessor P3 declarado de inspetor-dash2-opus (R3 do disparo); nomeia C2 = jurado-dash2-c2-opus, Claude Code / Claude Opus, worktree ~/w-jdash2-c2-*, cluster jdash2-c2-* só se precisar (sem banco). Objeto faad24ce, 14/14 check-runs success.
 - cmd: `git show faad24ce:<corpo>` (R1: corpo lido do OBJETO, não da sessão) · `diff` EOL-neutro dos dois espelhos → só cabeçalho Codex difere; corpo IDENTICO; também idêntico ao do objeto do ciclo 1 849bf840 (afee3f7f... nos dois).
 - cmd: `md5sum` cru e `tr -d '\r' | md5sum` do mandato → 9e9e46ff0cb189656368fc14940dc309 nos dois.
 - Plano do ciclo 2 (R-B-DASH-PERFIL-1), ata do ciclo 1 e relatório do dev: tratados como A RE-VERIFICAR, não como fato.
@@ -13,7 +13,7 @@ executor efetivo: jurado-dash2-c2-opus (identidade NOVA) · Claude Code · model
 ## Terreno (22:31Z–22:40Z)
 - Objeto por duas fontes: `git ls-remote origin refs/heads/fix/dash-perfil` → faad24ce7c00ab4d7610d0784c0beab8a479ddb0; `gh pr view 446` → headRefOid faad24ce…, OPEN, MERGEABLE. `git merge-base origin/main faad24ce` = B = bf83cda8a9acdc92f05f29397d1860bed9be5388 (= origin/main no fetch das 22:31Z; delta 0).
 - check-runs: `gh api .../commits/faad24ce.../check-runs` → 14 total, 0 fora de completed/success.
-- Worktree próprio: `git worktree add C:/Users/AMP/w-jdash2-c2-a faad24ce --detach` (prefixo w-jdash2-c2-), `npm ci` próprio em frontend/ (timeout 600 s; 103 pacotes), `dir /AL` → 0 junction. Sem banco, sem Docker (não subi contêiner nenhum; R4), sem navegador/porta (nenhuma porta aberta; 5432/6379/3000/5173/5050/8899 intocadas). Árvore C:/Users/AMP/w-dash não editada (só os 2 arquivos de saída desta cadeira).
+- Worktree próprio: `git worktree add ~/w-jdash2-c2-a faad24ce --detach` (prefixo w-jdash2-c2-), `npm ci` próprio em frontend/ (timeout 600 s; 103 pacotes), `dir /AL` → 0 junction. Sem banco, sem Docker (não subi contêiner nenhum; R4), sem navegador/porta (nenhuma porta aberta; 5432/6379/3000/5173/5050/8899 intocadas). Árvore ~/w-dash não editada (só os 2 arquivos de saída desta cadeira).
 - R2: o mandato desta cadeira NÃO manda executar mandato-refs.sh; não o rodei (refs medidas acima direto por git/gh).
 - Diff do bloco `git diff --stat B faad24ce -- frontend/src` → 9 arquivos de produto; os dois alvos das mutações: PermissionProvider.tsx (linha 25: `[...new Set(session?.user.permissions ?? [])]`, era união sessão+contexto na base) e repository.ts (`permissions = resolveFrontendPermissionsFromBackend(d.permissions)` no nextSession.user).
 
@@ -54,5 +54,5 @@ executor efetivo: jurado-dash2-c2-opus (identidade NOVA) · Claude Code · model
 
 ## Teardown (22:5xZ)
 - Antes de remover: `git status --short` no worktree → só as 3 sondas `?? frontend/tests/zz-jdash2-c2-*.test.tsx` (minhas); `git hash-object` = `git rev-parse faad24ce:` nos 4 arquivos mutados (PermissionProvider 8ab79873, repository 68a4804f, ContextSelectionPage e34d4cbd, landing-route b7882890) → IGUAL ×4.
-- `git worktree remove --force C:/Users/AMP/w-jdash2-c2-a` → ec 0; `ls C:/Users/AMP/w-jdash2*` → inexistente; `git worktree list | grep -c jdash2-c2` → 0. As sondas morreram com o worktree (fonte no histórico desta sessão; a de clique = `git show faad24ce:frontend/tests/work-orders-page-live.test.tsx | sed -n 1,364p` menos 6 imports de OS + o bloco "sonda C2" descrito no item 3).
-- Nenhum contêiner, rede, Vite, navegador ou porta criados; todos os comandos foram em primeiro plano com `timeout` (≤600 s); nenhum processo deixado. Árvore C:/Users/AMP/w-dash: só os 2 arquivos desta cadeira (c2-evidencia.md, c2-voto.json); não commitei. Scratch próprio: <scratch>/jdash2-c2/ (mut.mjs, fin.mts, fin.json, smoke-base.log, smoke-m3b.log, check-m3b.log).
+- `git worktree remove --force ~/w-jdash2-c2-a` → ec 0; `ls ~/w-jdash2*` → inexistente; `git worktree list | grep -c jdash2-c2` → 0. As sondas morreram com o worktree (fonte no histórico desta sessão; a de clique = `git show faad24ce:frontend/tests/work-orders-page-live.test.tsx | sed -n 1,364p` menos 6 imports de OS + o bloco "sonda C2" descrito no item 3).
+- Nenhum contêiner, rede, Vite, navegador ou porta criados; todos os comandos foram em primeiro plano com `timeout` (≤600 s); nenhum processo deixado. Árvore ~/w-dash: só os 2 arquivos desta cadeira (c2-evidencia.md, c2-voto.json); não commitei. Scratch próprio: <scratch>/jdash2-c2/ (mut.mjs, fin.mts, fin.json, smoke-base.log, smoke-m3b.log, check-m3b.log).

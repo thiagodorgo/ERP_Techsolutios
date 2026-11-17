@@ -5,7 +5,7 @@
 - **Executor:** `dev-19b-cl`, Claude Opus 5.5 (subagente, nível menor, declarado). O plano pedia Codex; exceção
   declarada (§C7 item 6 e 11(6)): Codex 1 sem cota semanal até 16/11, Codex 2 ocupado, API no limite do dia, Argon só
   como segundo revisor. A pré-revisão é de outro modelo.
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/plano-B-SAN3-19b-v2.md` (autor `replano-B-SAN3-19b-api`, Claude
+- **Plano:** `~/erp-pausa-2026-10-03/planos/plano-B-SAN3-19b-v2.md` (autor `replano-B-SAN3-19b-api`, Claude
   Opus 5.5 pela API, topo declarado), com a **Emenda 1** (requisitos da crítica r2, `revisoes/crit-19b-r2-plano.json`).
 - **Perguntas do dono (§9):** sem resposta ao começar; segue a recomendação (Pergunta 1 = A; Pergunta 2 abre
   `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO`).

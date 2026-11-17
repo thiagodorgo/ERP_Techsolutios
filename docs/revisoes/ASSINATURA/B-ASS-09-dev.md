@@ -13,11 +13,11 @@ DINHEIRO e de BANCO, junta completa.
 - **Banco:** Postgres 16 descartável próprio em `127.0.0.1:55561` (`initdb` com `timezone` e `log_timezone` em UTC antes do
   start). Nunca a base viva, a 5432 nem a 6379.
 
-## F0 — ramo `feat/ass-09-visao-custo` (worktree `C:/Users/thiag/w-ass09`)
+## F0 — ramo `feat/ass-09-visao-custo` (worktree `~/w-ass09`)
 
 | passo | comando | saída resumida | veredito |
 |---|---|---|---|
-| worktree | `git fetch origin` · `git worktree add -b feat/ass-09-visao-custo C:/Users/thiag/w-ass09 origin/main` | `HEAD is now at d29b3bef` (#558) | base = `origin/main` `d29b3bef3041a5e383885b01b28595817d7b15d5` |
+| worktree | `git fetch origin` · `git worktree add -b feat/ass-09-visao-custo ~/w-ass09 origin/main` | `HEAD is now at d29b3bef` (#558) | base = `origin/main` `d29b3bef3041a5e383885b01b28595817d7b15d5` |
 | `npm ci` | `npm ci` no worktree (sem junction) · `DATABASE_URL=…55561/erp_ass09 npm run db:generate` | `exit=0` · cliente gerado | terreno próprio |
 | baseline N (CI) | `gh run view 43530268818 --job 132245927735 --log` (job `backend` da `main` `d29b3bef`, evento `push`, `success`) e `grep -E '# (tests\|pass\|fail\|skipped)'` | `[run-backend-tests] 550 arquivo(s) · 5554 teste(s) · pass 5552 · fail 0 · skipped 2` · `# tests 5554 # pass 5552 # fail 0 # cancelled 0 # skipped 2` | **N (job `backend`) = 5554**, 0 falha, 2 pulos (os de sempre) |
 | baseline N (CI) | `gh run view 43530268818 --job 132245927975 --log` (job `backend-postgres`) | `# tests 621 # pass 621 # fail 0 # skipped 0` · `testes pulados: 0` | **N (job `backend-postgres`) = 621**, 0 pulo |
@@ -66,7 +66,7 @@ entre as duas entraram `5728df31` (#557, B-ASS-08c-wh) e `d29b3bef` (#558, B-SAN
   (§C7 item 11(6)), **cobrindo o braço, declarado**: as 3 contas Codex na junta J-555 a partir das 23:29 SP e o DeepSeek no
   pico e com pouco saldo. Não sou `dev-ass09-cl`, nem planejador, nem crítico do bloco. **A pré-revisão das F1, F2 e F3 passa a
   ser de outra casa (Codex ou DeepSeek).**
-- **Ramo:** `feat/ass-09-visao-custo`, worktree `C:/Users/thiag/w-ass09`, a partir de `2b5e0325` (F0). Sem banco.
+- **Ramo:** `feat/ass-09-visao-custo`, worktree `~/w-ass09`, a partir de `2b5e0325` (F0). Sem banco.
 - **Arquivos:** `src/modules/subscription-billing/overview/{overview-money.ts, overview.constants.ts, overview.types.ts,
   overview.engine.ts}`, `tests/ass-09-overview-money.test.ts`, `tests/ass-09-overview-engine.test.ts`.
 
@@ -288,7 +288,7 @@ em outubro.
 - **Dev:** `dev-ass09-f13-cl`, Claude Opus 5.5, **identidade de dev declarada** (§C7 item 11(6)), retomado pelo orquestrador em
   14/11 ~02:27 SP: a F6 era do braço e passou ao Claude (o dono, 13/11: só o Claude trabalha). Não sou planejador, crítico nem
   revisor do bloco. **Sem cruzamento entre modelos, declarado** (§C7 11(2)).
-- **Ramo:** `feat/ass-09-visao-custo`, worktree `C:/Users/thiag/w-ass09`, a partir de `1a3c7477` (J2), puxado por `--ff-only`.
+- **Ramo:** `feat/ass-09-visao-custo`, worktree `~/w-ass09`, a partir de `1a3c7477` (J2), puxado por `--ff-only`.
 - **Arquivos:** `overview/{overview.service.ts, overview.routes.ts, overview.factory.ts, overview.trail.ts, tenant-list.ts,
   tenant-list.prisma.ts}`, `fx-rates/fx-rates.routes.ts`, `economic-groups/economic-groups.routes.ts`,
   `subscription-billing.platform.routes.ts` (só montar os 3 routers), `platform-audit/audit-metadata.ts` (só as 8 chaves do
@@ -374,7 +374,7 @@ instantâneos são **gerados** por script, nunca escritos à mão, e **nenhum do
 - **Vermelho esperado até a emenda:** esses 2 arquivos no job `backend`, além do `san3-05-acessos-de-plataforma-guard` (dono F7, desde
   a F5) e do `san3-05-leituras-de-plataforma-db` (a superfície fechada, `-db`, dono F7).
 
-## F4 — ramo `feat/ass-09-banco` (worktree `C:/Users/thiag/w-ass09b`)
+## F4 — ramo `feat/ass-09-banco` (worktree `~/w-ass09b`)
 
 Base: `feat/ass-09-banco` nasce do head da F0 (`2b5e0325`), em worktree próprio com `npm ci` próprio (sem junction),
 `exit=0`. `git merge-base HEAD origin/main` = `d29b3bef`.
@@ -1112,7 +1112,7 @@ tabela do mapa"), como as extensões do 08b e do 08c1a fizeram. Fica para a emen
   está pronto em `dev-ass09-cl-tmp/pr-body.md`); a limpeza. A troca de `new PrismaPg(` por `createPgAdapter` espera o #554.
 - **Próximo comando, depois da emenda:** aplicar as 3 linhas pela emenda; depois
   `DATABASE_URL=… node --test --import tsx tests/ass-08-lock-order-db.test.ts`.
-- Cluster `pg-ass09` parado depois deste registro (pasta `C:/Users/thiag/pg-ass09`, `127.0.0.1:55561`, bases `erp_ass09` e `erp_ass09_ci` mantidas). Nenhum papel efêmero restante.
+- Cluster `pg-ass09` parado depois deste registro (pasta `~/pg-ass09`, `127.0.0.1:55561`, bases `erp_ass09` e `erp_ass09_ci` mantidas). Nenhum papel efêmero restante.
 
 ### Adendo à PARADA, 2026-11-14 10:41 UTC (07:41 SP): o CI no Linux mostra mais 2 censos e um ID repetido
 

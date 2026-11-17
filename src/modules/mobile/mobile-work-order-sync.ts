@@ -1,7 +1,15 @@
+import { createHash } from "node:crypto";
+
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { publicErrorMessage } from "../../infra/logging/public-error.js";
+import { createDefaultNotificationService, type NotificationService } from "../notifications/notification.service.js";
+import { createDefaultApprovalService, type ApprovalService } from "../work-orders/approval.service.js";
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
-import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
+import {
+  createDefaultWorkOrderService,
+  type FieldRequestOutcome,
+  type WorkOrderService,
+} from "../work-orders/work-order.service.js";
 import { isCheckinRefusal } from "../work-orders/work-order.checkin.js";
 import {
   ASSIGNMENT_CHANGED_CONFLICT_TYPE,
@@ -42,6 +50,20 @@ type MobileWorkOrderActionResult = {
   };
 };
 
+/**
+ * B-SAN3-16 — o que o lote usa além do serviço de OS, injetável nos testes (falha da fila de Aprovações). Padrão: os
+ * serviços de runtime. A rota (`mobile.routes.ts`) não muda.
+ */
+export type MobileWorkOrderSyncDeps = {
+  readonly approvals?: () => Promise<Pick<ApprovalService, "request">>;
+  readonly notifications?: () => Promise<Pick<NotificationService, "createNotification">>;
+};
+
+type ResolvedMobileWorkOrderSyncDeps = {
+  readonly approvals: () => Promise<Pick<ApprovalService, "request">>;
+  readonly notifications: () => Promise<Pick<NotificationService, "createNotification">>;
+};
+
 type MobileWorkOrderSyncReceipt = {
   readonly fingerprint: string;
   readonly result: MobileWorkOrderActionResult;
@@ -50,7 +72,7 @@ type MobileWorkOrderSyncReceipt = {
 export type MobileWorkOrderSyncResponse = {
   readonly contract: {
     readonly name: "mobile_work_order_actions_sync";
-    readonly version: "2026-07-07.d1";
+    readonly version: "2026-11-14.b-san3-16";
     readonly status: "implemented";
   };
   readonly client_batch_id: string | null;
@@ -71,15 +93,27 @@ export type MobileWorkOrderSyncResponse = {
 
 const MAX_BATCH_SIZE = 50;
 const syncReceipts = new Map<string, MobileWorkOrderSyncReceipt>();
+// B-SAN3-16 (item 5) — a permissão de cada pedido do técnico é a mesma da tela do app: o pedido de aprovação exige
+// `work_orders:update` (a Operação de Campo tem `:status` e não tem `:update`); o "não consegui iniciar" exige
+// `work_orders:status` (o mesmo botão do app). Nenhuma permissão nova; o catálogo e a RBAC_MATRIX não mudam.
+const APPROVAL_REQUEST_PERMISSION = "work_orders:update";
+const UNABLE_TO_START_PERMISSION = "work_orders:status";
+const APPROVAL_UNAVAILABLE_MESSAGE = "Não foi possível registrar o pedido de aprovação agora. O aplicativo tenta de novo.";
+const NOTICE_UNAVAILABLE_MESSAGE = "Não foi possível avisar quem despachou a OS agora. O aplicativo tenta de novo.";
 
 export async function syncMobileWorkOrderActions(
   actor: AuthenticatedActor | undefined,
   body: unknown,
   resolveService: () => Promise<WorkOrderService> = createDefaultWorkOrderService,
+  deps: MobileWorkOrderSyncDeps = {},
 ): Promise<MobileWorkOrderSyncResponse> {
   assertSyncActor(actor);
   const request = parseSyncRequest(body);
   const service = await resolveService();
+  const resolvedDeps: ResolvedMobileWorkOrderSyncDeps = {
+    approvals: deps.approvals ?? createDefaultApprovalService,
+    notifications: deps.notifications ?? createDefaultNotificationService,
+  };
   const accepted: MobileWorkOrderActionResult[] = [];
   const rejected: MobileWorkOrderActionResult[] = [];
   const conflicts: MobileWorkOrderActionResult[] = [];
@@ -103,7 +137,7 @@ export async function syncMobileWorkOrderActions(
       continue;
     }
 
-    const result = await processAction(service, actor, action);
+    const result = await processAction(service, actor, action, resolvedDeps);
 
     if (result.status === "accepted") {
       syncReceipts.set(receiptKey, {
@@ -125,7 +159,7 @@ export async function syncMobileWorkOrderActions(
   return {
     contract: {
       name: "mobile_work_order_actions_sync",
-      version: "2026-07-07.d1",
+      version: "2026-11-14.b-san3-16",
       status: "implemented",
     },
     client_batch_id: request.client_batch_id,
@@ -216,6 +250,7 @@ async function processAction(
   service: WorkOrderService,
   actor: AuthenticatedActor,
   action: MobileWorkOrderAction,
+  deps: ResolvedMobileWorkOrderSyncDeps,
 ): Promise<MobileWorkOrderActionResult> {
   try {
     if (action.type === "work_order.create") {
@@ -267,6 +302,40 @@ async function processAction(
       return acceptedResult(action, workOrder);
     }
 
+    // B-SAN3-16 (item 5, P2) — os dois pedidos do técnico: a permissão da ação, e o resto (escopo por objeto antes do
+    // corpo, repetição durável, validação, OS terminal, evento) em `recordFieldRequest`. O status da OS não muda.
+    if (action.type === "work_order.approval_request") {
+      requireActionPermission(actor, action, APPROVAL_REQUEST_PERMISSION);
+      const outcome = await service.recordFieldRequest(
+        actor,
+        parseRequiredString(action.payload.work_order_id, "work_order_id"),
+        "approval_request",
+        action.payload,
+        action.client_action_id,
+        {
+          openApproval: (workOrder, reason) =>
+            openFieldApproval(deps, actor, workOrder, action.client_action_id, reason),
+        },
+      );
+
+      return acceptedResult(action, outcome.workOrder);
+    }
+
+    if (action.type === "work_order.unable_to_start") {
+      requireActionPermission(actor, action, UNABLE_TO_START_PERMISSION);
+      const outcome = await service.recordFieldRequest(
+        actor,
+        parseRequiredString(action.payload.work_order_id, "work_order_id"),
+        "unable_to_start",
+        action.payload,
+        action.client_action_id,
+      );
+      // P8 (P2 = B) — chamado com o evento novo E no reenvio que achou o evento: a chave do aviso é durável.
+      await notifyDispatcher(deps, actor, action, outcome);
+
+      return acceptedResult(action, outcome.workOrder);
+    }
+
     if (action.type !== "work_order.status_change") {
       throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
     }
@@ -289,6 +358,80 @@ async function processAction(
     return acceptedResult(action, workOrder);
   } catch (error) {
     return actionErrorResult(action, error);
+  }
+}
+
+// B-SAN3-16 (Emenda 1.1 §2.3) — a identidade do pedido do técnico na fila de Aprovações: própria, determinística e
+// opaca (43 caracteres), da MESMA tripla da repetição durável do evento (OS + usuário + `client_action_id`). Com ela,
+// o pedido do técnico e a aprovação de conclusão da mesma OS são DUAS pendências (a fila funde por `entity_id`), e o
+// reenvio cai na mesma pendência. O tipo de entidade continua `work_order` (um tipo novo quebraria a tela da web).
+function fieldApprovalEntityId(workOrderId: string, userId: string, clientActionId: string): string {
+  const digest = createHash("sha256")
+    .update(`${workOrderId}\n${userId}\n${clientActionId}`)
+    .digest("hex");
+  return `pedido-app:${digest.slice(0, 32)}`;
+}
+
+// B-SAN3-16 (Emenda 1.1 §2.4) — a fila de Aprovações é chamada ANTES do evento, pela porta pública (o item 67 a torna
+// durável sem editar esta regra). Falha da fila → 503 `approval_unavailable`, com mensagem fixa (o texto do erro
+// nunca sai): o app reenvia, e a chave determinística devolve a pendência que já existir.
+async function openFieldApproval(
+  deps: ResolvedMobileWorkOrderSyncDeps,
+  actor: AuthenticatedActor,
+  workOrder: WorkOrder,
+  clientActionId: string,
+  reason: string,
+): Promise<string> {
+  try {
+    const approvals = await deps.approvals();
+    const approval = await approvals.request({
+      tenantId: actor.tenantId,
+      entityType: "work_order",
+      entityId: fieldApprovalEntityId(workOrder.id, actor.userId, clientActionId),
+      workOrderId: workOrder.id,
+      requestedByUserId: actor.userId,
+      pendingReason: reason,
+    });
+    return approval.id;
+  } catch {
+    throw routeError(503, "SERVICE_UNAVAILABLE", "approval_unavailable", APPROVAL_UNAVAILABLE_MESSAGE);
+  }
+}
+
+// B-SAN3-16 (P8, P2 = B) — o "não consegui iniciar" avisa no sino quem atribuiu a OS por último (o serviço de OS o
+// lê na linha do tempo da própria OS, na organização do ator; nunca do corpo). Sem esse ator, fica só o registro na OS.
+// A chave de repetição é durável (`tenant_id + recipient_user_id + idempotency_key`): o reenvio não duplica. A falha do
+// aviso NÃO some em silêncio: a ação sai 503 `notification_unavailable`, o app reenvia, o evento não duplica (a
+// repetição durável o acha) e o aviso é tentado de novo. A observação livre não vai no aviso (Q7), só o motivo da lista.
+function unableToStartNoticeKey(workOrderId: string, userId: string, clientActionId: string): string {
+  return `work_order_unable_to_start:${workOrderId}:${userId}:${clientActionId}`;
+}
+
+async function notifyDispatcher(
+  deps: ResolvedMobileWorkOrderSyncDeps,
+  actor: AuthenticatedActor,
+  action: MobileWorkOrderAction,
+  outcome: FieldRequestOutcome,
+): Promise<void> {
+  const { workOrder, dispatcherUserId, reason } = outcome;
+  if (!dispatcherUserId) return;
+  try {
+    const notifications = await deps.notifications();
+    await notifications.createNotification({
+      tenantId: actor.tenantId,
+      recipientUserId: dispatcherUserId,
+      type: "work_order.unable_to_start",
+      title: "Não foi possível iniciar a OS",
+      message: `O técnico informou que não foi possível iniciar a OS ${workOrder.code}: ${reason}.`,
+      severity: "warning",
+      sourceType: "work_order",
+      sourceId: workOrder.id,
+      actionUrl: `/work-orders/${workOrder.id}`,
+      idempotencyKey: unableToStartNoticeKey(workOrder.id, actor.userId, action.client_action_id),
+      metadata: { workOrderId: workOrder.id, reason },
+    });
+  } catch {
+    throw routeError(503, "SERVICE_UNAVAILABLE", "notification_unavailable", NOTICE_UNAVAILABLE_MESSAGE);
   }
 }
 
@@ -318,7 +461,7 @@ async function assertExpectedTechnician(
 function requireActionPermission(
   actor: AuthenticatedActor,
   action: MobileWorkOrderAction,
-  permission: "work_orders:create" | "work_orders:assign" | "work_orders:status",
+  permission: "work_orders:create" | "work_orders:assign" | "work_orders:status" | "work_orders:update",
 ): void {
   if (actor.permissions.includes(permission)) {
     return;

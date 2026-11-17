@@ -66,6 +66,6 @@
   "REDIS_URL=redis://127.0.0.1:56402 (contêiner j-bsan301-c1-redis, redis:7-alpine) — npm test e e2e",
   "E2E_API_PORT=3401 · E2E_FRONTEND_PORT=5401 (livres antes, fora das faixas excluídas)"
  ],
- "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C1-validador-mestre-evidencia.md",
+ "evidencia": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C1-validador-mestre-evidencia.md",
  "limpeza": "FEITA 2026-09-18: git worktree remove --force .claude/worktrees/j-bsan301-c1 (ec=0; worktree list sem j-bsan301-c1; node_modules, test-results, playwright-report, frontend/dist e a copia _jc1-copia.spec.ts sairam com ele); docker rm -f j-bsan301-c1-pg j-bsan301-c1-redis (ec=0; docker ps -a sem j-bsan301-c1); portas 3401/5401 sem listener; bsan301 intocado (status vazio, HEAD 74f3f7c9); nada escrito na arvore principal nem na base viva; logs de evidencia ficam no scratchpad (c1-backend-bb540fb3.log, c1-honest-*.tap, c1-g1-*.tap, c1-e2e/, c1-censo/, c1-indice-regen/)."
 }

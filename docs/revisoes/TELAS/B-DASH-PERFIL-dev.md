@@ -8,19 +8,19 @@
 
 ### Passo 1 — preparar a ref e o worktree
 
-- **Comando:** `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch origin`.
+- **Comando:** `git -C ~/Documents/GitHub/ERP_Techsolutios fetch origin`.
 - **Saída resumida:** `exit 0`; refs remotas atualizadas sem mensagem de erro.
 - **Veredito parcial:** APROVADO.
 - **Comando:** `git ... worktree list --porcelain` e `git ... branch --list fix/dash-perfil`.
-- **Saída resumida:** `C:/Users/AMP/w-dash` e o ramo ainda não existiam; worktrees de Traccar apenas observados, não tocados.
+- **Saída resumida:** `~/w-dash` e o ramo ainda não existiam; worktrees de Traccar apenas observados, não tocados.
 - **Veredito parcial:** APROVADO.
-- **Comando:** `git ... worktree add -b fix/dash-perfil C:/Users/AMP/w-dash origin/main`.
+- **Comando:** `git ... worktree add -b fix/dash-perfil ~/w-dash origin/main`.
 - **Saída resumida:** worktree próprio criado; ramo rastreia `origin/main`; HEAD inicial `af89abbb`.
 - **Veredito parcial:** APROVADO.
 
 ### Passo 2 — contratos e skills
 
-- **Comando:** leitura integral, em `C:/Users/AMP/w-dash`, de `CLAUDE.md` (870 linhas), `PROJECT_MEMORY.md` (235 linhas), `.agents/skills/ts-frontend-full/SKILL.md` (125 linhas) e `.agents/skills/ui-ux-pro-max/SKILL.md` (171 linhas).
+- **Comando:** leitura integral, em `~/w-dash`, de `CLAUDE.md` (870 linhas), `PROJECT_MEMORY.md` (235 linhas), `.agents/skills/ts-frontend-full/SKILL.md` (125 linhas) e `.agents/skills/ui-ux-pro-max/SKILL.md` (171 linhas).
 - **Saída resumida:** confirmados o escopo por bloco, KPI congelado, tela-modelo existente, backend como autoridade, nível menor GPT-5.6 Sol, validação padrão e uso obrigatório das duas skills.
 - **Veredito parcial:** APROVADO. `ts-frontend-full` regerá tipagem/camadas/testes; `ui-ux-pro-max` regerá RBAC visual, foco, teclado e preservação do design system.
 
@@ -75,10 +75,10 @@
 
 ### Passo C2-1 — contrato, skills, fetch e terreno herdado
 
-- **Comando:** leitura integral de `CLAUDE.md` e das skills `.agents/skills/{ts-frontend-full,ui-ux-pro-max}/SKILL.md`; `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch origin`.
+- **Comando:** leitura integral de `CLAUDE.md` e das skills `.agents/skills/{ts-frontend-full,ui-ux-pro-max}/SKILL.md`; `git -C ~/Documents/GitHub/ERP_Techsolutios fetch origin`.
 - **Saída resumida:** leituras concluídas; `fetch` terminou com exit 0. Confirmados KPI congelado, tela-modelo existente, validação completa e proibição de dependência/estilo/arquitetura nova.
 - **Veredito parcial:** APROVADO. As duas skills regem implementação e revisão deste bloco.
-- **Comando:** inspeção read-only de `C:/Users/AMP/w-dash` com `branch --show-current`, `rev-parse HEAD`, `status --short` e `worktree list --porcelain`.
+- **Comando:** inspeção read-only de `~/w-dash` com `branch --show-current`, `rev-parse HEAD`, `status --short` e `worktree list --porcelain`.
 - **Saída resumida:** worktree existente no ramo correto `fix/dash-perfil`, HEAD `af89abbbbb11ca34cdb74ceb3ad6916d5ce6e7a8`; 9 arquivos rastreados modificados e 2 untracked (`landing-route.ts` e este relatório). Worktrees de Traccar apenas listados, não tocados.
 - **Veredito parcial:** APROVADO para prosseguir. O diff herdado ainda não é aceito como fato; cada arquivo será confrontado com plano/crítica.
 
@@ -150,10 +150,10 @@
 - **Comando:** reexecução verde no worktree do bloco: root `node --test --import tsx` com os 4 arquivos backend/contrato; frontend direto com 3 arquivos.
 - **Saída resumida:** root **17/17**; frontend **31/31**. Os 13 casos novos estão incluídos: 4 rota/perfil + 3 active-tenant + 1 forma Prisma + 4 comportamento frontend + 1 fila memória.
 - **Veredito parcial:** VERDE.
-- **Comando:** criação de `C:/Users/AMP/w-dash-mut` detached em `af89abbb`, cópia explícita apenas dos arquivos necessários e cinco mutações independentes, cada uma restaurada da fonte antes da seguinte.
+- **Comando:** criação de `~/w-dash-mut` detached em `af89abbb`, cópia explícita apenas dos arquivos necessários e cinco mutações independentes, cada uma restaurada da fonte antes da seguinte.
 - **Saída resumida:** (1) Financeiro→Dashboard: `dashboard-profile-permissions` ficou **2/4 vermelho**; (2) remoção de `permissions` do active-tenant: `auth-active-tenant-permissions` ficou **1/3 vermelho**; (3) status apenas no ramo vencido do Prisma: `dashboard-prisma-repository` ficou **1/1 vermelho**; (4) permissão mutada de Nova OS: `dashboard-profile-behavior` ficou **1/4 vermelho**; (5) remoção do guard terminal em memória: caso filtrado ficou **1/1 vermelho**. Uma tentativa inicial do primeiro controle usou caminho Windows sem `file://` e falhou no loader; foi descartada e repetida corretamente.
 - **Veredito parcial:** VERMELHOS-CONTROLE COMPROVADOS para cada arquivo novo/alterado de teste do plano.
-- **Comando:** restauração por cópia, comparação SHA-256 dos 5 alvos mutados contra o worktree do bloco e `git worktree remove --force C:/Users/AMP/w-dash-mut` após `Resolve-Path` confirmar o alvo exato.
+- **Comando:** restauração por cópia, comparação SHA-256 dos 5 alvos mutados contra o worktree do bloco e `git worktree remove --force ~/w-dash-mut` após `Resolve-Path` confirmar o alvo exato.
 - **Saída resumida:** 5/5 hashes iguais antes da remoção; worktree descartável removido. Nenhuma mutação ficou no ramo do bloco.
 - **Veredito parcial:** LIMPO.
 
@@ -162,7 +162,7 @@
 - **Comando:** `docker ps --format '{{.Names}}'`.
 - **Saída resumida:** somente `erp-postgres` e `erp-redis` (base viva apenas observada, nunca usada); zero grupos de outros trabalhos em Docker, portanto dentro do limite para iniciar um container próprio.
 - **Veredito parcial:** TERRENO LIBERADO.
-- **Comando:** `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-dash "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"`.
+- **Comando:** `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-dash "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"`.
 - **Saída resumida:** bloqueado antes de executar qualquer teste: imagem local `erp-teste-linux:1` ausente; Docker tentou resolver a imagem e recebeu `pull access denied`; helper encerrou `ec=125`. Nenhuma porta foi publicada e a base viva não foi tocada.
 - **Veredito parcial:** **BLOQUEADO POR INFRAESTRUTURA**. Pela ordem expressa “se algo for barrado, PARE e relate, sem contornar”, não foi tentado build manual da imagem, outro container, Windows como substituto, nem o restante da bateria.
 
@@ -172,7 +172,7 @@
 - Testes-alvo locais válidos: root **17/17** e frontend **31/31**; 5 grupos de vermelho-controle comprovados em cópia descartável e restaurados.
 - Checks já concluídos: `npm run check` verde; `npm --prefix frontend run check` verde.
 - Bateria obrigatória **incompleta**: o primeiro alvo Linux executou **0 testes** (`ec=125`, imagem ausente). Não iniciados por parada obrigatória: `npm run lint`, `npm test` Linux, `npm run build`, frontend `build`/`test:smoke`, regressões nominais restantes, sync checks, escopo final e `git diff --check` final.
-- Próximo comando exato após o orquestrador restaurar/prover a imagem local `erp-teste-linux:1`: `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-dash "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"`.
+- Próximo comando exato após o orquestrador restaurar/prover a imagem local `erp-teste-linux:1`: `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-dash "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"`.
 
 ## SUCESSÃO — dev-b-dash-perfil-gemini
 Assumi o trabalho. Encontrei um erro crítico do Codex: ele havia sobrescrito \rontend/src/modules/auth/auth.adapter.ts\ com código backend do express. Reverti os arquivos de auth para o HEAD, mas mantive as correções na fila do dashboard (\dashboard-prisma.repository.ts\ e \dashboard.repository.ts\) que estavam corretas.
@@ -223,7 +223,7 @@ ode --test --import tsx tests/operator-profiles.smoke.test.tsx\ (após a injeç�
 
 > **Identidade:** `dev-b-dash-perfil-opus` (identidade NOVA). **Modelo:** Claude Opus, nível menor (§C7.6), DECLARADO.
 > **Por que Opus e não uma IA externa:** o Gemini atingiu o teto mensal da API e o Codex está ocupado — regra do dono `D-IAS-EXTERNAS-PRIMEIRO` (Claude só cobre quando as externas estão esgotadas ou ocupadas).
-> **Mandato:** fechar a bateria sem mexer em código de produto. Worktree `C:/Users/AMP/w-dash`, ramo `fix/dash-perfil`, head `af89abbb` + mudanças não commitadas. `origin/main` medida = `a26f8afe`.
+> **Mandato:** fechar a bateria sem mexer em código de produto. Worktree `~/w-dash`, ramo `fix/dash-perfil`, head `af89abbb` + mudanças não commitadas. `origin/main` medida = `a26f8afe`.
 > `node_modules` e `frontend/node_modules` conferidos como diretórios reais (`dir /AL` não lista junction nem symlink).
 
 | # | Comando | Estado |
@@ -259,6 +259,6 @@ Todos os 13 arquivos modificados têm diff real ignorando CR (`git diff --ignore
 - Novos: `docs/revisoes/TELAS/B-DASH-PERFIL-dev.md` · `frontend/src/modules/context/landing-route.ts` · `frontend/tests/dashboard-profile-behavior.test.tsx` · `tests/auth-active-tenant-permissions.test.ts` · `tests/dashboard-prisma-repository.test.ts` · `tests/dashboard-profile-permissions.test.ts`
 
 ### Limpeza
-- Removido `frontend/dist` (gerado pelo build). O `frontend/tsconfig.tsbuildinfo` foi reescrito pelo `tsc -b`; é gitignored e regenerável, e ficou. Os logs estão só na minha subpasta do scratchpad: `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/dev-b-dash-perfil-opus/` (`fe-check.log`, `fe-build.log`, `fe-smoke.log`, `db-generate.log`, `root-check.log`, `root-lint.log`). Sem commit, push, stash, clean ou reset. Nenhum acesso à base viva nem às portas proibidas.
+- Removido `frontend/dist` (gerado pelo build). O `frontend/tsconfig.tsbuildinfo` foi reescrito pelo `tsc -b`; é gitignored e regenerável, e ficou. Os logs estão só na minha subpasta do scratchpad: `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/dev-b-dash-perfil-opus/` (`fe-check.log`, `fe-build.log`, `fe-smoke.log`, `db-generate.log`, `root-check.log`, `root-lint.log`). Sem commit, push, stash, clean ou reset. Nenhum acesso à base viva nem às portas proibidas.
 
 **Veredito do fechamento:** a bateria **NÃO fecha**. Check e build do frontend, check e lint da raiz e `git diff --check` estão verdes. O `test:smoke` está **vermelho: 68/1327 falhas causadas pelo bloco** (a `main` dá 1327/1327). Parei sem consertar, como o mandato manda.

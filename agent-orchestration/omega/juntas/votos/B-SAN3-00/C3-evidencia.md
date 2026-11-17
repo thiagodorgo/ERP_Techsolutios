@@ -23,11 +23,11 @@ Provo a participacao **por execucao**, nao por releitura do meu proprio texto �
 ## M-0. Terreno proprio (isolamento) — MEDIDO
 
 ```
-git worktree add --detach C:/Users/AMP/w-j-san300-c3 7822deaf   -> ec=0
-git -C <repo> worktree list | grep c3 -> C:/Users/AMP/w-j-san300-c3   7822deaf (detached HEAD)
+git worktree add --detach ~/w-j-san300-c3 7822deaf   -> ec=0
+git -C <repo> worktree list | grep c3 -> ~/w-j-san300-c3   7822deaf (detached HEAD)
 ```
-**O caminho que SAIU e o caminho pedido** (`C:/Users/AMP/w-j-san300-c3`) — nao houve a resolucao para
-`C:/c/Users/...` que o briefing avisou ter ocorrido em outra cadeira desta rodada. Conferido por
+**O caminho que SAIU e o caminho pedido** (`~/w-j-san300-c3`) — nao houve a resolucao para
+`C:/c/...` que o briefing avisou ter ocorrido em outra cadeira desta rodada. Conferido por
 `worktree list`, nao pela string que passei.
 
 ```
@@ -39,8 +39,8 @@ gh pr view 392 --json headRefOid,mergeStateStatus,mergeable,state
 O head do PR **e** o objeto. `npm ci` PROPRIO na raiz (ec=0) e no `frontend/` (ec=0).
 **Sem junction**, conferido por execucao:
 ```
-fsutil reparsepoint query C:\Users\AMP\w-j-san300-c3\node_modules           -> "nao e um ponto de nova analise"
-fsutil reparsepoint query C:\Users\AMP\w-j-san300-c3\frontend\node_modules  -> "nao e um ponto de nova analise"
+fsutil reparsepoint query ~/w-j-san300-c3\node_modules           -> "nao e um ponto de nova analise"
+fsutil reparsepoint query ~/w-j-san300-c3\frontend\node_modules  -> "nao e um ponto de nova analise"
 ```
 **Nao ha `.env` no meu worktree** (`ls -la .env` -> *No such file or directory*) — logo `DATABASE_URL`
 e `REDIS_URL` so podem vir do ambiente que eu exportei. Isto fecha **por construcao** a possibilidade
@@ -481,15 +481,15 @@ como o inspetor escreveu.
 
 # LIMPEZA (§C5) — o que criei e o que derrubei, pelo nome
 
-- **Criei:** o worktree detached `C:/Users/AMP/w-j-san300-c3` (`npm ci` proprio na raiz **e** no
+- **Criei:** o worktree detached `~/w-j-san300-c3` (`npm ci` proprio na raiz **e** no
   `frontend/`, client Prisma gerado, banco `erp_c3`) e os conteineres **`j-san300-c3-pg`** e
   **`j-san300-c3-redis`**.
 - **Derrubei, PELO NOME** (identificador desta cadeira, nunca por wildcard nem por nome de papel):
 ```
 docker rm -f j-san300-c3-pg j-san300-c3-redis            -> ec=0 (os dois)
 docker ps -a | grep j-san300-c3                          -> (vazio)
-git -C <repo> worktree remove --force C:/Users/AMP/w-j-san300-c3 -> ec=0
-ls C:/Users/AMP/w-j-san300-c3                            -> No such file or directory
+git -C <repo> worktree remove --force ~/w-j-san300-c3 -> ec=0
+ls ~/w-j-san300-c3                            -> No such file or directory
 ```
 - **Antes de remover, conferi que a minha arvore estava limpa** (`git status --porcelain -uall`
   vazio) — o controle vermelho do M-7(a) e a regeneracao do indice do M-3 foram **restaurados**,
@@ -501,8 +501,8 @@ ls C:/Users/AMP/w-j-san300-c3                            -> No such file or dire
   arvore alheia nenhuma. O unico `git checkout --` que rodei foi dentro do **meu** worktree.
 - **A arvore do dev (`san300`) segue em `7822deaf`** e os worktrees alheios seguem intactos.
 - **Residuo de OUTRAS sessoes, que eu REPORTO e nao varro:** entre o inicio e o fim da minha medicao
-  o `git worktree list` mudou sozinho — `C:/Users/AMP/w-s1` e `.claude/worktrees/sanb1` sairam e
-  apareceu `C:/Users/AMP/w-port391` (detached `b8cd22df`); a arvore principal segue em
+  o `git worktree list` mudou sozinho — `~/w-s1` e `.claude/worktrees/sanb1` sairam e
+  apareceu `~/w-port391` (detached `b8cd22df`); a arvore principal segue em
   `demo/investidor@d1fab3bc` com mutacao viva de outra sessao. **Nada disso toca o objeto julgado** —
   eu li `7822deaf` no meu proprio checkout.
 - **Logs brutos deixados no scratchpad, FORA da pasta de votos:** `c3-npmci-root.txt`,

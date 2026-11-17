@@ -16,8 +16,8 @@ Troca de executor: `inspetor-dash-cdx`, Codex GPT-5.6 Sol, esforço médio, nív
 
 Nenhum.
 
-Plano obrigatório: C1 usa `C:/Users/AMP/w-jdash-c1-cdx` + `jdash-c1-cdx-*`; C2 usa `C:/Users/AMP/w-jdash-c2-gemini` + `jdash-c2-gemini-*`; C3 usa `C:/Users/AMP/w-jdash-c3-cdx-b` + `jdash-c3-cdx-b-*`. Cada cadeira executa `npm ci` próprio, nunca junction/symlink, não publica portas e não toca a base viva nem 5432/6379/3000/5173/5050/8899. Disparo: C1+C2; C3 só após um deles encerrar e limpar, mantendo no máximo dois trabalhos. P3/P6 regem perda de jurado; unanimidade de 3 com veto.
+Plano obrigatório: C1 usa `~/w-jdash-c1-cdx` + `jdash-c1-cdx-*`; C2 usa `~/w-jdash-c2-gemini` + `jdash-c2-gemini-*`; C3 usa `~/w-jdash-c3-cdx-b` + `jdash-c3-cdx-b-*`. Cada cadeira executa `npm ci` próprio, nunca junction/symlink, não publica portas e não toca a base viva nem 5432/6379/3000/5173/5050/8899. Disparo: C1+C2; C3 só após um deles encerrar e limpar, mantendo no máximo dois trabalhos. P3/P6 regem perda de jurado; unanimidade de 3 com veto.
 
 ## Limpeza
 
-`C:/Users/AMP/w-idash` removido por `git worktree remove --force` (`ec=0`) e confirmado ausente; zero `w-idash`/`w-jdash-*` e zero container `jdash-*`. Nenhum container/rede/volume foi criado.
+`~/w-idash` removido por `git worktree remove --force` (`ec=0`) e confirmado ausente; zero `w-idash`/`w-jdash-*` e zero container `jdash-*`. Nenhum container/rede/volume foi criado.

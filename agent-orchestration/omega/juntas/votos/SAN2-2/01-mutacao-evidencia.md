@@ -11,10 +11,10 @@
 Mutação **não** aconteceu na árvore da junta. Worktree próprio, descartável, criado por mim:
 
 ```
-$ git worktree add --detach /c/Users/AMP/AppData/Local/Temp/c1w c8dc716
+$ git worktree add --detach ~/AppData/Local/Temp/c1w c8dc716
 Preparing worktree (detached HEAD c8dc716)
 HEAD is now at c8dc716 docs(junta): briefing da junta do SAN2-2 ...
-$ git -C /c/Users/AMP/AppData/Local/Temp/c1w rev-parse HEAD
+$ git -C ~/AppData/Local/Temp/c1w rev-parse HEAD
 c8dc716e9b4ffa014783289fdab484da07858d67
 $ git -C ... status --short      # (vazio — árvore limpa)
 ```

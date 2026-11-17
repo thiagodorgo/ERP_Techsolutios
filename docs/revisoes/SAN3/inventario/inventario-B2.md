@@ -1,7 +1,7 @@
 # Inventario balde B (processo/registro) — linhas 51..99 — fatia B2
 
 - head medido: `15ef3fbed57e217b66e6b307f9ae96502777fd09` (main, "fix(cloud-usage): ... (B-O6R-06) (#385)", 2026-09-11 05:10:50 -0300)
-- worktree: C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco (SOMENTE LEITURA)
+- worktree: ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco (SOMENTE LEITURA)
 - inventariante: sessao 3ad1b87d (rodada 2 da fatia; a 1a morreu sem medir)
 - data: 2026-09-11
 

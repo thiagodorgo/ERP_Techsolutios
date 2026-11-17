@@ -66,4 +66,4 @@
 - Decisão do dono registrada no bloco: `D-SAN3-13-SCOPE-ASSIGNED` (Q1–Q5, E1 "Só as abertas", E2).
 
 ## Nota de registro (orquestrador)
-O `git diff --check` acusou espaço no fim de linha em saídas coladas dentro de mandatos e evidências. Os originais foram arquivados, com md5, em `C:/Users/AMP/erp-pausa-2026-10-03/arquivo-mandatos-san313/` (`md5-originais.txt`). Nas cópias versionadas só se tirou o espaço do fim das linhas, com o mesmo procedimento do #454. O conteúdo medido não mudou.
+O `git diff --check` acusou espaço no fim de linha em saídas coladas dentro de mandatos e evidências. Os originais foram arquivados, com md5, em `~/erp-pausa-2026-10-03/arquivo-mandatos-san313/` (`md5-originais.txt`). Nas cópias versionadas só se tirou o espaço do fim das linhas, com o mesmo procedimento do #454. O conteúdo medido não mudou.

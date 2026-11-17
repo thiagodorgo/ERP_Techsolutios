@@ -3,7 +3,7 @@ porteiro-pos-merge · modelo Fable (claude-fable-5-1, o do frontmatter; sem fall
 # PORTEIRO-398 — parecer pós-merge do PR #398 (registro puro do #397, B-GOV-PAUSA)
 
 Parecer incremental (P1/P2: esqueleto primeiro, cada item gravado ao ser medido). Horas em UTC.
-Ambiente: Git Bash (MINGW64) no Windows do dono; medição em worktree próprio detached `C:/Users/AMP/w-port398`;
+Ambiente: Git Bash (MINGW64) no Windows do dono; medição em worktree próprio detached `~/w-port398`;
 `MSYS_NO_PATHCONV` nunca exportada (o `git show ref:path` foi mangled pela conversão — medi por `ls-tree` + `cat-file` do blob);
 base viva 5432/6379 não é alvo; nada escrito no repositório.
 
@@ -74,7 +74,7 @@ O #398 não tocou código nem teste; o que ele declara de executável é "`kpi-f
 - Disco: `Get-PSDrive C` → **18,31 GB livres** (219,2 GB usados) — acima dos ~10 GB; `DEEP_CLEAN=1` não é devido agora.
 - **ACHADO (declaração do orquestrador, não do PR):** o mandato diz que `post-merge-cleanup.sh` não rodou "porque o docker volume prune derrubaria o cluster de KPI de um dev vivo do PR 393". Lido o script em `5bcdcc58`: Docker só aparece sob `DEEP_CLEAN=1` (l.64–79: `docker image prune -af`, `docker volume prune -f`), e o próprio comentário l.71 diz "NÃO derruba container em execução" (`volume prune` só remove volume sem contêiner). O **modo padrão** (l.30–59) remove build artifacts, apaga branches locais mergeadas e faz `git remote prune` — nada de Docker. A razão declarada não existe no modo padrão. Os efeitos do §C5 foram obtidos à mão (medidos acima), então o custo hoje é zero — mas declaração que cita um mecanismo que o script não tem é a classe "promessa que o código não cumpre" que este gate existe para apontar. Ressalva: corrigir a razão no registro (`docs/registro-398`) ou, no próximo merge, rodar o script no modo padrão; a única razão real para não rodá-lo é a já pendente `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` (o `find .` desce em `.claude/worktrees/`).
 - **Terreno (pré-existente, não varrido — não é meu):** 55 `??` na árvore principal: 31 corpos em `.claude/agents/especialistas/`, 22 em `.agents/agents/especialistas/`, `agent-orchestration/omega/juntas/TEMPLATE-J-ata.md` (3178 B, 7/set) e `results.txt` na raiz (24 B, 19/set, "BASELINE5 ec=1 07:58:33" — resíduo de medição). Nenhum veio do #398 (stat: 8 arquivos, todos rastreados). O orquestrador decide o destino; registro aqui para não sumir em silêncio.
-- **Limpeza do próprio porteiro:** `git worktree remove --force /c/Users/AMP/w-port398` ec=0, diretório ausente, `git worktree prune`, `git worktree list | grep -c w-port398` → 0 (16 worktrees restantes, os mesmos de antes). Nada escrito no repositório: o único arquivo mutado foi `pendencias-indice.md` dentro do meu worktree (pelo gerador, para comparar) e foi restaurado antes da remoção (`git status --porcelain` → 0 linhas).
+- **Limpeza do próprio porteiro:** `git worktree remove --force ~/w-port398` ec=0, diretório ausente, `git worktree prune`, `git worktree list | grep -c w-port398` → 0 (16 worktrees restantes, os mesmos de antes). Nada escrito no repositório: o único arquivo mutado foi `pendencias-indice.md` dentro do meu worktree (pelo gerador, para comparar) e foi restaurado antes da remoção (`git status --porcelain` → 0 linhas).
 
 ## 8. O próximo bloco pode começar? — 2026-10-01T21:45Z — SIM
 

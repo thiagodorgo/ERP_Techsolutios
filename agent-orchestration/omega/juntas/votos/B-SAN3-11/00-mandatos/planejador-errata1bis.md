@@ -33,27 +33,27 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o planejador-mestre da errata 1 do B-SAN3-11 (PR 401), a MESMA identidade planejador-errata1-b-san3-11, agora para a errata
   1-bis; o Fable e obrigatorio porque o fluxo voltou ao planejador depois de correcao de codigo (secao C7 item 6 do contrato); esgotado o
   Fable, Opus com a substituicao declarada; esgotado o Opus, para; declara na 1a linha do arquivo de saida o papel, a identidade, o modelo
-  e o mandato_md5 deste arquivo derruba com: `head -1 C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md | grep -ic 'mandato_md5'`
+  e o mandato_md5 deste arquivo derruba com: `head -1 ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md | grep -ic 'mandato_md5'`
 
-O insumo e a evidencia do dev da errata em C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-ERRATA1-401.md (secao 9, a divergencia, e a secao PARADA), lida como relatorio de quem
+O insumo e a evidencia do dev da errata em ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-ERRATA1-401.md (secao 9, a divergencia, e a secao PARADA), lida como relatorio de quem
   executou e nunca como fato: D1 (com teto, o Node preenche error ETIMEDOUT e signal SIGTERM com status nulo, e a forma de referencia testa
   error antes de status nulo, logo o criterio A17 que cobra a mensagem morto por sinal nao e alcancavel) e D2 (a regex NULL da varredura
   casa a linha de retorno da propria forma de referencia por causa do coalescimento do stdout, logo NULL=0 do A18 nao e alcancavel; e EOL
-  da 3, nao 2) sao re-medidas pelo planejador por execucao propria, com comando e saida colados derruba com: `grep -ic 'ETIMEDOUT' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md`
+  da 3, nao 2) sao re-medidas pelo planejador por execucao propria, com comando e saida colados derruba com: `grep -ic 'ETIMEDOUT' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md`
 
 A errata 1-bis decide, por propriedade e com a mutacao que deixa cada criterio vermelho, se muda a forma ou o criterio em cada caso
   (A17, A18 e o total esperado da varredura), sem escopo novo e sem afrouxar a P-A nem a P-B; e o texto vai pronto para o orquestrador
-  apensar verbatim ao plano docs/revisoes/SAN3/B-SAN3-11-plano.md como subsecao da secao 15 derruba com: `grep -ic 'A17' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md`
+  apensar verbatim ao plano docs/revisoes/SAN3/B-SAN3-11-plano.md como subsecao da secao 15 derruba com: `grep -ic 'A17' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md`
 
 A errata 1-bis diz ao dev o que vale do que ele ja commitou localmente (o merge da main, o E6 e E7, a recontagem do KPI e a secao do
   relatorio) e a ordem do que falta (o A17 de novo, os controles A19 a A21, a bateria da secao 15.8 nos dois terrenos, a varredura final,
   o registro e o push); e decide o destino da observacao do dev sobre o indice de pendencias que nao foi regenerado no commit original
-  do bloco (dentro ou fora do escopo, com dono) derruba com: `grep -ic 'pendencias-indice' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md`
+  do bloco (dentro ou fora do escopo, com dono) derruba com: `grep -ic 'pendencias-indice' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md`
 
-O terreno e as regras: o worktree do dev C:/Users/AMP/w-dev11 e so leitura (nunca mutado); se precisar executar, worktree proprio detached
-  C:/Users/AMP/w-pl11b, removido pelo nome ao fim com 0 processo vivo; o planejador nao desenvolve, nao commita e nao vota; escreve so C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md,
+O terreno e as regras: o worktree do dev ~/w-dev11 e so leitura (nunca mutado); se precisar executar, worktree proprio detached
+  ~/w-pl11b, removido pelo nome ao fim com 0 processo vivo; o planejador nao desenvolve, nao commita e nao vota; escreve so ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md,
   incremental com a hora UTC (P1), mensagem final de 1 linha (P2); nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo que
-  executa; base viva nunca alvo; sob PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'medido por' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md`
+  executa; base viva nunca alvo; sob PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'medido por' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/ERRATA-1bis-B-SAN3-11.md`
 
 ## MEDIDO
 
@@ -61,7 +61,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-19: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/planejador-errata1bis.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/planejador-errata1bis.md
 ec=0
 head=508240fb1bc84528c5ce34bb506fada13b7ca178
 utc=2026-10-02T16:13:10Z

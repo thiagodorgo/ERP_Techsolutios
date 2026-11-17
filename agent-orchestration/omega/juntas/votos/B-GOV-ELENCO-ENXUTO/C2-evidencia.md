@@ -36,7 +36,7 @@ agent-orchestration/omega/juntas/votos/B-GOV-ELENCO-ENXUTO/00-inspetor.md
 ## Sandbox da mutação
 
 Cópia isolada e descartável em
-`C:/Users/AMP/AppData/Local/Temp/claude/.../scratchpad/c2-copia` — caminho que **Windows e Git Bash
+`~/AppData/Local/Temp/claude/.../scratchpad/c2-copia` — caminho que **Windows e Git Bash
 enxergam** (a armadilha do `mktemp -d` do briefing foi evitada de propósito). Copiados: `scripts/`,
 `.claude/agents`, `.claude/skills`, `.agents/agents`, `.agents/skills`. A cópia **não é repositório git**
 (sem `--ref`, o auditor lê o disco por `fs`; `git` nunca é invocado). Cada caso: aplica → **relê do disco e

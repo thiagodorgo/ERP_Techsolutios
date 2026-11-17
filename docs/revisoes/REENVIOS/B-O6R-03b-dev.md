@@ -3,7 +3,7 @@
 - Autor/dev: `dev-o6r03b-codex` — Codex, GPT-5.6 Sol, esforço medium, identidade exclusiva de desenvolvimento.
 - Plano: Claude (`B-REENVIOS-plano.md`). Verificação prevista: Claude e/ou DeepSeek; este dev não julga a própria entrega.
 - Base: `origin/main@4cd1889dbbe0d35780649b81de86522d7539c409`; ramo `fix/mobile-rdv-sync`.
-- PREMISSA FALSA (ambiente): `C:/Users/AMP/w-o6r03b` não pôde ser criado — comando `mkdir -p /c/Users/AMP` — saída `Permission denied`; continuidade isolada em `C:/Users/thiag/w-o6r03b`, sem junction.
+- PREMISSA FALSA (ambiente): `~/w-o6r03b` não pôde ser criado — comando `mkdir -p ~` — saída `Permission denied`; continuidade isolada em `~/w-o6r03b`, sem junction.
 
 ## B-F0 — terreno
 
@@ -56,13 +56,13 @@ PRONTO PARA REVISÃO — PR #520
 ## CONSERTO J-520 (ciclo 1)
 
 - **Papéis (§C7.4-bis):** achou = C2 (Claude Opus 4.8); planejou = auditor de topo (Claude Opus 5.5); desenvolve = DeepSeek (`deepseek-v4-pro`, dev original, declarado); confere = Claude em identidade nova. Cruzamento de modelo (`D-UM-FAZ-OUTRO-VERIFICA`). Este dev só implementa o plano; não julga o achado.
-- **Plano (autoridade):** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-O6R-03b-conserto-c1.md` (499 linhas). Sondas re-executáveis em `B-O6R-03b-conserto-c1-sondas/`.
+- **Plano (autoridade):** `~/erp-pausa-2026-10-03/planos/B-O6R-03b-conserto-c1.md` (499 linhas). Sondas re-executáveis em `B-O6R-03b-conserto-c1-sondas/`.
 - **F1/F2/500 (mesma causa):** o `catch` de `_sendChunk` do `DioExpenseSyncBatchApi` virava qualquer status com `error.reason` em `ExpenseSyncDomainError`, antes de `mapDioError`; o backend põe `reason` em todo erro da rota (503 `sync_busy`, 500 e 403 de sessão). Correção: a classe do status decide antes do `reason` (`_isExpenseDomainRefusal`: 4xx que não seja 401/403/408/429). 503 volta a `pending` sem custo; 500→`failed`+1; 401/403→`SESSION_FORBIDDEN`; 408/429→`failed`+1; 400/404/409/422 com `reason`→conflito por código (sem mudança).
 - **C3-F1:** `Entre de novo e use Minha versao.` → `Entre de novo e use Minha versão.`
 
 ## RETOMADA k0 — main
 
-- `git merge origin/main` no worktree `C:/Users/thiag/w-o6r03b` (HEAD `f63c8bb6` → merge `aae29e51`). Conflito só em `pendencias-indice.md`; `checkout --theirs` + `python agent-orchestration/controle/gerar-indice-pendencias.py`; união conferida de blob a blob (`comm -23` ×2 vazios, `origin/main` e `f63c8bb6` × HEAD); `git diff --quiet -- pendencias-indice.md` rc 0.
+- `git merge origin/main` no worktree `~/w-o6r03b` (HEAD `f63c8bb6` → merge `aae29e51`). Conflito só em `pendencias-indice.md`; `checkout --theirs` + `python agent-orchestration/controle/gerar-indice-pendencias.py`; união conferida de blob a blob (`comm -23` ×2 vazios, `origin/main` e `f63c8bb6` × HEAD); `git diff --quiet -- pendencias-indice.md` rc 0.
 
 ## RETOMADA k1 — vermelho-controle
 

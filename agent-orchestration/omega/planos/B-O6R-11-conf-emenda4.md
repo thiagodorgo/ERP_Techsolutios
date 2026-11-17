@@ -2,7 +2,7 @@
 
 > **Papel:** `conf-emenda4-o6r11`, identidade nova; não escreveu a emenda, o plano nem o código. **Modelo que rodou:** Opus (claude-opus-5-5), declarado.
 > **Refs medidas (§A7), depois de `git fetch origin`:** `origin/main` `0fda595a`; `origin/fix/mobile-fila-duravel-b-o6r-11` `19e18e15`.
-> **Sonda:** clone próprio `C:/Users/AMP/s-cf4/r` (`git clone --shared`, esparso em `mobile/flutter_app`, sem tocar worktree alheio). Nela apliquei D1 a D7 ao pé da letra e reescrevi os testes a partir do texto da emenda. Sem Docker, sem base viva, sem porta. Flutter local 3.41.6. Removida ao fim; o log das mutações ficou em `revisoes/conf-emenda4-o6r11-mutacoes.log`.
+> **Sonda:** clone próprio `~/s-cf4/r` (`git clone --shared`, esparso em `mobile/flutter_app`, sem tocar worktree alheio). Nela apliquei D1 a D7 ao pé da letra e reescrevi os testes a partir do texto da emenda. Sem Docker, sem base viva, sem porta. Flutter local 3.41.6. Removida ao fim; o log das mutações ficou em `revisoes/conf-emenda4-o6r11-mutacoes.log`.
 > **Regra da VOLTA, do mandato:** só se o dev errar ou o técnico perder dado. Quem acha não propõe conserto (§C7.4-bis): aqui só defeito, comando e motivo.
 
 ## Evidência incremental (P1)
@@ -30,7 +30,7 @@
 | C.19 | sonda: `_resolveStalled` sem reler (usa `action` em vez de `fresh`) | w4 **verde**, w5/w6 **verdes** | ver R3 |
 | C.20 | head puro: cenário de p1 com `MockExpenseSyncBatchApi(results: const [])` | `failed r=1 MISSING_RESULT`; `failed r=3 MISSING_RESULT` | vermelho-controle executável confere |
 | C.21 | sonda: `git diff 0fda595a --stat -- sync_replay_service.dart`; `grep '^@@'` | `+12 −0`; hunks l.127 e l.145 | "≈ +14" e "≤ l.250" conferem |
-| C.22 | `rm -rf C:/Users/AMP/s-cf4`; `git status --short`; disco; memória | sonda removida; 3 não rastreados que já estavam; 23 GB; memória livre mínima medida 7,3 GB | limpo, acima dos pisos |
+| C.22 | `rm -rf ~/s-cf4`; `git status --short`; disco; memória | sonda removida; 3 não rastreados que já estavam; 23 GB; memória livre mínima medida 7,3 GB | limpo, acima dos pisos |
 
 ## (1) Despesa vira erro ou cartão de Descartar com o canal desligado?
 

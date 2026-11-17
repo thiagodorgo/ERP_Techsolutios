@@ -94,18 +94,18 @@ void main() {
     test('1. Guincho tem 6 rotulos na ordem correta', () {
       final labels = workOrderStepLabels(WorkOrderServiceType.tow);
       expect(labels, [
-        'Inicio',
+        'Início',
         'Rota coleta',
         'Coleta',
         'Rota entrega',
         'Entrega',
-        'Conclusao',
+        'Conclusão',
       ]);
     });
 
     test('2. Prestador tem 4 rotulos na ordem correta', () {
       final labels = workOrderStepLabels(WorkOrderServiceType.provider);
-      expect(labels, ['Inicio', 'Rota', 'Atendimento', 'Conclusao']);
+      expect(labels, ['Início', 'Rota', 'Atendimento', 'Conclusão']);
     });
 
     test('3. serviceType null usa fluxo de prestador (4 passos)', () {

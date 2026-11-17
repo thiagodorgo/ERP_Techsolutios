@@ -7,7 +7,7 @@
   "quorum": "MAIORIA de 3",
   "identidade": "NOVA",
   "muta": true,
-  "worktree_proprio": "C:/Users/AMP/AppData/Local/Temp/c2wt (detached 5256b49) — criado por git worktree add a partir de .claude/worktrees/san2-r; SEM junction de node_modules; remocao por git worktree remove --force ao final",
+  "worktree_proprio": "~/AppData/Local/Temp/c2wt (detached 5256b49) — criado por git worktree add a partir de .claude/worktrees/san2-r; SEM junction de node_modules; remocao por git worktree remove --force ao final",
   "veredito": "APROVADO",
   "itens": [
     {
@@ -44,7 +44,7 @@
         "merge_base": "git merge-base main 5256b49 = df496d2 = main — a branch NAO esta atras; o ... nao esconde mudanca da main",
         "universo_do_diff": "17 arquivos, TODOS de registro/governanca: 8 corpos em .claude/agents/especialistas (+357..+413, todos /0) · Kpis/app.js 1/1 · kpis-history 14/2 · kpis-latest 13/13 · pendencias.md 100/0 · porteiro #366 153/0 · 2 diarios do dev 769/0 e 408/0 · plano do c5 442/0 · SAN2-5-plano.md 517/0 (novo)",
         "arvore_do_worktree": "git rev-parse HEAD = 5256b49...; git diff --exit-code ec=0; git status --porcelain = 0 linhas",
-        "vermelho_controle": "MUTEI 6 alvos (um por caminho julgado) no MEU worktree C:/Users/AMP/AppData/Local/Temp/c2wt, sem commit: src/app.ts, tests/audit-security.test.ts, prisma/schema.prisma, .github/workflows/ci.yml, CLAUDE.md, AGENTS.md. Mesmo comando => ec=1, numstat 2/0 nos SEIS, patch 2773 bytes. AS 6 PERNAS ACUSARAM.",
+        "vermelho_controle": "MUTEI 6 alvos (um por caminho julgado) no MEU worktree ~/AppData/Local/Temp/c2wt, sem commit: src/app.ts, tests/audit-security.test.ts, prisma/schema.prisma, .github/workflows/ci.yml, CLAUDE.md, AGENTS.md. Mesmo comando => ec=1, numstat 2/0 nos SEIS, patch 2773 bytes. AS 6 PERNAS ACUSARAM.",
         "restauro": "git checkout -- <os 6> => ec=0 de novo, porcelain 0 linhas, HEAD nao moveu (5256b49)",
         "observacao_fora_do_item": "Kpis/app.js muda 1 linha, so a var FROZEN (fallback congelado de file:// que o D-KPI-INDEX-PAINEL manda existir e rotular). Nenhuma logica do painel muda. Fora dos 6 caminhos julgados; o merito e da cadeira C3."
       }
@@ -95,5 +95,5 @@
     "Observacao estrutural (nao achado): sendo append-only por contrato, a l.134 do plano segue literalmente PROIBIDO sem marcador in-loco. Mitigado nos 3 pontos de entrada; e o custo da regra §A2, nao defeito deste bloco.",
     "Nao julguei o merito do KPI (Kpis/app.js 1/1, kpis-latest 13/13, kpis-history 14/2) — e da cadeira C3."
   ],
-  "limpeza": "worktree proprio C:/Users/AMP/AppData/Local/Temp/c2wt removido por git worktree remove --force; lista de worktrees conferida de volta ao estado anterior. Nenhuma junction/symlink de node_modules criada. Nenhum commit. erp-postgres/erp-redis nao tocados (nem para leitura)."
+  "limpeza": "worktree proprio ~/AppData/Local/Temp/c2wt removido por git worktree remove --force; lista de worktrees conferida de volta ao estado anterior. Nenhuma junction/symlink de node_modules criada. Nenhum commit. erp-postgres/erp-redis nao tocados (nem para leitura)."
 }

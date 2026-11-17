@@ -12,11 +12,11 @@ executor=jurado-san320-c1-opus (Claude Code, subagente do orquestrador) · model
 - Independência: não li votos/evidências de C2/C3.
 
 ## Terreno próprio (~00:02Z)
-- `git worktree add --detach C:/Users/AMP/w-jsan320-c1 a0f5aabc…` → HEAD is now at a0f5aabc. `npm ci` → added 326 packages; `ls -la node_modules` → diretório comum (`drwxr-xr-x`), sem junction. `npm run db:generate` sem DATABASE_URL → PrismaConfigEnvError; com `DATABASE_URL=postgresql://x:y@127.0.0.1:1/x` (só para gerar, sem conexão) → cliente gerado.
+- `git worktree add --detach ~/w-jsan320-c1 a0f5aabc…` → HEAD is now at a0f5aabc. `npm ci` → added 326 packages; `ls -la node_modules` → diretório comum (`drwxr-xr-x`), sem junction. `npm run db:generate` sem DATABASE_URL → PrismaConfigEnvError; com `DATABASE_URL=postgresql://x:y@127.0.0.1:1/x` (só para gerar, sem conexão) → cliente gerado.
 - `node --test --import tsx tests/cheque-title-link.test.ts tests/financial-entry-undo-owners.test.ts` → tests 44 · pass 44 · fail 0 · skipped 0 (38 + 6).
 
 ## Sonda própria em memória/HTTP (Itens 1, 2 e 3 — parte sem banco)
-- Comando: `cd C:/Users/AMP/w-jsan320-c1 && CORE_SAAS_PERSISTENCE=memory node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/jsan320-c1/probe-mem.mts` (createApp real, HTTP em 127.0.0.1:0).
+- Comando: `cd ~/w-jsan320-c1 && CORE_SAAS_PERSISTENCE=memory node --import tsx ~/erp-pausa-2026-10-03/jsan320-c1/probe-mem.mts` (createApp real, HTTP em 127.0.0.1:0).
 - Saída: `RESUMO: 35/35 OK, 0 FAIL` (ec=0). Linhas-chave:
   - K2 receivable/payable × título 100/300 com cheque 100: clear 200, 1 lançamento `check`/`cheque_clearing`/`title_id=t`, `clearedEntryId` presente, paid 100, status paid/partially_paid, saldo ±100.
   - K2 fail-closed: `title_already_paid` (pix depois do vínculo), `title_cancelled` (PATCH status cancelled), `overpayment` (pix 50 + cheque 100 em título 100), `404 title_not_found` (DELETE do título): cheque `deposited`, `clearedEntryId` null, zero lançamento novo, título intocado.
@@ -35,7 +35,7 @@ executor=jurado-san320-c1-opus (Claude Code, subagente do orquestrador) · model
 - Suítes `-db` do bloco, 2 execuções: `npm test -- tests/cheque-title-link-atomic-db.test.ts tests/financial-title-status-cas-db.test.ts` (prisma) → `2 arquivo(s) · 24 teste(s) · pass 24 · fail 0 · skipped 0` nas duas (15 + 9; T-K2d, T-K2e, T-K5×2, T-K10a/b/c/e, T-K11a/b/c/h incluídos).
 
 ## Sonda própria no Postgres (Itens 1, 2 e 3)
-- Comando: `DATABASE_URL=<jsan320-c1-pg> CORE_SAAS_PERSISTENCE=prisma node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/jsan320-c1/probe-db.mts` (serviços de produto sobre Prisma; a sonda recusa rodar fora da porta 55461).
+- Comando: `DATABASE_URL=<jsan320-c1-pg> CORE_SAAS_PERSISTENCE=prisma node --import tsx ~/erp-pausa-2026-10-03/jsan320-c1/probe-db.mts` (serviços de produto sobre Prisma; a sonda recusa rodar fora da porta 55461).
 - 1ª execução: 20/22 — as 2 barreiras próprias deram P2028 (tx interativa 5 s expirada) porque eu observava `pg_stat_activity` de dentro da transação do segurador (snapshot de estatística congelado). Defeito da MINHA sonda, não do produto; corrigido com conexão-monitor separada (`c1-mon`).
 - Execução final: `RESUMO: 22/22 OK, 0 FAIL`. Linhas-chave:
   - K2-db receivable/payable × título 100/300: 1 lançamento `check`/`cheque_clearing`/`title_id=t`, `cheques.cleared_entry_id` = id desse lançamento, paid 100, paid/partially_paid, saldo (`entrySvc.balance`) ±100.
@@ -50,7 +50,7 @@ executor=jurado-san320-c1-opus (Claude Code, subagente do orquestrador) · model
 - Veredito parcial: Postgres VERDE em K2, K3, RR9, K4, K5, K6, RR1(i) e RR1(iv).
 
 ## Vermelho-controle (Itens 1, 2 e 3) — 18 mutações, uma por vez, no worktree próprio
-- Mecanismo: `PYTHONIOENCODING=utf-8 python C:/Users/AMP/erp-pausa-2026-10-03/jsan320-c1/mutar.py` (âncora única por `count == 1`, EOL preservado; roda o comando; `git checkout -- <arquivo>`; `git hash-object` == `git rev-parse <objeto>:<arquivo>`; `git status --short -- src` vazio). Saída crua: `C:/Users/AMP/erp-pausa-2026-10-03/jsan320-c1/mutacoes.jsonl`. 1ª rodada abortou após M6 por erro de `print` cp1252 do MEU script (registro de M6 íntegro, restauro ok); rodada completa refeita do zero. Memória = `CORE_SAAS_PERSISTENCE=memory npm test -- tests/cheque-title-link.test.ts`; DB = `DATABASE_URL=<jsan320-c1-pg> CORE_SAAS_PERSISTENCE=prisma npm test -- <suíte>`.
+- Mecanismo: `PYTHONIOENCODING=utf-8 python ~/erp-pausa-2026-10-03/jsan320-c1/mutar.py` (âncora única por `count == 1`, EOL preservado; roda o comando; `git checkout -- <arquivo>`; `git hash-object` == `git rev-parse <objeto>:<arquivo>`; `git status --short -- src` vazio). Saída crua: `~/erp-pausa-2026-10-03/jsan320-c1/mutacoes.jsonl`. 1ª rodada abortou após M6 por erro de `print` cp1252 do MEU script (registro de M6 íntegro, restauro ok); rodada completa refeita do zero. Memória = `CORE_SAAS_PERSISTENCE=memory npm test -- tests/cheque-title-link.test.ts`; DB = `DATABASE_URL=<jsan320-c1-pg> CORE_SAAS_PERSISTENCE=prisma npm test -- <suíte>`.
 - Item 1:
   - M6 (lançamento do clear sem titleId) → mem `38 · pass 35 · fail 3` (#10 K2, #35/#36 K5) · probe-mem `25/35, 10 FAIL` (K2 ×4, K5 ×4…). VERMELHO.
   - M7 (sem applyPaymentGuarded) → mem `pass 29 · fail 9` (#10–#12 K2, #15–#16 K3…). VERMELHO.
@@ -72,7 +72,7 @@ executor=jurado-san320-c1-opus (Claude Code, subagente do orquestrador) · model
 - Item 3:
   - M17 (title_settlement antes de cheque_link) → mem `pass 37 · fail 1` (#23 K6, pelo `reason`) · probe-mem `34/35` (K6 DELETE). VERMELHO.
   - M18 (cheque_link fora da ordem) → `npm run check` ec 2: `financial-entry-undo-owners.ts(220,14): error TS2322: Type 'true' is not assignable to type 'never'`. VERMELHO.
-- Restauro: 18/18 `restore_hash_ok: true`, `src_clean: true`; M-C1b refeita à parte para ver a saída: restauro `59a0c7913a4f` = blob. `git -C C:/Users/AMP/w-jsan320-c1 status --short` → vazio.
+- Restauro: 18/18 `restore_hash_ok: true`, `src_clean: true`; M-C1b refeita à parte para ver a saída: restauro `59a0c7913a4f` = blob. `git -C ~/w-jsan320-c1 status --short` → vazio.
 - Veredito parcial: vermelho-controle completo nos 3 itens (16 mutações do mandato + 2 novas); M8 equivalente em memória e morta no Postgres, como declarado.
 
 ## Leituras (Itens 2 e 3)
@@ -83,8 +83,8 @@ executor=jurado-san320-c1-opus (Claude Code, subagente do orquestrador) · model
 
 ## Teardown
 - `docker rm -f jsan320-c1-pg` → removido; `docker ps -a | grep -c jsan320-c1` → 0. Base viva (erp-postgres/erp-redis) e `jt2c2-*` não tocadas.
-- `git -C <worktree> status --short` → 0 linhas (nenhuma mutação viva); `git worktree remove --force C:/Users/AMP/w-jsan320-c1` → removido; `worktree list | grep -c jsan320` → 0. Disco: 12G livres.
-- Sondas e saída crua preservadas fora do repo: `C:/Users/AMP/erp-pausa-2026-10-03/jsan320-c1/` (probe-mem.mts, probe-db.mts, mutar.py, mutacoes.jsonl, mutar.log). Nenhum commit; no repositório escrevi só `cadeira-c1-evidencia.md` e `cadeira-c1-voto.json`.
+- `git -C <worktree> status --short` → 0 linhas (nenhuma mutação viva); `git worktree remove --force ~/w-jsan320-c1` → removido; `worktree list | grep -c jsan320` → 0. Disco: 12G livres.
+- Sondas e saída crua preservadas fora do repo: `~/erp-pausa-2026-10-03/jsan320-c1/` (probe-mem.mts, probe-db.mts, mutar.py, mutacoes.jsonl, mutar.log). Nenhum commit; no repositório escrevi só `cadeira-c1-evidencia.md` e `cadeira-c1-voto.json`.
 
 ## Veredito
 - Itens 1, 2 e 3 medidos por execução própria (memória/HTTP e Postgres 16 próprio), com vermelho-controle completo. Nenhum achado `bloqueia`. Achados `nota` no voto. **VOTO: APROVADO.**

@@ -13,7 +13,7 @@
 ## §0 — BASELINE medido ANTES de tocar em qualquer arquivo
 
 Todos os comandos abaixo rodaram de dentro de
-`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r`, no head `e545e64`,
+`~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r`, no head `e545e64`,
 **antes** da primeira edição.
 
 ### 0.1 Estado do git
@@ -325,7 +325,7 @@ disfarçada de inserção. Nenhuma linha de massa no diff (o hunk tem 8 linhas d
 ### 4.4 INCIDENTE — eu editei o arquivo da ÁRVORE PRINCIPAL por engano, e desfiz
 
 **Declaro porque aconteceu, não porque foi pego.** Ao aplicar esta edição, passei à ferramenta `Edit` o
-caminho `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.agents\agents\README.md` — a **árvore principal**
+caminho `~/Documents\GitHub\ERP_Techsolutios\.agents\agents\README.md` — a **árvore principal**
 (`demo/investidor`, que tem mutação viva e que o meu mandato manda **não tocar**) — em vez do caminho do
 worktree `.claude/worktrees/san2-r/`. A edição foi aplicada lá.
 
@@ -336,7 +336,7 @@ worktree `.claude/worktrees/san2-r/`. A edição foi aplicada lá.
 **Prova de que a árvore principal ficou sem trace:**
 
 ```
-$ cd /c/Users/AMP/Documents/GitHub/ERP_Techsolutios
+$ cd ~/Documents/GitHub/ERP_Techsolutios
 $ git status --porcelain -- .agents/agents/README.md
 (vazio)
 $ git diff --numstat -- .agents/agents/README.md

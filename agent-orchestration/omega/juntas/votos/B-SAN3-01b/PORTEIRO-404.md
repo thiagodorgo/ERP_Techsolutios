@@ -169,7 +169,7 @@ Veredito parcial: ec=0
 
 ## Terreno isolado — 2026-10-03T16:33:30.465592+00:00
 
-Comando / medido por: git worktree add --detach C:/Users/AMP/w-port404 origin/main
+Comando / medido por: git worktree add --detach ~/w-port404 origin/main
 
 Saída resumida:
 Preparing worktree (detached HEAD b404815c)
@@ -184,7 +184,7 @@ Veredito parcial: ec=0
 Comando / medido por: git show b404815c:agent-orchestration/omega/juntas/votos/B-SAN3-01b/PORTEIRO-403.md; hashlib.md5/read_bytes origem declarada
 
 Saída resumida:
-{"source": "C:\\Users\\AMP\\AppData\\Local\\Temp\\claude\\c--Users-AMP-Documents-GitHub-ERP-Techsolutios\\3ad1b87d-fdbf-41f2-b085-1068e01c5d64\\scratchpad\\PORTEIRO-403.md", "exists": true, "blob_bytes": 22600, "blob_raw_md5": "34bb418f026b79a74a27d8e731a490c6", "source_raw_md5": "34bb418f026b79a74a27d8e731a490c6", "raw_equal": true, "eol_equal": true}
+{"source": "~/AppData\\Local\\Temp\\claude\\c--Users-~-Documents-GitHub-ERP-Techsolutios\\3ad1b87d-fdbf-41f2-b085-1068e01c5d64\\scratchpad\\PORTEIRO-403.md", "exists": true, "blob_bytes": 22600, "blob_raw_md5": "34bb418f026b79a74a27d8e731a490c6", "source_raw_md5": "34bb418f026b79a74a27d8e731a490c6", "raw_equal": true, "eol_equal": true}
 
 Veredito parcial: CONFERE
 
@@ -193,7 +193,7 @@ Veredito parcial: CONFERE
 Comando / medido por: git show b404815c:agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/PORTEIRO-399.md; hashlib.md5/read_bytes origem declarada
 
 Saída resumida:
-{"source": "C:\\Users\\AMP\\AppData\\Local\\Temp\\claude\\c--Users-AMP-Documents-GitHub-ERP-Techsolutios\\3ad1b87d-fdbf-41f2-b085-1068e01c5d64\\scratchpad\\PORTEIRO-399.md", "exists": true, "blob_bytes": 14213, "blob_raw_md5": "c57b1a48c54029f126aacc0d94a7de9c", "source_raw_md5": "c57b1a48c54029f126aacc0d94a7de9c", "raw_equal": true, "eol_equal": true, "equals_04cedbea_blob": true}
+{"source": "~/AppData\\Local\\Temp\\claude\\c--Users-~-Documents-GitHub-ERP-Techsolutios\\3ad1b87d-fdbf-41f2-b085-1068e01c5d64\\scratchpad\\PORTEIRO-399.md", "exists": true, "blob_bytes": 14213, "blob_raw_md5": "c57b1a48c54029f126aacc0d94a7de9c", "source_raw_md5": "c57b1a48c54029f126aacc0d94a7de9c", "raw_equal": true, "eol_equal": true, "equals_04cedbea_blob": true}
 
 Veredito parcial: CONFERE
 
@@ -226,7 +226,7 @@ Veredito parcial: Código idêntico fora da carga congelada
 
 ## A3. Dependências próprias — 2026-10-03T16:35:14.355022+00:00
 
-Comando / medido por: node npm-cli.js ci --no-audit --no-fund --ignore-scripts; cwd C:/Users/AMP/w-port404; timeout 120s
+Comando / medido por: node npm-cli.js ci --no-audit --no-fund --ignore-scripts; cwd ~/w-port404; timeout 120s
 
 Saída resumida:
 npm warn EBADENGINE Unsupported engine {
@@ -1522,79 +1522,79 @@ Veredito parcial: ec=0; leitura, sem limpeza alheia
 Comando / medido por: ["git", "worktree", "list", "--porcelain"]
 
 Saída resumida:
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios
+worktree ~/Documents/GitHub/ERP_Techsolutios
 HEAD b404815ce3d1f1b8e5121bd1526978f7222e7479
 branch refs/heads/main
 
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b04a
+worktree ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b04a
 HEAD dee45faffc718491bc6f66ea46f4157b303c6be4
 branch refs/heads/fix/inventory-consistency
 
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b11
+worktree ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b11
 HEAD a24f58b51bb38302c82878aedc55e8b611cc2ce0
 branch refs/heads/fix/mobile-work-order-contracts
 
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-descuido
+worktree ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-descuido
 HEAD 497d360dd131952f5ca156fb59def2aa390449a8
 branch refs/heads/docs/governanca-porteiro-pre-merge-sol
 
-worktree C:/Users/AMP/w-j4c2
+worktree ~/w-j4c2
 HEAD 371b09b26cf51ee28996074c81e2f91dca585cc3
 detached
 
-worktree C:/Users/AMP/w-j4c2-c3
+worktree ~/w-j4c2-c3
 HEAD 335cf09d79f923f76a614b27fabc2d8c0e87c2c4
 detached
 
-worktree C:/Users/AMP/w-j4c2-k4
+worktree ~/w-j4c2-k4
 HEAD bb641b7769fb59ea6352df6d1de3defecb1be694
 detached
 
-worktree C:/Users/AMP/w-j4c3
+worktree ~/w-j4c3
 HEAD 371b09b26cf51ee28996074c81e2f91dca585cc3
 detached
 
-worktree C:/Users/AMP/w-j4c3-dr
+worktree ~/w-j4c3-dr
 HEAD 335cf09d79f923f76a614b27fabc2d8c0e87c2c4
 detached
 
-worktree C:/Users/AMP/w-mandato
+worktree ~/w-mandato
 HEAD 371b09b26cf51ee28996074c81e2f91dca585cc3
 branch refs/heads/chore/mandato-refs-e-preflight
 
-worktree C:/Users/AMP/w-nuv05
+worktree ~/w-nuv05
 HEAD 9a808491bd7a3ffe20adbec5647879479f73f9e5
 branch refs/heads/docs/plano-b-san3-05
 
-worktree C:/Users/AMP/w-nuv05d
+worktree ~/w-nuv05d
 HEAD cb94b78b476dd01345b5982c4c3b1f8e43abfe9a
 branch refs/heads/fix/runtime-role-sem-bypass
 
-worktree C:/Users/AMP/w-nuv09
+worktree ~/w-nuv09
 HEAD 8deebefc66e94005d7a037dbf5b133c74edb4f10
 branch refs/heads/feat/bootstrap-platform-admin
 
-worktree C:/Users/AMP/w-nuv11
+worktree ~/w-nuv11
 HEAD 59aa7593f7d245e1d57ffeb0b5ca12fb98f10247
 branch refs/heads/fix/dossie-versao-da-vistoria
 
-worktree C:/Users/AMP/w-port404
+worktree ~/w-port404
 HEAD b404815ce3d1f1b8e5121bd1526978f7222e7479
 detached
 
-worktree C:/Users/AMP/w-pvnuv
+worktree ~/w-pvnuv
 HEAD 8e636a2382786d8b4cc8478da1a2789df4593dd9
 detached
 
-worktree C:/Users/AMP/w-pvpr
+worktree ~/w-pvpr
 HEAD 7ac9d17629dd543af2f72a530642f615670d7620
 detached
 
-worktree C:/Users/AMP/w-pvreg
+worktree ~/w-pvreg
 HEAD b404815ce3d1f1b8e5121bd1526978f7222e7479
 detached
 
-worktree C:/Users/AMP/w-reg404
+worktree ~/w-reg404
 HEAD 94dc3b4bf19ee258f90a4ff88b2b6639f38f8b22
 branch refs/heads/docs/registro-porteiro-404
 
@@ -1864,7 +1864,7 @@ Veredito parcial: Limpeza do registro CONFERE; ressalva operacional de espaço l
 Comando / medido por: Path.resolve + is_junction; git rev-parse HEAD/status/diff; Get-CimInstance Win32_Process por caminho absoluto do PowerShell
 
 Saída resumida:
-Alvo absoluto validado: C:\Users\AMP\w-port404; HEAD b404815c; node_modules proprio nao junction. Status: ' M agent-orchestration/controle/pendencias-indice.md\n'; diff ec=0.
+Alvo absoluto validado: ~/w-port404; HEAD b404815c; node_modules proprio nao junction. Status: ' M agent-orchestration/controle/pendencias-indice.md\n'; diff ec=0.
 {
     "count":  0,
     "processes":  [
@@ -1880,13 +1880,13 @@ Veredito parcial: ec=0; tentativa anterior nao encontrou powershell.exe no PATH,
 Comando / medido por: Verificacao sequencial anterior
 
 Saída resumida:
-0 processos vivos; alvo absoluto C:/Users/AMP/w-port404 confirmado, sem junction
+0 processos vivos; alvo absoluto ~/w-port404 confirmado, sem junction
 
 Veredito parcial: Remover exclusivamente o worktree proprio autorizado.
 
 ## C1. Limpeza propria — 2026-10-03T16:40:43.107581+00:00
 
-Comando / medido por: git worktree remove --force C:/Users/AMP/w-port404 (timeout 120s)
+Comando / medido por: git worktree remove --force ~/w-port404 (timeout 120s)
 
 Saída resumida:
 

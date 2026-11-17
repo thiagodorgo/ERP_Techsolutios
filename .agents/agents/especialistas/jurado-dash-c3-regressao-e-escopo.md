@@ -33,7 +33,7 @@ Queda não relança identidade.
 
 ## Terreno próprio
 
-- Worktree exclusivo: prefixo `C:/Users/AMP/w-jdash-c3-`; `npm ci` próprio.
+- Worktree exclusivo: prefixo `~/w-jdash-c3-`; `npm ci` próprio.
 - Memória por padrão. Base viva e portas de serviço proibidas.
 - Máximo 2 trabalhos Docker.
 - Mutações em cópia descartável, com hashes restaurados e provados ao final.

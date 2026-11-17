@@ -1,6 +1,6 @@
 # Inventário B1 — balde B (processo/registro), primeiras 50 linhas
 
-- terreno: `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` (branch `main`, SOMENTE LEITURA)
+- terreno: `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` (branch `main`, SOMENTE LEITURA)
 - head: `15ef3fbed57e217b66e6b307f9ae96502777fd09` — fix(cloud-usage): unidade faturável na transação e resumo somado no banco (B-O6R-06) (#385)
 - fonte da fatia: `agent-orchestration/controle/pendencias-indice.md`, tabela "ABERTAS · balde B — processo/registro", linhas 1..50
 - método: presença/ausência provada por git show/ls-tree/grep; `NAO MEDI` + motivo quando não medido

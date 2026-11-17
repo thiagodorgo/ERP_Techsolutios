@@ -48,7 +48,7 @@ agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/inspetor-c2.md
 ## Fatia B / item 1 — arvores e integridade — 2026-10-03T16:59:14.995880+00:00
 - Comando: git worktree list --porcelain; git -C <arvore> status --porcelain; MD5 EOL-neutro disco/blob dos 3 arquivos centrais
 - Saida resumida:
-C:/Users/AMP/w-nuv11 status:
+~/w-nuv11 status:
  M .agents/agents/agente-ci-doutor.md
  M .agents/agents/agente-dba-guardiao.md
  M .agents/agents/agente-devops-provisionador.md
@@ -83,7 +83,7 @@ C:/Users/AMP/w-nuv11 status:
 frontend/src/modules/patios/processes/processes.adapter.ts md5 disco=e4b8484d9f638bb459f7003340d739e8 blob=e4b8484d9f638bb459f7003340d739e8
 frontend/src/modules/patios/processes/components/ChecklistRunsPanel.tsx md5 disco=7cb3f0b5fddfb92291deb8743dec5938 blob=7cb3f0b5fddfb92291deb8743dec5938
 frontend/tests/patios-dossie-versao.smoke.test.tsx md5 disco=a3232547e7cc39977808026cb4b22a5b blob=a3232547e7cc39977808026cb4b22a5b
-C:/Users/AMP/Documents/GitHub/ERP_Techsolutios status:
+~/Documents/GitHub/ERP_Techsolutios status:
 ?? .agents/agents/especialistas/jurado-06-banco-atomicidade-rls.md
 ?? .agents/agents/especialistas/jurado-06-contrato-regressao-kpi.md
 ?? .agents/agents/especialistas/jurado-06-invariante-financeiro-rateio.md
@@ -140,67 +140,67 @@ C:/Users/AMP/Documents/GitHub/ERP_Techsolutios status:
 ?? agent-orchestration/omega/juntas/TEMPLATE-J-ata.md
 ?? results.txt
 
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios
+worktree ~/Documents/GitHub/ERP_Techsolutios
 HEAD b404815ce3d1f1b8e5121bd1526978f7222e7479
 branch refs/heads/main
 
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b04a
+worktree ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b04a
 HEAD dee45faffc718491bc6f66ea46f4157b303c6be4
 branch refs/heads/fix/inventory-consistency
 
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b11
+worktree ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/b11
 HEAD a24f58b51bb38302c82878aedc55e8b611cc2ce0
 branch refs/heads/fix/mobile-work-order-contracts
 
-worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-descuido
+worktree ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-descuido
 HEAD 497d360dd131952f5ca156fb59def2aa390449a8
 branch refs/heads/docs/governanca-porteiro-pre-merge-sol
 
-worktree C:/Users/AMP/w-j4c2
+worktree ~/w-j4c2
 HEAD 371b09b26cf51ee28996074c81e2f91dca585cc3
 detached
 
-worktree C:/Users/AMP/w-j4c2-c3
+worktree ~/w-j4c2-c3
 HEAD 335cf09d79f923f76a614b27fabc2d8c0e87c2c4
 detached
 
-worktree C:/Users/AMP/w-j4c2-k4
+worktree ~/w-j4c2-k4
 HEAD bb641b7769fb59ea6352df6d1de3defecb1be694
 detached
 
-worktree C:/Users/AMP/w-mandato
+worktree ~/w-mandato
 HEAD 371b09b26cf51ee28996074c81e2f91dca585cc3
 branch refs/heads/chore/mandato-refs-e-preflight
 
-worktree C:/Users/AMP/w-nuv05
+worktree ~/w-nuv05
 HEAD 9a808491bd7a3ffe20adbec5647879479f73f9e5
 branch refs/heads/docs/plano-b-san3-05
 
-worktree C:/Users/AMP/w-nuv05d
+worktree ~/w-nuv05d
 HEAD cb94b78b476dd01345b5982c4c3b1f8e43abfe9a
 branch refs/heads/fix/runtime-role-sem-bypass
 
-worktree C:/Users/AMP/w-nuv09
+worktree ~/w-nuv09
 HEAD 8deebefc66e94005d7a037dbf5b133c74edb4f10
 branch refs/heads/feat/bootstrap-platform-admin
 
-worktree C:/Users/AMP/w-nuv11
+worktree ~/w-nuv11
 HEAD 3ec6f52b2be38160f82dc8f766948b685a3de79e
 branch refs/heads/fix/dossie-versao-da-vistoria
 
-worktree C:/Users/AMP/w-pvnuv
+worktree ~/w-pvnuv
 HEAD 8e636a2382786d8b4cc8478da1a2789df4593dd9
 detached
 
-worktree C:/Users/AMP/w-pvpr
+worktree ~/w-pvpr
 HEAD 59aa7593f7d245e1d57ffeb0b5ca12fb98f10247
 detached
 
-worktree C:/Users/AMP/w-pvreg
+worktree ~/w-pvreg
 HEAD b404815ce3d1f1b8e5121bd1526978f7222e7479
 detached
 
-worktree C:/Users/AMP/w-reg404
+worktree ~/w-reg404
 HEAD 94dc3b4bf19ee258f90a4ff88b2b6639f38f8b22
 branch refs/heads/docs/registro-porteiro-404
 
@@ -292,14 +292,14 @@ MINGW64_NT-10.0-22631 3.6.6-1cdd4371.x86_64 x86_64
 - Veredito parcial: CONFIRMADO: conferir abaixo a origem true; nenhum git config foi alterado por este inspetor.
 
 ## Fatia D / item 2 — CRLF e S0 — 2026-10-03T17:03:27.704573+00:00
-- Comando: git worktree add --detach C:/Users/AMP/w-insp401c 3ec6f52b2be38160f82dc8f766948b685a3de79e; git -C <wt> status --porcelain; bytes.count(CR) do adapter; node scripts/sync-agent-agents.mjs --check
+- Comando: git worktree add --detach ~/w-insp401c 3ec6f52b2be38160f82dc8f766948b685a3de79e; git -C <wt> status --porcelain; bytes.count(CR) do adapter; node scripts/sync-agent-agents.mjs --check
 - Saida resumida:
 HEAD=3ec6f52b2be38160f82dc8f766948b685a3de79e; status=''; CR=602; MD5 EOL-neutro=e4b8484d9f638bb459f7003340d739e8; node_modules existe=False; S0 ec=0: [agents-sync] OK — 33 agentes, espelho consistente.
 
 - Veredito parcial: CONFIRMADO
 
 ## Fatia D / item 3 — LF e S0 — 2026-10-03T17:03:37.355640+00:00
-- Comando: git -c core.autocrlf=false worktree add --detach C:/Users/AMP/w-insp401clf 3ec6f52b2be38160f82dc8f766948b685a3de79e; git -C <wt> status --porcelain; bytes.count(CR) do adapter; node scripts/sync-agent-agents.mjs --check
+- Comando: git -c core.autocrlf=false worktree add --detach ~/w-insp401clf 3ec6f52b2be38160f82dc8f766948b685a3de79e; git -C <wt> status --porcelain; bytes.count(CR) do adapter; node scripts/sync-agent-agents.mjs --check
 - Saida resumida:
 HEAD=3ec6f52b2be38160f82dc8f766948b685a3de79e; status=''; CR=0; MD5 EOL-neutro=e4b8484d9f638bb459f7003340d739e8; node_modules existe=False; S0 ec=0: [agents-sync] OK — 33 agentes, espelho consistente.
 
@@ -316,9 +316,9 @@ HEAD=3ec6f52b2be38160f82dc8f766948b685a3de79e; status=''; CR=0; MD5 EOL-neutro=e
 - Saida resumida:
 3ec6f52b2be38160f82dc8f766948b685a3de79e	refs/heads/fix/dossie-versao-da-vistoria
 b404815ce3d1f1b8e5121bd1526978f7222e7479	refs/heads/main
-C:/Users/AMP/w-nuv11: status=' M .agents/agents/agente-ci-doutor.md\n M .agents/agents/agente-dba-guardiao.md\n M .agents/agents/agente-devops-provisionador.md\n M .agents/agents/agente-fabrica.md\n M .agents/agents/agente-finops.md\n M .agents/agents/agente-pesquisador-web.md\n M .agents/agents/agente-secops.md\n M .agents/agents/avaliador-mapas.md\n M .agents/agents/cognicao-visual.md\n M .agents/agents/coordenador-de-acessos.md\n M .agents/agents/critico-adversarial.md\n M .agents/agents/dev-mapas.md\n M .agents/agents/especialistas/jurado-pausa-c1-fidelidade-transcricao.md\n M .agents/agents/especialistas/jurado-pausa-c2-consistencia-normativa-espelho.md\n M .agents/agents/especialistas/jurado-pausa-c3-escopo-registro-kpi.md\n M .agents/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md\n M .agents/agents/especialistas/jurado-semteto-c1-fidelidade-transcricao.md\n M .agents/agents/especialistas/jurado-semteto-c2-consistencia-normativa.md\n M .agents/agents/especialistas/jurado-semteto-c3-escopo-registro.md\n M .agents/agents/estrategista.md\n M .agents/agents/frontend-pixel-master.md\n M .agents/agents/guardiao-fail-closed.md\n M .agents/agents/inspetor-de-arnes-concorrente.md\n M .agents/agents/inspetor-de-rotas.md\n M .agents/agents/inspetor-de-terreno-da-junta.md\n M .agents/agents/master-teste-telas-rotas.md\n M .agents/agents/planejador-mapas.md\n M .agents/agents/planejador-mestre.md\n M .agents/agents/porteiro-pos-merge.md\n M .agents/agents/validador-mestre.md\n'; probes soltos=[]
-C:/Users/AMP/w-insp401c: status=''; probes soltos=[]
-C:/Users/AMP/w-insp401clf: status=''; probes soltos=[]
+~/w-nuv11: status=' M .agents/agents/agente-ci-doutor.md\n M .agents/agents/agente-dba-guardiao.md\n M .agents/agents/agente-devops-provisionador.md\n M .agents/agents/agente-fabrica.md\n M .agents/agents/agente-finops.md\n M .agents/agents/agente-pesquisador-web.md\n M .agents/agents/agente-secops.md\n M .agents/agents/avaliador-mapas.md\n M .agents/agents/cognicao-visual.md\n M .agents/agents/coordenador-de-acessos.md\n M .agents/agents/critico-adversarial.md\n M .agents/agents/dev-mapas.md\n M .agents/agents/especialistas/jurado-pausa-c1-fidelidade-transcricao.md\n M .agents/agents/especialistas/jurado-pausa-c2-consistencia-normativa-espelho.md\n M .agents/agents/especialistas/jurado-pausa-c3-escopo-registro-kpi.md\n M .agents/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md\n M .agents/agents/especialistas/jurado-semteto-c1-fidelidade-transcricao.md\n M .agents/agents/especialistas/jurado-semteto-c2-consistencia-normativa.md\n M .agents/agents/especialistas/jurado-semteto-c3-escopo-registro.md\n M .agents/agents/estrategista.md\n M .agents/agents/frontend-pixel-master.md\n M .agents/agents/guardiao-fail-closed.md\n M .agents/agents/inspetor-de-arnes-concorrente.md\n M .agents/agents/inspetor-de-rotas.md\n M .agents/agents/inspetor-de-terreno-da-junta.md\n M .agents/agents/master-teste-telas-rotas.md\n M .agents/agents/planejador-mapas.md\n M .agents/agents/planejador-mestre.md\n M .agents/agents/porteiro-pos-merge.md\n M .agents/agents/validador-mestre.md\n'; probes soltos=[]
+~/w-insp401c: status=''; probes soltos=[]
+~/w-insp401clf: status=''; probes soltos=[]
 processos com w-nuv11/w-j11/w-dev11 no inventario inicial: []
 Docker: 0 jur-*/crit-*; bases vivas somente listadas. Arvore principal: untracked de especialistas antigos, TEMPLATE-J-ata.md e results.txt; nenhum tracked modificado. Worktrees antigos listados no item B1 nao sao alvos desta inspecao.
 - Veredito parcial: CONFIRMADO: nenhuma mutacao viva no terreno PR401. R-RESIDUOS: untracked e worktrees alheios inertes para este terreno, preservados. Junta393 ativa e isolada, nao e residuo a limpar. Arvore w-nuv11 limpa; tres hashes centrais iguais ao objeto. Ref remota coincide com gh.
@@ -374,7 +374,7 @@ diff numstat:
 - Veredito parcial: AGUARDAR
 
 ## QUEDAS, RETOMADAS E TROCA DE MODELO — 2026-10-03T17:26:07Z
-- Comando/evidencia: relato do orquestrador nesta retomada; releitura integral do parecer ate a ultima secao; `git -C C:/Users/AMP/w-insp401c{,lf} rev-parse HEAD`; `git status --porcelain`; `git config --show-origin --get core.autocrlf`; `Get-CimInstance Win32_Process` filtrado por `w-j4c`.
+- Comando/evidencia: relato do orquestrador nesta retomada; releitura integral do parecer ate a ultima secao; `git -C ~/w-insp401c{,lf} rev-parse HEAD`; `git status --porcelain`; `git config --show-origin --get core.autocrlf`; `Get-CimInstance Win32_Process` filtrado por `w-j4c`.
 - Saida resumida: (1) queda por limite de uso OpenAI por volta de 17:11Z, retomada por volta de 17:20Z; o `insp401-wait.py` PID 53828 ficou orfao e foi encerrado pelo orquestrador por caminho por volta de 17:15Z; nenhum baseline havia iniciado. (2) a janela foi fechada pelo dono por volta de 17:24Z para troca de modelo; nova retomada as 17:26Z. Os worktrees CRLF e LF continuam no objeto `3ec6f52b2be38160f82dc8f766948b685a3de79e`, `status --porcelain` vazio. Nada foi refeito: as medicoes anteriores permanecem nos itens incrementais; apenas se revalidaram head/limpeza e a carga. Amostra da retomada: `count=14`, CPU=69%, livre=6697136128 bytes.
 - Modelo: a primeira linha do parecer permanece como registro historico do trecho executado em Codex, GPT-6 Astra. A partir desta secao, todas as secoes sao executadas em **Codex, GPT-5.6 Sol**, substituicao declarada por decisao do dono de 2026-10-03: "o padrao e o sol; restrinja o astra a demandas com dinheiro como o claude"; B-SAN3-11 nao toca dinheiro. Isto substitui a designacao anterior para a cauda desta instancia, conforme CLAUDE.md §C7.6-bis e fonte §A1.1.
 - Veredito parcial: RETOMADO. Nenhum comando de baseline perdido ou parcialmente executado; espera de carga continua. O intervalo sem amostras entre 17:09Z e 17:26Z e declarado, nao preenchido com dados inventados.
@@ -385,7 +385,7 @@ diff numstat:
 - Veredito parcial: AGUARDAR. A janela maxima permanece ancorada na primeira amostra (17:04:50Z); se ainda houver processos as 18:04:50Z, o baseline roda com a carga declarada.
 
 ## Retomada / terreno LF efetivo — 2026-10-03T17:27Z
-- Comando: `git -C C:/Users/AMP/w-insp401clf config --worktree core.autocrlf false`; `git config --show-origin --get core.autocrlf`; `git status --porcelain`; contagem binaria de CR no adapter.
+- Comando: `git -C ~/w-insp401clf config --worktree core.autocrlf false`; `git config --show-origin --get core.autocrlf`; `git status --porcelain`; contagem binaria de CR no adapter.
 - Saida resumida: `ec=0`; origem `config.worktree`; valor `false`; status vazio; CR=0. Antes desta linha o checkout ja era LF por ter sido criado com `git -c core.autocrlf=false worktree add`, mas a consulta efetiva herdava `true` do sistema. A configuracao foi limitada ao worktree proprio, como exige o mandato; nenhuma configuracao comum foi alterada.
 - Veredito parcial: CONFIRMADO. Terreno LF efetivamente `core.autocrlf=false`; terreno CRLF permanece `true` pela configuracao de sistema.
 
@@ -430,27 +430,27 @@ diff numstat:
 - Veredito parcial: ESPERA CONCLUIDA PELO TETO. Conforme o mandato, o baseline inicia mesmo com carga; cada comando declarara novamente CPU e contagem em seu cabecalho.
 
 ## Baseline CRLF / npm ci — 2026-10-03T18:06:09Z
-- Comando: `C:/nvm4w/nodejs/node.exe C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund`; cwd `C:/Users/AMP/w-insp401c/frontend`; timeout externo 900s; saida integral em `insp401-CRLF-ci.log`.
+- Comando: `C:/nvm4w/nodejs/node.exe C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund`; cwd `~/w-insp401c/frontend`; timeout externo 900s; saida integral em `insp401-CRLF-ci.log`.
 - Saida resumida: cabecalho de carga `count=17`, CPU=99%, livre=6662201344 bytes; `added 103 packages in 29s`; `ec=0`; duracao=29.972s; copias `.tmp-censo-*` novas restantes=0.
 - Veredito parcial: CONFIRMADO. Instalacao propria, sem junction, concluida no terreno CRLF.
 
 ## Baseline LF / npm ci — 2026-10-03T18:07:05Z
-- Comando: `C:/nvm4w/nodejs/node.exe C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund`; cwd `C:/Users/AMP/w-insp401clf/frontend`; timeout externo 900s; saida integral em `insp401-LF-ci.log`.
+- Comando: `C:/nvm4w/nodejs/node.exe C:/nvm4w/nodejs/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund`; cwd `~/w-insp401clf/frontend`; timeout externo 900s; saida integral em `insp401-LF-ci.log`.
 - Saida resumida: cabecalho de carga `count=17`, CPU=87%, livre=6463635456 bytes; `added 103 packages in 29s`; `ec=0`; duracao=29.178s; copias `.tmp-censo-*` novas restantes=0.
 - Veredito parcial: CONFIRMADO. Instalacao propria, sem junction, concluida no terreno LF.
 
 ## Baseline CRLF / frontend check — 2026-10-03T18:08:06Z
-- Comando: `npm run check` via npm-cli e Node 20.19.5; cwd `C:/Users/AMP/w-insp401c/frontend`; timeout externo 300s; saida integral em `insp401-CRLF-check.log`.
+- Comando: `npm run check` via npm-cli e Node 20.19.5; cwd `~/w-insp401c/frontend`; timeout externo 300s; saida integral em `insp401-CRLF-check.log`.
 - Saida resumida: cabecalho de carga `count=17`, CPU=91%, livre=6278057984 bytes; `tsc -b --noEmit`; `ec=0`; duracao=86.057s; copias `.tmp-censo-*` novas restantes=0.
 - Veredito parcial: CONFIRMADO. Frontend check verde no CRLF.
 
 ## Baseline LF / frontend check — 2026-10-03T18:09:53Z
-- Comando: `npm run check` via npm-cli e Node 20.19.5; cwd `C:/Users/AMP/w-insp401clf/frontend`; timeout externo 300s; saida integral em `insp401-LF-check.log`.
+- Comando: `npm run check` via npm-cli e Node 20.19.5; cwd `~/w-insp401clf/frontend`; timeout externo 300s; saida integral em `insp401-LF-check.log`.
 - Saida resumida: cabecalho de carga `count=14`, CPU=97%, livre=6281224192 bytes; `tsc -b --noEmit`; `ec=0`; duracao=72.036s; copias `.tmp-censo-*` novas restantes=0.
 - Veredito parcial: CONFIRMADO. Frontend check verde no LF.
 
 ## Baseline CRLF / arquivo do bloco — 2026-10-03T18:11:36Z
-- Comando: `node --test --import tsx --test-reporter=tap tests/patios-dossie-versao.smoke.test.tsx`; cwd `C:/Users/AMP/w-insp401c/frontend`; timeout externo 1200s; saida integral em `insp401-CRLF-bloco.log`.
+- Comando: `node --test --import tsx --test-reporter=tap tests/patios-dossie-versao.smoke.test.tsx`; cwd `~/w-insp401c/frontend`; timeout externo 1200s; saida integral em `insp401-CRLF-bloco.log`.
 - Saida resumida: cabecalho de carga `count=13`, CPU=82%, livre=6261407744 bytes; `tests=24`, `pass=24`, `fail=0`, `cancelled=0`, duracao TAP=125057.4255ms, `ec=0`, duracao externa=125.378s. T12=7875.1857ms; T13=26681.8055ms; T14=21424.8714ms; T20=23597.1811ms; T21=20405.4794ms; T22=20389.6715ms. `morto por sinal`=0; copias `.tmp-censo-*` novas restantes=0.
 - Veredito parcial: CONFIRMADO. Arquivo do bloco 24/24 no CRLF, sem morte por sinal.
 
@@ -470,18 +470,18 @@ diff numstat:
 - Veredito parcial: RETOMADA UNICA CONFIRMADA. Nenhum dado posterior a 22:23Z foi usado sem esta reexecucao; o resultado LF ainda esta EM APURACAO.
 
 ## Baseline LF / arquivo do bloco — reexecucao integra — 2026-10-03T22:34:39Z
-- Comando: `node --test --import tsx --test-reporter=tap tests/patios-dossie-versao.smoke.test.tsx`; cwd `C:/Users/AMP/w-insp401clf/frontend`; timeout externo 1200s; saida integral valida em `insp401-LF-bloco-redo2.log`. Os logs `insp401-LF-bloco.log` e `insp401-LF-bloco-redo1.log` permanecem marcados como tentativas interrompidas e nao-insumo.
+- Comando: `node --test --import tsx --test-reporter=tap tests/patios-dossie-versao.smoke.test.tsx`; cwd `~/w-insp401clf/frontend`; timeout externo 1200s; saida integral valida em `insp401-LF-bloco-redo2.log`. Os logs `insp401-LF-bloco.log` e `insp401-LF-bloco-redo1.log` permanecem marcados como tentativas interrompidas e nao-insumo.
 - Saida resumida: cabecalho de carga `w-j4c count=0`, CPU=6%, livre=10156908544 bytes; `tests=24`, `pass=24`, `fail=0`, `cancelled=0`, duracao TAP=56837.3954ms, `ec=0`, duracao externa=56.888s. T12=2695.2977ms; T13=10058.9749ms; T14=10729.6022ms; T20=11539.4772ms; T21=9980.7248ms; T22=10969.2709ms. `morto por sinal`=0; nenhuma copia nova `.tmp-censo-*` ficou.
-- Limpeza da tentativa interrompida: antes da execucao valida havia 1 copia `C:/Users/AMP/AppData/Local/Temp/.tmp-censo-hpJkG4`, criada em 22:33:04Z, 4.127.828 bytes, sem processo vivo; origem temporal coincide com `redo1`. Alvo absoluto foi validado dentro de `%TEMP%`, basename `.tmp-censo-*`, e removido por script local com `fs.rmSync`; `exists=false` depois.
+- Limpeza da tentativa interrompida: antes da execucao valida havia 1 copia `~/AppData/Local/Temp/.tmp-censo-hpJkG4`, criada em 22:33:04Z, 4.127.828 bytes, sem processo vivo; origem temporal coincide com `redo1`. Alvo absoluto foi validado dentro de `%TEMP%`, basename `.tmp-censo-*`, e removido por script local com `fs.rmSync`; `exists=false` depois.
 - Veredito parcial: CONFIRMADO. Arquivo do bloco 24/24 no LF, sem morte por sinal; a medicao interrompida foi refeita inteira e o residuo proprio foi removido.
 
 ## Baseline CRLF / test:smoke — 2026-10-03T22:36:13Z
-- Comando: `npm run test:smoke` via npm-cli e Node 20.19.5; cwd `C:/Users/AMP/w-insp401c/frontend`; timeout externo 1800s; saida integral em `insp401-CRLF-smoke.log`.
+- Comando: `npm run test:smoke` via npm-cli e Node 20.19.5; cwd `~/w-insp401c/frontend`; timeout externo 1800s; saida integral em `insp401-CRLF-smoke.log`.
 - Saida resumida: cabecalho de carga `w-j4c count=0`, CPU=4%, livre=10162286592 bytes; `tests=1238`, `pass=1238`, `fail=0`, `cancelled=0`, duracao TAP=114367.6866ms, `ec=0`, duracao externa=114.697s. T12=17405.5027ms; T13=21114.7168ms; T14=11538.6326ms; T20=12160.997ms; T21=11158.6096ms; T22=11097.3791ms; `morto por sinal`=0; copias `.tmp-censo-*` novas restantes=0.
 - Veredito parcial: CONFIRMADO. `test:smoke` 1238/1238 no CRLF, sem morte por sinal.
 
 ## Baseline LF / test:smoke — 2026-10-03T22:38:18Z
-- Comando: `npm run test:smoke` via npm-cli e Node 20.19.5; cwd `C:/Users/AMP/w-insp401clf/frontend`; timeout externo 1800s; saida integral em `insp401-LF-smoke.log`.
+- Comando: `npm run test:smoke` via npm-cli e Node 20.19.5; cwd `~/w-insp401clf/frontend`; timeout externo 1800s; saida integral em `insp401-LF-smoke.log`.
 - Saida resumida: cabecalho de carga `w-j4c count=0`, CPU=18%, livre=10144038912 bytes; `tests=1238`, `pass=1238`, `fail=0`, `cancelled=0`, duracao TAP=108515.7534ms, `ec=0`, duracao externa=108.901s. T12=9954.7493ms; T13=26407.8496ms; T14=10235.8229ms; T20=10385.2989ms; T21=9890.2684ms; T22=10465.1649ms; `morto por sinal`=0; copias `.tmp-censo-*` novas restantes=0.
 - Veredito parcial: CONFIRMADO. `test:smoke` 1238/1238 no LF, sem morte por sinal.
 
@@ -491,7 +491,7 @@ diff numstat:
 - Veredito parcial: CONFIRMADO. Objeto nao andou, CI esta concluida e verde, S0 continua verde, arvores limpas e nenhum processo de teste vive nos terrenos.
 
 ## Limpeza dos terrenos do inspetor — 2026-10-03T22:41Z
-- Comando: resolver literalmente `C:/Users/AMP/w-insp401c` e `C:/Users/AMP/w-insp401clf`; conferir cada caminho exato no `git worktree list --porcelain`; com `process_count=0`, executar `git worktree remove --force <caminho>` separadamente; conferir existencia e listagem final.
+- Comando: resolver literalmente `~/w-insp401c` e `~/w-insp401clf`; conferir cada caminho exato no `git worktree list --porcelain`; com `process_count=0`, executar `git worktree remove --force <caminho>` separadamente; conferir existencia e listagem final.
 - Saida resumida: `w-insp401c` removido, `exists=False`; `w-insp401clf` removido, `exists=False`; nenhuma entrada `w-insp401c*` restante. A remocao levou os dois `node_modules` proprios. O residuo `.tmp-censo-hpJkG4` ja havia sido removido e nenhuma outra `.tmp-censo-*` existia.
 - Veredito parcial: CONFIRMADO. Zero processo vivo e zero artefato de terreno deixado pelo inspetor.
 

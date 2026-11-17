@@ -93,6 +93,6 @@
    "resultado": "14/14 completed success; contagens = ciclo 2"
   }
  ],
- "teardown": "worktree C:/Users/AMP/j13c3-c3-wt removido por git worktree remove --force (ec 0, 0 na lista) · nenhum container nem banco subido (0 j13*) · $SCRATCH esvaziado por nome e removido · base viva nunca tocada · w-san313 só com c3c-evidencia.md e c3c-voto.json, 0 rastreado modificado, sem commit",
+ "teardown": "worktree ~/j13c3-c3-wt removido por git worktree remove --force (ec 0, 0 na lista) · nenhum container nem banco subido (0 j13*) · $SCRATCH esvaziado por nome e removido · base viva nunca tocada · w-san313 só com c3c-evidencia.md e c3c-voto.json, 0 rastreado modificado, sem commit",
  "justificativa": "terreno: worktree próprio, sem Docker/Postgres, 14,58 GB livres de commit, 9,8 GB em C: · item 1: C3-01 fechado por CA-c3-1/2/3, condições = código · item 2: delta só no PERMITIDO, sem merge, commits = declarados · item 3: código idêntico ao ciclo 2, CI 14/14 verde com as mesmas contagens · cada comparação com vermelho-controle que acusou · nada ficou sem medir · régua do ciclo 3: nenhum defeito grave\nVOTO: APROVADO — C3-01 fechado (contrato com os 4 motivos, = §B byte a byte, 8/8 motivos do bloco cobertos); delta do ciclo 3 dentro do PERMITIDO, PROIBIDO intocado, 0 merge; CODIGO-IDENTICO e CI 14/14 com backend 345·3981·3979·0·2, backend-postgres 493/493, flutter +905 = ciclo 2; Kpis intocado; pendências: C3c-N1 (nota)"
 }

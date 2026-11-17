@@ -16,7 +16,7 @@ papel: cadeira (a′) ciclo 2 | executor: Codex | identidade: jurado-trc01c2-a-c
 ```text
 docker exec jtrc01c2-a-pg psql -U postgres -d erp_test -c "ALTER SYSTEM SET log_statement='all'; ALTER SYSTEM SET log_line_prefix='%m %u %a %v %x '; SELECT pg_reload_conf()"
 DATABASE_URL=<PG próprio 127.0.0.1:47661> REDIS_URL=redis://127.0.0.1:47671 node --test --test-reporter=tap tests/traccar-position-ingestion-db.test.ts
-node <parser EOL-neutro inline> C:/Users/AMP/AppData/Local/Temp/jtrc01c2-a-cdx/position-server.log
+node <parser EOL-neutro inline> ~/AppData/Local/Temp/jtrc01c2-a-cdx/position-server.log
 DATABASE_URL=<PG próprio> REDIS_URL=<Redis próprio> node --test --test-reporter=tap tests/traccar-idempotency-db.test.ts
 # M-B1: remover o rethrow do gancho afterReceiptInsert; M-B2a: work antes do setter; M-B2b: is_local true→false; npm run check; teste-alvo; restaurar e comparar blob
 pg_dump --schema-only --no-owner --no-privileges jtrc01c2_a_base/jtrc01c2_a_rb | normalização documentada | diff
@@ -25,7 +25,7 @@ SELECT count(*) FROM pg_stat_activity WHERE usename='jtrc01c2_a_usuario_inexiste
 
 ### Saída resumida
 
-- Terreno: worktree detached `C:/Users/AMP/w-jc2-a` no objeto, `.env` ausente, instalação própria por `npm ci`, PostgreSQL 16.14 em `127.0.0.1:47661` e Redis 7 em `127.0.0.1:47671`; base viva não foi usada.
+- Terreno: worktree detached `~/w-jc2-a` no objeto, `.env` ausente, instalação própria por `npm ci`, PostgreSQL 16.14 em `127.0.0.1:47661` e Redis 7 em `127.0.0.1:47671`; base viva não foi usada.
 - `%v`: `145/145` transações do papel efêmero que tocaram uma das tabelas-alvo tiveram `set_config('app.current_tenant_id', …)` como primeira instrução SQL depois de `BEGIN`; `0` fora de contexto. Das `33` que tocaram recibo/localização, `32/32` transações reais de ingestão emitiram, nesta ordem, tenant → `lock_timeout` → `statement_timeout`; a 33ª foi leitura de verificação pós-caso, com setter primeiro e sem orçamento porque não executou a ingestão. Em `29/29` transações de ingestão cujo SQL carregou tenant explicitamente, o valor reapareceu igual; nos três caminhos sob predicado RLS sem parâmetro tenant explícito, a comparação pelo admin e o resultado funcional confirmaram o vínculo. Dica velha/envenenada: A permaneceu com `1` recibo/localização e B com `0`; envelope com chave de organização: 422 e zero escrita. T-B2 cliente + log servidor provam as duas metades da propriedade.
 - Controle vermelho `%v`: conexão `jtrc01c2_a_red`, `application_name=jtrc01c2-a-red`, executou `SELECT count(*) FROM vehicle_tracking_bindings` sem setter; o log registrou exatamente a instrução fora de contexto e o RLS retornou `0` linha.
 - T-B1 isolado: `tests=9 pass=9 fail=0 skipped=0`. O caso 9 mirou exatamente `1` pid entre recibo e commit, `pg_terminate_backend=true`; log do servidor: `FATAL terminating connection due to administrator command` (classe PostgreSQL `57P01`), serviço respondeu `503/unavailable/database`, sobraram `0` recibo, `0` localização, `0` evento; retry `204` deixou `1/1`. O controle com usuário inexistente retornou `0` pid e `0` término; o caminho sem término gravou `1/1/1` no caso 1. T-B1 também integrou as três rodadas do item 3.
@@ -121,6 +121,6 @@ gh run view 39087734991 --job 117557731847 --log
 - Pré-voo: corpo/mandato/plano com MD5 esperado; inspetor `LIBERADO COM RESSALVA`; R-DBA presente; identidade inelegível sem ocorrência; decisões e autorização nominal presentes na ref julgada. O head do ciclo 1 é ancestral (`ec=0`).
 - Re-resolução final: `git ls-remote` e `gh pr view 426` = `2043c5840c8f60fe91538840aaefb3420a11cfe3`; PR aberto, não draft, base `main`, `MERGEABLE`. `origin/main=a26f8afe74b73d9379b4fae5deba312875c2427b`; merge-base continuou `c260d36201f6e835799e7f96a14bc9eb8889ca5a`. O objeto medido não andou.
 - `log_statement` foi restaurado para `none` e `log_line_prefix` para `%m [%p]`; reload confirmado.
-- Limpeza: removidos apenas `jtrc01c2-a-pg`, `jtrc01c2-a-redis`, `C:/Users/AMP/w-jc2-a` por `git worktree remove --force` e o scratch próprio. Resultado: containers próprios `0`, worktree ausente, scratch ausente; nenhum prune. Disco final: `14,93 GB` livres.
+- Limpeza: removidos apenas `jtrc01c2-a-pg`, `jtrc01c2-a-redis`, `~/w-jc2-a` por `git worktree remove --force` e o scratch próprio. Resultado: containers próprios `0`, worktree ausente, scratch ausente; nenhum prune. Disco final: `14,93 GB` livres.
 
 **VOTO: APROVADO — itens 1 e 2 sem achado; item 3 com um ajuste não grave (comentário de denominador desatualizado), sem bloqueante dentro do bloco.**

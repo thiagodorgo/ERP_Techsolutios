@@ -33,23 +33,23 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed), instancia nova para a junta 1 do B-SAN3-05 (PR 405), com o
   corpo de origin/main, rodando no Claude Code em Opus 5.5 ou no Codex em GPT-5.6 Sol, com a substituicao declarada (o dono suspendeu Fable e
   Astra ate o reset semanal), e declara na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo;
-  ele nao julga merito derruba com: `head -1 C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md | grep -ic 'mandato_md5'`
+  ele nao julga merito derruba com: `head -1 ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md | grep -ic 'mandato_md5'`
 
 O objeto e o head do PR 405 resolvido pelo proprio inspetor, so com os check-runs CONCLUIDOS (inclusive o job docker que o secao 10 do plano
   docs/revisoes/SAN3/B-SAN3-05-plano.md exige, ou a razao medida de ele nao rodar); o tabuleiro e o da secao 10: as tres cadeiras (agente-dba-guardiao, agente-secops,
   guardiao-fail-closed) existem no origin/main e nao participaram deste bloco (inelegiveis por nome: critico-b-san3-05, planejador-b-san3-05-v3,
   os devs dev-b-san3-05, dev-b-san3-05-sucessor-1 e dev-b-san3-05-sucessor-2, e o orquestrador); um worktree e um cluster Postgres
   descartavel por cadeira, em portas livres provadas, nunca a base viva; S0 (node scripts/sync-agent-agents.mjs --check igual a zero); baseline
-  honesto (npm run check e o arquivo de teste do bloco, com npm ci proprio) derruba com: `grep -ic 'check-run' C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md`
+  honesto (npm run check e o arquivo de teste do bloco, com npm ci proprio) derruba com: `grep -ic 'check-run' ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md`
 
-Os mandatos: um por papel em C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/ com a cerca igual ao head colado; o relatorio do dev em C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md lido como insumo e
+Os mandatos: um por papel em ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/ com a cerca igual ao head colado; o relatorio do dev em ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md lido como insumo e
   nao como fato; a regra em vigor (CLAUDE.md secao C7 item 8, D-GOV-PROPORCIONAL: junta completa porque o bloco mexe em seguranca e permissao,
-  teto de 2 ciclos, KPI congelado); plano de perda e de PAUSA (P7); nenhum segredo real no tabuleiro derruba com: `grep -ic '00-mandatos' C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md`
+  teto de 2 ciclos, KPI congelado); plano de perda e de PAUSA (P7); nenhum segredo real no tabuleiro derruba com: `grep -ic '00-mandatos' ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md`
 
-O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; o parecer e incremental com hora em C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md (novo) e o
-  orquestrador o versiona; worktree proprio detached C:/Users/AMP/w-insp405, removido pelo nome com 0 processo vivo; nunca tail -f nem
+O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; o parecer e incremental com hora em ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md (novo) e o
+  orquestrador o versiona; worktree proprio detached ~/w-insp405, removido pelo nome com 0 processo vivo; nunca tail -f nem
   MSYS_NO_PATHCONV exportada; nunca git config sem --worktree; timeout em tudo; base viva nunca alvo; nada escrito alem do parecer; PAUSA grava a
-  secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md`
+  secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-inspetor-terreno.md`
 
 ## MEDIDO
 
@@ -57,7 +57,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-19: refs do PR #405 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/inspetor.md
+PRE-VOO OK — ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/inspetor.md
 ec=0
 head=240dbaa9560c3ccb23a41e42885e8d1b7815fb32
 utc=2026-10-04T19:34:56Z

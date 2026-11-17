@@ -2,8 +2,8 @@ papel: cadeira C2 revalidada | identidade: jurado-san312b-ciclo3-c2rev-sol | exe
 
 - início: 2026-10-28T11:57:49Z
 - origin/main no início: `f076973921539165df8d406b8c061dbf4e4ee127`
-- scratch: `C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c2rev3-sol/`
-- worktree exclusivo: `C:/Users/AMP/j12b-c3-c2rev3-wt`
+- scratch: `~/erp-pausa-2026-10-03/j12b3-c2rev3-sol/`
+- worktree exclusivo: `~/j12b-c3-c2rev3-wt`
 - runtime: Node `v22.14.0` por caminho absoluto; `CORE_SAAS_PERSISTENCE=memory`; `REDIS_URL` apontará para porta fechada em `127.0.0.1`; sem Docker e sem base viva.
 - recursos medidos em 2026-10-28T11:57:49Z: C: `10,69 GB` livres; memória de commit livre `11,73 GB`; pisos atendidos (disco ≥ 8,8 GB; commit ≥ 4 GB).
 - legalidade: `inspetor-san312b-ciclo3-opus`, parecer `LIBERADO COM RESSALVA`; ressalvas do disparo genérico/P3/Postgres lidas; esta C2 não usa Postgres.
@@ -53,5 +53,5 @@ papel: cadeira C2 revalidada | identidade: jurado-san312b-ciclo3-c2rev-sol | exe
 
 - Servidores em memória encerrados pelos scripts; `wmic` sem processo com `j12b-c3-c2rev3-wt`.
 - Sondas `zz-j12bc2-{front,cauda,front3}.test.tsx` removidas do worktree; status limpo antes da remoção.
-- Worktree removido por `git worktree remove --force C:/Users/AMP/j12b-c3-c2rev3-wt`; caminho ausente e não listado por `git worktree list`.
+- Worktree removido por `git worktree remove --force ~/j12b-c3-c2rev3-wt`; caminho ausente e não listado por `git worktree list`.
 - Nenhum Docker, Postgres, Redis vivo ou base do dono; nenhum commit. Logs/JSON longos permanecem só no scratch fora do repositório.

@@ -33,23 +33,23 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o dev da errata 1 do B-SAN3-11 (PR 401), a MESMA identidade dev-errata1-b-san3-11 (local, Opus), para um passo curto que a
   secao 15.9 do plano docs/revisoes/SAN3/B-SAN3-11-plano.md ja manda (se a main andar antes do merge, o numero e o da main de entao mais
   1): a main andou com o merge do PR 402; o dev declara na 1a linha do seu relatorio o papel, a identidade, o modelo e o mandato_md5 deste
-  arquivo derruba com: `head -1 C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md | grep -ic 'mandato_md5'`
+  arquivo derruba com: `head -1 ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md | grep -ic 'mandato_md5'`
 
 Item 1: a origin/main de agora integrada ao ramo do PR 401 por merge e nunca por rebase; conflitos so em registro e KPI, cada um
-  resolvido com as duas entradas e a deste bloco por ultimo, sem nenhuma linha da main removida (provado por diff contra a main) derruba com: `grep -ic 'merge' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md`
+  resolvido com as duas entradas e a deste bloco por ultimo, sem nenhuma linha da main removida (provado por diff contra a main) derruba com: `grep -ic 'merge' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md`
 
 Item 2: o KPI recontado pela secao C3 do contrato contra a main integrada: blocks_completed igual ao da main mais 1, frontend_smoke_tests
   pelo TAP de uma execucao real do test:smoke no head integrado (os testes do PR 402 e os deste bloco somados), o arquivo de teste do
   bloco 16/16, history com n igual ao da main mais 1 e a entrada deste bloco por ultimo, e o app.js so pela saida do kpi-freeze com o
-  --check verde derruba com: `grep -ic 'blocks_completed' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md`
+  --check verde derruba com: `grep -ic 'blocks_completed' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md`
 
 Item 3: a secao de integracao no DEV-relatorio.md do bloco (append), 1 linha em agent-orchestration/codex/log-execucao.md e em
   agent-orchestration/docs/status-geral.md; commits Conventional com git diff --cached --check como trava; push fast-forward depois de
-  provar a ancestralidade; nunca force, nunca main, nunca PR, sem linhas de atribuicao derruba com: `grep -ic 'is-ancestor' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md`
+  provar a ancestralidade; nunca force, nunca main, nunca PR, sem linhas de atribuicao derruba com: `grep -ic 'is-ancestor' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md`
 
-O terreno: worktree proprio detached C:/Users/AMP/w-dev11i, npm ci proprio sem junction, removido pelo nome ao fim com 0 processo vivo;
-  evidencia incremental com hora em C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md (P1); mensagem final de 1 linha (P2); nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo
-  que executa; base viva nunca alvo; se a medicao contradisser o plano, grava e PARA; sob PAUSA grava e para (P7) derruba com: `grep -ic 'medido por' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md`
+O terreno: worktree proprio detached ~/w-dev11i, npm ci proprio sem junction, removido pelo nome ao fim com 0 processo vivo;
+  evidencia incremental com hora em ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md (P1); mensagem final de 1 linha (P2); nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo
+  que executa; base viva nunca alvo; se a medicao contradisser o plano, grava e PARA; sob PAUSA grava e para (P7) derruba com: `grep -ic 'medido por' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-INTEG-401.md`
 
 ## MEDIDO
 
@@ -57,7 +57,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-19: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/dev-integracao.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/dev-integracao.md
 ec=0
 head=91a60b37d8db55bfe3731ce306ab2fe485d1b794
 utc=2026-10-02T22:41:55Z

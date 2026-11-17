@@ -1564,7 +1564,7 @@ EOL-neutro `4c912f69a93f07b14d8fd1c49539c778`. Início 2026-10-04T23:24Z.
 
 - **Objeto medido:** `7812fe7cd1783afc09e7d4afce5c7cb497011d45` (= `origin/feat/bootstrap-platform-admin`, medido por `git fetch` +
   `git rev-parse`); árvore de produto idêntica ao objeto julgado `ba65c03a` (o delta são só ata, votos e R-1). Medição num
-  worktree próprio detached `C:/Users/AMP/w-pl09c2` (npm ci próprio, `prisma generate` com URL só no comando); o teste `-db` num
+  worktree próprio detached `~/w-pl09c2` (npm ci próprio, `prisma generate` com URL só no comando); o teste `-db` num
   container Linux próprio (receita 4.2-bis do inspetor, nomes `pl09c2-*`). Base viva 5432/6379 nunca alvo.
 - **Regra (CLAUDE.md da `origin/main` `357a98e9`, §C7 item 8, `D-GOV-PROPORCIONAL`):** junta completa (o bloco mexe em
   segurança e permissão), **teto de 2 ciclos** — este é o último ciclo em que achado não grave bloqueia; no ciclo 3 só defeito de
@@ -1840,7 +1840,7 @@ qualquer outro arquivo de `tests/`; `docs/revisoes/**` (o plano é do planejador
    (caminhos só dentro do `sh -c`, por causa do MSYS), md5 de script, testes e lockfile = blob; `apt-get install -y openssl`; `npm ci`;
    `prisma generate`; `CREATE DATABASE` + `prisma migrate deploy` + `npm run db:provision-rbac`; o teste com
    `-e DATABASE_URL -e REDIS_URL -e CORE_SAAS_PERSISTENCE=memory`. Teardown: `docker rm -f -v` dos 3 e `docker network rm`. Alternativa
-   equivalente: `C:/Users/AMP/erp-terreno/receita-pg16.sh` adaptada aos dois arquivos deste bloco (imagem `erp-junta-node20-pg16:local`).
+   equivalente: `~/erp-terreno/receita-pg16.sh` adaptada aos dois arquivos deste bloco (imagem `erp-junta-node20-pg16:local`).
 7. Regressões com banco (§8 do plano) no mesmo container: `tests/san3-04a-menu-com-permissoes-do-banco-db.test.ts tests/core-saas-role-authority-db.test.ts tests/auth-login-anonymous-db.test.ts tests/auth-login-candidates-fn-db.test.ts tests/rls-tenant-isolation.test.ts tests/auth-identity-exposure-scan.test.ts`.
 8. As mutações de 15.1 e 15.2 que o dev consegue rodar (todas as de T1 e as MA1–MA6 no container), cada uma com o resultado e o restauro
    provado por md5 = blob, publicadas no relatório do dev. A junta re-executa: o relatório do dev é roteiro, não prova.

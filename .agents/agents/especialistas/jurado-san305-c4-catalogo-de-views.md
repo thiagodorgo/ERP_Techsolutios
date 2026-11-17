@@ -30,7 +30,7 @@ inteira nem o texto da regra (é a **C3**, `jurado-san305-c4-boot-e-suite`). Voc
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus, substituição declarada — §C7.6-bis), **sem executar nada** do que está
-aqui. Tudo o que ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-o05` em 2026-10-09, depois das 18:32Z, com a ref local
+aqui. Tudo o que ele diz sobre o ramo foi **lido** no disco de `~/w-o05` em 2026-10-09, depois das 18:32Z, com a ref local
 e a de rastreio do ramo em `737e8cf37b0eefec40e794bf716d48844b763048` (lidas nos arquivos de ref, não por `git`; o reflog local dá a
 esse commit a mensagem "chore(junta): fecho do relatório do dev do ciclo 4 do B-SAN3-05 (D0, D10, teardown, checklist)", e ao
 `7c63f920c996cf105535f345eec2ee10461c77a3` a mensagem "docs(plano): ciclo 4 do B-SAN3-05 — proibir qualquer view sobre tabela FORCE
@@ -212,28 +212,28 @@ achado contra este corpo ou contra a régua**, declarado antes do veredito. Item
   (host **e** container), `node -v` e `psql --version` (container), `docker version` (servidor), espaço livre em `C:` (`df -h /c`), e o
   ambiente (shell, cwd, variáveis que você definiu — nunca valores de segredo; nenhum `export` de conveniência no condutor).
 - **Arquivos de saída:** os que o seu mandato nomear (padrão deste corpo:
-  `C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/C1-evidencia.md` e `…/ciclo4/C1-voto.json`). **Nunca**
+  `~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/C1-evidencia.md` e `…/ciclo4/C1-voto.json`). **Nunca**
   grave nos `C1-*` dos ciclos 1, 2 ou 3. Nunca grave no seu worktree de medição. Quedas vão para `votos/B-SAN3-05/ciclo4/00-quedas.md`
   pelo **orquestrador** (P6), não por você.
 - **Saída colada na evidência: LF, sem espaço no fim de linha.** Passe cada trecho colado por `sed -E 's/[[:space:]]+$//'` antes de
   apensar; antes da mensagem final, `grep -cE '[[:space:]]+$'` nos seus dois arquivos tem de dar **0** (publique o número).
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Use sempre `C:/…` com `git.exe`, `node.exe`, `python.exe`;
   caminhos `/…` **só dentro** do `sh -c` do container.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** `C:/Users/AMP/w-j05c4c1` (ou o que o mandato nomear), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j05c4c1 <objeto>`; **prove**
-  `test -e C:/Users/AMP/w-j05c4c1/.git`. Se o caminho já existir, é resíduo alheio: reporte e use o sufixo `b`. Ele serve para leitura
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** `~/w-j05c4c1` (ou o que o mandato nomear), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j05c4c1 <objeto>`; **prove**
+  `test -e ~/w-j05c4c1/.git`. Se o caminho já existir, é resíduo alheio: reporte e use o sufixo `b`. Ele serve para leitura
   de git; se precisar de `node_modules` nele, `npm ci --no-audit --no-fund` **próprio**. **Junction ou symlink de `node_modules` entre
-  worktrees é PROIBIDO** (§C7.1-ter(c)). `C:/Users/AMP/w-o05` é a árvore do **desenvolvedor**: a sua **única** escrita lá são os seus
+  worktrees é PROIBIDO** (§C7.1-ter(c)). `~/w-o05` é a árvore do **desenvolvedor**: a sua **única** escrita lá são os seus
   dois arquivos de saída.
 - **Containers PRÓPRIOS, prefixo `j05c4-c1-`** (C4.6, l.2320), numa rede Docker própria **sem porta publicada no host**:
-  - **a receita** `C:/Users/AMP/erp-terreno/receita-pg16.sh` (imagem `erp-junta-node20-pg16:local`, Node 20, `psql` 16; `postgres:16`
+  - **a receita** `~/erp-terreno/receita-pg16.sh` (imagem `erp-junta-node20-pg16:local`, Node 20, `psql` 16; `postgres:16`
     descartável) — **copie para `$SCRATCH` e adapte**, publicando o `diff` e o md5 da cópia. Pontos de leitura da fábrica a conferir:
-    o `RUN_ID` nasce com o prefixo fixo `pg16r-` (l.45) e a remoção da árvore temporária só casa `/c/Users/AMP/t-pg16r-*` (l.63) —
+    o `RUN_ID` nasce com o prefixo fixo `pg16r-` (l.45) e a remoção da árvore temporária só casa `~/t-pg16r-*` (l.63) —
     trocar um sem o outro **deixa a árvore temporária para trás**; `REPO` por padrão é o checkout principal (l.27; o objeto existe lá,
     os worktrees partilham objetos); `TESTS` (l.32) lista os dois `-db` do bloco; a contagem de resíduo (l.186) olha só papéis e bancos
     `s305%` e slots — some as relações das suas fixtures, os seus bancos de caso e as views/matviews fora de `pg_catalog` e
     `information_schema`; a receita **derruba tudo no `trap EXIT`** (l.72), então **não atende mutação nem banco por caso** (limite
-    declarado em `C:/Users/AMP/erp-terreno/TERRENO-PG16.md` §6): escreva um condutor seu que mantém o container de pé entre a base, a
+    declarado em `~/erp-terreno/TERRENO-PG16.md` §6): escreva um condutor seu que mantém o container de pé entre a base, a
     montagem, a mutação, a medição e o restauro — texto verbatim e md5 na evidência;
   - **para o controle de discriminação (item 1)**, uma segunda árvore só com `src/database/runtime-role.ts`,
     `src/database/runtime-role.bootstrap.ts` e `scripts/db-runtime-role.sh` do **head do disparo**, extraída pelo mesmo procedimento
@@ -256,7 +256,7 @@ achado contra este corpo ou contra a régua**, declarado antes do veredito. Item
   o volume sumiu), rede por `docker network rm`, e confira cada remoção com a contagem `j05c4-c1-` = 0. Worktree: antes, conte os
   processos vivos com o caminho na linha de comando por
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-j05c4c1*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`
-  (aspas **simples** por fora); depois `git worktree remove --force C:/Users/AMP/w-j05c4c1`.
+  (aspas **simples** por fora); depois `git worktree remove --force ~/w-j05c4c1`.
 - **Mutação restaurável, dentro do container** (nenhuma toca a árvore do ramo):
   1. `cp /work/<f> /tmp/<basename>.pristino` antes de tocar;
   2. mute **por script** (`node -e` lendo e gravando, ou um `.mjs` seu copiado para dentro), com âncora de ocorrência **única** —
@@ -556,7 +556,7 @@ Voto (JSON):
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou — achado contra este corpo, declarado antes do veredito · critério que não pode PASSAR por construção — achado contra a régua" ],
  "pendencias_que_aceito": [ "o que é da C2/C3 (nomeie a cadeira) · o que o C4.6 declara reprovação por construção · formas fora do ponto (com dono) · achados não graves e pre-existentes com dono" ],
- "teardown": "bancos de caso e fixtures do meu cluster removidos (bancos, papéis, views, matviews, tabelas, regras: contagem 0) · containers j05c4-c1-* removidos por docker rm -f -v (volume anônimo conferido) e rede removida, contagem 0 · árvore temporária da receita removida · processos vivos com o caminho = 0 antes da remoção · worktree C:/Users/AMP/w-j05c4c1 removido por `git worktree remove --force` · mutações restauradas com md5 = blob (container) · sondas removidas · cópias e segredos descartáveis de $SCRATCH apagados · base viva (erp-postgres/erp-redis) nunca tocada · w-o05 só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
+ "teardown": "bancos de caso e fixtures do meu cluster removidos (bancos, papéis, views, matviews, tabelas, regras: contagem 0) · containers j05c4-c1-* removidos por docker rm -f -v (volume anônimo conferido) e rede removida, contagem 0 · árvore temporária da receita removida · processos vivos com o caminho = 0 antes da remoção · worktree ~/w-j05c4c1 removido por `git worktree remove --force` · mutações restauradas com md5 = blob (container) · sondas removidas · cópias e segredos descartáveis de $SCRATCH apagados · base viva (erp-postgres/erp-redis) nunca tocada · w-o05 só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
 }
 ```
 

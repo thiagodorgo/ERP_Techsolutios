@@ -2,12 +2,12 @@
 
 papel: cadeira C3 — escopo, registro, KPI e terreno · junta B-GOV-SEM-TETO (PR #394) · 2ª INSTÂNCIA (a 1ª caiu sem veredito)
 modelo: opus (claude-opus-5-5), rodando como general-purpose — Write/Edit NÃO usados no repositório (§C7.4-bis)
-md5 EOL-neutro do corpo aplicado: 4396c0fbd8f6b0ddaf1c555cd6137c32 (C:/Users/AMP/w-teto/.claude/agents/especialistas/jurado-semteto-c3-escopo-registro.md) — confere com o do mandato
+md5 EOL-neutro do corpo aplicado: 4396c0fbd8f6b0ddaf1c555cd6137c32 (~/w-teto/.claude/agents/especialistas/jurado-semteto-c3-escopo-registro.md) — confere com o do mandato
 leitura_de_outras_cadeiras: não li VOTO-394-C1.md nem VOTO-394-C2.md nem c1-*/c2-*; não li o parcial da 1ª instância (parcial-queda-1207) antes de medir.
 
 STATUS: item1 FECHADO · item2 FECHADO · item3 FECHADO · VOTO GRAVADO (ver fim)
 
-## ITEM 1 — Escopo (medido 2026-09-28 ~16:05–16:15, worktree próprio C:/Users/AMP/w-jst3 detached no head; node v20.19.5)
+## ITEM 1 — Escopo (medido 2026-09-28 ~16:05–16:15, worktree próprio ~/w-jst3 detached no head; node v20.19.5)
 
 (a) head por DUAS fontes: `gh pr view 394 --json headRefOid` = 7ad08690bad5e9cbc4d34fe6905b14c6ac634046 · `git ls-remote origin refs/heads/docs/sem-teto-auditoria-no-3` = 7ad08690bad5e9cbc4d34fe6905b14c6ac634046 → COINCIDEM. state=OPEN, base=main.
     objeto do mandato `7ad08690^{commit}` = 7ad08690bad5e9cbc4d34fe6905b14c6ac634046 (= head; NÃO andou). origin/main = fc3363e38aabd77f54e6b53034128182f8000571 = merge-base(origin/main, head).
@@ -73,7 +73,7 @@ VEREDITO PARCIAL ITEM 2: registro íntegro (append-only, ID único, ponteiros re
     2. EOL por arquivo (python rb sobre git show, base e head): 21/21 arquivos 0 CRLF nos dois lados (LF uniforme no blob); 7 novos nascem LF. EOL misto introduzido = 0. VERMELHO-CONTROLE: sonda printf a CR LF b CR LF c LF -> contador python "CRLF=2 só-LF=1" (correto); grep -c com padrão CR na mesma sonda -> 3 (ERRADO: casa as 3 linhas — cegueira registrada); od -c mostra os 2 CR.
     3. Artefato solto no diff (*.txt, *.tap, *.log, *probe*, results*) -> 0 (grep ec=1). Controle: o mesmo grep em tests/zz-probe.test.ts + results.txt -> 2.
     4. w-teto (SÓ observado, leitura): HEAD 7ad08690; porcelain 22 " M" em .agents/agents/* -> hash-object = HEAD:blob nos 22 -> 22 FANTASMAS, 0 reais (disco LF, mtime 10:47). Nenhuma mutação viva.
-    Resíduo ALHEIO (reportado, não tocado): worktree C:/Users/AMP/w-jst2 @7ad08690 (outra cadeira); w-devs2/w-e4 @c32f77b5; w-devs393, w-devt393, w-mandato, .claude/worktrees/{b04a,b11,gov-descuido,gov-elenco}; na árvore principal: results.txt e scripts/audit-agents-skills.mjs untracked (fora do objeto).
+    Resíduo ALHEIO (reportado, não tocado): worktree ~/w-jst2 @7ad08690 (outra cadeira); w-devs2/w-e4 @c32f77b5; w-devs393, w-devt393, w-mandato, .claude/worktrees/{b04a,b11,gov-descuido,gov-elenco}; na árvore principal: results.txt e scripts/audit-agents-skills.mjs untracked (fora do objeto).
     Conflito com o #393 RE-MEDIDO: git merge-tree --write-tree --name-only 7ad08690 c32f77b5 (git 2.53) -> ec=1, 7 arquivos em CONFLICT: Kpis/app.js, Kpis/kpis-history.json, Kpis/kpis-history.md, Kpis/kpis-latest.json, agent-orchestration/controle/decisoes.md, pendencias-indice.md, pendencias.md (merge-base = fc3363e3; interseção dos dois diffs = os mesmos 7). O briefing no objeto (§7 l.121–122, escrito em 43b37e4d) declara "decisoes.md (+ Kpis/*)" = 5 -> subconta 2. Recontagem: o briefing §7 diz "blocks_completed 167 -> 168 recontado no pré-merge" e "#394 mergeia primeiro"; NÃO diz explicitamente "se o #393 mergear antes"; quem diz é o plano §7.3 ("se o #393 mergear antes, é 169") e o próprio KPI (backfill_note: "Se o #393 mergear antes, blocks_completed e este backfill se RECONTAM no pré-merge"). Briefing l.42 "não versionados e sem espelho .agents/" -> falso no objeto (6 corpos rastreados).
     isDraft=true (condição de merge, não de voto); mergeable=MERGEABLE; check-runs no head 14, não-verdes 0, pendentes 0.
 
@@ -118,7 +118,7 @@ BEGIN-JSON
   "N6 (pré-existente) como pendência nomeada com dono",
   "isDraft=true — condição de merge, não de voto"
  ],
- "teardown": "worktree C:/Users/AMP/w-jst3 (meu, detached em 7ad08690, npm ci próprio, sem junction) removido por git worktree remove --force ec=0 após confirmar 0 processos com w-jst3 na linha de comando e porcelain 0; mutações (pendencias.md, pendencias-indice.md, decisoes.md, Kpis/app.js) restauradas por cp com hash-object = blob antes da remoção; 0 containers criados; base viva erp-postgres/erp-redis nunca tocada; w-teto só observado (22 M fantasmas, 0 reais); cópias em SCRATCH/jst3 descartadas; resíduo ALHEIO só reportado: w-jst1, w-jst2 (@7ad08690), w-devs2, w-e4 (@c32f77b5, E4 em curso), w-devs393, w-devt393, w-mandato, .claude/worktrees/{b04a,b11,gov-descuido,gov-elenco}, results.txt e scripts/audit-agents-skills.mjs untracked na árvore principal"
+ "teardown": "worktree ~/w-jst3 (meu, detached em 7ad08690, npm ci próprio, sem junction) removido por git worktree remove --force ec=0 após confirmar 0 processos com w-jst3 na linha de comando e porcelain 0; mutações (pendencias.md, pendencias-indice.md, decisoes.md, Kpis/app.js) restauradas por cp com hash-object = blob antes da remoção; 0 containers criados; base viva erp-postgres/erp-redis nunca tocada; w-teto só observado (22 M fantasmas, 0 reais); cópias em SCRATCH/jst3 descartadas; resíduo ALHEIO só reportado: w-jst1, w-jst2 (@7ad08690), w-devs2, w-e4 (@c32f77b5, E4 em curso), w-devs393, w-devt393, w-mandato, .claude/worktrees/{b04a,b11,gov-descuido,gov-elenco}, results.txt e scripts/audit-agents-skills.mjs untracked na árvore principal"
 }
 END-JSON
 

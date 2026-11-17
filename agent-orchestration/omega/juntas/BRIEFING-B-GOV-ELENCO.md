@@ -116,7 +116,7 @@ ser mutação viva de outro jurado.
 (`scripts/audit-agents-skills.mjs`), então uma cópia autocontida audita a si mesma. Receita:
 
 ```bash
-WT=/c/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco
+WT=~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco
 MEU=$(mktemp -d)                       # fora do repo, só seu
 mkdir -p "$MEU/scripts"
 cp "$WT/scripts/audit-agents-skills.mjs" "$MEU/scripts/"

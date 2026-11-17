@@ -1,5 +1,9 @@
 # Status Geral
 
+## Atualização 2026-11-16 — registro de 14/11 14:24 a 16/11 11:39: itens 61, 62, 42, 65, 18 e 52 FECHADOS, item 68 no portão, 10 atas e as pendências da rodada
+
+Registro documental pelo `reg-1611-cl` (Claude Opus 5.5, redator de registro, identidade nova, nível menor declarado), sobre a `origin/main@60b4b122` (#579) num worktree próprio; `Kpis/**` congelado e intocado. **Corte:** a fonte fora do repositório (`REGISTRO-PENDENTE.md`) de 14/11 14:24 até a pausa de 15/11 23:43, mais o merge do #579 (16/11 11:37 SP) e as porteiras de 16/11; as linhas de 14/11 14:24 a 20:43, que o #570 deixou "para o próximo registro" e que o mandato deste começava às 21:08, entram para não ficar buraco (declarado). **Merges do período (fato; `gh pr view`, hora em SP):** #565 `adec93ce` (14/11 20:52), #566 `cd480ab6` (22:29), #574 `b00f3161` (15/11 01:44), #569 `4acd14ad` (02:31), #567 `fa23e97a` (03:48), #576 `026d5fd2` (05:03), #578 `f95786f5` (06:42, KPI), #575 `6e1eb06d` (07:32), #577 `3601fa2f` (08:02), #571 `5366d5a2` (10:47), #573 `02c9ff10` (12:15), #568 `80f5b4d9` (20:02) e #579 `60b4b122` (16/11 11:37). **Portão:** os itens 61 (#567), 62 (#574 e #576), 42 (#575), 65 (#573), 18 e 52 (#568) ficam FECHADOS no `PLANO_SAN3.md`, com o PR, o merge, a CI e a porteira; o item 68 (a sessão do app, `B-APP-SESSAO-RENOVA`) entra por `D-PORTAO-ITEM-68-SESSAO-APP`, e o total vai de 67 a 68; o #569 e o #579 são parte do item 60, que NÃO fecha. **Portão: 58/68** (85%, pelo piso: `floor(100 × 58 / 68) = 85`), derivado do 52/67 do registro de 14/11 tarde mais os 6 itens, sem recontagem do zero; o marco de KPI de 15/11 (#578) diz 54/67 porque já contava o 61 e o 62 e ainda não tinha o 68. **Em `controle/decisoes.md`:** as falas e respostas do dono (`D-DONO-1411-SO-PRA-FRENTE-E-DEMO`, `D-PORTAO-ITEM-68-SESSAO-APP` com a confirmação da `D-O6R-04B-RETIRADA`, `D-DONO-1511-COBRIR-CODEX`, e as respostas `D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA` e `D-DONO-1511-68-NAO-DESLOGAR`), o complemento "4.item60" e "3.extra" da `D-DONO-1311-RECOMENDACOES`, as decisões do orquestrador com ID (16b, 568, 573, 579, 44 e aparências do app) e o `REGISTRO-DECISOES-ORQ-1411-1511`. **Em `controle/pendencias.md`:** 75 entradas novas (as das atas J-565 a J-579, as 8 do corpo do #571 com o dono de 3, as 3 da conferência do #579, as do plano 68, do item 44 e dos diagnósticos), 5 fechamentos (`P-LOGIN-READINESS-VAZA-HOST-NO-ERRO`, `P-ASS08C1B-CC6-MAPEAR-UNKNOWN`, `P-SAN3-06B-CLOUD-BILLING-ESCRITA`, `P-FRONT-TESTE-FORA-DO-SMOKE` e a data da `P-ASS-RASTREAMENTO-NAO-COBRADO`) e 11 acréscimos de dono, alvo ou andamento; o índice foi regenerado pelo gerador da casa. **Atas** J-565, J-566, J-567, J-568, J-569, J-571, J-573, J-574, J-575 e J-579 em `omega/juntas/`, cada uma com o adendo do registro (merge, CI e porteira). **Fica fora deste PR, de propósito (só arquivos de controle):** a correção do `RBAC_MATRIX.md:146` (`P-RBAC-146-ID-INEXISTENTE`), a l.328 do §5 do `PLANO_SAN3.md` (a linha do `B-ASS-10b`, R-4 do `porteiro-567`), o comando e o diário do `B-SAN3-17` (C3-06 da J-568) e a limpeza do ramo e do worktree do #579, que é do orquestrador. **Em voo em 16/11:** #580 (B-SAN3-16), #581 (a semente com o consentimento), #582 (04b, item 31), #572 (a varredura dos caminhos locais), o B-APP-APARENCIA e o plano 68 v3.4.
+
 ## Atualização 2026-11-15 (madrugada) — item 42: o e2e no portão obrigatório da CI (`B-SAN3-10-E2E-CI`, PR em rascunho)
 
 - **Autor:** `dev-42-cl` (Claude Opus 5.5, dev declarado da F3 em diante, cobrindo o Codex 1). As fatias F0 a F2 são do Codex. O registro do PR e as rodadas da CI estão em `docs/revisoes/SAN3/B-SAN3-10-E2E-CI-dev.md`.
@@ -138,7 +142,7 @@ Registro documental de 13/11 noite e 14/11 madrugada, pelo `reg-1411-cl` (Claude
 
 ## Atualização 2026-11-11 — B-O6R-11d (o contrato da OS no app; item 3 do portão, resto do `Ω6R-QUA-004`)
 
-- **Autor:** `dev-11d-cl` (Claude Opus 5.5, subagente da sessão, dev, nível menor; exceção declarada: Codex sem cota semanal até 16/11, API reservada para verificação, Antigravity no limite). Ramo `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, base `origin/main@da12fec6` com o merge de `c95ad4fd` (#536).
+- **Autor:** `dev-11d-cl` (Claude Opus 5.5, subagente da sessão, dev, nível menor; exceção declarada: Codex sem cota semanal até 16/11, API reservada para verificação, Antigravity no limite). Ramo `fix/mobile-os-contrato-b-o6r-11d`, worktree `~/w-11d`, base `origin/main@da12fec6` com o merge de `c95ad4fd` (#536).
 - **O que entrega (fato, testes no diário `docs/revisoes/SAN3/B-O6R-11d-dev.md`):** codec único de status e prioridade de OS no app (lista, detalhe, status, atribuição e linha do tempo); os 3 métodos REST de OS única leem `{data}`; o PATCH só manda status do backend; o POST manda `userId`/`message`; a organização nunca vem do corpo; a ação de viatura/equipe da fila manda `user_id` e declara `expected_technician_id`, e o servidor responde conflito `technician_changed_since_action` se o técnico mudou (Q1 = A, `D-DONO-TODAS-RECOMENDACOES-1111`). Fecha o `Ω6R-QUA-004` e a `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` no merge.
 - **Trava de arquivo com o `B-SAN3-26` (#534), CR2-11D-02:** a ordem não estava gravada antes da F0 (medido às 10:52 SP na `origin/main`). Vale "quem mergear primeiro manda". Se o #534 entrar antes, o ramo do 11d faz merge da `main` e leva `checkinMode`/`checkinPlateTail` para o `_workOrderFromRemoteJson` (o `_workOrderFromJson`, que o #534 também edita, é apagado pelo 11d). Se o 11d entrar antes, o #534 faz o merge e re-mede por emenda as mutações dele ancoradas em `_workOrderFromRemoteJson`, `_workOrderFromJson` e `_statusPayload`.
 - **Cadeia de `src/modules/mobile/mobile-work-order-sync.ts`:** `07c` → `11d` → `SAN3-16` (`PLANO_SAN3.md`).
@@ -325,7 +329,7 @@ Régua seguinte: revisor independente + `cognicao-visual` + CI. A validação vi
 
 ## Atualização 2026-10-28 — B-SAN3-12c FATIA 1 aberta
 
-`dev-san312c-sol` (Codex CLI, GPT-5.6 Sol, esforço medium, nível menor declarado) criou o ramo `feat/web-financeiro-aparencias-b-c` no head-base `3c27f1bf`, worktree isolado `C:/Users/AMP/w-san312c`, e versionou a Emenda E5. Dependências próprias instaladas sem junction; baseline financeiro **122/122** e smoke frontend **1482/1482** no Node 22 absoluto. Próxima: FATIA 2, resumo incompleto não vira zero. `Kpis/**` continua congelado; marco acompanha o PR #473 após merge + porteiro do 12c.
+`dev-san312c-sol` (Codex CLI, GPT-5.6 Sol, esforço medium, nível menor declarado) criou o ramo `feat/web-financeiro-aparencias-b-c` no head-base `3c27f1bf`, worktree isolado `~/w-san312c`, e versionou a Emenda E5. Dependências próprias instaladas sem junction; baseline financeiro **122/122** e smoke frontend **1482/1482** no Node 22 absoluto. Próxima: FATIA 2, resumo incompleto não vira zero. `Kpis/**` continua congelado; marco acompanha o PR #473 após merge + porteiro do 12c.
 
 ## Atualização 2026-10-25 — B-SAN3-12a (dev `dev-san312a-opus`, Claude Opus): backend de dinheiro do web financeiro — PARADO por premissa falsificada
 
@@ -5324,7 +5328,7 @@ Decisões do dono no dia, a registrar em `decisoes.md` no próximo PR de registr
 depois **Fable suspenso até o reinício do limite semanal**; **Codex habilitado** neste projeto, rodado pelo orquestrador
 por `codex exec` em janela visível; **padrão do Codex = GPT-5.6 Sol**, GPT-6 Astra só em demanda com dinheiro; a nuvem
 foi **encerrada** (B-SAN3-05 saiu dela no commit `6edf21ee`). Cópia dos artefatos da sessão (fora do `%TEMP%`):
-`C:/Users/AMP/erp-pausa-2026-10-03/`.
+`~/erp-pausa-2026-10-03/`.
 
 | frente | onde parou | retomada |
 |---|---|---|
@@ -5344,7 +5348,7 @@ do Codex por limite de uso.
   emitido; feitos os itens 0–6 com comando e saída; achados em apuração: C2d-01, C2d-02). Os jobs locais dela (fila de
   guards das viáveis, drills de controle, H4, C3-OLD — ~40 processos) foram **parados pelo orquestrador**, filtrados pelo
   caminho `j4c2`/`w-j4c2`, porque o reinício do PC os mataria no meio de qualquer forma; a retomada re-executa os itens
-  que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `C:/Users/AMP/erp-pausa-2026-10-03/`. Nenhum agente
+  que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `~/erp-pausa-2026-10-03/`. Nenhum agente
   vivo; nenhuma sessão do Codex viva; o relançamento agendado do Codex foi cancelado.
 
 ## RETOMADA 2026-10-03 22:25Z → 2026-10-04 — depois da PAUSA
@@ -5370,7 +5374,7 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 
 - **Medido na retomada (13:54Z):** `main` 749a5cf8 = `origin/main`; PRs #405, #400, #393 com head = remoto e check-runs
   verdes; nenhum `index.lock`; o único trabalho não commitado era o rascunho de 31 linhas do plano do ciclo 2 do #405
-  (cópia em `C:/Users/AMP/erp-pausa-2026-10-03/`). Docker religado; `erp-postgres`/`erp-redis` (base viva) seguem
+  (cópia em `~/erp-pausa-2026-10-03/`). Docker religado; `erp-postgres`/`erp-redis` (base viva) seguem
   desligados desde a queda — não são alvo de nada.
 - **Decisões do dono** (em `controle/decisoes.md`): `D-OS-CABECALHO-PADRONIZADO` (opção C), `D-393-ESTACIONADO`,
   `D-FABLE-ASTRA-SO-DINHEIRO`, `D-CODEX-DISPONIVEL`.
@@ -5450,7 +5454,7 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 
 ## Estado em 2026-10-13 (07:00, Brasília) — relatório da noite de 12 → 13/10
 
-Relatório visual para o dono: `C:/Users/AMP/erp-pausa-2026-10-03/relatorio-2026-10-13/index.html` (fora do repositório, com as imagens das maquetes).
+Relatório visual para o dono: `~/erp-pausa-2026-10-03/relatorio-2026-10-13/index.html` (fora do repositório, com as imagens das maquetes).
 
 **Feito:**
 - **#428 mergeado** (`bdd7c3b5`): `D-PADRAO-BLOCOS-CLICAVEIS`, `D-TELAS-TRES-OPCOES` e `D-INFRA-PROVIDER-AWS`.

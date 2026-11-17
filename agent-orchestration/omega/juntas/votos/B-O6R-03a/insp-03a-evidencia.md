@@ -22,7 +22,7 @@ Formato por item: comando → saída resumida → veredito parcial. Itens EM APU
 - 5.1 VERDE c/ ressalva forte → parecer: LIBERADO COM RESSALVA (`insp-03a-parecer.md`)
 
 ### 1.1 (cont.) — 2026-10-11T23:44Z
-- `git -C C:/Users/AMP/w-03a rev-parse HEAD` → b75a0c2e96a80b2f54cc629fe856d16660ccbe86, ramo fix/expense-sync-atomic.
+- `git -C ~/w-03a rev-parse HEAD` → b75a0c2e96a80b2f54cc629fe856d16660ccbe86, ramo fix/expense-sync-atomic.
 - `git log --oneline 5cee8e57..b75a0c2e` → 1 commit, `b75a0c2e chore(junta): mandatos do inspetor e das 3 cadeiras` ; `git diff --stat` → só 4 arquivos em votos/B-O6R-03a/00-mandatos/ (+277). Delta do mandato ao head = só os mandatos; nenhum src/tests/docs tocado.
 - `git status --porcelain` → 52 ` M` (todos em .agents/agents e .claude/agents) + 2 `??` (meus 2 arquivos). `git diff --quiet` ec=0; `git diff --stat` vazio; laço EOL-neutro blob×disco nos 52 → checked=52 divergent=0. São fantasmas de stat-cache sob core.autocrlf=true (system gitconfig), NÃO mutação viva.
 - Veredito parcial 1.1: VERDE (head por 2 fontes = b75a0c2e; árvore do PR sem mutação de conteúdo). Nota: o MEDIDO do mandato nomeia 5cee8e57; o objeto real é b75a0c2e (delta = só mandatos).
@@ -36,17 +36,17 @@ Formato por item: comando → saída resumida → veredito parcial. Itens EM APU
 - Veredito parcial 1.3: VERDE com ressalva inerte (erp-postgres-alt parado, 29 dirs de storage ignorados em w-03a, 2 dirs órfãos em .claude/worktrees) — nenhum com privilégio ou mutação no objeto.
 
 ### Worktree próprio — 2026-10-11T23:48Z
-- `git worktree add --detach C:/Users/AMP/w-insp-03a b75a0c2e…` → HEAD b75a0c2e, `status --porcelain` 0 linhas. `npm ci` disparado em segundo plano (para 4.2).
+- `git worktree add --detach ~/w-insp-03a b75a0c2e…` → HEAD b75a0c2e, `status --porcelain` 0 linhas. `npm ci` disparado em segundo plano (para 4.2).
 
 ### 1.2 Plano de isolamento — 2026-10-11T23:50Z
-- `cat 00-mandatos/C{1,2,3}.md` (blob do head b75a0c2e, meu worktree) → cada mandato, bloco "O terreno": "worktree proprio detached C:/Users/AMP/w-j03a-cN, npm ci proprio sem junction; banco so em container Linux proprio com prefixo j03a-cN-, porta alta so em 127.0.0.1 testada antes, papel sem BYPASSRLS; nunca a base viva nem as portas do servidor do dono; os containers trc01-* e de outras cadeiras nao sao alvo; remocao so pelo nome, nunca prune". Prefixos distintos c1/c2/c3. E "ninguem roda ferramenta no worktree do dev".
+- `cat 00-mandatos/C{1,2,3}.md` (blob do head b75a0c2e, meu worktree) → cada mandato, bloco "O terreno": "worktree proprio detached ~/w-j03a-cN, npm ci proprio sem junction; banco so em container Linux proprio com prefixo j03a-cN-, porta alta so em 127.0.0.1 testada antes, papel sem BYPASSRLS; nunca a base viva nem as portas do servidor do dono; os containers trc01-* e de outras cadeiras nao sao alvo; remocao so pelo nome, nunca prune". Prefixos distintos c1/c2/c3. E "ninguem roda ferramenta no worktree do dev".
 - Plano §8.1 (l.317): "Cada cadeira mede em seu worktree e Postgres próprios. Quem muta nunca usa a árvore compartilhada do dev." §6.2 l.285 idem.
-- `ls -d /c/Users/AMP/w-j03a-c*` → (medido abaixo) caminhos ainda livres.
+- `ls -d ~/w-j03a-c*` → (medido abaixo) caminhos ainda livres.
 - Veredito parcial 1.2: VERDE (plano escrito, verificável, por cadeira).
 - Nota de objeto: os 4 mandatos (MEDIDO, l.13) nomeiam head 5cee8e57 com check-runs 14/0/0; o objeto real é b75a0c2e (o commit que versiona os próprios mandatos). Delta 5cee8e57..b75a0c2e = só 00-mandatos/*.md. Cada mandato manda a cadeira "resolver de novo por git e por gh" → as cadeiras chegarão em b75a0c2e. Vai como ressalva ao briefing.
 
 ### 4.2 Baseline — 2026-10-11T23:55Z
-- Terreno: worktree próprio C:/Users/AMP/w-insp-03a (detached b75a0c2e), `npm ci --no-audit --no-fund` → "added 326 packages", ec=0 (sem junction; sem .env, só .env.example).
+- Terreno: worktree próprio ~/w-insp-03a (detached b75a0c2e), `npm ci --no-audit --no-fund` → "added 326 packages", ec=0 (sem junction; sem .env, só .env.example).
 - `DATABASE_URL='postgresql://nobody:nobody@127.0.0.1:1/none' timeout 180 node node_modules/prisma/build/index.js generate > log 2>&1; ec=$?` → ec=0 (URL inalcançável de propósito, nunca a base viva).
 - `timeout 300 npm run check > log 2>&1; ec=$?` → **ec=0** (`tsc -p tsconfig.json --noEmit`, sem erro). `git status --porcelain` no meu worktree → vazio depois.
 - Veredito parcial 4.2: VERDE.
@@ -91,7 +91,7 @@ Formato por item: comando → saída resumida → veredito parcial. Itens EM APU
   - banco: head .claude = **4afc985059608ce41053a15d9366578f** = disco w-03a; .agents = bf857394… (espelho Codex, diferença só `tools:` + bloco "Papel para o Codex").
   - replay: head .claude = **8ef06bc866bef9987f28e32c4b70b213** = disco w-03a; .agents = 8f0eaf48….
   - regressao: head .claude = **1fdfb5c1108376ebdcc4f49b102166e9** = disco w-03a; .agents = 291dff2c….
-  - diretório da SESSÃO (C:/Users/AMP/Documents/GitHub/ERP_Techsolutios, main 684e9afd) e origin/main: os 3 corpos **AUSENTES** → o harness não os carrega por nome; os mandatos mandam disparo `general-purpose` com o corpo do blob do head e conferência do md5 publicado no disparo. Os disparos das cadeiras ainda não existem (`ls prompts/` → só `hip-03a-C{1,2,3}.txt`, hipóteses), então o "carregado" ainda não existe: os md5 acima são os que o disparo tem de publicar.
+  - diretório da SESSÃO (~/Documents/GitHub/ERP_Techsolutios, main 684e9afd) e origin/main: os 3 corpos **AUSENTES** → o harness não os carrega por nome; os mandatos mandam disparo `general-purpose` com o corpo do blob do head e conferência do md5 publicado no disparo. Os disparos das cadeiras ainda não existem (`ls prompts/` → só `hip-03a-C{1,2,3}.txt`, hipóteses), então o "carregado" ainda não existe: os md5 acima são os que o disparo tem de publicar.
   - inspetor: head b75a0c2e = origin/main (medido no item 0) = disco da sessão = 89b4563001df748a4016ae57b05fbd20.
 - Normas citadas nos 3 corpos, conferidas no CLAUDE.md do head: §A1 §A2 §A5 §A7 (l.45/59/89/103), §C3 + item 5 (l.294/325), §C5 §C6 §C7 (l.341/373/379), §C7.1 (l.383), 1-ter (a)(b)(c) (l.394/404/412), 4-bis (l.485), 5 (l.499), 6 (l.504), 6-bis (l.529), 7 (l.578), 8 (l.661) → todas existem. §C7.1-bis: presente (texto "1-bis. INSPEÇÃO DE TERRENO" no item 1). Decisões: D-03a-MESMA-CHAVE-OUTRO-ATOR (decisoes l.3432), D-CLAUDE-2-PROCESSOS (l.3062), D-GOV-PROPORCIONAL, D-TOPO-…, D-PAUSA-GRAVA-E-PARA, D-MEDIR-NA-REF-ALVO, D-FABLE-ASTRA-SO-DINHEIRO → presentes. ("D-PATTERN-INVALIDO" do regex é fragmento de `P-O6R-B03-UUID-PATTERN-INVALIDO`, não decisão.)
 - **Divergência corpo × contrato (não carregado × julgado):** os 3 corpos dizem (banco l.157, replay l.164, regressao l.165) "**Queda por infraestrutura relança a MESMA identidade, você** (P3)". O P3 do CLAUDE.md do head (l.602) diz "Voto perdido não conta; **o sucessor tem identidade nova**"; o PROTOCOLO-JUNTA-RESILIENTE.md (a fonte) l.37: "Texto vigente da R2, que fica: voto perdido não conta; o sucessor tem identidade nova". "Mesma identidade" é a retomada do P7 (PAUSA, protocolo l.102), não da queda. Pela §A7/3.3, norma que o contrato não diz não se aplica: em queda, vale o P3 do contrato.
@@ -112,4 +112,4 @@ Formato por item: comando → saída resumida → veredito parcial. Itens EM APU
 ### Fecho — 2026-10-11T23:54Z
 - Objeto re-resolvido no fim: `git ls-remote` e `gh pr view 425 --json headRefOid` → **b75a0c2e96a80b2f54cc629fe856d16660ccbe86** (não andou). Check-runs (latest): total=14 não-verdes=0 pendentes=0.
 - w-03a: só os 2 `??` meus fora dos 52 fantasmas de stat-cache.
-- Limpeza: `git worktree remove --force C:/Users/AMP/w-insp-03a` ec=0 (dir ausente, fora do `worktree list`); logs `insp03a-*` do scratchpad apagados; nenhum container criado; `df -h /c` → 16G.
+- Limpeza: `git worktree remove --force ~/w-insp-03a` ec=0 (dir ausente, fora do `worktree list`); logs `insp03a-*` do scratchpad apagados; nenhum container criado; `df -h /c` → 16G.

@@ -37,6 +37,7 @@ import {
   mirrorColumnsFromInputs,
   mirrorColumnsFromLinks,
   type CreateWorkOrderEventInput,
+  type FieldRequestUnit,
   type WorkOrderRepository,
 } from "./work-order.repository.js";
 import {
@@ -793,6 +794,33 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
 
     return events.map(mapWorkOrderEventRecord);
   }
+
+  // B-SAN3-16 (Emendas 1.3 e 1.3.1, DUP-580-CONCORRENTE) — a unidade do pedido de campo, nesta ordem:
+  //   (1) a trava exclusiva da linha da OS, o idioma do cancelamento (`B-SAN3-23:trava-os-cancel`): o 2º envio da mesma
+  //       ação espera aqui e, solto, enxerga o commit do 1º (READ COMMITTED). Ordem "OS antes de tudo" (P-23.3);
+  //   (2) a situação relida sob a trava (E13-01): um cancelamento que commitou depois do `getForMutation` do serviço
+  //       decide a regra da OS terminal; 0 linhas (OS ausente, ou de outra organização sob RLS) → `undefined` (E13-04);
+  //   (3) o trabalho do serviço: a leitura da linha do tempo (o dedupe) e o INSERT do evento, no MESMO `tx`.
+  // A TRANSAÇÃO é a do invólucro (`RlsPrismaWorkOrderRepository` → `withTenantRls`), como no cancelamento: sem
+  // `$transaction` interno, e sem advisory (o guard do DIN-008 continua o único lar de `pg_advisory` em `src/**`).
+  async runFieldRequestUnit<T>(
+    tenantId: string,
+    workOrderId: string,
+    work: (unit: FieldRequestUnit) => Promise<T>,
+  ): Promise<T | undefined> {
+    const tx = this.client;
+    await tx.$queryRaw`SELECT id FROM work_orders WHERE tenant_id = ${tenantId}::uuid AND id = ${workOrderId}::uuid FOR UPDATE`; // B-SAN3-16:trava-os-pedido
+    const locked = await tx.workOrder.findFirst({
+      where: { tenant_id: tenantId, id: workOrderId },
+      select: { status: true },
+    });
+    if (!locked) return undefined;
+    return work({
+      status: locked.status as WorkOrderStatus,
+      listTimeline: () => this.listTimeline(tenantId, workOrderId),
+      createEvent: (input) => this.createEvent({ ...input, tenantId, workOrderId }),
+    });
+  }
 }
 
 export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
@@ -906,6 +934,18 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
 
   listTimeline(tenantId: string, workOrderId: string): Promise<readonly WorkOrderEvent[]> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderRepository(tx).listTimeline(tenantId, workOrderId));
+  }
+
+  // B-SAN3-16 (Emenda 1.3) — a unidade do pedido de campo sob RLS, numa transação só (a do `withTenantRls`), sem
+  // superusuário: a trava, a releitura, a linha do tempo e o evento commitam juntos, ou nada.
+  runFieldRequestUnit<T>(
+    tenantId: string,
+    workOrderId: string,
+    work: (unit: FieldRequestUnit) => Promise<T>,
+  ): Promise<T | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).runFieldRequestUnit(tenantId, workOrderId, work),
+    );
   }
 }
 

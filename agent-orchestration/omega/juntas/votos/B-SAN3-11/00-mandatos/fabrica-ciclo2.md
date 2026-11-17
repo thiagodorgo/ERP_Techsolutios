@@ -34,19 +34,19 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 
 O papel e a agente-fabrica, instancia nova, que escreve os TRES corpos de jurado de identidade nova da junta do ciclo 2 do B-SAN3-11 (PR
   401), como a secao 16.8 do plano docs/revisoes/SAN3/B-SAN3-11-plano.md manda (identidade, competencia e itens de cada cadeira na tabela da secao); declara na 1a
-  linha do seu relatorio o papel, o modelo e o mandato_md5 que o orquestrador lhe passa no disparo derruba com: `head -1 C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md | grep -ic 'mandato_md5'`
+  linha do seu relatorio o papel, o modelo e o mandato_md5 que o orquestrador lhe passa no disparo derruba com: `head -1 ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md | grep -ic 'mandato_md5'`
 
-Os corpos sao C:/Users/AMP/w-nuv11/.claude/agents/especialistas/jurado-san3-11-c2-afordancia-e-ancora.md (novo),
-  C:/Users/AMP/w-nuv11/.claude/agents/especialistas/jurado-san3-11-c2-enumeracao-tipada.md (novo) e
-  C:/Users/AMP/w-nuv11/.claude/agents/especialistas/jurado-san3-11-c2-registro-e-escopo.md (novo), cada um com a competencia e os itens
-  da linha dele na tabela da secao 16.8, sem diluir, com frontmatter name, description e tools (Read, Grep, Glob, Bash) derruba com: `grep -ic 'jurado-san3-11-c2' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md`
+Os corpos sao ~/w-nuv11/.claude/agents/especialistas/jurado-san3-11-c2-afordancia-e-ancora.md (novo),
+  ~/w-nuv11/.claude/agents/especialistas/jurado-san3-11-c2-enumeracao-tipada.md (novo) e
+  ~/w-nuv11/.claude/agents/especialistas/jurado-san3-11-c2-registro-e-escopo.md (novo), cada um com a competencia e os itens
+  da linha dele na tabela da secao 16.8, sem diluir, com frontmatter name, description e tools (Read, Grep, Glob, Bash) derruba com: `grep -ic 'jurado-san3-11-c2' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md`
 
 Cada corpo segue o rigor dos jurados de identidade nova de origin/main: unanimidade de 3 com veto; achado com gravidade e escopo
   (pre-existente so com evidencia de data ou origem); nao consigo medir e REPROVADO; nao propoe correcao; P1, P2 e P7; declara o
-  mandato_md5 e o md5 EOL-neutro do corpo na 1a linha da evidencia; cita so norma que existe em origin/main derruba com: `grep -ic 'unanimidade' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md`
+  mandato_md5 e o md5 EOL-neutro do corpo na 1a linha da evidencia; cita so norma que existe em origin/main derruba com: `grep -ic 'unanimidade' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md`
 
-A fabrica nao versiona nem commita (nao tem Bash), nao vota e nao escreve outro arquivo alem dos tres corpos e do relatorio C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md; o
-  orquestrador gera o espelho em .agents por scripts/sync-agent-agents.mjs e versiona os dois espelhos derruba com: `grep -ic 'sync-agent-agents' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md`
+A fabrica nao versiona nem commita (nao tem Bash), nao vota e nao escreve outro arquivo alem dos tres corpos e do relatorio ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md; o
+  orquestrador gera o espelho em .agents por scripts/sync-agent-agents.mjs e versiona os dois espelhos derruba com: `grep -ic 'sync-agent-agents' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md`
 
 ## MEDIDO
 
@@ -54,7 +54,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-21: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/fabrica-ciclo2.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/fabrica-ciclo2.md
 ec=0
 head=653532f7abfffc1be738c9b111d78d54d6bc4ea1
 utc=2026-10-03T04:49:17Z

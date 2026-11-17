@@ -5,7 +5,7 @@
   "corpo_md5": "6af1ad8f996180a6080a2f4cceca4cdf",
   "head_medido": "622bf8453d2d60ecb6577aa611b2d87645a689ae · merge-base c1cfdabe12c74b58f8393dbee4f333224c56b303 · 14/14 check-runs completed/success",
   "regua": "ciclo 3: somente defeito grave de produto comprovado por execução — perda de dado, vazamento entre organizações, quebra de permissão ou erro de dinheiro — bloqueia",
-  "terreno": "worktree detached próprio C:/Users/AMP/w-ciclo3-389-c1; npm ci próprio; runner Linux Node 20.20.2; PostgreSQL 16.14 e Redis próprios sem portas publicadas; DATABASE_URL/REDIS_URL explícitas para os descartáveis; node_modules sem junction/symlink; árvore pristina antes do teardown",
+  "terreno": "worktree detached próprio ~/w-ciclo3-389-c1; npm ci próprio; runner Linux Node 20.20.2; PostgreSQL 16.14 e Redis próprios sem portas publicadas; DATABASE_URL/REDIS_URL explícitas para os descartáveis; node_modules sem junction/symlink; árvore pristina antes do teardown",
   "voto": "APROVADO",
   "itens": [
     {

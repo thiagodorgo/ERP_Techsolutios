@@ -1,8 +1,8 @@
 # B-SAN3-13 — Crítica adversarial do plano · rodada 2 (a última)
 
 - **SUBSTITUIÇÃO DECLARADA:** este arquivo é de `crit-san313-opus-r2` (Claude **Opus 5.5**, `claude-opus-5-5`, nível menor declarado, papel `critico-adversarial`, identidade NOVA), no lugar de `crit-san313-pro-r2` (Gemini 3.1 Pro pela API), que caiu pela cota da API **sem gravar nada** (nada a re-executar — P3). O crítico da r1 foi `crit-san313-opus` (outra identidade).
-- **Objeto:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-13-plano.md` — PLANO v2 (Fable) + **Emenda E1** (dono: "Só as abertas").
-- **Ref medida:** `origin/main` = `c76ec481ea9af23dea8cb58ce28fb72bf1965f2b`; worktree só-leitura `C:/Users/AMP/w-crit313b` (detached, conferido por `git rev-parse HEAD`).
+- **Objeto:** `~/erp-pausa-2026-10-03/planos/B-SAN3-13-plano.md` — PLANO v2 (Fable) + **Emenda E1** (dono: "Só as abertas").
+- **Ref medida:** `origin/main` = `c76ec481ea9af23dea8cb58ce28fb72bf1965f2b`; worktree só-leitura `~/w-crit313b` (detached, conferido por `git rev-parse HEAD`).
 - **Regra:** quem acha não propõe correção (§C7.4-bis). Cada achado: id · gravidade · escopo · evidência executada · motivo.
 
 ## Estado (P2 — esqueleto; cada item gravado ao ser medido)
@@ -15,10 +15,10 @@
 | Veredito | GRAVADO |
 
 ## Item 0 — ref e terreno (GRAVADO)
-- `git -C C:/Users/AMP/w-crit313b rev-parse HEAD` → `c76ec481ea9af23dea8cb58ce28fb72bf1965f2b` = `git rev-parse origin/main` (após `git fetch`). Mesma ref de `w-plan21`.
+- `git -C ~/w-crit313b rev-parse HEAD` → `c76ec481ea9af23dea8cb58ce28fb72bf1965f2b` = `git rev-parse origin/main` (após `git fetch`). Mesma ref de `w-plan21`.
 - Cópias de execução conferidas contra o head por `cmp`: `san313-medicao/src/modules/work-orders/{work-order.service,work-order-prisma.repository,work-order.repository}.ts` → **igual** (3/3); `san313-critica/flutter_app/lib/{features/work_orders/data/work_order_repository,core/sync/sync_providers,core/evidence/evidence_upload}.dart` → **igual** (3/3).
 - Sondas da r1 re-executadas (P3), com o gancho dela: `node --import file:///<scratchpad>/hook/register.mjs --import file:///…/node_modules/tsx/dist/loader.mjs --test tests/crit-opus-r1-{backend,ca1,paginacao}.test.ts` → `ok 1 - CRIT-OPUS-A …` · `predicado completo: 3 · sem ramo assigned_user_id: 3 · sem ramo operator=userId: 3 · sem ramo operator=perfil: 2` · `acumulado=149 … OS_ainda_de_A_que_o_pull_nao_trouxe=1` · `# pass 3 # fail 0` (idêntico ao registrado na r1 e na v2).
-- **Terreno durante a rodada:** o worktree `C:/Users/AMP/w-crit313b` **sumiu** no meio da medição (`cd` → "No such file or directory"; `git worktree list` não o lista mais — removido por outra sessão, não por mim). O restante foi medido em `C:/Users/AMP/w-plan21` (detached em `c76ec481`, conferido) e por `git show/blame c76ec481 -- <caminho>`. A `origin/main` andou para `37a3f360` (B-SAN3-20, #456): `git diff --name-only c76ec481 37a3f360 -- src/modules/work-orders src/modules/operator-profiles mobile prisma/schema.prisma` → só `prisma/schema.prisma`, sem linha de `WorkOrder`/`created_at` (`git diff … | grep -i "workorder\|work_orders\|created_at"` → vazio). Tudo abaixo vale nos dois heads.
+- **Terreno durante a rodada:** o worktree `~/w-crit313b` **sumiu** no meio da medição (`cd` → "No such file or directory"; `git worktree list` não o lista mais — removido por outra sessão, não por mim). O restante foi medido em `~/w-plan21` (detached em `c76ec481`, conferido) e por `git show/blame c76ec481 -- <caminho>`. A `origin/main` andou para `37a3f360` (B-SAN3-20, #456): `git diff --name-only c76ec481 37a3f360 -- src/modules/work-orders src/modules/operator-profiles mobile prisma/schema.prisma` → só `prisma/schema.prisma`, sem linha de `WorkOrder`/`created_at` (`git diff … | grep -i "workorder\|work_orders\|created_at"` → vazio). Tudo abaixo vale nos dois heads.
 - Sondas NOVAS desta rodada (arquivos meus, declarados; nada da medição nem do worktree alterado): `<scratchpad>/r2/prisma-sql-probe.mjs` (Prisma 7.8 real do repo com driver adapter FALSO que só registra o SQL — nenhum banco), `<scratchpad>/r2/cursor-us-probe.mjs` (PGlite = Postgres WASM em memória, descartável — não é a base viva, sem Docker), `san313-critica/flutter_app/test/crit_opus_r2_{instancia,evidencia}_test.dart`. `flutter pub get --offline` → `Got dependencies!`.
 
 ## Item 1 — as respostas da v2 fecham os achados da r1? (GRAVADO)

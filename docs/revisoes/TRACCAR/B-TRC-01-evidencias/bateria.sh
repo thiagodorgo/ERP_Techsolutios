@@ -3,8 +3,8 @@
 # trc01-redis também na 1ª forma (a 6379 desta máquina é o erp-redis do dono; ver o incidente no relatório).
 # Cada comando grava a saída inteira num arquivo e uma linha de resumo no LOG. Sem tail -f, tudo com timeout.
 set -u
-W=/c/Users/AMP/w-trc01
-OUT=/c/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/bateria
+W=~/w-trc01
+OUT=~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/bateria
 LOG=$OUT/resumo.log
 mkdir -p "$OUT"; : > "$LOG"
 DB='postgresql://postgres:trc01-local-not-a-secret@127.0.0.1:47432/erp_techsolutions?schema=public'

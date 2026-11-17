@@ -125,6 +125,6 @@
   ],
   "nao_executado": "nao rodei a suite inteira (npm test) nem as regressoes de §8 l.568/570 (fora das tres linhas desta cadeira); a mutacao M10 sem GUC e da C2; nao medi ps -o args (C1)",
   "incidente_de_limpeza": "o glob ./*.log apagou todo .log da raiz do scratchpad COMPARTILHADO da sessao, inclusive possiveis logs alheios (contagem anterior nao medida); ver C3-evidencia.md §L2",
-  "terreno": "worktree C:/Users/AMP/w-j09c3 (detached ba65c03a) e containers j09c3-pg/j09c3-redis/j09c3-node + rede j09c3-net criados e removidos; base viva nunca alvo",
+  "terreno": "worktree ~/w-j09c3 (detached ba65c03a) e containers j09c3-pg/j09c3-redis/j09c3-node + rede j09c3-net criados e removidos; base viva nunca alvo",
   "gravado_em": "2026-10-04T20:10Z"
 }

@@ -5,10 +5,10 @@ papel: cadeira C1 | identidade: jurado-san313-c1-opus | executor: subagente Clau
 ## Terreno e legalidade
 - origin/main início: b08c755719a6cb0ed192fa04e549ac5fc67a3e67 (= merge-base do objeto). Head-base do controle: `8a7885f4` = 8a7885f4c3bfab02e6c31b318c1111e262f2907c = `<objeto>~19`. Commit de vermelho-controle do dev: f6b1ea37 (`test(work-orders): vermelho-controle B1/B14-db/F1 no head`).
 - Objeto por duas fontes: `git ls-remote origin refs/heads/fix/mobile-minhas-os` = cbf2db29…; `gh pr view 460` headRefOid = cbf2db29…, OPEN, isDraft=false, MERGEABLE. Check-runs (mandato, re-verificado pelo rollup do gh no fim): 14, 0 não-verdes, 0 pendentes.
-- Parecer `insp-san313c2-parecer.md` (inspetor-san313c2-opus): LIBERADO COM RESSALVA (R1 corpo do blob, R2 monocultura Opus, R3 disco), ordem C2b → C1 → C3, nomeia `jurado-san313-c1-opus`, `C:/Users/AMP/j13c2-c1-wt`, `j13c2-c1-pg`/`j13c2-c1-redis`, 47613/47614. Nome não está na lista de inelegíveis.
+- Parecer `insp-san313c2-parecer.md` (inspetor-san313c2-opus): LIBERADO COM RESSALVA (R1 corpo do blob, R2 monocultura Opus, R3 disco), ordem C2b → C1 → C3, nomeia `jurado-san313-c1-opus`, `~/j13c2-c1-wt`, `j13c2-c1-pg`/`j13c2-c1-redis`, 47613/47614. Nome não está na lista de inelegíveis.
 - Não li c2b-* nem c3-* (nenhum voto/evidência de outra cadeira).
-- $SCRATCH = C:/Users/AMP/erp-pausa-2026-10-03/j13c2-c1/ · node v20.19.5 · disco C: 9.9G livre no início, 9.4G após npm ci · memória de commit livre 13,44 GB · trabalhos Docker fora de erp-*: 0 antes de subir.
-- Worktree `C:/Users/AMP/j13c2-c1-wt` detached em cbf2db29 (`git worktree add --detach`), `.git` presente, sem `.env`; `npm ci` próprio ec=0 (sem junction); `prisma generate` ec=0.
+- $SCRATCH = ~/erp-pausa-2026-10-03/j13c2-c1/ · node v20.19.5 · disco C: 9.9G livre no início, 9.4G após npm ci · memória de commit livre 13,44 GB · trabalhos Docker fora de erp-*: 0 antes de subir.
+- Worktree `~/j13c2-c1-wt` detached em cbf2db29 (`git worktree add --detach`), `.git` presente, sem `.env`; `npm ci` próprio ec=0 (sem junction); `prisma generate` ec=0.
 - Postgres `j13c2-c1-pg` (postgres:16-alpine, PostgreSQL 16.15) em 127.0.0.1:47613, Redis `j13c2-c1-redis` (redis:7-alpine) em 127.0.0.1:47614 (`docker port` conferido; portas não citadas em `docker ps -a` antes). Senha aleatória em $SCRATCH/j13c2-c1.pw, só por ambiente (aqui `***`). Variáveis: DATABASE_URL, REDIS_URL, CORE_SAAS_PERSISTENCE só como prefixo de comando; nenhum export.
 - `npx prisma migrate deploy` ec=0, 116 migrações aplicadas.
 - Âncoras do contrato no objeto (CLAUDE.md): ver item de normas abaixo.
@@ -104,5 +104,5 @@ papel: cadeira C1 | identidade: jurado-san313-c1-opus | executor: subagente Clau
 - Monocultura (R2 do inspetor): esta cadeira roda em Claude Opus, o mesmo modelo do dev do ciclo 2.
 
 ### Teardown
-- `docker rm -f -v j13c2-c1-pg j13c2-c1-redis` → contagem `j13c2-c1-*` = 0. Processos com `j13c2-c1-wt` na linha de comando = 0. `git worktree remove --force C:/Users/AMP/j13c2-c1-wt` ec=0 (removido; `worktree list` sem ele). A sonda saiu do worktree antes. Mutações e checkout do head-base restaurados (hash-object = blob). Senha: `grep -c -F` na evidência, no voto e nos logs = 0, e o arquivo foi apagado; `runlog.txt` (CI) apagado. A base viva e os containers alheios nunca foram tocados; nenhum prune. Disco C: 9.7G no fim.
+- `docker rm -f -v j13c2-c1-pg j13c2-c1-redis` → contagem `j13c2-c1-*` = 0. Processos com `j13c2-c1-wt` na linha de comando = 0. `git worktree remove --force ~/j13c2-c1-wt` ec=0 (removido; `worktree list` sem ele). A sonda saiu do worktree antes. Mutações e checkout do head-base restaurados (hash-object = blob). Senha: `grep -c -F` na evidência, no voto e nos logs = 0, e o arquivo foi apagado; `runlog.txt` (CI) apagado. A base viva e os containers alheios nunca foram tocados; nenhum prune. Disco C: 9.7G no fim.
 - Objeto no fim: ls-remote = gh = cbf2db29 (não andou), rollup 14/0; origin/main no fim = b08c7557 (igual ao início). `w-san313` sem modificação rastreada (0).

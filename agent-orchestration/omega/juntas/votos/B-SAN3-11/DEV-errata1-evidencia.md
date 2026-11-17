@@ -17,8 +17,8 @@ Não achei o defeito (inspetor de terreno), não planejei a correção (planejad
 
 ## 1. Terreno — 2026-10-02T15:51Z
 
-- medido por: `git worktree add --detach /c/Users/AMP/w-dev11 508240fb` (repo com `core.autocrlf=true`) e
-  `git -c core.autocrlf=false worktree add --detach /c/Users/AMP/w-dev11lf 508240fb` → ambos `HEAD is now at 508240fb`.
+- medido por: `git worktree add --detach ~/w-dev11 508240fb` (repo com `core.autocrlf=true`) e
+  `git -c core.autocrlf=false worktree add --detach ~/w-dev11lf 508240fb` → ambos `HEAD is now at 508240fb`.
 - medido por: `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` → **CRLF (w-dev11): 583** · **LF (w-dev11lf): 0**.
 - medido por: `uname -a` → `MINGW64_NT-10.0-22631 N3SOH82 3.6.6 … x86_64 Msys` (máquina local, Windows 11); `node --version` → v20.19.5 (`/c/nvm4w/nodejs/node`); npm 11.7.0.
 - medido por: `timeout 900 npm ci --no-audit --no-fund` em `frontend/` de cada worktree → `added 103 packages in 39s` · ec=0 (os dois). Sem junction.
@@ -154,7 +154,7 @@ terreno LF e a bateria final no head novo NÃO foram rodados depois da divergên
   16/16 no arquivo em CRLF e em LF · test:smoke 1218/1218 em CRLF @ 92cfc05e · guards da raiz verdes · controle A17 executado (D1) · varredura (D2).
 - falta: decisão do plano sobre D1/D2 → (se a forma mudar) commit novo no arquivo de teste; controles A17 (re-execução), A19 (CRLF obrigatório, e LF), A20, A21;
   bateria §15.8 completa nos dois terrenos no head final; varredura final; seção `## ERRATA 1` do DEV-relatorio, 1 linha em log-execucao e status-geral; fetch + ancestralidade + push.
-- próximo comando (após a decisão): `cd /c/Users/AMP/w-dev11 && git fetch origin && git merge-base --is-ancestor origin/fix/dossie-versao-da-vistoria HEAD; echo $?`
+- próximo comando (após a decisão): `cd ~/w-dev11 && git fetch origin && git merge-base --is-ancestor origin/fix/dossie-versao-da-vistoria HEAD; echo $?`
 - meio-escritos: nenhum (tudo commitado localmente). Worktrees mantidos (com `node_modules` próprios) para a retomada; NÃO removidos porque o trabalho não terminou.
 - observação já registrada no §5: `pendencias-indice.md` não regenerado pelo bloco original (fora do PERMITIDO da errata).
 
@@ -165,8 +165,8 @@ terreno LF e a bateria final no head novo NÃO foram rodados depois da divergên
 - head local final (w-dev11, detached): **`46bd9fbe`** ← `3208cf13` ← `92cfc05e` ← `1654ae57` ← `508240fb`. **Nada empurrado**: origin/fix/dossie-versao-da-vistoria continua `508240fb`.
   Ancestralidade: `508240fb` é ancestral de `46bd9fbe` (cadeia acima), então o push futuro é fast-forward se o ramo remoto não andar.
 - medido por: `Get-CimInstance Win32_Process | ? CommandLine -match 'w-dev11'` → 0 processos vivos nos dois worktrees.
-- worktrees `C:/Users/AMP/w-dev11` e `C:/Users/AMP/w-dev11lf` MANTIDOS (o trabalho não terminou; a remoção é "ao fim"). Remoção, quando o trabalho fechar:
-  `git worktree remove --force C:/Users/AMP/w-dev11` e `… w-dev11lf`, depois de contar 0 processo.
+- worktrees `~/w-dev11` e `~/w-dev11lf` MANTIDOS (o trabalho não terminou; a remoção é "ao fim"). Remoção, quando o trabalho fechar:
+  `git worktree remove --force ~/w-dev11` e `… w-dev11lf`, depois de contar 0 processo.
 - conclusão: PARADO em D1 (A17) e D2 (A18) aguardando decisão do plano; nenhuma decisão tomada por esta identidade.
 
 ---
@@ -313,7 +313,7 @@ medido por: `bash scratchpad/bateria-terreno.sh <wt> <terreno>` (os dois em para
 - CI no head novo (informativo; quem espera é o orquestrador), medido por `gh api …/commits/6cb53df0…/check-runs` às 21:17Z → `total=12`, owner-portal e authority-portal
   `completed/success`, frontend/backend/backend-postgres/flutter `in_progress` — NÃO concluídos; o inspetor novo só começa com check-runs concluídos (§C7.1-bis).
 - medido por: `Get-CimInstance Win32_Process | ? CommandLine -match 'w-dev11'` → **0**; `git status --short` vazio nos dois →
-  `git worktree remove --force C:/Users/AMP/w-dev11` ec=0 · `git worktree remove --force C:/Users/AMP/w-dev11lf` ec=0; `ls -d` → não existem; `git worktree list | grep -c w-dev11` → 0.
+  `git worktree remove --force ~/w-dev11` ec=0 · `git worktree remove --force ~/w-dev11lf` ec=0; `ls -d` → não existem; `git worktree list | grep -c w-dev11` → 0.
   `%TEMP%/.tmp-censo-*` → 0; `node_modules` da árvore principal intacto (sem junction em lugar nenhum). Nenhum `git clean`, nenhum `git stash`. w-nuv11 (do orquestrador) não tocado: continua em `1ae41a42` (o ramo andou para `6cb53df0` no remoto — o orquestrador puxa).
 - scratchpad desta identidade (instrumentos e TAPs, fora do repo): `san3-11-errata1-varredura{,-v2}.mjs`, `controles.mjs`, `run-controle.sh`, `bateria-terreno.sh`, `escopo.mjs`,
   `indice-delta.mjs`, `resolve-both.mjs`, `resolve-kpi-merge.mjs`, `recount-kpi.mjs`, `tap-*.log`, `bat-*.log`, `ctl-*.out` — ficam para a C2/C3 re-executarem (P3); não versionados.

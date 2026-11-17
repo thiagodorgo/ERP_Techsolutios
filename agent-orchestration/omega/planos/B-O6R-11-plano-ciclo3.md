@@ -5,7 +5,7 @@
 > perda de dado, logo **junta completa**, com pré-revisão, UMA votação, UM conserto e conferência.
 > **Este plano não desenvolve, não vota, não commita.** Tudo abaixo foi medido na `origin/main` `264c3760` ou na ref do ramo
 > `origin/fix/mobile-work-order-contracts` `a24f58b5`, com o comando ao lado (§A7, `D-MEDIR-NA-REF-ALVO`). O que vem do
-> diagnóstico antigo (`C:/Users/AMP/.claude/plans/luminous-nibbling-sparrow.md`, Partes 2 e 4) entrou como **hipótese** e foi re-medido.
+> diagnóstico antigo (`~/.claude/plans/luminous-nibbling-sparrow.md`, Partes 2 e 4) entrou como **hipótese** e foi re-medido.
 
 ## Resposta curta à pergunta do mandato
 
@@ -28,7 +28,7 @@ A segunda perda que executa hoje, o **lote preso em `syncing` para sempre** (`MP
 
 ## §0 — Terreno medido (comando → saída → leitura)
 
-Árvore `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios`, refs remotas após `git fetch`, 2026-10-30.
+Árvore `~/Documents/GitHub/ERP_Techsolutios`, refs remotas após `git fetch`, 2026-10-30.
 
 | # | Comando | Saída (resumida) | Leitura |
 |---|---|---|---|
@@ -144,7 +144,7 @@ nenhum arquivo em conflito com a `main` é tocado; o que não executa fica nomea
 ## §4 — Escopo PERMITIDO e PROIBIDO (caminhos exatos)
 
 Raiz do app: `mobile/flutter_app/`. Branch: `fix/mobile-fila-duravel-b-o6r-11`, a partir de `origin/main` (`264c3760` ou mais novo,
-medido em F0). Worktree próprio em caminho curto (`C:/Users/AMP/w-o6r11c3`), `flutter pub get` próprio, **sem junction** de
+medido em F0). Worktree próprio em caminho curto (`~/w-o6r11c3`), `flutter pub get` próprio, **sem junction** de
 `.dart_tool`/`node_modules`.
 
 ### PERMITIDO
@@ -299,13 +299,13 @@ bloco), e o resultado (vermelho/verde, qual caso) fica registrado. "Vermelho-con
 
 Regras que valem em toda fatia: diário em `agent-orchestration/omega/juntas/votos/B-O6R-11-c3/00-dev.md` (P1: cada medida
 ao ser feita; P2: o diário antes da mensagem final; P7: se receber `PAUSA`, grava `## PAUSA <hora UTC>` e para). Worktree
-`C:/Users/AMP/w-o6r11c3` em `fix/mobile-fila-duravel-b-o6r-11`. **Disco < 7,5 GB → PARE** e registre. Nenhum arquivo PROIBIDO.
+`~/w-o6r11c3` em `fix/mobile-fila-duravel-b-o6r-11`. **Disco < 7,5 GB → PARE** e registre. Nenhum arquivo PROIBIDO.
 Formatação com o `dart format` da versão local **e** a forma aceita pelo CI (o ramo já pagou isso em `ea27b369`). Mensagem final
 de cada fatia = 1 linha apontando o diário. O orquestrador é quem reporta ao dono.
 
 | Fatia | Tempo | O que faz | Prova registrada | Commit |
 |---|---|---|---|---|
-| **F0 — Terreno** | 20 min | `git fetch`; `git worktree add C:/Users/AMP/w-o6r11c3 -b fix/mobile-fila-duravel-b-o6r-11 origin/main`; `cd mobile/flutter_app && flutter pub get`; `flutter --version`; `df -h`; baseline `flutter test --reporter compact` → **N** (esperado 905); criar o diário com `## RETOMADA 0` (head, versão, N, disco) | saídas de `flutter --version`, `df`, última linha do `flutter test` | `docs(b-o6r-11): diário do ciclo 3 — terreno medido` |
+| **F0 — Terreno** | 20 min | `git fetch`; `git worktree add ~/w-o6r11c3 -b fix/mobile-fila-duravel-b-o6r-11 origin/main`; `cd mobile/flutter_app && flutter pub get`; `flutter --version`; `df -h`; baseline `flutter test --reporter compact` → **N** (esperado 905); criar o diário com `## RETOMADA 0` (head, versão, N, disco) | saídas de `flutter --version`, `df`, última linha do `flutter test` | `docs(b-o6r-11): diário do ciclo 3 — terreno medido` |
 | **F1 — Vermelho-controle** | 40 min | Num worktree **temporário** sobre `origin/main` (não no do bloco), copiar os 3 testes do ramo (`git show origin/fix/mobile-work-order-contracts:<caminho> > <caminho>`) **sem** o código A/B e rodar cada arquivo; registrar por caso: vermelho/verde, e para o caso 14 **N=5 execuções**. Também rodar `flutter analyze` com `unawaited_futures: true` nesse worktree para medir R5 (issues fora do escopo: N e arquivos). Remover o worktree temporário (`git worktree remove --force`). **Nada se commita de código nesta fatia.** | tabela caso → resultado; saída do `analyze` | `docs(b-o6r-11): vermelho-controle no head da main, por caso` |
 | **F2 — QUA-005: código + testes** | 30 min | No worktree do bloco: `git checkout origin/fix/mobile-work-order-contracts -- mobile/flutter_app/lib/core/sync/sync_queue_repository.dart mobile/flutter_app/lib/features/prestador/data/prestador_repository.dart mobile/flutter_app/test/core/sync/bo6r11_fila_serializada_test.dart mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart`; `dart format`; `flutter analyze`; rodar os 3 arquivos → 12/12; mutações **M1-M5**, uma por vez, revertidas por edição inversa, com o caso que ficou vermelho | `analyze` 0 issues; 12/12; tabela M1-M5 | `fix(mobile): fila serializa mutações e material só retorna depois de gravado (B-O6R-11)` |
 | **F3 — Lint (condicional)** | 15 min | Se F1 mediu **0 issues fora do escopo**: `git checkout <ramo> -- mobile/flutter_app/analysis_options.yaml`; `flutter analyze` → 0. Se mediu ≥1: **não** aplicar; registrar a pendência `P-MOBILE-UNAWAITED-FUTURES-FORA-DO-ESCOPO` (N, arquivos, linhas) no diário para F6 | saída do `analyze` | `chore(mobile): liga unawaited_futures (B-O6R-11)` **ou** só diário |

@@ -6,8 +6,8 @@ papel: cadeira C1 refeita (c1r2) | identidade: jurado-san312b-c1-r2-opus | execu
 - origin/main no início: f076973921539165df8d406b8c061dbf4e4ee127 (= merge-base e77a5ac1 × origin/main).
 - objeto: e77a5ac1… por duas fontes: `git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas` = e77a5ac1… ; `gh pr view 469` headRefOid = e77a5ac1…, base main, OPEN, não rascunho, MERGEABLE.
 - objeto do ciclo 1 (vermelho-controle, `<objeto>~13`): fc5ead6cf3191eb2a1485d4a16404a403a00beec.
-- $SCRATCH: C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c1r2/ (sondas zz-j12bc1r2-*, logs, capturas).
-- worktree próprio: C:/Users/AMP/j12b-c2-c1r2-wt (caminho do mandato e do parecer do inspetor; o disparo dizia j12b2-c1r2-wt — vale o mandato), detached em e77a5ac1, `.git` presente, sem `.env`, status vazio; `npm ci` próprio na raiz e em frontend/ (sem junction).
+- $SCRATCH: ~/erp-pausa-2026-10-03/j12b2-c1r2/ (sondas zz-j12bc1r2-*, logs, capturas).
+- worktree próprio: ~/j12b-c2-c1r2-wt (caminho do mandato e do parecer do inspetor; o disparo dizia j12b2-c1r2-wt — vale o mandato), detached em e77a5ac1, `.git` presente, sem `.env`, status vazio; `npm ci` próprio na raiz e em frontend/ (sem junction).
 - node -v: v20.19.5 (o Node padrão; Node 22 não usado — a bateria de Node 22 é da C3).
 - disco livre em C: 13G (df -h /c) no start; memória de commit livre 13,21 GB. Piso do disparo (C1: ≥ 8,8 GiB) e do mandato (≥ 7,5 GB, ≥ 4 GB) cumpridos.
 - check-runs no objeto (gh api …/check-runs?per_page=100 → $S/check-runs.json): total 14 | não-verdes 0 | pendentes 0; frontend: success (2 runs).
@@ -19,7 +19,7 @@ papel: cadeira C1 refeita (c1r2) | identidade: jurado-san312b-c1-r2-opus | execu
 - independência: não li votos/evidências do ciclo 2 de c2rev/c3r2. Li (roteiro, a re-verificar): o meu próprio corpo, o mandato c1r2, o parecer do inspetor c2, R-B-SAN3-12b-ciclo1.md (E2.2, R1–R11), e o c1-voto.json/c1-evidencia + as sondas do ciclo 1 da MINHA cadeira (`j12b-c1/zz-j12bc1-*`), usadas como roteiro: as sondas desta cadeira são cópias adaptadas em $S, re-executadas por mim.
 
 ## Terreno — instalação e servidor
-- `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j12b-c2-c1r2-wt e77a5ac1…` ec 0; `test -e .git` ok; `test ! -e .env` ok; status vazio.
+- `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j12b-c2-c1r2-wt e77a5ac1…` ec 0; `test -e .git` ok; `test ! -e .env` ok; status vazio.
 - `npm ci --no-audit --no-fund` na raiz (326 pacotes, ec 0) e `npm --prefix frontend ci` (103 pacotes, ec 0) — próprios, zero symlink em node_modules (`find -maxdepth 1 -type l` vazio). Playwright/Chromium da raiz (cache ms-playwright chromium-1243).
 - Ressalva 1 do inspetor (re-medição depois das dependências): disco 12G livres (df -h /c), memória de commit livre 12,07 GB → ≥ 7,5 GB e ≥ 4 GB: a C2 pode correr em paralelo.
 - Vite PRÓPRIO: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 48121 --strictPort` (cwd frontend do worktree) → ready; `netstat` LISTENING 127.0.0.1:48121 PID Windows 18544. API dublada por `page.route` (sem VITE_USE_MOCKS; API relativa /api/v1). Nunca a base viva.
@@ -104,7 +104,7 @@ papel: cadeira C1 refeita (c1r2) | identidade: jurado-san312b-c1-r2-opus | execu
 
 ## Fim — objeto, base e teardown
 - objeto no fim: `git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas` = e77a5ac1… e `gh pr view 469` headRefOid = e77a5ac1…, OPEN → não andou. `origin/main` no fim (depois de `git fetch`): f076973921539165df8d406b8c061dbf4e4ee127 (igual ao início).
-- teardown: Vite morto pelo PID (`taskkill //PID 18544 //T //F` → 18544 e o filho 27996; `netstat` em 48121 só TIME_WAIT); processos com `j12b-c2-c1r2-wt` na linha de comando = 0; `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force C:/Users/AMP/j12b-c2-c1r2-wt` ec 0, caminho ausente, 0 na `worktree list`. Todas as mutações e os 2 checkouts do objeto do ciclo 1 (`<objeto>~13`) restaurados antes (status vazio, hash-object = blob conferido em cada um). Nenhum docker, nenhuma base. Sondas, logs e capturas só em `$S` = C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c1r2/. Em w-san312b só `c1r2-evidencia.md` e `c1r2-voto.json`. Nada commitado. Disco no fim: 13G livres.
+- teardown: Vite morto pelo PID (`taskkill //PID 18544 //T //F` → 18544 e o filho 27996; `netstat` em 48121 só TIME_WAIT); processos com `j12b-c2-c1r2-wt` na linha de comando = 0; `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force ~/j12b-c2-c1r2-wt` ec 0, caminho ausente, 0 na `worktree list`. Todas as mutações e os 2 checkouts do objeto do ciclo 1 (`<objeto>~13`) restaurados antes (status vazio, hash-object = blob conferido em cada um). Nenhum docker, nenhuma base. Sondas, logs e capturas só em `$S` = ~/erp-pausa-2026-10-03/j12b2-c1r2/. Em w-san312b só `c1r2-evidencia.md` e `c1r2-voto.json`. Nada commitado. Disco no fim: 13G livres.
 
 ## Veredito
 - Item 1 VERDE · Item 2 VERDE · Item 3 VERMELHO.

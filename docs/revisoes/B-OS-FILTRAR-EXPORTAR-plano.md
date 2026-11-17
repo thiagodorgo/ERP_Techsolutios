@@ -5,11 +5,11 @@
 > **Por que o Fable faltou:** o bloco **não toca dinheiro**; por decisão do dono (2026-10-08), o Fable fica
 > reservado a bloco de dinheiro. O frontmatter do `planejador-mestre` continua `fable` — o fallback é do invocador.
 > **Decisão de origem:** `D-OS-CABECALHO-PADRONIZADO`, opção C (dono, 2026-10-08).
-> **Base medida:** `main` = `c8af6458` · worktree `C:/Users/AMP/w-osfe` · ramo `feat/web-os-filtrar-exportar`.
+> **Base medida:** `main` = `c8af6458` · worktree `~/w-osfe` · ramo `feat/web-os-filtrar-exportar`.
 > **Executor previsto:** Codex (`gpt-5.6-sol`) no papel `frontend-pixel-master` (`.agents/agents/frontend-pixel-master.md`).
 
 ## 0. Fatos medidos (comando → saída) e hipóteses
-Todas as medições foram feitas na ref **`c8af6458`** (worktree `C:/Users/AMP/w-osfe`, `git rev-parse HEAD` =
+Todas as medições foram feitas na ref **`c8af6458`** (worktree `~/w-osfe`, `git rev-parse HEAD` =
 `c8af64580cb85ddf4960fecb2f8604384f8f0328`; a árvore principal está na mesma ref). O catálogo de permissões foi
 **executado** a partir da árvore principal, depois de conferir que o arquivo é idêntico ao da ref
 (`git diff --quiet c8af6458 -- src/modules/core-saas/permissions/catalog.ts` → sem diferença). Nenhum servidor nem
@@ -62,7 +62,7 @@ banco foi ligado. Marcado **[H]** = hipótese, com o comando que a decide.
 | F26 | `test:smoke` lista os arquivos **explicitamente**. Teste novo só roda no smoke se for **acrescentado** à lista em `frontend/package.json` (precedente: o último item, `tests/san3-04a-…`). | `node -e` imprimindo `scripts["test:smoke"]` de `frontend/package.json` |
 | F27 | Só 3 testes da suíte backend leem fonte do front, e **nenhum** lê arquivo que este bloco toca: `approval-frontend-contract` (`WorkOrderDetailPage.tsx`, `GeneralInfoTab.tsx`, `approval.service.ts`), `checklist-editor-blockers-parity` e `san3-04a-menu-front-x-catalogo` (`appSidebarNav.ts`, `auth.adapter.ts`, `App.tsx`). | `grep -rln "frontend/src" tests/*.test.ts` + `grep -on` dos caminhos |
 | F28 | `npm test` (raiz) roda `scripts/run-backend-tests.mjs`, que força `CORE_SAAS_PERSISTENCE=memory` quando a variável não está exportada. **Não precisa de banco.** | `sed -n 28,45p scripts/run-backend-tests.mjs` |
-| F29 | O worktree **não tem `node_modules`** (nem na raiz nem em `frontend/`). | `ls /c/Users/AMP/w-osfe/node_modules` → ausente |
+| F29 | O worktree **não tem `node_modules`** (nem na raiz nem em `frontend/`). | `ls ~/w-osfe/node_modules` → ausente |
 | F30 | `[G1b]` de `frontend/tests/work-orders-honest-errors.test.tsx` varre `src/modules/work-orders/**` (arquivo novo incluso) e reprova **literal de objeto com `id`/`code` constante** em ramo de falha (`catch`, `.catch(`, `??`, `OR lógico`). | `sed -n 1209,1260p frontend/tests/work-orders-honest-errors.test.tsx` |
 
 ### 0.5 Hipóteses abertas (não medidas)
@@ -192,7 +192,7 @@ botão de filtros, o cartão e o Exportar; **a própria lista de OS** para estad
 
 **Verificação de escopo (o dev roda, o revisor re-roda):**
 ```bash
-cd C:/Users/AMP/w-osfe
+cd ~/w-osfe
 git diff --name-only c8af6458...HEAD | sort > /tmp/osfe-tocados.txt   # (no Windows: arquivo no scratchpad)
 cat /tmp/osfe-tocados.txt
 # esperado: subconjunto EXATO de A1..A13 (13 caminhos no máximo; os 4 "novos" aparecem só se criados)
@@ -734,7 +734,7 @@ Se uma mutação **não** deixar vermelho o id previsto, isso é **achado**: o d
 teste (não a mutação).
 
 ## 8. Bateria exata
-**Onde:** sempre no worktree `C:/Users/AMP/w-osfe` (ramo `feat/web-os-filtrar-exportar`). **Nunca** na árvore
+**Onde:** sempre no worktree `~/w-osfe` (ramo `feat/web-os-filtrar-exportar`). **Nunca** na árvore
 principal: ela tem `.env` com o banco vivo, e o worktree não tem (medido: só `.env.example`). Não copiar `.env` para
 o worktree, não exportar `DATABASE_URL` nem `CORE_SAAS_PERSISTENCE` na sessão. Não subir banco. Todo comando longo
 leva `timeout`; **sem `tail -f`**, e o sinal de vida é o arquivo de log crescendo. Cada checagem é **trava** em
@@ -743,7 +743,7 @@ linha própria (`… || exit 1`), nunca elo de `&&` seguido de commit na linha d
 ### 8.0 Preparação (uma vez)
 
 ```bash
-cd C:/Users/AMP/w-osfe
+cd ~/w-osfe
 git rev-parse HEAD                         # anotar; a base é c8af6458
 timeout 900 npm ci                         # raiz, próprio (junction de node_modules é PROIBIDA, §C7.1-ter(c))
 timeout 900 npm --prefix frontend ci
@@ -761,7 +761,7 @@ DATABASE_URL="postgresql://gen:gen@127.0.0.1:5432/gen" timeout 300 npm run db:ge
 | 5 | `timeout 900 npm --prefix frontend run build` | ec 0 |
 | 6 | `timeout 300 node --test --import tsx tests/approval-frontend-contract.test.ts tests/checklist-editor-blockers-parity.test.ts tests/san3-04a-menu-front-x-catalogo.test.ts` (raiz: os testes do backend que leem `.tsx`/`.ts` do front, F27) | 0 falha |
 | 7 | `npm run check` (raiz) | ec 0 |
-| 8 | `timeout 1800 npm test` (raiz; o runner declara o modo; sem `DATABASE_URL` no ambiente as suítes de Prisma se pulam sozinhas) | 0 falha. Anotar `# skipped` e a linha de modo. Falha aqui, com o bloco sem tocar `src/`, é investigada contra a `main` **no worktree** (`git stash` proibido: usar um 2º worktree limpo em `C:/Users/AMP/w-osfe-base` na `c8af6458`, com `npm ci` próprio) e registrada como pré-existente com evidência, nunca "consertada" aqui |
+| 8 | `timeout 1800 npm test` (raiz; o runner declara o modo; sem `DATABASE_URL` no ambiente as suítes de Prisma se pulam sozinhas) | 0 falha. Anotar `# skipped` e a linha de modo. Falha aqui, com o bloco sem tocar `src/`, é investigada contra a `main` **no worktree** (`git stash` proibido: usar um 2º worktree limpo em `~/w-osfe-base` na `c8af6458`, com `npm ci` próprio) e registrada como pré-existente com evidência, nunca "consertada" aqui |
 | 9 | `timeout 600 npm run build` (raiz) | ec 0 |
 | 10 | `node scripts/sync-agent-agents.mjs --check` (o CI roda; o bloco não toca agente) | ec 0 |
 | 11 | `git diff --check c8af6458...HEAD \|\| exit 1` (e, antes de cada commit, `git diff --cached --check \|\| exit 1`) | sem saída |

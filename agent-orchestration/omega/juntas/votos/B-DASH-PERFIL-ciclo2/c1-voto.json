@@ -13,7 +13,7 @@
   },
   "o_que_executei": [
     "item1: mandato-refs.sh 25 (cópia R2), git log -S isPlatformAdmin, git blame no objeto, catalog.ts l.412/729, auth.adapter.ts l.228, git diff origin/main...objeto do PermissionProvider, isPlatformAdmin em navigation/types.ts, git grep da pendência",
-    "item2: worktree C:/Users/AMP/w-jdash2-c1-a + npm ci próprio (sem junction); node --test tests/auth-active-tenant-permissions.test.ts (5/5); sonda própria .jdash2-c1-sonda/sonda.ts (117 OK/0 FALHA após recalibrar 2 expectativas da própria sonda); M3/M2/M6 uma por vez com teste+sonda vermelhos e restauro por hash",
+    "item2: worktree ~/w-jdash2-c1-a + npm ci próprio (sem junction); node --test tests/auth-active-tenant-permissions.test.ts (5/5); sonda própria .jdash2-c1-sonda/sonda.ts (117 OK/0 FALHA após recalibrar 2 expectativas da própria sonda); M3/M2/M6 uma por vez com teste+sonda vermelhos e restauro por hash",
     "item3: sonda própria modo item3 (7 casos de recusa × 6 checagens); F1 e F2 (troca do 403 por fallback) uma por vez com T6 e sonda vermelhos e restauro por hash; grep de assert.match no objeto do ciclo 1 (849bf840) e no objeto"
   ],
   "achados": [],
@@ -35,7 +35,7 @@
       "dono": "B-SAN3-06a"
     }
   ],
-  "teardown": "auth.routes.ts e PermissionProvider.tsx com hash-object = blobs do objeto (0da96d08, 8ab79873); sonda removida; worktree C:/Users/AMP/w-jdash2-c1-a removido por git worktree remove --force (ec=0, 0 na lista, 0 no disco); processos node jdash2-c1 = 0; contêineres/redes jdash2-c1 = 0/0 (Docker não usado); base viva e portas proibidas intocadas; sem commit",
+  "teardown": "auth.routes.ts e PermissionProvider.tsx com hash-object = blobs do objeto (0da96d08, 8ab79873); sonda removida; worktree ~/w-jdash2-c1-a removido por git worktree remove --force (ec=0, 0 na lista, 0 no disco); processos node jdash2-c1 = 0; contêineres/redes jdash2-c1 = 0/0 (Docker não usado); base viva e portas proibidas intocadas; sem commit",
   "notas": [
     "Sonda: 2 expectativas da própria sonda recalibradas na 1ª rodada (Bearer inválido responde 401 INVALID_TOKEN; a regex de token casava a palavra token da mensagem) — calibração do instrumento, não defeito do produto; registrado na evidência.",
     "Limitação declarada: os detectores sem tenant_id e sem token das recusas não tiveram vermelho-controle próprio."

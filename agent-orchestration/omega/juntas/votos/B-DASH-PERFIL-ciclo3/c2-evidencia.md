@@ -2,11 +2,11 @@ identidade efetiva: jurado-dash3-c2b-opus · executor: Claude Opus (Claude Opus 
 
 # C2 — evidência — B-DASH-PERFIL ciclo 3 (PR 446)
 
-Logs brutos: `C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c2b/`. Não li votos de outras cadeiras. Insumos (plano R-B-DASH-PERFIL-2.md, atas dos ciclos 1 e 2, relatório do dev do ciclo 3) tratados como A RE-VERIFICAR.
+Logs brutos: `~/erp-pausa-2026-10-03/jdash3-c2b/`. Não li votos de outras cadeiras. Insumos (plano R-B-DASH-PERFIL-2.md, atas dos ciclos 1 e 2, relatório do dev do ciclo 3) tratados como A RE-VERIFICAR.
 
 ## S0 — legalidade (antes do mérito)
 
-Comando (timeout 10 s, Git Bash): `bash C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c2b/s0-legalidade.sh` (log `s0.log`). Conteúdo: md5 do mandato cru e `tr -d '\r'`; `git show $O:<corpo> | tr -d '\r' | md5sum` nos dois espelhos + `git rev-parse` do blob nos objetos 849bf840/faad24ce/33345c6e; `diff` EOL-neutro dos espelhos; `git ls-remote origin refs/heads/fix/dash-perfil`; `gh pr view 446 --json headRefOid,state,isDraft,mergeable`; `git fetch origin main`; `git merge-base origin/main $O`; `gh api .../commits/$O/check-runs --jq ...`; `git diff --name-only <ciclo1|ciclo2> $O -- frontend/src src | wc -l`; `docker ps -a`; `git worktree list`.
+Comando (timeout 10 s, Git Bash): `bash ~/erp-pausa-2026-10-03/jdash3-c2b/s0-legalidade.sh` (log `s0.log`). Conteúdo: md5 do mandato cru e `tr -d '\r'`; `git show $O:<corpo> | tr -d '\r' | md5sum` nos dois espelhos + `git rev-parse` do blob nos objetos 849bf840/faad24ce/33345c6e; `diff` EOL-neutro dos espelhos; `git ls-remote origin refs/heads/fix/dash-perfil`; `gh pr view 446 --json headRefOid,state,isDraft,mergeable`; `git fetch origin main`; `git merge-base origin/main $O`; `gh api .../commits/$O/check-runs --jq ...`; `git diff --name-only <ciclo1|ciclo2> $O -- frontend/src src | wc -l`; `docker ps -a`; `git worktree list`.
 
 Saída resumida:
 - mandato md5 cru `ab74b68ba960309c352e4dd78126eba7` = EOL-neutro (bate com o citado pelo inspetor na R1).
@@ -16,8 +16,8 @@ Saída resumida:
 - check-runs: `14` total, `0` fora de completed/success.
 - `frontend/src` + `src`: 0 arquivos diferentes ciclo1→3 e ciclo2→3 (ciclos 2 e 3 não tocaram produto).
 - Docker: só `erp-postgres` (5432) e `erp-redis` (6379), base viva, proibida, não tocada. Este jurado não sobe contêiner (ciclo sem banco); cluster `jdash3-c2-*` não criado.
-- Parecer do inspetor `insp-dash3-parecer.md` (`inspetor-dash3-opus`): **LIBERADO COM RESSALVA** (R1–R5), nomeando C2 = `jurado-dash3-c2b-opus`, worktree `C:/Users/AMP/w-jdash3-c2b-opus`, sem cluster (Docker se preciso `jdash3-c2-*`), cadeira que muta só no próprio worktree.
-- Nota de terreno: o prompt de disparo sugeria `C:/Users/AMP/w-jdash3-c2b`; uso `C:/Users/AMP/w-jdash3-c2b-opus`, que é o nome do parecer do inspetor e casa o prefixo `w-jdash3-c2` do mandato. Divergência de forma, declarada.
+- Parecer do inspetor `insp-dash3-parecer.md` (`inspetor-dash3-opus`): **LIBERADO COM RESSALVA** (R1–R5), nomeando C2 = `jurado-dash3-c2b-opus`, worktree `~/w-jdash3-c2b-opus`, sem cluster (Docker se preciso `jdash3-c2-*`), cadeira que muta só no próprio worktree.
+- Nota de terreno: o prompt de disparo sugeria `~/w-jdash3-c2b`; uso `~/w-jdash3-c2b-opus`, que é o nome do parecer do inspetor e casa o prefixo `w-jdash3-c2` do mandato. Divergência de forma, declarada.
 - Inelegibilidade: `jurado-dash3-c2b-opus` não consta da lista de inelegíveis do mandato nem das 31 identidades geradas pelo inspetor; nunca atuei neste bloco.
 
 Veredito parcial S0: **LEGAL — pode começar o mérito.**
@@ -25,14 +25,14 @@ Veredito parcial S0: **LEGAL — pode começar o mérito.**
 ## Terreno
 
 - Memória de commit livre antes do `npm ci`: `pwsh/powershell (Get-CimInstance Win32_OperatingSystem).FreeVirtualMemory/1MB` → **5,77 GB** (≥ 3 GB); disco C: 13,1 GB livres.
-- `git -C C:/Users/AMP/w-dash worktree add C:/Users/AMP/w-jdash3-c2b-opus 33345c6e --detach` (timeout 10 s) → `HEAD is now at 33345c6e`; `git rev-parse HEAD` = `33345c6ed5021bdd7c3a5162b14c2bc52a2ed39d`. Worktree exclusivo `w-jdash3-c2-…` (prefixo do mandato: `C:/Users/AMP/w-jdash3-c2b-opus`).
+- `git -C ~/w-dash worktree add ~/w-jdash3-c2b-opus 33345c6e --detach` (timeout 10 s) → `HEAD is now at 33345c6e`; `git rev-parse HEAD` = `33345c6ed5021bdd7c3a5162b14c2bc52a2ed39d`. Worktree exclusivo `w-jdash3-c2-…` (prefixo do mandato: `~/w-jdash3-c2b-opus`).
 - `npm ci --no-audit --no-fund` em `frontend/` do worktree (timeout de espera 10 min; log `npm-ci.log`) → `ec=0`, `added 103 packages in 2m` (106,9 s). `(Get-Item frontend/node_modules).LinkType` → vazio: diretório comum, **zero junction**. Raiz do worktree sem `node_modules` (os itens só usam `frontend/`).
 - Sem banco, sem `DATABASE_URL`, sem Docker: nenhum contêiner/rede `jdash3-c2-*` criado. Nenhuma das portas 5432/6379/3000/5173/5050/8899 usada. Base viva (`erp-postgres`/`erp-redis`) intocada.
-- Árvore principal `C:/Users/AMP/w-dash` não editada (só estes dois arquivos de output, como manda o mandato).
+- Árvore principal `~/w-dash` não editada (só estes dois arquivos de output, como manda o mandato).
 
 ## Item 1 de 3 — execução do arquivo novo e dos vizinhos
 
-Comando (cwd `C:/Users/AMP/w-jdash3-c2b-opus/frontend`, timeout de espera 10 s, log `item1.log`):
+Comando (cwd `~/w-jdash3-c2b-opus/frontend`, timeout de espera 10 s, log `item1.log`):
 `node --test --import tsx tests/context-selection-page-live.test.tsx tests/dashboard-profile-provider.test.tsx tests/dashboard-profile-behavior.test.tsx`
 
 Saída resumida (ec=0, 2,25 s):
@@ -52,7 +52,7 @@ Veredito parcial Item 1: **VERDE** (12/12 pass, 0 fail, 0 `console.error`).
 ## Item 2 de 3 — as 4 mutações M3b, M3c, M3e, M1a
 
 Comando (timeout de espera 10 s + espera ativa de 9 s; log `item2.log` e `item2-<id>.log`):
-`powershell -NoProfile -File C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c2b/item2.ps1` — para cada mutação, uma por vez: `git hash-object` antes; `node mut.cjs <id> apply` (cópia byte a byte para `.orig-c2b`, âncora única n=1, CRLF preservado); `git diff --stat`; `node --test --import tsx tests/context-selection-page-live.test.tsx`; `node mut.cjs <id> restore` (cópia byte a byte de volta); `git hash-object` × `git rev-parse 33345c6e:frontend/<arquivo>`. No fim: `git status --short -- src` e `git diff --stat HEAD -- src`.
+`powershell -NoProfile -File ~/erp-pausa-2026-10-03/jdash3-c2b/item2.ps1` — para cada mutação, uma por vez: `git hash-object` antes; `node mut.cjs <id> apply` (cópia byte a byte para `.orig-c2b`, âncora única n=1, CRLF preservado); `git diff --stat`; `node --test --import tsx tests/context-selection-page-live.test.tsx`; `node mut.cjs <id> restore` (cópia byte a byte de volta); `git hash-object` × `git rev-parse 33345c6e:frontend/<arquivo>`. No fim: `git status --short -- src` e `git diff --stat HEAD -- src`.
 - M1a ancorada no `permissions,` de `nextSession.user` (logo após `roles: resolveFrontendRoles(backendRoles),`), não no `permissions,` de `membershipToContext` — a âncora casou n=1.
 
 Saída resumida:
@@ -84,7 +84,7 @@ Veredito parcial Item 3: **VERDE** (fechada com evidência; índice regenerado =
 
 ## Teardown
 
-Comando (timeout de espera 10 s): `git status --short` no worktree (0 entradas); `Get-ChildItem -Recurse -Filter *.orig-c2b frontend/src` (0); `git ls-remote origin refs/heads/fix/dash-perfil` (`33345c6e…`, o head não andou); `git fetch origin main` (origin/main fim `2ecfb333…` = início: cerca intacta, delta zero); `git worktree remove --force C:/Users/AMP/w-jdash3-c2b-opus` → ec=0, `Test-Path` False, ausente do `git worktree list`; `docker ps -a` → só `erp-postgres`/`erp-redis` (nenhum contêiner meu). Processos alheios intocados. Restam só os logs em `C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c2b/` e estes dois outputs. Nada commitado.
+Comando (timeout de espera 10 s): `git status --short` no worktree (0 entradas); `Get-ChildItem -Recurse -Filter *.orig-c2b frontend/src` (0); `git ls-remote origin refs/heads/fix/dash-perfil` (`33345c6e…`, o head não andou); `git fetch origin main` (origin/main fim `2ecfb333…` = início: cerca intacta, delta zero); `git worktree remove --force ~/w-jdash3-c2b-opus` → ec=0, `Test-Path` False, ausente do `git worktree list`; `docker ps -a` → só `erp-postgres`/`erp-redis` (nenhum contêiner meu). Processos alheios intocados. Restam só os logs em `~/erp-pausa-2026-10-03/jdash3-c2b/` e estes dois outputs. Nada commitado.
 
 ## Veredito
 

@@ -11,8 +11,8 @@
 >   (`crit-525-plano`, Codex `gpt-5.6-sol`): rodada 1 `VOLTA` (A-01, A-02), rodada 2 `APROVADO`.
 > - **Ordem obrigatória (§12.13 + §13.3):** F0 → F1a → F1d → F1b → F1e → F1c → F2a → F2b → F3 → F4a → F4b → F5a →
 >   F5b → F5c → F6a → F6b → F7 → F8. **Meta:** M = 71 + 31 = **102**, com **42** mutações literais.
-> - **Terreno:** worktree `C:/Users/thiag/w-dev525` no ramo `feat/mobile-rdv-comprovante`; vermelho-controle em
->   `C:/Users/thiag/w-dev525-vc` (`--detach` no objeto `b9e63ec0`). `npm ci`, `prisma generate` e `flutter pub get`
+> - **Terreno:** worktree `~/w-dev525` no ramo `feat/mobile-rdv-comprovante`; vermelho-controle em
+>   `~/w-dev525-vc` (`--detach` no objeto `b9e63ec0`). `npm ci`, `prisma generate` e `flutter pub get`
 >   próprios em cada um (sem junction). KPI congelado (`Kpis/*` intocado).
 > - **Formato:** uma linha por passo — comando → saída → veredito. Horas de `date` no mesmo comando (SP).
 
@@ -24,7 +24,7 @@
   livres (≥ 7 GB) → pode seguir. **OK.**
 - `docker ps` → `users-seg-pg` (5491) e `ci522-pg` (5481) de pé = **2 trabalhos** → a F3 não sobe agora; sigo a
   ordem até a F3 e espero ali, medindo `docker ps` a cada 5 min (acréscimo do orquestrador, 05:24). **Anotado.**
-- `git worktree add C:/Users/thiag/w-dev525 feat/mobile-rdv-comprovante` → `HEAD = b9e63ec0…`, árvore limpa,
+- `git worktree add ~/w-dev525 feat/mobile-rdv-comprovante` → `HEAD = b9e63ec0…`, árvore limpa,
   `core.autocrlf=false`, arquivos tocados todos LF (`tr -cd '\r' | wc -c` = 0) · `npm ci` → 326 pacotes, exit 0;
   `node_modules` não é link (`lstat.isSymbolicLink()=false`) · `prisma generate` (URL fictícia) exit 0 ·
   `flutter pub get` exit 0. **OK.**

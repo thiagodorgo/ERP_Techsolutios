@@ -115,5 +115,5 @@
     "P-SAN3-20-LEGADO-CHECK-SEM-CHEQUE (dono: DBA)",
     "P-SAN3-20-DRIFT-MIGRACOES-X-SCHEMA (dono: bloco de ferramenta/DBA; o K12 impede drift novo)"
   ],
-  "teardown": "6 arquivos mutados restaurados (hash == blob); bases jsan320_c2_* dropadas (0 restantes) e nenhuma %drill%; container jsan320-c2-pg removido; worktree C:/Users/AMP/w-jsan320-c2 removido por git worktree remove --force; extração de B apagada; base viva e jt2c2-*/agv3-* intocados; sem commit"
+  "teardown": "6 arquivos mutados restaurados (hash == blob); bases jsan320_c2_* dropadas (0 restantes) e nenhuma %drill%; container jsan320-c2-pg removido; worktree ~/w-jsan320-c2 removido por git worktree remove --force; extração de B apagada; base viva e jt2c2-*/agv3-* intocados; sem commit"
 }
