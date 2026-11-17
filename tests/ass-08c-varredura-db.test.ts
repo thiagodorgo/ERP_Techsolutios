@@ -161,8 +161,8 @@ if (!connectionString) {
   }
 
   test("setup: base própria migrada, papel NOSUPERUSER NOBYPASSRLS, o falso Focus", async () => {
-    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString! }) });
+    const [{ createPgAdapter }, { PrismaClient }] = await Promise.all([import("../src/database/pg-connection.js"), import("@prisma/client")]);
+    admin = new PrismaClient({ adapter: createPgAdapter(connectionString!) });
     const base = decodeURIComponent(new URL(connectionString!).pathname.replace(/^\//, "")) || "postgres";
     dbName = `${base}_c2_vr_${randomUUID().replaceAll("-", "").slice(0, 8)}`.slice(0, 63);
     await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}" TEMPLATE template0`);
@@ -171,7 +171,7 @@ if (!connectionString) {
     const targetUrl = u.toString();
     const prismaCli = createRequire(path.join(ROOT, "package.json")).resolve("prisma/build/index.js");
     execFileSync(process.execPath, [prismaCli, "migrate", "deploy"], { cwd: ROOT, env: { ...process.env, DATABASE_URL: targetUrl }, stdio: "pipe" });
-    db = new PrismaClient({ adapter: new PrismaPg({ connectionString: targetUrl }) });
+    db = new PrismaClient({ adapter: createPgAdapter(targetUrl) });
     role = await createEphemeralRole(db, targetUrl);
     const posture = (await role.client.$queryRawUnsafe(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`)) as any[];
     assert.deepEqual(posture, [{ rolsuper: false, rolbypassrls: false }], "o papel de runtime é NOSUPERUSER NOBYPASSRLS");
