@@ -43,6 +43,11 @@ import {
 //   (i) [Emenda 3] o [D5] do B-SAN3-16 com a fila do BANCO (sem injetar): pelo papel NOSUPERUSER NOBYPASSRLS, 10 envios
 //       do mesmo `client_action_id` + 1 de outro atrás da trava da OS → 1 evento de cada, 2 aprovações, 2
 //       `approval.requested`, todo envio aceito, e a barreira viu o `FOR UPDATE`; 5 rodadas.
+//   (j) [conserto da J-586, L2-01] o caminho de ERRO da fila da unidade, pelo lote: um gatilho derruba UMA vez o INSERT
+//       em `operational_approvals` (os seguintes passam) → o envio sai 503 `approval_unavailable` em menos de 1000 ms,
+//       sem o texto do banco na resposta, com 0 aprovação, 0 `approval.requested` e 0 evento, e a inserção foi tentada
+//       1 vez só; o reenvio da MESMA ação grava 1/1/1. Uma fila que, no erro, tentasse de novo por outra conexão
+//       passaria no 2º INSERT e deixaria a aprovação órfã: este caso fica vermelho.
 //
 // Organização descartável por caso; teardown escopado pelo id dela. Gatilho TEMPORÁRIO escopado pela organização (nome
 // único, DROP no finally, catálogo limpo provado), sempre pelo `runHarnessDdl`. Sem DATABASE_URL, o arquivo se declara
@@ -398,6 +403,74 @@ if (!connection) {
     });
   });
 
+  test("T3(j) · a fila da unidade falha UMA vez pelo lote → 503 approval_unavailable em menos de 1000 ms, 0 aprovação, 0 auditoria, 0 evento; o reenvio grava 1/1/1", async (t) => {
+    await comCenario(async (c) => {
+      const os = await c.criarOsDoTecnico();
+      const cid = randomUUID();
+      const marca = "B_APROV_INJ_UMA_VEZ";
+      const contar = async () => {
+        const linhas = await c.sql(
+          "SELECT id::text, status, requested_by_user_id::text AS requested_by FROM operational_approvals WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid",
+          [c.tenantId, os],
+        );
+        const auditoria = await c.auditoriaDaAba(os, "approval.requested");
+        const eventos = await c.sql(
+          "SELECT metadata FROM work_order_events WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid AND event_type = 'work_order_approval_requested'",
+          [c.tenantId, os],
+        );
+        return { linhas, auditoria, eventos };
+      };
+
+      // (1) O gatilho derruba o 1º INSERT da aprovação; o envio sai 503, depressa, e nada fica gravado.
+      const tentativas = await c.comGatilhoUmaVezNaAprovacao(marca, async () => {
+        const inicio = performance.now();
+        const lote = await c.pedirPeloLote(os, cid);
+        const ms = performance.now() - inicio;
+        t.diagnostic(
+          `T3(j) (1) envio com a aprovação derrubada: pedirPeloLote ${ms.toFixed(1)} ms ` +
+            `${JSON.stringify({ aceitos: lote.accepted.length, recusados: lote.rejected.map((r: any) => r.error?.reason) })}`,
+        );
+        assert.deepEqual({ aceitos: lote.accepted.length, recusados: lote.rejected.length }, { aceitos: 0, recusados: 1 }, `(1) ${JSON.stringify(lote)}`);
+        const erro = (lote.rejected[0] as any).error;
+        assert.deepEqual(
+          { code: erro?.code, reason: erro?.reason },
+          { code: "SERVICE_UNAVAILABLE", reason: "approval_unavailable" },
+          `(1) a falha da fila não saiu 503 approval_unavailable: ${JSON.stringify(erro)}`,
+        );
+        assert.ok(!String(erro?.message ?? "").includes(marca), "(1) o texto do erro do banco saiu na resposta");
+        assert.ok(ms < 1000, `(1) o envio com a aprovação derrubada levou ${ms.toFixed(1)} ms (limite 1000 ms)`);
+      });
+      const falha = await contar();
+      assert.deepEqual(
+        { aprovacoes: falha.linhas.length, auditoria: falha.auditoria.length, eventos: falha.eventos.length },
+        { aprovacoes: 0, auditoria: 0, eventos: 0 },
+        "(1) a fila falhou e sobrou aprovação, auditoria ou evento: a aprovação ficou órfã (ou o evento nasceu sem ela)",
+      );
+      assert.equal(tentativas, 1, `(1) a aprovação foi tentada ${tentativas} vez(es): a fila tentou de novo fora da unidade`);
+
+      // (2) Sem o gatilho, a MESMA ação (o recibo só guarda o aceito): 1 linha, 1 auditoria, 1 evento, e o evento aponta a linha.
+      const inicioReenvio = performance.now();
+      const reenvio = await c.pedirPeloLote(os, cid);
+      const msReenvio = performance.now() - inicioReenvio;
+      t.diagnostic(`T3(j) (2) reenvio: pedirPeloLote ${msReenvio.toFixed(1)} ms`);
+      assert.equal(reenvio.accepted.length, 1, `(2) o reenvio foi recusado: ${JSON.stringify(reenvio)}`);
+      assert.ok(msReenvio < 1000, `(2) o reenvio levou ${msReenvio.toFixed(1)} ms (limite 1000 ms)`);
+      const gravado = await contar();
+      assert.deepEqual(
+        { aprovacoes: gravado.linhas.length, auditoria: gravado.auditoria.length, eventos: gravado.eventos.length },
+        { aprovacoes: 1, auditoria: 1, eventos: 1 },
+        "(2) o reenvio não gravou 1 aprovação, 1 auditoria e 1 evento",
+      );
+      assert.deepEqual(
+        { status: gravado.linhas[0].status, requested_by: gravado.linhas[0].requested_by },
+        { status: "pending_approval", requested_by: c.tecnicoId },
+        "(2) a linha do pedido do técnico",
+      );
+      assert.equal(gravado.eventos[0].metadata?.approval_id, gravado.linhas[0].id, "(2) o approval_id do evento não é o id da linha");
+      assert.equal(gravado.auditoria[0].metadata?.approvalId, gravado.linhas[0].id, "(2) o id da aprovação nos metadados da auditoria");
+    });
+  });
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -483,6 +556,44 @@ async function montarCenario(conexao: string) {
     assert.deepEqual([gatilhos, funcoes], [0, 0], `o gatilho ${nome} sobrou no catálogo`);
   }
 
+  // Conserto da J-586 (L2-01, T3(j)) — no molde de `comGatilhoNaAprovacao`, mas o gatilho derruba só o 1º INSERT em
+  // `operational_approvals` da organização descartável; os seguintes passam. A contagem é de uma sequência própria
+  // (`nextval` não volta com o rollback da unidade). Devolve quantas vezes a inserção foi tentada com o gatilho no ar.
+  async function comGatilhoUmaVezNaAprovacao(marca: string, corpo: () => Promise<void>): Promise<number> {
+    assert.match(tenantId, UUID);
+    const nome = `b_aprov_inj_1x_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    let erroDoCorpo: unknown;
+    let tentativas = -1;
+    try {
+      await runHarnessDdl(admin, `CREATE SEQUENCE ${nome}_seq`);
+      await runHarnessDdl(
+        admin,
+        `CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN IF nextval('${nome}_seq') = 1 THEN RAISE EXCEPTION '${marca}'; END IF; RETURN NEW; END $f$`,
+      );
+      await runHarnessDdl(
+        admin,
+        `CREATE TRIGGER ${nome} BEFORE INSERT ON operational_approvals FOR EACH ROW WHEN (NEW.tenant_id = '${tenantId}'::uuid) EXECUTE FUNCTION ${nome}()`,
+      );
+      await corpo();
+      const [{ valor, chamada }] = await sql(`SELECT last_value::int AS valor, is_called AS chamada FROM ${nome}_seq`);
+      tentativas = chamada ? valor : 0;
+    } catch (error) {
+      erroDoCorpo = error;
+    } finally {
+      await dropHarnessObjects(admin, erroDoCorpo, [
+        `DROP TRIGGER IF EXISTS ${nome} ON operational_approvals`,
+        `DROP FUNCTION IF EXISTS ${nome}()`,
+        `DROP SEQUENCE IF EXISTS ${nome}_seq`,
+      ]);
+    }
+    if (erroDoCorpo !== undefined) throw erroDoCorpo;
+    const [{ gatilhos }] = await sql("SELECT count(*)::int AS gatilhos FROM pg_trigger WHERE tgname = $1", [nome]);
+    const [{ funcoes }] = await sql("SELECT count(*)::int AS funcoes FROM pg_proc WHERE proname = $1", [nome]);
+    const [{ sequencias }] = await sql("SELECT count(*)::int AS sequencias FROM pg_class WHERE relname = $1", [`${nome}_seq`]);
+    assert.deepEqual([gatilhos, funcoes, sequencias], [0, 0, 0], `o gatilho ${nome} (ou a sequência) sobrou no catálogo`);
+    return tentativas;
+  }
+
   // Emenda 3 (T3(i)) — o segurador do [D5] do 16: SQL próprio do admin numa transação aberta toma a trava da OS e espera
   // um portão.
   async function segurarOs(workOrderId: string): Promise<{ release: () => void; done: Promise<SettledOutcome<unknown>> }> {
@@ -549,6 +660,7 @@ async function montarCenario(conexao: string) {
     sql,
     comGatilhoNaAprovacao,
     comGatilhoNoEventoDoPedido,
+    comGatilhoUmaVezNaAprovacao,
     segurarOs,
     papelDaRajada,
     gestao,

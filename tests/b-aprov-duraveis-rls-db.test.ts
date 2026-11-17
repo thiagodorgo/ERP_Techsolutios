@@ -14,6 +14,8 @@ import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity
 //   - pelo serviço (com o repositório em banco sobre o cliente do papel): `get` de aprovação de B com ator de A → 404;
 //     `listPending` de A não traz B; decidir aprovação de B com ator de A → 404 e a linha de B intacta; o controle
 //     positivo — o mesmo papel pede, lê e decide a aprovação de A.
+// T5b (conserto da J-586, C3-01): o mesmo isolamento com o repositório sobre uma conexão que CONTORNA o RLS, para provar o
+// filtro de organização do próprio código (`findById`, `listPending`, `decide`), que o T5 não distingue do RLS.
 // Duas organizações descartáveis; teardown escopado pelos ids delas. Sem DATABASE_URL, o arquivo se declara pulado.
 
 const connection = process.env.DATABASE_URL;
@@ -165,6 +167,98 @@ if (!connection) {
     });
     assert.equal((await servico.approve(atorDeA, nova.id, { note: "Conferido." })).status, "approved");
     assert.equal((await servico.approve(atorDeA, a.aprovacao, {})).status, "approved");
+  });
+
+  // Conserto da J-586 (C3-01) — a 2ª barreira, a do CÓDIGO: o T5 roda sob o papel sem bypass, e lá o isolamento segura
+  // pelo RLS mesmo sem o filtro de organização no repositório. Aqui o repositório roda sobre uma conexão que CONTORNA o
+  // RLS (o cliente do arnês, superusuário ou BYPASSRLS, provado no começo): o que separa as organizações é só o
+  // `tenant_id` no `where` de `findById`, `listPending` e `decide`. Tirar esse filtro deixa este caso vermelho.
+  test("T5b · sem o RLS (conexão que o contorna): o repositório e o serviço filtram pela organização no próprio código", async () => {
+    const [{ createPrismaClient }, { resolvePermissionsForRoles }, { ApprovalService }, { RlsPrismaApprovalRepository }] = await Promise.all([
+      import("../src/database/pg-connection.js"),
+      import("../src/modules/core-saas/permissions/catalog.js"),
+      import("../src/modules/work-orders/approval.service.js"),
+      import("../src/modules/work-orders/approval-prisma.repository.js"),
+    ]);
+    admin ??= createPrismaClient(connection);
+    const sufixo = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const organizacao = async (rotulo: string) => {
+      const tenant = await admin.tenant.create({ data: { name: `B-APROV rls5b ${rotulo} ${sufixo}`, slug: `b-aprov-rls5b-${rotulo}-${sufixo}` } });
+      organizacoes.push(tenant.id);
+      const usuario = (nome: string) =>
+        admin.user.create({ data: { tenant_id: tenant.id, name: `${nome} ${sufixo}`, email: `b-aprov-rls5b-${rotulo}-${nome}-${sufixo}@example.com` } });
+      const [solicitante, decisor] = [await usuario("solicitante"), await usuario("decisor")];
+      const os = await admin.workOrder.create({
+        data: { tenant_id: tenant.id, code: `WO-BAPROV-RLS5B-${rotulo}-${sufixo}`, title: "OS B-APROV rls5b", customer_name: "Cliente B-APROV", status: "completed" },
+      });
+      const [{ id: aprovacao }] = await admin.$queryRawUnsafe(
+        `INSERT INTO operational_approvals (tenant_id, entity_type, entity_id, work_order_id, requested_by_user_id, pending_reason)
+         VALUES ($1::uuid, 'work_order', $2, $3::uuid, $4::uuid, 'semente do T5b') RETURNING id::text`,
+        tenant.id,
+        os.id,
+        os.id,
+        solicitante.id,
+      );
+      return { tenantId: tenant.id as string, solicitante: solicitante.id as string, decisor: decisor.id as string, os: os.id as string, aprovacao: aprovacao as string };
+    };
+    const a = await organizacao("a");
+    const b = await organizacao("b");
+
+    // Pré-condição: a conexão contorna o RLS (sem isso, o caso não provaria nada além do T5).
+    const [atributos] = await admin.$queryRawUnsafe("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user");
+    assert.ok(atributos.rolsuper || atributos.rolbypassrls, `a conexão do T5b não contorna o RLS: ${JSON.stringify(atributos)}`);
+    const [{ semContexto }] = await admin.$queryRawUnsafe(
+      "SELECT count(*)::int AS \"semContexto\" FROM operational_approvals WHERE tenant_id = ANY($1::uuid[])",
+      [a.tenantId, b.tenantId],
+    );
+    assert.equal(semContexto, 2, "a conexão do T5b não leu as 2 organizações sem contexto: o RLS não está contornado");
+
+    const repositorio = new RlsPrismaApprovalRepository(admin);
+    const servico = new ApprovalService(repositorio);
+
+    // O repositório, direto: com a organização A, a aprovação de B não existe, não é listada e não é decidida.
+    assert.equal(await repositorio.findById(a.tenantId, b.aprovacao), null, "findById com a organização A devolveu a aprovação de B");
+    const pendentes = await repositorio.listPending({ tenantId: a.tenantId });
+    assert.deepEqual([...new Set(pendentes.map((p) => p.tenantId))], [a.tenantId], "listPending de A trouxe linha de outra organização");
+    assert.equal(
+      await repositorio.decide({ tenantId: a.tenantId, approvalId: b.aprovacao, actorUserId: a.decisor, decision: "approved", note: "invasão" }),
+      null,
+      "decide com a organização A decidiu a aprovação de B",
+    );
+    assert.equal(
+      await repositorio.decide({ tenantId: a.tenantId, approvalId: b.aprovacao, actorUserId: a.decisor, decision: "rejected", reason: "invasão" }),
+      null,
+      "decide (reprovar) com a organização A decidiu a aprovação de B",
+    );
+
+    // Pelo serviço: 404, nunca 409 nem a linha de B.
+    const atorDeA = { tenantId: a.tenantId, userId: a.decisor, roles: ["manager"], permissions: resolvePermissionsForRoles(["manager"]), explicitPermissions: true } as never;
+    const naoAchou = (erro: unknown) => {
+      const e = erro as { statusCode?: number; reason?: string };
+      assert.deepEqual({ status: e.statusCode, reason: e.reason }, { status: 404, reason: "not_found" });
+      return true;
+    };
+    await assert.rejects(servico.get(atorDeA, b.aprovacao), naoAchou);
+    await assert.rejects(servico.approve(atorDeA, b.aprovacao, { note: "invasão" }), naoAchou);
+    await assert.rejects(servico.reject(atorDeA, b.aprovacao, { reason: "invasão" }), naoAchou);
+
+    // A linha de B continua intacta, e nenhuma auditoria de aprovação nasceu em B.
+    const [linhaDeB] = await admin.$queryRawUnsafe("SELECT status, pending_reason, decided_by_user_id FROM operational_approvals WHERE id = $1::uuid", b.aprovacao);
+    assert.deepEqual(
+      { status: linhaDeB.status, motivo: linhaDeB.pending_reason, decisor: linhaDeB.decided_by_user_id },
+      { status: "pending_approval", motivo: "semente do T5b", decisor: null },
+      "a aprovação de B foi alterada por um ator de A",
+    );
+    const [{ auditoriaDeB }] = await admin.$queryRawUnsafe(
+      "SELECT count(*)::int AS \"auditoriaDeB\" FROM audit_logs WHERE tenant_id = $1::uuid AND action LIKE 'approval.%'",
+      b.tenantId,
+    );
+    assert.equal(auditoriaDeB, 0, "nasceu auditoria de aprovação na organização B");
+
+    // Controle positivo: na MESMA conexão, a organização A acha e decide a própria aprovação.
+    assert.equal((await repositorio.findById(a.tenantId, a.aprovacao))?.id, a.aprovacao, "findById de A não achou a própria aprovação");
+    assert.equal((await servico.approve(atorDeA, a.aprovacao, { note: "Conferido." })).status, "approved");
   });
 }
 
