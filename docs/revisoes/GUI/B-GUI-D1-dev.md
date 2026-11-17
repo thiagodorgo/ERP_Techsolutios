@@ -47,12 +47,12 @@ limite; §C7 11(2)). A pré-revisão e a junta devem ser de outra casa quando ho
 ## Testes do bloco
 
 Servidor (`tests/bguid1-dados-da-os.test.ts`, 8): F0, D1, D1b, D2, D3 (15 casos de placa, inclusive `ABC2323` por
-posição), D3b, D3c (8 casos, conferência por dobra campo a campo), D3c-fuzz (N = 5 000, semente fixa).
+posição), D3b, D3c (10 casos, conferência por dobra campo a campo; 2 deles da pré-revisão, A-PR1), D3c-fuzz (N = 5 000, semente fixa).
 App (19): `bguid1_dados_da_os_test.dart` (D4 ×3, D4b, D4c, D4d, D4e ×7, D7a, D7b) e `bguid1_subida_19_test.dart`
 (D5, D5b, D5c, D6). Todos pelo app real onde o plano pede (`createApp`; Drift sobre `AppDatabase.openInMemory()`;
 `_LegacyDb` em arquivo).
 
-## Mutações (16), uma a uma, âncora `grep -cF` = 1, restauro provado (`git checkout --` + `git diff --quiet`)
+## Mutações (16 da lei + MP1 e MP2 da pré-revisão), uma a uma, âncora `grep -cF` = 1, restauro provado (`git checkout --` + `git diff --quiet`)
 
 | Mutação | Arquivo | Vermelho |
 |---|---|---|
@@ -63,6 +63,8 @@ App (19): `bguid1_dados_da_os_test.dart` (D4 ×3, D4b, D4c, D4d, D4e ×7, D7a, D
 | MD9 | idem | D1, D3b, D3c |
 | MD11 | idem | D3c (`Onix ABC1D2​3`), fuzz |
 | MD12 | idem | D3c (`SEM PLACA` + `Gol ABC1D23`) |
+| MP1 (A-PR1: `foldForPlate` sem `.toUpperCase()`) | idem | D3c (`uno xyz9876 e abc1d23`) |
+| MP2 (A-PR1: `foldForPlate` sem `.normalize("NFKC")`) | idem | D3c (`Uno XYZ9876 e ＡＢＣ１Ｄ２３`) |
 | MD3 | `work_order_remote_api.dart` | D4 (servidor antigo, tipo errado), D4b |
 | MD4 | `app_database.dart` | D5, D5b, D5c |
 | MD5 | idem | D4b, D4c, D4d, D6 |

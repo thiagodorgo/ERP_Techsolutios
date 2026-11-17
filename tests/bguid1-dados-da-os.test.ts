@@ -352,6 +352,9 @@ test("D3c — a placa no modelo ou na cor anula o campo (regra do check-in + dob
       { detalhes: { plate: PLACA, vehicle: "Onix ABC.1D/23" }, esperado: { plateMasked: "ABC1D**", model: null, color: null }, referencia: PLACA },
       // Duas placas no texto: o check-in não acha UMA; a dobra acha a desta OS (MD11).
       { detalhes: { plate: PLACA, vehicle: "Uno XYZ9876 e ABC1D23" }, esperado: { plateMasked: "ABC1D**", model: null, color: null }, referencia: PLACA },
+      // A-PR1 (pré-revisão do #597) — 2 placas, e a dobra tem de MAIUSCULAR (MP1) e aplicar NFKC (MP2) antes de comparar.
+      { detalhes: { plate: PLACA, vehicle: "uno xyz9876 e abc1d23" }, esperado: { plateMasked: "ABC1D**", model: null, color: null }, referencia: PLACA },
+      { detalhes: { plate: PLACA, vehicle: "Uno XYZ9876 e ＡＢＣ１Ｄ２３" }, esperado: { plateMasked: "ABC1D**", model: null, color: null }, referencia: PLACA },
       // Modelo e cor legítimos ficam intactos.
       { detalhes: { vehicle: "Onix", color: "Prata" }, esperado: { plateMasked: null, model: "Onix", color: "Prata" }, referencia: null },
       { detalhes: { plate: PLACA, vehicle: "Ka SE 1.5 2019", color: "Prata" }, esperado: { plateMasked: "ABC1D**", model: "Ka SE 1.5 2019", color: "Prata" }, referencia: PLACA },
