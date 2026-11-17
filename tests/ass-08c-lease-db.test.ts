@@ -305,8 +305,8 @@ if (!connectionString) {
   // B-ASS-08c2 (plano §4.12, §5.5) · L4 — o zumbi da órfã na NOTA (LEASE-03): A reclama a `invoice_issue`, começa a nota
   // (`beginIssue`) e para ANTES do `port.issue` (portão por Promise, sem relógio); passa o limite de órfã e B reclama a
   // linha e emite; A retoma → 0 POST de A e `lease_lost` (a posse vem do despacho, como parâmetro). Vermelho-controle: M21
-  // (apagar a linha `[LEASE-03]`) → A emite um 2º POST.
-  test("L4: a órfã da nota — A para antes do port.issue, B reclama e emite; A retoma → 0 POST de A, lease_lost [LEASE-03]", async () => {
+  // (apagar a linha LEASE-03) → A emite um 2º POST.
+  test("L4: a órfã da nota — A para antes do port.issue, B reclama e emite; A retoma → 0 POST de A, lease_lost (LEASE-03)", async () => {
     const slug = `ass08c-lease-l4-${randomUUID().slice(0, 8)}`;
     const tenantId = ((await db.$queryRawUnsafe(`INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id`, "Organização fictícia l4", slug)) as Array<{ id: string }>)[0]!.id;
     const statementId = ((await db.$queryRawUnsafe(

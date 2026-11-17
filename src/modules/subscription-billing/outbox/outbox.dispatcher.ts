@@ -558,7 +558,7 @@ async function registerInvoiceResult(deps: DispatcherDeps, row: BillingOutboxRow
       if (!(await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + INVOICE_DEFER_MS), result.code, clock(), lease, { refundAttempt: true }))) return leaseLost(deps, row);
       return "retry";
     case "lease_lost":
-      // B-ASS-08c2 (plano §4.12): o `[LEASE-03]` viu a posse perdida antes do POST — 0 escrita, a trilha de sempre.
+      // B-ASS-08c2 (plano §4.12): a conferência da posse (LEASE-03) a viu perdida antes do POST — 0 escrita, a trilha de sempre.
       return leaseLost(deps, row);
   }
 }
