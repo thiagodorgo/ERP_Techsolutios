@@ -622,7 +622,7 @@ identidade viva de cada linha é `(organização, ordem, modelo, **etapa**)`: o 
 **e** a entrega da mesma ordem — é esse par que a tela de comparação do app confronta.
 
 **Retrocompatibilidade (aditiva).** `checklistId` e `checklistSnapshot` continuam no payload, com o mesmo
-significado, agora como **espelho da linha primária** (a de menor `orderIndex`; `null` quando o conjunto vivo é
+significado, agora como **espelho da linha primária** (a vistoria de coleta viva de menor `orderIndex`; sem coleta, a de menor `orderIndex`; `null` quando o conjunto vivo é
 vazio). Nenhum consumidor atual precisa mudar.
 
 `GET /work-orders/:id` e o `PATCH /work-orders/:id/checklists` acrescentam a chave `checklists[]`:
@@ -655,7 +655,7 @@ altera o conjunto nem gera evento — a escrita da junção só acontece depois 
 
 **`PATCH /work-orders/:id/checklists`** — `{ "add": [{ "checklistId", "role"? }], "remove": [{ "checklistId",
 "role", "reason", "confirmCustomerScoped"? }] }`. Retirar exige **etapa** e **motivo**. Erros: 400
-`checklist_not_published` · 409 `duplicate_checklist_phase` · 409 `checklist_already_dispatched` (vistoria já
+`checklist_not_published` · 409 `duplicate_checklist_phase` · 409 `collection_after_dispatch` (a OS já foi enviada sem coleta) · 409 `checklist_already_dispatched` (vistoria já
 enviada ao técnico — o caminho é a reabertura) · 409 `checklist_customer_scoped_confirmation_required` (a
 vistoria veio de regra com cliente nomeado) · 409 `work_order_terminal` · 404 `checklist_link_not_found`.
 Remoção é **soft** (guarda quem/quando/por quê) e vira evento na timeline da OS, visível ao técnico.

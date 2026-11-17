@@ -27,6 +27,7 @@ import { hasInvoicedItemsError, matchesAssignedToActor, WorkOrderError } from ".
 import { WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
   assertChecklistRemovalHasActor,
+  checklistRoleRank,
   liveChecklistLinks,
   pickPrimaryChecklistLink,
   sortChecklistLinks,
@@ -794,7 +795,7 @@ export function mirrorColumnsFromInputs(inputs: readonly WorkOrderChecklistLinkI
   readonly checklistId: string | undefined;
   readonly checklistSnapshot: Record<string, unknown> | null;
 } {
-  const primary = [...inputs].sort((left, right) => left.orderIndex - right.orderIndex)[0];
+  const primary = [...inputs].sort((left, right) => checklistRoleRank(left.role) - checklistRoleRank(right.role) || left.orderIndex - right.orderIndex)[0];
 
   return {
     checklistId: primary?.checklistId,

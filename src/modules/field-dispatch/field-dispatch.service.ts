@@ -30,7 +30,7 @@ import {
   type FieldDispatchRepository,
 } from "./field-dispatch.repository.js";
 import type { ChecklistRunRole } from "../checklists/checklist.types.js";
-import type { WorkOrderChecklistLink } from "../work-orders/work-order-checklists.types.js";
+import { checklistRoleRank, type WorkOrderChecklistLink } from "../work-orders/work-order-checklists.types.js";
 import type {
   DispatchChecklistLine,
   FieldDispatch,
@@ -1055,7 +1055,7 @@ export class FieldDispatchService {
       // rede secundária e ESTÁVEL: preserva o desempate do porto e só protege contra uma listagem fora de
       // ordem trocar qual vistoria é a primária — que trocaria qual vistoria vai a campo.
       return [...live]
-        .sort((a, b) => a.orderIndex - b.orderIndex)
+        .sort((a, b) => checklistRoleRank(a.role) - checklistRoleRank(b.role) || a.orderIndex - b.orderIndex)
         .map((link) => ({
           checklistId: link.checklistId,
           role: link.role,

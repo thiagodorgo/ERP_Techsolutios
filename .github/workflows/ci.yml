@@ -356,6 +356,7 @@ jobs:
           # drill de RLS com papel efêmero e o aviso a quem atribuiu a OS (D1 a D4). Medida a lista inteira 3× nesta forma antes
           # de entrar (74 arquivos, banco migrado e semeado): 625/625, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/bsan316-fila-os-db.test.ts"
+          SUITES="$SUITES tests/bgui02-ordem-por-etapa-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

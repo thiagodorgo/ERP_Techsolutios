@@ -92,9 +92,11 @@ import {
 } from "./work-order.validators.js";
 import {
   effectiveChecklistSet,
+  isChecklistSetFrozen,
   liveChecklistLinks,
   syntheticChecklistSet,
   workOrderChecklistAlreadyDispatchedError,
+  workOrderChecklistCollectionAfterDispatchError,
   workOrderChecklistCustomerScopedConfirmationError,
   workOrderChecklistDuplicateError,
   workOrderChecklistLinkNotFoundError,
@@ -1353,6 +1355,9 @@ export class WorkOrderService {
       }
     }
     await this.assertChecklistsArePublished(actor, add.map((item) => item.checklistId));
+    if (add.some((item) => item.role === "collection") && isChecklistSetFrozen(current, links) && !effective.some((line) => line.role === "collection" && !removalKeys.has(checklistPhaseKey(line)))) {
+      throw workOrderChecklistCollectionAfterDispatchError();
+    }
 
     const customerScopedKeys = new Set<string>();
     for (const item of remove) {
