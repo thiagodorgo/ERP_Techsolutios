@@ -134,6 +134,7 @@ class BootstrapSession extends Equatable {
     this.expandedPolicy = ExpandedMobilePolicy.defaultPolicy,
     this.contractMeta,
     this.syncCursors = SyncCursors.empty,
+    this.ownerKey,
   });
 
   final TenantContext activeTenant;
@@ -150,6 +151,27 @@ class BootstrapSession extends Equatable {
   final ExpandedMobilePolicy expandedPolicy;
   final BootstrapContractMeta? contractMeta;
   final SyncCursors syncCursors;
+
+  /// B-APP-SESSAO-RENOVA (D6c): a chave da sessão que gravou este bootstrap
+  /// (`sessionKeyOf`). `null` num cache antigo, gravado antes do dono existir.
+  final String? ownerKey;
+
+  /// Uma cópia com o dono [key].
+  BootstrapSession withOwnerKey(String key) => BootstrapSession(
+    activeTenant: activeTenant,
+    availableTenants: availableTenants,
+    user: user,
+    enabledModules: enabledModules,
+    permissions: permissions,
+    mobilePolicy: mobilePolicy,
+    expenseCategories: expenseCategories,
+    expensePolicy: expensePolicy,
+    featureFlags: featureFlags,
+    expandedPolicy: expandedPolicy,
+    contractMeta: contractMeta,
+    syncCursors: syncCursors,
+    ownerKey: key,
+  );
 
   /// Returns true only when the backend explicitly enabled this flag.
   bool isFeatureEnabled(String flagKey) =>
@@ -174,6 +196,7 @@ class BootstrapSession extends Equatable {
     expandedPolicy,
     contractMeta,
     syncCursors,
+    ownerKey,
   ];
 }
 
