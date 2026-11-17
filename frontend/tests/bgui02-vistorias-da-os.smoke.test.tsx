@@ -519,6 +519,37 @@ test("W-TROCA · com a 2ª recusada, a vaga mostra 'falta escolher' e o modelo c
   await view.unmount();
 });
 
+// =============================== W-A2 (Emenda 2.1) ===============================
+
+test("W-A2 · OS já enviada: a coleta fica sem 'Trocar' e sem 'Retirar', com a frase; a entrega segue as regras", async () => {
+  reset();
+  const view = await mount({ workOrder: workOrder([line(C1, "collection", 0), line(E1, "delivery", 1)], { checklistSnapshot: { template_id: C1 } }) });
+  const phrase = /Esta OS já foi enviada: a vistoria de coleta não pode mais ser trocada\./;
+  // Outro modelo de coleta: não oferece trocar a coleta.
+  await openRow(view.container, "Coleta — moto");
+  assert.equal(buttons(view.container, "Trocar a coleta por este").length, 0, "trocar a coleta na OS enviada");
+  assert.match(text(view.container), phrase);
+  // A coleta escolhida: não oferece retirar.
+  await openRow(view.container, "Coleta padrão — reboque");
+  assert.equal(buttons(view.container, "Retirar da coleta").length, 0, "retirar a coleta na OS enviada");
+  assert.match(text(view.container), phrase);
+  // A entrega: segue as regras da Emenda 2 (retirar e trocar continuam).
+  await openRow(view.container, "Entrega padrão — reboque");
+  assert.equal(buttons(view.container, "Retirar da entrega").length, 1, "a entrega continua retirável");
+  await openRow(view.container, "Conferência de itens");
+  assert.equal(buttons(view.container, "Trocar a entrega por este").length, 1, "a entrega continua trocável");
+  assert.equal(patchCalls().length, 0);
+  await view.unmount();
+
+  // Sem envio, a coleta continua trocável e retirável (o caso de controle).
+  reset();
+  const fresh = await mount({ workOrder: workOrder([line(C1, "collection", 0), line(E1, "delivery", 1)]) });
+  await openRow(fresh.container, "Coleta padrão — reboque");
+  assert.equal(buttons(fresh.container, "Retirar da coleta").length, 1);
+  assert.doesNotMatch(text(fresh.container), phrase);
+  await fresh.unmount();
+});
+
 // =============================== W5a ===============================
 
 test("W5a · o painel renderiza a raiz data-aparencia da aparência escolhida", () => {

@@ -184,6 +184,40 @@ test("T7 · o carimbo certo: depois do despacho de Entrega@0 + Coleta@1, cada li
   });
 });
 
+// Emenda 2.1 (A2) — CARACTERIZAÇÃO, sem mudar o servidor: a OS em voo pela regra antiga (enviada com a entrega como primária
+// e uma coleta SEM execução). Retirar a coleta passa (ela não tem execução) e incluir outra dá 409 `collection_after_dispatch`:
+// a OS fica sem coleta. É por isso que a tela deixa de oferecer "Trocar"/"Retirar" a coleta numa OS já enviada. A linha de
+// coleta é posta direto no repositório em memória, como o dado antigo (a API de hoje não produz esse estado).
+test("T9 · caracterização: OS enviada com coleta sem execução — retirar passa, e nenhuma coleta volta (409)", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const coleta = await publishTemplate(baseUrl, seed, "Vistoria de coleta");
+    const coleta2 = await publishTemplate(baseUrl, seed, "Vistoria de coleta 2");
+    const entrega = await publishTemplate(baseUrl, seed, "Vistoria de entrega");
+    const wo = await createWO(baseUrl, seed, { title: "OS em voo pela regra antiga" });
+    assert.equal((await adjust(baseUrl, seed, wo.id, { add: [{ checklistId: entrega.id, role: "delivery" }] })).status, 200);
+    assert.equal((await createDispatch(baseUrl, seed, wo.id, seed.techA.id)).status, 201);
+    const { getMemoryWorkOrderRepositoryForTests } = await import("../src/modules/work-orders/work-order.service.js");
+    await getMemoryWorkOrderRepositoryForTests().applyChecklists({
+      tenantId: seed.tenantA.id,
+      workOrderId: wo.id,
+      actorUserId: seed.managerA.id,
+      remove: [],
+      add: [{ checklistId: coleta.id, role: "collection", source: "manual", orderIndex: 0, addedBy: seed.managerA.id }],
+      appendAfterExisting: true,
+    });
+    assert.deepEqual((await getWO(baseUrl, seed, wo.id)).checklists.map((line: Line) => line.role).sort(), ["collection", "delivery"]);
+    assert.deepEqual(await runsByRole(baseUrl, seed, wo.id), { delivery: entrega.id }, "a coleta do dado antigo não tem execução");
+
+    const retirar = await adjust(baseUrl, seed, wo.id, { remove: [{ checklistId: coleta.id, role: "collection", reason: "trocar" }] });
+    assert.equal(retirar.status, 200, JSON.stringify(retirar.body));
+    const incluir = await adjust(baseUrl, seed, wo.id, { add: [{ checklistId: coleta2.id, role: "collection" }] });
+    assert.deepEqual([incluir.status, incluir.body.error.reason], [409, "collection_after_dispatch"]);
+    assert.deepEqual((await getWO(baseUrl, seed, wo.id)).checklists.map((line: Line) => line.role), ["delivery"], "a OS ficou sem coleta");
+    const reincluir = await adjust(baseUrl, seed, wo.id, { add: [{ checklistId: coleta.id, role: "collection" }] });
+    assert.deepEqual([reincluir.status, reincluir.body.error.reason], [409, "collection_after_dispatch"], "nem a mesma coleta volta");
+  });
+});
+
 // ---------- harness (molde de tests/checklist-snapshot-dispatch.test.ts) ----------
 
 type Line = { readonly checklistId: string; readonly role: string | null };

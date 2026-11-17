@@ -1173,6 +1173,7 @@ function TemplateDetail({
   appearance,
   rowError,
   nextDispatchOf,
+  dispatched,
   canEdit,
   collectionLine,
   deliveryLine,
@@ -1189,9 +1190,12 @@ function TemplateDetail({
   const inDelivery = uses.find((line) => line.role === "delivery");
   const prefersDelivery = template.type === "towing_delivery";
 
+  // Emenda 2.1 (A2) — numa OS JÁ ENVIADA a coleta não se troca nem se retira: o "Trocar" retiraria a coleta e a nova seria
+  // recusada (409 `collection_after_dispatch`), deixando a OS sem coleta para o próximo envio. A entrega segue as regras.
+  const collectionLocked = dispatched && collectionLine !== null;
   const actions: ReactNode[] = [];
   if (canEdit) {
-    const collectionButton = inCollection ? null : (
+    const collectionButton = inCollection || collectionLocked ? null : (
       <button
         key="col"
         type="button"
@@ -1216,11 +1220,19 @@ function TemplateDetail({
     for (const button of prefersDelivery ? [deliveryButton, collectionButton] : [collectionButton, deliveryButton]) if (button) actions.push(button);
     for (const line of uses) {
       if (!line.role) continue;
+      if (line.role === "collection" && collectionLocked) continue;
       actions.push(
         <button key={`ret-${line.role}`} type="button" className="pat-btn" style={dangerButton} onClick={() => onRetire(line)}>
           <Trash2 size={13} aria-hidden="true" />
           Retirar da {PHASE_LABELS[line.role]}
         </button>,
+      );
+    }
+    if (collectionLocked) {
+      actions.push(
+        <span key="coleta-travada" data-coleta-travada style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>
+          {COLLECTION_LOCKED_MESSAGE}
+        </span>,
       );
     }
   }
@@ -1258,6 +1270,9 @@ function TemplateDetail({
     </div>
   );
 }
+
+/** Emenda 2.1 (A2) — a frase da coleta travada na OS já enviada. */
+export const COLLECTION_LOCKED_MESSAGE = "Esta OS já foi enviada: a vistoria de coleta não pode mais ser trocada.";
 
 const dangerButton: CSSProperties = { color: "#B91C1C", borderColor: "#FECACA" };
 const errorStrip: CSSProperties = { padding: "10px 13px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 9, fontSize: 12.5, color: "#B91C1C" };

@@ -113,6 +113,29 @@ if (!connectionString) {
       assert.equal((await c.ordemCrua(workOrderId)).template_carimbado, c.coleta, "o espelho congelado é o da coleta");
     });
   });
+
+  // Emenda 2.1 (A1) — a METADE DO ESPELHO da guarda S4 (`isChecklistSetFrozen`): a OS anterior à migração 20260865, feita SEM
+  // backfill, tem a junção VAZIA e o espelho (`work_orders.checklist_id` + `checklist_snapshot`) já congelado por um envio. A API
+  // de hoje não produz esse estado; ele existe no banco. Só o espelho diz que a OS foi enviada: sem essa metade, a coleta
+  // entraria depois do envio (BLOQ 3).
+  test("T8 · OS antiga enviada (junção vazia, espelho congelado) + incluir coleta → 409 collection_after_dispatch, nada muda", async () => {
+    await comCenario(admin, async (c) => {
+      const workOrderId = await c.criarOsLegadaEnviada();
+      assert.equal((await c.linhasCruas(workOrderId)).length, 0, "a OS antiga não tem linha na junção");
+      const ordemAntes = await c.ordemCrua(workOrderId);
+      assert.equal(ordemAntes.checklist_id, c.entrega);
+      assert.equal(ordemAntes.template_carimbado, c.entrega, "o espelho está congelado");
+
+      await assert.rejects(c.ajustar(workOrderId, { add: [{ checklistId: c.coleta, role: "collection" }] }), (error: any) => {
+        assert.equal(error?.statusCode, 409);
+        assert.equal(error?.reason, "collection_after_dispatch");
+        return true;
+      });
+
+      assert.equal((await c.linhasCruas(workOrderId)).length, 0, "a recusa gravou linha");
+      assert.deepEqual(await c.ordemCrua(workOrderId), ordemAntes, "a recusa mexeu no espelho");
+    });
+  });
 }
 
 async function montarCenario(admin: any) {
@@ -181,6 +204,23 @@ async function montarCenario(admin: any) {
     async criarOs(set: ReadonlyArray<{ checklistId: string; role: string }>): Promise<string> {
       const os = await ordens.create(gestao as never, { title: "OS de guincho (ordem por etapa)", checklists: set });
       return os.id;
+    },
+    /** OS como o banco a tinha ANTES do 04c e já enviada: campo legado + formulário congelado no espelho, junção vazia. */
+    async criarOsLegadaEnviada(): Promise<string> {
+      const os = await admin.workOrder.create({
+        data: {
+          tenant_id: tenantId,
+          code: `OS-LEG-${Math.random().toString(16).slice(2, 8)}`,
+          title: "Ordem anterior à junção, já enviada",
+          priority: "medium",
+          status: "assigned",
+          checklist_id: entrega,
+          checklist_snapshot: { template_id: entrega, contract: "checklist_snapshot@2026-07-31.omega3c" },
+          created_by: gestor.id,
+          updated_by: gestor.id,
+        },
+      });
+      return os.id as string;
     },
     async ajustar(workOrderId: string, body: Record<string, unknown>) {
       return ordens.adjustChecklists(gestao as never, workOrderId, body);

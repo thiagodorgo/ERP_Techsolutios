@@ -183,7 +183,9 @@ export function isChecklistSetFrozen(
 }
 
 /**
- * ORDEM DA FILA — e, no topo dela, a PRIMÁRIA: menor `order_index`, desempate por `created_at` e por `id`.
+ * ORDEM DA FILA — e, no topo dela, a PRIMÁRIA: a vistoria de COLETA viva vem primeiro, pela etapa (`checklistRoleRank`,
+ * B-GUI-02); entre as coletas, e entre as que não são coleta, menor `order_index`, desempate por `created_at` e por `id`.
+ * Sem coleta viva, a primária é a de menor `order_index`, como antes.
  * A primária é a linha que o espelho legado (`work_orders.checklist_id` + `checklist_snapshot`) reproduz e a
  * única que o despacho provisiona nesta fatia (§7.3 do plano). Comparador ÚNICO: memória e Prisma o
  * compartilham, senão o conjunto congelado dependeria do modo de persistência.
