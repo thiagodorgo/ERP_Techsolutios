@@ -15,11 +15,11 @@ class NewExpenseItemScreen extends StatefulWidget {
 }
 
 class _NewExpenseItemScreenState extends State<NewExpenseItemScreen> {
-  final _amountController = TextEditingController(text: '120.00');
-  final _cityController = TextEditingController(text: 'Sao Paulo');
-  final _vendorController = TextEditingController(text: 'Fornecedor local');
+  // B-GUI-01a (PH-08): os campos abrem vazios, sem valor de exemplo.
+  final _amountController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _vendorController = TextEditingController();
   String _categoryId = 'fuel';
-  bool _receiptPlaceholder = false;
 
   @override
   void dispose() {
@@ -72,21 +72,23 @@ class _NewExpenseItemScreenState extends State<NewExpenseItemScreen> {
                 controller: _vendorController,
                 decoration: const InputDecoration(labelText: 'Fornecedor'),
               ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                value: _receiptPlaceholder,
-                onChanged: (value) =>
-                    setState(() => _receiptPlaceholder = value),
-                title: const Text('Recibo anexado estruturalmente'),
-                subtitle: const Text(
-                  'Camera, upload e OCR reais permanecem para bloco futuro.',
-                ),
-              ),
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: () async {
-                  final amount =
-                      double.tryParse(_amountController.text.trim()) ?? 0;
+                  // B-GUI-01a: sem o valor de exemplo, o campo vazio não
+                  // vira um gasto de R$ 0,00; zero, negativo e valor não
+                  // finito ("NaN", "Infinity") também são recusados.
+                  final amount = double.tryParse(
+                    _amountController.text.trim().replaceAll(',', '.'),
+                  );
+                  if (amount == null || !amount.isFinite || amount <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Informe o valor do gasto.'),
+                      ),
+                    );
+                    return;
+                  }
                   await ref
                       .read(expenseRepositoryProvider)
                       .addItem(
@@ -95,13 +97,12 @@ class _NewExpenseItemScreenState extends State<NewExpenseItemScreen> {
                         amount: amount,
                         city: _cityController.text,
                         vendorName: _vendorController.text,
-                        attachReceiptPlaceholder: _receiptPlaceholder,
                       );
                   if (context.mounted) {
                     context.go('/expenses/${widget.reportId}');
                   }
                 },
-                child: const Text('Salvar item e enfileirar sync'),
+                child: const Text('Salvar gasto'),
               ),
             ],
           );

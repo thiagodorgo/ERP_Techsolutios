@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../auth/auth_notifier.dart';
+import '../../features/auth/auth_models.dart';
 import '../evidence/evidence_blob_store.dart';
 import '../evidence/evidence_sync.dart';
 import '../evidence/evidence_upload.dart';
@@ -16,7 +17,6 @@ import '../location/geolocator_device_location_provider.dart';
 import '../location/location_consent_providers.dart';
 import '../location/location_consent_store.dart';
 import '../network/api_contracts.dart';
-import '../network/http_client.dart';
 import '../../features/work_orders/data/work_order_local_store.dart';
 import '../../features/work_orders/data/work_order_conflict_resolution_service.dart';
 import '../../features/expenses/data/expense_repository.dart';
@@ -32,6 +32,7 @@ import 'sync_replay_service.dart';
 import 'expense_receipt_sync.dart';
 import 'inventory_sync_replay_service.dart';
 import 'sync_user_scope.dart';
+import '../auth/session_http_client.dart';
 
 final syncActionStoreProvider = Provider<SyncActionStore>(
   (ref) => DriftSyncActionStore(ref.watch(appDatabaseProvider)),
@@ -64,10 +65,28 @@ final syncActionFactoryProvider = Provider<SyncActionFactory>(
   ),
 );
 
+/// B-APP-SESSAO-RENOVA (D8): o dono da fila na passada de replay. Com sessão
+/// autenticada, é a pessoa dela (o `currentSyncUserIdProvider`); com a sessão
+/// expirada, é a pessoa da sessão que morreu (`expiredOwnerSub`), para o lote
+/// que levou 401 conseguir voltar as ações dela a `pending`. Só o replay lê
+/// este dono: a fábrica de ações e o consentimento seguem com o
+/// `currentSyncUserIdProvider` (falha fechada).
+final syncQueueOwnerIdProvider = Provider<String?>((ref) {
+  final current = ref.watch(currentSyncUserIdProvider);
+  if (current != null) return current;
+  final auth = ref
+      .watch(authStateProvider)
+      .maybeWhen(data: (state) => state, orElse: () => null);
+  if (auth == null || auth.status != AuthStatus.expired) return null;
+  final sub = auth.expiredOwnerSub?.trim();
+  if (sub == null || sub.isEmpty) return null;
+  return sub;
+});
+
 final replaySyncQueueRepositoryProvider = Provider<SyncQueueRepository>(
   (ref) => UserScopedSyncQueueRepository(
     queue: ref.watch(syncQueueRepositoryProvider),
-    currentUserId: () => ref.read(currentSyncUserIdProvider),
+    currentUserId: () => ref.read(syncQueueOwnerIdProvider),
   ),
 );
 
@@ -119,21 +138,7 @@ final fieldLocationApiProvider = Provider<FieldLocationApi>((ref) {
     return const PendingFieldLocationApi();
   }
 
-  return DioFieldLocationApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioFieldLocationApi(sessionHttpClient(ref, config));
 });
 
 final fieldLocationSyncServiceProvider = Provider<FieldLocationSyncService>(
@@ -157,21 +162,7 @@ final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>((ref) {
     return const PendingBackendExpenseSyncBatchApi();
   }
 
-  return DioExpenseSyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioExpenseSyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final syncReplayServiceProvider = Provider<SyncReplayService>((ref) {
@@ -198,21 +189,7 @@ final workOrderSyncBatchApiProvider = Provider<WorkOrderSyncBatchApi>((ref) {
     return const PendingBackendWorkOrderSyncBatchApi();
   }
 
-  return DioWorkOrderSyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioWorkOrderSyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
@@ -232,21 +209,7 @@ final inventorySyncBatchApiProvider = Provider<InventorySyncBatchApi>((ref) {
     return const PendingBackendInventorySyncBatchApi();
   }
 
-  return DioInventorySyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioInventorySyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final inventorySyncReplayServiceProvider = Provider<InventorySyncReplayService>(
@@ -313,21 +276,7 @@ final checklistSyncBatchApiProvider = Provider<ChecklistSyncBatchApi>((ref) {
     return const PendingBackendChecklistSyncBatchApi();
   }
 
-  return DioChecklistSyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioChecklistSyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final checklistSyncReplayServiceProvider = Provider<ChecklistSyncReplayService>(
@@ -349,21 +298,7 @@ final evidenceSyncBatchApiProvider = Provider<EvidenceSyncBatchApi>((ref) {
     return const PendingEvidenceSyncBatchApi();
   }
 
-  return DioEvidenceSyncBatchApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioEvidenceSyncBatchApi(sessionHttpClient(ref, config));
 });
 
 final evidenceSyncReplayServiceProvider = Provider<EvidenceSyncReplayService>((
@@ -417,21 +352,7 @@ final evidenceUploadApiProvider = Provider<EvidenceUploadApi>((ref) {
     return const PendingEvidenceUploadApi();
   }
 
-  return DioEvidenceUploadApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioEvidenceUploadApi(sessionHttpClient(ref, config));
 });
 
 // B-RDV-COMPROVANTE — API e replay multipart do comprovante de despesa.
@@ -443,21 +364,7 @@ final expenseReceiptUploadApiProvider = Provider<ExpenseReceiptUploadApi>((
     return const PendingExpenseReceiptUploadApi();
   }
 
-  return DioExpenseReceiptUploadApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioExpenseReceiptUploadApi(sessionHttpClient(ref, config));
 });
 
 final expenseReceiptSyncServiceProvider = Provider<ExpenseReceiptSyncService>(

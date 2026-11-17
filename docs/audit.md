@@ -63,8 +63,8 @@ Eventos cobertos nesta rodada:
 - `auth.login.success`
 - `auth.login.failed`
 - `auth.session.created`
-- `auth.refresh.success`
-- `auth.refresh.failed`
+- `auth.refresh.success` — com `reason: "retry_within_window"` quando o servidor devolve o MESMO sucessor ao antecessor imediato do token vigente (o reenvio da resposta que se perdeu, ou a corrida de renovações em voo), sem trocar nada (B-APP-SESSAO-RENOVA, S4)
+- `auth.refresh.failed` — com `reason: "reuse_detected"` quando um token de renovação já trocado volta fora do reenvio: a sessão inteira é revogada e grava também `auth.session.revoked` (B-APP-SESSAO-RENOVA, S3). Nenhum metadado leva token, `jti`, compromisso, prova ou o domínio do vínculo
 - `auth.logout`
 - `auth.session.revoked`
 - `checklist_template.created`
