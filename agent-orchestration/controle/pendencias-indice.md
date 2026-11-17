@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1239** |
-| IDs distintos | 1228 |
-| **ABERTAS** | **958** |
+| Cabecalhos `## P-` | **1245** |
+| IDs distintos | 1234 |
+| **ABERTAS** | **964** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **897** |
+| — das quais **ativas nesta rodada** | **903** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 277 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1239 cabecalhos para 1228 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1245 cabecalhos para 1234 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 369
+## ABERTAS · balde A — material — 371
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -443,8 +443,10 @@
 | `P-ASS08C-REQUISITOS-DAS-ABERTURAS` | 16622 | MÉDIA | sim | P-ASS08C-REQUISITOS-DAS-ABERTURAS (2026-11-15) — os requisitos que o #569 deixou "para a |
 | `P-579-MERGE-EDITOU-PENDENCIA` | 16630 | MÉDIA | sim | P-579-MERGE-EDITOU-PENDENCIA (2026-11-16) — o merge de absorção do #579 trouxe 9 linhas  |
 | `P-APP-TELAS-SEM-3-OPCOES` | 16650 | MÉDIA | sim | P-APP-TELAS-SEM-3-OPCOES (2026-11-15) — as telas do app sem maquete de 3 opções — MÉDIA |
+| `P-GUI02-DISPATCHER-LER-MODELOS` | 16745 | ALTA | sim | P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da O |
+| `P-GUI02-VISTORIA-ENVIADA-POR-LINHA` | 16752 | MÉDIA | sim | P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistor |
 
-## ABERTAS · balde B — processo/registro — 528
+## ABERTAS · balde B — processo/registro — 532
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -976,6 +978,10 @@
 | `P-AUTH-REFRESH-VINCULO-APARELHO` | 16723 | BAIXA | sim | P-AUTH-REFRESH-VINCULO-APARELHO (2026-11-16) — o token de renovação não é amarrado ao ap |
 | `P-WEB-SAIR-SEM-NOVA-TENTATIVA` | 16730 | BAIXA | sim | P-WEB-SAIR-SEM-NOVA-TENTATIVA (2026-11-16) — o "Sair" da web ignora o 503 do servidor e  |
 | `P-APP-LISTA-OS-ERRO-COM-200` | 16737 | BAIXA | sim | P-APP-LISTA-OS-ERRO-COM-200 (2026-11-16) — a lista de OS do app mostra "Não foi possível |
+| `P-GUI02-QUEM-ESCOLHEU` | 16759 | BAIXA | sim | P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA |
+| `P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO` | 16766 | BAIXA | sim | P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o  |
+| `P-GUI02-ESPELHO-OS-EM-VOO` | 16773 | BAIXA | sim | P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o e |
+| `P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO` | 16780 | BAIXA | sim | P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" nu |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

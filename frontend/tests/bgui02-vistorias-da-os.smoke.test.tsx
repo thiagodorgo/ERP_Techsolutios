@@ -341,45 +341,57 @@ test("W2 · a matriz das 4 combinações (função pura)", () => {
   assert.deepEqual([nenhuma.canEdit, nenhuma.canReadTemplates, nenhuma.readOnlyReason], [false, false, "read_only_profile"]);
 });
 
-test("W2 · na tela: só o despachante sem leitura → frase dele e NENHUMA chamada à lista de modelos", async () => {
-  const live = [line(C1, "collection", 0)];
-  const timeline: WorkOrderEvent[] = [
-    { id: "ev1", eventType: "work_order_checklist_added", message: "Vistoria incluída", metadata: { checklistId: C1, checklistLabel: "Coleta padrão — reboque", role: "collection" }, createdAt: "2026-11-17T09:12:00.000Z" },
-  ];
-  const cases: Array<{ permissions: string[]; reads: number; phrase: RegExp | null; edits: boolean }> = [
-    { permissions: ["work_orders:read", "field_dispatch:create", "tenant_checklists:read"], reads: 1, phrase: null, edits: true },
-    { permissions: ["work_orders:read", "field_dispatch:create"], reads: 0, phrase: /Seu perfil envia a OS ao guincheiro, mas ainda não vê os modelos de vistoria\. Para escolher a vistoria desta OS, peça a um gestor\./, edits: false },
-    { permissions: ["work_orders:read", "tenant_checklists:read"], reads: 1, phrase: /Seu perfil vê as vistorias desta OS, mas não pode alterá-las\./, edits: false },
-    { permissions: ["work_orders:read"], reads: 0, phrase: /Seu perfil vê as vistorias desta OS, mas não pode alterá-las\./, edits: false },
-  ];
-  for (const item of cases) {
-    reset();
-    const view = await mount({ workOrder: workOrder(live), timeline, permissions: item.permissions });
-    assert.equal(listCalls().length, item.reads, `chamadas à lista com ${JSON.stringify(item.permissions)}`);
-    const page = text(view.container);
-    if (item.phrase) assert.match(page, item.phrase);
-    // O que está ligado aparece com o nome registrado na inclusão, mesmo sem a lista.
-    assert.match(page, /Coleta padrão — reboque/);
-    assert.equal(buttons(view.container, "Gerenciar modelos").length, item.edits ? 1 : 0, `edição com ${JSON.stringify(item.permissions)}`);
-    if (item.reads > 0) {
-      await openRow(view.container, "Entrega padrão — reboque");
-      assert.equal(buttons(view.container, "Usar na entrega").length, item.edits ? 1 : 0);
-    }
-    await view.unmount();
-  }
-});
+// J-596 (C2-N1) — W2 e W-A2 montados nas 3 aparências: uma regressão que atinja só a B ou a C fica vermelha aqui.
+const APPEARANCES = ["A", "B", "C"] as const;
+const rootAppearance = (root: MiniDomElement) =>
+  elements(root, (el) => el.hasAttribute("data-aparencia")).map((el) => el.getAttribute("data-aparencia")).join();
 
-test("W2 · o 403 ao salvar leva o painel a só leitura", async () => {
-  reset();
-  patchReplies = [{ status: 403, reason: "permission_required" }];
-  const view = await mount({ workOrder: workOrder([]) });
-  await openRow(view.container, "Coleta padrão — reboque");
-  await click(buttons(view.container, "Usar na coleta")[0]);
-  assert.match(text(view.container), /Seu perfil não pode alterar as vistorias desta OS\./);
-  assert.equal(buttons(view.container, "Usar na coleta").length, 0, "depois do 403 não há mais controle de edição");
-  assert.equal(buttons(view.container, "Gerenciar modelos").length, 0);
-  await view.unmount();
-});
+for (const appearance of APPEARANCES) {
+  test(`W2 · [${appearance}] na tela: só o despachante sem leitura → frase dele e NENHUMA chamada à lista de modelos`, async () => {
+    const live = [line(C1, "collection", 0)];
+    const timeline: WorkOrderEvent[] = [
+      { id: "ev1", eventType: "work_order_checklist_added", message: "Vistoria incluída", metadata: { checklistId: C1, checklistLabel: "Coleta padrão — reboque", role: "collection" }, createdAt: "2026-11-17T09:12:00.000Z" },
+    ];
+    const cases: Array<{ permissions: string[]; reads: number; phrase: RegExp | null; edits: boolean }> = [
+      { permissions: ["work_orders:read", "field_dispatch:create", "tenant_checklists:read"], reads: 1, phrase: null, edits: true },
+      { permissions: ["work_orders:read", "field_dispatch:create"], reads: 0, phrase: /Seu perfil envia a OS ao guincheiro, mas ainda não vê os modelos de vistoria\. Para escolher a vistoria desta OS, peça a um gestor\./, edits: false },
+      { permissions: ["work_orders:read", "tenant_checklists:read"], reads: 1, phrase: /Seu perfil vê as vistorias desta OS, mas não pode alterá-las\./, edits: false },
+      { permissions: ["work_orders:read"], reads: 0, phrase: /Seu perfil vê as vistorias desta OS, mas não pode alterá-las\./, edits: false },
+    ];
+    for (const item of cases) {
+      reset();
+      const view = await mount({ workOrder: workOrder(live), timeline, permissions: item.permissions, appearance });
+      assert.equal(rootAppearance(view.container), appearance, "a aparência montada");
+      assert.equal(listCalls().length, item.reads, `chamadas à lista com ${JSON.stringify(item.permissions)}`);
+      const page = text(view.container);
+      if (item.phrase) assert.match(page, item.phrase);
+      // O que está ligado aparece com o nome registrado na inclusão, mesmo sem a lista.
+      assert.match(page, /Coleta padrão — reboque/);
+      // "Gerenciar modelos" é o atalho da aparência A (a B e a C não o desenham): na A, 1 com edição; na B e na C, 0 sempre.
+      assert.equal(buttons(view.container, "Gerenciar modelos").length, item.edits && appearance === "A" ? 1 : 0, `edição com ${JSON.stringify(item.permissions)}`);
+      // Em toda aparência: sem edição, nenhum controle de edição na página.
+      if (!item.edits) assert.equal(buttons(view.container, /Usar na|Trocar a|Retirar da/).length, 0, `controle de edição com ${JSON.stringify(item.permissions)}`);
+      if (item.reads > 0) {
+        await openRow(view.container, "Entrega padrão — reboque");
+        assert.equal(buttons(view.container, "Usar na entrega").length, item.edits ? 1 : 0);
+      }
+      await view.unmount();
+    }
+  });
+
+  test(`W2 · [${appearance}] o 403 ao salvar leva o painel a só leitura`, async () => {
+    reset();
+    patchReplies = [{ status: 403, reason: "permission_required" }];
+    const view = await mount({ workOrder: workOrder([]), appearance });
+    assert.equal(rootAppearance(view.container), appearance, "a aparência montada");
+    await openRow(view.container, "Coleta padrão — reboque");
+    await click(buttons(view.container, "Usar na coleta")[0]);
+    assert.match(text(view.container), /Seu perfil não pode alterar as vistorias desta OS\./);
+    assert.equal(buttons(view.container, "Usar na coleta").length, 0, "depois do 403 não há mais controle de edição");
+    assert.equal(buttons(view.container, "Gerenciar modelos").length, 0);
+    await view.unmount();
+  });
+}
 
 // =============================== W3 ===============================
 
@@ -521,34 +533,37 @@ test("W-TROCA · com a 2ª recusada, a vaga mostra 'falta escolher' e o modelo c
 
 // =============================== W-A2 (Emenda 2.1) ===============================
 
-test("W-A2 · OS já enviada: a coleta fica sem 'Trocar' e sem 'Retirar', com a frase; a entrega segue as regras", async () => {
-  reset();
-  const view = await mount({ workOrder: workOrder([line(C1, "collection", 0), line(E1, "delivery", 1)], { checklistSnapshot: { template_id: C1 } }) });
-  const phrase = /Esta OS já foi enviada: a vistoria de coleta não pode mais ser trocada\./;
-  // Outro modelo de coleta: não oferece trocar a coleta.
-  await openRow(view.container, "Coleta — moto");
-  assert.equal(buttons(view.container, "Trocar a coleta por este").length, 0, "trocar a coleta na OS enviada");
-  assert.match(text(view.container), phrase);
-  // A coleta escolhida: não oferece retirar.
-  await openRow(view.container, "Coleta padrão — reboque");
-  assert.equal(buttons(view.container, "Retirar da coleta").length, 0, "retirar a coleta na OS enviada");
-  assert.match(text(view.container), phrase);
-  // A entrega: segue as regras da Emenda 2 (retirar e trocar continuam).
-  await openRow(view.container, "Entrega padrão — reboque");
-  assert.equal(buttons(view.container, "Retirar da entrega").length, 1, "a entrega continua retirável");
-  await openRow(view.container, "Conferência de itens");
-  assert.equal(buttons(view.container, "Trocar a entrega por este").length, 1, "a entrega continua trocável");
-  assert.equal(patchCalls().length, 0);
-  await view.unmount();
+for (const appearance of APPEARANCES) {
+  test(`W-A2 · [${appearance}] OS já enviada: a coleta fica sem 'Trocar' e sem 'Retirar', com a frase; a entrega segue as regras`, async () => {
+    reset();
+    const view = await mount({ workOrder: workOrder([line(C1, "collection", 0), line(E1, "delivery", 1)], { checklistSnapshot: { template_id: C1 } }), appearance });
+    assert.equal(rootAppearance(view.container), appearance, "a aparência montada");
+    const phrase = /Esta OS já foi enviada: a vistoria de coleta não pode mais ser trocada\./;
+    // Outro modelo de coleta: não oferece trocar a coleta.
+    await openRow(view.container, "Coleta — moto");
+    assert.equal(buttons(view.container, "Trocar a coleta por este").length, 0, "trocar a coleta na OS enviada");
+    assert.match(text(view.container), phrase);
+    // A coleta escolhida: não oferece retirar.
+    await openRow(view.container, "Coleta padrão — reboque");
+    assert.equal(buttons(view.container, "Retirar da coleta").length, 0, "retirar a coleta na OS enviada");
+    assert.match(text(view.container), phrase);
+    // A entrega: segue as regras da Emenda 2 (retirar e trocar continuam).
+    await openRow(view.container, "Entrega padrão — reboque");
+    assert.equal(buttons(view.container, "Retirar da entrega").length, 1, "a entrega continua retirável");
+    await openRow(view.container, "Conferência de itens");
+    assert.equal(buttons(view.container, "Trocar a entrega por este").length, 1, "a entrega continua trocável");
+    assert.equal(patchCalls().length, 0);
+    await view.unmount();
 
-  // Sem envio, a coleta continua trocável e retirável (o caso de controle).
-  reset();
-  const fresh = await mount({ workOrder: workOrder([line(C1, "collection", 0), line(E1, "delivery", 1)]) });
-  await openRow(fresh.container, "Coleta padrão — reboque");
-  assert.equal(buttons(fresh.container, "Retirar da coleta").length, 1);
-  assert.doesNotMatch(text(fresh.container), phrase);
-  await fresh.unmount();
-});
+    // Sem envio, a coleta continua trocável e retirável (o caso de controle).
+    reset();
+    const fresh = await mount({ workOrder: workOrder([line(C1, "collection", 0), line(E1, "delivery", 1)]), appearance });
+    await openRow(fresh.container, "Coleta padrão — reboque");
+    assert.equal(buttons(fresh.container, "Retirar da coleta").length, 1);
+    assert.doesNotMatch(text(fresh.container), phrase);
+    await fresh.unmount();
+  });
+}
 
 // =============================== W5a ===============================
 

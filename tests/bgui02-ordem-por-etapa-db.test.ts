@@ -17,7 +17,9 @@ import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 //   T3 · criação com [Entrega, Coleta] → o espelho da criação aponta a coleta;
 //   T4 · OS enviada só com a entrega + incluir a coleta → 409 `collection_after_dispatch`, e as linhas e o espelho ficam
 //        IGUAIS (comparação por igualdade das linhas cruas);
-//   T7 · depois do despacho de Entrega@0 + Coleta@1, cada linha guarda o formulário do SEU modelo (`template_id`).
+//   T7 · depois do despacho de Entrega@0 + Coleta@1, cada linha guarda o formulário do SEU modelo (`template_id`);
+//   T10 · (Emenda 2.2, C1-01) OS enviada SEM nenhuma vistoria + incluir a coleta → 409 `collection_after_dispatch` pela
+//        referência do despacho (nada foi congelado), e as linhas e o espelho ficam IGUAIS.
 //
 // PAPEL DO BANCO (regra da casa para suítes `-db`, molde de `bsan314-provisao-entrega-db.test.ts`): o cliente do app é
 // o do papel efêmero NOSUPERUSER NOBYPASSRLS, injetado no singleton `src/database/prisma.ts` antes de importar src. A
@@ -128,6 +130,29 @@ if (!connectionString) {
 
       await assert.rejects(c.ajustar(workOrderId, { add: [{ checklistId: c.coleta, role: "collection" }] }), (error: any) => {
         assert.equal(error?.statusCode, 409);
+        assert.equal(error?.reason, "collection_after_dispatch");
+        return true;
+      });
+
+      assert.equal((await c.linhasCruas(workOrderId)).length, 0, "a recusa gravou linha");
+      assert.deepEqual(await c.ordemCrua(workOrderId), ordemAntes, "a recusa mexeu no espelho");
+    });
+  });
+
+  // Emenda 2.2 (C1-01) — a OS enviada SEM vistoria nenhuma: não há espelho nem linha congelada, e só o despacho (não
+  // cancelado, lido pelo repositório do despacho sob RLS) diz que ela foi enviada.
+  test("T10 · OS enviada SEM nenhuma vistoria + incluir coleta → 409 collection_after_dispatch, linhas e espelho iguais", async () => {
+    await comCenario(admin, async (c) => {
+      const workOrderId = await c.criarOs([]);
+      await c.despachar(workOrderId);
+
+      assert.equal((await c.linhasCruas(workOrderId)).length, 0, "a OS foi enviada sem vistoria");
+      const ordemAntes = await c.ordemCrua(workOrderId);
+      assert.equal(ordemAntes.template_carimbado, null, "nada foi congelado no envio");
+
+      await assert.rejects(c.ajustar(workOrderId, { add: [{ checklistId: c.coleta, role: "collection" }] }), (error: any) => {
+        assert.equal(error?.statusCode, 409);
+        assert.equal(error?.code, "WORK_ORDER_CONFLICT");
         assert.equal(error?.reason, "collection_after_dispatch");
         return true;
       });

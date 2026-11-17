@@ -5646,3 +5646,24 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 6. **VER5-02 (Emenda 1.1.1, item 2), medida antes do código.** `src/modules/work-orders/approval.controller.ts` grava a auditoria da decisão (`approval.approved`/`approval.rejected`) com `resourceId: approval.entityId` (`:56-60` em `eeac48a3`); a recusa por segregação (`approval.self_decision_denied`) é gravada em `approval.service.ts` com `entityId: current.entityId`. Os dois arquivos estão no PROIBIDO do 16 (`src/modules/work-orders/approval.*.ts`, Emenda 1 §6) e fora da lista de permitidos (Emenda 1.1 §5). **Vale o 2º caso:** a correção (com OS, a decisão e a recusa também gravam `resourceId = work_order_id`, com a chave opaca nos metadados) vai para a seção 3 do plano do 67, como **item 11**. O orquestrador a repassa.
 - **Cruzamento:** o dev é Claude; a pré-revisão é da outra casa quando houver crédito (§C7 11(1)), ou identidade Claude nova, com "sem cruzamento" declarado.
 - **Gravado por:** `dev-16-cl` (Claude Opus 5.5, dev do bloco), em 14/11/2026.
+
+## D-GUI02-PRIMARIA-POR-ETAPA (registro de CONFLITO, §A2, 2026-11-17) — a primária é a coleta pela etapa, e o comentário da migração diz "a de menor `order_index`"
+
+- **Os dois lados:** o comentário da migração `20260865000000` (l.67-71) diz "a de menor `order_index` é a PRIMÁRIA"; o código do `B-GUI-02` (Emenda 2, §1.2: `checklistRoleRank` no comparador, no espelho da criação e no `sort` do despacho) faz da coleta viva a primária, e o `API_CONTRACTS.md` (l.625) foi corrigido.
+- **Estado:** vale o código novo e o `API_CONTRACTS.md`. A migração aplicada não se edita.
+- **Fonte:** Emenda 2 do `B-GUI-02` (§1.2 e §5), `plano-B-GUI-02-emenda2.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (conserto da J-596, achado C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.
+
+## D-GUI02-CODIGOS-REAIS (registro de CONFLITO, §A2, 2026-11-17) — os códigos do ajuste de vistorias são os do código, não os do plano
+
+- **Os dois lados:** o §4.2 do plano do app guincho previa 422 para "modelo não publicado" e "OS encerrada"; o código real é 400 `checklist_not_published` e 409 `work_order_terminal`.
+- **Estado:** vale o código. O contrato da tela segue o mapa de recusas da Emenda 1 §2 (o W3 e o W4c do `B-GUI-02` os provam pelo servidor).
+- **Fonte:** Emenda 1 do `B-GUI-02` (§2 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.
+
+## D-GUI02-SEM-SELO-ENVIADA (registro de CONFLITO, §A2, 2026-11-17) — o selo "enviada" por vistoria da maquete fica de fora
+
+- **Os dois lados:** a maquete aprovada desenha o selo "enviada" por vistoria; o servidor não diz qual linha já virou execução.
+- **Estado:** o selo fica de fora até a `P-GUI02-VISTORIA-ENVIADA-POR-LINHA`. A tela mostra só, no nível da OS, a faixa "já foi enviada".
+- **Fonte:** Emenda 1 do `B-GUI-02` (§4 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.

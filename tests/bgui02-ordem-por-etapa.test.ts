@@ -218,6 +218,100 @@ test("T9 · caracterização: OS enviada com coleta sem execução — retirar p
   });
 });
 
+// Emenda 2.2 (achado C1-01 da J-596) — a guarda vale para TODA OS já enviada, com ou sem vistoria congelada. A OS enviada
+// SEM nenhuma vistoria não tem nada congelado (nem espelho, nem linha), então só o DESPACHO diz que ela foi enviada: a
+// referência `hasDispatchForWorkOrder` (despacho não cancelado da OS). No `src/` de 578b7463 este caso dava 200 e a OS
+// ganhava a coleta depois do envio (a sonda P1 da C1).
+test("T10 · OS enviada SEM nenhuma vistoria + incluir coleta → 409 collection_after_dispatch, sem mudar nada", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const coleta = await publishTemplate(baseUrl, seed, "Vistoria de coleta");
+    const wo = await createWO(baseUrl, seed, { title: "OS enviada sem vistoria" });
+    assert.equal((await createDispatch(baseUrl, seed, wo.id, seed.techA.id)).status, 201);
+
+    const before = await getWO(baseUrl, seed, wo.id);
+    assert.equal(before.checklistSnapshot ?? null, null, "nada foi congelado no envio");
+    assert.deepEqual(before.checklists, [], "a OS foi enviada sem vistoria");
+    const linksBefore = await rawLinks(seed, wo.id);
+
+    const refused = await adjust(baseUrl, seed, wo.id, { add: [{ checklistId: coleta.id, role: "collection" }] });
+    assert.equal(refused.status, 409, JSON.stringify(refused.body));
+    assert.equal(refused.body.error.code, "WORK_ORDER_CONFLICT");
+    assert.equal(refused.body.error.reason, "collection_after_dispatch");
+
+    const after = await getWO(baseUrl, seed, wo.id);
+    assert.deepEqual(after.checklists, before.checklists, "o conjunto não pode mudar");
+    assert.equal(after.checklistId ?? null, before.checklistId ?? null, "o espelho não pode mudar");
+    assert.deepEqual(after.checklistSnapshot ?? null, before.checklistSnapshot ?? null);
+    assert.deepEqual(await rawLinks(seed, wo.id), linksBefore, "nenhuma linha gravada nem retirada");
+  });
+});
+
+// Controle do T10: é a referência (o despacho NÃO cancelado) que decide, e não outra coisa. A OS nunca enviada e a OS cujo
+// único despacho foi cancelado recebem a coleta (200); a mesma OS, depois de um despacho vivo, não (409).
+test("T10 (controle) · OS não enviada → 200; só despacho cancelado → 200; despacho vivo → 409", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const coleta = await publishTemplate(baseUrl, seed, "Vistoria de coleta");
+    const coleta2 = await publishTemplate(baseUrl, seed, "Vistoria de coleta 2");
+
+    const naoEnviada = await createWO(baseUrl, seed, { title: "OS ainda não enviada" });
+    const incluida = await adjust(baseUrl, seed, naoEnviada.id, { add: [{ checklistId: coleta.id, role: "collection" }] });
+    assert.equal(incluida.status, 200, JSON.stringify(incluida.body));
+
+    const cancelada = await createWO(baseUrl, seed, { title: "OS com o envio cancelado" });
+    const dispatch = await createDispatch(baseUrl, seed, cancelada.id, seed.techA.id);
+    assert.equal(dispatch.status, 201, JSON.stringify(dispatch.body));
+    const cancel = await cancelDispatch(baseUrl, seed, dispatch.body.data.id as string);
+    assert.equal(cancel.status, 200, JSON.stringify(cancel.body));
+    const depoisDoCancelamento = await adjust(baseUrl, seed, cancelada.id, { add: [{ checklistId: coleta.id, role: "collection" }] });
+    assert.equal(depoisDoCancelamento.status, 200, JSON.stringify(depoisDoCancelamento.body));
+
+    assert.equal((await adjust(baseUrl, seed, cancelada.id, { remove: [{ checklistId: coleta.id, role: "collection", reason: "trocar" }] })).status, 200);
+    assert.equal((await createDispatch(baseUrl, seed, cancelada.id, seed.techA.id)).status, 201);
+    const depoisDoNovoEnvio = await adjust(baseUrl, seed, cancelada.id, { add: [{ checklistId: coleta2.id, role: "collection" }] });
+    assert.deepEqual([depoisDoNovoEnvio.status, depoisDoNovoEnvio.body?.error?.reason], [409, "collection_after_dispatch"]);
+  });
+});
+
+// Emenda 2.2 §3 (achado C1-02) — a metade `links.some(...)` de `isChecklistSetFrozen`, ISOLADA: o único despacho foi
+// cancelado (logo a referência do despacho diz "não enviada"), o espelho ficou `null` (a primária geral estava arquivada no
+// envio e não tem formulário) e só a linha da entrega guarda formulário congelado. Só a linha congelada diz que o conjunto já
+// foi ao campo; sem essa metade, a coleta entraria (MP2).
+test("T11 · só a linha viva congelada (despacho cancelado, espelho null) + incluir coleta → 409 collection_after_dispatch", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const geral = await publishTemplate(baseUrl, seed, "Vistoria padrão");
+    const entrega = await publishTemplate(baseUrl, seed, "Vistoria de entrega");
+    const coleta = await publishTemplate(baseUrl, seed, "Vistoria de coleta");
+    const wo = await createWO(baseUrl, seed, { title: "OS com a geral arquivada", checklistId: geral.id });
+    assert.equal((await adjust(baseUrl, seed, wo.id, { add: [{ checklistId: entrega.id, role: "delivery" }] })).status, 200);
+    const geralAtual = await req(baseUrl, `/api/v1/tenant/checklists/${geral.id}`, { headers: headers(seed, "tenant_admin") });
+    assert.equal(geralAtual.status, 200, JSON.stringify(geralAtual.body));
+    const token = encodeURIComponent(String(geralAtual.body.data.updatedAt));
+    const archived = await req(baseUrl, `/api/v1/tenant/checklists/${geral.id}?expectedUpdatedAt=${token}`, {
+      method: "DELETE",
+      headers: headers(seed, "tenant_admin"),
+    });
+    assert.equal(archived.status, 204, JSON.stringify(archived.body));
+
+    const dispatch = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
+    assert.equal(dispatch.status, 201, JSON.stringify(dispatch.body));
+    assert.equal((await cancelDispatch(baseUrl, seed, dispatch.body.data.id as string)).status, 200);
+
+    const before = await getWO(baseUrl, seed, wo.id);
+    assert.equal(before.checklistSnapshot ?? null, null, "o espelho não pode estar congelado (senão o caso não isola a metade das linhas)");
+    assert.deepEqual(before.checklists.map((line: Line) => line.role), ["generic", "delivery"]);
+    const linksBefore = await rawLinks(seed, wo.id);
+    assert.deepEqual(
+      linksBefore.filter((link) => !link.removed).map((link) => `${link.role}:${link.snapshotTemplateId}`),
+      ["generic:null", `delivery:${entrega.id}`],
+      "só a linha da entrega guarda formulário congelado",
+    );
+
+    const refused = await adjust(baseUrl, seed, wo.id, { add: [{ checklistId: coleta.id, role: "collection" }] });
+    assert.deepEqual([refused.status, refused.body?.error?.reason], [409, "collection_after_dispatch"], JSON.stringify(refused.body));
+    assert.deepEqual(await rawLinks(seed, wo.id), linksBefore, "nenhuma linha gravada nem retirada");
+  });
+});
+
 // ---------- harness (molde de tests/checklist-snapshot-dispatch.test.ts) ----------
 
 type Line = { readonly checklistId: string; readonly role: string | null };
@@ -320,6 +414,14 @@ async function adjust(baseUrl: string, seed: SeedData, workOrderId: string, body
 
 async function createDispatch(baseUrl: string, seed: SeedData, workOrderId: string, operatorUserId: string) {
   return req(baseUrl, "/api/v1/operations/dispatches", { method: "POST", headers: headers(seed, "manager"), body: { workOrderId, operatorUserId } });
+}
+
+async function cancelDispatch(baseUrl: string, seed: SeedData, dispatchId: string) {
+  return req(baseUrl, `/api/v1/operations/dispatches/${dispatchId}/status`, {
+    method: "PATCH",
+    headers: headers(seed, "manager"),
+    body: { status: "cancelled", reason: "envio desfeito" },
+  });
 }
 
 /** As execuções da OS, pela porta do app novo: `{ etapa: modelo }`. Uma etapa repetida reprova (seria execução a mais). */

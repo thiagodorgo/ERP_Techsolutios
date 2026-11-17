@@ -655,7 +655,7 @@ altera o conjunto nem gera evento — a escrita da junção só acontece depois 
 
 **`PATCH /work-orders/:id/checklists`** — `{ "add": [{ "checklistId", "role"? }], "remove": [{ "checklistId",
 "role", "reason", "confirmCustomerScoped"? }] }`. Retirar exige **etapa** e **motivo**. Erros: 400
-`checklist_not_published` · 409 `duplicate_checklist_phase` · 409 `collection_after_dispatch` (a OS já foi enviada sem coleta) · 409 `checklist_already_dispatched` (vistoria já
+`checklist_not_published` · 409 `duplicate_checklist_phase` · 409 `collection_after_dispatch` (a OS já foi enviada; a coleta não entra depois do envio, com ou sem vistoria congelada) · 409 `checklist_already_dispatched` (vistoria já
 enviada ao técnico — o caminho é a reabertura) · 409 `checklist_customer_scoped_confirmation_required` (a
 vistoria veio de regra com cliente nomeado) · 409 `work_order_terminal` · 404 `checklist_link_not_found`.
 Remoção é **soft** (guarda quem/quando/por quê) e vira evento na timeline da OS, visível ao técnico.
