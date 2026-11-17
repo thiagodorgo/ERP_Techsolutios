@@ -220,7 +220,8 @@ export class StatementSettlementService {
   /**
    * Estorno/chargeback de um pagamento do provedor (R-CB-1, R-SET-3/D4). Desconta PRIMEIRO do crédito que o pagamento
    * gerou e só o resto de `applied_amount`. `cancelled` NUNCA volta a `closed`. Devolve `shouldCancelInvoice` para o
-   * reconcile enfileirar `invoice_cancel` — só em estorno TOTAL ou chargeback, com nota `authorized` e sem `keepInvoice`.
+   * reconcile enfileirar `invoice_cancel` — só em estorno TOTAL ou chargeback, com nota viva (pendente ou autorizada; com o
+   * cancelamento já pendente, não nasce outro) e sem `keepInvoice`.
    */
   async applyReversal(input: {
     readonly tenantId: string;

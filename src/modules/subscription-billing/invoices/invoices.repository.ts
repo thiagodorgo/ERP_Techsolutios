@@ -42,7 +42,7 @@ export interface StatementInvoiceRepository {
   /** Idempotente por (provider, `<statement_id>:<seq>`): existente → `created: false`, SEM novo número. Outra nota VIVA do
    * demonstrativo → `InvoiceProviderError("invoice_already_live")` (no banco, o UNIQUE parcial é a última palavra).
    * Conserto da J-530 (A): `statementPaid` é o status do demonstrativo lido sob a trava; nota NOVA sobre demonstrativo que não
-   * está `paid` → `InvoiceProviderError("statement_not_paid")` (a existente volta, com `statementPaid`, para quem chamou decidir). */
+   * está `paid` → `StatementNotPaidError` (a existente volta, com `statementPaid`, para quem chamou decidir). */
   beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean; readonly statementPaid: boolean }>;
   findByRef(tenantId: string, provider: string, externalRef: string): Promise<SubscriptionStatementInvoice | undefined>;
   /** A nota VIVA (`pending`/`authorized`/`cancel_pending`) do demonstrativo, se houver. */

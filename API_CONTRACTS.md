@@ -511,6 +511,38 @@ novo**; muda o efeito das rotas que já existem. **Tudo continua DESLIGADO por p
   não prova que a cobrança está aberta; o reopen e o refechamento continuam recusando. (Conserto da J-579: a regra de cada estado
   da cobrança vive numa tabela-verdade única, `charges/charge-rules.ts`.)
 
+**A nota da baixa manual, a reemissão, a varredura, o estorno manual com nota, o `/invoice` e o backlog — `subscription_billing_channel@2026-11-17.b-ass-08c2`.**
+Fontes: `statements/statement.service.ts`, `statements/statement-settlement.service.ts`, `statements/statements.platform.routes.ts`,
+`statements/statement.prisma-runtime.ts`, `invoices/invoice-intent-rules.ts`, `outbox/invoice.dispatch.ts`, `outbox/outbox.dispatcher.ts`,
+`outbox/channel.jobs.ts`, `outbox/invoice-sweep.ts`. **Tudo continua DESLIGADO por padrão** (`BILLING_PROVIDERS_ENABLED=false`): com o
+canal desligado, as intenções de nota nascem `PENDING` com `skipReason = provider_disabled` e nada sai. **Nenhuma rota fala com o
+provedor**; quem emite e cancela a nota é o despacho. Erro = `{ error: { reason } }`.
+
+| Método | Caminho | Permissão | Corpo / consulta | Sucesso | Recusas (`reason`) |
+|---|---|---|---|---|---|
+| POST | `/platform/billing/statements/:statementId/invoice` | `platform:billing:settle` | `{ tenantId }` | `200` `{ data: { statementId, seq, providerDisabled } }`: nasce uma `invoice_issue` `PENDING` com o `seq` seguinte (a reemissão depois de uma nota rejeitada, ou a nota que a automática não criou), com a trilha `subscription_statement.invoice_requested` na mesma transação | `400` `tenant_id_required` · `404` `statement_not_found` (inclusive id de outra organização) · `409` `statement_busy` · `422` `statement_not_paid` (não pago, ou total zero), `invoice_already_live` (já há nota viva), `invoice_issue_pending` (há pedido de nota em voo ou em conferência; a saída é o `/resolve` da linha) |
+| GET | `/platform/billing/invoices/backlog?tenantId=` | `platform:billing:read` | — | `200` `{ data: [ { statementId, period, status, category, invoiceStatus, lastLineStatus, lastLineError, totalAmount } ] }`, ordenado pela categoria e, dentro dela, pelo período. Categorias, a primeira que casar: `live_on_unpaid` (nota viva num demonstrativo que não está pago: o estorno de só uma parte, ou a recusa do cancelamento), `before_cutoff` (pago antes do corte, sem pedido de nota da época: para o contador decidir), `awaiting_provider` (pedido da época esperando o provedor ser ligado), `needs_review` (pedido da época em conferência ou falho, ou nota da época rejeitada: a reemissão é pelo `/invoice`), `no_intent` (pago desde o corte, sem pedido da época: a varredura o cria quando a nota for ligada). O que não casa (pedido em voo, nota autorizada sobre pago) não aparece. Nunca o id da nota no provedor, a referência externa, URL de documento nem a organização | `400` `tenant_id_required` |
+
+- **A baixa manual que quita** (`POST …/statements/:statementId/payments`) grava, na mesma transação, uma `invoice_issue` com o
+  `seq` seguinte (uma linha viva por época de pagamento) e o índice da organização, depois da marcação imediata da cobrança.
+- **O estorno manual** (`POST …/statements/:statementId/payments/:paymentId/reverse`) aceita `confirmInvoiceCancel` (booleano;
+  outro tipo → `400` `invalid_confirmation`). Estorno que devolve TODO o pago com nota viva: sem a confirmação → `422`
+  `invoice_cancel_confirmation_required` e nada é gravado; com ela → a `invoice_cancel` na mesma transação. Estorno de só uma
+  parte não cancela a nota (vira alerta no backlog, `live_on_unpaid`). A resposta passa a trazer `data.invoice`:
+  `cancel_requested`, `cancel_in_progress`, `kept_partial_reversal` ou `none`.
+- **O fechamento e os outros movimentos do demonstrativo** (`POST …/statements/close`, `…/reopen`, `…/payments`, `…/reverse`,
+  `…/cancel`, `…/invoice`): **a falha de banco do movimento (a transação expirou ou a trava não veio) sai como `409`
+  `statement_busy`, repetível**, e não mais como `400` `invalid_request`; o pool esgotado ao abrir a transação continua
+  indisponibilidade. Nada é gravado pela metade: a transação desfaz.
+- **A varredura de recuperação** roda no despacho, antes do claim, só com provedor de nota ligado: os demonstrativos pagos desde
+  o corte do dono (`2026-11-11T09:43:45Z`) sem pedido de nota da época ganham um, sob a trava do demonstrativo. Se a varredura
+  falhar numa organização, as emissões não órfãs da rodada são adiadas (`lastError = invoice_sweep_failed`), sem gastar
+  tentativa.
+- **A emissão no despacho:** o erro de validação do provedor (dado fiscal incompleto, validação) deixa a nota `rejected` com o
+  CÓDIGO (nunca o texto do provedor) e a linha em `NEEDS_REVIEW`; a retentativa de uma nota já começada reconsulta pela
+  referência antes de reenviar; a posse da linha é conferida logo antes do envio (`billing_outbox.lease_lost`, sem envio, se
+  outro despacho a reclamou). O poll da nota pendente e o da que espera cancelamento leem as notas vivas por organização.
+
 ### 3.4 Navegação
 
 Fonte: `src/modules/navigation/navigation.routes.ts` (montado em `/api/v1/navigation`).
