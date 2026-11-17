@@ -18,7 +18,7 @@ import {
   attachAuthenticatedActor,
   getAuthenticatedActor,
 } from "../middleware/authenticated-actor.middleware.js";
-import type { AuthSessionService } from "../services/auth-session.service.js";
+import type { AuthSessionService, RenewalBinding } from "../services/auth-session.service.js";
 import {
   getIdentityLinkService,
   resetUnavailableError,
@@ -85,6 +85,9 @@ type LoginRequestBody = {
 type RefreshRequestBody = {
   readonly refreshToken?: unknown;
   readonly refresh_token?: unknown;
+  // B-APP-SESSAO-RENOVA (S5) — a prova de posse do reenvio: o 1º envio leva o compromisso, os reenvios a prova.
+  readonly renewalCommit?: unknown;
+  readonly renewalProof?: unknown;
 };
 
 const uuidPattern =
@@ -368,7 +371,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         return;
       }
 
-      const refreshResult = await (await resolveSessionService()).refreshSession(refreshToken);
+      const refreshResult = await (await resolveSessionService()).refreshSession(refreshToken, parseRenewalBinding(request.body)); // a prova do reenvio, se veio
 
       if (!refreshResult.ok) {
         response.status(401).json({
@@ -605,24 +608,24 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
     },
   );
 
+  // B-APP-SESSAO-RENOVA (S1) — o "Sair" diz a verdade: 200 `{revoked:true}` só quando este token não renova mais
+  // nenhuma sessão (revogado agora, já revogado, vencido ou inválido); sem token, 400; falha interna, 503.
   router.post("/logout", async (request, response) => {
-    try {
-      const refreshToken = parseRefreshTokenRequestBody(request.body);
+    const refreshToken = parseRefreshTokenRequestBody(request.body);
 
-      if (refreshToken) {
-        await (await resolveSessionService()).logout(refreshToken);
-      }
-
-      response.status(200).json({
-        data: {
-          revoked: true,
-        },
+    if (!refreshToken) { // sem token não há o que revogar
+      response.status(400).json({
+        error: { code: "BAD_REQUEST", reason: "refresh_token_required", message: "refreshToken is required." },
       });
+      return;
+    }
+
+    try {
+      await (await resolveSessionService()).logout(refreshToken);
+      response.status(200).json({ data: { revoked: true } });
     } catch {
-      response.status(200).json({
-        data: {
-          revoked: true,
-        },
+      response.status(503).json({ // a falha interna não vira 200
+        error: { code: "SERVICE_UNAVAILABLE", reason: "logout_failed", message: "Unable to revoke the session." },
       });
     }
   });
@@ -715,6 +718,14 @@ function parseRefreshTokenRequestBody(body: unknown): string {
 
 function isBasicEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// B-APP-SESSAO-RENOVA (S5) — só o formato de 32 bytes em base64url (43 caracteres) conta; qualquer outra coisa é
+// ignorada, como se não viesse.
+function parseRenewalBinding(body: unknown): RenewalBinding {
+  const input = isRecord(body) ? (body as RefreshRequestBody) : {};
+  const valid = (value: unknown) => (typeof value === "string" && /^[A-Za-z0-9_-]{43}$/.test(value) ? value : undefined); // 32 bytes em base64url; o resto é ignorado
+  return { commit: valid(input.renewalCommit), proof: valid(input.renewalProof) };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

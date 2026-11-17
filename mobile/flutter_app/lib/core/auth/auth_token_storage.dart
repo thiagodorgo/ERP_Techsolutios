@@ -11,6 +11,29 @@ class _K {
   static const tokenExpiryMs = 'erp.token_expiry_ms';
   static const userJson = 'erp.user_safe_json';
   static const bootstrapJson = 'erp.bootstrap_json';
+  static const sessionNonce = 'erp.session_nonce';
+  static const pendingRevocations = 'erp.pending_revocations';
+}
+
+/// B-APP-SESSAO-RENOVA (D11): um token do "Sair" que o servidor ainda não
+/// respondeu de forma definitiva. O `id` separa dois itens do mesmo token.
+class PendingRevocation {
+  const PendingRevocation({required this.id, required this.token});
+
+  factory PendingRevocation.fromJson(Map<String, dynamic> j) =>
+      PendingRevocation(id: j['id'] as String, token: j['token'] as String);
+
+  final String id;
+  final String token;
+
+  Map<String, String> toJson() => {'id': id, 'token': token};
+
+  @override
+  bool operator ==(Object other) =>
+      other is PendingRevocation && other.id == id && other.token == token;
+
+  @override
+  int get hashCode => Object.hash(id, token);
 }
 
 abstract class AuthTokenStorage {
@@ -20,6 +43,10 @@ abstract class AuthTokenStorage {
   Future<void> saveBootstrapJson(String json);
   Future<String?> loadBootstrapJson();
   Future<void> clearBootstrap();
+
+  /// A fila do "Sair" sem servidor (D11). O `clearSession()` não a apaga.
+  Future<List<PendingRevocation>> loadPendingRevocations();
+  Future<void> savePendingRevocations(List<PendingRevocation> entries);
 }
 
 class SecureAuthTokenStorage implements AuthTokenStorage {
@@ -48,6 +75,9 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
       key: _K.userJson,
       value: jsonEncode(_userToSafeJson(session.user)),
     );
+    // dart format off
+    if (session.sessionNonce != null) await _storage.write(key: _K.sessionNonce, value: session.sessionNonce); // a sessão guardada leva o identificador
+    // dart format on
   }
 
   @override
@@ -69,6 +99,9 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
       final userJson = jsonDecode(userJsonStr) as Map<String, dynamic>;
       final user = _userFromSafeJson(userJson);
       final refreshToken = await _storage.read(key: _K.refreshToken);
+      // dart format off
+      final sessionNonce = await _storage.read(key: _K.sessionNonce); // o identificador volta com a sessão
+      // dart format on
 
       return AuthSession(
         tokens: AuthTokens(
@@ -77,6 +110,7 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
           expiresAt: expiresAt,
         ),
         user: user,
+        sessionNonce: sessionNonce,
       );
     } catch (_) {
       // Corrupted storage — clear silently and force re-login
@@ -92,6 +126,7 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
       _storage.delete(key: _K.refreshToken),
       _storage.delete(key: _K.tokenExpiryMs),
       _storage.delete(key: _K.userJson),
+      _storage.delete(key: _K.sessionNonce),
     ]);
   }
 
@@ -105,6 +140,22 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
 
   @override
   Future<void> clearBootstrap() => _storage.delete(key: _K.bootstrapJson);
+
+  @override
+  Future<List<PendingRevocation>> loadPendingRevocations() async {
+    final raw = await _storage.read(key: _K.pendingRevocations);
+    if (raw == null) return const [];
+    return (jsonDecode(raw) as List<dynamic>)
+        .map((e) => PendingRevocation.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<void> savePendingRevocations(List<PendingRevocation> entries) async {
+    // dart format off
+    await _storage.write(key: _K.pendingRevocations, value: jsonEncode(entries.map((e) => e.toJson()).toList())); // a fila sobrevive ao fechar o app
+    // dart format on
+  }
 
   Map<String, Object?> _userToSafeJson(AuthUser user) => {
     'sub': user.sub,
@@ -149,4 +200,14 @@ class InMemoryAuthTokenStorage implements AuthTokenStorage {
 
   @override
   Future<void> clearBootstrap() async => _bootstrapJson = null;
+
+  List<PendingRevocation> _pendingRevocations = const [];
+
+  @override
+  Future<List<PendingRevocation>> loadPendingRevocations() async =>
+      List.of(_pendingRevocations);
+
+  @override
+  Future<void> savePendingRevocations(List<PendingRevocation> entries) async =>
+      _pendingRevocations = List.of(entries);
 }
