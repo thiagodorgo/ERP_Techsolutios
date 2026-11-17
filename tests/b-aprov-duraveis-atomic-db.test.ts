@@ -20,6 +20,12 @@ import { dropHarnessObjects, runHarnessDdl } from "./helpers/pg-barrier.js";
 //       id devolvido; a repetição devolve o mesmo id, 1 linha, 1 auditoria; a auditoria é achada pelo filtro da aba e
 //       tem o id da aprovação nos metadados; falha forçada → rejeita, 0 linha, 0 auditoria; concluir a OS em seguida →
 //       2 pendentes e a linha do pedido não muda.
+//   (e) [F4c, com o B-SAN3-16 na main] o T2b na tabela: com o pedido do técnico pendente (pelo lote
+//       `work_order.approval_request`), concluir a OS por cada uma das 2 portas → 2 linhas `pending_approval` com o mesmo
+//       `work_order_id`, e a transação da conclusão não toca a linha do pedido do técnico (`xmin` e `updated_at` iguais);
+//   (f) [F4c] o pedido do técnico pelo lote com `CORE_SAAS_PERSISTENCE=prisma` e a fila de Aprovações PADRÃO (a do banco):
+//       1 linha e 1 `approval.requested`; reenvio do mesmo `client_action_id` com serviço novo e recibo zerado → continua
+//       1 linha, 1 evento e 1 `approval.requested`; o `approval_id` do evento é o `id` da linha.
 //
 // Organização descartável por caso; teardown escopado pelo id dela. Gatilho TEMPORÁRIO escopado pela organização (nome
 // único, DROP no finally, catálogo limpo provado), sempre pelo `runHarnessDdl`. Sem DATABASE_URL, o arquivo se declara
@@ -157,6 +163,79 @@ if (!connection) {
       assert.deepEqual({ xmin: depois.xmin, updated_at: depois.updated_at?.toISOString?.() }, { xmin: linhas[0].xmin, updated_at: linhas[0].updated_at?.toISOString?.() }, "(5) a conclusão tocou a linha do pedido do técnico");
     });
   });
+  test("T3(e) · o T2b na tabela: com o pedido do técnico pendente, concluir por cada porta → 2 pendentes, e a conclusão não toca a linha do técnico", async () => {
+    await comCenario(async (c) => {
+      for (const porta of ["rota", "fila"] as const) {
+        const os = await c.criarOsDoTecnico();
+        const lote = await c.pedirPeloLote(os, randomUUID());
+        assert.equal(lote.accepted.length, 1, `${porta}: o lote recusou o pedido do técnico: ${JSON.stringify(lote)}`);
+        const [antes] = await c.sql(
+          "SELECT id::text, entity_id, xmin::text AS xmin, updated_at FROM operational_approvals WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid AND entity_id LIKE 'pedido-app:%'",
+          [c.tenantId, os],
+        );
+        assert.ok(antes, `${porta}: o pedido do técnico não está na tabela`);
+
+        if (porta === "rota") await c.concluirPelaRota(os);
+        else assert.equal((await c.concluirPelaFila(os)).accepted.length, 1, `${porta}: a fila não concluiu`);
+
+        assert.equal((await c.os(os)).status, "completed", `${porta}: a OS não concluiu`);
+        const pendentes = (await c.aprovacoesDaOs(os)).filter((l) => l.status === "pending_approval");
+        assert.equal(pendentes.length, 2, `${porta}: esperava 2 pendentes com o mesmo work_order_id, veio ${pendentes.length}`);
+        assert.deepEqual(pendentes.map((l) => l.entity_id).sort(), [antes.entity_id, os].sort(), `${porta}: esperava o pedido do técnico e o da conclusão`);
+        const daConclusao = pendentes.find((l) => l.entity_id === os);
+        assert.equal(daConclusao?.pending_reason, MOTIVO_DA_CONCLUSAO, `${porta}: o motivo da conclusão`);
+        const [depois] = await c.sql(
+          "SELECT xmin::text AS xmin, updated_at FROM operational_approvals WHERE tenant_id = $1::uuid AND id = $2::uuid",
+          [c.tenantId, antes.id],
+        );
+        assert.deepEqual(
+          { xmin: depois.xmin, updated_at: depois.updated_at?.toISOString?.() },
+          { xmin: antes.xmin, updated_at: antes.updated_at?.toISOString?.() },
+          `${porta}: a transação da conclusão tocou a linha do pedido do técnico`,
+        );
+      }
+    });
+  });
+
+  test("T3(f) · o pedido do técnico pelo lote, na fila de Aprovações do banco: 1 linha e 1 auditoria; o reenvio com serviço novo e recibo zerado não duplica", async () => {
+    await comCenario(async (c) => {
+      const os = await c.criarOsDoTecnico();
+      const cid = randomUUID();
+      const primeiro = await c.pedirPeloLote(os, cid);
+      assert.equal(primeiro.accepted.length, 1, `o lote recusou o pedido do técnico: ${JSON.stringify(primeiro)}`);
+
+      const conferir = async (quando: string) => {
+        const linhas = await c.sql(
+          "SELECT id::text, status, entity_type, entity_id, requested_by_user_id::text AS requested_by FROM operational_approvals WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid",
+          [c.tenantId, os],
+        );
+        assert.equal(linhas.length, 1, `${quando}: esperava 1 linha de aprovação, veio ${linhas.length}`);
+        assert.deepEqual(
+          { status: linhas[0].status, entity_type: linhas[0].entity_type, requested_by: linhas[0].requested_by },
+          { status: "pending_approval", entity_type: "work_order", requested_by: c.tecnicoId },
+          `${quando}: a linha do pedido do técnico`,
+        );
+        assert.match(linhas[0].entity_id, /^pedido-app:[0-9a-f]{32}$/, `${quando}: a chave do pedido do técnico`);
+        const auditoria = await c.auditoriaDaAba(os, "approval.requested");
+        assert.equal(auditoria.length, 1, `${quando}: esperava 1 approval.requested no filtro da aba, veio ${auditoria.length}`);
+        assert.equal(auditoria[0].metadata?.approvalId, linhas[0].id, `${quando}: o id da aprovação nos metadados da auditoria`);
+        const eventos = await c.sql(
+          "SELECT metadata FROM work_order_events WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid AND event_type = 'work_order_approval_requested'",
+          [c.tenantId, os],
+        );
+        assert.equal(eventos.length, 1, `${quando}: esperava 1 evento do pedido, veio ${eventos.length}`);
+        assert.equal(eventos[0].metadata?.approval_id, linhas[0].id, `${quando}: o approval_id do evento não é o id da linha`);
+        return linhas[0].id as string;
+      };
+
+      const id = await conferir("1º envio");
+      c.zerarRecibos();
+      const reenvio = await c.pedirPeloLote(os, cid, { servicoNovo: true });
+      assert.equal(reenvio.accepted.length, 1, `o reenvio foi recusado: ${JSON.stringify(reenvio)}`);
+      assert.equal(await conferir("reenvio com serviço novo e recibo zerado"), id, "o reenvio apontou outra linha");
+    });
+  });
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -190,6 +269,8 @@ async function montarCenario(conexao: string) {
   sync.resetMobileWorkOrderSyncRuntimeForTests();
   const ordens = await wo.createDefaultWorkOrderService();
   const gestao = { tenantId, userId: gestor.id, roles: ["manager"], permissions: resolvePermissionsForRoles(["manager"]), explicitPermissions: true } as never;
+  // F4c — o técnico da OS, com as permissões do papel (o lote do app confere a permissão da ação e o escopo por objeto).
+  const campo = { tenantId, userId: tecnico.id, roles: ["field_technician"], permissions: resolvePermissionsForRoles(["field_technician"]), explicitPermissions: true } as never;
   const sql = async (texto: string, params: readonly unknown[] = []): Promise<any[]> => admin.$queryRawUnsafe(texto, ...params);
   let sequencia = 0;
 
@@ -230,6 +311,49 @@ async function montarCenario(conexao: string) {
       });
       return os.id;
     },
+    // F4c — OS em atendimento atribuída ao técnico (o casamento duplo do escopo aceita o id do usuário em `assigned_operator_id`).
+    async criarOsDoTecnico(): Promise<string> {
+      sequencia += 1;
+      const os = await admin.workOrder.create({
+        data: {
+          tenant_id: tenantId,
+          code: `WO-BAPROV-${sufixo}-${sequencia}`,
+          title: "OS B-APROV atomic do técnico",
+          customer_name: "Cliente B-APROV",
+          status: "in_progress",
+          assigned_user_id: tecnico.id,
+          assigned_operator_id: tecnico.id,
+        },
+      });
+      return os.id;
+    },
+    // F4c — o pedido do técnico pelo lote do app (`work_order.approval_request`, do B-SAN3-16), com as dependências
+    // PADRÃO da fila (a fila de Aprovações é a do banco, `createDefaultApprovalService`). `servicoNovo` reconstrói o
+    // serviço de OS e o de aprovações, como depois de um reinício.
+    async pedirPeloLote(workOrderId: string, clientActionId: string, opcoes: { servicoNovo?: boolean } = {}) {
+      let servico = ordens;
+      if (opcoes.servicoNovo) {
+        wo.resetWorkOrderRuntimeForTests();
+        approvals.resetApprovalRuntimeForTests();
+        servico = await wo.createDefaultWorkOrderService();
+      }
+      return sync.syncMobileWorkOrderActions(
+        campo,
+        {
+          client_batch_id: randomUUID(),
+          actions: [
+            {
+              client_action_id: clientActionId,
+              type: "work_order.approval_request",
+              local_created_at: "2026-11-17T12:00:00.000Z",
+              payload: { work_order_id: workOrderId, reason: "Troca de peça fora do orçamento", urgency: "normal" },
+            },
+          ],
+        },
+        async () => servico,
+      );
+    },
+    zerarRecibos: () => sync.resetMobileWorkOrderSyncRuntimeForTests(),
     concluirPelaRota: (workOrderId: string) => ordens.changeStatus(gestao, workOrderId, { status: "completed" }, { entry: "http_status_route" }),
     concluirPelaFila: (workOrderId: string) =>
       sync.syncMobileWorkOrderActions(
