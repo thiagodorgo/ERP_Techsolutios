@@ -201,6 +201,7 @@ class ExecucaoGuinchoViewProps {
     this.deliveryQueueNotice,
     this.conclusionMeta = '',
     this.nextAction,
+    this.onApprovalRequest,
   });
 
   // O cabeçalho.
@@ -278,6 +279,11 @@ class ExecucaoGuinchoViewProps {
   final List<MobileRequirement> requirements;
 
   final List<ExecucaoGuinchoTransicao> transitions;
+
+  /// B-SAN3-16 — "Solicitar aprovação": o mesmo toque e a mesma condição do
+  /// botão próprio da opção A (`work_orders:update` e a OS que pode pedir).
+  /// Nulo: a ação não aparece.
+  final VoidCallback? onApprovalRequest;
 }
 
 /// O título e o subtítulo da opção B, pela fase.

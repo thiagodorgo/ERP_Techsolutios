@@ -6,6 +6,9 @@
 import 'dart:math' as math;
 
 import 'package:erp_techsolutions_mobile/core/appearance/app_appearance.dart';
+import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
+import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
+import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_stepper.dart';
@@ -117,6 +120,38 @@ const _cColeta = Key('guincho-c-fase-coleta');
 const _cEntrega = Key('guincho-c-fase-entrega');
 const _cConcluir = Key('guincho-c-concluir');
 const _cComparar = Key('guincho-c-comparar-texto');
+const _aprovacao = Key('guincho-solicitar-aprovacao');
+
+/// B-SAN3-16 (E-580-APARENCIA-2) — o estado "pronta" com uma sessão que tem
+/// `work_orders:status`, mas não `work_orders:update`: a sessão do app é
+/// trocada num escopo filho, só para a tela.
+Future<void> _pumpSemUpdate(WidgetTester t, AppAppearance ap) async {
+  fixarTela(t, const Size(800, 3000));
+  await t.pumpWidget(const SizedBox.shrink());
+  final app =
+      await guinchoApp(GuinchoCenario.of('pronta'), appearance: ap)
+          as ProviderScope;
+  const semUpdate = BootstrapSession(
+    activeTenant: TenantContext(
+      tenantId: aparTenant,
+      displayName: 'Org Exemplo',
+    ),
+    enabledModules: [],
+    permissions: PermissionSet({'work_orders:read', 'work_orders:status'}),
+  );
+  await t.pumpWidget(
+    ProviderScope(
+      overrides: app.overrides,
+      child: ProviderScope(
+        overrides: [
+          bootstrapSessionProvider.overrideWith((_) async => semUpdate),
+        ],
+        child: app.child,
+      ),
+    ),
+  );
+  await t.pumpAndSettle();
+}
 
 void main() {
   group('despacho', () {
@@ -396,8 +431,8 @@ void main() {
       await t.tap(find.byKey(const Key('guincho-b-mais-acoes')));
       await t.pumpAndSettle();
       expect(find.text('Pausar'), findsOneWidget);
-      expect(find.text('Solicitar aprovação'), findsOneWidget);
-      expect(find.text('Registrar exceção'), findsOneWidget);
+      expect(find.byKey(_aprovacao), findsOneWidget);
+      expect(find.text('Registrar exceção'), findsNothing);
       final container = ProviderScope.containerOf(t.element(find.byKey(_keyB)));
       await t.tap(find.text('Pausar'));
       await t.pumpAndSettle();
@@ -406,6 +441,14 @@ void main() {
         container.read(workOrderRepositoryProvider).findById(guinchoWo)!.status,
         WorkOrderStatus.paused,
       );
+    });
+    testWidgets('GB15b. sem work_orders:update, "Solicitar aprovação" não '
+        'aparece em "Mais ações"', (t) async {
+      await _pumpSemUpdate(t, AppAppearance.b);
+      await t.tap(find.byKey(const Key('guincho-b-mais-acoes')));
+      await t.pumpAndSettle();
+      expect(find.text('Pausar'), findsOneWidget);
+      expect(find.byKey(_aprovacao), findsNothing);
     });
   });
 
@@ -591,16 +634,19 @@ void main() {
     testWidgets('GC15. "Próxima ação" com as mudanças de situação de hoje, e '
         'concluir leva ao detalhe', (t) async {
       await _pump(t, 'pronta', ap: AppAppearance.c);
-      for (final s in [
-        WorkOrderStatus.paused,
-        WorkOrderStatus.pendingApproval,
-        WorkOrderStatus.exception,
-      ]) {
-        expect(
-          find.byKey(ValueKey('guincho-transicao-${s.name}')),
-          findsOneWidget,
-        );
-      }
+      expect(
+        find.byKey(
+          ValueKey('guincho-transicao-${WorkOrderStatus.paused.name}'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(_aprovacao), findsOneWidget);
+      expect(
+        find.byKey(
+          ValueKey('guincho-transicao-${WorkOrderStatus.exception.name}'),
+        ),
+        findsNothing,
+      );
       final container = ProviderScope.containerOf(t.element(find.byKey(_keyC)));
       await t.tap(find.text('Concluir OS'));
       await t.pumpAndSettle();
@@ -609,6 +655,17 @@ void main() {
         container.read(workOrderRepositoryProvider).findById(guinchoWo)!.status,
         WorkOrderStatus.completed,
       );
+    });
+    testWidgets('GC15b. sem work_orders:update, "Solicitar aprovação" não '
+        'aparece na "Próxima ação"', (t) async {
+      await _pumpSemUpdate(t, AppAppearance.c);
+      expect(
+        find.byKey(
+          ValueKey('guincho-transicao-${WorkOrderStatus.paused.name}'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(_aprovacao), findsNothing);
     });
   });
 
