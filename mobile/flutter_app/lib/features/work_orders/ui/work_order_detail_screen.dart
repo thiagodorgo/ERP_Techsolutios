@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/appearance/app_appearance.dart';
+import '../../../core/appearance/app_appearance_providers.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
-import '../../../core/bootstrap/bootstrap_session.dart';
+import '../../../core/network/connectivity_repository.dart';
 import '../../../core/permissions/permission_resolver.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../core/sync/sync_providers.dart';
@@ -15,24 +17,121 @@ import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../../checklists/ui/checklist_navigation.dart';
 import '../../prestador/domain/prestador_flow.dart';
-import '../data/work_order_repository.dart';
 import '../data/work_order_conflict_resolution_service.dart';
+import '../data/work_order_repository.dart';
 import '../domain/work_order_models.dart';
-import '../../../core/location/gps_service.dart';
+import 'aparencias/detalhe_os_shared.dart';
+import 'aparencias/detalhe_os_view_a.dart';
+import 'aparencias/detalhe_os_view_b.dart';
+import 'aparencias/detalhe_os_view_c.dart';
+import 'checkin_confirm_dialog.dart';
 import 'registry_assignment_section.dart';
 import 'work_order_operational_map_screen.dart';
 
-class WorkOrderDetailScreen extends ConsumerWidget {
-  const WorkOrderDetailScreen({required this.workOrderId, super.key});
+// B-GUI-FID1 — os diálogos do check-in moram em `checkin_confirm_dialog.dart`; quem importava daqui continua importando.
+export 'checkin_confirm_dialog.dart'
+    show
+        ArrivalConfirmation,
+        readGpsAvailability,
+        showArrivalConfirmationDialog,
+        showUnableToStartSheet;
+
+/// B-GUI-FID1 — o detalhe da OS, fiel ao desenho aprovado (`os-detalhe.png`), nas 3 aparências da maquete
+/// `os-detalhe-app-3opcoes.reference.html` (chave [kDetalheOsAppearanceKey]).
+///
+/// A tela decide (permissão, ação, o que aparece); as vistas em `aparencias/` só desenham. O check-in ("Iniciar rota",
+/// "Cheguei ao local" com a placa) mora agora na execução: "Iniciar atendimento" abre a execução no passo "Início",
+/// sem mudar a situação da OS.
+class WorkOrderDetailScreen extends ConsumerStatefulWidget {
+  const WorkOrderDetailScreen({
+    required this.workOrderId,
+    this.clock,
+    super.key,
+  });
 
   final String workOrderId;
 
+  /// O relógio do prazo restante; os testes fixam.
+  final DateTime Function()? clock;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref
-        .watch(bootstrapSessionProvider)
-        .maybeWhen(data: (v) => v, orElse: () => null);
+  ConsumerState<WorkOrderDetailScreen> createState() =>
+      _WorkOrderDetailScreenState();
+}
+
+class _WorkOrderDetailScreenState extends ConsumerState<WorkOrderDetailScreen> {
+  Future<void>? _load;
+  int? _repoKey;
+  Future<List<WorkOrderTimelineEvent>>? _historico;
+  Future<_VistoriaResumo?>? _vistoria;
+  String? _vistoriaDe;
+
+  void _back() => context.go('/work-orders');
+
+  Future<void> _ensureLoad(WorkOrderRepository repo) {
+    final key = identityHashCode(repo);
+    if (_load == null || _repoKey != key) {
+      _repoKey = key;
+      _load = repo.load();
+      _historico = null;
+      _vistoria = null;
+      _vistoriaDe = null;
+    }
+    return _load!;
+  }
+
+  Future<_VistoriaResumo?> _loadVistoria(
+    String checklistId,
+    String woId,
+  ) async {
+    try {
+      final repo = ref.read(checklistRepositoryProvider);
+      final runs = await repo.getRunsForWorkOrder(woId);
+      final schema = await repo.getCachedSchema(checklistId);
+      return _VistoriaResumo(
+        title: schema?.title ?? 'Vistoria da OS',
+        complete: runs.any(
+          (r) => r.status == MobileChecklistRunStatus.completed,
+        ),
+        started: runs.any(
+          (r) => r.status == MobileChecklistRunStatus.inProgress,
+        ),
+      );
+    } catch (_) {
+      return const _VistoriaResumo(
+        title: 'Vistoria da OS',
+        complete: false,
+        started: false,
+      );
+    }
+  }
+
+  Future<void> _unableToStart(WorkOrder wo) => showUnableToStartSheet(
+    context,
+    onSubmit: (reason, note) async {
+      final repo = ref.read(workOrderRepositoryProvider);
+      await repo.reportUnableToStart(
+        localId: wo.localId,
+        reason: reason,
+        note: note,
+      );
+      if (!mounted) return;
+      context.go('/work-orders');
+    },
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final sessionAsync = ref.watch(bootstrapSessionProvider);
+    final session = sessionAsync.maybeWhen(data: (v) => v, orElse: () => null);
     final repo = ref.watch(workOrderRepositoryProvider);
+    final appearanceAsync = ref.watch(
+      screenAppearanceProvider(kDetalheOsAppearanceKey),
+    );
+
+    if (session == null && sessionAsync.isLoading) {
+      return _Esqueleto(onBack: _back);
+    }
 
     final canRead = session == null
         ? false
@@ -46,10 +145,7 @@ class WorkOrderDetailScreen extends ConsumerWidget {
         showAppBar: false,
         body: Column(
           children: [
-            MobileScreenHeader(
-              title: 'Detalhe da OS',
-              onBack: () => context.go('/work-orders'),
-            ),
+            MobileScreenHeader(title: 'Detalhe da OS', onBack: _back),
             const Expanded(
               child: PermissionBlockedState(
                 title: 'Acesso não permitido',
@@ -62,113 +158,275 @@ class WorkOrderDetailScreen extends ConsumerWidget {
       );
     }
 
-    return FutureBuilder<void>(
-      future: repo.load(),
-      builder: (context, _) {
-        final wo = repo.findById(workOrderId);
+    // A aparência escolhida; carregando, o esqueleto (nunca a A antes da B); erro, a A.
+    if (appearanceAsync.asData == null && appearanceAsync.isLoading) {
+      return _Esqueleto(onBack: _back);
+    }
+    final appearance = appearanceAsync.asData?.value ?? AppAppearance.a;
 
-        if (wo == null) {
-          return ErpScaffold(
-            showAppBar: false,
-            body: Column(
-              children: [
-                MobileScreenHeader(
-                  title: 'Detalhe da OS',
-                  onBack: () => context.go('/work-orders'),
-                ),
-                const Expanded(
-                  child: ErrorState(
-                    message: 'Ordem de servico nao encontrada.',
+    final permissions = session.permissions;
+    const resolver = PermissionResolver();
+    final canStatus = resolver.has(permissions, 'work_orders:status');
+    final canApproval = resolver.has(permissions, 'work_orders:update');
+    final canAssign = resolver.has(permissions, 'work_orders:assign');
+    final offline = ref.watch(networkStatusProvider) == NetworkStatus.offline;
+
+    return FutureBuilder<void>(
+      future: _ensureLoad(repo),
+      builder: (context, loadSnapshot) => ListenableBuilder(
+        listenable: repo,
+        builder: (context, _) {
+          final wo = repo.findById(widget.workOrderId);
+          if (wo == null) {
+            if (loadSnapshot.connectionState != ConnectionState.done) {
+              return _Esqueleto(onBack: _back);
+            }
+            return ErpScaffold(
+              showAppBar: false,
+              body: Column(
+                children: [
+                  MobileScreenHeader(title: 'Detalhe da OS', onBack: _back),
+                  Expanded(
+                    child: EmptyState(
+                      key: const Key('detalhe-os-erro'),
+                      icon: Icons.error_outline,
+                      title: 'Não foi possível carregar',
+                      message:
+                          'Esta OS não está no aparelho. Volte à lista e atualize.',
+                      action: OutlinedButton.icon(
+                        onPressed: _back,
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text('Voltar para a lista'),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            );
+          }
+
+          _historico ??= repo.loadTimeline(wo.localId);
+          final checklistId = wo.checklistId;
+          if (checklistId != null && _vistoriaDe != checklistId) {
+            _vistoriaDe = checklistId;
+            _vistoria = _loadVistoria(checklistId, wo.localId);
+          }
+
+          return FutureBuilder<List<WorkOrderTimelineEvent>>(
+            future: _historico,
+            builder: (context, hist) => FutureBuilder<_VistoriaResumo?>(
+              future: checklistId == null ? null : _vistoria,
+              builder: (context, vist) {
+                final props = _props(
+                  wo: wo,
+                  repo: repo,
+                  offline: offline,
+                  canStatus: canStatus,
+                  canApproval: canApproval,
+                  canAssign: canAssign,
+                  historico: hist.connectionState == ConnectionState.done
+                      ? (hist.data ?? const <WorkOrderTimelineEvent>[])
+                      : null,
+                  vistoria: vist.data,
+                );
+                return switch (appearance) {
+                  AppAppearance.a => DetalheOsViewA(props: props),
+                  AppAppearance.b => DetalheOsViewB(props: props),
+                  AppAppearance.c => DetalheOsViewC(props: props),
+                };
+              },
             ),
           );
-        }
+        },
+      ),
+    );
+  }
 
-        final canStatus = const PermissionResolver().has(
-          session.permissions,
-          'work_orders:status',
-        );
-        final canApproval = const PermissionResolver().has(
-          session.permissions,
-          'work_orders:update',
-        );
-        final canAssign = const PermissionResolver().has(
-          session.permissions,
-          'work_orders:assign',
-        );
-
-        return ErpScaffold(
-          showAppBar: false,
-          body: Column(
-            children: [
-              MobileScreenHeader(
-                title: 'Detalhe da OS',
-                subtitle: wo.status.label,
-                onBack: () => context.go('/work-orders'),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    TenantContextBar(session: session),
-                    const SizedBox(height: 8),
-                    _WorkOrderStepper(status: wo.status),
-                    const SizedBox(height: 8),
-                    if (wo.syncStatus == SyncStatus.pending)
-                      SyncStatusBanner(
-                        status: SyncStatus.pending,
-                        message:
-                            'Esta OS possui alteracoes locais aguardando sync.',
-                      ),
-                    if (wo.syncStatus == SyncStatus.conflict) ...[
-                      SyncStatusBanner(
-                        status: SyncStatus.conflict,
-                        message:
-                            'Conflito de sincronizacao. Seus dados locais foram preservados.',
-                      ),
-                      const SizedBox(height: 8),
-                      WorkOrderConflictResolutionPanel(
-                        workOrder: wo,
-                        repository: repo,
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    _HeaderCard(wo: wo),
-                    const SizedBox(height: 8),
-                    _CustomerCard(wo: wo),
-                    const SizedBox(height: 8),
-                    _AssignmentCard(wo: wo, session: session),
-                    if (canAssign) ...[
-                      const SizedBox(height: 8),
-                      RegistryAssignmentSection(
-                        workOrder: wo,
-                        canAssign: canAssign,
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    if (wo.checklistId != null) _ChecklistCard(wo: wo),
-                    const SizedBox(height: 8),
-                    OperationalLocationCard(session: session, workOrder: wo),
-                    const SizedBox(height: 8),
-                    _TimelineCard(workOrderId: workOrderId, repo: repo),
-                    const SizedBox(height: 16),
-                    _CheckinActions(
-                      wo: wo,
-                      canStatus: canStatus,
-                      canApproval: canApproval,
-                    ),
-                  ],
+  DetalheOsViewProps _props({
+    required WorkOrder wo,
+    required WorkOrderRepository repo,
+    required bool offline,
+    required bool canStatus,
+    required bool canApproval,
+    required bool canAssign,
+    required List<WorkOrderTimelineEvent>? historico,
+    required _VistoriaResumo? vistoria,
+  }) {
+    final status = wo.status;
+    final isFinal = status.isFinal;
+    final acao = isFinal
+        ? DetalheOsAcao.verHistorico
+        : !canStatus
+        ? DetalheOsAcao.nenhuma
+        // No local, o atendimento ainda não começou: "Iniciar atendimento" também (abre a execução no passo "Coleta").
+        : (status == WorkOrderStatus.scheduled ||
+              status == WorkOrderStatus.dispatched ||
+              status == WorkOrderStatus.arrived)
+        ? DetalheOsAcao.iniciar
+        : DetalheOsAcao.continuar;
+    final execute = '/work-orders/${wo.localId}/execute';
+    final checklistId = wo.checklistId;
+    final session = ref.read(bootstrapSessionProvider).asData?.value;
+    return DetalheOsViewProps(
+      wo: wo,
+      now: (widget.clock ?? DateTime.now)(),
+      // O B-GUI-D1 traz o veículo atendido e o prazo; hoje o app não os recebe, e os cartões somem (F2).
+      vehicle: null,
+      slaDueAt: null,
+      offline: offline,
+      pendingSync: wo.syncStatus == SyncStatus.pending,
+      stale:
+          !offline &&
+          !repo.isPulling &&
+          (repo.lastPullError != null || repo.lastPullIncomplete),
+      onRefresh: () => repo.refresh(),
+      conflictPanel: wo.syncStatus == SyncStatus.conflict
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SyncStatusBanner(
+                  status: SyncStatus.conflict,
+                  message:
+                      'Conflito ao enviar esta OS. Os dados do aparelho foram preservados.',
                 ),
-              ),
-            ],
-          ),
-        );
+                const SizedBox(height: 8),
+                WorkOrderConflictResolutionPanel(
+                  workOrder: wo,
+                  repository: repo,
+                ),
+              ],
+            )
+          : null,
+      onBack: _back,
+      onMap: () => context.push('/field-map?workOrderId=${wo.localId}'),
+      acao: acao,
+      onAcao: switch (acao) {
+        DetalheOsAcao.iniciar ||
+        DetalheOsAcao.continuar => () => context.go(execute),
+        _ => null,
       },
+      onUnableToStart: canStatus && status == WorkOrderStatus.enRoute
+          ? () => _unableToStart(wo)
+          : null,
+      onServiceDoor: !isFinal && canStatus && showsProviderServiceDoor(wo)
+          ? () => context.go('/work-orders/${wo.localId}/service')
+          : null,
+      onApprovalRequest: !isFinal && canApproval
+          ? () => context.go('/work-orders/${wo.localId}/approval-request')
+          : null,
+      vistoria: DetalheOsVistoria(
+        title: checklistId == null
+            ? 'Abrir as vistorias da OS'
+            : (vistoria?.title ?? 'Vistoria da OS'),
+        statusLabel: checklistId == null
+            ? null
+            : vistoria == null
+            ? 'Carregando'
+            : vistoria.complete
+            ? 'Concluída'
+            : vistoria.started
+            ? 'Em andamento'
+            : 'Não iniciada',
+        tone: vistoria?.complete == true
+            ? PillTone.done
+            : vistoria?.started == true
+            ? PillTone.warning
+            : PillTone.info,
+        // B-SAN3-14 (P4) — a coleta, explícita, pelo helper; sem vistoria vinculada, a lista de vistorias da OS.
+        onOpen: () => context.push(
+          checklistId == null
+              ? '/work-orders/${wo.localId}/checklists'
+              : checklistRunLocation(
+                  checklistId: checklistId,
+                  workOrderId: wo.localId,
+                  kind: MobileChecklistRunKind.collection,
+                ),
+        ),
+      ),
+      historico: historico,
+      localizacao: session == null
+          ? const SizedBox.shrink()
+          : OperationalLocationCard(session: session, workOrder: wo),
+      atribuicao: canAssign
+          ? RegistryAssignmentSection(workOrder: wo, canAssign: canAssign)
+          : null,
     );
   }
 }
+
+class _VistoriaResumo {
+  const _VistoriaResumo({
+    required this.title,
+    required this.complete,
+    required this.started,
+  });
+
+  final String title;
+  final bool complete;
+  final bool started;
+}
+
+/// O carregamento (§7): o esqueleto do bloco branco e dos cartões.
+class _Esqueleto extends StatelessWidget {
+  const _Esqueleto({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget caixa(double h, {double? w, double r = 8}) => Container(
+      width: w,
+      height: h,
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: ErpMobileTheme.cardBorder,
+        borderRadius: BorderRadius.circular(r),
+      ),
+    );
+    return ErpScaffold(
+      showAppBar: false,
+      body: Column(
+        children: [
+          MobileScreenHeader(
+            title: 'Detalhe da OS',
+            subtitle: 'Somente leitura',
+            onBack: onBack,
+          ),
+          Expanded(
+            child: Semantics(
+              key: const Key('detalhe-os-carregando'),
+              label: 'Carregando a OS',
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: caixa(16, w: 84),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: caixa(24, w: 190, r: 99),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: caixa(20, w: 150),
+                  ),
+                  caixa(76, r: 14),
+                  caixa(150, r: 14),
+                  caixa(58, r: 12),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// O cartão de conflito (o de hoje, com as 3 saídas; B-SAN3-26: "Chegada não confirmada")
+// ---------------------------------------------------------------------------
 
 class WorkOrderConflictResolutionPanel extends ConsumerStatefulWidget {
   const WorkOrderConflictResolutionPanel({
@@ -219,7 +477,7 @@ class _WorkOrderConflictResolutionPanelState
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Resolucao manual de conflito',
+                        'Resolução manual de conflito',
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                     ),
@@ -230,7 +488,9 @@ class _WorkOrderConflictResolutionPanelState
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Status local: ${widget.workOrder.status.label}'),
+                Text(
+                  'Situação no aparelho: ${detalheOsSituacao(widget.workOrder.status)}',
+                ),
                 Text(safeMessage ?? 'O servidor retornou um conflito seguro.'),
                 const SizedBox(height: 12),
                 FilledButton.icon(
@@ -266,7 +526,7 @@ class _WorkOrderConflictResolutionPanelState
                           WorkOrderConflictResolution.manualReview,
                         ),
                   icon: const Icon(Icons.fact_check_outlined),
-                  label: const Text('Marcar para revisao manual'),
+                  label: const Text('Marcar para revisão manual'),
                 ),
               ],
             ),
@@ -397,7 +657,7 @@ class _WorkOrderConflictResolutionPanelState
       await widget.repository.refreshLocalState();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Decisao de conflito registrada.')),
+        const SnackBar(content: Text('Decisão de conflito registrada.')),
       );
     } on StateError catch (error) {
       if (!mounted) return;
@@ -409,1122 +669,3 @@ class _WorkOrderConflictResolutionPanelState
     }
   }
 }
-
-// ---------------------------------------------------------------------------
-// Stepper
-// ---------------------------------------------------------------------------
-
-class _WorkOrderStepper extends StatelessWidget {
-  const _WorkOrderStepper({required this.status});
-
-  final WorkOrderStatus status;
-
-  static const _labels = [
-    'Agendada',
-    'Em rota',
-    'No local',
-    'Em exec.',
-    'Concluida',
-  ];
-
-  int get _current => switch (status) {
-    WorkOrderStatus.scheduled || WorkOrderStatus.dispatched => 0,
-    WorkOrderStatus.enRoute => 1,
-    WorkOrderStatus.arrived => 2,
-    WorkOrderStatus.inService ||
-    WorkOrderStatus.paused ||
-    WorkOrderStatus.pendingApproval ||
-    WorkOrderStatus.exception => 3,
-    _ => 4,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final current = _current;
-
-    // Tokens do protótipo: etapa feita azul sólido, atual azul suave,
-    // futuras neutras (os-detalhe.png).
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        child: Row(
-          children: [
-            for (int i = 0; i < _labels.length; i++) ...[
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: i < current
-                            ? ErpMobileTheme.primary
-                            : i == current
-                            ? const Color(0xFFEFF6FF)
-                            : const Color(0xFFF1F5F9),
-                      ),
-                      child: Icon(
-                        i < current ? Icons.check : Icons.circle,
-                        size: 14,
-                        color: i < current
-                            ? Colors.white
-                            : i == current
-                            ? ErpMobileTheme.primary
-                            : ErpMobileTheme.inkFaint,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _labels[i],
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        color: i <= current
-                            ? ErpMobileTheme.primary
-                            : ErpMobileTheme.inkFaint,
-                        fontWeight: i == current
-                            ? FontWeight.w700
-                            : FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (i < _labels.length - 1)
-                Container(
-                  height: 2,
-                  width: 12,
-                  color: i < current
-                      ? ErpMobileTheme.primary
-                      : ErpMobileTheme.cardBorder,
-                ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Cards
-// ---------------------------------------------------------------------------
-
-class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({required this.wo});
-
-  final WorkOrder wo;
-
-  @override
-  Widget build(BuildContext context) {
-    // Hero fiel ao os-detalhe.png: código azul em destaque + pills de
-    // prioridade/status + tipo de serviço + agenda.
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${wo.code} · ${wo.title}',
-              style: const TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: ErpMobileTheme.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                MobilePill(
-                  label: 'Prioridade ${wo.priority.label}',
-                  tone: pillToneFromStatus(wo.priority.statusTone),
-                ),
-                MobilePill(
-                  label: wo.status.label,
-                  tone: pillToneFromStatus(wo.status.statusTone),
-                ),
-                if (wo.serviceType != null)
-                  MobilePill(label: wo.serviceType!.label, tone: PillTone.info),
-              ],
-            ),
-            if (wo.scheduledAt != null) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.schedule_outlined,
-                    size: 15,
-                    color: ErpMobileTheme.inkFaint,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    _fmtDate(wo.scheduledAt!),
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      color: ErpMobileTheme.inkMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CustomerCard extends StatelessWidget {
-  const _CustomerCard({required this.wo});
-
-  final WorkOrder wo;
-
-  @override
-  Widget build(BuildContext context) {
-    final document = wo.customerDocument?.trim();
-    final phone = wo.customerPhone?.trim();
-    return Card(
-      child: Column(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Cliente'),
-            subtitle: Text(wo.customerName),
-          ),
-          if (document != null && document.isNotEmpty)
-            ListTile(
-              leading: const Icon(Icons.badge_outlined),
-              title: const Text('Documento'),
-              subtitle: Text(document),
-            ),
-          if (phone != null && phone.isNotEmpty)
-            ListTile(
-              leading: const Icon(Icons.phone_outlined),
-              title: const Text('Telefone'),
-              subtitle: Text(phone),
-            ),
-          ListTile(
-            leading: const Icon(Icons.location_on_outlined),
-            title: const Text('Endereco de atendimento'),
-            subtitle: Text(wo.serviceAddress),
-            trailing: wo.latitude != null
-                ? const Icon(Icons.map_outlined, color: Colors.blue)
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AssignmentCard extends StatelessWidget {
-  const _AssignmentCard({required this.wo, required this.session});
-
-  final WorkOrder wo;
-  final BootstrapSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.engineering_outlined),
-        title: const Text('Tecnico atribuido'),
-        subtitle: Text(wo.assignedUserId ?? 'Nao atribuido'),
-        trailing: wo.assignedUserId == session.user.userId
-            ? const OperationalStatusChip(label: 'Voce', status: 'success')
-            : null,
-      ),
-    );
-  }
-}
-
-class _ChecklistCard extends ConsumerWidget {
-  const _ChecklistCard({required this.wo});
-
-  final WorkOrder wo;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clRepo = ref.watch(checklistRepositoryProvider);
-    return FutureBuilder<List<MobileChecklistRun>>(
-      future: clRepo.getRunsForWorkOrder(wo.localId),
-      builder: (context, snapshot) {
-        final runs = snapshot.data ?? [];
-        final isComplete = runs.any(
-          (r) => r.status == MobileChecklistRunStatus.completed,
-        );
-        final isStarted = runs.any(
-          (r) => r.status == MobileChecklistRunStatus.inProgress,
-        );
-        final statusLabel = isComplete
-            ? 'Concluido'
-            : isStarted
-            ? 'Em andamento'
-            : 'Nao iniciado';
-        final statusTone = isComplete
-            ? 'success'
-            : isStarted
-            ? 'warning'
-            : 'info';
-        final buttonLabel = isComplete
-            ? 'Ver checklist'
-            : isStarted
-            ? 'Continuar checklist'
-            : 'Abrir checklist';
-
-        return Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.checklist_outlined),
-                title: const Text('Checklist vinculado'),
-                subtitle: Text(wo.checklistId!),
-                trailing: OperationalStatusChip(
-                  label: statusLabel,
-                  status: statusTone,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    // B-SAN3-14 (P4) — a coleta, explícita, pelo helper.
-                    onPressed: () => context.push(
-                      checklistRunLocation(
-                        checklistId: wo.checklistId!,
-                        workOrderId: wo.localId,
-                        kind: MobileChecklistRunKind.collection,
-                      ),
-                    ),
-                    icon: Icon(
-                      isComplete
-                          ? Icons.check_circle_outline
-                          : Icons.checklist_outlined,
-                    ),
-                    label: Text(buttonLabel),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _TimelineCard extends StatefulWidget {
-  const _TimelineCard({required this.workOrderId, required this.repo});
-
-  final String workOrderId;
-  final WorkOrderRepository repo;
-
-  @override
-  State<_TimelineCard> createState() => _TimelineCardState();
-}
-
-class _TimelineCardState extends State<_TimelineCard> {
-  late Future<List<WorkOrderTimelineEvent>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    // Busca a timeline uma vez (real quando online; fallback local seguro).
-    _future = widget.repo.loadTimeline(widget.workOrderId);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<WorkOrderTimelineEvent>>(
-      future: _future,
-      builder: (context, snapshot) {
-        final loading = snapshot.connectionState == ConnectionState.waiting;
-        final events = snapshot.data ?? const <WorkOrderTimelineEvent>[];
-        return Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.timeline_outlined),
-                title: const Text('Historico'),
-                subtitle: Text(
-                  loading
-                      ? 'Carregando historico...'
-                      : '${events.length} evento(s)',
-                ),
-              ),
-              if (loading)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: LinearProgressIndicator(),
-                )
-              else if (events.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Text('Nenhum evento registrado.'),
-                )
-              else
-                for (final e in events)
-                  ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.circle, size: 10),
-                    title: Text(e.eventType.label),
-                    subtitle: e.note != null ? Text(e.note!) : null,
-                    trailing: Text(
-                      _fmtDate(e.occurredAt),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Check-in action buttons — context-aware based on wo.status
-// ---------------------------------------------------------------------------
-
-class _CheckinActions extends ConsumerStatefulWidget {
-  const _CheckinActions({
-    required this.wo,
-    required this.canStatus,
-    required this.canApproval,
-  });
-
-  final WorkOrder wo;
-  final bool canStatus;
-  final bool canApproval;
-
-  @override
-  ConsumerState<_CheckinActions> createState() => _CheckinActionsState();
-}
-
-class _CheckinActionsState extends ConsumerState<_CheckinActions> {
-  bool _loading = false;
-
-  WorkOrder get _wo => widget.wo;
-
-  Future<void> _doStatus(WorkOrderStatus next, {String? lastDigits}) async {
-    setState(() => _loading = true);
-    try {
-      final repo = ref.read(workOrderRepositoryProvider);
-      await repo.updateStatus(_wo.localId, next, lastDigits: lastDigits);
-    } on StateError catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _openArrivalDialog() async {
-    final gpsOk = await readGpsAvailability(ref);
-    if (!mounted) return;
-
-    final confirmation = await showArrivalConfirmationDialog(
-      context,
-      _wo,
-      gpsOk: gpsOk,
-    );
-
-    if (confirmation != null && mounted) {
-      await _doStatus(
-        WorkOrderStatus.arrived,
-        lastDigits: confirmation.lastDigits,
-      );
-    }
-  }
-
-  Future<void> _openBlockSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _BlockSheet(
-        onSubmit: (reason, note) async {
-          final repo = ref.read(workOrderRepositoryProvider);
-          await repo.reportUnableToStart(
-            localId: _wo.localId,
-            reason: reason,
-            note: note,
-          );
-          if (!mounted) return;
-          context.go('/work-orders');
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final wo = _wo;
-    final isFinal = wo.status.isFinal;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // --- Check-in buttons (status-aware) ---
-        if (!isFinal && widget.canStatus) ...[
-          if (wo.status == WorkOrderStatus.scheduled ||
-              wo.status == WorkOrderStatus.dispatched)
-            FilledButton.icon(
-              key: const Key('checkin-start-route'),
-              onPressed: _loading
-                  ? null
-                  : () => _doStatus(WorkOrderStatus.enRoute),
-              icon: _loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.directions_outlined),
-              label: const Text('Iniciar rota'),
-            ),
-          if (wo.status == WorkOrderStatus.enRoute) ...[
-            FilledButton.icon(
-              key: const Key('checkin-arrived'),
-              onPressed: _loading ? null : _openArrivalDialog,
-              icon: _loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.location_on_outlined),
-              label: const Text('Cheguei ao local'),
-            ),
-            const SizedBox(height: 6),
-            TextButton.icon(
-              key: const Key('checkin-block'),
-              onPressed: _loading ? null : _openBlockSheet,
-              icon: const Icon(Icons.cancel_outlined),
-              label: const Text('Nao foi possivel iniciar'),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ],
-          if (wo.status == WorkOrderStatus.arrived)
-            FilledButton.icon(
-              key: const Key('checkin-start-service'),
-              onPressed: _loading
-                  ? null
-                  : () async {
-                      await _doStatus(WorkOrderStatus.inService);
-                      if (!context.mounted) return;
-                      context.go('/work-orders/${wo.localId}/execute');
-                    },
-              icon: _loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.play_arrow_outlined),
-              label: const Text('Iniciar atendimento'),
-            ),
-          if (wo.status == WorkOrderStatus.inService ||
-              wo.status == WorkOrderStatus.paused)
-            FilledButton.icon(
-              key: const Key('checkin-continue'),
-              onPressed: () => context.go('/work-orders/${wo.localId}/execute'),
-              icon: const Icon(Icons.play_arrow_outlined),
-              label: const Text('Continuar atendimento'),
-            ),
-        ],
-        // --- B-SAN3-15b (P8, decisão 1.A): a porta do atendimento do prestador, logo abaixo de
-        // "Continuar atendimento" (opção A), só para quem pode mudar a situação da OS ---
-        if (!isFinal && widget.canStatus && showsProviderServiceDoor(wo)) ...[
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            key: const Key('provider-service-door'),
-            onPressed: () => context.go('/work-orders/${wo.localId}/service'),
-            icon: const Icon(Icons.build_outlined),
-            label: const Text('Diagnóstico e peças'),
-          ),
-        ],
-        // --- Final state ---
-        if (isFinal)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.check_circle_outline),
-              title: Text('OS ${wo.status.label.toLowerCase()}'),
-              subtitle: const Text('Nenhuma acao disponivel.'),
-            ),
-          ),
-        // --- Approval ---
-        if (!isFinal && widget.canApproval) ...[
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () =>
-                context.go('/work-orders/${wo.localId}/approval-request'),
-            icon: const Icon(Icons.approval_outlined),
-            label: const Text('Solicitar aprovacao'),
-          ),
-        ],
-        const SizedBox(height: 8),
-        // --- Checklist ---
-        OutlinedButton.icon(
-          onPressed: () =>
-              context.push('/work-orders/${wo.localId}/checklists'),
-          icon: const Icon(Icons.checklist_outlined),
-          label: const Text('Checklist'),
-        ),
-        const SizedBox(height: 4),
-        // --- Map ---
-        OutlinedButton.icon(
-          key: const Key('work-order-map-action'),
-          onPressed: () => context.push('/field-map?workOrderId=${wo.localId}'),
-          icon: const Icon(Icons.map_outlined),
-          label: const Text('Mapa'),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Plate validation dialog
-// ---------------------------------------------------------------------------
-
-/// B-SAN3-26 — o que o diálogo de chegada devolve: `null` = cancelou; [lastDigits] = os 2 caracteres digitados (nulo no
-/// serviço sem placa). Quem confere de verdade é o servidor; o app só molda a tela pelo modo que o servidor mandou.
-class ArrivalConfirmation {
-  const ArrivalConfirmation({this.lastDigits});
-
-  final String? lastDigits;
-}
-
-/// B-SAN3-26 — o GPS do aparelho, lido ANTES de abrir o diálogo (quem chama ainda está montado).
-Future<bool> readGpsAvailability(WidgetRef ref) =>
-    ref.read(gpsAvailableProvider.future).catchError((_) => false);
-
-/// B-SAN3-26 — abre o diálogo de chegada da OS. Usado pelo botão "Cheguei ao local" e pelo "Confirmar a placa de novo"
-/// do cartão de conflito. `showDialog` é chamado na hora: o diálogo vive no navegador, mesmo que o cartão saia da tela.
-Future<ArrivalConfirmation?> showArrivalConfirmationDialog(
-  BuildContext context,
-  WorkOrder wo, {
-  required bool gpsOk,
-}) {
-  return showDialog<ArrivalConfirmation>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => _PlateDialog(wo: wo, gpsOk: gpsOk),
-  );
-}
-
-String _normalizePlateChars(String raw) =>
-    raw.toUpperCase().replaceAll(RegExp('[^A-Z0-9]'), '');
-
-class _PlateDialog extends StatefulWidget {
-  const _PlateDialog({required this.wo, required this.gpsOk});
-
-  final WorkOrder wo;
-  final bool gpsOk;
-
-  @override
-  State<_PlateDialog> createState() => _PlateDialogState();
-}
-
-class _PlateDialogState extends State<_PlateDialog> {
-  final _ctrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  // B-SAN3-26 — o esperado é o fim da PLACA do veículo atendido, que o servidor mandou na lista; nunca o código da OS.
-  String? get _expected => widget.wo.checkinPlateTail;
-
-  // B-SAN3-26 (N-03) — a dica mostra a placa mascarada, sem o prefixo do código da OS.
-  String _maskedHint() => '•••••';
-
-  String get _typed => _normalizePlateChars(_ctrl.text);
-
-  /// Só o modo `plate` compara aqui; no `unknown` (OS em cache antiga) quem decide é o servidor.
-  bool get _mismatch {
-    final expected = _expected;
-    if (widget.wo.checkinMode != CheckinMode.plate || expected == null) {
-      return false;
-    }
-    final typed = _typed;
-    return typed.length == 2 && typed != _normalizePlateChars(expected);
-  }
-
-  void _confirm() {
-    Navigator.of(context).pop(ArrivalConfirmation(lastDigits: _typed));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.wo.checkinMode == CheckinMode.referenceMissing) {
-      return const _MissingReferenceNotice();
-    }
-    final cs = Theme.of(context).colorScheme;
-    final canConfirmWithoutDigits = widget.wo.checkinMode == CheckinMode.exempt;
-    final hint = _maskedHint();
-    final error = _mismatch;
-    final canConfirm =
-        widget.gpsOk &&
-        (canConfirmWithoutDigits || (_typed.length == 2 && !error));
-
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  canConfirmWithoutDigits
-                      ? Icons.location_on_outlined
-                      : Icons.local_shipping_outlined,
-                  color: cs.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      canConfirmWithoutDigits
-                          ? 'Confirmar chegada'
-                          : 'Confirmar veículo',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Text(
-                      canConfirmWithoutDigits
-                          ? 'Serviço sem placa: confirme que você chegou ao local.'
-                          : 'Informe os 2 últimos dígitos da placa do veículo',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // GPS chip
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: widget.gpsOk
-                  ? Colors.green.shade50
-                  : cs.errorContainer.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  widget.gpsOk ? Icons.gps_fixed : Icons.gps_off_outlined,
-                  size: 14,
-                  color: widget.gpsOk ? Colors.green.shade700 : cs.error,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    widget.gpsOk
-                        ? 'Localização confirmada · você está no local'
-                        : 'Ative o GPS para confirmar que chegou ao local',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: widget.gpsOk ? Colors.green.shade700 : cs.error,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!canConfirmWithoutDigits) ...[
-            const SizedBox(height: 14),
-            // 2-digit input
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  hint,
-                  key: const Key('plate-masked-hint'),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontFamily: 'monospace',
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                SizedBox(
-                  width: 64,
-                  child: TextField(
-                    key: const Key('plate-input'),
-                    controller: _ctrl,
-                    autofocus: true,
-                    textAlign: TextAlign.center,
-                    keyboardType: TextInputType.text,
-                    maxLength: 2,
-                    textCapitalization: TextCapitalization.characters,
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      counterText: '',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: error ? cs.error : cs.outline,
-                          width: 1.5,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: error ? cs.error : cs.outline,
-                          width: 1.5,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: error ? cs.error : cs.primary,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(fontFamily: 'monospace'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (error) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.error_outline, size: 14, color: cs.error),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'Os dígitos não conferem com a placa do veículo.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: cs.error),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          key: const Key('plate-cancel'),
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          key: const Key('plate-confirm'),
-          onPressed: !canConfirm
-              ? null
-              : canConfirmWithoutDigits
-              ? () => Navigator.of(context).pop(const ArrivalConfirmation())
-              : _confirm,
-          child: const Text('Confirmar chegada'),
-        ),
-      ],
-    );
-  }
-}
-
-/// B-SAN3-26 (decisão B do dono) — a OS sem placa não confirma a chegada pelo app: o guincheiro pede à base.
-class _MissingReferenceNotice extends StatelessWidget {
-  const _MissingReferenceNotice();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return AlertDialog(
-      key: const Key('checkin-reference-missing-notice'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      content: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, color: cs.primary),
-          const SizedBox(width: 12),
-          const Expanded(child: Text(kCheckinMissingReferenceMessage)),
-        ],
-      ),
-      actions: [
-        FilledButton(
-          key: const Key('plate-missing-close'),
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Entendi'),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// "Nao foi possivel iniciar" bottom sheet
-// ---------------------------------------------------------------------------
-
-class _BlockSheet extends StatefulWidget {
-  const _BlockSheet({required this.onSubmit});
-
-  final Future<void> Function(String reason, String note) onSubmit;
-
-  @override
-  State<_BlockSheet> createState() => _BlockSheetState();
-}
-
-class _BlockSheetState extends State<_BlockSheet> {
-  static const _reasons = [
-    'Cliente ausente no local',
-    'Endereco nao localizado',
-    'Veiculo inacessivel / impedimento',
-    'Condicoes de seguranca',
-    'Outro motivo',
-  ];
-
-  String? _reason;
-  String _note = '';
-  bool _submitting = false;
-
-  bool get _canSubmit => _reason != null && _note.trim().isNotEmpty;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final mq = MediaQuery.of(context);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          const SizedBox(height: 12),
-          Container(
-            width: 38,
-            height: 4,
-            decoration: BoxDecoration(
-              color: cs.outlineVariant,
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: cs.errorContainer,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.warning_amber_outlined,
-                    color: cs.error,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Nao foi possivel iniciar',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Text(
-                      'Registre o motivo para enviar a central',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Reasons
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Motivo',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  for (final r in _reasons)
-                    GestureDetector(
-                      onTap: () => setState(() => _reason = r),
-                      child: Container(
-                        key: Key('block-reason-$r'),
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: _reason == r ? cs.primary : cs.outline,
-                            width: 1.5,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          color: _reason == r
-                              ? cs.primaryContainer.withValues(alpha: 0.3)
-                              : null,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: _reason == r
-                                      ? cs.primary
-                                      : cs.outlineVariant,
-                                  width: 2,
-                                ),
-                              ),
-                              child: _reason == r
-                                  ? Center(
-                                      child: Container(
-                                        width: 9,
-                                        height: 9,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: cs.primary,
-                                        ),
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 11),
-                            Text(
-                              r,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Explicacao',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    key: const Key('block-note'),
-                    maxLines: 3,
-                    onChanged: (v) => setState(() => _note = v),
-                    decoration: InputDecoration(
-                      hintText:
-                          'Descreva o que impediu o inicio do atendimento...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-          // Buttons
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _submitting
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    child: const Text('Cancelar'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton(
-                    key: const Key('block-submit'),
-                    onPressed: _canSubmit && !_submitting
-                        ? () async {
-                            setState(() => _submitting = true);
-                            try {
-                              await widget.onSubmit(_reason!, _note.trim());
-                              if (context.mounted) Navigator.of(context).pop();
-                            } finally {
-                              if (mounted) setState(() => _submitting = false);
-                            }
-                          }
-                        : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _canSubmit
-                          ? Theme.of(context).colorScheme.error
-                          : null,
-                    ),
-                    child: _submitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Enviar nao conclusao'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String _fmtDate(DateTime dt) =>
-    '${dt.day.toString().padLeft(2, '0')}/'
-    '${dt.month.toString().padLeft(2, '0')} '
-    '${dt.hour.toString().padLeft(2, '0')}:'
-    '${dt.minute.toString().padLeft(2, '0')}';
