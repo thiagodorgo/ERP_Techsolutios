@@ -44,13 +44,37 @@ export function blocoDoTitulo(titulo) {
   return achados.length ? achados[achados.length - 1][1] : null;
 }
 
+/**
+ * A linha final do `flutter test` no job do Flutter, nas DUAS formas que ele emite com tudo verde:
+ *   `+N: All tests passed!`            → N/N;
+ *   `+N ~M: All other tests passed!`   → N/(N+M), M = os testes pulados (a mesma forma passaram/total do backend).
+ * Sem linha final: null (quem chama acusa a falta). Linha final em qualquer outra forma (falha, forma cruzada,
+ * texto novo do Flutter): erro que cita a linha, nunca chute.
+ */
+export const FLUTTER_VERDE = /\s\+(\d+)(?:: All tests passed!| ~(\d+): All other tests passed!)\s*$/;
+export function contagemFlutter(log) {
+  const finais = log.split(/\r?\n/).filter((l) => /^flutter\b/.test(l) && /tests? (?:passed|failed)/i.test(l));
+  if (!finais.length) return null;
+  for (const l of finais) {
+    const m = l.match(FLUTTER_VERDE);
+    if (m) {
+      const passaram = Number(m[1]);
+      return { passaram, total: passaram + Number(m[2] ?? 0) };
+    }
+  }
+  throw new Error(
+    `o log do flutter traz a linha final numa forma que este script não reconhece ` +
+      `(aceitas: "+N: All tests passed!" e "+N ~M: All other tests passed!"): ${finais[finais.length - 1].trim()}`,
+  );
+}
+
 /** Contagens de teste a partir do log da CI (backend, frontend e flutter). Falta = erro, nunca chute. */
 export function contagensDoLog(log) {
   const be = log.match(/(\d+) teste\(s\) · pass (\d+) · fail (\d+) · skipped (\d+)/);
   const linhasFe = log.split(/\r?\n/).filter((l) => /^frontend\b/.test(l));
   const feT = linhasFe.map((l) => l.match(/# tests (\d+)/)).find(Boolean);
   const feP = linhasFe.map((l) => l.match(/# pass (\d+)/)).find(Boolean);
-  const fl = log.split(/\r?\n/).filter((l) => /^flutter\b/.test(l)).map((l) => l.match(/\+(\d+): All tests passed!/)).find(Boolean);
+  const fl = contagemFlutter(log);
   const falta = [!be && "backend", !(feT && feP) && "frontend", !fl && "flutter"].filter(Boolean);
   if (falta.length) throw new Error(`o log da CI não traz a contagem de: ${falta.join(", ")}`);
   if (Number(be[3]) !== 0) throw new Error(`a rodada tem ${be[3]} falha(s) no backend: não se publica número de rodada vermelha`);
@@ -58,7 +82,7 @@ export function contagensDoLog(log) {
     backend: `${be[2]}/${be[1]}`,
     backendResumo: be[0],
     frontend: `${feP[1]}/${feT[1]}`,
-    flutter: `${fl[1]}/${fl[1]}`,
+    flutter: `${fl.passaram}/${fl.total}`,
   };
 }
 
