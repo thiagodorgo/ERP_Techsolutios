@@ -9,7 +9,7 @@ critica e não vota.
 ## Fontes, nesta ordem
 
 1. A decisão do dono `D-O6R-04B-RETIRADA` (`agent-orchestration/controle/decisoes.md`).
-2. O plano do bloco e as Emendas 1, 1.1 e 1.2 (fora do repositório; vale a mais nova).
+2. O plano do bloco e as Emendas 1, 1.1, 1.2 e 1.3 (fora do repositório; vale a mais nova).
 
 ## Propriedade
 
@@ -44,6 +44,21 @@ A porta do lote do app passa a ter uma chave só, `work_orders:update`.
 - **Testes fora do §4.4 que o desenho deixa vermelhos:** foram medidos por simulação e estão decididos na Emenda 1.2.
   São o RC2(8), o RC2(9) e o RC2(20) de `tests/b-material-sync.test.ts`, reescritos, e o H4d e o H4g de
   `tests/sec-log-http.test.ts`.
+
+## F4 — a ação antiga de estoque na fila (17/11, depois do 16 na `main`, `00e46347`)
+
+Executada por `dev-04b-e1-cl` (Claude Opus 5.5, sucessor do `dev-04b-cl`, sem cruzamento, declarado), com a Emenda 1.3.
+
+- **A tabela do 16** (`mobile/flutter_app/lib/core/sync/sync_action_routing.dart`) tinha os dois tipos em
+  `SyncActionRoute.awaitingBlock`, com dono `P-MOBILE-SYNC-ESTOQUE-TIPOS`, e uma mensagem por causa. O D8 os passa a
+  `SyncActionRoute.unroutable`, tira os dois do mapa de donos (`syncActionAwaitingOwner` fica vazio) e dá a eles a frase
+  própria (`syncUnroutableInventoryRetiredMessage`): "O aplicativo não registra mais entrada e saída avulsas de estoque.
+  Este lançamento não chegou ao servidor. Refaça no sistema web e descarte este registro."
+- **Âncora da MQ1, literal** (contagem 1): `  InventorySyncActionTypes.entryCreate: SyncActionRoute.unroutable,`.
+  A mutação troca `SyncActionRoute.unroutable` por `SyncActionRoute.awaitingBlock` nessa linha; o Q1 de
+  `test/core/sync/bo6r04b_estoque_legado_na_fila_test.dart` fica vermelho.
+- **A MA2** é a da Emenda 1.3: a rota `/inventory` volta em `router.dart`, abaixo de `    routes: [`, apontando para
+  `LoginScreen` (que o arquivo já importa).
 
 ## Escopo
 

@@ -1,8 +1,8 @@
 // B-O6R-04b (item 31 do portão, `Ω6R-QUA-002`): o módulo de estoque fabricado sai do app.
 //
 // A1 — nenhum produtor dos dois tipos legados (`inventory_entry.create`, `inventory_exit.create`): eles só aparecem
-//      numa lista FECHADA de arquivos, com a contagem exata por arquivo (o contrato, o rótulo da fila e o mapa de
-//      purga, que existem para encerrar uma ação antiga que já estava na fila do aparelho).
+//      numa lista FECHADA de arquivos, com a contagem exata por arquivo (o contrato, o rótulo da fila, o mapa de
+//      purga e a tabela de rotas da fila, que existem para encerrar uma ação antiga que já estava na fila do aparelho).
 // A2 — os dois roteadores (`appRouterProvider` e `appRouter`), percorridos pela configuração do `GoRouter`, não têm
 //      rota cujo caminho comece por `/inventory`.
 // A3 — o diretório `lib/features/inventory` não existe.
@@ -17,6 +17,8 @@ import 'package:go_router/go_router.dart';
 const _permitidos = <String, int>{
   'lib/core/network/api_contracts.dart': 2,
   'lib/core/sync/sync_action_labels.dart': 2,
+  // F4 (D8): a rota "sem envio" dos dois tipos e a frase própria deles.
+  'lib/core/sync/sync_action_routing.dart': 4,
   'lib/features/work_orders/data/work_order_repository.dart': 2,
 };
 

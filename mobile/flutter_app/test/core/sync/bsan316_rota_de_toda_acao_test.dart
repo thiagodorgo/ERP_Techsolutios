@@ -304,6 +304,9 @@ void main() {
     expect(semEnvio, {
       WorkOrderSyncActionTypes.evidenceAttach,
       ChecklistSyncActionTypes.runCreate,
+      // B-O6R-04b (D8): entrada e saída avulsas de estoque saíram do app.
+      InventorySyncActionTypes.entryCreate,
+      InventorySyncActionTypes.exitCreate,
     }, reason: 'só as constantes sem produtor ficam sem envio');
   });
 
@@ -433,15 +436,14 @@ void main() {
     expect(alheio.lastErrorCode, isNull);
   });
 
-  test('R4. material (envio) e estoque (aguarda) continuam pending, sem '
-      'erro', () async {
+  // B-O6R-04b (D8): a entrada e a saída avulsas de estoque saíram do R4 (deixaram de "aguardar"); o desfecho delas
+  // na fila é o Q1 a Q3 de `bo6r04b_estoque_legado_na_fila_test.dart`.
+  test('R4. material (envio) continua pending, sem erro', () async {
     final base = InMemorySyncQueueRepository();
     final queue = _filaDoUsuario(base);
     final ids = {
       'r4-material': InventorySyncActionTypes.materialAdd,
       'r4-remocao': InventorySyncActionTypes.materialRemove,
-      'r4-entrada': InventorySyncActionTypes.entryCreate,
-      'r4-saida': InventorySyncActionTypes.exitCreate,
     };
     for (final e in ids.entries) {
       await queue.enqueue(_acao(e.key, e.value));
