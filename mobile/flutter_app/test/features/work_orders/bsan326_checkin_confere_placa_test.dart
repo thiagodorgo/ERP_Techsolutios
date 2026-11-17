@@ -9,6 +9,8 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/app_database.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/database_provider.dart';
 import 'package:erp_techsolutions_mobile/core/location/gps_service.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_action_factory.dart';
@@ -22,6 +24,7 @@ import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_re
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_detail_screen.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_execute_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,8 +88,10 @@ class _Harness {
     seedWorkOrders: [wo],
   );
 
+  // B-GUI-FID1 — a execução (onde mora o check-in) lê as vistorias do banco do aparelho: um banco em memória.
   Widget app({bool gpsOk = true}) => ProviderScope(
     overrides: [
+      appDatabaseProvider.overrideWithValue(_db()),
       bootstrapSessionProvider.overrideWith((_) async => _session),
       workOrderLocalStoreProvider.overrideWithValue(store),
       syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore([])),
@@ -95,11 +100,18 @@ class _Harness {
     ],
     child: MaterialApp.router(
       routerConfig: GoRouter(
-        initialLocation: '/work-orders/${wo.localId}',
+        // B-GUI-FID1 — "Cheguei ao local" mora no check-in da execução.
+        initialLocation: '/work-orders/${wo.localId}/execute',
         routes: [
           GoRoute(
             path: '/work-orders',
             builder: (_, _) => const Scaffold(body: Text('Lista OS')),
+          ),
+          GoRoute(
+            path: '/work-orders/:id/execute',
+            builder: (_, state) => WorkOrderExecuteScreen(
+              workOrderId: state.pathParameters['id']!,
+            ),
           ),
           GoRoute(
             path: '/work-orders/:id',
@@ -115,6 +127,12 @@ class _Harness {
     for (final a in await queue.actionsForTenant(_tenant))
       if (a.payload['new_status'] == 'arrived') a,
   ];
+}
+
+AppDatabase _db() {
+  final db = AppDatabase.openInMemory();
+  addTearDown(db.close);
+  return db;
 }
 
 Future<void> _openArrival(WidgetTester t) async {
