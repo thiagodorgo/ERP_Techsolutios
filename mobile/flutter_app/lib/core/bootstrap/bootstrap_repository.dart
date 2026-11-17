@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/auth_models.dart';
 import '../auth/auth_notifier.dart';
 import '../auth/auth_token_storage.dart';
+import '../auth/session_http_client.dart';
+import '../auth/session_renewal.dart';
 import '../config/app_config.dart';
 import '../network/api_contracts.dart';
 import '../network/api_error.dart';
@@ -48,7 +50,7 @@ class LocalDevBootstrapRepository implements MobileBootstrapRepository {
     if (session == null) return devBootstrapSession;
 
     final u = session.user;
-    return BootstrapSession(
+    final result = BootstrapSession(
       activeTenant: TenantContext(
         tenantId: u.tenantId,
         displayName: _tenantDisplayName(u.tenantId),
@@ -72,6 +74,9 @@ class LocalDevBootstrapRepository implements MobileBootstrapRepository {
       expenseCategories: devBootstrapSession.expenseCategories,
       expensePolicy: devBootstrapSession.expensePolicy,
     );
+    // dart format off
+    return result.withOwnerKey(sessionKeyOf(session)); // dono: fetch local
+    // dart format on
   }
 
   @override
@@ -102,7 +107,7 @@ class LocalDevBootstrapRepository implements MobileBootstrapRepository {
       (t) => t.tenantId == tenantId,
       orElse: () => base.activeTenant,
     );
-    return BootstrapSession(
+    final result = BootstrapSession(
       activeTenant: selected,
       availableTenants: allAvailable,
       user: base.user,
@@ -112,6 +117,9 @@ class LocalDevBootstrapRepository implements MobileBootstrapRepository {
       expenseCategories: base.expenseCategories,
       expensePolicy: base.expensePolicy,
     );
+    // dart format off
+    return result.withOwnerKey(sessionKeyOf(session)); // dono: troca local
+    // dart format on
   }
 
   @override
@@ -439,25 +447,43 @@ ExpensePolicySnapshot _expensePolicyFromJson(Map<String, dynamic> j) =>
       ),
     );
 
+// ── O dono do cache (B-APP-SESSAO-RENOVA, D6c) ────────────────────────────────
+
+/// O bootstrap guardado vale só para a sessão que o gravou. Um cache antigo,
+/// sem dono, vale só para a sessão antiga (também sem identificador) da mesma
+/// pessoa na mesma organização. A recusa é na leitura: não depende de a
+/// limpeza do cache ter dado certo.
+bool bootstrapBelongsTo(BootstrapSession cached, AuthSession session) {
+  final owner = cached.ownerKey;
+  // dart format off
+    if (owner != null) return owner == sessionKeyOf(session); // dono gravado: tem de ser esta sessão
+    return session.sessionNonce == null && cached.user.userId == session.user.sub && cached.activeTenant.tenantId == session.user.tenantId; // cache antigo, sem dono
+  // dart format on
+}
+
 // ── Dio / remote implementation ───────────────────────────────────────────────
 
 class DioMobileBootstrapRepository implements MobileBootstrapRepository {
-  DioMobileBootstrapRepository(this._storage);
+  DioMobileBootstrapRepository(
+    this._storage, {
+    required Dio Function(ApiConfig config) createClient,
+  }) : _createClient = createClient;
 
   final AuthTokenStorage _storage;
+  final Dio Function(ApiConfig config) _createClient;
 
   @override
   Future<BootstrapSession> fetch(AuthSession? session) async {
     if (session == null) throw const ApiUnauthorizedError();
 
-    final client = createExpenseHttpClient(
+    final client = _createClient(
       ApiConfig(accessToken: session.tokens.accessToken),
     );
     try {
       final response = await client.get(ExpenseApiEndpoints.mobileBootstrap);
-      final bootstrap = bootstrapSessionFromJson(
-        response.data as Map<String, dynamic>,
-      );
+      // dart format off
+      final bootstrap = bootstrapSessionFromJson(response.data as Map<String, dynamic>).withOwnerKey(sessionKeyOf(session)); // dono: fetch remoto
+      // dart format on
       await cache(bootstrap);
       return bootstrap;
     } on DioException catch (e) {
@@ -470,7 +496,7 @@ class DioMobileBootstrapRepository implements MobileBootstrapRepository {
     AuthSession session,
     String tenantId,
   ) async {
-    final client = createExpenseHttpClient(
+    final client = _createClient(
       ApiConfig(accessToken: session.tokens.accessToken),
     );
     try {
@@ -478,9 +504,9 @@ class DioMobileBootstrapRepository implements MobileBootstrapRepository {
         ExpenseApiEndpoints.mobileBootstrap,
         queryParameters: {'tenantId': tenantId},
       );
-      final bootstrap = bootstrapSessionFromJson(
-        response.data as Map<String, dynamic>,
-      );
+      // dart format off
+      final bootstrap = bootstrapSessionFromJson(response.data as Map<String, dynamic>).withOwnerKey(sessionKeyOf(session)); // dono: troca remota
+      // dart format on
       await cache(bootstrap);
       return bootstrap;
     } on DioException catch (e) {
@@ -515,7 +541,11 @@ final mobileBootstrapRepositoryProvider = Provider<MobileBootstrapRepository>((
 ) {
   final storage = ref.watch(authTokenStorageProvider);
   if (kIsRemoteAuth) {
-    return DioMobileBootstrapRepository(storage);
+    // D5: o bootstrap também passa pela porta da renovação.
+    return DioMobileBootstrapRepository(
+      storage,
+      createClient: (config) => sessionHttpClient(ref, config),
+    );
   }
   return LocalDevBootstrapRepository(storage);
 });
@@ -526,14 +556,18 @@ final mobileBootstrapRepositoryProvider = Provider<MobileBootstrapRepository>((
 // HomeScreen now watches bootstrapNotifierProvider for retry/switchTenant.
 
 final bootstrapSessionProvider = FutureProvider<BootstrapSession>((ref) async {
-  final authState = await ref.watch(authStateProvider.future);
+  // B-APP-SESSAO-RENOVA (D6): só a chave da sessão; renovar não recarrega.
+  final key = await ref.watch(authStateProvider.selectAsync(sessionKeyOfState));
+  final session = ref.read(authStateProvider).asData?.value.session;
   final repo = ref.watch(mobileBootstrapRepositoryProvider);
 
-  if (authState.isAuthenticated && authState.session != null) {
+  if (key != null && session != null) {
     final cached = await repo.restoreCached();
-    if (cached != null) return cached;
+    if (cached != null && bootstrapBelongsTo(cached, session)) {
+      return cached;
+    }
 
-    final fetched = await repo.fetch(authState.session);
+    final fetched = await repo.fetch(session);
     await repo.cache(fetched);
     return fetched;
   }
@@ -557,14 +591,20 @@ class BootstrapNotifier extends AsyncNotifier<BootstrapSession> {
 
   @override
   Future<BootstrapSession> build() async {
-    final authState = await ref.watch(authStateProvider.future);
+    // B-APP-SESSAO-RENOVA (D6): só a chave da sessão; renovar não recarrega.
+    final key = await ref.watch(
+      authStateProvider.selectAsync(sessionKeyOfState),
+    );
+    final session = ref.read(authStateProvider).asData?.value.session;
     final repo = ref.watch(mobileBootstrapRepositoryProvider);
 
-    if (authState.isAuthenticated && authState.session != null) {
+    if (key != null && session != null) {
       final cached = await repo.restoreCached();
-      if (cached != null) return cached;
+      if (cached != null && bootstrapBelongsTo(cached, session)) {
+        return cached;
+      }
 
-      final fetched = await repo.fetch(authState.session);
+      final fetched = await repo.fetch(session);
       await repo.cache(fetched);
       return fetched;
     }

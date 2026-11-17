@@ -2,12 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/auth_notifier.dart';
 import '../bootstrap/bootstrap_repository.dart';
-import '../network/http_client.dart';
 import '../sync/sync_providers.dart';
 import '../telemetry/telemetry_providers.dart';
 import 'location_consent_api.dart';
 import 'location_consent_store.dart';
 import 'location_consent_sync.dart';
+import '../auth/session_http_client.dart';
 
 /// O dono do consentimento NA HORA da leitura (P2; CR17-01): o `sub` da sessão
 /// autenticada e a organização ativa do bootstrap. Só `ref.read`, nunca
@@ -37,21 +37,7 @@ final locationConsentApiProvider = Provider<LocationConsentApi>((ref) {
     return const PendingLocationConsentApi();
   }
 
-  return DioLocationConsentApi(
-    createAuthenticatedHttpClient(
-      config,
-      onRefresh: () async {
-        await ref.read(authStateProvider.notifier).tryRefresh();
-        return ref
-            .read(authStateProvider)
-            .maybeWhen(
-              data: (state) => state.session?.tokens.accessToken,
-              orElse: () => null,
-            );
-      },
-      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
-    ),
-  );
+  return DioLocationConsentApi(sessionHttpClient(ref, config));
 });
 
 /// O envio das decisões de consentimento, ESTÁVEL: não vigia nada (S9b). O

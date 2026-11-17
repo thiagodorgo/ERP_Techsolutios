@@ -38,6 +38,32 @@ test("kpi-history-append: rodada com falha no backend não é publicada", () => 
   assert.throws(() => contagensDoLog(LOG_VERDE.replace("fail 0", "fail 2")), /falha/);
 });
 
+// P-KPI-APPEND-FLUTTER-OUTRAS: desde o #583 o job do Flutter termina com os testes pulados (as capturas de tela).
+// Linha real da rodada de push da main 00e46347 (run 43985415476).
+const LINHA_FLUTTER_PULADOS = "flutter\tUNKNOWN STEP\t2026-11-17T00:13:23.8385820Z 02:10 +1697 ~216: All other tests passed!";
+const comFlutter = (linha: string) => LOG_VERDE.replace(/^flutter.*$/m, linha);
+
+test("kpi-history-append: flutter nas 2 formas verdes — sem pulados N/N, com pulados N/(N+M)", () => {
+  assert.equal(contagensDoLog(LOG_VERDE).flutter, "864/864");
+  assert.equal(contagensDoLog(comFlutter(LINHA_FLUTTER_PULADOS)).flutter, "1697/1913");
+  assert.equal(contagensDoLog(comFlutter(`${LINHA_FLUTTER_PULADOS}\r`)).flutter, "1697/1913");
+});
+
+test("kpi-history-append: flutter em forma estranha é recusado, com a linha na mensagem", () => {
+  const estranhas = [
+    "flutter\tTest\t2026-11-17T00:13:23Z 02:10 +1697 ~216 -3: Some tests failed.",
+    "flutter\tTest\t2026-11-17T00:13:23Z 02:10 +1697 ~216: All tests passed!", // forma cruzada
+    "flutter\tTest\t2026-11-17T00:13:23Z 02:10 +1697: All other tests passed!", // forma cruzada
+  ];
+  for (const l of estranhas) {
+    assert.throws(
+      () => contagensDoLog(comFlutter(l)),
+      (e: Error) => /forma que este script não reconhece/.test(e.message) && e.message.includes(l.split("Z ")[1]),
+      l,
+    );
+  }
+});
+
 test("kpi-history-append: acrescenta no JSON sem reformatar o resto e mantendo o CRLF", () => {
   const antes = '[\r\n  {\r\n    "pr": 1,\r\n    "blocks_completed": 1\r\n  }\r\n]\r\n';
   const depois = acrescentarNoJson(antes, { pr: 2, blocks_completed: 2 });

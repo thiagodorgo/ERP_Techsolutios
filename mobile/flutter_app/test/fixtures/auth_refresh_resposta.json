@@ -1,0 +1,18 @@
+{
+  "data": {
+    "access_token": "acesso-contrato",
+    "accessToken": "acesso-contrato",
+    "token_type": "Bearer",
+    "tokenType": "Bearer",
+    "expires_in": 900,
+    "expiresIn": 900,
+    "refresh_token": "renovacao-contrato",
+    "refreshToken": "renovacao-contrato",
+    "refresh_expires_at": "2026-11-21T00:00:00.000Z",
+    "refreshExpiresAt": "2026-11-21T00:00:00.000Z",
+    "refresh_expires_in": 604800,
+    "refreshExpiresIn": 604800,
+    "session_id": "s-contrato",
+    "sessionId": "s-contrato"
+  }
+}
