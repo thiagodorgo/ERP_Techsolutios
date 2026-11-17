@@ -246,12 +246,15 @@ void main() {
       },
     );
 
-    test('servidor antigo (chaves ausentes): null nos 7, sem exceção', () async {
-      final porId = await _ler([_item('b', {})]);
-      final o = porId['b']!;
-      expect(_seteECoordenada(o), List<Object?>.filled(9, null));
-      expect(o.code, 'OS-b');
-    });
+    test(
+      'servidor antigo (chaves ausentes): null nos 7, sem exceção',
+      () async {
+        final porId = await _ler([_item('b', {})]);
+        final o = porId['b']!;
+        expect(_seteECoordenada(o), List<Object?>.filled(9, null));
+        expect(o.code, 'OS-b');
+      },
+    );
 
     test(
       'tipo errado: null só no campo errado, sem exceção, e o resto do item intacto',
@@ -273,8 +276,8 @@ void main() {
         ]);
         expect(porId.length, 6, reason: 'um item com tipo errado sumiu');
 
-        List<Object?> com(int i, Object? v) => List<Object?>.from(_esperado)
-          ..[i] = v;
+        List<Object?> com(int i, Object? v) =>
+            List<Object?>.from(_esperado)..[i] = v;
         expect(_seteECoordenada(porId['c']!), com(1, null));
         expect(
           _seteECoordenada(porId['d']!),
@@ -338,8 +341,9 @@ void main() {
         final db = AppDatabase.openInMemory();
         addTearDown(db.close);
         await DriftWorkOrderLocalStore(db).saveWorkOrder(_woCompleta());
-        final lida = (await DriftWorkOrderLocalStore(db).loadWorkOrders())
-            .single;
+        final lida = (await DriftWorkOrderLocalStore(
+          db,
+        ).loadWorkOrders()).single;
         expect(_seteECoordenada(lida), _esperado);
         expect(lida, _woCompleta());
       },

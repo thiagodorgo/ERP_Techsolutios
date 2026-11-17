@@ -245,9 +245,8 @@ Future<int> _userVersion(GeneratedDatabase db) async =>
 
 /// `PRAGMA table_info` de `work_orders`, como conjunto de "nome:tipo".
 Future<Set<String>> _esquema(GeneratedDatabase db) async => {
-  for (final r in await db
-      .customSelect("PRAGMA table_info('work_orders')")
-      .get())
+  for (final r
+      in await db.customSelect("PRAGMA table_info('work_orders')").get())
     '${r.read<String>('name')}:${r.read<String>('type')}',
 };
 
@@ -257,7 +256,8 @@ Future<Map<String, List<Map<String, Object?>>>> _foto(
 ) async => {
   for (final t in _tabelas)
     t: [
-      for (final r in await db.customSelect('SELECT * FROM $t ORDER BY 1').get())
+      for (final r
+          in await db.customSelect('SELECT * FROM $t ORDER BY 1').get())
         Map<String, Object?>.from(r.data),
     ],
 };
@@ -383,8 +383,8 @@ void main() {
     'D6 — instalação nova, vindo da 18 e vindo da 1 (com e sem work_orders) terminam com o MESMO esquema de work_orders',
     () async {
       final nova = AppDatabase.openInMemory();
-      addTearDown(nova.close);
       final esperado = await _esquema(nova);
+      await nova.close();
       for (final c in _sete) {
         expect(esperado, contains('$c:${_seteTipos[c]}'), reason: 'onCreate');
       }
@@ -396,9 +396,12 @@ void main() {
       ) async {
         final path = await _semear(dir, nome, version: version, sql: sql);
         final db = AppDatabase(NativeDatabase(File(path)));
-        addTearDown(db.close);
-        expect(await _userVersion(db), 19, reason: nome);
-        return _esquema(db);
+        try {
+          expect(await _userVersion(db), 19, reason: nome);
+          return await _esquema(db);
+        } finally {
+          await db.close();
+        }
       }
 
       // A fila da v1 ainda não tinha `user_id` (entra na v14).
