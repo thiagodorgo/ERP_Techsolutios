@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_notifier.dart';
+import '../../../core/auth/session_http_client.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_contracts.dart';
 import '../../../core/network/api_error.dart';
@@ -22,9 +23,6 @@ class DioRegistryOptionsApi implements RegistryOptionsApi {
   DioRegistryOptionsApi(this._dio);
 
   final Dio _dio;
-
-  static DioRegistryOptionsApi create(ApiConfig config) =>
-      DioRegistryOptionsApi(createExpenseHttpClient(config));
 
   @override
   Future<List<VehicleOption>> fetchVehicles() async {
@@ -89,7 +87,7 @@ final registryOptionsApiProvider = Provider<RegistryOptionsApi?>((ref) {
   if (!kIsRemoteAuth) return null;
   final config = ref.watch(authenticatedApiConfigProvider);
   if (config.accessToken == null) return null;
-  return DioRegistryOptionsApi.create(config);
+  return DioRegistryOptionsApi(sessionHttpClient(ref, config));
 });
 
 /// Carrega viaturas + equipes para os seletores. Offline/local/dev ou falha de

@@ -86,9 +86,6 @@ class DioWorkOrderRemoteApi
 
   final Dio _dio;
 
-  static DioWorkOrderRemoteApi create(ApiConfig config) =>
-      DioWorkOrderRemoteApi(createExpenseHttpClient(config));
-
   /// B-SAN3-13 — teto da caminhada. Passou disso, a caminhada é INCOMPLETA ("dados desatualizados"), nunca
   /// "completa" fingida: com "Só as abertas" (E1) 50 páginas de 100 é borda, não o caminho normal.
   static const maxPages = 50;

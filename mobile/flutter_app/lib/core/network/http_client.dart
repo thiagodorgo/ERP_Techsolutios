@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../auth/session_renewal.dart';
 import 'api_error.dart';
 import 'auth_interceptor.dart';
 
@@ -47,20 +48,28 @@ Dio createExpenseHttpClient(ApiConfig config) {
   return dio;
 }
 
-/// Creates an authenticated Dio client that automatically refreshes the token
-/// on 401 responses (via [AuthRefreshInterceptor]) and falls back to clearing
-/// the session if refresh fails.
+/// B-APP-SESSAO-RENOVA (D4, D5) — o cliente autenticado: põe o token vivo da
+/// sessão em cada pedido e, num 401, pede a renovação à porta única do app
+/// (o notifier). Só o `sessionHttpClient` monta este cliente.
 Dio createAuthenticatedHttpClient(
   ApiConfig config, {
-  required Future<String?> Function() onRefresh,
-  required Future<void> Function() onClearSession,
+  required Future<SessionRenewalOutcome> Function(
+    String? failedAccessToken,
+    int requestEpoch,
+  )
+  renew,
+  required Future<void> Function(int requestEpoch) expire,
+  required String? Function() currentAccessToken,
+  required int Function() currentEpoch,
 }) {
   final dio = createExpenseHttpClient(config);
   dio.interceptors.add(
     AuthRefreshInterceptor(
       client: dio,
-      onRefresh: onRefresh,
-      onClearSession: onClearSession,
+      renew: renew,
+      expire: expire,
+      currentAccessToken: currentAccessToken,
+      currentEpoch: currentEpoch,
     ),
   );
   return dio;
@@ -69,6 +78,9 @@ Dio createAuthenticatedHttpClient(
 // Converts a DioException to a typed ApiError.
 // Never includes response body, URLs with private parameters, or tokens.
 ApiError mapDioError(DioException e) {
+  // dart format off
+  if (e.error is SessionRenewalLocalError) return const ApiServerError(statusCode: 0, safeMessage: kSessionCheckFailedMessage);
+  // dart format on
   final status = e.response?.statusCode;
   return switch (e.type) {
     DioExceptionType.connectionTimeout ||
@@ -76,7 +88,8 @@ ApiError mapDioError(DioException e) {
     DioExceptionType.sendTimeout => const ApiTimeoutError(),
     DioExceptionType.connectionError => const ApiNetworkError(),
     DioExceptionType.badResponse => switch (status) {
-      401 || 403 => const ApiUnauthorizedError(),
+      401 => const ApiSessionExpiredError(),
+      403 => const ApiForbiddenError(),
       409 => const ApiConflictError(),
       _ when status != null && status >= 500 => ApiServerError(
         statusCode: status,
