@@ -396,7 +396,6 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
   return self;
 }
 
-/** A linha de `audit_logs` dentro do `tx` corrente: se falhar, a transação do movimento cai junto (fail-closed). */
 /** B-ASS-08c2 (plano §4.14, `P-BILLING-P2028-COMO-400`): a falha de banco do movimento que quer dizer "o demonstrativo está
  * ocupado" — a trava não obtida (55P03, o mesmo helper do pedido de cobrança) ou a transação interativa expirada (P2028). O P2028
  * de INÍCIO de transação (pool esgotado) não é: ele continua o `infra_down` da casa. */
@@ -407,6 +406,7 @@ function isStatementBusy(error: unknown): boolean {
   return record.code === "P2028" && !isTransactionStartTimeout(record);
 }
 
+/** A linha de `audit_logs` dentro do `tx` corrente: se falhar, a transação do movimento cai junto (fail-closed). */
 async function writeAuditInTx(tx: Tx, event: StatementAuditEvent): Promise<void> {
   const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
     import("../../core-saas/audit/audit-log.service.js"),
