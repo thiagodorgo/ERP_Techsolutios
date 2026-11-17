@@ -286,6 +286,9 @@ As linhas resumem saídas saneadas. Logs brutos e valores sensíveis não são v
 | Op-6 | 2026-11-04 | 196d7b48 | bootstrap como escrito, depois da Op-7 | antes da Op-7 recusa RBAC_NOT_PROVISIONED; depois, recusas nomeadas, dry-run sem escrita, criação única, repetição e login 200 | passou | dev-44k-opus |
 | Op-8 | 2026-11-04 | a11d91f2 | rotação na API isolada | ADIADA: backend comprovado; trecho mobile sem INTERNET no release do ensaio, consertado depois no PR #499; dono B-SAN3-10b | ADIADA | dev-44-sol |
 | Op-10 | 2026-11-04 | a11d91f2 | atualização por cima no AVD isolado | ADIADA: release do ensaio sem INTERNET não alcança a API isolada, consertado depois no PR #499; dono B-SAN3-10b | ADIADA | dev-44-sol |
+| Op-8 | 2026-11-17 | 89cf79fe | rotacao de JWT com fila offline no emulador | token antigo 401, refresh antigo 401, login novo 200; sessao renovou sozinha (68); fila drenada | PASSOU | ens-44b3-dp |
+| Op-10 | 2026-11-17 | 89cf79fe | atualizacao por cima no AVD isolado com fila offline | fila preservada; cancel_via_status_forbidden no aparelho; gestor cancelou com decisao; tecnico descartou; despesa sem Descartar | PASSOU | ens-44b3-dp |
+| F3 | 2026-11-17 | 89cf79fe | vermelho-controle da permissao de internet no release | INTERNET=0 no build sem a linha e APK REPROVADO | PASSOU | ens-44b3-dp |
 
 ### Veredito por procedimento
 
