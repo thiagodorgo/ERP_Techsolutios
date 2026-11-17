@@ -192,12 +192,25 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
   }
 
   async list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {
-    const filtered = this.sortedDispatches()
+    let filtered = this.sortedDispatches()
       .filter((dispatch) => dispatch.tenantId === input.tenantId)
       .filter((dispatch) => !input.status || dispatch.status === input.status)
       .filter((dispatch) => !input.workOrderId || dispatch.workOrderId === input.workOrderId)
       .filter((dispatch) => !input.operatorUserId || dispatch.operatorUserId === input.operatorUserId)
       .filter((dispatch) => matchesSearch(dispatch, input.search));
+    // B-WO-LEITURA — a OS do despacho ainda é do ator (o join do Prisma; aqui, pela OS em memória, o precedente do
+    // painel em memória). Import dinâmico, para este arquivo não importar work-orders estaticamente.
+    if (input.workOrderAssignedOperatorIn) {
+      const { getMemoryWorkOrderRepositoryForTests } = await import("../work-orders/work-order.service.js");
+      const ordens = getMemoryWorkOrderRepositoryForTests();
+      const aceitos = new Set(input.workOrderAssignedOperatorIn);
+      const manter: FieldDispatch[] = [];
+      for (const dispatch of filtered) {
+        const workOrder = await ordens.findById(input.tenantId, dispatch.workOrderId);
+        if (workOrder?.assignedOperatorId !== undefined && aceitos.has(workOrder.assignedOperatorId)) manter.push(dispatch);
+      }
+      filtered = manter;
+    }
 
     return {
       items: filtered.slice(input.offset, input.offset + input.limit),
