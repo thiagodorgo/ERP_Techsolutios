@@ -14,7 +14,7 @@ Início: 2026-10-26T01:55:28Z. A 1ª passada (BLOQUEADO por cobertura) foi prese
 - Pré-voo dos 5 mandatos (`MANDATO_REFS=<redator>/mandato-refs.sh bash <redator>/mandato-preflight.sh <m> 459`) → PRE-VOO OK, ec=0 nos 5; md5 sem CR c1 3619f4e0…, c2 641aba51…, c3 2665f365…, c4 02a4b61e…, inspetor b638e1c0….
 - Unidades MEDIDO sem saída colada (awk): c1 19/0, c2 21/0, c3 21/0, c4 23/0, inspetor 23/0 → CONFORME.
 - Corpos C1–C4: `.claude` × `.agents` no blob (EOL-neutro, sem bloco Codex) IDENTICO nos 4; disco do wt = blob nos 4; no diretório da sessão os 4 AUSENTES → cada cadeira roda como subagente genérico que lê o blob.
-- S0: `git worktree add --detach C:/Users/AMP/j12a-insp3-s0 O` → `sync-agent-agents.mjs --check` → `OK — 89 agentes, espelho consistente.` ec=0 → worktree removido → CONFORME.
+- S0: `git worktree add --detach ~/j12a-insp3-s0 O` → `sync-agent-agents.mjs --check` → `OK — 89 agentes, espelho consistente.` ec=0 → worktree removido → CONFORME.
 - Veredito parcial Item 1: CONFORME.
 
 ## Item 2 — identidades, papéis, composição, cobertura, briefing (re-medido)
@@ -28,7 +28,7 @@ Início: 2026-10-26T01:55:28Z. A 1ª passada (BLOQUEADO por cobertura) foi prese
 
 ## Item 3 — terreno (re-medido)
 - wt: HEAD 04b8a667, 0 modificação rastreada, único não rastreado = diretório desta junta; `node_modules` sem junction (`fsutil` → não é ponto de nova análise).
-- `docker ps -a`: dev-san322-pg/redis Up (1 trabalho fora de erp-*), agv3-proxy Exited (alheio, inerte), erp-postgres/erp-redis (base viva). 0 `j12a*`; `ls -d C:/Users/AMP/j12a*` → 0; worktrees alheios w-agapi2, w-med03, w-san322 (reportados, não varridos); probes 0.
+- `docker ps -a`: dev-san322-pg/redis Up (1 trabalho fora de erp-*), agv3-proxy Exited (alheio, inerte), erp-postgres/erp-redis (base viva). 0 `j12a*`; `ls -d ~/j12a*` → 0; worktrees alheios w-agapi2, w-med03, w-san322 (reportados, não varridos); probes 0.
 - Disco C: 12 GB; memória de commit livre 13,98 GB.
 - Portas 47713/47714, 47723/47724, 47733/47734, 47743/47744: fora das faixas reservadas, uso 0.
 - Isolamento nos 4 mandatos: `npm ci`, junction, base viva, sucessor, "uma cadeira por vez" presentes em cada.
@@ -37,4 +37,4 @@ Início: 2026-10-26T01:55:28Z. A 1ª passada (BLOQUEADO por cobertura) foi prese
 - Veredito parcial Item 3: CONFORME com ressalva (Docker no teto com dev-san322; tamanho do `npm ci` não medido).
 
 ## Limpeza
-- Criei e removi `C:/Users/AMP/j12a-insp3-s0` (S0). O log temporário do `npm run check` (scratchpad) foi apagado. Nenhum container, nenhum arquivo rastreado tocado, nenhum commit.
+- Criei e removi `~/j12a-insp3-s0` (S0). O log temporário do `npm run check` (scratchpad) foi apagado. Nenhum container, nenhum arquivo rastreado tocado, nenhum commit.

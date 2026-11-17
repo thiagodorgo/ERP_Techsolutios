@@ -32,11 +32,11 @@ Queda não relança a mesma identidade: o sucessor tem **identidade NOVA**, reex
 
 ## Terreno próprio
 
-- Worktree exclusivo: prefixo `C:/Users/AMP/w-j07cb1c2-c1-`; `npm ci` próprio, zero junction/symlink de `node_modules`.
+- Worktree exclusivo: prefixo `~/w-j07cb1c2-c1-`; `npm ci` próprio, zero junction/symlink de `node_modules`.
 - Memória por padrão, sem `DATABASE_URL`/`REDIS_URL`; servidor somente em porta efêmera (`listen(0)`). Base viva e portas `5432`, `6379`, `3000`, `5173`, `5050`, `8899` são proibidas.
 - Se precisar Docker, antes de subir qualquer container conte **grupos de trabalhos alheios**, excluindo os containers `erp-*`. Há no máximo **2 trabalhos Docker na máquina**, incluindo o seu. Se já houver 2 grupos alheios, espere; não derrube nada. Seus nomes começam `j07cb1c2-c1-`, rede própria, nenhuma porta publicada.
 - Todo comando tem timeout e exit code registrado. Mutações apenas em cópia descartável do seu worktree; restaure e prove com `git hash-object = <objeto>:<arquivo>`.
-- Nunca edite `C:/Users/AMP/w-07cb1`, salvo os dois artefatos de voto/evidência que o mandato nomear. Nunca use base viva.
+- Nunca edite `~/w-07cb1`, salvo os dois artefatos de voto/evidência que o mandato nomear. Nunca use base viva.
 
 ## P1–P7 — mandato resiliente
 

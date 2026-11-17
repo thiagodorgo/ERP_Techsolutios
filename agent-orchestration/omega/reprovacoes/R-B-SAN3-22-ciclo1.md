@@ -9,7 +9,7 @@
 > (3 `bloqueia`, 7 notas) · C3 `jurado-san322-c3-opus` APROVADO (2 ajustes, 5 notas). Queda: `jurado-san322-c1-sol` (Codex,
 > limite de uso, 14:38Z); sucedida pela C1 em Opus com P3 cumprido (6 comandos re-executados). Votos e evidências em
 > `agent-orchestration/omega/juntas/votos/B-SAN3-22/`.
-> **Terreno desta auditoria (§A7):** worktree detached próprio `C:/Users/AMP/w-plan22r` no objeto, `npm ci` próprio
+> **Terreno desta auditoria (§A7):** worktree detached próprio `~/w-plan22r` no objeto, `npm ci` próprio
 > (326 pacotes, sem junction), `npm --prefix frontend ci` próprio (103), `prisma generate` com URL fictícia; **sem Docker,
 > sem Postgres**; base viva (5432/6379) não tocada; disco 9,9 GB livres ao fim das medições (piso 7 GB). Os três votos, as
 > três evidências, o parecer do inspetor, o plano e o relatório do dev entraram como **A RE-VERIFICAR**; o que abaixo diz
@@ -141,6 +141,6 @@ git diff --check
 
 ## 6. Fechamento desta identidade
 
-- Escritas: este arquivo e a Emenda E4 (texto das §3 e §4) apensada a `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-22-plano.md` (a cópia em `docs/revisoes/SAN3/` é recopiada pelo dev do ciclo 2, E4-11 (h)). Nenhum código tocado; `w-san322` só com este `R-`.
-- Worktree `C:/Users/AMP/w-plan22r` removido por `git worktree remove --force` (0 processos no caminho); sondas (`tests/zz-plan22r-c201.test.ts`) apagadas antes; mutações restauradas por `git checkout 44d9cbb3 --` (status vazio conferido a cada passo); scripts do scratchpad e os 2 logs de `npm ci` apagados; nenhum container criado; base viva não acessada.
+- Escritas: este arquivo e a Emenda E4 (texto das §3 e §4) apensada a `~/erp-pausa-2026-10-03/planos/B-SAN3-22-plano.md` (a cópia em `docs/revisoes/SAN3/` é recopiada pelo dev do ciclo 2, E4-11 (h)). Nenhum código tocado; `w-san322` só com este `R-`.
+- Worktree `~/w-plan22r` removido por `git worktree remove --force` (0 processos no caminho); sondas (`tests/zz-plan22r-c201.test.ts`) apagadas antes; mutações restauradas por `git checkout 44d9cbb3 --` (status vazio conferido a cada passo); scripts do scratchpad e os 2 logs de `npm ci` apagados; nenhum container criado; base viva não acessada.
 - Objeto no fim: `44d9cbb3…` (ls-remote às 15:28Z, igual ao início).

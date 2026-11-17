@@ -30,8 +30,8 @@ Comandos e saídas em `insp-trc02-evidencia.md` (Item 2).
 
 ## Item 3 — terreno — VERDE
 Comandos e saídas em `insp-trc02-evidencia.md` (Item 3).
-- **Árvore do objeto:** `C:/Users/AMP/w-trc02` no objeto, sem mutação viva; não rastreado só o diretório desta junta.
-- **Isolamento declarado no briefing (corpo 1.2):** os três mandatos exigem worktree próprio (`C:/Users/AMP/w-jtrc02-<a|b|c>-`), `npm ci` próprio, Postgres/Redis descartáveis com prefixo `jtrc02-<x>-`/`jtrc02_<x>_` só em `127.0.0.1` em porta alta, ou `teste-linux.sh` copiado com o ID trocado; base viva proibida. Nenhum `w-jtrc02-*` existe ainda.
+- **Árvore do objeto:** `~/w-trc02` no objeto, sem mutação viva; não rastreado só o diretório desta junta.
+- **Isolamento declarado no briefing (corpo 1.2):** os três mandatos exigem worktree próprio (`~/w-jtrc02-<a|b|c>-`), `npm ci` próprio, Postgres/Redis descartáveis com prefixo `jtrc02-<x>-`/`jtrc02_<x>_` só em `127.0.0.1` em porta alta, ou `teste-linux.sh` copiado com o ID trocado; base viva proibida. Nenhum `w-jtrc02-*` existe ainda.
 - **Zero junction** de `node_modules` nos worktrees existentes (§C7.1-ter(c)). Worktrees alheios (`w-agapi2`, `w-plan21`, `w-planos`, `w-reg21`) intocados.
 - **Docker:** só `erp-postgres` e `erp-redis` (base viva, proibida a qualquer jurado); 0 órfão de jurado (`jur-*`, `crit-*`, `tl*`, `jtrc02-*`); 0 trabalho Docker alheio. `teste-linux.sh` não publica porta (rede interna).
 - **Portas:** 5432 e 6379 ocupadas pela base viva (proibidas); 3000, 3200, 5173, 5050, 8899, 8082, 5055 livres e proibidas; altas 55431–55433 e 56371–56373 livres agora (cada cadeira testa a sua antes de subir). Servidores públicos de demonstração do Traccar: proibidos.
@@ -53,7 +53,7 @@ Se o orquestrador decidir rodar as três cadeiras como **Claude Opus** (o que os
 
 **Ressalvas para o briefing (não bloqueiam):** as seis do Item 2 (Argon nível menor por leitura do orquestrador; teto US$ 5 por cadeira Gemini; cota diária do Pro; confirmar se o Pro voltou à escala depois da fala do dono de 19/10, que está fora da ref; nomes distintos dos redatores Codex/Argon e coincidência de modelo registrada na ata; Codex só depois de 05:13 BRT). Mais: o `agentes-vivos.tsv` aponta um nome de arquivo errado para este parecer; e a ressalva do porteiro do #426 é matéria da cadeira (b), item 3.
 
-**Limpeza:** criei e removi o worktree `C:/Users/AMP/w-insp-trc02-s0` (`git worktree list` sem `insp-trc02`); nenhum contêiner, rede ou volume criado; os logs dos jobs da CI e do `npm run check` ficaram no scratchpad da sessão (`insp-job-*.log`, `insp-check.log`, `ineleg.txt`), fora do repositório. Nada rastreado foi editado; nada foi commitado.
+**Limpeza:** criei e removi o worktree `~/w-insp-trc02-s0` (`git worktree list` sem `insp-trc02`); nenhum contêiner, rede ou volume criado; os logs dos jobs da CI e do `npm run check` ficaram no scratchpad da sessão (`insp-job-*.log`, `insp-check.log`, `ineleg.txt`), fora do repositório. Nada rastreado foi editado; nada foi commitado.
 
 ---
 
@@ -108,12 +108,12 @@ As cadeiras liberadas são:
 
 | Cadeira | Identidade | Executor | Worktree | Banco descartável | Disparo |
 |---|---|---|---|---|---|
-| (a) | `jurado-trc02-a-opus` | subagente Claude Opus | `C:/Users/AMP/w-jtrc02-a-` | prefixos `jtrc02-a-` / `jtrc02_a_` | 1ª onda |
-| (b) | `jurado-trc02-b-opus` | subagente Claude Opus | `C:/Users/AMP/w-jtrc02-b-` | prefixos `jtrc02-b-` / `jtrc02_b_` | 1ª onda |
-| (c) | `jurado-trc02-c-opus` | subagente Claude Opus | `C:/Users/AMP/w-jtrc02-c-` | prefixos `jtrc02-c-` / `jtrc02_c_` | quando (a) ou (b) terminar |
+| (a) | `jurado-trc02-a-opus` | subagente Claude Opus | `~/w-jtrc02-a-` | prefixos `jtrc02-a-` / `jtrc02_a_` | 1ª onda |
+| (b) | `jurado-trc02-b-opus` | subagente Claude Opus | `~/w-jtrc02-b-` | prefixos `jtrc02-b-` / `jtrc02_b_` | 1ª onda |
+| (c) | `jurado-trc02-c-opus` | subagente Claude Opus | `~/w-jtrc02-c-` | prefixos `jtrc02-c-` / `jtrc02_c_` | quando (a) ou (b) terminar |
 
 - Todos sobem Postgres e Redis próprios em `127.0.0.1`, em porta alta.
-- Cada um cria uma pasta de sondas própria, `C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-<x>/`.
+- Cada um cria uma pasta de sondas própria, `~/erp-pausa-2026-10-03/jtrc02-<x>/`.
 - A base viva e as portas 5432, 6379, 3000, 5173, 5050 e 8899 são proibidas.
 
 **Ressalvas a pôr em destaque no briefing:**

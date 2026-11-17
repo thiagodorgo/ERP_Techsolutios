@@ -12,7 +12,7 @@
   `export MSYS_NO_PATHCONV=1`). A norma é a do `CLAUDE.md` NA REF. Norma citada que não existe na ref não se aplica.
 - **O PR não toca código:** `git diff --stat 15ef3fbe ecc32712 -- src tests prisma frontend mobile .github scripts` vazio.
   Nenhuma cadeira precisa de banco nem de container.
-- **Isolamento:** worktree próprio detached em `ecc32712`, em `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3c2-<cadeira>`,
+- **Isolamento:** worktree próprio detached em `ecc32712`, em `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3c2-<cadeira>`,
   criado com `git -c core.longpaths=true worktree add --detach`; `npm ci` próprio se for rodar `node --test`; removido por
   `git worktree remove --force`. Gerador do índice só em cópia fora do repo. Sem junction de `node_modules`; sem
   `git stash/checkout/reset/clean` alheio; base viva fora de alvo.

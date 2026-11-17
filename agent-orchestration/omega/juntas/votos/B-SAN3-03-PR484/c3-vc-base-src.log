@@ -15,7 +15,7 @@ ok 2 - usuario tenant comum nao acessa endpoints platform de allocation
 not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível
   ---
   duration_ms: 23.1019
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\cloud-cost-allocation-routes.test.ts:1:2156'
+  location: '~/w-j484-c3\\tests\\cloud-cost-allocation-routes.test.ts:1:2156'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -28,11 +28,11 @@ not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repe
   actual: 200
   operator: 'strictEqual'
   stack: |-
-    assertInvalidPeriod (C:\Users\thiag\w-j484-c3\tests\cloud-cost-allocation-routes.test.ts:196:10)
-    <anonymous> (C:\Users\thiag\w-j484-c3\tests\cloud-cost-allocation-routes.test.ts:88:5)
+    assertInvalidPeriod (~/w-j484-c3\tests\cloud-cost-allocation-routes.test.ts:196:10)
+    <anonymous> (~/w-j484-c3\tests\cloud-cost-allocation-routes.test.ts:88:5)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    async withAllocationApi (C:\Users\thiag\w-j484-c3\tests\cloud-cost-allocation-routes.test.ts:173:5)
-    async TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\cloud-cost-allocation-routes.test.ts:69:3)
+    async withAllocationApi (~/w-j484-c3\tests\cloud-cost-allocation-routes.test.ts:173:5)
+    async TestContext.<anonymous> (~/w-j484-c3\tests\cloud-cost-allocation-routes.test.ts:69:3)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...
@@ -70,13 +70,13 @@ ok 9 - T-SUM-6 · sem período → a mais nova com import, com runId e importId
 not ok 10 - T-SUM-7 · resumo recusa período com somente uma ponta
   ---
   duration_ms: 3.2065
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-summary.test.ts:1:4427'
+  location: '~/w-j484-c3\\tests\\san3-03-summary.test.ts:1:4427'
   failureType: 'testCodeFailure'
   error: 'Missing expected rejection.'
   code: 'ERR_ASSERTION'
   name: 'AssertionError'
   stack: |-
-    async TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-summary.test.ts:111:3)
+    async TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-summary.test.ts:111:3)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...
@@ -94,7 +94,7 @@ ok 12 - T-SYS-db-2 · run antiga com alocação da plataforma aparece em tenants
 not ok 13 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo ambíguo
   ---
   duration_ms: 251.9641
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-system-org-db.test.ts:1:3738'
+  location: '~/w-j484-c3\\tests\\san3-03-system-org-db.test.ts:1:3738'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -107,7 +107,7 @@ not ok 13 - T-TAG-db · nomes duplicados não geram alocação e persistem motiv
   actual: true
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-system-org-db.test.ts:122:14)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-system-org-db.test.ts:122:14)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
@@ -116,7 +116,7 @@ not ok 13 - T-TAG-db · nomes duplicados não geram alocação e persistem motiv
 not ok 14 - T-TAG-1 · nome duplicado é ambíguo independentemente da ordem
   ---
   duration_ms: 5.0741
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:661'
+  location: '~/w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:661'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -129,8 +129,8 @@ not ok 14 - T-TAG-1 · nome duplicado é ambíguo independentemente da ordem
   actual: 10
   operator: 'strictEqual'
   stack: |-
-    assertAmbiguous (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:153:10)
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:32:3)
+    assertAmbiguous (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:153:10)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:32:3)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)
@@ -143,7 +143,7 @@ not ok 14 - T-TAG-1 · nome duplicado é ambíguo independentemente da ordem
 not ok 15 - T-TAG-2 · colisão entre nome e slug também é ambígua
   ---
   duration_ms: 0.5598
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:1054'
+  location: '~/w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:1054'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -156,8 +156,8 @@ not ok 15 - T-TAG-2 · colisão entre nome e slug também é ambígua
   actual: 10
   operator: 'strictEqual'
   stack: |-
-    assertAmbiguous (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:153:10)
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:37:3)
+    assertAmbiguous (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:153:10)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:37:3)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)
@@ -174,7 +174,7 @@ ok 16 - T-TAG-3 e T-TAG-4 · slug e id únicos continuam diretos
 not ok 17 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma
   ---
   duration_ms: 0.5101
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:1772'
+  location: '~/w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:1772'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -187,8 +187,8 @@ not ok 17 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma
   actual: 10
   operator: 'strictEqual'
   stack: |-
-    assertAmbiguous (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:155:10)
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:60:7)
+    assertAmbiguous (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:155:10)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:60:7)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)
@@ -200,7 +200,7 @@ not ok 17 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma
 not ok 18 - T-TAG-7 · estratégia só por uso também recusa tag ambígua
   ---
   duration_ms: 0.5839
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:2109'
+  location: '~/w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:2109'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -213,8 +213,8 @@ not ok 18 - T-TAG-7 · estratégia só por uso também recusa tag ambígua
   actual: 8
   operator: 'strictEqual'
   stack: |-
-    assertAmbiguous (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:153:10)
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:66:3)
+    assertAmbiguous (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:153:10)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:66:3)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)
@@ -226,7 +226,7 @@ not ok 18 - T-TAG-7 · estratégia só por uso também recusa tag ambígua
 not ok 19 - T-TAG-8 · grafias equivalentes não contornam ambiguidade
   ---
   duration_ms: 0.4098
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:2250'
+  location: '~/w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:2250'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -239,8 +239,8 @@ not ok 19 - T-TAG-8 · grafias equivalentes não contornam ambiguidade
   actual: 8
   operator: 'strictEqual'
   stack: |-
-    assertAmbiguous (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:153:10)
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:72:7)
+    assertAmbiguous (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:153:10)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:72:7)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)
@@ -252,7 +252,7 @@ not ok 19 - T-TAG-8 · grafias equivalentes não contornam ambiguidade
 not ok 20 - T-TAG-9 · slug único normalizado continua direto
   ---
   duration_ms: 16.3791
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:2760'
+  location: '~/w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:2760'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly deep-equal:
@@ -284,7 +284,7 @@ not ok 20 - T-TAG-9 · slug único normalizado continua direto
       1: 6
   operator: 'deepStrictEqual'
   stack: |-
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:83:10)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:83:10)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)
@@ -296,7 +296,7 @@ not ok 20 - T-TAG-9 · slug único normalizado continua direto
 not ok 21 - T-TAG-10 · tag desconhecida falha fechada na estratégia direta
   ---
   duration_ms: 0.6646
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:2898'
+  location: '~/w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:2898'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -309,7 +309,7 @@ not ok 21 - T-TAG-10 · tag desconhecida falha fechada na estratégia direta
   actual: 8
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:89:12)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:89:12)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)
@@ -331,7 +331,7 @@ ok 23 - T-TAG-12 · tag só de espaço equivale a linha sem tag
 not ok 24 - T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma
   ---
   duration_ms: 3.5889
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:3845'
+  location: '~/w-j484-c3\\tests\\san3-03-tenant-tag.test.ts:1:3845'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly deep-equal:
@@ -363,7 +363,7 @@ not ok 24 - T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha 
       unallocatedCost: 7
   operator: 'deepStrictEqual'
   stack: |-
-    TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-tenant-tag.test.ts:121:10)
+    TestContext.<anonymous> (~/w-j484-c3\tests\san3-03-tenant-tag.test.ts:121:10)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...

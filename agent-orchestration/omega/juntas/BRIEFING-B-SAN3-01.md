@@ -16,7 +16,7 @@
   da junta (`git diff --stat bb540fb3 74f3f7c9`, zero código) (R3). Commit de código novo na branch reabre a inspeção.
 - **Meça na ref, nunca no disco da sessão:** `git -C <seu-worktree> show bb540fb3:<caminho>` (git-bash: `export MSYS_NO_PATHCONV=1`,
   caminhos `C:/...`).
-- **Isolamento:** worktree próprio detached em `bb540fb3`, em `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-bsan301-<cadeira>`
+- **Isolamento:** worktree próprio detached em `bb540fb3`, em `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-bsan301-<cadeira>`
   (`git -c core.longpaths=true worktree add --detach`); `npm ci` e `npm --prefix frontend ci` próprios; quem subir back e front
   usa **cluster Postgres descartável próprio** (`postgres:16`, nome `j-bsan301-<cadeira>-pg`, porta própria) e portas de app
   próprias, com `VITE_USE_MOCKS` **desligado**; **toda cadeira exporta `DATABASE_URL` e `REDIS_URL` explícitas para os SEUS contêineres antes de qualquer `db:seed`,

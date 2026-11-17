@@ -1,6 +1,6 @@
 # dev-san2-2 — Fase 4 (metade KPI): diario de execucao
 
-Worktree: `c:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r`
+Worktree: `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r`
 Branch: `fix/san2-2-guard-espelho-ci` · head na largada: `2e4985b`
 Mandato: **so** `Kpis/kpis-history.json`, `Kpis/kpis-latest.json`, `Kpis/app.js` (via script) e este diario.
 **NAO** toco `agent-orchestration/controle/pendencias.md` (outro agente esta nela agora).

@@ -8,13 +8,13 @@
 - **Merge:** squash `36ad6aa7b967f3e1df0ae70fc4c4894fb0795744`, em 03/11/2026 às 16:35:49 SP (`2026-11-03T19:35:49Z`).
 - **CI:** head aprovado com 16/16 check-runs concluídos e verdes (runs `41702230082` e `41702238984`); merge com run `41704741894`, `backend` e `backend-postgres` verdes pela saída TAP.
 - **Resultado:** junta **REPROVADA** (C2 REPROVADO; C1 e C3 APROVADO; a régua é unanimidade) por C2-2, defeito GRAVE dentro do bloco; triagem e auditoria do topo no §12; conserto único K1–K3; conferência **CONFERIDO COM RESSALVA**, sem grave restante; nenhuma cadeira refeita; porteiro pós-merge **LIBERADO COM RESSALVA** para o `B-ASS-00`.
-- **Evidências versionadas:** `agent-orchestration/omega/juntas/votos/B-PATIO-REC-01-PR488/`, copiadas em LF de `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/`, mais a pré-revisão e o porteiro que estavam em `revisoes/`. Seis linhas, em quatro arquivos, foram redigidas para tirar o nome e o caminho do ambiente externo de apresentação, por este repositório ser público: `BRIEFING.md` (2), `conf-488-parecer.md` (1, sem marca de omissão no próprio arquivo), `inspetor-evidencia.md` (1) e `inspetor-parecer.md` (2). Correção de 04/11 (H-1 do `rev-496-opus`); antes, esta linha dizia "Quatro referências". votos e substância técnica ficaram intactos. Logs e scripts grandes permanecem na fonte externa, citados pelos pareceres.
+- **Evidências versionadas:** `agent-orchestration/omega/juntas/votos/B-PATIO-REC-01-PR488/`, copiadas em LF de `~/erp-pausa-2026-10-03/revisoes/j488/`, mais a pré-revisão e o porteiro que estavam em `revisoes/`. Seis linhas, em quatro arquivos, foram redigidas para tirar o nome e o caminho do ambiente externo de apresentação, por este repositório ser público: `BRIEFING.md` (2), `conf-488-parecer.md` (1, sem marca de omissão no próprio arquivo), `inspetor-evidencia.md` (1) e `inspetor-parecer.md` (2). Correção de 04/11 (H-1 do `rev-496-opus`); antes, esta linha dizia "Quatro referências". votos e substância técnica ficaram intactos. Logs e scripts grandes permanecem na fonte externa, citados pelos pareceres.
 
 As referências de PR e CI foram medidas por comando: `gh pr view 488 --json ...` retornou `MERGED`, head `f472aab1…`, merge `36ad6aa7…` e `mergedAt=2026-11-03T19:35:49Z`; `gh api .../commits/f472aab1.../check-runs` retornou 16 checks, todos `completed/success`; o porteiro reexecutou as suítes e leu o TAP da run `41704741894`.
 
 ## Antes da junta
 
-- **Plano e emenda:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3.md` §9.1 e `B-PATIO-RECEBIMENTO-plano-v3-emenda-1.md` §§0–11.
+- **Plano e emenda:** `~/erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3.md` §9.1 e `B-PATIO-RECEBIMENTO-plano-v3-emenda-1.md` §§0–11.
 - **Dev:** `dev-rec01-opus`, Claude Opus 5.5, nível menor declarado.
 - **Pré-revisão:** `prerev-488-sol`, Codex GPT-5.6 Sol, conta 2, esforço high, sobre `ea6d4aef`: **APROVADO, sem achados**. O arquivo original foi sobrescrito às 18:49 por uma fila órfã; o resumo recuperado está em `prerev-488-parecer.md`, e o artefato órfão ficou fora em `revisoes/prerev-488-parecer.orfa-1849.md`. A aprovação declarava 22 mutações, 9/9 nas migrações/suítes REC-01 e 2/2 de paridade RBAC.
 - **Inspetor:** `inspetor-j488-opus`, Claude Opus 5.5, nível menor declarado: **LIBERADO COM RESSALVA**. R1 exigiu sucessor com identidade nova, P3 e três votos válidos; R2 cobrou o mandato da C3; R3 corrigiu a premissa sobre o worktree do dev; R4 documentou `db:generate` antes do check; R5 registrou que a `main` andou sem conflito. O briefing incorporou as travas operacionais.
@@ -93,12 +93,12 @@ Ressalvas do porteiro:
 - versionar esta ata e as evidências;
 - registrar e atribuir R1–R3 da conferência;
 - preservar a explicação do parecer de pré-revisão sobrescrito;
-- remover o worktree residual `C:/Users/thiag/w-prerev488` na limpeza operacional;
+- remover o worktree residual `~/w-prerev488` na limpeza operacional;
 - `B-PATIO-REC-02` continua negado até REC-04, B-ASS-05/06/08 e o conflito `P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS` fecharem.
 
 ## Arquivos externos não copiados
 
-Os logs e scripts grandes permanecem em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/c3-ci/`, `c3-scratch/` e nos scratchpads citados por `conf-488-parecer.md`. Eles não foram versionados; os runs e jobs podem ser reabertos pelos comandos `gh` registrados nas evidências.
+Os logs e scripts grandes permanecem em `~/erp-pausa-2026-10-03/revisoes/j488/c3-ci/`, `c3-scratch/` e nos scratchpads citados por `conf-488-parecer.md`. Eles não foram versionados; os runs e jobs podem ser reabertos pelos comandos `gh` registrados nas evidências.
 
 ## Limite
 

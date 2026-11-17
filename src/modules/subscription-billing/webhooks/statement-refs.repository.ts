@@ -21,6 +21,13 @@ export interface StatementRefRepository {
   listWithCharge(since: Date): Promise<readonly BillingStatementRef[]>;
 }
 
+/** B-ASS-08c1c (Emenda 1 §2): o `created_at` do índice é o instante em que a cobrança que ele aponta foi registrada — o id
+ * externo que MUDA para um valor não nulo renova; o pedido sem id e o registro do mesmo id não. */
+function refCreatedAt(existing: BillingStatementRef | undefined, externalChargeId: string | null | undefined, now: Date): Date {
+  if (existing && externalChargeId && externalChargeId !== existing.externalChargeId) return now; // [REF-FRESH]
+  return existing?.createdAt ?? now;
+}
+
 export class InMemoryStatementRefRepository implements StatementRefRepository {
   readonly #rows = new Map<string, BillingStatementRef>();
 
@@ -34,7 +41,7 @@ export class InMemoryStatementRefRepository implements StatementRefRepository {
       tenantId: ref.tenantId,
       provider: ref.provider ?? existing?.provider ?? null,
       externalChargeId: ref.externalChargeId ?? existing?.externalChargeId ?? null,
-      createdAt: existing?.createdAt ?? now,
+      createdAt: refCreatedAt(existing, ref.externalChargeId, now),
     };
     this.#rows.set(ref.statementId, row);
     return row;
@@ -45,9 +52,9 @@ export class InMemoryStatementRefRepository implements StatementRefRepository {
   }
 
   /** Só atualiza (igual ao Prisma): o índice nasce no fechamento com a organização certa; sem linha → nada a fazer. */
-  async setExternalChargeId(statementId: string, externalChargeId: string, _now: Date): Promise<void> {
+  async setExternalChargeId(statementId: string, externalChargeId: string, now: Date): Promise<void> {
     const existing = this.#rows.get(statementId);
-    if (existing) this.#rows.set(statementId, { ...existing, externalChargeId, createdAt: existing.createdAt });
+    if (existing) this.#rows.set(statementId, { ...existing, externalChargeId, createdAt: refCreatedAt(existing, externalChargeId, now) });
   }
 
   async listWithCharge(since: Date): Promise<readonly BillingStatementRef[]> {

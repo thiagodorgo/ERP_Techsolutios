@@ -2,7 +2,7 @@
 
 - **Identidade:** `dev-ciclo3-b-san3-05` (não achou, não planejou, não votou).
 - **Modelo:** Codex GPT-5.6 Sol — substituição declarada (§C7.6-bis); o bloco não toca dinheiro.
-- **Worktree exclusivo:** `C:/Users/AMP/w-o05`.
+- **Worktree exclusivo:** `~/w-o05`.
 - **Ramo:** `fix/runtime-role-sem-bypass`.
 - **Objeto inicial:** `91d794956309f6e63511bdfd76cbfddd8bf45c40`.
 - **Escopo:** somente A2 e A3 da seção “Ciclo 3 — planejador-ciclo3-b-san3-05”.
@@ -12,7 +12,7 @@
 
 ### Pré-voo e D0 — VERDE
 
-- **Comando:** `git -C C:/Users/AMP/w-o05 rev-parse HEAD`; `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass`; `git diff --ignore-cr-at-eol --stat`; `git diff --ignore-cr-at-eol --name-only`.
+- **Comando:** `git -C ~/w-o05 rev-parse HEAD`; `git -C ~/w-o05 ls-remote origin fix/runtime-role-sem-bypass`; `git diff --ignore-cr-at-eol --stat`; `git diff --ignore-cr-at-eol --name-only`.
 - **Saída resumida:** HEAD local e remoto = `91d794956309f6e63511bdfd76cbfddd8bf45c40`; diff EOL-neutro vazio. O `git status` mostra 33 marcações `M` fantasmas em `.agents/agents/*.md` e `scratchpad/` não rastreado, já previstos no plano; nenhum tem diff de conteúdo e nenhum será staged.
 - **Resultado:** pré-voo liberado. No head `8f2fd6cfbeaf2d5fe59f0dd25c3aa2ee26a62bbc`, local = remoto; diff desde `91d79495` restrito ao escopo; `Kpis/` ec=0.
 

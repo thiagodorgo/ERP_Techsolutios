@@ -35,23 +35,23 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o dev do ciclo 2 do B-SAN3-11 (PR 401), identidade nova e local dev-ciclo2-b-san3-11 (Opus 5.5), que nao achou, nao planejou e
   nao vota (nao e o dev de nuvem nem o dev da errata), executando a fatia D3 da secao 16 do plano, com o item 2 da 16-bis.4 acrescentado, docs/revisoes/SAN3/B-SAN3-11-plano.md (a secao do ciclo 2, apensada
   verbatim pelo orquestrador); declara na 1a linha da sua secao do relatorio o papel, a identidade, o modelo e o mandato_md5 deste
-  arquivo derruba com: `grep -ic 'mandato_md5' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+  arquivo derruba com: `grep -ic 'mandato_md5' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
-Item 1: a entrega E14 da secao 16.3 (as duas pendencias do bloco com dono valido do plano da rodada e o texto medido, o indice pelo gerador) derruba com: `grep -ic 'E14' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+Item 1: a entrega E14 da secao 16.3 (as duas pendencias do bloco com dono valido do plano da rodada e o texto medido, o indice pelo gerador) derruba com: `grep -ic 'E14' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
 Item 2: a entrega E15 da secao 16.3 e a secao 16.7 (o KPI recontado contra a main integrada, com blocks_completed igual ao da main mais 1 e
-  o smoke por execucao real, a backfill_note verdadeira, o app.js so pela saida do kpi-freeze com o --check verde) derruba com: `grep -ic 'blocks_completed' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+  o smoke por execucao real, a backfill_note verdadeira, o app.js so pela saida do kpi-freeze com o --check verde) derruba com: `grep -ic 'blocks_completed' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
 Item 3: o push fast-forward para o ramo do PR 401 depois de provar a ancestralidade, nunca force, nunca main, nunca PR; depois, no head
   empurrado, os controles do item 2 da 16-bis.4 (A17 duas linhas, A18 duas linhas e A25 duas linhas pelos instrumentos F1 a F3 do Apendice F, e
   o T22 pelo F4), e o registro (a secao do ciclo 2 no DEV-relatorio.md do bloco com esses controles, 1 linha em log-execucao e em
   status-geral) empurrado da mesma forma; e os worktrees do dev removidos pelo nome com 0
-  processo vivo derruba com: `grep -ic 'is-ancestor' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+  processo vivo derruba com: `grep -ic 'is-ancestor' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
-O terreno e as regras: worktrees proprios C:/Users/AMP/w-dc2 (CRLF) e C:/Users/AMP/w-dc2lf (LF, core.autocrlf=false), npm ci proprio sem
+O terreno e as regras: worktrees proprios ~/w-dc2 (CRLF) e ~/w-dc2lf (LF, core.autocrlf=false), npm ci proprio sem
   junction; commits locais em Conventional Commits com git diff --cached --check como trava, sem linha de atribuicao; so o escopo da secao
-  16.4; se a medicao contradisser a secao 16, grava e PARA; evidencia incremental com hora UTC em C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md (P1), mensagem final de 1 linha (P2);
-  nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo; base viva nunca alvo; sob PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'medido por' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
+  16.4; se a medicao contradisser a secao 16, grava e PARA; evidencia incremental com hora UTC em ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md (P1), mensagem final de 1 linha (P2);
+  nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo; base viva nunca alvo; sob PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'medido por' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/DEV-C2-401.md`
 
 ## MEDIDO
 
@@ -59,7 +59,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-21: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/dev-ciclo2-D3.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/dev-ciclo2-D3.md
 ec=0
 head=876d9a93ca4f1365aea7f07687eeedbde80155eb
 utc=2026-10-03T12:10:52Z

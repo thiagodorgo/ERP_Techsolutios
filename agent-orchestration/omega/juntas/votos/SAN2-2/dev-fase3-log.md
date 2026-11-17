@@ -121,7 +121,7 @@ Mandato deste passo: **escrever** o instrumento da inserção e provar por `--dr
 ### 1.1 Caminho do script
 
 ```
-C:\Users\AMP\AppData\Local\Temp\claude\c--Users-AMP-Documents-GitHub-ERP-Techsolutios\
+~/AppData\Local\Temp\claude\c--Users-~-Documents-GitHub-ERP-Techsolutios\
   45ec3bf3-f8ba-485c-8a5a-43ebee07158f\scratchpad\fase3-inserir.mjs
 ```
 

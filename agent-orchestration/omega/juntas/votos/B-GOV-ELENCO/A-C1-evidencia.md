@@ -1,7 +1,7 @@
 # A-C1 (`agente-secops`) — evidência executada · `B-GOV-ELENCO` ciclo 2, fatia A
 
 **Forma (publicada, §7):** Node **v20.19.5** · `core.autocrlf=true` (global; sem override local) ·
-worktree `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` ·
+worktree `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` ·
 árvore **limpa** (`git status --porcelain` = vazio no início) · **1 execução por estado** (git é determinístico) ·
 árvore principal **não lida**. Mutação: nenhuma necessária nos meus 3 itens (medição por `git`/`node` sobre blobs).
 

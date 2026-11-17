@@ -62,7 +62,7 @@ O sucessor de um caído tem identidade NOVA. Ele reexecuta cada comando que o ca
 
 ## Terreno próprio
 
-- **Worktree:** exclusivo em `C:/Users/AMP/w-jsan302-c1-<sufixo>`, com `npm ci` próprio e zero junction ou symlink de `node_modules` (§C7.1-ter(c)). Remova-o só por `git worktree remove --force`, depois de conferir que nenhum processo o usa.
+- **Worktree:** exclusivo em `~/w-jsan302-c1-<sufixo>`, com `npm ci` próprio e zero junction ou symlink de `node_modules` (§C7.1-ter(c)). Remova-o só por `git worktree remove --force`, depois de conferir que nenhum processo o usa.
 - **Cluster:** Postgres 16 descartável próprio, com containers e rede `jsan302-c1-*`, sem porta publicada. A suíte roda num container Linux próprio na mesma rede e chega ao banco pelo nome DNS. Se uma porta de host for inevitável, use uma alta e efêmera, só em `127.0.0.1` e testada livre antes. São proibidas a base viva e as portas `5432`, `6379`, `3000`, `5173`, `5050` e `8899`. Redis: nenhum serviço, com `REDIS_URL` de loopback descartável, salvo se a execução exigir um próprio.
 - **Docker:** antes de subir, liste os containers e conte os grupos de trabalhos alheios, excluindo `erp-*`. Cabem no máximo **2 trabalhos Docker** na máquina, incluindo o seu. Se já houver 2 grupos alheios, espere. Nunca pare, reinicie nem remova container alheio, nem `erp-*`; nunca rode `prune`.
 - **Mutações e base:** toda mutação vive só numa cópia descartável do seu worktree, com âncora única e prova de aplicação (CRLF incluso). Restaure e prove com `git hash-object` igual a `git rev-parse <objeto>:<arquivo>`. A troca de `src/` pelo de `B` segue a mesma regra.

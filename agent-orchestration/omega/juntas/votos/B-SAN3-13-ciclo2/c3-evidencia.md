@@ -7,13 +7,13 @@ Onde o corpo (escrito para o ciclo 1) diverge do mandato do ciclo 2 (ciclo, obje
 ## Terreno
 - node v20.19.5 · flutter 3.41.6 (Dart 3.11.4) local · CI flutter 3.47.5 (Dart 3.13.4; ci.yml l.414 no objeto) · docker server 29.6.1
 - memória de commit livre 14,22 GB (≥ 4 GB) · disco livre C: 10G (≥ 7 GB) · trabalhos Docker fora de erp-*: 0 (docker ps: só erp-postgres, erp-redis — não tocados)
-- $SCRATCH = C:/Users/AMP/erp-pausa-2026-10-03/j13c2-c3/
-- Legalidade: insp-san313c2-parecer.md = LIBERADO COM RESSALVA (R1 corpo do blob; R2 monocultura Opus declarada; R3 disco, ordem C2b → C1 → C3, cada uma remove o seu terreno). C3 é a última; `ls -d C:/Users/AMP/j13*` → nenhum (C2b e C1 removeram).
+- $SCRATCH = ~/erp-pausa-2026-10-03/j13c2-c3/
+- Legalidade: insp-san313c2-parecer.md = LIBERADO COM RESSALVA (R1 corpo do blob; R2 monocultura Opus declarada; R3 disco, ordem C2b → C1 → C3, cada uma remove o seu terreno). C3 é a última; `ls -d ~/j13*` → nenhum (C2b e C1 removeram).
 - Objeto por duas fontes: ls-remote = gh pr view 460 = cbf2db292f0643b9647017005c361a2e11da61c7 (OPEN, rascunho=false, MERGEABLE).
 - Votos/evidências de C1 e C2b NÃO lidos.
 
 ## Terreno montado (P1)
-- worktree próprio `C:/Users/AMP/j13c2-c3-wt` (detached no objeto; `.git` é arquivo; `.env` ausente = 0); `npm ci --no-audit --no-fund` ec 0 (326 pacotes); `fsutil reparsepoint query node_modules` → "não é ponto de nova análise" (sem junction); `npm run db:generate` ec 0 com URL falsa.
+- worktree próprio `~/j13c2-c3-wt` (detached no objeto; `.git` é arquivo; `.env` ausente = 0); `npm ci --no-audit --no-fund` ec 0 (326 pacotes); `fsutil reparsepoint query node_modules` → "não é ponto de nova análise" (sem junction); `npm run db:generate` ec 0 com URL falsa.
 - containers `j13c2-c3-pg` (postgres:16 → `PostgreSQL 16.14`) e `j13c2-c3-redis` (redis:7, PONG), só em 127.0.0.1:47633/47634; portas fora das faixas excluídas (netsh) e livres (netstat 0); senha aleatória só por ambiente (arquivo no $SCRATCH, ***); `npx prisma migrate deploy` ec 0 ("All migrations have been successfully applied").
 - Antes de subir: trabalhos Docker fora de `erp-*` = 0; memória de commit livre 14,22 GB; disco 9,5 GB depois do npm ci.
 - Bases: head-base `<objeto>~19` = 8a7885f4c3bfab02e6c31b318c1111e262f2907c; objeto do ciclo 1 `<objeto>~6` = ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d; merge `<objeto>~9` = 2d8fe6c1683a0def190208f7c09f075b78ead799 (P1 b4334ab1…, P2 b08c7557…); merge-base atual = b08c755719a6cb0ed192fa04e549ac5fc67a3e67 = `git ls-remote origin refs/heads/main` no início.
@@ -89,7 +89,7 @@ Onde o corpo (escrito para o ciclo 1) diverge do mandato do ciclo 2 (ciclo, obje
 - `origin/main` no fim = b08c7557… (igual ao início); head do PR no fim = cbf2db29… (igual).
 - `docker rm -f -v j13c2-c3-pg j13c2-c3-redis` → contagem `j13c2-c3` = 0; vivos só `erp-postgres`, `erp-redis` (nunca tocados).
 - Temporários meus `…\Temp\trc02-mdrill-{wcccbe,HWbKt5,haATEH}` (EBUSY dos drills) apagados (0 restantes); 10 `trc02-mdrill-*` alheios, de outras sessões, não tocados — resíduo alheio reportado.
-- `dist/` apagado; `git status --porcelain` do worktree = 0; processos com `j13c2-c3-wt` = só o shell que media; `git worktree remove --force C:/Users/AMP/j13c2-c3-wt` ec 0 (lista 0, pasta ausente).
+- `dist/` apagado; `git status --porcelain` do worktree = 0; processos com `j13c2-c3-wt` = só o shell que media; `git worktree remove --force ~/j13c2-c3-wt` ec 0 (lista 0, pasta ausente).
 - Senha, logs e cópias do $SCRATCH apagados; `grep` da senha no $SCRATCH e nos votos = 0. Restam no $SCRATCH só roteiros e resumos (classify.sh, fnmap.py, tele.sh, setitem.py, final.py, tele.txt, fase2.txt, i*.json) para P3. O SDK Dart 3.13.4 do scratchpad da sessão não é meu: só executado.
 - `w-san313`: só `c3-evidencia.md` e `c3-voto.json` escritos por mim; nada commitado.
 

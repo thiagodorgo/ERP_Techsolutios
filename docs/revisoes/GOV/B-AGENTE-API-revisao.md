@@ -2,7 +2,7 @@
 
 > **Modelo que rodou:** Claude **Opus 5.5** (`claude-opus-5-5`), nível menor (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`). Instância nova; não escrevi, não planejei e não desenvolvi este bloco.
 > **Objeto:** PR #417, ramo `chore/agente-claude-api`, head `c876e6b08946e5d1b9854934e3c16fa2c0ae3311`, base `origin/main` = `9b611468`.
-> **Terreno:** worktree próprio e detached `C:/Users/AMP/w-rev417` no head; venv dentro dele. Nenhuma chamada à API da Anthropic; o valor de `ERP_AGENTE_ANTHROPIC_KEY` não foi lido nem impresso.
+> **Terreno:** worktree próprio e detached `~/w-rev417` no head; venv dentro dele. Nenhuma chamada à API da Anthropic; o valor de `ERP_AGENTE_ANTHROPIC_KEY` não foi lido nem impresso.
 > **Governança:** §C7 item 8(1) — ferramenta de processo, um revisor independente + CI verde, sem junta.
 
 ## Veredito
@@ -150,8 +150,8 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
 
 ## 7. Limpeza
 
-- **Processos:** antes de remover, contei os processos com executável ou linha de comando dentro de `C:/Users/AMP/w-rev417`, filtrando `python`, `node`, `git` e `npm`. Resultado: 0.
-- **Worktree:** `git worktree remove --force C:/Users/AMP/w-rev417` → exit 0, seguido de `git worktree prune`. O `git worktree list` tem 0 entradas `w-rev417` ou `w-agr417`, e nenhum diretório `C:/Users/AMP/w-rev417*` ou `w-agr417*` sobrou. Os worktrees que o próprio agente criou nos testes de STOP e Ctrl+C foram removidos por ele.
+- **Processos:** antes de remover, contei os processos com executável ou linha de comando dentro de `~/w-rev417`, filtrando `python`, `node`, `git` e `npm`. Resultado: 0.
+- **Worktree:** `git worktree remove --force ~/w-rev417` → exit 0, seguido de `git worktree prune`. O `git worktree list` tem 0 entradas `w-rev417` ou `w-agr417`, e nenhum diretório `~/w-rev417*` ou `w-agr417*` sobrou. Os worktrees que o próprio agente criou nos testes de STOP e Ctrl+C foram removidos por ele.
 - **Scratchpad:**
   - Os diretórios de ataque foram apagados; a junction foi desfeita antes, sem ser seguida, e os objetos git somente-leitura foram liberados.
   - Ficam só os 7 scripts de ataque em `scratchpad/rev417/scripts/`, como evidência, fora do repositório.
@@ -161,7 +161,7 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
 
 ## PAUSA 19:44Z
 
-- **Head medido:** `c876e6b08946e5d1b9854934e3c16fa2c0ae3311` no worktree detached `C:/Users/AMP/w-rev417`. O `git status --porcelain` está vazio: nenhuma mutação aplicada, nada a restaurar. O único untracked é o `.venv/`, que é ignorado.
+- **Head medido:** `c876e6b08946e5d1b9854934e3c16fa2c0ae3311` no worktree detached `~/w-rev417`. O `git status --porcelain` está vazio: nenhuma mutação aplicada, nada a restaurar. O único untracked é o `.venv/`, que é ignorado.
 - **Feito:**
   - Li inteiros o brief, o plano (§0 a §10, inclusive os 18 itens do §7) e o relatório do dev.
   - Li todo o código de `agente_claude/`: `cerca`, `ferramentas`, `executor`, `worktree`, `tarefas`, `conta`, `modelo`, `laco`, `parecer`, `esquemas`, `redacao`, `auditoria`, `orcamento`, `prompts` e `cli`. Dos testes, li `tests/fakes.py` e `tests/__init__.py`.
@@ -182,13 +182,13 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
   - Re-executar pelo menos 8 das 48 mutações do dev.
   - Segredo e escopo: `git grep` de segredo, `check-ignore`, o diff dentro do PERMITIDO, `sync-agent-agents --check`, `git diff --check`.
   - CI: `gh api .../commits/c876e6b0.../check-runs`.
-  - Achados, veredito e limpeza: remover `C:/Users/AMP/w-rev417` com `git worktree remove --force` depois de contar os processos vivos.
-- **Próximo comando exato:** `cd /c/Users/AMP/w-rev417/scripts/agente-claude-api && timeout 600 .venv/Scripts/python.exe -B -m unittest discover -s tests -t . 2>&1 | tail -5`
-- **Arquivos meio-escritos:** só este parecer. As seções acima da PAUSA ainda estão como esqueleto `EM APURAÇÃO` e nenhuma conclusão foi gravada. Nada mais foi escrito no `w-agapi`. O worktree `C:/Users/AMP/w-rev417` continua existindo, com o `.venv`, e precisa ser removido na retomada.
+  - Achados, veredito e limpeza: remover `~/w-rev417` com `git worktree remove --force` depois de contar os processos vivos.
+- **Próximo comando exato:** `cd ~/w-rev417/scripts/agente-claude-api && timeout 600 .venv/Scripts/python.exe -B -m unittest discover -s tests -t . 2>&1 | tail -5`
+- **Arquivos meio-escritos:** só este parecer. As seções acima da PAUSA ainda estão como esqueleto `EM APURAÇÃO` e nenhuma conclusão foi gravada. Nada mais foi escrito no `w-agapi`. O worktree `~/w-rev417` continua existindo, com o `.venv`, e precisa ser removido na retomada.
 
 ## RETOMADA 19:51Z — evidência incremental (P1)
 
-- `git -C C:/Users/AMP/w-rev417 rev-parse HEAD` → `c876e6b08946e5d1b9854934e3c16fa2c0ae3311`. A árvore está limpa; o único ignorado é o `.venv/`.
+- `git -C ~/w-rev417 rev-parse HEAD` → `c876e6b08946e5d1b9854934e3c16fa2c0ae3311`. A árvore está limpa; o único ignorado é o `.venv/`.
 - **Suíte no venv:**
   - Comando: `.venv/Scripts/python.exe -B -m unittest discover -s tests -t .`
   - Saída: `Ran 130 tests in 3.788s` · `OK`, sem `skipped`.
@@ -313,7 +313,7 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
   - `custo` (`0.00028`), `conta.request_ids` e `modelo.nivel` vêm do script.
   - Veredito parcial: confere.
 - **§7.11, STOP real** (`stop_ctrlc.py stop`):
-  - Comando: a CLI real, como processo, `investigar … --sha c876e6b0… --simular --simular-turnos 5 --saida <scratch>/run-stop --worktree-dir C:/Users/AMP/w-agr417s`, com chave e workspace FALSOS só no processo, de modo que o registro não é lido.
+  - Comando: a CLI real, como processo, `investigar … --sha c876e6b0… --simular --simular-turnos 5 --saida <scratch>/run-stop --worktree-dir ~/w-agr417s`, com chave e workspace FALSOS só no processo, de modo que o registro não é lido.
   - `STOP` criado depois de 2 turnos (6,1 s) → `codigo: 2`, `parecer PARCIAL (STOP)`, `worktree_removido=True`, `resumo.json` presente.
   - Eventos: `…7 modelo, 8 evento stop_detectado, 9 ferramenta listar_diretorio (negada), 10 worktree_removido, 11 fim`.
   - A chave falsa não aparece em nenhum arquivo de saída.
@@ -353,7 +353,7 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
 
 ## Reconferência dos ajustes (c727fb4e)
 
-> **Modelo:** Claude Opus 5.5 (`claude-opus-5-5`), mesma identidade revisora, nível menor. **Objeto:** head `c727fb4e65f9b130d1f6ba30ddff0b6f5ef80239` (sobre `c876e6b0` + `debae897`). **Terreno:** worktree próprio detached `C:/Users/AMP/w-rev417b`, venv próprio. Sem chamada à API; a chave não foi lida; sem commit.
+> **Modelo:** Claude Opus 5.5 (`claude-opus-5-5`), mesma identidade revisora, nível menor. **Objeto:** head `c727fb4e65f9b130d1f6ba30ddff0b6f5ef80239` (sobre `c876e6b0` + `debae897`). **Terreno:** worktree próprio detached `~/w-rev417b`, venv próprio. Sem chamada à API; a chave não foi lida; sem commit.
 
 ### Veredito final
 **APROVADO COM AJUSTES.**
@@ -453,7 +453,7 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
   - Medição em `executar_tarefa` (`n1_n2.py`): um parecer VÁLIDO com `comando = 'buscar ' + '{"a":'*3000 + '1' + '}'*3000` → `RecursionError` levantado de dentro do `finally`, depois da remoção do worktree.
   - O disco fica só com `['auditoria.jsonl']`: eventos `inicio, worktree_criado, modelo, ferramenta entregar_parecer, worktree_removido`. **Não há** `fim`, `parecer.json`, `parecer.md`, `resumo.json` nem `erro.txt`.
   - A forma `buscar padrao=[[[…` dá o mesmo.
-  - Pela CLI (falsos, worktree `C:/Users/AMP/w-agr417n`): `erro interno: RecursionError`, **exit 5**, arquivos `['auditoria.jsonl']`. O worktree foi removido.
+  - Pela CLI (falsos, worktree `~/w-agr417n`): `erro interno: RecursionError`, **exit 5**, arquivos `['auditoria.jsonl']`. O worktree foi removido.
 - **N2 · resíduo da classe do A6 · `redacao.py:30`** (padrão 7, JWT `eyJ[A-Za-z0-9_-]{8,}\.…`):
   - `redigir('eyJ'*n)` → 4 K: 0,005 s · 8 K: 0,020 s · 16 K: 0,080 s · 64 K: 1,126 s. É quadrático.
   - Medido só o padrão: 256 K → **17,60 s** (o 6 dá 0,07 s).
@@ -506,7 +506,7 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
 - **N-c · `nota` · dentro-do-bloco, já declarada pelo dev (§4 do relatório de ajustes).** Com `--permitir-execucao-do-alvo` LIGADA, um arquivo rastreado trocado por hard link é recusado pelo `ler_arquivo`, mas é lido por `buscar` e `git_diff` (R-2). Está coberto pelo aviso do README. Com a flag desligada, não há via.
 
 ### R-5. Limpeza
-- **Worktree:** antes de remover, 0 processos vivos (filtro por executável ou linha de comando com `C:/Users/AMP/w-rev417b`, em `python`, `node`, `git` e `npm`). `git worktree remove --force C:/Users/AMP/w-rev417b` → exit 0, seguido de `git worktree prune`. O `worktree list` tem 0 entradas `w-rev417` ou `w-agr417`; os diretórios `w-rev417b` e `w-agr417n` não existem; `C:/Users/AMP/w-ag-*`: 0.
+- **Worktree:** antes de remover, 0 processos vivos (filtro por executável ou linha de comando com `~/w-rev417b`, em `python`, `node`, `git` e `npm`). `git worktree remove --force ~/w-rev417b` → exit 0, seguido de `git worktree prune`. O `worktree list` tem 0 entradas `w-rev417` ou `w-agr417`; os diretórios `w-rev417b` e `w-agr417n` não existem; `~/w-ag-*`: 0.
 - **Scratchpad:** os diretórios de ataque foram apagados (junction desfeita sem seguir; somente-leitura liberado). Ficam só os scripts em `scratchpad/rev417/scripts/` e `scripts_b/`, fora do repositório.
 - **Resíduo que o dev atribuiu ao revisor** (relatório de ajustes §4): `%TEMP%gente-suite-dssc53qv`, vazio, criado em 2026-10-10 16:57:49 (−03).
   - Medi que é **meu**: a saída da minha 1ª execução do `ataque_laco.py` (importa `tests`, que cria esse diretório, e foi morta pelo `timeout 120`, exit 124, sem rodar o `atexit`) fechou às 16:59:49, logo começou às 16:57:49.
@@ -517,7 +517,7 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
 
 ## Conferência final N1/N2 (7213ac50)
 
-> **Modelo:** Claude Opus 5.5 (`claude-opus-5-5`), mesma identidade revisora, nível menor. **Objeto:** head `7213ac50a504f1ab7bd03327d4d612979b623e59` (sobre `c727fb4e` + `f6abcaa0`). **Terreno:** worktree próprio detached `C:/Users/AMP/w-rev417c`, venv próprio. Sem chamada à API; a chave não foi lida; sem commit.
+> **Modelo:** Claude Opus 5.5 (`claude-opus-5-5`), mesma identidade revisora, nível menor. **Objeto:** head `7213ac50a504f1ab7bd03327d4d612979b623e59` (sobre `c727fb4e` + `f6abcaa0`). **Terreno:** worktree próprio detached `~/w-rev417c`, venv próprio. Sem chamada à API; a chave não foi lida; sem commit.
 >
 > **Incidente de terreno, meu e declarado.** Ao gravar a F-2, um `open(…, "w")` em Python truncou este arquivo para 0 bytes antes de um `write` falhar. A causa foi um surrogate solto que o heredoc do Bash materializou, o colapso de `\\` registrado no F26 do plano. Restaurei assim:
 > - a base veio de `git show HEAD:docs/revisoes/GOV/B-AGENTE-API-revisao.md`, porque o `HEAD` do `w-agapi` é `7213ac50` e o `git status` estava vazio antes do meu primeiro acréscimo;
@@ -551,7 +551,7 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
     - antes: `RecursionError`, e só `auditoria.jsonl` no disco;
     - agora: **sem exceção**; arquivos `['auditoria.jsonl','parecer.json','parecer.md','resumo.json']`;
     - eventos `inicio, worktree_criado, modelo, ferramenta entregar_parecer, worktree_removido, fim`.
-  - Pela CLI (falsos, `revisar-pr 416`, worktree `C:/Users/AMP/w-agr417q`, removido no fim):
+  - Pela CLI (falsos, `revisar-pr 416`, worktree `~/w-agr417q`, removido no fim):
     - antes: exit 5 e só a auditoria;
     - agora: `parecer completo: veredito=aprovado`, **exit 0**, os 4 artefatos.
   - **Fechado.** A forja do `.md` continua fechada: 0 linhas forjadas fora de bloco, nenhum bloco aberto.
@@ -603,7 +603,7 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
 - Python global (`find_spec('anthropic')` → `None`): `Ran 170 tests in 8.121s` · `OK`.
 
 ### F-4. Limpeza
-- **Worktree:** antes de remover, 0 processos vivos em `C:/Users/AMP/w-rev417c`. `git worktree remove --force C:/Users/AMP/w-rev417c` → exit 0, seguido de `git worktree prune`. O `worktree list` tem 0 entradas `w-rev417` ou `w-agr417`; os diretórios `w-rev417c` e `w-agr417q` não existem; `C:/Users/AMP/w-ag-*`: 0.
+- **Worktree:** antes de remover, 0 processos vivos em `~/w-rev417c`. `git worktree remove --force ~/w-rev417c` → exit 0, seguido de `git worktree prune`. O `worktree list` tem 0 entradas `w-rev417` ou `w-agr417`; os diretórios `w-rev417c` e `w-agr417q` não existem; `~/w-ag-*`: 0.
 - **Temporários:** `%TEMP%/agente-suite-*`: 0. No scratchpad, apaguei o temporário da CLI falsa e as partes desta seção; ficam só os scripts `scripts/`, `scripts_b/` e `scripts_c/`, fora do repositório.
 - **Repositório principal:** `git status` igual ao do início.
 - **No `w-agapi`:** este arquivo, restaurado do `HEAD` depois do incidente que declarei no topo da seção, mais esta seção, só por acréscimo; sem commit e sem push.

@@ -336,15 +336,17 @@ if (!connectionString) {
   });
 
   /** Uma `charge_create` PENDING semeada direto (a que nasceu antes de o vencimento passar), com o payload do servidor. */
-  async function seedPendingCreate(fixture: { tenantId: string; statementId: string }, dueDate: string): Promise<string> {
+  // B-ASS-08c1c (Emenda 1.2 #4): `occurredAt` data a linha pelo relógio do PRÓPRIO teste (a regra dos 7 dias do claim conta a idade).
+  async function seedPendingCreate(fixture: { tenantId: string; statementId: string }, dueDate: string, occurredAt: Date | null = null): Promise<string> {
     await db.$executeRawUnsafe(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider) VALUES ($1::uuid, $2::uuid, 'asaas') ON CONFLICT DO NOTHING`, fixture.statementId, fixture.tenantId);
     const rows = (await db.$queryRawUnsafe(
       `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status)
-       VALUES ($1::uuid, $2::uuid, 'charge_create', 'asaas', $3, gen_random_uuid(), $4::jsonb, now(), 'PENDING') RETURNING id`,
+       VALUES ($1::uuid, $2::uuid, 'charge_create', 'asaas', $3, gen_random_uuid(), $4::jsonb, COALESCE($5::timestamptz, now()), 'PENDING') RETURNING id`,
       fixture.tenantId,
       fixture.statementId,
       `charge_create:${fixture.statementId}:1`,
       JSON.stringify({ amountCents: 12345, dueDate, method: "pix" }),
+      occurredAt,
     )) as Array<{ id: string }>;
     return rows[0]!.id;
   }
@@ -379,7 +381,7 @@ if (!connectionString) {
 
   test("CR7b: relógio em 02:30Z do dia seguinte (ainda o dia anterior em São Paulo) → o vencimento igual ao dia de São Paulo NÃO é passado", async () => {
     const fixture = await seedClosed("cr7b");
-    await seedPendingCreate(fixture, "2027-03-10");
+    await seedPendingCreate(fixture, "2027-03-10", new Date("2027-03-11T01:30:00.000Z"));
     const before = postsToPayments();
     const clock = new Date("2027-03-11T02:30:00.000Z"); // 23:30 de 10/03 em São Paulo
     const result = await modules.runDispatchOutbox({

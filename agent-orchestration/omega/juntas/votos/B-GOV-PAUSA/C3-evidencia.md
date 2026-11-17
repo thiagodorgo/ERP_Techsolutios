@@ -1,31 +1,31 @@
-mandato_md5 = 6bb2ccfd33b0eec1bce54347edfe1fc7 (medido: `tr -d '\r' < .../00-mandatos/c3.md | md5sum`; cru tambem 6bb2ccfd...) · declarado no disparo: 6bb2ccfd33b0eec1bce54347edfe1fc7 — IGUAL · papel = cadeira C3 da junta 1 do B-GOV-PAUSA (PR 397) · identidade = jurado-pausa-c3-escopo-registro-kpi · modelo = Opus (claude-opus-5-5) · corpo_md5 EOL-neutro = 06172f527763ae5c71e1e2d56a5fd8a8 (`MSYS_NO_PATHCONV=1 git -C C:/Users/AMP/w-pausa show 67c2c280:.claude/agents/especialistas/jurado-pausa-c3-escopo-registro-kpi.md | tr -d '\r' | md5sum`; corpo recebido = o mesmo blob, md5 do arquivo de saida tambem 06172f52...) — esperado no disparo 06172f52... IGUAL
+mandato_md5 = 6bb2ccfd33b0eec1bce54347edfe1fc7 (medido: `tr -d '\r' < .../00-mandatos/c3.md | md5sum`; cru tambem 6bb2ccfd...) · declarado no disparo: 6bb2ccfd33b0eec1bce54347edfe1fc7 — IGUAL · papel = cadeira C3 da junta 1 do B-GOV-PAUSA (PR 397) · identidade = jurado-pausa-c3-escopo-registro-kpi · modelo = Opus (claude-opus-5-5) · corpo_md5 EOL-neutro = 06172f527763ae5c71e1e2d56a5fd8a8 (`MSYS_NO_PATHCONV=1 git -C ~/w-pausa show 67c2c280:.claude/agents/especialistas/jurado-pausa-c3-escopo-registro-kpi.md | tr -d '\r' | md5sum`; corpo recebido = o mesmo blob, md5 do arquivo de saida tambem 06172f52...) — esperado no disparo 06172f52... IGUAL
 
 # Evidencia — C3 (escopo, registro, KPI e terreno) — junta 1 do B-GOV-PAUSA
 
 - Lancada como `general-purpose` com o corpo do head (ressalva R1 do inspetor). Obedeco `tools: Read, Grep, Glob, Bash`: escrevo so `C3-evidencia.md` e `C3-voto.json`, por Bash.
 - Nomes dos arquivos: o corpo diz `c3-evidencia.md`/`c3-voto.json`; o mandato de disparo (e as hipoteses do mandato) dizem `C3-evidencia.md`/`C3-voto.json`. Uso os do mandato (o corpo manda: "Diretorio: o que o seu mandato de disparo nomear"). NTFS e case-insensitive: e o mesmo arquivo.
-- Ambiente: Git Bash 5.2.37 (MINGW64) · node v20.19.5 · Python 3.13.14 · cwd: absoluto em cada comando · SCRATCH=C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3pz · variaveis que defini: SCRATCH, EV, LOG, WT (todas locais ao comando; `MSYS_NO_PATHCONV=1` so como prefixo por comando, nunca exportada).
+- Ambiente: Git Bash 5.2.37 (MINGW64) · node v20.19.5 · Python 3.13.14 · cwd: absoluto em cada comando · SCRATCH=~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3pz · variaveis que defini: SCRATCH, EV, LOG, WT (todas locais ao comando; `MSYS_NO_PATHCONV=1` so como prefixo por comando, nunca exportada).
 - Legalidade: parecer do inspetor `00-inspetor-terreno.md` (lido) = **LIBERADO COM RESSALVA** (R1 corpos ausentes na sessao; R2 residuo inerte; R3 w-devt4 limpo; R4 colagem nomeia ed61f998, objeto 67c2c280). Objeto liberado: 67c2c280612cb644f246af0b5410cab59afe028d. Resolvo o head eu mesma abaixo (git e gh).
 - Nao li nenhum arquivo de outra cadeira (C1-*/C2-*/c1-*/c2-*).
 - Inicio: 2026-10-01T19:49:32Z
-- Worktree de medicao: C:/Users/AMP/w-jur-pz3 (nao existia as 19:49:32Z: `test -e` → nao existe).
+- Worktree de medicao: ~/w-jur-pz3 (nao existia as 19:49:32Z: `test -e` → nao existe).
 
 ## Item 1 — Escopo por laco, e os corpos desta junta no head
 
 ### 1(a) Head e base — [2026-10-01T19:51:42Z]
-- `timeout 120 git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch origin` → ec=0
+- `timeout 120 git -C ~/Documents/GitHub/ERP_Techsolutios fetch origin` → ec=0
 - `git rev-parse origin/docs/gov-pausa-grava-e-para` → `67c2c280612cb644f246af0b5410cab59afe028d`
 - `gh pr view 397 --repo thiagodorgo/ERP_Techsolutios --json headRefOid,headRefName,baseRefName,state,isDraft,mergeable` (ec=0) → headRefOid=`67c2c280612cb644f246af0b5410cab59afe028d`, headRefName=docs/gov-pausa-grava-e-para, base=main, OPEN, isDraft=false, MERGEABLE
 - As duas fontes COINCIDEM (40 hex). origin/main=`5b6e103638f398d6074eecc5daebdf2d3bcd2252` (#396); merge-base(origin/main, head)=`5b6e1036...` = origin/main: **SIM** (a main nao andou desde o ramo).
 - origin/chore/mandato-refs-e-preflight (#393) = `2ca15eb03ffb06b8c0ded21a0b2929b548bddb21` — NAO mergeado (origin/main ainda e #396).
 - Colagem do mandato (R4) nomeia `ed61f998`; o objeto medido e `67c2c280` (1 commit acima, o que versiona os mandatos). Medido por comando, nao digitado.
-- Worktree: `timeout 300 git -C <repo> worktree add --detach C:/Users/AMP/w-jur-pz3 67c2c280...` ec=0 · `test -e C:/Users/AMP/w-jur-pz3/.git` → EXISTE · `rev-parse HEAD`=67c2c280... · porcelain=0 · core.autocrlf=true.
+- Worktree: `timeout 300 git -C <repo> worktree add --detach ~/w-jur-pz3 67c2c280...` ec=0 · `test -e ~/w-jur-pz3/.git` → EXISTE · `rev-parse HEAD`=67c2c280... · porcelain=0 · core.autocrlf=true.
 - `npm ci --no-audit --no-fund` proprio, `timeout 598`, lancado em segundo plano no w-jur-pz3 (sem junction; log em $SCRATCH/npmci.log).
 - Veredito parcial 1(a): VERDE — head 67c2c280 por duas fontes; base = origin/main de agora.
 
 ### 1(b) Permitido x diff, por laco — [2026-10-01T20:16:27Z]
 - Lista permitida EXTRAIDA por parse (script `$SCRATCH/permitido.py`) da tabela "**Arquivos tocados:**" do §7 do plano do head (`MSYS_NO_PATHCONV=1 git show 67c2c280:docs/revisoes/SAN3/B-GOV-PAUSA-plano.md`), 1a coluna, tokens entre crases. Regras de expansao PUBLICADAS: (R2) `<c1,c2,c3>` e `<…>` -> jurado-pausa-c1-fidelidade-transcricao / c2-consistencia-normativa-espelho / c3-escopo-registro-kpi; (R3) token sem `/` herda o dir do 1o token da celula (`kpis-history.json` -> `Kpis/`; `pendencias-indice.md` -> `agent-orchestration/controle/`); (R4) `omega/...` -> `agent-orchestration/omega/...`, `votos/...` -> `agent-orchestration/omega/juntas/votos/...`, e `docs/status-geral.md` -> `agent-orchestration/docs/status-geral.md` (medido: `git cat-file -e` de `docs/status-geral.md` ausente em origin/main E no head; `agent-orchestration/docs/status-geral.md` existe nos dois); (R5) `/**` = prefixo. Resultado: **23 entradas**.
-- `git -C C:/Users/AMP/w-jur-pz3 diff --name-only origin/main...67c2c280` → ec=0, **N=28** (`--shortstat`: 28 files, +3668/−37). Laco `$SCRATCH/laco.py` (arquivo | entrada que casou):
+- `git -C ~/w-jur-pz3 diff --name-only origin/main...67c2c280` → ec=0, **N=28** (`--shortstat`: 28 files, +3668/−37). Laco `$SCRATCH/laco.py` (arquivo | entrada que casou):
 ```
 .agents/agents/README.md | .agents/agents/README.md (E2b)
 .agents/agents/especialistas/jurado-pausa-c1-fidelidade-transcricao.md | .agents/agents/especialistas/jurado-pausa-c1-fidelidade-transcricao.md (E4)
@@ -109,9 +109,9 @@ TOTAL casamentos no proibido = 1
 - Veredito parcial 1(c): VERDE (0 casamentos efetivos; controle acusou).
 
 ### 1(d) Os corpos desta junta no head — [2026-10-01T20:18:35Z]
-- `git -C C:/Users/AMP/w-jur-pz3 ls-tree -r --name-only 67c2c280 -- .claude/agents/especialistas/ .agents/agents/especialistas/ | grep -c 'jurado-pausa-c[123]-'` → **6** (c1/c2/c3 em .claude e em .agents). Em origin/main: 0 (sao novos neste ramo, versionados em `ed61f998`).
+- `git -C ~/w-jur-pz3 ls-tree -r --name-only 67c2c280 -- .claude/agents/especialistas/ .agents/agents/especialistas/ | grep -c 'jurado-pausa-c[123]-'` → **6** (c1/c2/c3 em .claude e em .agents). Em origin/main: 0 (sao novos neste ramo, versionados em `ed61f998`).
 - **Vermelho-controle:** mesmo `grep -c` com `jurado-pausa-c9-` → **0**.
-- `cd C:/Users/AMP/w-jur-pz3 && timeout 120 node scripts/sync-agent-agents.mjs --check > $LOG 2>&1; ec=$?` → **ec=0**, `[agents-sync] OK — 29 agentes, espelho consistente.` (**N=29**; hipotese do plano 26+3 confere).
+- `cd ~/w-jur-pz3 && timeout 120 node scripts/sync-agent-agents.mjs --check > $LOG 2>&1; ec=$?` → **ec=0**, `[agents-sync] OK — 29 agentes, espelho consistente.` (**N=29**; hipotese do plano 26+3 confere).
 - **Vermelho-controle extra do --check (protocolo restauravel):** cp do espelho `.agents/.../jurado-pausa-c3-escopo-registro-kpi.md` para $SCRATCH → mutacao por python (append `MUTACAO-CONTROLE-C3` em CRLF) → `cmp` prova que mudou → `--check` **ec=1** `DIVERGE: .agents/agents/especialistas/jurado-pausa-c3-escopo-registro-kpi.md` → restore por cp → `git hash-object` = `a2396c0d30d47a3f21d24a6a9d4d063bf7f48abe` = blob no head → `--check` de novo ec=0 (29) → porcelain 0.
 - **Vermelho-controle pathspec (vazio + irmao nao-vazio):** `git diff --name-only origin/main...67c2c280 -- src prisma frontend mobile .github tests scripts infra | wc -l` = **0** · irmao `-- CLAUDE.md` = **1** · `-- Kpis/index.html Kpis/styles.css Kpis/README.md` = **0** · irmao `-- Kpis/app.js` = **1** · corpos em `.claude/agents .agents/agents` alem dos 3 e do README = **0** · irmao (todos) = **7** (6 corpos + README). Todo vazio tem irmao que acusa.
 - npm ci proprio (para o item 2): 1a tentativa `timeout 598` → **ec=124** (morto pelo timeout; sem `.package-lock.json`); conferido sem processo vivo com `w-jur-pz3` na CommandLine (PowerShell Get-CimInstance → 0); 2a → **ec=1** (`@prisma/engines` postinstall: `ECONNRESET` / `Error: aborted` — rede); 3a → **ec=0**, "added 326 packages in 48s", `.package-lock.json` presente. node_modules NAO e symlink nem reparse point (`test -L` falso; `fsutil reparsepoint query` → "nao e um ponto de nova analise"). Avisos EBADENGINE de `@prisma/streams-local` (node>=22) pre-existentes.
@@ -154,7 +154,7 @@ a0a10750 | #361 | docs(orquestracao): a junta passa a sobreviver a morte de quem
 - **Juizo da decisao do plano (§6: SIM, 168->169):** coerente com a NATUREZA medida (muda o contrato de execucao; e o §C3.6 literal diz "Todo PR atualiza `Kpis/*`") e com o precedente medido; a razao esta ESCRITA no plano (§6, tabela das tres propriedades). O head CUMPRE o plano (E3 no commit `a55975b5`). A frase de `3b00cae9` ("precedente #396") foi derrubada pelo plano e o head segue o plano, nao a frase.
 
 ### 2(b) Os numeros, com N e forma — [2026-10-01T20:26:01Z]
-- cwd `C:/Users/AMP/w-jur-pz3` (67c2c280, porcelain 0 antes e depois), node v20.19.5, npm ci proprio (3a tentativa ec=0).
+- cwd `~/w-jur-pz3` (67c2c280, porcelain 0 antes e depois), node v20.19.5, npm ci proprio (3a tentativa ec=0).
 - `timeout 60 node --check Kpis/app.js` → **ec=0** · `timeout 120 node scripts/kpi-freeze.mjs --check` → **ec=0** "kpi-freeze: em dia (snapshot 2026-10-01)." · `timeout 60 node -e "require('./Kpis/kpis-latest.json');require('./Kpis/kpis-history.json')"` → **ec=0**, history N=165.
 - `timeout 400 node --test --import tsx tests/kpi-dashboard-charts.test.ts tests/kpi-dashboard-contraste.test.ts tests/kpi-achados-paridade.test.ts > $LOG 2>&1; ec=$?` → **ec=0 · tests 29 · pass 29 · fail 0 · cancelled 0 · skipped 0** (6796 ms). Por arquivo (execucoes separadas, `timeout 300`): charts **17/17** ec=0 · contraste **6/6** ec=0 · paridade **6/6** ec=0. A referencia herdada 17/6/6 confere por execucao propria.
 - Estrutura REAL dos JSON (lida): `release.{block,title,pr,merge_commit,approved_head,status,summary}`, `metrics.<k>.{value,total?,display,note}`; history = lista sem campo `n` (o "n" e a posicao). Tabela `campo | head | origin/main de agora (5b6e1036) | esperado` (`$SCRATCH/kpicmp.py`, blobs `git show <ref>:Kpis/kpis-latest.json`):
@@ -190,7 +190,7 @@ backend_contract_tests_focused 34/34 · flutter_modules 17/17 · mobile_backend_
   - `## P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — ... — BAIXA` · status ABERTA · prova N=2 com forma · escopo: "nota S-10 do plano — as duas regras são coerentes hoje (...) a ligação seria elaboração nova" · **dono:** `B-GOV-CICLOS-RESIDUAIS` (salvo o orquestrador nomear outro na ata) · bloqueia: não · teste de encerramento.
   - grep -c no head: pendencias.md 1/1, pendencias-indice.md 1/1.
 - Gerador lido antes de rodar (`agent-orchestration/controle/gerar-indice-pendencias.py`, 184 linhas): caminhos RELATIVOS `P='agent-orchestration/controle/pendencias.md'`, `O='.../pendencias-indice.md'`, escreve `O` no lugar com `newline=''` (LF), sem `--check`, sem data/hora no conteudo. Logo: cwd = raiz do MEU worktree.
-- `cd C:/Users/AMP/w-jur-pz3 && timeout 120 python agent-orchestration/controle/gerar-indice-pendencias.py` → **ec=0** · "indice: 423 cabecalhos / 412 IDs | {'FECHADA': 111, 'ABERTA': 312} | baldes {'-': 111, 'C': 69, 'B': 105, 'A': 138} | diferidas-materiais 13".
+- `cd ~/w-jur-pz3 && timeout 120 python agent-orchestration/controle/gerar-indice-pendencias.py` → **ec=0** · "indice: 423 cabecalhos / 412 IDs | {'FECHADA': 111, 'ABERTA': 312} | baldes {'-': 111, 'C': 69, 'B': 105, 'A': 138} | diferidas-materiais 13".
 - `git status --porcelain` → 1 linha ` M agent-orchestration/controle/pendencias-indice.md` → discriminado: `git hash-object` = `da1a08c4f20c211a43e8b2c4b337bf0b5c8ab8e8` = `git rev-parse 67c2c280:agent-orchestration/controle/pendencias-indice.md` → **FANTASMA** (o gerador escreve LF — disco 0 CRLF / 511 LF —, o checkout e CRLF; EOL-neutro IGUAL). **Zero diff residual real: indice do head = o que o gerador produz.** Restore por cp → hash = blob, porcelain 0.
 - **Vermelho-controle (gerador reescreve):** apaguei a UNICA linha do indice com `P-GOV-PAUSA-ESCADA-C76BIS` (l.321) → hash `55941a18...` ≠ blob, grep=0 → gerador ec=0 → hash volta a `da1a08c4...` = blob, grep=1 → restore por cp → hash = blob, porcelain 0. O gerador reescreve o indice: "indice = gerador" e prova, nao tautologia.
 - Observacao de forma (nota): o campo `escopo` da `P-GOV-PAUSA-ESCADA-C76BIS` nao usa o vocabulario `dentro-do-bloco`/`pre-existente` da casa (diz "nota S-10 do plano"); ID, gravidade (BAIXA), dono e teste de encerramento estao presentes. Nao e criterio vermelho do item (o vermelho e "ausente ou sem bloco dono").
@@ -204,7 +204,7 @@ backend_contract_tests_focused 34/34 · flutter_modules 17/17 · mobile_backend_
 - Veredito parcial 3(b): VERDE.
 
 ### 3(c) Terreno do head — [2026-10-01T20:30:10Z]
-1. `git -C C:/Users/AMP/w-jur-pz3 diff --check origin/main...67c2c280 > $LOG 2>&1; ec=$?` → **ec=0**, log 0 bytes. **Controle:** `git diff --no-index --check sonda-limpa.txt sonda-espaco.txt` (2a com `b ` no fim) → **ec=3** "sonda-espaco.txt:2: trailing whitespace." — o check acusa.
+1. `git -C ~/w-jur-pz3 diff --check origin/main...67c2c280 > $LOG 2>&1; ec=$?` → **ec=0**, log 0 bytes. **Controle:** `git diff --no-index --check sonda-limpa.txt sonda-espaco.txt` (2a com `b ` no fim) → **ec=3** "sonda-espaco.txt:2: trailing whitespace." — o check acusa.
 2. **EOL por arquivo** (`$SCRATCH/eol.py`: `git show <ref>:<f>` lido em bytes, `CRLF = count(b'\r\n')`, `só-LF = count(b'\n') - CRLF`, nos dois lados):
 ```
 arquivo | main CRLF/soLF | head CRLF/soLF | estado
@@ -256,7 +256,7 @@ MISTO INTRODUZIDO = 0
 
 ## Limpeza — [2026-10-01T20:31:27Z]
 - Processos com `w-jur-pz3` na CommandLine (PowerShell Get-CimInstance) → **0**; porcelain do meu worktree antes de remover → 0 (todas as mutacoes restauradas: espelho c3 `a2396c0d...`, kpis-latest `ec2969da...`, indice `da1a08c4...` = blobs).
-- `timeout 300 git -C <repo> worktree remove --force C:/Users/AMP/w-jur-pz3` → **ec=0**; diretorio inexistente; `git worktree list | grep -ic w-jur-pz3` → **0** (node_modules proprio saiu junto). Sem `git worktree prune` (proibido).
+- `timeout 300 git -C <repo> worktree remove --force ~/w-jur-pz3` → **ec=0**; diretorio inexistente; `git worktree list | grep -ic w-jur-pz3` → **0** (node_modules proprio saiu junto). Sem `git worktree prune` (proibido).
 - Base viva erp-postgres 5432 / erp-redis 6379: **nunca tocada** (nenhum comando abriu conexao; sem Docker). `w-pausa` (HEAD 67c2c280): so os meus 2 arquivos escritos; `w-devt4` e demais worktrees alheios nao tocados (nem listados por mim alem do `worktree list`).
 - Copias e sondas em `$SCRATCH/c3pz` apagadas ao fim (ver linha final).
 

@@ -3,7 +3,7 @@
 ## Identidade e escopo
 
 - Dev: `dev-dash-emenda-cdx` — Codex GPT-5.6 Sol, esforço médio, nível menor.
-- Worktree: `C:/Users/AMP/w-dash`; ramo medido: `fix/dash-perfil`.
+- Worktree: `~/w-dash`; ramo medido: `fix/dash-perfil`.
 - Produto, backend, Prisma, KPI, workflows e lockfiles: fora da emenda; não serão alterados.
 - Asserções e títulos de testes: fora da emenda; não serão alterados.
 
@@ -12,13 +12,13 @@
 ### Pré-voo
 
 ```text
-git -C C:/Users/AMP/w-dash branch --show-current
+git -C ~/w-dash branch --show-current
 fix/dash-perfil
 
-git -C C:/Users/AMP/w-dash status --short
+git -C ~/w-dash status --short
 árvore já continha trabalho não commitado do B-DASH-PERFIL; preservado sem checkout, stash, reset ou clean
 
-Get-ChildItem C:/Users/AMP/w-dash/frontend/tests -Directory
+Get-ChildItem ~/w-dash/frontend/tests -Directory
 nenhuma pasta de auxiliares existente; criada a convenção frontend/tests/helpers
 ```
 
@@ -79,7 +79,7 @@ lista=37 helper=37 legado=0
 ### TypeScript
 
 ```text
-npm --prefix C:/Users/AMP/w-dash/frontend run check
+npm --prefix ~/w-dash/frontend run check
 > @erp-techsolutions/frontend@0.1.0 check
 > tsc -b --noEmit
 exit code 0
@@ -88,7 +88,7 @@ exit code 0
 ### Smoke completo
 
 ```text
-npm --prefix C:/Users/AMP/w-dash/frontend run test:smoke
+npm --prefix ~/w-dash/frontend run test:smoke
 # tests 1327
 # pass 1326
 # fail 1
@@ -111,7 +111,7 @@ node --test --import tsx tests/checklists-editor.smoke.test.tsx
 Reexecução após o ajuste de preparo:
 
 ```text
-npm --prefix C:/Users/AMP/w-dash/frontend run test:smoke
+npm --prefix ~/w-dash/frontend run test:smoke
 # tests 1327
 # pass 1327
 # fail 0
@@ -147,7 +147,7 @@ exit code 0
 ### Escopo, whitespace e asserções
 
 ```text
-git -C C:/Users/AMP/w-dash diff --stat -- frontend/tests
+git -C ~/w-dash diff --stat -- frontend/tests
 38 files changed, 90 insertions(+), 83 deletions(-)
 ```
 
@@ -157,13 +157,13 @@ aparece no `git diff --stat`. Contagem própria da emenda: 37 arquivos da lista 
 relatório = 39 arquivos.
 
 ```text
-git -C C:/Users/AMP/w-dash diff --check
+git -C ~/w-dash diff --check
 sem saída
 exit code 0
 ```
 
 ```text
-git -C C:/Users/AMP/w-dash diff -U0 -- frontend/tests | grep -E "^[-+].*(expect|assert)"
+git -C ~/w-dash diff -U0 -- frontend/tests | grep -E "^[-+].*(expect|assert)"
 sem saída
 exit code 1 do grep (nenhuma correspondência)
 ```

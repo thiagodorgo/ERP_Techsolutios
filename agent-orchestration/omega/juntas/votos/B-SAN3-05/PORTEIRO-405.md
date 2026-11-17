@@ -4,7 +4,7 @@
 
 - Corpo aplicado: `git show a9fbe283:.claude/agents/porteiro-pos-merge.md` (78 linhas), md5 EOL-neutro `374b1b0d091a85cddf1733d3e51456ae` (`| tr -d '\r' | md5sum`).
 - Merge julgado: `a9fbe28342a41e2f61cfbb0bea7e618f85d86d9f` (squash). Head aprovado (ata): `84831ad9796d8db29766b0ff6e0a1a894a9d45e7`. Head no merge: `c16bf9be1c3d08a8420751deb9ee4d86c896166a`.
-- Medição na ref (§A7): tudo por `git show a9fbe283:…` / worktree próprio `C:/Users/AMP/w-port405` detached em `a9fbe283`.
+- Medição na ref (§A7): tudo por `git show a9fbe283:…` / worktree próprio `~/w-port405` detached em `a9fbe283`.
 - Início: 2026-10-09T22:03Z.
 
 ## 0. Pré-voo (disco, corpo, ref)
@@ -45,7 +45,7 @@
 
 ## 3. Contagens reexecutadas
 **Terreno próprio (P1, medido 22:05–22:10Z).**
-- Worktree: `git -c core.autocrlf=false worktree add --detach C:/Users/AMP/w-port405 a9fbe28342a41e2f61cfbb0bea7e618f85d86d9f` ec=0; `rev-parse HEAD` = `a9fbe283…`. Byte-identidade: `git hash-object --no-filters --stdin-paths` × `ls-tree -r` → `blobs=3830 byte_identicos=3830`. Sem `node_modules` no worktree (nenhuma junction).
+- Worktree: `git -c core.autocrlf=false worktree add --detach ~/w-port405 a9fbe28342a41e2f61cfbb0bea7e618f85d86d9f` ec=0; `rev-parse HEAD` = `a9fbe283…`. Byte-identidade: `git hash-object --no-filters --stdin-paths` × `ls-tree -r` → `blobs=3830 byte_identicos=3830`. Sem `node_modules` no worktree (nenhuma junction).
 - Containers Linux próprios, prefixo `port405-`: rede `port405-net`, `port405-pg` (postgres:16 → 16.14), `port405-redis` (redis:7, `PONG`), `port405-node` (`erp-junta-node20-pg16:local`, node v20.20.2, npm 10.8.2, psql 16.14). `docker port` dos dois → vazio (**nenhuma porta publicada no host**). `erp-postgres`/`erp-redis` (Exited) não tocados; 5432/6379 do host nunca alvo.
 - Árvore copiada ao container por `tar -T paths.txt` (3830 arquivos rastreados) → `md5sum -c` dentro: 0 divergência; amostra blob=container: `db-runtime-role.sh` `5cab4f63…`, `runtime-role.ts` `9efee03d…`, `san3-05-runtime-role-guard-db.test.ts` `57ab4744…`.
 - `npm ci` próprio no container ec=0 (326 pacotes, 13 s). `prisma generate` ec=0 e `prisma migrate deploy` ec=0 (107 migrations) com `DATABASE_URL` só no ambiente do comando (`docker exec -e DATABASE_URL`, subshell). Catálogo migrado: **115 tabelas · 106 FORCE · 0 views/matviews fora do catálogo do sistema**.
@@ -119,10 +119,10 @@ Resíduo do cluster depois das 5 suítes (22:12:21Z): papéis `s305%` 0 · banco
 - Conclusão 6: índice = gerador; 3 das 4 novas bem formadas; **`-MENSAGEM-DA-RECUSA` sem bloco dono** (ressalva de registro). Amostra antiga: 4/4 verdadeiras como escritas.
 
 ## 7. Limpeza §C5
-- `ls -d C:/Users/AMP/w-o05` → inexistente; `git worktree list | grep -c w-o05` → 0.
+- `ls -d ~/w-o05` → inexistente; `git worktree list | grep -c w-o05` → 0.
 - Ramo `fix/runtime-role-sem-bypass`: local `git branch --list` → 0; remoto `git ls-remote origin refs/heads/fix/runtime-role-sem-bypass` → 0; ref `origin/…` após `fetch --prune` → 0.
 - Containers `j05c4*`/`dev05c4*`/`dv05c4*`/`pl05c4*`/`insp405c4*` → 0; redes desses prefixos → 0.
-- Rascunho preservado: `find C:/Users/AMP/erp-pausa-2026-10-03/w-o05-scratchpad-405 -type f | wc -l` → **278** arquivos (confere com o R1 do inspetor: 278).
+- Rascunho preservado: `find ~/erp-pausa-2026-10-03/w-o05-scratchpad-405 -type f | wc -l` → **278** arquivos (confere com o R1 do inspetor: 278).
 - Volumes Docker órfãos (`docker volume ls -q -f dangling=true`) → **18** — resíduo alheio, de outras sessões (o inspetor do ciclo 4 já contou 18 no R1, antes das cadeiras). **Reportado, não varrido.**
 - Árvore principal: `git status --porcelain | grep -c '^ D'` → 0 (nenhum rastreado apagado). Os `??` são corpos de jurado de outros blocos (ignore global), não deste merge.
 - Base viva: `erp-postgres`/`erp-redis` estão `Exited` desde antes desta sessão e não foram alvo de nenhuma cadeira nem meu.
@@ -151,7 +151,7 @@ Próximo alvo: **o PLANO da trilha do Traccar** (sem código de ingestão em pro
 **Desvios meus, declarados:** (i) `-e PGPASSWORD=<valor>` uma vez no argv do `docker.exe` (cluster descartável, sem porta no host; item 3); (ii) às 22:19Z um `grep -rn` sem arquivo (erro meu de pipe) varreu em leitura a árvore principal por ~2 min; parei a tarefa (`TaskStop`) e matei o processo residual (PID MSYS 1356, linha de comando conferida como minha); nada foi escrito. Nenhum dos dois toca o mérito.
 
 ## Veredito
-**Teardown deste porteiro (22:21–22:23Z):** `docker rm -f -v port405-node port405-pg port405-redis` ec=0 ×3; `docker network rm port405-net` ec=0; containers/redes `port405` = 0; volumes anônimos do pg (`5fe53e38…`) e do redis (`86a9dfe1…`) removidos; volumes órfãos seguem **18** (alheios, intocados). Senha do cluster apagada do scratchpad. `git worktree remove --force C:/Users/AMP/w-port405` ec=0 → diretório inexistente, `git worktree list | grep -c port405` = 0, 0 processo com o caminho. `erp-postgres`, `erp-redis`, 5432, 6379 e `C:/Users/AMP/w-06b` nunca tocados. Disco 12 GB livres (igual ao início).
+**Teardown deste porteiro (22:21–22:23Z):** `docker rm -f -v port405-node port405-pg port405-redis` ec=0 ×3; `docker network rm port405-net` ec=0; containers/redes `port405` = 0; volumes anônimos do pg (`5fe53e38…`) e do redis (`86a9dfe1…`) removidos; volumes órfãos seguem **18** (alheios, intocados). Senha do cluster apagada do scratchpad. `git worktree remove --force ~/w-port405` ec=0 → diretório inexistente, `git worktree list | grep -c port405` = 0, 0 processo com o caminho. `erp-postgres`, `erp-redis`, 5432, 6379 e `~/w-06b` nunca tocados. Disco 12 GB livres (igual ao início).
 
 **Resumo dos achados (nenhum grave, nenhum de produto):**
 1. Produto mergeado = produto aprovado (patch-id `2bc57e75…` = `2bc57e75…`; 124/135 blobs iguais, os 11 restantes explicados: registro pós-voto e o lado da `main` em `docs/deployment.md`). Árvore do squash = árvore de `c16bf9be`.

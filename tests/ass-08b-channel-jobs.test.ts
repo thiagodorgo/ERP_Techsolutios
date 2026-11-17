@@ -120,6 +120,8 @@ test("poll-pending (b): cobrança pending sem evento há > 30 min é reconsultad
   const statement = await closedStatement(statements, 10000);
   port.reference = statement.id;
   await deps.refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas", externalChargeId: "pay_9" }, OLD);
+  // B-ASS-08c1c (Emenda 1.2 #1): a cobrança `pending` também na TABELA — o poll-pending lê a tabela (o marcador POLL-TABLE), não o espelho.
+  await deps.charges.insert({ tenantId: TENANT, statementId: statement.id, provider: "asaas", externalChargeId: "pay_9", status: "pending" }, OLD);
   const result = await runBillingPollPending(deps);
   assert.equal(result.charges, 1);
   assert.equal(port.lookups, 1, "uma reconsulta");
@@ -183,6 +185,8 @@ test("G12: o resolver do despacho guarda o cliente do provedor no perfil; perfil
   const statement = await closedStatement(statements, 10000);
   port.reference = statement.id;
   await deps.refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas", externalChargeId: "pay_g12" }, OLD);
+  // B-ASS-08c1c (Emenda 1.2 #2): a cobrança `pending` também na TABELA — o poll-pending lê a tabela (o marcador POLL-TABLE), não o espelho.
+  await deps.charges.insert({ tenantId: TENANT, statementId: statement.id, provider: "asaas", externalChargeId: "pay_g12", status: "pending" }, OLD);
   const result = await runBillingPollPending({ ...deps, resolveExpectedCustomerId: (tenantId, provider) => store.get(tenantId, provider) });
   assert.equal(result.outcomes.rejected, 1, "cliente da cobrança ≠ cliente guardado → rejeitada");
   assert.equal((await statements.findStatement(TENANT, statement.id))?.status, "closed", "nenhuma baixa");

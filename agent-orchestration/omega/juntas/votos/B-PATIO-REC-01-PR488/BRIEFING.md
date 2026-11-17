@@ -15,7 +15,7 @@
 - **A re-verificar, nunca tomar como fato:** as contagens do diário e o "sem achado" da pré-revisão.
 
 ## Terreno
-- **Worktree:** cada cadeira cria o próprio com `git -C C:/Users/thiag/Documents/GitHub/ERP_Techsolutios worktree add --detach <wt> ea6d4aef` e roda `npm ci` próprio. **Nunca junction.**
+- **Worktree:** cada cadeira cria o próprio com `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <wt> ea6d4aef` e roda `npm ci` próprio. **Nunca junction.**
 - **Postgres próprio** (`postgres:16`, em 127.0.0.1, usuário `postgres`):
   - C1: `j488-c1-pg`, porta 55491;
   - C2: `j488-c2-pg`, porta 55492;
@@ -51,5 +51,5 @@
   - Toda queda vai para `revisoes/j488/00-quedas.md` (P6).
   - Teto P5: no máximo 2 cadeiras ao mesmo tempo. A C3 roda junto com a C1, porque a C2 espera o limite do Codex; se a C2 começar antes de uma das duas terminar, ela espera.
 - **R4, terreno.** Num worktree novo, `npm run check` dá TS2305 até gerar o cliente Prisma. Rode `npm run db:generate` com um `DATABASE_URL` no ambiente; pode ser o do seu Postgres. Esse vermelho não é da base.
-- **R3.** `C:/Users/thiag/w-rec01` é o worktree do dev: está limpo e no objeto. Nenhum jurado o usa.
+- **R3.** `~/w-rec01` é o worktree do dev: está limpo e no objeto. Nenhum jurado o usa.
 - **R5.** A `main` andou depois do objeto, sem conflito e sem migração nova. Julga-se o objeto e o CI dele.

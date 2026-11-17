@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/appearance/app_appearance.dart';
+import '../../../core/appearance/app_appearance_providers.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/location/gps_service.dart';
 import '../../../core/location/location_consent_providers.dart';
@@ -11,6 +13,22 @@ import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 import '../../../shared/ui/mobile_kit.dart';
+import 'aparencias/location_consent_aparencias_shared.dart';
+import 'aparencias/location_consent_view_b.dart';
+import 'aparencias/location_consent_view_c.dart';
+
+/// B-APP-APARENCIA (F1) — o bloco "Captura" da opção C: a conferência de envio
+/// que já existe (`positionsStillAllowed`: concedido, registrado e o dono da
+/// sessão igual), lida a cada mudança da decisão. A regra continua lá.
+final _captureRegisteredProvider = FutureProvider.autoDispose<bool>((
+  ref,
+) async {
+  await ref.watch(locationConsentStatusProvider.future);
+  final tenantId =
+      ref.watch(bootstrapSessionProvider).asData?.value.activeTenant.tenantId ??
+      '';
+  return ref.read(locationConsentSyncProvider).positionsStillAllowed(tenantId);
+});
 
 /// Perfil › Privacidade › Localização (B-SAN3-17, itens 18 e 52; opção A da
 /// maquete `localizacao-consentimento-3opcoes.reference.html`).
@@ -70,14 +88,26 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
     final status = statusAsync.asData?.value;
     final needsDecision = status == null || status.needsDecision;
 
-    final title = !canSend
+    // B-APP-APARENCIA (F1): a aparência que a pessoa escolheu no Perfil.
+    // Carregando: o indicador da tela (nunca a A antes da B); erro: a A.
+    final appearanceAsync = ref.watch(
+      screenAppearanceProvider(kLocationConsentAppearanceKey),
+    );
+    final appearance = appearanceAsync.asData?.value;
+    final appearanceLoading = appearance == null && appearanceAsync.isLoading;
+
+    final title = appearance == AppAppearance.b
+        ? 'Privacidade · Localização'
+        : !canSend
         ? 'Privacidade · Localização'
         : (needsDecision
               ? 'Localização em campo'
               : 'Privacidade · Localização');
 
     final Widget body;
-    if (status == null && statusAsync.hasError) {
+    if (appearanceLoading) {
+      body = const Center(child: CircularProgressIndicator.adaptive());
+    } else if (status == null && statusAsync.hasError) {
       body = EmptyState(
         icon: Icons.error_outline,
         title: 'Não foi possível ler a sua decisão',
@@ -90,16 +120,84 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
     } else if (status == null) {
       body = const Center(child: CircularProgressIndicator.adaptive());
     } else {
+      // As vistas B e C recebem o estado pronto (Emenda 1, A4); a A é o corpo
+      // de hoje, sem mudança.
+      LocationConsentViewProps props() => _viewProps(
+        status,
+        canSend: canSend,
+        tenantId: tenantId,
+        captureRegistered:
+            appearance == AppAppearance.c &&
+            (ref.watch(_captureRegisteredProvider).asData?.value ?? false),
+      );
       body = _ConsentScope(
         status: status,
         tenantId: tenantId,
         busy: _busy,
         consentSync: consentSync,
-        child: canSend ? _consentBody(context, status) : const _BlockedBody(),
+        child: switch (appearance ?? AppAppearance.a) {
+          AppAppearance.a =>
+            canSend ? _consentBody(context, status) : const _BlockedBody(),
+          AppAppearance.b => LocationConsentViewB(props: props()),
+          AppAppearance.c => LocationConsentViewC(props: props()),
+        },
       );
     }
 
     return ErpScaffold(title: title, body: body);
+  }
+
+  /// O estado pronto das vistas B e C: os mesmos textos, linhas e ações da A,
+  /// calculados uma vez aqui.
+  LocationConsentViewProps _viewProps(
+    LocationConsentStatus status, {
+    required bool canSend,
+    required String tenantId,
+    required bool captureRegistered,
+  }) {
+    final gpsOk = ref.watch(gpsAvailableProvider).asData?.value;
+    final decision = _DecisionView.of(status);
+    final organization = _OrganizationView.of(status);
+    return LocationConsentViewProps(
+      blocked: !canSend,
+      granted: status.granted,
+      decisionPending: status.needsDecision || status.kind == null,
+      askDecline: status.needsDecision,
+      showReconfirm: status.needsReconfirm,
+      decisionTitle: decision.title,
+      decisionSubtitle: decision.subtitle,
+      decisionShort: decision.short,
+      organizationLine: organization.line,
+      organizationShort: organization.short,
+      organizationTone: organization.tone,
+      organizationIcon: organization.icon,
+      gpsAvailable: gpsOk,
+      capture: locationCaptureSummary(
+        captureRegistered: captureRegistered,
+        consentOnDevice: status.granted,
+        gpsAvailable: gpsOk != false,
+      ),
+      rows: [
+        for (final row in _rows(status, decision, organization, gpsOk))
+          LocationConsentUsageRowData(
+            id: row.id,
+            icon: row.icon,
+            title: row.title,
+            lines: row.lines,
+            trailing: row.trailing,
+            facts: row.facts,
+            action: row.action,
+          ),
+      ],
+      openRow: _openRow,
+      onToggleRow: _toggleRow,
+      onOpenRow: _openOnly,
+      busy: _busy,
+      onAccept: () => consentSync.accept(tenantId),
+      onDecline: () => consentSync.decline(tenantId),
+      onRevoke: () => consentSync.revoke(tenantId),
+      blockedState: _blockedState,
+    );
   }
 
   Widget _consentBody(BuildContext context, LocationConsentStatus status) {
@@ -205,7 +303,7 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
       ),
       const _UsageRow(
         id: 'fechado',
-        icon: Icons.lock_outline,
+        icon: Icons.block_outlined,
         title: 'Com o app fechado, nada',
         lines: [locationConsentClosedAppText],
       ),
@@ -537,6 +635,14 @@ class _RowDetail extends StatelessWidget {
   }
 }
 
+/// O estado "Acesso não permitido" da tela, um só para as 3 aparências
+/// (B-APP-APARENCIA F1: o T1/T9 do `bsan319b` contam 1 chamada por arquivo).
+const _blockedState = PermissionBlockedState(
+  title: 'Acesso não permitido',
+  message:
+      'Seu perfil não tem permissão para enviar localização. Fale com o administrador da sua organização.',
+);
+
 /// "Acesso não permitido" (padrão do #540). Se havia consentimento, a
 /// revogação continua e funciona: a rota de revogar não exige a permissão de
 /// enviar (P6).
@@ -551,11 +657,7 @@ class _BlockedBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const PermissionBlockedState(
-            title: 'Acesso não permitido',
-            message:
-                'Seu perfil não tem permissão para enviar localização. Fale com o administrador da sua organização.',
-          ),
+          _blockedState,
           if (scope.status.granted) ...[
             const SizedBox(height: 14),
             const Text(

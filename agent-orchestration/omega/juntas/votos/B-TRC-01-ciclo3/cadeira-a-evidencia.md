@@ -8,18 +8,18 @@ papel: cadeira (a″) ciclo 3 | identidade: jurado-trc01c3-a-rls-e-regressao (in
 - h2 = 2043c5840c8f60fe91538840aaefb3420a11cfe3, ancestral do objeto: ec=0 (sem rebase). `git diff --name-only 2043c584 e6b4a33a` = só agent-orchestration/ (ata e votos do ciclo 2).
 - package.json/package-lock.json h2→objeto: 0 arquivos (npm ci de um worktree serve aos dois commits).
 - uname: MINGW64_NT-10.0-22631 x86_64 · node v20.19.5 · df /c: 9.8G livres
-- $SCRATCH = C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/jtrc01c3-a
+- $SCRATCH = ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/jtrc01c3-a
 - Docker 20:01Z (`docker ps --format '{{.Names}}'`): outros = j07cb1c2-c2-runner, j07cb1c2-c2-pg (grupo 1: outra junta), jtrc01c3-c-pg, jtrc01c3-c-redis (grupo 2: cadeira c″); base viva à parte (não conta): erp-postgres, erp-redis → 2 trabalhos de outros = SEM VAGA. Faço antes o que não precisa de banco.
 - Leitura: NÃO li arquivo das cadeiras (b″)/(c″) deste ciclo (os arquivos existem na pasta; não abertos). Li: o corpo (blob do objeto), o mandato, o parecer do inspetor e 00-quedas.md.
 
 ## Legalidade
-- md5 do corpo .claude no blob do objeto = a454ff5c98827787825ab0d141ad94c5 (comando: `git -C C:/Users/AMP/w-trc01 show 7c220467:.claude/agents/especialistas/jurado-trc01c3-a-rls-e-regressao.md | tr -d '\r' | md5sum`) → IGUAL ao exigido. mandato `tr -d '\r' < 00-mandatos/cadeira-a.md | md5sum` = bae2ba9e… → IGUAL.
-- Inspetor: insp-trc01c3-parecer.md, instância inspetor-trc01c3-opus (o mandato nomeia inspetor-trc01c3-cdx; troca declarada na 1ª linha do parecer). Veredito LIBERADO COM RESSALVA (R-1..R-10). Nomeia a (a″) com identidade, worktree C:/Users/AMP/w-jc3-a, prefixo jtrc01c3-a-, portas 47761/47771 e md5 do corpo nos 2 espelhos (a454ff5c…/7f224a87…) e do mandato (bae2ba9e…) — todos conferidos por mim. Executor na tabela do inspetor: Codex GPT-5.6 Sol; quem roda é Claude Opus 5.5 (mesmo nível; declarado acima) — ressalva de legalidade, não impede.
+- md5 do corpo .claude no blob do objeto = a454ff5c98827787825ab0d141ad94c5 (comando: `git -C ~/w-trc01 show 7c220467:.claude/agents/especialistas/jurado-trc01c3-a-rls-e-regressao.md | tr -d '\r' | md5sum`) → IGUAL ao exigido. mandato `tr -d '\r' < 00-mandatos/cadeira-a.md | md5sum` = bae2ba9e… → IGUAL.
+- Inspetor: insp-trc01c3-parecer.md, instância inspetor-trc01c3-opus (o mandato nomeia inspetor-trc01c3-cdx; troca declarada na 1ª linha do parecer). Veredito LIBERADO COM RESSALVA (R-1..R-10). Nomeia a (a″) com identidade, worktree ~/w-jc3-a, prefixo jtrc01c3-a-, portas 47761/47771 e md5 do corpo nos 2 espelhos (a454ff5c…/7f224a87…) e do mandato (bae2ba9e…) — todos conferidos por mim. Executor na tabela do inspetor: Codex GPT-5.6 Sol; quem roda é Claude Opus 5.5 (mesmo nível; declarado acima) — ressalva de legalidade, não impede.
 - (i) diff h2→objeto sem prisma/migrations/ci.yml: o mandato mediu 0/0; re-medido abaixo no item 3(c). (ii) w-jc2-b/w-jc2-b3 declarados pelo inspetor (R-3), não tocados. (iii) mandatos marcam A RE-VERIFICAR: sim (mandato l.225-241).
 - Ressalvas lidas e aplicadas: R-8 (Docker 1 vaga quando muito; conto antes de subir), R-9 (npm run db:generate com URL inerte antes de check).
 
 ## Terreno (20:02Z–)
-- worktree: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-jc3-a 7c220467…` ec=0; `.git` presente; `.env` AUSENTE; HEAD=7c220467f754341a699c18c241fa9965c1a35638. `timeout -k 15 900 npm ci --no-audit --no-fund` ec=0 (326 pacotes, sem junction); `DATABASE_URL=<inerte 127.0.0.1:1> npm run db:generate` ec=0 (R-9). df /c após: 9.3G.
+- worktree: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-jc3-a 7c220467…` ec=0; `.git` presente; `.env` AUSENTE; HEAD=7c220467f754341a699c18c241fa9965c1a35638. `timeout -k 15 900 npm ci --no-audit --no-fund` ec=0 (326 pacotes, sem junction); `DATABASE_URL=<inerte 127.0.0.1:1> npm run db:generate` ec=0 (R-9). df /c após: 9.3G.
 - Para h2 (2043c584) uso o MESMO worktree trocando de commit dentro dele (package.json/lock sem diff h2→objeto; disco < 10 GB), restaurado e provado depois — declarado.
 
 ## Item 2 — CI (parte sem banco)
@@ -174,7 +174,7 @@ Execução pelo código do produto (`findOperatorsForVehicleAt` com um proxy do 
 // Uso: node --import tsx zz-jtrc01c3a-iso.mts ISO     (DATABASE_URL admin, JTRC_PW, JSCR só por prefixo)
 import { randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
-const WP = "C:/Users/AMP/w-jc3-a/";
+const WP = "~/w-jc3-a/";
 const W = "file:///" + WP;
 const SCR = process.env.JSCR!;
 const NUL = String.fromCharCode(0);
@@ -332,7 +332,7 @@ finally {
 // Controle (3) do item 1: com o código MUTADO (sem `d.tenant_id = ${input.tenantId}::uuid`), a consulta do produto
 // sob o papel do runtime e o GUC de A não devolve B (o RLS segura); sob BYPASSRLS devolve B (a disjunção sem as duas travas vaza).
 import { readFileSync } from "node:fs";
-const WP = "C:/Users/AMP/w-jc3-a/"; const W = "file:///" + WP; const SCR = process.env.JSCR!;
+const WP = "~/w-jc3-a/"; const W = "file:///" + WP; const SCR = process.env.JSCR!;
 const { PrismaPg } = await import(W + "node_modules/@prisma/adapter-pg/dist/index.mjs");
 const { PrismaClient } = await import(W + "node_modules/@prisma/client/default.js");
 const rls = await import(W + "src/database/rls.ts");
@@ -518,7 +518,7 @@ node --test --test-reporter=tap --import tsx tests/o6r07c-census-guard.test.ts >
 ````
 #!/usr/bin/env bash
 # uso: withdb.sh <banco> <comando...>  — DATABASE_URL (admin jadmin), REDIS_URL, JTRC_PW, JSCR só neste processo; nada exportado no shell do chamador
-S="C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/jtrc01c3-a"
+S="~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/jtrc01c3-a"
 PW="$(cat "$S/jtrc01c3-a.pw")"; DB="$1"; shift
 DATABASE_URL="postgresql://jadmin:${PW}@127.0.0.1:47761/${DB}?schema=public" REDIS_URL="redis://127.0.0.1:47771" JTRC_PW="$PW" JSCR="$S" LOG_LEVEL=silent "$@"
 ````
@@ -540,6 +540,6 @@ SELECT rolname, rolsuper, rolbypassrls, rolinherit FROM pg_roles WHERE rolname L
 ## Fim (21:10Z–21:20Z)
 - Objeto re-resolvido no fim: head do PR = ce20aa3f (igual ao início; delta só registro) → medi 7c220467. origin/main fim = 40c3651f066278654e2c71df4c3b38e1d90994c8 (andou de a26f8afe); merge-base com o objeto continua c260d362. Origem da suíte census-guard: `git log --diff-filter=A` → 86ea8a81 (2026-10-11, B-O6R-07c-a, #414).
 - **Queda do motor do Docker (~21:05Z)** durante o `npm ci` da minha re-execução Linux do census-guard: `error waiting for container: unexpected EOF`; todos os containers `Exited (255)`; `erp-*` reiniciaram sozinhos (política de reinício) — não toquei a base viva. Registro para o orquestrador (00-quedas/ata): não foi queda deste agente; o trabalho já estava medido e gravado; só a re-execução do census-guard ficou sem resultado (N-A1).
-- Teardown: `docker rm -f -v jtrc01c3-a-pg jtrc01c3-a-redis jtrc01c3-a-tl-pg jtrc01c3-a-tl-redis` (tl-run era `--rm`), `docker network rm jtrc01c3-a-tl-net` → `docker ps -a --filter name=jtrc01c3-a- -q | wc -l` = 0, redes 0. `log_statement`, papéis (rt, byp e os 8 `s305_*` da suíte do guard) e bancos viviam só nesses clusters e foram destruídos com eles. Worktree: HEAD = 7c220467, porcelain 0, processos vivos com `w-jc3-a` = 0 → `git worktree remove --force C:/Users/AMP/w-jc3-a` ec=0, ausente do disco e do `worktree list`. df /c no fim: 27G livres.
+- Teardown: `docker rm -f -v jtrc01c3-a-pg jtrc01c3-a-redis jtrc01c3-a-tl-pg jtrc01c3-a-tl-redis` (tl-run era `--rm`), `docker network rm jtrc01c3-a-tl-net` → `docker ps -a --filter name=jtrc01c3-a- -q | wc -l` = 0, redes 0. `log_statement`, papéis (rt, byp e os 8 `s305_*` da suíte do guard) e bancos viviam só nesses clusters e foram destruídos com eles. Worktree: HEAD = 7c220467, porcelain 0, processos vivos com `w-jc3-a` = 0 → `git worktree remove --force ~/w-jc3-a` ec=0, ausente do disco e do `worktree list`. df /c no fim: 27G livres.
 - grep da senha: evidência 0, voto 0, logs e ferramentas 0. A subpasta `$S` (só a minha, `scratchpad/jtrc01c3-a`) é apagada logo após esta linha, com o arquivo da senha.
 - Voto gravado em `cadeira-a-voto.json` (JSON validado por `node -e JSON.parse`): **APROVADO**, 4 notas não graves (N-A1..N-A4).

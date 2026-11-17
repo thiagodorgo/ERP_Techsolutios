@@ -31,7 +31,7 @@ julga **o contrato, o classificador e os consumidores**.
 Este corpo foi escrito por `fab-red-san322-opus` (Claude Opus 5.5, nível menor — §C7.6), nos papéis de fábrica e de redator, a partir do
 plano do bloco no ramo (`docs/revisoes/SAN3/B-SAN3-22-plano.md`: §2.3, §3, §8.1, §8.3, §8.5, E3-01…E3-03, E3-20, E3-21, **E3.5**,
 E3b-01…E3b-03, E3b-12, **E3b.4**, **E3b.5** e a ratificação do orquestrador de 2026-10-26 12:30Z) e do relatório do dev
-(`docs/revisoes/SAN3/B-SAN3-22-dev.md`, seções R e W, divergência **D-W1**), lidos no worktree `C:/Users/AMP/w-san322` no head `72e5944a`
+(`docs/revisoes/SAN3/B-SAN3-22-dev.md`, seções R e W, divergência **D-W1**), lidos no worktree `~/w-san322` no head `72e5944a`
 em 2026-10-26. O objeto da junta é o head **depois** do commit destes corpos. **Todo arquivo:linha, SHA e número abaixo é leitura
 [A RE-VERIFICAR]**; os nomes são as âncoras. Afirmação do plano, do dev, das críticas, do orquestrador, do inspetor e deste corpo é
 **roteiro, nunca fato**.
@@ -158,14 +158,14 @@ régua, declarado antes do veredito.
 
 - **Onde roda.** Git Bash no Windows do dono. Cada comando com `timeout -k 15 <s>`, saída para arquivo, `ec` lido em variável. **Nunca
   `tail -f`, `watch`, `| tail` nem leitura sem fim.** Caminho absoluto sempre; estado em arquivo no seu `$SCRATCH` (padrão
-  `C:/Users/AMP/erp-pausa-2026-10-03/j22-c2/`).
+  `~/erp-pausa-2026-10-03/j22-c2/`).
 - **Primeira linha do arquivo de evidência**, numa linha só:
   `papel: cadeira C2 | identidade: <nome da sessão> | corpo: jurado-san322-c2-contrato-classificador-consumidores | modelo: <modelo> (nível menor, §C7.6; substituição: <nenhuma | qual e por quê>) | objeto: <40 hex> | mandato_md5: <tr -d '\r' < mandato | md5sum> | corpo carregado × blob do objeto: IDENTICO | DIVERGE`.
   Logo abaixo: `origin/main` no início, `$SCRATCH`, `node -v`, livre em `C:`, memória de commit livre, as variáveis definidas (nomes).
-- **Arquivos de saída:** padrão `C:/Users/AMP/w-san322/agent-orchestration/omega/juntas/votos/B-SAN3-22/c2-evidencia.md` e `…/c2-voto.json`.
+- **Arquivos de saída:** padrão `~/w-san322/agent-orchestration/omega/juntas/votos/B-SAN3-22/c2-evidencia.md` e `…/c2-voto.json`.
   Única escrita sua em `w-san322`. Não commita.
-- **Worktree PRÓPRIO, detached, caminho CURTO, prefixo `j22-c2-`:** `C:/Users/AMP/j22-c2-wt`, por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j22-c2-wt <objeto>`; prove `.git` presente e
+- **Worktree PRÓPRIO, detached, caminho CURTO, prefixo `j22-c2-`:** `~/j22-c2-wt`, por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j22-c2-wt <objeto>`; prove `.git` presente e
   `.env` ausente. `npm ci --no-audit --no-fund` **próprio** (a raiz; o CE-37 importa um arquivo de `frontend/src` por caminho relativo —
   leia no blob se ele precisa de `frontend/node_modules`; se precisar, `npm --prefix frontend ci` também, e declare) e `npx prisma generate`
   com `DATABASE_URL` fictícia. **Junction ou symlink de `node_modules` é PROIBIDO** (§C7.1-ter(c)).
@@ -178,7 +178,7 @@ régua, declarado antes do veredito.
 - **PROIBIDO:** `git stash`, `git clean`, `git reset`, `git checkout` fora do seu worktree, `git worktree prune`, `rm -rf` de worktree,
   `git commit`, `git push`, `docker rm` sem o seu prefixo, `docker * prune`. Resíduo alheio se **reporta, não se varre**.
 - **Remoção só do que você criou:** `docker rm -f -v j22-c2-redis`, contagem `j22-c2-` = 0; worktree só com 0 processos no caminho
-  (`Get-CimInstance Win32_Process`), por `git worktree remove --force C:/Users/AMP/j22-c2-wt`.
+  (`Get-CimInstance Win32_Process`), por `git worktree remove --force ~/j22-c2-wt`.
 - **Mutação restaurável, no SEU worktree:** âncora única e EOL-consciente (conte: 1) → `git diff --numstat` não-vazio → um caso **irmão**
   verde (o mutante carrega) → medir (TAP para arquivo) → `git -C <wt> checkout <objeto> -- <f>` → `status --porcelain` vazio e
   `hash-object` = blob. O roteiro de mutações do dev (W2, W5, W9) é **roteiro**: diga de cada mutação se ela muta a propriedade do CE ou

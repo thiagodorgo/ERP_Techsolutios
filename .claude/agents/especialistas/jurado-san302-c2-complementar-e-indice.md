@@ -52,7 +52,7 @@ Se coincidir, pare. O sucessor de um caído tem identidade NOVA e reexecuta a ev
 
 ## Terreno próprio
 
-- **Worktree:** exclusivo em `C:/Users/AMP/w-jsan302-c2-<sufixo>`, com `npm ci` próprio e zero junction ou symlink de `node_modules`. Remova-o só por `git worktree remove --force`.
+- **Worktree:** exclusivo em `~/w-jsan302-c2-<sufixo>`, com `npm ci` próprio e zero junction ou symlink de `node_modules`. Remova-o só por `git worktree remove --force`.
 - **Cluster:** Postgres 16 descartável próprio, com containers e rede `jsan302-c2-*`, sem porta publicada. A suíte e o `prisma` rodam num container Linux próprio na mesma rede. Bases do drill: `CREATE DATABASE jsan302_c2_<caso>` dentro do **seu** cluster, apagadas no `finally`; prove `0` bases com esse prefixo no fim. Porta de host, só se inevitável: alta, efêmera, em `127.0.0.1`. São proibidas a base viva e as portas `5432`, `6379`, `3000`, `5173`, `5050` e `8899`.
 - **Docker:** no máximo **2 trabalhos Docker** na máquina, incluindo o seu. Conte os grupos alheios antes, excluindo `erp-*`; se já houver 2, espere. Nunca toque container alheio nem rode `prune`.
 - **Mutações:** no SQL da migração, no `schema.prisma` ou em `src/`, só numa cópia descartável, com âncora única e prova de aplicação em CRLF. Restaure provando `git hash-object` = blob do objeto.

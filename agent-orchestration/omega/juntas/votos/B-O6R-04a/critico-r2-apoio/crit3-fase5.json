@@ -20,7 +20,7 @@
       "err": {
         "name": "PrismaClientKnownRequestError",
         "code": "P2028",
-        "msg": " Invalid `this.client.stockMovement.create()` invocation in C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\inventory-prisma.repository.ts:436:54 433 readon"
+        "msg": " Invalid `this.client.stockMovement.create()` invocation in ~/Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\inventory-prisma.repository.ts:436:54 433 readon"
       },
       "ms": 5569
     },

@@ -9,14 +9,14 @@ Terreno medido pelo sucessor: git status --short vazio; HEAD cfb19fd115bac02ef65
 Check-runs próprios: [["docker", "completed", "success"], ["docker", "completed", "success"], ["frontend", "completed", "success"], ["authority-portal", "completed", "success"], ["backend-postgres", "completed", "success"], ["backend", "completed", "success"], ["flutter", "completed", "success"], ["owner-portal", "completed", "success"], ["flutter", "completed", "success"], ["owner-portal", "completed", "success"], ["backend", "completed", "success"], ["authority-portal", "completed", "success"], ["backend-postgres", "completed", "success"], ["frontend", "completed", "success"]]
 
 ### kpi-obj — 2026-10-28T21:26:06Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r3-kpi.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r3-kpi.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
 
 ### testes-obj — 2026-10-28T21:26:28Z
-Comando: `cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/dense-expandable-row.test.tsx tests/finance-contas-extrato.smoke.test.tsx tests/pattern-css-guard.test.ts`
+Comando: `cd ~/j12b-c3-c1r3-wt/frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/dense-expandable-row.test.tsx tests/finance-contas-extrato.smoke.test.tsx tests/pattern-css-guard.test.ts`
 
 ### item1-obj — 2026-10-28T21:26:29Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
-Saída ec=1, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/kpi-obj.log
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
+Saída ec=1, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/kpi-obj.log
 node:internal/modules/run_main:122
     triggerUncaughtException(
     ^
@@ -25,15 +25,15 @@ page.goto: Timeout 30000ms exceeded.
 Call log:
 [2m  - navigating to "http://127.0.0.1:48261/finance?aba=rec", waiting until "load"[22m
 
-    at openPage (C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\zz-j12bc1r2-harness.mjs:131:14)
-    at async file:///C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/zz-j12bc1r3-kpi.mjs:42:29 {
+    at openPage (~/erp-pausa-2026-10-03\j12b3-c1r3-s61\zz-j12bc1r2-harness.mjs:131:14)
+    at async file:///~/erp-pausa-2026-10-03/j12b3-c1r3-s61/zz-j12bc1r3-kpi.mjs:42:29 {
   name: 'TimeoutError'
 }
 
 Node.js v22.14.0
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
-Saída ec=1, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/item1-obj.log
+Saída ec=1, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/item1-obj.log
 node:internal/modules/run_main:122
     triggerUncaughtException(
     ^
@@ -42,15 +42,15 @@ page.goto: Timeout 30000ms exceeded.
 Call log:
 [2m  - navigating to "http://127.0.0.1:48261/finance?aba=rec", waiting until "load"[22m
 
-    at openPage (C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\zz-j12bc1r2-harness.mjs:131:14)
-    at async file:///C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/zz-j12bc1r2-item1.mjs:30:37 {
+    at openPage (~/erp-pausa-2026-10-03\j12b3-c1r3-s61\zz-j12bc1r2-harness.mjs:131:14)
+    at async file:///~/erp-pausa-2026-10-03/j12b3-c1r3-s61/zz-j12bc1r2-item1.mjs:30:37 {
   name: 'TimeoutError'
 }
 
 Node.js v22.14.0
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/testes-obj.log
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/testes-obj.log
 # tests 54
 # pass 54
 # fail 0
@@ -60,8 +60,8 @@ Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/testes-obj.lo
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### kpi-retry — 2026-10-28T21:27:34Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r3-kpi.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/kpi-retry.log
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r3-kpi.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/kpi-retry.log
 KPI 1280 row="pat-kpi-row pat-kpi-row--6" style=null :: R$ 126.958,65|15.5px|cabe=true(122/122)|sobra=37|pinta=true|lbl=true|hint=true ; R$ 167.692,35|15.5px|cabe=true(122/122)|sobra=37|pinta=true|lbl=true|hint=true ; R$ 56.999,50|15.5px|cabe=true(122/122)|sobra=44|pinta=true|lbl=true|hint=true ; R$ 56.330,00|15.5px|cabe=true(122/122)|sobra=44|pinta=true|lbl=true|hint=true ; R$ 30.520,00|15.5px|cabe=true(122/122)|sobra=44|pinta=true|lbl=true|hint=true ; 2|15.5px|cabe=true(122/122)|sobra=129|pinta=true|lbl=true|hint=true
 KPI 1366 row="pat-kpi-row pat-kpi-row--6" style=null :: R$ 126.958,65|18px|cabe=true(136/136)|sobra=35|pinta=true|lbl=true|hint=true ; R$ 167.692,35|18px|cabe=true(136/136)|sobra=35|pinta=true|lbl=true|hint=true ; R$ 56.999,50|18px|cabe=true(136/136)|sobra=43|pinta=true|lbl=true|hint=true ; R$ 56.330,00|18px|cabe=true(136/136)|sobra=43|pinta=true|lbl=true|hint=true ; R$ 30.520,00|18px|cabe=true(136/136)|sobra=43|pinta=true|lbl=true|hint=true ; 2|18px|cabe=true(136/136)|sobra=142|pinta=true|lbl=true|hint=true
 KPI 1440 row="pat-kpi-row pat-kpi-row--6" style=null :: R$ 126.958,65|18px|cabe=true(149/149)|sobra=47|pinta=true|lbl=true|hint=true ; R$ 167.692,35|18px|cabe=true(149/149)|sobra=47|pinta=true|lbl=true|hint=true ; R$ 56.999,50|18px|cabe=true(149/149)|sobra=56|pinta=true|lbl=true|hint=true ; R$ 56.330,00|18px|cabe=true(149/149)|sobra=56|pinta=true|lbl=true|hint=true ; R$ 30.520,00|18px|cabe=true(149/149)|sobra=56|pinta=true|lbl=true|hint=true ; 2|18px|cabe=true(149/149)|sobra=154|pinta=true|lbl=true|hint=true
@@ -70,16 +70,16 @@ ALIGN pa
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### item2-obj — 2026-10-28T21:28:08Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item2.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item2.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
 
 ### item1-retry — 2026-10-28T21:28:08Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
 
 2026-10-28T21:28:58.277327+00:00 — P3 comparação própria: kpi-obj.json do sucessor reproduz R-E3-3 e R-E3-4 do parcial preservado: sobras 37/37/44/44/44 (1280), 35/35/43/43/43 (1366), 47/47/56/56/56 (1440); scrollWidth=clientWidth, rótulos/hints íntegros; th/td right/tabular-nums, linhas 42/42/41 px. Mesma saída substantiva do antecessor. VERDE parcial. Timeout inicial de goto não é evidência contra produto; repetição kpi-retry ec=0. Vite PID Windows 20664, 127.0.0.1:48261.
 
 ### static-item3 — 2026-10-28T21:28:58Z
-Comando: `cd C:/Users/AMP/j12b-c3-c1r3-wt && git diff cfb19fd1~6 cfb19fd1 -- frontend/src/styles/app.css frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx COMPONENT_LIBRARY.md && git grep -n pat-btn--secondary cfb19fd1 -- frontend/src; test $? -eq 1`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/static-item3.log
+Comando: `cd ~/j12b-c3-c1r3-wt && git diff cfb19fd1~6 cfb19fd1 -- frontend/src/styles/app.css frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx COMPONENT_LIBRARY.md && git grep -n pat-btn--secondary cfb19fd1 -- frontend/src; test $? -eq 1`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/static-item3.log
 diff --git a/COMPONENT_LIBRARY.md b/COMPONENT_LIBRARY.md
 index 5e8de9a3..1e400f7f 100644
 --- a/COMPONENT_LIBRARY.md
@@ -101,10 +101,10 @@ index dcd0caa0..39f7e506 100644
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### static-verificado — 2026-10-28T21:30:39Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/static.py`
-Saída ec=1, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/static-verificado.log
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/static.py`
+Saída ec=1, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/static-verificado.log
 Traceback (most recent call last):
-  File "C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\static.py", line 21, in <module>
+  File "~/erp-pausa-2026-10-03\j12b3-c1r3-s61\static.py", line 21, in <module>
     assert all(t in e22 for t in ['D-5','D-9','Carregar','BUSCA-TABELA'])
            ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
@@ -112,10 +112,10 @@ AssertionError
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### static-verificado-retry — 2026-10-28T21:30:51Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/static.py`
-Saída ec=1, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/static-verificado-retry.log
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/static.py`
+Saída ec=1, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/static-verificado-retry.log
 Traceback (most recent call last):
-  File "C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\static.py", line 21, in <module>
+  File "~/erp-pausa-2026-10-03\j12b3-c1r3-s61\static.py", line 21, in <module>
     assert all(t.lower() in e22.lower() for t in ['D-5','D-9','Carregar','BUSCA-TABELA'])
            ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
@@ -123,8 +123,8 @@ AssertionError
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### static-final — 2026-10-28T21:31:06Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/static.py`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/static-final.log
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/static.py`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/static-final.log
 Item 3 VERDE: CSS 8 acréscimos = 2 comentários + 6 regras autorizadas; 0 remoção; nenhuma outra regra pat-kpi alterada. View 2 substituições exatas. Componentes alterados no ciclo 3: 0; novos tokens/modificadores além da variante autorizada: 0.
  Divergências da opção A DECLARADAS (fidelidade, para a C1 julgar como declaradas, não como silêncio)
 - **D-5 (mantida):** "Conciliação por conta" mostra a contagem a conciliar por conta (dado do `GET /financial-entries/aggregate?group_by=none&account_id=…&reconciled=false`), não a barra conciliado/ressalva/a conciliar da maquete: o agregado do 12a não agrupa por conta, e a barra exigiria 3 consultas por conta.
@@ -140,16 +140,16 @@ Item 3 VERDE: CSS 8 acréscimos = 2 comentários + 6 regras autorizadas; 0 remo�
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### regressao-r3 — 2026-10-28T21:31:29Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-r3.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj && node zz-j12bc1r2-semEntries.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-r3.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj && node zz-j12bc1r2-semEntries.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
 
 2026-10-28T21:32:04.116764+00:00 — Item 3 FECHADO VERDE: comando static.py (versão final no scratch), static-final.log ec=0; tentativas anteriores falharam por recorte do texto da E2.2 pegando uma citação anterior do cabeçalho, corrigido com rsplit; nenhuma falha de produto. CSS 6 regras + 2 comentários, 0 regra alheia; view só grade e pat-btn; variante autorizada registrada; nenhum componente novo no ciclo 3; E2.2 e E3.2 explícitas. pattern-css-guard passou no testes-obj.log (54/54).
 
 ### dom-opcaoA — 2026-10-28T21:32:18Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item3.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item3.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 obj`
 
 ### legalidade-detalhe — 2026-10-28T21:32:51Z
-Comando: `cd C:/Users/AMP/j12b-c3-c1r3-wt && node -v && git diff --name-only cfb19fd1~6 cfb19fd1 && git diff --check && git status --short`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/legalidade-detalhe.log
+Comando: `cd ~/j12b-c3-c1r3-wt && node -v && git diff --name-only cfb19fd1~6 cfb19fd1 && git diff --check && git status --short`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/legalidade-detalhe.log
 v22.14.0
 COMPONENT_LIBRARY.md
 agent-orchestration/controle/pendencias-indice.md
@@ -180,7 +180,7 @@ frontend/tests/finance-no-money-reduce.guard.test.ts
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 2026-10-28T21:33:00.031871+00:00 — Comando Python blob/EOL: corpo carregado idêntico ao blob; conteúdo do título Cadeira C1 até fim IDENTICO entre os dois espelhos (preâmbulos específicos removidos). Normas medidas em cfb19fd1, contagens {'D-PADRAO-BLOCOS-CLICAVEIS': 3, 'D-TELAS-SEGUEM-O-PADRAO': 4, 'D-DESIGN-SO-CLAUDE': 2, 'D-TELAS-SAEM-COM-TRES': 3, 'D-MEDIR-NA-REF-ALVO': 1, 'D-INSPETOR-TERRENO-JUNTA': 2, 'D-JUNTA-SEPARACAO-DE-PAPEIS': 1, 'D-GOV-PROPORCIONAL': 3, 'D-JUNTA-SO-CADEIRA-VERMELHA': 1, 'D-PAUSA-GRAVA-E-PARA': 2, 'P1 —': 1, 'P2 —': 1, 'P3 —': 1, 'P4 —': 1, 'P7 —': 1}. Dependências reaproveitadas por autorização expressa (npm ci já realizado pelo antecessor não é nova medição de produto); Node 22 absoluto.
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/regressao-r3.log
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/regressao-r3.log
 ok
 {
  "rec": {
@@ -207,7 +207,7 @@ ok
 }
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
-Saída ec=1, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/item1-retry.log
+Saída ec=1, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/item1-retry.log
 node:internal/modules/run_main:122
     triggerUncaughtException(
     ^
@@ -216,8 +216,8 @@ page.waitForSelector: Timeout 15000ms exceeded.
 Call log:
 [2m  - waiting for locator('[data-aparencia="A"]') to be visible[22m
 
-    at ready (C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\zz-j12bc1r2-harness.mjs:136:14)
-    at C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\zz-j12bc1r2-item1.mjs:117:13 {
+    at ready (~/erp-pausa-2026-10-03\j12b3-c1r3-s61\zz-j12bc1r2-harness.mjs:136:14)
+    at ~/erp-pausa-2026-10-03\j12b3-c1r3-s61\zz-j12bc1r2-item1.mjs:117:13 {
   name: 'TimeoutError'
 }
 
@@ -226,8 +226,8 @@ Node.js v22.14.0
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### r3-confirmado — 2026-10-28T21:35:23Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-r3.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto && node zz-j12bc1r2-semEntries.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/r3-confirmado.log
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-r3.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto && node zz-j12bc1r2-semEntries.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/r3-confirmado.log
 ok
 {
  "rec": {
@@ -296,41 +296,41 @@ ok
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### item1-r1 — 2026-10-28T21:37:27Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 r1 r1`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/item1-r1.log
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 r1 r1`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/item1-r1.log
 ok
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### item1-f12 — 2026-10-28T21:38:56Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 f12 f12`
-Saída ec=124, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/item2-obj.log
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 f12 f12`
+Saída ec=124, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/item2-obj.log
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/item1-f12.log
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/item1-f12.log
 ok
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### item1-f11 — 2026-10-28T21:39:55Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 f11 f11`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item1.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 f11 f11`
 
 ### item2-matrix-robusta — 2026-10-28T21:40:19Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item2.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto matrix`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item2.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto matrix`
 
 ### dom-robusto — 2026-10-28T21:41:21Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item3.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto sweep normal`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item3.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto sweep normal`
 
 2026-10-28T21:42:12.879304+00:00 — R1/R2: node item1.mjs ... r1 r1 ec=0; item1-r1.json confirma chip Conta acima da lista, remoção em 1 clique e pedido sem account_id; KPIs da organização limpam conta; flex, nome/contagem a 13 px da borda, nome longo 216 caracteres cortado, title inteiro e gap 8 px. VERDE.
 F12: comando item1.mjs ... f12 f12 ec=0; saída completa própria: {"label": "f12", "pressables": [], "rows": {"rec": {"static": [{"h": 42, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": [{"textOverflow": "ellipsis", "whiteSpace": "nowrap", "titleLen": 217, "textLen": 217}]}, {"h": 42, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": []}, {"h": 42, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": []}], "click0": {"details": 1, "nextIsDetail": true, "gapY": 0, "exp": "true", "detailButtons": ["Registrar recebimento"]}, "click1": {"details": 1, "r0exp": "false", "r1exp": "true", "nextOf1IsDetail": true}, "kbd": {"reachedByTab": true, "focused": {"fv": true, "outline": "solid 2px rgb(37, 99, 235)", "shadow": "none"}, "unfocused": {"outline": "none 3px rgb(15, 23, 42)", "shadow": "none"}, "enter": {"exp": "true", "details": 1, "focusOnRow": true}, "escape": {"exp": "false", "details": 0, "focusOnRow": true}, "space": {"exp": "true", "details": 1, "focusOnRow": true}, "escape2": {"exp": "false", "details": 0, "focusOnRow": true}}}, "pag": {"static": [{"h": 42, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": []}, {"h": 42, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": [{"textOverflow": "ellipsis", "whiteSpace": "nowrap", "titleLen": 211, "textLen": 211}]}], "click0": {"details": 1, "nextIsDetail": true, "gapY": 0, "exp": "true", "detailButtons": ["Registrar pagamento"]}, "click1": {"details": 1, "r0exp": "false", "r1exp": "true", "nextOf1IsDetail": true}, "kbd": {"reachedByTab": true, "focused": {"fv": true, "outline": "solid 2px rgb(37, 99, 235)", "shadow": "none"}, "unfocused": {"outline": "none 3px rgb(15, 23, 42)", "shadow": "none"}, "enter": {"exp": "true", "details": 1, "focusOnRow": true}, "escape": {"exp": "false", "details": 0, "focusOnRow": true}, "space": {"exp": "true", "details": 1, "focusOnRow": true}, "escape2": {"exp": "false", "details": 0, "focusOnRow": true}}}, "ext": {"static": [{"h": 41, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": [{"textOverflow": "ellipsis", "whiteSpace": "nowrap", "titleLen": 200, "textLen": 200}]}, {"h": 41, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": []}, {"h": 41, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": []}], "click0": {"details": 1, "nextIsDetail": true, "gapY": 0, "exp": "true", "detailButtons": ["Conciliar"]}, "click1": {"details": 1, "r0exp": "false", "r1exp": "true", "nextOf1IsDetail": true}, "kbd": {"reachedByTab": true, "focused": {"fv": true, "outline": "solid 2px rgb(37, 99, 235)", "shadow": "none"}, "unfocused": {"outline": "none 3px rgb(15, 23, 42)", "shadow": "none"}, "enter": {"exp": "true", "details": 1, "focusOnRow": true}, "escape": {"exp": "false", "details": 0, "focusOnRow": true}, "space": {"exp": "true", "details": 1, "focusOnRow": true}, "escape2": {"exp": "false", "details": 0, "focusOnRow": true}}}, "conc": {"static": [{"h": 41, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": [{"textOverflow": "ellipsis", "whiteSpace": "nowrap", "titleLen": 200, "textLen": 200}]}, {"h": 41, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": []}, {"h": 41, "interactive": 0, "tabIndex": 0, "expanded": "false", "cut": []}], "click0": {"details": 1, "nextIsDetail": true, "gapY": 0, "exp": "true", "detailButtons": ["Conciliar"]}, "click1": {"details": 1, "r0exp": "false", "r1exp": "true", "nextOf1IsDetail": true}, "kbd": {"reachedByTab": true, "focused": {"fv": true, "outline": "solid 2px rgb(37, 99, 235)", "shadow": "none"}, "unfocused": {"outline": "none 3px rgb(15, 23, 42)", "shadow": "none"}, "enter": {"exp": "true", "details": 1, "focusOnRow": true}, "escape": {"exp": "false", "details": 0, "focusOnRow": true}, "space": {"exp": "true", "details": 1, "focusOnRow": true}, "escape2": {"exp": "false", "details": 0, "focusOnRow": true}}}}, "focus": {"focusedByTab": [{"label": "Saldo em caixa: R$ 12.850,75 —", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "Entradas em outubro: R$ 2.300,", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "Saídas em outubro: R$ 640,00 —", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "A receber vencido: R$ 1.000,00", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "A pagar vencido: R$ 0,00 — fil", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "A conciliar: 2 lançamentos — v", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "maio: entradas R$ 900,00, saíd", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "junho: entradas R$ 1.100,00, s", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "julho: entradas R$ 1.500,00, s", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "agosto: entradas R$ 1.300,00, ", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "setembro: entradas R$ 1.700,00", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "outubro: entradas R$ 2.300,50,", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "Banco do Brasil: 1 a conciliar", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "Caixa da loja: 1 a conciliar —", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "Vencidos: 1 — filtrar a lista", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "Vencem hoje: 1 — filtrar a lis", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "Próximos 7 dias: 1 — filtrar a", "fv": true, "outline": "solid 2px", "shadow": "none"}, {"label": "Recebidos em parte: 1 — filtra", "fv": true, "outline": "solid 2px", "shadow": "none"}], "repouso": {"outline": "none 3px", "shadow": "none"}}, "scenarios": {}, "faixa": {}}
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/dom-robusto.log
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/dom-robusto.log
 ok
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### origem-pendencias — 2026-10-28T21:42:27Z
-Comando: `cd C:/Users/AMP/j12b-c3-c1r3-wt && git blame cfb19fd1 -L 108,120 -- frontend/src/modules/finance/dashboard/financial-summary.adapter.ts && sed -n "12,65p" src/modules/financial-summary/financial-summary.types.ts && grep -n "financial_entries:read\|finance:read" src/modules/core-saas/permissions/catalog.ts && sed -n "1119,1126p" docs/revisoes/SAN3/B-SAN3-12-plano.md`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/origem-pendencias.log
+Comando: `cd ~/j12b-c3-c1r3-wt && git blame cfb19fd1 -L 108,120 -- frontend/src/modules/finance/dashboard/financial-summary.adapter.ts && sed -n "12,65p" src/modules/financial-summary/financial-summary.types.ts && grep -n "financial_entries:read\|finance:read" src/modules/core-saas/permissions/catalog.ts && sed -n "1119,1126p" docs/revisoes/SAN3/B-SAN3-12-plano.md`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/origem-pendencias.log
 08d009492 (thiagodorgo 2026-07-18 17:28:00 -0300 108)     if (typeof value === "string" && value.length > 0) return value;
 08d009492 (thiagodorgo 2026-07-18 17:28:00 -0300 109)   }
 08d009492 (thiagodorgo 2026-07-18 17:28:00 -0300 110)   return undefined;
@@ -376,7 +376,7 @@ Parcial: execução própria registrada; juízo após leitura do resultado.
 DOM próprio: comando dom-robusto, node item3.mjs ... robusto sweep normal (4 abas, todos os detalhes e modais disponíveis); 4139 nós em 25 telas; hits=[]; grafias sem acento=[]. Lista de grafias e regex estão no script copiado. Escopo da varredura declarado: estado normal, abas e detalhes, não 134 telas da execução antiga.
 
 ### item2-f19-robusto — 2026-10-28T21:44:47Z
-Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item2.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto f19`
+Comando: `cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r2-item2.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 robusto f19`
 
 2026-10-28T21:45:40.689547+00:00 — Matriz robusta (aguarda montagem; item2-robusto-matrix.json): 4 abas × 10 estados. Recursos agora 11,73 GiB C e commit livre 17,33 GiB. Saída própria célula por célula: 
 [
@@ -999,17 +999,17 @@ Comando: `cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && node zz-j12bc1r
 ]
 
 2026-10-28T21:46:36.428888+00:00 — Matriz de estados FECHADA VERDE (4 × 10; artefato robusto completo e log final ok). wrapper da primeira repetição emitiu EOF ao ser atualizado em execução, depois do Node terminar: falha do meu registro auxiliar, não do produto; ec do wrapper não é usado como verde. Resultado célula a célula acima. 500/rede/403 não viram vazio; técnico sem aparência A; R10 forbidden nas contas; stale mantém 3/2/3/3 linhas e faixa nas quatro.
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/item2-f19-robusto.log
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/item2-f19-robusto.log
 controle (dado completo) {"kpis":[{"value":"R$ 12.850,75","label":"Saldo em caixa","hint":"2 contas ativas","tag":"agora"},{"value":"R$ 2.300,50","label":"Entradas em outubro","hint":"setembro: R$ 1,7k"},{"value":"R$ 640,00","label":"Saídas em outubro","hint":"setembro: R$ 800"},{"value":"R$ 1.000,00","label":"A receber vencido","hint":"1 título para cobrar ou baixar","tag":"1 título"},{"value":"R$ 0,00","label":"A pagar vencido","hint":"0 títulos para pagar ou baixar","tag":"0 títulos"},{"value":"2","label":"A conciliar","hint":"R$ 200,00 a entrar · R$ 80,00 a sair"}],"cards":[],"porConta":[],"blocks":["Vencidos1","Vencem hoje1","Próximos 7 dias1","Recebidos em parte1"],"tabs":["A receber2","A pagar1","Contas e extrato","Conciliação2"],"cheque":"R$ 1.000,00 em 1 cheque vinculado a títulos aguardam compensação: esses títulos baixam sozinhos quando o cheque compensar.","states":[]}
 summary.cash.totalBalance ausente {"kpis":[{"value":"R$ 0,00","label":"Saldo em caixa","hint":"2 contas ativas","tag":"agora"},{"value":"R$ 2.300,50","label":"Entradas em outubro","hint":"setembro: R$ 1,7k"},{"value":"R$ 640,00","label":"Saídas em outubro","hint":"setembro: R$ 800"},{"value":"R$ 1.000,00","label":"A receber vencido","hint":"1 título para cobrar ou baixar","tag":"1 título"},{"value":"R$ 0,00","label":"A pagar vencido","hint":"0 títulos para pagar ou baixar","tag":"0 títulos"},{"value":"2","label":"A conciliar","hint":"R$ 200,00 a entrar · R$ 80,00 a sair"}],"cards":[],"porConta":[],"blocks":["Vencidos1","Vencem hoje1","Próximos 7 dias1","Recebidos em parte1"],"tabs":["A receber2","A pagar1","Contas e extrato","Conciliação2"],"cheque":"R$ 1.000,00 em 1 cheque vinculado a títulos aguardam compensação: esses títulos baixam sozinhos quando o cheque compensar.","states":[]}
 summary.cash.totalBalance null {"kpis":[{"value":"R$ 0,00","label":"Saldo em caixa","hint":"2 contas ativas","tag":"agora"},{"value":"R$ 2.300,50","label":"Entradas
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### mutacoes — 2026-10-28T21:48:09Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.py`
-Saída ec=1, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.log
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.py`
+Saída ec=1, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.log
 Traceback (most recent call last):
-  File "C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\mutacoes.py", line 37, in <module>
+  File "~/erp-pausa-2026-10-03\j12b3-c1r3-s61\mutacoes.py", line 37, in <module>
     assert run('git -C '+str(W)+' rev-parse HEAD','mut-head.log')[1].strip()=='cfb19fd115bac02ef65eb94202b01a64e6730854'
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
@@ -1017,11 +1017,11 @@ AssertionError
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### mutacoes-validas — 2026-10-28T21:48:25Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.py`
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.py`
 
 ### Mutação M-E3-3a — 2026-10-28T21:48:25.968197+00:00
 âncora '.pat-kpi-row--6 .pat-kpi__value { font-size: 18px; letter-spacing: -0.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R-E3-3|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R-E3-3|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
 ec=1
 not ok 2 - R-E3-3: a variante .pat-kpi-row--6 existe no CSS efetivo — grade de 6, valor a 18 px sem quebra e com reticências, 15,5 px até 1340 px
 # tests 3
@@ -1034,7 +1034,7 @@ Restauro hash-object = blob 15ee6a2110e7fb821839f889ef0b01f6819bb3f7
 
 ### Mutação M-E3-3b — 2026-10-28T21:48:29.420629+00:00
 âncora 'className="pat-kpi-row pat-kpi-row--6"' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R-E3-3|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R-E3-3|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
 ec=1
 not ok 3 - R-E3-3: a linha de indicadores da opção A usa a classe da biblioteca, sem grade inline — carregada e no esqueleto
 # tests 3
@@ -1042,7 +1042,7 @@ not ok 3 - R-E3-3: a linha de indicadores da opção A usa a classe da bibliotec
 # fail 1
 # skipped 0
 # duration_ms 1117.9079
-Sonda: cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && timeout -k 15 180 node zz-j12bc1r3-kpi.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 mutE33b
+Sonda: cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && timeout -k 15 180 node zz-j12bc1r3-kpi.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 mutE33b
 ec=0
 KPI 1280 row="pat-kpi-row" style=grid-template-columns: repeat(6, minmax(0px, 1fr)); :: R$ 126.958,65|27px|cabe=false(175/122)|sobra=-37|pinta=true|lbl=true|hint=true ; R$ 167.692,35|27px|cabe=false(175/122)|sobra=-37|pinta=true|lbl=true|hint=true ; R$ 56.999,50|27px|cabe=false(163/122)|sobra=-25|pinta=true|lbl=true|hint=true ; R$ 56.330,00|27px|cabe=false(163/122)|sobra=-25|pinta=true|lbl=true|hint=true ; R$ 30.520,00|27px|cabe=false(163/122)|sobra=-25|pinta=true|lbl=true|hint=true ; 2|27px|cabe=true(122/122)|sobra=123|pinta=true|lbl=true|hint=true
 KPI 1366 row="pat-kpi-row" style=grid-template-columns: repeat(6, minmax(0px, 1fr)); :: R$ 126.958,65|27px|cabe=false(175/136)|sobra=-23|pinta=true|lbl=true|hint=true ; R$ 167.692,35|27px|cabe=false(175/136)|sobra=-23|pinta=true|lbl=true|hint=true ; R$ 56.999,50|27px|cabe=false(163/136)|sobra=-11|pinta=true|lbl=true|hint=true ; R$ 56.330,00|27px|cabe=false(163/136)|sobra=-11|pinta=true|lbl=true|hint=true ; R$ 30.520,00|27px|cabe=false(163/136)|sobra=-11|pinta=true|lbl=true|hint=true ; 2|27px|cabe=true(136/136)|sobra=137|pinta=true|lbl=true|hint=true
@@ -1057,7 +1057,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação M-E3-4 — 2026-10-28T21:48:52.250603+00:00
 âncora '.pat-ab-table th.dense-col-right, .pat-ab-row td.dense-col-right { text-align: right; }' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R-E3-4|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R-E3-4|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
 ec=1
 not ok 3 - R-E3-4: o skin .pat-ab-table alinha à direita e tabula as colunas de dinheiro no CSS efetivo (espelho de .dense-table)
 # tests 3
@@ -1070,7 +1070,7 @@ Restauro hash-object = blob 15ee6a2110e7fb821839f889ef0b01f6819bb3f7
 
 ### Mutação M-E3-5 — 2026-10-28T21:48:55.503249+00:00
 âncora 'label="Vencimento"' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F17|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F17|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
 ec=1
 not ok 2 - F17: nenhum termo técnico (tenant, role, reconciled, rota de API) nos textos de tela do Financeiro (12b)
 # tests 5
@@ -1083,7 +1083,7 @@ Restauro hash-object = blob c6817e5b696df0ccc17489bf4ea4214da31ed65c
 
 ### Mutação R1-M1 — 2026-10-28T21:48:58.769269+00:00
 âncora 'if (selectedAccountName && (state.tab === "ext" || state.tab === "conc"))' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R1:|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R1:|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 2 - R1: filtro de conta convive com o alvo e sai com um clique sem manter account_id
 not ok 3 - R1: indicador da organização limpa a conta selecionada antes de abrir 'A conciliar'
@@ -1097,7 +1097,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação R1-M2 — 2026-10-28T21:49:03.090173+00:00
 âncora 'go({ tab: "conc", target: "conc:pendente", accountId: null })' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R1:|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R1:|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 3 - R1: indicador da organização limpa a conta selecionada antes de abrir 'A conciliar'
 # tests 3
@@ -1113,7 +1113,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 2026-10-28T21:49:09.613571+00:00 — Item 1 F11: node item1.mjs ... f11 f11 terminou com log ok e item1-f11.json completo (wrapper EOF pelo mesmo motivo já declarado, sem uso do ec do wrapper como aprovação). 70/70 BUTTON, after=true; 66 filtros clear=false. Saldo em caixa (4 ocorrências) mantém true: navega para a lista sem filtro, estado selecionado da aba, não há chip a limpar. Dado exato publicado, sem afirmar 70 clear=false. Todas as entradas/saídas/A conciliar alteram query; vencidos filtram títulos localmente. Foco de todos os 18 controles da aba inicial: outline solid 2px ao Tab (F12.json).
 Item 2 F19: comando item2.mjs ... robusto f19 ec=0, 38 formas (controle + 22 campos ausente/null + 5 grupos ausentes + 8 endpoints 404/500 + balance ausente/null + aggregate vazio). Balance 404/500/campo ausente ou nulo: 2 cartões Saldo indisponível em cada forma; resumo 404/500: erro e nenhum KPI; aggregate fora: indisponível, sem número fabricado. Resumo HTTP 200 fora do contrato com campo ausente: zero; origem git blame própria 08d009492 (18/07), num() l.113–119; pendência P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO, dono B-SAN3-12c, já registrada em E3.4 e controle, não grave no contrato válido do servidor.
 âncora 'style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", textAlign: "left" }}' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R2:|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R2:|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 2 - R2: 'Conciliação por conta' separa nome e contagem com flex e distância mínima
 # tests 2
@@ -1126,7 +1126,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação R3-M1 — 2026-10-28T21:49:12.665928+00:00
 âncora 'summary.receivable.openCount : null' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R3|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R3|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 3 - R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam páginas
 not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos
@@ -1140,7 +1140,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação R3-M2 — 2026-10-28T21:49:16.939733+00:00
 âncora 'offset: current.items.length,' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R3|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R3|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 2 - R3(a): o hook carrega 100, busca offset 100, deduplica e relê todas as páginas alcançadas
 not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos
@@ -1155,7 +1155,7 @@ Restauro hash-object = blob 76bd85f5ecba808a585754251ceff96b6257ef86
 ### Mutação R3-M3 — 2026-10-28T21:49:21.412491+00:00
 âncora '<TablePager\n' ocorrências=0
 Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
-Saída ec=1, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes-validas.log
+Saída ec=1, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes-validas.log
 M-E3-3a VERMELHO; restaurado
 M-E3-3b VERMELHO; restaurado
 M-E3-4 VERMELHO; restaurado
@@ -1166,7 +1166,7 @@ R2-M1 VERMELHO; restaurado
 R3-M1 VERMELHO; restaurado
 R3-M2 VERMELHO; restaurado
 Traceback (most recent call last):
-  File "C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\mutacoes.py", line 42, in <module>
+  File "~/erp-pausa-2026-10-03\j12b3-c1r3-s61\mutacoes.py", line 42, in <module>
     n=t.count(a);e.append('âncora '+repr(a)+' ocorrências='+str(n));assert n==1,(name,n);t=t.replace(a,b)
                                                                            ^^^^
 AssertionError: ('R3-M3', 0)
@@ -1174,9 +1174,9 @@ AssertionError: ('R3-M3', 0)
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### mutacoes-cauda — 2026-10-28T21:49:51Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.py R3-M3`
-Saída ec=1, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes-cauda.log
-  File "C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\mutacoes.py", line 40
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.py R3-M3`
+Saída ec=1, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes-cauda.log
+  File "~/erp-pausa-2026-10-03\j12b3-c1r3-s61\mutacoes.py", line 40
     original=path.read_bytes();t=original.decode('utf-8').replace('
                                                                   ^
 SyntaxError: unterminated string literal (detected at line 40)
@@ -1184,12 +1184,12 @@ SyntaxError: unterminated string literal (detected at line 40)
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### mutacoes-cauda-valida — 2026-10-28T21:50:10Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.py R3-M3`
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes.py R3-M3`
 
 ### Mutação R3-M3 — 2026-10-28T21:50:11.316321+00:00
 âncora '<TablePager\n' ocorrências=1
 âncora 'export function FinanceiroViewA(model: FinanceiroViewModel) {' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R3|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R3|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos
 # tests 4
@@ -1202,7 +1202,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação R3-M4 — 2026-10-28T21:50:15.697659+00:00
 âncora 'count={target === "venc" ? overdueCount : complete ? count(target) : null}' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R3|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R3|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 3 - R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam páginas
 not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos
@@ -1216,7 +1216,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação R10-M1 — 2026-10-28T21:50:20.023538+00:00
 âncora 'if (state.tab === "ext" && !access.readAccounts) {' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R10|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='R10|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 2 - R10: aba 'Contas e extrato' sem financial_accounts:read mostra acesso não permitido, nunca 'Cadastre a primeira conta'
 # tests 2
@@ -1229,7 +1229,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação F16 — 2026-10-28T21:50:24.026243+00:00
 âncora '{model.stale ? <StaleDataBanner lastUpdatedAt={model.lastUpdatedAt} onRetry={model.onRetry} /> : null}' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F16|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F16|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 6 - F16 desatualizado: a atualização em 2º plano falha → faixa 'Dados desatualizados' e o dado anterior continua na tela
 # tests 6
@@ -1242,7 +1242,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação F19 — 2026-10-28T21:50:28.804337+00:00
 âncora '{saldo ?? "Saldo indisponível"}' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F19|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F19|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
 ec=1
 not ok 2 - F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca '—' nem R$ 0,00 fingido
 # tests 2
@@ -1255,7 +1255,7 @@ Restauro hash-object = blob da3ae4ca18793507d84a1745ede631882b42c04e
 
 ### Mutação F11 — 2026-10-28T21:50:32.059247+00:00
 âncora 'onClick={() => go({ tab: "rec", target: "venc" })}' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F11|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F11|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 2 - F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um clique
 # tests 3
@@ -1268,7 +1268,7 @@ Restauro hash-object = blob 39f7e50681debacebe58bc8178779595c58d68fe
 
 ### Mutação F12 — 2026-10-28T21:50:36.243862+00:00
 âncora 'expanded={expandedKey === key}' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F12|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F12|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 2 - F12: linha de uma altura, sem botão; o detalhe abre logo abaixo, um por vez; Enter/Espaço abrem, Escape fecha
 # tests 2
@@ -1281,7 +1281,7 @@ Restauro hash-object = blob f2ae07c6e3a3b2bb4ff6e37b3c994ad0e548826b
 
 ### Mutação MINHA-pressed — 2026-10-28T21:50:40.306407+00:00
 âncora 'aria-pressed={pressed}' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F11|conta: saldo|F14:' tests/finance-page-live.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F11|conta: saldo|F14:' tests/finance-page-live.test.tsx
 ec=1
 not ok 2 - F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um clique
 # tests 3
@@ -1294,7 +1294,7 @@ Restauro hash-object = blob 3104cbcddc86dee53e78c9f0f038160e7f7bf342
 
 ### Mutação MINHA-saldo0 — 2026-10-28T21:50:44.717310+00:00
 âncora '{saldo ?? "Saldo indisponível"}' ocorrências=1
-Comando: cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F19|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
+Comando: cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern='F19|conta: saldo|F14:' tests/finance-contas-extrato.smoke.test.tsx
 ec=1
 not ok 2 - F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca '—' nem R$ 0,00 fingido
 # tests 2
@@ -1304,7 +1304,7 @@ not ok 2 - F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca 
 # duration_ms 1074.7227
 VERMELHO pelo teste dono; irmão conta: saldo ou F14 verde no mesmo arquivo.
 Restauro hash-object = blob da3ae4ca18793507d84a1745ede631882b42c04e
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes-cauda-valida.log
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/mutacoes-cauda-valida.log
 R3-M3 VERMELHO; restaurado
 R3-M4 VERMELHO; restaurado
 R10-M1 VERMELHO; restaurado
@@ -1318,17 +1318,17 @@ MINHA-saldo0 VERMELHO; restaurado
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### controles — 2026-10-28T21:50:56Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/controle.py`
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/controle.py`
 
-2026-10-28T21:50:57.493821+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt checkout cfb19fd1~6 -- frontend/src/styles/app.css
+2026-10-28T21:50:57.493821+00:00 — Comando git -C ~/j12b-c3-c1r3-wt checkout cfb19fd1~6 -- frontend/src/styles/app.css
  ec=0; log ctl-checkout-app.css.log
 
 
-2026-10-28T21:50:57.860394+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt checkout cfb19fd1~6 -- frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
+2026-10-28T21:50:57.860394+00:00 — Comando git -C ~/j12b-c3-c1r3-wt checkout cfb19fd1~6 -- frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
  ec=0; log ctl-checkout-FinanceiroViewA.tsx.log
 
 
-2026-10-28T21:50:59.461977+00:00 — Comando cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern=R-E3 tests/finance-contas-extrato.smoke.test.tsx
+2026-10-28T21:50:59.461977+00:00 — Comando cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern=R-E3 tests/finance-contas-extrato.smoke.test.tsx
  ec=1; log ctl-E3-testes.log
 TAP version 13
 # Subtest: F17/R-E3-5: a régua acusa scope, rbac e permission, e deixa o PT-BR livre (controle positivo)
@@ -1340,7 +1340,7 @@ ok 1 - F17/R-E3-5: a régua acusa scope, rbac e permission, e deixa o PT-BR livr
 not ok 2 - R-E3-3: a variante .pat-kpi-row--6 existe no CSS efetivo — grade de 6, valor a 18 px sem quebra e com reticências, 15,5 px até 1340 px
   ---
   duration_ms: 9.6804
-  location: 'C:\\Users\\AMP\\j12b-c3-c1r3-wt\\frontend\\tests\\finance-contas-extrato.smoke.test.tsx:1:9109'
+  location: '~/j12b-c3-c1r3-wt\\frontend\\tests\\finance-contas-extrato.smoke.test.tsx:1:9109'
   failureType: 'testCodeFailure'
   error: 'grade de 6 da biblioteca'
   code: 'ERR_ASSERTION'
@@ -1349,7 +1349,7 @@ not ok 2 - R-E3-3: a variante .pat-kpi-row--6 existe no CSS efetivo — grade de
   actual: false
   operator: '=='
   stack: |-
-    TestContext.<anonymous> (C:\Users\AMP\j12b-c3-c1r3-wt\frontend\tests\finance-contas-extrato.smoke.test.tsx:220:10)
+    TestContext.<anonymous> (~/j12b-c3-c1r3-wt\frontend\tests\finance-contas-extrato.smoke.test.tsx:220:10)
     Test.runInAsyncScope (node:async_hooks:211:14)
     Test.run (node:internal/test_runner/test:979:25)
     Test.processPendingSubtests (node:internal/test_runner/test:677:18)
@@ -1361,7 +1361,7 @@ not ok 2 - R-E3-3: a variante .pat-kpi-row--6 existe no CSS efetivo — grade de
 not ok 3 - R-E3-3: a linha de indicadores da opção A usa a classe da biblioteca, sem grade inline — carregada e no esqueleto
   ---
   duration_ms: 40.4788
-  location: 'C:\\Users\\AMP\\j12b-c3-c1r3-wt\\frontend\\tests\\finance-contas-extrato.smoke.test.tsx:1:9968'
+  location: '~/j12b-c3-c1r3-wt\\frontend\\tests\\finance-contas-extrato.smoke.test.tsx:1:9968'
   failureType: 'testCodeFailure'
   error: 'classe da variante de 6 (loading=false)'
   code: 'ERR_ASSERTION'
@@ -1370,7 +1370,7 @@ not ok 3 - R-E3-3: a linha de indicadores da opção A usa a classe da bibliotec
   actual: '<div class="pat-kpi-row" style="grid-template-columns:repeat(6, minmax(0, 1fr))">'
   operator: 'match'
   stack: |-
-    TestContext.<anonymous> (C:\Users\AMP\j12b-c3-c1r3-wt\frontend\tests\finance-contas-extrato.smoke.test.tsx:236:12)
+    TestContext.<anonymous> (~/j12b-c3-c1r3-wt\frontend\tests\finance-contas-extrato.smoke.test.tsx:236:12)
     Test.runInAsyncScope (node:async_hooks:211:14)
     Test.run (node:internal/test_runner/test:979:25)
     Test.processPendingSubtests (node:internal/test_runner/test:677:18)
@@ -1387,7 +1387,7 @@ ok 4 - R-E3-4: VALOR e SALDO EM ABERTO da lista de títulos levam dense-col-righ
 not ok 5 - R-E3-4: o skin .pat-ab-table alinha à direita e tabula as colunas de dinheiro no CSS efetivo (espelho de .dense-table)
   ---
   duration_ms: 2.8657
-  location: 'C:\\Users\\AMP\\j12b-c3-c1r3-wt\\frontend\\tests\\finance-contas-extrato.smoke.test.tsx:1:11680'
+  location: '~/j12b-c3-c1r3-wt\\frontend\\tests\\finance-contas-extrato.smoke.test.tsx:1:11680'
   failureType: 'testCodeFailure'
   error: '.pat-ab-table th.dense-col-right { text-align: right }'
   code: 'ERR_ASSERTION'
@@ -1396,7 +1396,7 @@ not ok 5 - R-E3-4: o skin .pat-ab-table alinha à direita e tabula as colunas de
   actual: false
   operator: '=='
   stack: |-
-    TestContext.<anonymous> (C:\Users\AMP\j12b-c3-c1r3-wt\frontend\tests\finance-contas-extrato.smoke.test.tsx:259:12)
+    TestContext.<anonymous> (~/j12b-c3-c1r3-wt\frontend\tests\finance-contas-extrato.smoke.test.tsx:259:12)
     Test.runInAsyncScope (node:async_hooks:211:14)
     Test.run (node:internal/test_runner/test:979:25)
     Test.processPendingSubtests (node:internal/test_runner/test:677:18)
@@ -1415,7 +1415,7 @@ not ok 5 - R-E3-4: o skin .pat-ab-table alinha à direita e tabula as colunas de
 # duration_ms 1110.875
 
 
-2026-10-28T21:51:20.290773+00:00 — Comando cd C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 && timeout -k 15 180 node zz-j12bc1r3-kpi.mjs C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61 ctlC2
+2026-10-28T21:51:20.290773+00:00 — Comando cd ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 && timeout -k 15 180 node zz-j12bc1r3-kpi.mjs ~/erp-pausa-2026-10-03/j12b3-c1r3-s61 ctlC2
  ec=0; log ctl-kpi.log
 KPI 1280 row="pat-kpi-row" style=grid-template-columns: repeat(6, minmax(0px, 1fr)); :: R$ 126.958,65|27px|cabe=false(175/122)|sobra=-37|pinta=true|lbl=true|hint=true ; R$ 167.692,35|27px|cabe=false(175/122)|sobra=-37|pinta=true|lbl=true|hint=true ; R$ 56.999,50|27px|cabe=false(163/122)|sobra=-25|pinta=true|lbl=true|hint=true ; R$ 56.330,00|27px|cabe=false(163/122)|sobra=-25|pinta=true|lbl=true|hint=true ; R$ 30.520,00|27px|cabe=false(163/122)|sobra=-25|pinta=true|lbl=true|hint=true ; 2|27px|cabe=true(122/122)|sobra=123|pinta=true|lbl=true|hint=true
 KPI 1366 row="pat-kpi-row" style=grid-template-columns: repeat(6, minmax(0px, 1fr)); :: R$ 126.958,65|27px|cabe=false(175/136)|sobra=-23|pinta=true|lbl=true|hint=true ; R$ 167.692,35|27px|cabe=false(175/136)|sobra=-23|pinta=true|lbl=true|hint=true ; R$ 56.999,50|27px|cabe=false(163/136)|sobra=-11|pinta=true|lbl=true|hint=true ; R$ 56.330,00|27px|cabe=false(163/136)|sobra=-11|pinta=true|lbl=true|hint=true ; R$ 30.520,00|27px|cabe=false(163/136)|sobra=-11|pinta=true|lbl=true|hint=true ; 2|27px|cabe=true(136/136)|sobra=137|pinta=true|lbl=true|hint=true
@@ -1426,19 +1426,19 @@ ALIGN ext rowHmax=41 n=3 :: DATA[th=left/normal td=start/normal sort=null] ; DES
 REF align: undefined
 
 
-2026-10-28T21:51:20.640762+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt checkout cfb19fd1 -- frontend/src/styles/app.css
+2026-10-28T21:51:20.640762+00:00 — Comando git -C ~/j12b-c3-c1r3-wt checkout cfb19fd1 -- frontend/src/styles/app.css
  ec=0; log ctl-restore-app.css.log
 
 
-2026-10-28T21:51:21.326698+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt checkout cfb19fd1 -- frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
+2026-10-28T21:51:21.326698+00:00 — Comando git -C ~/j12b-c3-c1r3-wt checkout cfb19fd1 -- frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
  ec=0; log ctl-restore-FinanceiroViewA.tsx.log
 
 
-2026-10-28T21:51:21.933524+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt checkout cfb19fd1~6 -- frontend/tests/finance-contas-extrato.smoke.test.tsx
+2026-10-28T21:51:21.933524+00:00 — Comando git -C ~/j12b-c3-c1r3-wt checkout cfb19fd1~6 -- frontend/tests/finance-contas-extrato.smoke.test.tsx
  ec=0; log ctl-f17-antigo-checkout.log
 
 
-2026-10-28T21:51:23.515224+00:00 — Comando cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern=F17 tests/finance-contas-extrato.smoke.test.tsx
+2026-10-28T21:51:23.515224+00:00 — Comando cd ~/j12b-c3-c1r3-wt/frontend && timeout -k 15 180 node --test --import tsx --test-name-pattern=F17 tests/finance-contas-extrato.smoke.test.tsx
  ec=0; log ctl-f17-antigo.log
 TAP version 13
 # Subtest: F17: nenhum termo técnico (tenant, role, reconciled, rota de API) nos textos de tela do Financeiro (12b)
@@ -1467,64 +1467,64 @@ ok 3 - F17/R11: a régua alcança palavra única com maiúscula, o diretório ti
 # duration_ms 906.4273
 
 
-2026-10-28T21:51:23.855950+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt checkout cfb19fd1 -- frontend/src/modules/finance/entries/components/TitleDetail.tsx
+2026-10-28T21:51:23.855950+00:00 — Comando git -C ~/j12b-c3-c1r3-wt checkout cfb19fd1 -- frontend/src/modules/finance/entries/components/TitleDetail.tsx
  ec=0; log ctl-f17-restore-TitleDetail.tsx.log
 
 
-2026-10-28T21:51:24.214753+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt checkout cfb19fd1 -- frontend/tests/finance-contas-extrato.smoke.test.tsx
+2026-10-28T21:51:24.214753+00:00 — Comando git -C ~/j12b-c3-c1r3-wt checkout cfb19fd1 -- frontend/tests/finance-contas-extrato.smoke.test.tsx
  ec=0; log ctl-f17-restore-finance-contas-extrato.smoke.test.tsx.log
 
 
-2026-10-28T21:51:24.551516+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt hash-object frontend/src/styles/app.css
+2026-10-28T21:51:24.551516+00:00 — Comando git -C ~/j12b-c3-c1r3-wt hash-object frontend/src/styles/app.css
  ec=0; log ctl-hash-app.css.log
 15ee6a2110e7fb821839f889ef0b01f6819bb3f7
 
 
-2026-10-28T21:51:24.878811+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt rev-parse cfb19fd1:frontend/src/styles/app.css
+2026-10-28T21:51:24.878811+00:00 — Comando git -C ~/j12b-c3-c1r3-wt rev-parse cfb19fd1:frontend/src/styles/app.css
  ec=0; log ctl-blob-app.css.log
 15ee6a2110e7fb821839f889ef0b01f6819bb3f7
 
 
-2026-10-28T21:51:25.214952+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt hash-object frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
+2026-10-28T21:51:25.214952+00:00 — Comando git -C ~/j12b-c3-c1r3-wt hash-object frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
  ec=0; log ctl-hash-FinanceiroViewA.tsx.log
 39f7e50681debacebe58bc8178779595c58d68fe
 
 
-2026-10-28T21:51:25.565605+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt rev-parse cfb19fd1:frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
+2026-10-28T21:51:25.565605+00:00 — Comando git -C ~/j12b-c3-c1r3-wt rev-parse cfb19fd1:frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
  ec=0; log ctl-blob-FinanceiroViewA.tsx.log
 39f7e50681debacebe58bc8178779595c58d68fe
 
 
-2026-10-28T21:51:25.913123+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt hash-object frontend/src/modules/finance/entries/components/TitleDetail.tsx
+2026-10-28T21:51:25.913123+00:00 — Comando git -C ~/j12b-c3-c1r3-wt hash-object frontend/src/modules/finance/entries/components/TitleDetail.tsx
  ec=0; log ctl-hash-TitleDetail.tsx.log
 c6817e5b696df0ccc17489bf4ea4214da31ed65c
 
 
-2026-10-28T21:51:26.246356+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt rev-parse cfb19fd1:frontend/src/modules/finance/entries/components/TitleDetail.tsx
+2026-10-28T21:51:26.246356+00:00 — Comando git -C ~/j12b-c3-c1r3-wt rev-parse cfb19fd1:frontend/src/modules/finance/entries/components/TitleDetail.tsx
  ec=0; log ctl-blob-TitleDetail.tsx.log
 c6817e5b696df0ccc17489bf4ea4214da31ed65c
 
 
-2026-10-28T21:51:26.574254+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt hash-object frontend/tests/finance-contas-extrato.smoke.test.tsx
+2026-10-28T21:51:26.574254+00:00 — Comando git -C ~/j12b-c3-c1r3-wt hash-object frontend/tests/finance-contas-extrato.smoke.test.tsx
  ec=0; log ctl-hash-finance-contas-extrato.smoke.test.tsx.log
 fecb23307e9dd46afdeee5927eb0a5183dbe0209
 
 
-2026-10-28T21:51:26.897911+00:00 — Comando git -C C:/Users/AMP/j12b-c3-c1r3-wt rev-parse cfb19fd1:frontend/tests/finance-contas-extrato.smoke.test.tsx
+2026-10-28T21:51:26.897911+00:00 — Comando git -C ~/j12b-c3-c1r3-wt rev-parse cfb19fd1:frontend/tests/finance-contas-extrato.smoke.test.tsx
  ec=0; log ctl-blob-finance-contas-extrato.smoke.test.tsx.log
 fecb23307e9dd46afdeee5927eb0a5183dbe0209
 
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/controles.log
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/controles.log
 Controles vermelhos E3 e navegador; Scope VERDE no F17 antigo; restauro completo
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### refs-finais — 2026-10-28T21:52:26Z
-Comando: `cd C:/Users/AMP/j12b-c3-c1r3-wt && git status --short && git diff --check && git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas && gh pr view 469 --json headRefOid,state,mergeable && git fetch -q origin main && git rev-parse origin/main && git merge-base HEAD origin/main && git blame cfb19fd1 -L 25,32 -- frontend/src/guards/PermissionGuard.tsx`
+Comando: `cd ~/j12b-c3-c1r3-wt && git status --short && git diff --check && git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas && gh pr view 469 --json headRefOid,state,mergeable && git fetch -q origin main && git rev-parse origin/main && git merge-base HEAD origin/main && git blame cfb19fd1 -L 25,32 -- frontend/src/guards/PermissionGuard.tsx`
 
 ### testes-finais — 2026-10-28T21:52:26Z
-Comando: `cd C:/Users/AMP/j12b-c3-c1r3-wt/frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/dense-expandable-row.test.tsx tests/finance-contas-extrato.smoke.test.tsx tests/pattern-css-guard.test.ts`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/refs-finais.log
+Comando: `cd ~/j12b-c3-c1r3-wt/frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/dense-expandable-row.test.tsx tests/finance-contas-extrato.smoke.test.tsx tests/pattern-css-guard.test.ts`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/refs-finais.log
 cfb19fd115bac02ef65eb94202b01a64e6730854	refs/heads/feat/web-financeiro-baixa-e-contas
 {"headRefOid":"cfb19fd115bac02ef65eb94202b01a64e6730854","mergeable":"MERGEABLE","state":"OPEN"}
 f076973921539165df8d406b8c061dbf4e4ee127
@@ -1539,7 +1539,7 @@ f076973921539165df8d406b8c061dbf4e4ee127
 98b4bee34 (thiagodorgo 2026-06-06 23:26:15 -0300 32)     );
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/testes-finais.log
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/testes-finais.log
 # tests 54
 # pass 54
 # fail 0
@@ -1549,8 +1549,8 @@ Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/testes-finais
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### teardown-servidor — 2026-10-28T21:55:34Z
-Comando: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/teardown-server.ps1`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/teardown-servidor.log
+Comando: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/teardown-server.ps1`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/teardown-servidor.log
 ÊXITO: o processo com PID 22012 (processo filho de PID 20664) foi finalizado.
 ÊXITO: o processo com PID 20664 (processo filho de PID 1928) foi finalizado.
 processos com o caminho do worktree = 0
@@ -1559,14 +1559,14 @@ Vite PID 20664 encerrado; caminho livre para remoÃ§Ã£o.
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### teardown-worktree — 2026-10-28T21:55:48Z
-Comando: `test "$(realpath /c/Users/AMP/j12b-c3-c1r3-wt)" = /c/Users/AMP/j12b-c3-c1r3-wt && git -C C:/Users/AMP/j12b-c3-c1r3-wt status --short && git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force C:/Users/AMP/j12b-c3-c1r3-wt && test ! -e C:/Users/AMP/j12b-c3-c1r3-wt && echo worktree-removido-caminho-ausente`
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/teardown-worktree.log
+Comando: `test "$(realpath ~/j12b-c3-c1r3-wt)" = ~/j12b-c3-c1r3-wt && git -C ~/j12b-c3-c1r3-wt status --short && git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force ~/j12b-c3-c1r3-wt && test ! -e ~/j12b-c3-c1r3-wt && echo worktree-removido-caminho-ausente`
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/teardown-worktree.log
 worktree-removido-caminho-ausente
 
 Parcial: execução própria registrada; juízo após leitura do resultado.
 
 ### voto-final — 2026-10-28T21:57:26Z
-Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/fechar.py`
+Comando: `python -X utf8 ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/fechar.py`
 
 ## Fechamento 2026-10-28T21:57:27.350466+00:00
 18/18 mutações VERMELHAS pela asserção esperada, irmão verde, âncora única e restauro hash=blob. Controles cfb19fd1~6 e Scope/F17 antigo conforme voto. Recorte pós-restauro 54/54. Refs finais iguais às iniciais.
@@ -1656,10 +1656,10 @@ Comando: `python -X utf8 C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/fechar
 ]
 
 Teardown: Vite PID Windows 20664 encerrado por PID, processo confirmado como o servidor desta porta; navegadores encerrados; 0 processo com o caminho do worktree; git worktree remove --force no caminho autorizado, diretório ausente; todas as mutações e checkouts restaurados por hash antes; nenhum Docker, commit ou alteração dos parciais pausados. Logs/sondas/capturas mantidos somente no scratch externo para P3.
-Roteiros reproduzíveis, manifesto MD5 em C:\Users\AMP\erp-pausa-2026-10-03\j12b3-c1r3-s61\manifesto-roteiros.json.
+Roteiros reproduzíveis, manifesto MD5 em ~/erp-pausa-2026-10-03\j12b3-c1r3-s61\manifesto-roteiros.json.
 Sucessor P3 autorizado em Codex CLI conta 2, GPT-6.1 Sol medium, nível menor declarado pelo dono (§A1.1), substituindo a obrigação C1 Claude Opus do R- §4 e inspetor. Objeto e refs estáveis. C1r2-01/02/03 fechados pela medição própria: valores cabem nas três larguras, dinheiro right/tabular, F17 acusa Scope. Regressões e 18 mutações com controles executados; nenhum defeito de produto grave medido no escopo da cadeira. Pendências não graves com N, forma, origem/escopo e dono individualizados. Limpeza comprovada; não commitei.
 VOTO: APROVADO — três itens medidos; só ressalvas não graves com dono, conforme régua do ciclo 3.
-Saída ec=0, log: C:/Users/AMP/erp-pausa-2026-10-03/j12b3-c1r3-s61/voto-final.log
-APROVADO C:\Users\AMP\w-san312b\agent-orchestration\omega\juntas\votos\B-SAN3-12b-ciclo3\c1r3-voto.json
+Saída ec=0, log: ~/erp-pausa-2026-10-03/j12b3-c1r3-s61/voto-final.log
+APROVADO ~/w-san312b\agent-orchestration\omega\juntas\votos\B-SAN3-12b-ciclo3\c1r3-voto.json
 
 Parcial: execução própria registrada; juízo após leitura do resultado.

@@ -30,34 +30,34 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 
 ## HIPOTESE
 
-O objeto agora inclui o conserto do 503 do relatorio do dev (secoes das Retomadas 3 a 7): a porta de commit com claim no servico de ingestao e os testes -db novos de quarentena interna e de conflito sob prazo esgotado; a cadeira (a) julga, por execucao e com mutacao propria, que depois de o listener responder 503 nada e gravado no banco, em todo caminho (posicao, quarentena, conflito) derruba com: `grep -ic '503' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md` (novo)
+O objeto agora inclui o conserto do 503 do relatorio do dev (secoes das Retomadas 3 a 7): a porta de commit com claim no servico de ingestao e os testes -db novos de quarentena interna e de conflito sob prazo esgotado; a cadeira (a) julga, por execucao e com mutacao propria, que depois de o listener responder 503 nada e gravado no banco, em todo caminho (posicao, quarentena, conflito) derruba com: `grep -ic '503' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md` (novo)
 
 O papel e a cadeira (a) (RLS, unicidade e banco) da junta de SEGURANCA do bloco B-TRC-01 (PR 426), identidade jurado-trc01-a-rls-e-banco, corpo tirado do
   blob do objeto (.claude/agents/especialistas/jurado-trc01-a-rls-e-banco.md no head do PR), disparado como general-purpose limitado por escrito a
   Read, Grep, Glob e Bash; roda no executor que o disparo nomeia (Codex em GPT-5.6 Sol por decisao do dono de 2026-10-12, ou Claude Code em Opus 5.5), no nivel menor por decisao do dono de 2026-10-10, declarado no
   artefato; se o md5 EOL-neutro do corpo recebido divergir do publicado no disparo, a cadeira nao vota; declara na 1a linha da
-  evidencia o papel, o modelo, o mandato_md5 deste arquivo e o md5 do corpo derruba com: `head -1 C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md | grep -ic 'mandato_md5'` (novo)
+  evidencia o papel, o modelo, o mandato_md5 deste arquivo e o md5 do corpo derruba com: `head -1 ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md | grep -ic 'mandato_md5'` (novo)
 
-A legalidade e conferida antes do merito: o parecer do inspetor (C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md) diz LIBERADO ou LIBERADO COM RESSALVA;
+A legalidade e conferida antes do merito: o parecer do inspetor (~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/insp-trc01-parecer.md) diz LIBERADO ou LIBERADO COM RESSALVA;
   o objeto e o head do PR 426 resolvido de novo por git e por gh, com os check-runs concluidos; a regua e a do CLAUDE.md da ref,
   secao C7 item 8: seguranca e dado de localizacao, unanimidade de 3 com veto, teto de 2 ciclos; as regras do dono para o Traccar
-  valem como criterio de veto; ninguem roda ferramenta no worktree do dev derruba com: `grep -ic 'LIBERADO' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md` (novo)
+  valem como criterio de veto; ninguem roda ferramenta no worktree do dev derruba com: `grep -ic 'LIBERADO' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md` (novo)
 
 O merito, por EXECUCAO, sem diluir (cadeira (a) da secao 8.10 do plano): (1) o vinculo global e a trava da confirmacao; (2) o recibo
   global e a atomicidade; (3) o orcamento de tempo e o pool proprio; re-executa as MUT-04 a MUT-06, MUT-12, MUT-34, MUT-35, MUT-40 e MUT-41;
   julga CADA chave nova do ratchet T13 e os deltas L0 +2 e tabelas_com_dml +3, inclusive se o papel de runtime deve ter DML na
-  traccar_quarantine_items, global e sem RLS derruba com: `grep -ic 'MUT-34' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md` (novo)
+  traccar_quarantine_items, global e sem RLS derruba com: `grep -ic 'MUT-34' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md` (novo)
 
 As regras da casa: unanimidade de 3 com veto; todo achado com gravidade (bloqueia, ajuste, nota) e escopo (dentro-do-bloco,
   ou pre-existente com evidencia de data ou origem, sem a qual conta como dentro-do-bloco); nao consigo medir e REPROVADO; a
   cadeira nao propoe correcao e nao le o voto das outras; KPI nao se cobra; T15, A11 e o relogio do teste do Console sao instaveis
-  conhecidos; escreve so C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md e C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-voto.json, o voto nascendo como esqueleto com cada item EM APURACAO e gravado ao ser medido derruba com: `grep -ic '"escopo"' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-voto.json` (novo)
+  conhecidos; escreve so ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md e ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-voto.json, o voto nascendo como esqueleto com cada item EM APURACAO e gravado ao ser medido derruba com: `grep -ic '"escopo"' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-voto.json` (novo)
 
-O terreno: worktree proprio detached C:/Users/AMP/w-jtrc-a, npm ci proprio sem junction; Postgres e Redis descartaveis em
+O terreno: worktree proprio detached ~/w-jtrc-a, npm ci proprio sem junction; Postgres e Redis descartaveis em
   container Linux proprio com prefixo jtrc01-a-, porta alta so em 127.0.0.1 testada antes, REDIS_URL proprio em todo npm test,
   skipped 0 em toda execucao -db, imagem do Traccar so por digest, docker compose down -v sempre com os --profile; nunca a base viva
   nem as portas do servidor do dono nem servidor publico de demonstracao; containers trc01-* e de outras cadeiras nao sao alvo;
-  remocao so pelo nome, nunca prune; nunca tail -f; timeout no que executa; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'jtrc01-a' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md` (novo)
+  remocao so pelo nome, nunca prune; nunca tail -f; timeout no que executa; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -ic 'jtrc01-a' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01/cadeira-a-evidencia.md` (novo)
 
 ## MEDIDO
 

@@ -22,7 +22,7 @@ Você **não** julga a aparência dos links, o clique, os ids no DOM, a impress�
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica`, **sem `Bash`**: quem escreveu não executou nada do que está aqui. Tudo o que ele
-diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-nuv11` em 2026-10-03, com o mandato da fábrica versionado em
+diz sobre o ramo foi **lido** no disco de `~/w-nuv11` em 2026-10-03, com o mandato da fábrica versionado em
 `feb0d838` e o código do ramo ainda no head `653532f7` — **antes** de o dev do ciclo 2 implementar: `ChecklistRunContractError`
 e `readVersionRef` davam **0 ocorrências** em `frontend/` quando este corpo foi escrito. Logo, **todo** arquivo:linha, SHA,
 md5, número e nome de símbolo do ciclo 2 abaixo vem do plano (§16 e Apêndice E) ou da trilha do planejador
@@ -161,16 +161,16 @@ este corpo** — declarado antes do veredito. Item cujo controle não acusou é 
   Logo abaixo: objeto, `$SCRATCH`, `node -v`, `uname -srm`, a versão do `typescript` de `frontend/node_modules`, e o
   ambiente (shell, cwd, variáveis que você definiu).
 - **Arquivos de saída:** os que o seu mandato de disparo nomear, no diretório que ele nomear (padrão:
-  `C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/`). Se o mandato não nomear, use
+  `~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/`). Se o mandato não nomear, use
   `C2c2-evidencia.md` e `C2c2-voto.json`. **Nunca** grave em `C2-evidencia.md`/`C2-voto.json`: são do ciclo 1.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Use sempre `C:/…`.
 - **DOIS worktrees PRÓPRIOS, detached, em caminho CURTO** — o item 3 é "nos dois terrenos", e a classe da errata só aparece
   em CRLF:
-  - **CRLF:** o que o mandato nomear (padrão deste corpo: `C:/Users/AMP/w-s11k2b`), por
-    `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; prove
+  - **CRLF:** o que o mandato nomear (padrão deste corpo: `~/w-s11k2b`), por
+    `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; prove
     `tr -cd '\r' < <caminho>/frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` **> 0**;
-  - **LF:** padrão `C:/Users/AMP/w-s11k2blf`, por
-    `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios -c core.autocrlf=false worktree add --detach <caminho> <objeto>`;
+  - **LF:** padrão `~/w-s11k2blf`, por
+    `git -C ~/Documents/GitHub/ERP_Techsolutios -c core.autocrlf=false worktree add --detach <caminho> <objeto>`;
     prove o mesmo contador **= 0**; todo checkout futuro nele com `-c core.autocrlf=false`.
   Depois de cada um, **prove** `test -e <caminho>/.git`. No scratchpad, `worktree add` falha com *Filename too long* e **não
   cria o diretório**. Se um caminho já existir, é resíduo alheio: reporte e use o sufixo `b`.
@@ -184,8 +184,8 @@ este corpo** — declarado antes do veredito. Item cujo controle não acusou é 
   externo, PID anotado. Outra cadeira pode estar com um Vite de pé: não use a porta dela, não mate processo que não é seu.
 - **Sem banco e sem Docker.** `erp-postgres` (5432) e `erp-redis` (6379) **nunca** são alvo. O service roda com `fetch`
   dublado (T16) e o navegador com `page.route`. Comando seu que abra conexão é achado contra a sua própria medição.
-- **Somente leitura fora dos seus worktrees.** A árvore do ramo (`C:/Users/AMP/w-nuv11`) e os terrenos do dev
-  (`C:/Users/AMP/w-dev11c2`, `C:/Users/AMP/w-dev11c2lf`) **nunca** são mutados. **PROIBIDO:** `git stash`, `git clean`,
+- **Somente leitura fora dos seus worktrees.** A árvore do ramo (`~/w-nuv11`) e os terrenos do dev
+  (`~/w-dev11c2`, `~/w-dev11c2lf`) **nunca** são mutados. **PROIBIDO:** `git stash`, `git clean`,
   `git checkout`/`git reset` do que você não criou, `git worktree prune`, `rm -rf` de worktree, `git commit`, `git push`.
   Resíduo alheio se **reporta, não se varre**.
 - **Remoção só do que você criou, pelo caminho:** antes, conte os processos vivos com o caminho na linha de comando por

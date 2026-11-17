@@ -81,7 +81,7 @@ wsl --shutdown
 Optimize-VHD -Path "$env:LOCALAPPDATA\Docker\wsl\disk\docker_data.vhdx" -Mode Full
 
 # 3b. Fallback sem Hyper-V (diskpart, como admin):
-#   select vdisk file="C:\Users\<user>\AppData\Local\Docker\wsl\disk\docker_data.vhdx"
+#   select vdisk file="<pasta do usuário>\AppData\Local\Docker\wsl\disk\docker_data.vhdx"
 #   attach vdisk readonly
 #   compact vdisk
 #   detach vdisk

@@ -2,7 +2,7 @@
 
 - Identidades: `dev-arnes2-codex` (execuções Codex em GPT-5.6 Sol, nível menor, de 12/10 a 17/10: RETOMADAS até a 6)
   e `dev-arnes2-opus` (Claude Opus, nível menor, RETOMADA 7, 17/10)
-- Worktree: `C:/Users/AMP/w-arnes2`
+- Worktree: `~/w-arnes2`
 - Ramo: `fix/arnes-2-testes-instaveis`
 - Base do bloco: `c1d745c857fc73281623ba37d5c63b904fe90225`; head versionado pelo orquestrador ao fim da RETOMADA 7:
   `d3414c33ff9b244dc815a8080ba2f72886ca97ac` (PR #442)
@@ -175,9 +175,9 @@ O primeiro `npm ci` disparado com `Start-Process` não produziu diagnóstico cap
 ```text
 npm error code EBUSY
 npm error syscall rmdir
-npm error path C:\Users\AMP\w-arnes2\node_modules\@prisma\engines
+npm error path ~/w-arnes2\node_modules\@prisma\engines
 npm error errno -4082
-npm error EBUSY: resource busy or locked, rmdir 'C:\Users\AMP\w-arnes2\node_modules\@prisma\engines'
+npm error EBUSY: resource busy or locked, rmdir '~/w-arnes2\node_modules\@prisma\engines'
 exit=-4082
 ```
 
@@ -382,7 +382,7 @@ T14d: scripts/db-runtime-role.sh: psql: command not found
 exit=1
 ```
 
-O host Windows não tem `psql.exe`. Foi criado fora do repositório o artefato temporário `C:/Users/AMP/AppData/Local/Temp/arnes2-bin/psql`, que encaminha somente o cliente `psql` por `docker exec -i arnes2-pg`, propagando `PGUSER`, `PGPASSWORD`, `PGDATABASE` e `PGOPTIONS`; não propaga `PGHOST/PGPORT`, portanto o cliente usa o socket interno do container próprio. Smoke com limite de 20 s:
+O host Windows não tem `psql.exe`. Foi criado fora do repositório o artefato temporário `~/AppData/Local/Temp/arnes2-bin/psql`, que encaminha somente o cliente `psql` por `docker exec -i arnes2-pg`, propagando `PGUSER`, `PGPASSWORD`, `PGDATABASE` e `PGOPTIONS`; não propaga `PGHOST/PGPORT`, portanto o cliente usa o socket interno do container próprio. Smoke com limite de 20 s:
 
 ```text
 psql -X -At -c 'SELECT 1'
@@ -435,7 +435,7 @@ git branch --show-current
 git rev-parse HEAD
 git diff --name-status c1d745c8 --
 git diff --exit-code c1d745c8 -- src
-Get-Content -Raw C:/Users/AMP/erp-pausa-2026-10-03/REV-ARNES2-api.md
+Get-Content -Raw ~/erp-pausa-2026-10-03/REV-ARNES2-api.md
 ```
 
 Saída resumida:
@@ -488,7 +488,7 @@ Identidade: `dev-arnes2-codex`. Execução declarada: Codex em GPT-5.6 Sol, nív
 
 ### Pré-voo e preservação do conserto
 
-Comandos executados no worktree `C:/Users/AMP/w-arnes2`:
+Comandos executados no worktree `~/w-arnes2`:
 
 ```text
 git status --short --branch
@@ -510,7 +510,7 @@ conserto existente=preservado; não reescrito
 ```
 
 Foram lidos integralmente `CLAUDE.md`, `PROJECT_MEMORY.md`, o plano do bloco e
-`C:/Users/AMP/erp-pausa-2026-10-03/REV-ARNES2-api.md`; também foram conferidos os registros relevantes em
+`~/erp-pausa-2026-10-03/REV-ARNES2-api.md`; também foram conferidos os registros relevantes em
 `agent-orchestration/docs/status-geral.md`, `agent-orchestration/controle/` e
 `agent-orchestration/codex/log-execucao.md`. A seção histórica `## PAUSA 2026-10-12 12:22:25Z` permanece
 ignorada conforme ordem expressa de retomada.
@@ -544,7 +544,7 @@ copia o worktree sem `.git`/`node_modules`, executa `npm ci`, `prisma generate`,
 nominalmente ao sair):
 
 ```text
-timeout 1800s bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-arnes2 \
+timeout 1800s bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-arnes2 \
   'export CORE_SAAS_PERSISTENCE=prisma; failed=0; for i in $(seq 1 10); do
      node --test --import tsx tests/san3-05-runtime-role-guard-db.test.ts >/tmp/r-$i.tap 2>&1 \
        && echo PASS $i || { echo FAIL $i; tail -80 /tmp/r-$i.tap; failed=1; };
@@ -719,7 +719,7 @@ Comando efetivo: o invólucro Linux descartável recebeu `set +e`; em cada uma d
 TAP integral preservado fora do repositório:
 
 ```text
-C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3.tap.log
+~/erp-pausa-2026-10-03/arnes2-full-n3.tap.log
 bytes=6076460
 sha256=6B03918BFC1DF3B177DA91CD65AC3A6BD73027F46FC1D38CD9CA4688F0FE7D9D
 ```
@@ -794,7 +794,7 @@ vez, com TAP integral fora do repositório e somente o resumo trazido para esta 
 Comando efetivo (Git Bash; limite externo de 10.900 s):
 
 ```text
-timeout 10900s bash C:/Users/AMP/erp-pausa-2026-10-03/arnes2-run-n3-retomada5.sh
+timeout 10900s bash ~/erp-pausa-2026-10-03/arnes2-run-n3-retomada5.sh
 ```
 
 O lançador chamou `teste-linux.sh` uma única vez e programou três rodadas sequenciais, cada uma como
@@ -823,7 +823,7 @@ RUN_EC=125
 TAP/stream integral preservado fora do repositório:
 
 ```text
-C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3-retomada5.tap.log
+~/erp-pausa-2026-10-03/arnes2-full-n3-retomada5.tap.log
 bytes=2003550
 sha256=A50627D34DCD4E66799A8E02918125B52ED82FF6D67E074BA77AF4B4A6D0EF3E
 ```
@@ -880,7 +880,7 @@ descartável própria e removida ao final.
 Comando efetivo (Git Bash, limite externo de 3.700 s):
 
 ```text
-bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-arnes2 \
+bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-arnes2 \
   "set +e; timeout 3600s npm test >/tmp/arnes2-full-r2.tap 2>&1; ec=$?; cat /tmp/arnes2-full-r2.tap; exit $ec"
 ```
 
@@ -891,7 +891,7 @@ error waiting for container: unexpected EOF
 teste-linux ec=125
 ```
 
-Log externo: `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-r2-attempt1.tap.log`, 114 bytes,
+Log externo: `~/erp-pausa-2026-10-03/arnes2-full-r2-attempt1.tap.log`, 114 bytes,
 sha256 `c9aebecacca212070628b83ee0b7f1708684c2f1a0289e835e02a0ccfa28d82b`.
 Conforme a RETOMADA 6, será aguardado 60 s e esta rodada será repetida uma única vez.
 
@@ -908,7 +908,7 @@ npm error Node.js v20.20.2
 teste-linux ec=3
 ```
 
-Log externo integral: `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-r2-attempt2.tap.log`, 840 bytes,
+Log externo integral: `~/erp-pausa-2026-10-03/arnes2-full-r2-attempt2.tap.log`, 840 bytes,
 sha256 `bbbe61e19c8a7306190749a9d869eb95a060a39bab6504585c0f789700054a03`.
 
 Classificação: falha de ambiente anterior ao teste, portanto não conta como verde nem vermelho do bloco.
@@ -973,9 +973,9 @@ comando meu.
 Contagem antes: grupos `tl*` de outros trabalhos = 0 (`docker ps --format '{{.Names}}' | grep -oE '^tl[0-9]+' | sort -u | wc -l`).
 
 ```text
-timeout 3900 bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-arnes2 \
+timeout 3900 bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-arnes2 \
   'set +e; timeout 3600s npm test >/tmp/full.tap 2>&1; ec=$?; cat /tmp/full.tap; echo "===== NPMTEST EC $ec ====="; exit $ec' \
-  > C:/Users/AMP/erp-pausa-2026-10-03/arnes2-r7-full-r2-a1.tap.log 2>&1
+  > ~/erp-pausa-2026-10-03/arnes2-r7-full-r2-a1.tap.log 2>&1
 ```
 
 SHA-256 de referência (w-arnes2, antes de qualquer mutação em cópia): `src/server.ts=3f2164fb…4dde8`,
@@ -1011,12 +1011,12 @@ sigo para a rodada 3/3 com a mesma forma.
 ### Passo 2 — rodada 3/3, tentativa 1 (lançada 02:18:02Z)
 
 Contagem antes: grupos `tl*` de outros = 0. Mesmo comando da rodada 2, log em
-`C:/Users/AMP/erp-pausa-2026-10-03/arnes2-r7-full-r3-a1.tap.log`.
+`~/erp-pausa-2026-10-03/arnes2-r7-full-r3-a1.tap.log`.
 
 ### Passo 3 — preparação da cópia descartável (enquanto a rodada 3 roda; sem container)
 
 ```text
-git -C C:/Users/AMP/w-arnes2 worktree add --detach C:/Users/AMP/w-arnes2-mut HEAD   → HEAD 08937165
+git -C ~/w-arnes2 worktree add --detach ~/w-arnes2-mut HEAD   → HEAD 08937165
 cp w-arnes2/tests/{o6r06-usage-atomic-db,owner-portal,san3-05-runtime-role-guard-db}.test.ts → w-arnes2-mut/tests/
 sha256 (mut) dos 3 testes + server.ts + cloud-usage.service.ts = idênticos aos do w-arnes2 (c2ba1cd1…, 32f79db3…,
 3d794ea7…, 3f2164fb…, 8cc172c8…); git diff --exit-code c1d745c8 -- src (mut) = 0
@@ -1030,7 +1030,7 @@ M-T15a preparada **só na cópia**: `src/server.ts:49` `process.exitCode = 1;` �
 ```text
 time="2026-10-16T23:21:46-03:00" (02:21:46Z) level=error msg="error waiting for container: unexpected EOF"
 teste-linux ec=125   RUN_EC=125
-log: C:/Users/AMP/erp-pausa-2026-10-03/arnes2-r7-full-r3-a1.tap.log, 125 bytes,
+log: ~/erp-pausa-2026-10-03/arnes2-r7-full-r3-a1.tap.log, 125 bytes,
 sha256=a4b28336e77cf8c431a679cdfebc37e2f4da0290915e6b1a0887b971acd0ddf6
 ```
 
@@ -1048,12 +1048,12 @@ nenhum container tl* meu remanescente
 
 #### Rodada 3/3, tentativa 2 (retry único; lançada 02:25Z)
 
-Mesmo comando; log `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-r7-full-r3-a2.tap.log`.
+Mesmo comando; log `~/erp-pausa-2026-10-03/arnes2-r7-full-r3-a2.tap.log`.
 
 Resultado da tentativa 2 (terminou ≈02:32Z):
 
 ```text
-log: C:/Users/AMP/erp-pausa-2026-10-03/arnes2-r7-full-r3-a2.tap.log, 2.003.251 bytes,
+log: ~/erp-pausa-2026-10-03/arnes2-r7-full-r3-a2.tap.log, 2.003.251 bytes,
 sha256=0a8e314f0eb39f3fa5beff8372bb741b71e4c3a2665b5a1e46a7d65e8edcb831
 # tests 3240 · # pass 3238 · # fail 0 · # cancelled 0 · # skipped 2 · duration_ms 333661.19
 [run-backend-tests] 298 arquivo(s) · 3240 teste(s) · pass 3238 · fail 0 · skipped 2
@@ -1074,9 +1074,9 @@ seguem fora do bloco.
 #### M-T15a — `src/server.ts:49` `exitCode = 1` → `0` (lançada 02:33:14Z; grupos de outros = 1)
 
 ```text
-timeout 1800 bash …/ferramentas/teste-linux.sh C:/Users/AMP/w-arnes2-mut \
+timeout 1800 bash …/ferramentas/teste-linux.sh ~/w-arnes2-mut \
   'set +e; export CORE_SAAS_PERSISTENCE=prisma; timeout 900s node --test --import tsx tests/san3-05-runtime-role-guard-db.test.ts >/tmp/m.tap 2>&1; ec=$?; cat /tmp/m.tap; echo "===== MUT EC $ec ====="; exit 0' \
-  > C:/Users/AMP/erp-pausa-2026-10-03/arnes2-r7-mut-t15a.tap.log
+  > ~/erp-pausa-2026-10-03/arnes2-r7-mut-t15a.tap.log
 ```
 
 Resultado (terminou ≈02:36Z; log 4.069 bytes, sha256 `8e9a0267…ada4`):
@@ -1101,7 +1101,7 @@ sed -i '49s/process.exitCode = 0;/process.exitCode = 1;/' src/server.ts (na cóp
 sha256 restaurado = b4c69490…edbe = sha256(git show HEAD:src/server.ts) (byte-idêntico ao blob, LF);
   o checkout tinha CRLF (3f2164fb…, autocrlf=true) e o `sed -i` do Git Bash normaliza EOL — diferença só de EOL,
   conferida EOL-neutra: git diff --exit-code c1d745c8 -- src = 0
-git -C w-arnes2 worktree remove --force C:/Users/AMP/w-arnes2-mut → ec=0, caminho removido
+git -C w-arnes2 worktree remove --force ~/w-arnes2-mut → ec=0, caminho removido
 ```
 
 Para as próximas mutações uso `sed -b -i` (binário, preserva CRLF) e confiro o sha cru.
@@ -1129,7 +1129,7 @@ formas previstas pelo plano ("o processo sobe ou a 1.ª falha não é RUNTIME_RO
 
 Restauração: `sed -b -i '16a\  await assertRuntimeDatabaseRoleIfEnforced({ logger });\r'` → sha256 cru
 `3f2164fb…4dde8` = original CRLF (restauração byte-exata); `git diff --exit-code c1d745c8 -- src` = 0;
-`git worktree remove --force C:/Users/AMP/w-arnes2-mut` → ec=0, caminho removido.
+`git worktree remove --force ~/w-arnes2-mut` → ec=0, caminho removido.
 
 #### M-T15c — `setInterval` pendurado no `catch` de `main()` (lançada 02:40:43Z; grupos de outros = 0)
 
@@ -1161,9 +1161,9 @@ Cópia nova (sha dos 3 testes e de `cloud-usage.service.ts` (8cc172c8…) iguais
 `b6af37f0…1984`. Comando (o arquivo fixa `CORE_SAAS_PERSISTENCE=prisma` sozinho quando há `DATABASE_URL`, l.45):
 
 ```text
-timeout 1800 bash …/ferramentas/teste-linux.sh C:/Users/AMP/w-arnes2-mut \
+timeout 1800 bash …/ferramentas/teste-linux.sh ~/w-arnes2-mut \
   'set +e; timeout 900s node --test --import tsx tests/o6r06-usage-atomic-db.test.ts >/tmp/m.tap 2>&1; ec=$?; cat /tmp/m.tap; echo "===== MUT EC $ec ====="; exit 0' \
-  > C:/Users/AMP/erp-pausa-2026-10-03/arnes2-r7-mut-a10drain.tap.log
+  > ~/erp-pausa-2026-10-03/arnes2-r7-mut-a10drain.tap.log
 ```
 
 Resultado (≈02:49Z; log 5.120 bytes, sha256 `a681de5b…8382`):
@@ -1196,7 +1196,7 @@ git diff --check c1d745c8  → ec=0 (árvore × base do bloco)
 
 Limpeza §C5: `dist/` gerado pelo `build` (ignorado por `.gitignore:2`, 0 arquivos rastreados) removido; sem
 `*.tsbuildinfo`. Cópias `w-arnes2-mut` removidas por `git worktree remove --force` (4×). Containers/redes `tl*`
-meus: 0 remanescentes. Logs TAP ficam fora do repositório, em `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-r7-*`.
+meus: 0 remanescentes. Logs TAP ficam fora do repositório, em `~/erp-pausa-2026-10-03/arnes2-r7-*`.
 `git status`: só o relatório e o ajuste A10 (RETOMADA 4) modificados; `git diff --exit-code c1d745c8 -- src` = 0.
 
 Veredito parcial: **verde**.
@@ -1241,7 +1241,7 @@ ajuste 4 sobre `pendencias.md`).
 **Reclassificação.** As falhas de `tests/o6r06-allocation-basis-rls-db.test.ts` na RETOMADA 4 passam de "fora do
 bloco/pre-existente" para **consequência do A10-drain quebrado** (risco r4 do plano: "o LOCK EXCLUSIVE atrasa suítes
 paralelas que escrevem em `cloud_usage_events`"). A data de origem do arquivo não decide a classe. A evidência foi
-relida em 17/10 no TAP `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3.tap.log` (sha256 `6B03918B…7D9D`) e no
+relida em 17/10 no TAP `~/erp-pausa-2026-10-03/arnes2-full-n3.tap.log` (sha256 `6B03918B…7D9D`) e no
 código:
 
 ```text
@@ -1391,7 +1391,7 @@ Pendências novas:
   A10-drain quebrado na mesma rodada) · **dono:** a nomear.
 - **medido:** `tests/inventory-cycle-count-close-units-db.test.ts`, B16 ("recontar Y enquanto a unidade de X segura a
   sessão…"): esperava `ok` e recebeu `422|entry_already_adjusted`. Falhou 1/3 no `npm test` da RETOMADA 4 do
-  `B-ARNES-2`, antes do ajuste A10 (log `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3.tap.log`); passou 0/3 no
+  `B-ARNES-2`, antes do ajuste A10 (log `~/erp-pausa-2026-10-03/arnes2-full-n3.tap.log`); passou 0/3 no
   `npm test` depois do ajuste e 0/10 no subconjunto backend-postgres local (RETOMADA 3).
 - **bloqueia:** não.
 - **teste de encerramento:** a causa nomeada por execução, ou N ≥ 20 rodadas do arquivo concorrendo com a suíte sem

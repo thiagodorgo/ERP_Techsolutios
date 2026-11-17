@@ -1,24 +1,24 @@
-mandato_md5 = becd53d8fe673d5561b14c1c282664c6 (medido: `tr -d '\r' < C:/Users/AMP/w-pausa/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/00-mandatos/c2.md | md5sum`) · declarado no disparo: becd53d8fe673d5561b14c1c282664c6 · CONFERE
+mandato_md5 = becd53d8fe673d5561b14c1c282664c6 (medido: `tr -d '\r' < ~/w-pausa/agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/00-mandatos/c2.md | md5sum`) · declarado no disparo: becd53d8fe673d5561b14c1c282664c6 · CONFERE
 # Evidência — cadeira C2 da junta 1 do B-GOV-PAUSA (PR 397)
 
 - papel: cadeira C2 — consistência normativa e espelho · identidade: `jurado-pausa-c2-consistencia-normativa-espelho` (nova) · modelo: Opus (claude-opus-5-5), o do frontmatter `model: opus`; sem substituição.
-- lançada como `general-purpose` (R1 do inspetor: o tipo não está registrado na sessão); corpo aplicado = blob `67c2c280:.claude/agents/especialistas/jurado-pausa-c2-consistencia-normativa-espelho.md`, lido INTEIRO. md5 EOL-neutro do corpo recebido = `facd19fd5c1a6ab892d08fb61c4dfc23` = md5 do blob no head (medido no worktree próprio: `MSYS_NO_PATHCONV=1 git -C C:/Users/AMP/w-jur-pz2 show HEAD:.claude/agents/especialistas/jurado-pausa-c2-consistencia-normativa-espelho.md | tr -d '\r' | md5sum`) = o declarado no disparo. CONFERE.
+- lançada como `general-purpose` (R1 do inspetor: o tipo não está registrado na sessão); corpo aplicado = blob `67c2c280:.claude/agents/especialistas/jurado-pausa-c2-consistencia-normativa-espelho.md`, lido INTEIRO. md5 EOL-neutro do corpo recebido = `facd19fd5c1a6ab892d08fb61c4dfc23` = md5 do blob no head (medido no worktree próprio: `MSYS_NO_PATHCONV=1 git -C ~/w-jur-pz2 show HEAD:.claude/agents/especialistas/jurado-pausa-c2-consistencia-normativa-espelho.md | tr -d '\r' | md5sum`) = o declarado no disparo. CONFERE.
 - Ferramentas: obedeço ao corpo (`Read, Grep, Glob, Bash`); as únicas escritas são este arquivo e `C2-voto.json`, por Bash. Nomes dos arquivos: o MANDATO e o disparo dizem `C2-evidencia.md`/`C2-voto.json` (maiúsculo); o corpo diz `c2-*` — segui o mandato (fonte do disparo). Anotado como nota de terreno.
 - head resolvido por mim (2026-10-01T18:32Z): `git fetch origin` ec=0 · `git rev-parse origin/docs/gov-pausa-grava-e-para` = `67c2c280612cb644f246af0b5410cab59afe028d` · `gh pr view 397 --json headRefOid,isDraft,mergeable,state` = headRefOid `67c2c280612cb644f246af0b5410cab59afe028d`, draft=false, MERGEABLE, OPEN → as duas vias COINCIDEM. merge-base(origin/main, head) = `5b6e103638f398d6074eecc5daebdf2d3bcd2252` = origin/main.
 - R4 do inspetor: a colagem do mandato nomeia `ed61f998`; o objeto é `67c2c280` (1 commit acima, o que versiona os mandatos). Medi `67c2c280`.
 - Legalidade: `00-inspetor-terreno.md` (não commitado, de propósito) lido inteiro → **LIBERADO COM RESSALVA** (R1–R4), objeto `67c2c280612cb644f246af0b5410cab59afe028d`, quórum MAIORIA DE 3 sem veto, 14/14 check-runs verdes. O objeto liberado = o head que resolvi. Legalidade CONFERIDA.
 - `00-quedas.md`: tabela vazia → não substituo caído (P3 não se aplica); não há `C2-evidencia.md` anterior.
-- Worktree próprio: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-jur-pz2 67c2c280…` ec=0 (não existia antes: `ls` → No such file) · `test -e C:/Users/AMP/w-jur-pz2/.git` OK · `rev-parse HEAD` = 67c2c280… · porcelain = 0.
-- $SCRATCH = `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad`
-- Ambiente: Git Bash (MINGW64_NT-10.0-22631, /bin/bash.exe); cwd por comando = `C:/Users/AMP/w-jur-pz2` (git -C); variáveis que defini: só locais por comando (EV, SCRATCH, H); `MSYS_NO_PATHCONV=1` SÓ como prefixo por comando, nunca exportada. Sem banco, sem Docker; base viva 5432/6379 nunca alvo. Não leio arquivos c1-*/c3-*/C1-*/C3-*.
+- Worktree próprio: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-jur-pz2 67c2c280…` ec=0 (não existia antes: `ls` → No such file) · `test -e ~/w-jur-pz2/.git` OK · `rev-parse HEAD` = 67c2c280… · porcelain = 0.
+- $SCRATCH = `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad`
+- Ambiente: Git Bash (MINGW64_NT-10.0-22631, /bin/bash.exe); cwd por comando = `~/w-jur-pz2` (git -C); variáveis que defini: só locais por comando (EV, SCRATCH, H); `MSYS_NO_PATHCONV=1` SÓ como prefixo por comando, nunca exportada. Sem banco, sem Docker; base viva 5432/6379 nunca alvo. Não leio arquivos c1-*/c3-*/C1-*/C3-*.
 - Resíduo alheio (R2) apenas reportado: `git worktree list` mostra 16 worktrees além do meu, inclusive `w-devs4` e `w-pl4f` (8dc14144) que não constavam da lista do inspetor — alheios, não tocados.
 
 ## Item 1 — o espelho [hora estimada, NÃO medida — ver correção no fim]
 
-Insumos: blobs do head `67c2c280` e de `origin/main` (`5b6e1036`) extraídos por `MSYS_NO_PATHCONV=1 git -C C:/Users/AMP/w-jur-pz2 show <ref>:<caminho> > $SCRATCH/pz2/<nome>.<head|main>` (blobs LF: CR=0; cópia de trabalho do meu worktree CRLF).
+Insumos: blobs do head `67c2c280` e de `origin/main` (`5b6e1036`) extraídos por `MSYS_NO_PATHCONV=1 git -C ~/w-jur-pz2 show <ref>:<caminho> > $SCRATCH/pz2/<nome>.<head|main>` (blobs LF: CR=0; cópia de trabalho do meu worktree CRLF).
 
 ### 1(a) hunks como multiconjunto
-- comando: `git -C C:/Users/AMP/w-jur-pz2 diff -U0 origin/main 67c2c280 -- CLAUDE.md` e `-- AGENTS.md` (ec=0/0, 47 linhas cada) → `python $SCRATCH/pz2/hunks.py` (linhas `^[+-]` não `^[+-][+-]`, CR removido, `collections.Counter`).
+- comando: `git -C ~/w-jur-pz2 diff -U0 origin/main 67c2c280 -- CLAUDE.md` e `-- AGENTS.md` (ec=0/0, 47 linhas cada) → `python $SCRATCH/pz2/hunks.py` (linhas `^[+-]` não `^[+-][+-]`, CR removido, `collections.Counter`).
 - saída: CLAUDE 38 linhas (+33 −5) · AGENTS 38 linhas (+33 −5) · só-CLAUDE = 0 · só-AGENTS = 0 → **MULTICONJUNTO IGUAL**. Hunks: CLAUDE `-524,2 +524,4 · -529,2 +531,3 · -562,0 +566,21 · -570,0 +595,3 · -575 +602,2`; AGENTS os mesmos com offset +28 (`-552…`). Piso do mandato (diff dos dois filtros grep, cwd w-jur-pz2, HEAD) → `IDENTICAS`.
 - vermelho-controle (irmão que sabidamente acusa): cópia do diff de AGENTS com 1º `P7`→`P8` (substituição provada: `diff -q` differ) → `MULTICONJUNTO DIFERENTE`; cópia com 1 linha `+linha so do Codex` a mais → `so AGENTS: 1`, `DIFERENTE`. O comparador acusa.
 - linhas de um lado só: **0** (nenhuma FERRAMENTA, nenhuma REGRA COMUM assimétrica).
@@ -46,7 +46,7 @@ Insumos: blobs do head `67c2c280` e de `origin/main` (`5b6e1036`) extraídos por
 ## Item 2 — lista PRÓPRIA de lugares vivos, cruzada com o plano [hora estimada, NÃO medida — ver correção no fim]
 
 ### 2(a) comando do briefing §5, como está (piso)
-- comando: `git -C C:/Users/AMP/w-jur-pz2 grep -c -i -E '\[P[1-6]\]|P1[–-]P[36]|P1–P6|junta resiliente|JUNTA-RESILIENTE|modelo de mandato|evid[eê]ncia incremental|voto-arquivo|00-quedas|perda de jurado' 67c2c280 -- CLAUDE.md AGENTS.md 'docs/claude-code-handoff/*.md' .agents/agents .claude/agents .claude/skills .agents/skills scripts tests Kpis agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md agent-orchestration/docs/conhecimento-de-terreno.md` ec=0. Saída (N por caminho):
+- comando: `git -C ~/w-jur-pz2 grep -c -i -E '\[P[1-6]\]|P1[–-]P[36]|P1–P6|junta resiliente|JUNTA-RESILIENTE|modelo de mandato|evid[eê]ncia incremental|voto-arquivo|00-quedas|perda de jurado' 67c2c280 -- CLAUDE.md AGENTS.md 'docs/claude-code-handoff/*.md' .agents/agents .claude/agents .claude/skills .agents/skills scripts tests Kpis agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md agent-orchestration/docs/conhecimento-de-terreno.md` ec=0. Saída (N por caminho):
 ```
 .agents/agents/README.md:1
 .agents/agents/especialistas/jurado-pausa-c1-fidelidade-transcricao.md:9
@@ -346,7 +346,7 @@ DECISOES  | jobs sem modelo | l.2836  | "não são alvo" — não grava | existe
 - veredito parcial 3(a): **VERDE**.
 
 ### 3(b) roteiro de retomada
-- comando: `git -C C:/Users/AMP/w-jur-pz2 grep -n -i -P 'custo/trilha|trilha de custo|arquivo de custo' 67c2c280` ec=0 → nos 5 arquivos vivos do texto (CLAUDE, AGENTS, PROTOCOLO, README, terreno) = **0/0/0/0/0**; fora deles só registro/plano/briefing/mandato/notas de KPI (decisoes l.2880–2881 T-22, BRIEFING, plano, `dev-pausa-emenda.md:79`, `Kpis/*`), o meu próprio corpo (l.262–263 nos dois espelhos) e um falso positivo (`docs/omega-pd.md:241` 'centro-de-custo/trilha'). O destino novo (`## PAUSA <hora UTC>` em `agent-orchestration/docs/status-geral.md`) **resolve** na ref (cat-file ok) e é lido antes de cada bloco (§A4, CLAUDE l.80).
+- comando: `git -C ~/w-jur-pz2 grep -n -i -P 'custo/trilha|trilha de custo|arquivo de custo' 67c2c280` ec=0 → nos 5 arquivos vivos do texto (CLAUDE, AGENTS, PROTOCOLO, README, terreno) = **0/0/0/0/0**; fora deles só registro/plano/briefing/mandato/notas de KPI (decisoes l.2880–2881 T-22, BRIEFING, plano, `dev-pausa-emenda.md:79`, `Kpis/*`), o meu próprio corpo (l.262–263 nos dois espelhos) e um falso positivo (`docs/omega-pd.md:241` 'centro-de-custo/trilha'). O destino novo (`## PAUSA <hora UTC>` em `agent-orchestration/docs/status-geral.md`) **resolve** na ref (cat-file ok) e é lido antes de cada bloco (§A4, CLAUDE l.80).
 - vermelho-controle: o 1(b) acima (roteiro trocado por caminho inexistente → 'não existe').
 - **S-05 não se confirma no head** (resolvido pela E2/T-22). veredito parcial 3(b): **VERDE**.
 
@@ -385,6 +385,6 @@ DECISOES  | jobs sem modelo | l.2836  | "não são alvo" — não grava | existe
 
 ## Fechamento [2026-10-01T19:32:47Z, medido]
 - head re-resolvido no fim (19:21:50Z): git = gh = 67c2c280612cb644f246af0b5410cab59afe028d (não andou durante a medição).
-- limpeza: git worktree remove --force C:/Users/AMP/w-jur-pz2 ec=0 (diretório inexistente; worktree list = 0; sem prune); scratchpad/pz2 e scripts de voto apagados; nenhum arquivo rastreado tocado; base viva nunca tocada; resíduo alheio só reportado.
+- limpeza: git worktree remove --force ~/w-jur-pz2 ec=0 (diretório inexistente; worktree list = 0; sem prune); scratchpad/pz2 e scripts de voto apagados; nenhum arquivo rastreado tocado; base viva nunca tocada; resíduo alheio só reportado.
 - não li nenhum arquivo C1-*/C3-* (existem C1-evidencia.md e C1-voto.json no diretório; não abertos).
 - voto gravado em C2-voto.json ANTES da mensagem final (P2): APROVADO, 3 itens VERDE, 4 achados nota, 0 ajuste, 0 bloqueia.

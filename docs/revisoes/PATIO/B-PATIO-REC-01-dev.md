@@ -3,12 +3,12 @@
 - **Autor:** `dev-rec01-opus`, Claude Opus 5.5, nível menor **DECLARADO**. Cobre a conta 1 do Codex (limite), por ordem do dono.
   Não escreveu o plano. **Verificador:** Codex (outro modelo, `D-UM-FAZ-OUTRO-VERIFICA`); depois, junta completa.
 - **Plano:** v3 §9.1 + emenda 1 §3.1, §6.2.2, §8.2.5, §10.1 (fora do repositório, `erp-pausa-2026-10-03/planos/`).
-- **Terreno:** worktree `C:/Users/thiag/w-rec01`, `npm ci` próprio (sem junction), Postgres descartável `rec01-pg` (`postgres:16`,
+- **Terreno:** worktree `~/w-rec01`, `npm ci` próprio (sem junction), Postgres descartável `rec01-pg` (`postgres:16`,
   `127.0.0.1:55467`, usuário `postgres` como no CI). Nunca `erp-*`, nunca 5432/3000/5173/6379.
 - **Ambientes (v3 §9.0):** `[SB]` = `env -u DATABASE_URL -u RBAC_DB_PARITY node --test --import tsx …`; `[UF]` =
   `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x`; `[DB]` = `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55467/postgres`;
   `[DBP]` = `[DB]` + `npm run db:seed` + `RBAC_DB_PARITY=1`.
-- **Saídas TAP completas:** `C:/Users/thiag/erp-pausa-2026-10-03/rec01/` (fora do repositório).
+- **Saídas TAP completas:** `~/erp-pausa-2026-10-03/rec01/` (fora do repositório).
 
 ## RETOMADA 0 — F0 (baselines), ref `origin/main` = `ceb62a07`
 
@@ -181,10 +181,10 @@ classificar a rota como `SEM-ALCANCE-CAMPO`, igual a `release/approve`. Os 28 te
 - **Pedido ao orquestrador (emenda antes do código):** autorizar no PERMITIDO do REC-01 as três edições acima, nesta forma exata:
   (1) o instantâneo regenerado pelo gerador, com o diff acima e nada mais; (2) `112` → `113` nas três posições do literal da linha 287;
   (3) `119` → `121` na linha 1016. Se a emenda vier, a F5 segue sem mudança.
-- **Próximo comando ao retomar:** `cd C:/Users/thiag/w-rec01 && git fetch -q origin && git status --porcelain` (vazio) e, com a emenda,
+- **Próximo comando ao retomar:** `cd ~/w-rec01 && git fetch -q origin && git status --porcelain` (vazio) e, com a emenda,
   aplicar as três edições num commit `test(…)` próprio; depois a F5.
 - **Arquivos meio-escritos:** nenhum. **Vivos:** o container `rec01-pg` (`127.0.0.1:55467`, bases `postgres`, `rec01c`, `rec01v`,
-  `rec01m`, `rec01g`), mantido para a retomada; o worktree `C:/Users/thiag/w-rec01`.
+  `rec01m`, `rec01g`), mantido para a retomada; o worktree `~/w-rec01`.
 
 ## RETOMADA 5 — emenda 1 §11 (orquestrador): unidade do dinheiro (11.1) e as três guardas (11.2)
 
@@ -282,7 +282,7 @@ mergeado; sem migração nova, sem rebase).
   - `backend-postgres` (jobs `125953754260` e `125953558682`): `# tests 502 # pass 502 # fail 0 # cancelled 0 # skipped 0`; as 7 do
     `rec-01-domain-db` e as 2 do `rec-01-migration-drill-db` aparecem como `ok`.
 - Limpeza: container `rec01-pg` removido; `dist/` removido; TAPs e executor de mutação ficam fora do repositório, em
-  `C:/Users/thiag/erp-pausa-2026-10-03/rec01/`.
+  `~/erp-pausa-2026-10-03/rec01/`.
 
 PRONTO PARA VERIFICAÇÃO
 
@@ -290,7 +290,7 @@ PRONTO PARA VERIFICAÇÃO
 
 - **Papéis:** quem achou foi `jurado-j488-c2-sol` (Codex); quem planejou foi o orquestrador (§12, topo declarado); quem consertou foi
   `dev-rec01-opus` (Claude Opus, nível menor declarado), que não achou. Conferência: um Codex que não consertou.
-- **Terreno medido antes:** worktree `C:/Users/thiag/w-rec01`, head `ea6d4aef` (= `origin/feat/patio-rec-01-dominio`), árvore limpa;
+- **Terreno medido antes:** worktree `~/w-rec01`, head `ea6d4aef` (= `origin/feat/patio-rec-01-dominio`), árvore limpa;
   `origin/main` = `2e7987bd`, que não toca nenhum arquivo do bloco (`git diff --stat ceb62a07 origin/main` nos arquivos do bloco: vazio) e
   faz merge sem conflito (`git merge-tree`); sem merge da `main` no ramo. Postgres descartável `rec01k-pg` em `127.0.0.1:55494`.
 - **Diff do conserto** (`git diff --stat ea6d4aef HEAD`, sem o diário): `impound-payment.{types,service}.ts`,
@@ -358,6 +358,6 @@ regressão → `63/63` · `[UF]` → `12/12` · `[DB]` domain-db, drill, gate-co
     (a diferença de 107 testes é o que a `main` acrescentou depois de `ceb62a07`; os 2 pulos ficam no orçamento do runner);
   - `backend-postgres` (jobs `126111636494` e `126111603386`): `# tests 503 # pass 503 # fail 0 # cancelled 0 # skipped 0` nos dois
     (o T-DOM-28-db soma 1 aos 502 de antes).
-- Limpeza: container `rec01k-pg` removido; `dist/` removido; TAPs fora do repositório, em `C:/Users/thiag/erp-pausa-2026-10-03/rec01/`.
+- Limpeza: container `rec01k-pg` removido; `dist/` removido; TAPs fora do repositório, em `~/erp-pausa-2026-10-03/rec01/`.
 
 PRONTO PARA CONFERÊNCIA

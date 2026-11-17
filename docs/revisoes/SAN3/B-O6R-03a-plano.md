@@ -2,7 +2,7 @@ Papel: planejador-mestre · Modelo: GPT-6 Astra (Codex, conforme alocação info
 
 # B-O6R-03a — Plano v2: replay atômico, compatibilidade legada e prova vinculada ao ator
 
-Identidade nova: `planejador-b-o6r-03a-v2-codex`. Corpo lido integralmente por `git show origin/main:.agents/agents/planejador-mestre.md`, com `origin/main = 9b611468902f3984d7704ef2dd6e3ad1d0c08b3a`. Produto, v1 e crítica medidos em `94002580`, branch `fix/expense-sync-atomic`, worktree `C:/Users/AMP/w-03a`; árvore inicialmente limpa. A v1 permanece no git. A declaração de modelo registra a alocação informada pelo invocador; as ferramentas não oferecem certificação independente do runtime.
+Identidade nova: `planejador-b-o6r-03a-v2-codex`. Corpo lido integralmente por `git show origin/main:.agents/agents/planejador-mestre.md`, com `origin/main = 9b611468902f3984d7704ef2dd6e3ad1d0c08b3a`. Produto, v1 e crítica medidos em `94002580`, branch `fix/expense-sync-atomic`, worktree `~/w-03a`; árvore inicialmente limpa. A v1 permanece no git. A declaração de modelo registra a alocação informada pelo invocador; as ferramentas não oferecem certificação independente do runtime.
 
 ## Veredito no topo
 
@@ -256,7 +256,7 @@ Cada mutação é aplicada **isoladamente** no arquivo de produção em worktree
 
 ### 6.1 Esta tarefa de planejamento
 
-**Único arquivo autorizado para escrita:** `C:/Users/AMP/w-03a/docs/revisoes/SAN3/B-O6R-03a-plano.md`, gravado por seção. Sem código, commit, push, alteração de contrato-base ou de registro externo. Banco apenas `pl03a2-*`; não usar base viva, prune, git clean/stash/reset --hard/add -A, tail -f ou npm install. Todo comando externo com timeout. Nenhum subagente de junta/dev é convocado por esta entrega de plano.
+**Único arquivo autorizado para escrita:** `~/w-03a/docs/revisoes/SAN3/B-O6R-03a-plano.md`, gravado por seção. Sem código, commit, push, alteração de contrato-base ou de registro externo. Banco apenas `pl03a2-*`; não usar base viva, prune, git clean/stash/reset --hard/add -A, tail -f ou npm install. Todo comando externo com timeout. Nenhum subagente de junta/dev é convocado por esta entrega de plano.
 
 ### 6.2 Implementação futura do bloco, depois do crítico
 

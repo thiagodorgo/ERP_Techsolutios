@@ -12,7 +12,7 @@
   **R2** participação prévia a declarar no voto (`coordenador-de-acessos`, `validador-mestre`, `agente-ci-doutor` vinham das juntas
   do plano SAN3); **R3** resíduo inerte alheio (`erp-postgres-alt` na 55432, diretório vazio `san2-r`) — não usar o nome nem a porta,
   ninguém varre; **R4** outras juntas no mesmo terreno (`bsan301-*` vivos), remoção só pelo PRÓPRIO nome; **R5** armadilha medida —
-  com `MSYS_NO_PATHCONV=1`, `git worktree add /c/Users/...` cria em `C:/c/Users/...`; **R6** `frontend/node_modules` presente no
+  com `MSYS_NO_PATHCONV=1`, `git worktree add /c/...` cria em `C:/c/...`; **R6** `frontend/node_modules` presente no
   `bsan304a`, ao contrário do que o plano dizia.
 - **Votos:**
 

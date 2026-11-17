@@ -27,6 +27,8 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
+import { CHARGE_RULES, sqlStatusList } from "../charges/charge-rules.js";
+import { enqueueChargeCancelInTx } from "../charges/charge-request.service.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import { putRefInTx } from "../webhooks/statement-refs.prisma.js";
 import {
@@ -170,6 +172,30 @@ export async function skipPendingChargeCreateInTx(
   return rows.length > 0 ? toDomain(rows[0]!) : undefined;
 }
 
+/** B-ASS-08c1c (plano §4.0 item 3): sobre um `tx` JÁ ABERTO e DEPOIS da trava do demonstrativo, a `charge_create` vira
+ * SKIPPED com o `skip_reason` dado (o CHECK da M5: `statement_paid`/`statement_cancelled`/`statement_reopened`) SÓ se o
+ * status ainda está em `from`. Nunca toca `external_id`, `last_error` nem `occurred_at`. 0 linhas = o claim ou o despacho
+ * pegaram a linha primeiro. */
+export async function skipChargeCreateInTx(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  id: string,
+  skipReason: OutboxSkipReason,
+  from: readonly OutboxStatus[],
+  now: Date,
+): Promise<BillingOutboxRow | undefined> {
+  const rows = (await tx.$queryRawUnsafe(
+    `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = $3, next_attempt_at = NULL, updated_at = $5
+       WHERE id = $1::uuid AND tenant_id = $2::uuid AND kind = 'charge_create' AND status = ANY($4::text[]) RETURNING *`,
+    id,
+    tenantId,
+    skipReason,
+    [...from],
+    now,
+  )) as Row[];
+  return rows.length > 0 ? toDomain(rows[0]!) : undefined;
+}
+
 /**
  * O núcleo comum do `retry` e do `retryByOperator` (E9 do 2º conserto do #522; B-ASS-08c1b, Emenda 1 §3.3-§3.6 e Emenda 2
  * §3): as MESMAS 3 instruções (as constantes abaixo) e a MESMA decisão pura (`reopenChecks`), sobre o `tx` que cada método
@@ -235,6 +261,18 @@ export async function writeOutboxAuditInTx(
     resourceId: event.entityId,
     metadata: event.metadata,
   });
+}
+
+/** B-ASS-08c1c (§9 D-4, o marcador REG-PAID): há pagamento do PROVEDOR desta cobrança no demonstrativo? Lido no `tx` do registro,
+ * com o demonstrativo já travado. */
+async function providerPaymentRecordedInTx(tx: Prisma.TransactionClient, statementId: string, provider: string, externalChargeId: string): Promise<boolean> {
+  const rows = (await tx.$queryRawUnsafe(
+    `SELECT 1 FROM subscription_statement_payments WHERE statement_id = $1::uuid AND source = $2 AND external_charge_id = $3 LIMIT 1`,
+    statementId,
+    provider,
+    externalChargeId,
+  )) as unknown[];
+  return rows.length > 0;
 }
 
 export const CLAIM_BUDGET = { maxWait: 5_000, timeout: 30_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
@@ -325,9 +363,9 @@ export class PrismaOutboxRepository implements OutboxRepository {
             //     cobrança viva, com a irmã viva = o conjunto do D1 (PENDING/PROCESSING/SENT/NEEDS_REVIEW), e aplica a
             //     política injetada (R-OBX-5).
             const statements = (await tx.$queryRawUnsafe(
-              `SELECT s.status, s.reopened_at,
+              `SELECT s.status, s.reopened_at, round(s.paid_amount * 100)::bigint AS paid_cents,
                       ( EXISTS (SELECT 1 FROM subscription_statement_charges c
-                                 WHERE c.statement_id = s.id AND c.status IN ('pending', 'confirmed'))
+                                 WHERE c.statement_id = s.id AND c.status IN (${sqlStatusList("occupiesSlot")}))
                         OR EXISTS (SELECT 1 FROM billing_outbox o2
                                     WHERE o2.statement_id = s.id AND o2.kind = 'charge_create' AND o2.id <> $2::uuid
                                       AND o2.status IN ('PENDING', 'PROCESSING', 'SENT', 'NEEDS_REVIEW')) ) AS has_live_charge
@@ -335,12 +373,12 @@ export class PrismaOutboxRepository implements OutboxRepository {
                  WHERE s.id = $1::uuid`,
               target.statementId,
               target.id,
-            )) as Array<{ status: string; reopened_at: Date | null; has_live_charge: boolean }>;
+            )) as Array<{ status: string; reopened_at: Date | null; paid_cents: bigint | number | string; has_live_charge: boolean }>;
             const statement = statements[0];
             const snapshot: StatementClaimSnapshot | undefined = statement
-              ? { status: statement.status as StatementClaimSnapshot["status"], reopenedAt: statement.reopened_at, hasLiveCharge: statement.has_live_charge }
+              ? { status: statement.status as StatementClaimSnapshot["status"], reopenedAt: statement.reopened_at, hasLiveCharge: statement.has_live_charge, paidCents: Number(statement.paid_cents) }
               : undefined;
-            verdict = params.verdict(target, snapshot);
+            verdict = params.verdict(target, snapshot, params.now);
           } else {
             // (4) PENDING dos outros tipos (`invoice_*` da 08b): pick próprio, sem trava do demonstrativo e sem releitura
             //     (a política os deixa `eligible`, como antes).
@@ -356,7 +394,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
             )) as Row[];
             if (others.length === 0) return null;
             target = toDomain(others[0]!);
-            verdict = params.verdict(target, undefined);
+            verdict = params.verdict(target, undefined, params.now);
           }
         }
 
@@ -469,12 +507,12 @@ export class PrismaOutboxRepository implements OutboxRepository {
     // [REG-TX] O demonstrativo vem PRIMEIRO; a rede já terminou antes de esta transação começar.
     return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
       const statements = (await tx.$queryRawUnsafe(
-        `SELECT id, tenant_id, status, total_amount, reopened_at
+        `SELECT id, tenant_id, status, total_amount, reopened_at, round(total_amount * 100)::bigint AS total_cents
            FROM subscription_statements
           WHERE id = $1::uuid
           FOR NO KEY UPDATE`,
         row.statementId,
-      )) as Array<{ id: string; tenant_id: string; status: string; total_amount: unknown; reopened_at: Date | null }>;
+      )) as Array<{ id: string; tenant_id: string; status: string; total_amount: unknown; reopened_at: Date | null; total_cents: bigint | number | string }>;
       const statement = statements[0];
       if (!statement) return false;
 
@@ -493,7 +531,10 @@ export class PrismaOutboxRepository implements OutboxRepository {
 
       const externalChargeId = outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId;
       const details = outcome.kind === "created" ? outcome.result : outcome.lookup;
-      const status = recordedChargeStatus(outcome.kind, details.status);
+      let recordedStatus = recordedChargeStatus(outcome.kind, details.status);
+      // B-ASS-08c1c (§9 D-4): o pagamento do provedor que chegou ANTES deste registro (o webhook pagou entre o `createCharge` e
+      // aqui) faz a cobrança nascer `confirmed`, não `pending` — dinheiro já recebido nunca fica sob cobrança aberta.
+      if (recordedStatus === "pending" && (await providerPaymentRecordedInTx(tx, statement.id, row.provider, externalChargeId))) recordedStatus = "confirmed"; // [REG-PAID]
       await tx.$executeRawUnsafe(
         `INSERT INTO subscription_statement_charges
            (tenant_id, statement_id, provider, external_charge_id, status, pay_url, pix_copy_paste, boleto_line, boleto_url, due_date, created_at)
@@ -503,7 +544,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
         statement.id,
         row.provider,
         externalChargeId,
-        status,
+        recordedStatus,
         details.payUrl ?? null,
         details.pixCopyPaste ?? null,
         details.boletoLine ?? null,
@@ -513,6 +554,17 @@ export class PrismaOutboxRepository implements OutboxRepository {
       );
       await this.scope.afterChargeInsert?.();
       await putRefInTx(tx, { statementId: statement.id, tenantId: statement.tenant_id, provider: row.provider, externalChargeId }, now);
+      // B-ASS-08c1c (A1, plano §4.4) — a RELEITURA no registro, com o demonstrativo travado no passo 1 (o registro espera a
+      // baixa, o cancelamento e o reopen): vigente = `closed`, o mesmo total e nenhuma reabertura depois da linha. Não vigente
+      // com a cobrança `pending` → o `charge_cancel` pelo MESMO núcleo do `charge/cancel` e da marcação imediata, no `tx`.
+      const vigente = statement.status === "closed" && Number(statement.total_cents) === Number(row.payload.amountCents) && !(statement.reopened_at !== null && statement.reopened_at.getTime() > row.occurredAt.getTime());
+      const cancelIt = !vigente && CHARGE_RULES[recordedStatus].cancelTarget; // [REG-REREAD]
+      if (cancelIt) {
+        const enqueued = await enqueueChargeCancelInTx({ listChargeLines: (id) => listByStatementInTx(tx, id), enqueue: (next, at) => enqueueInTx(tx, next, at) }, { tenantId: statement.tenant_id, statementId: statement.id, target: { id: row.id, provider: row.provider, externalId: externalChargeId }, now }); // [REREAD-ENQ]
+        if (enqueued?.kind === "enqueued") {
+          await writeOutboxAuditInTx(tx, statement.tenant_id, { actorId: null, action: "billing_outbox.charge_cancel_requested", entityId: enqueued.row.id, metadata: { statementId: statement.id, kind: enqueued.row.kind, code: "statement_changed_during_create" } });
+        }
+      }
       return true;
     });
   }
@@ -540,9 +592,9 @@ export class PrismaOutboxRepository implements OutboxRepository {
         now,
       )) as Array<{ id: string }>;
       if (leased.length === 0) return false;
-      await tx.$executeRawUnsafe(
+      await tx.$executeRawUnsafe( // [CANCEL-TX-CHG]
         `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4
-          WHERE tenant_id = $1::uuid AND provider = $2 AND external_charge_id = $3 AND status = 'pending'`,
+          WHERE tenant_id = $1::uuid AND provider = $2 AND external_charge_id = $3 AND status IN (${sqlStatusList("cancelTarget")})`,
         tenantId,
         row.provider,
         chargeId,
@@ -700,14 +752,27 @@ export class PrismaOutboxRepository implements OutboxRepository {
       const rows = (await tx.$queryRawUnsafe(
         `SELECT s.status, s.reopened_at, round(s.total_amount * 100)::bigint AS total_cents,
                 (SELECT count(*)::int FROM billing_outbox o
-                  WHERE o.statement_id = s.id AND o.kind = 'charge_create' AND o.id <> $2::uuid) AS other_intents
+                  WHERE o.statement_id = s.id AND o.kind = 'charge_create' AND o.id <> $2::uuid) AS other_intents,
+                (SELECT COALESCE(array_agg(c.external_charge_id ORDER BY c.external_charge_id), '{}'::text[])
+                   FROM subscription_statement_charges c
+                   JOIN subscription_statement_payments p ON p.statement_id = c.statement_id AND p.tenant_id = c.tenant_id
+                                                        AND p.source = c.provider AND p.external_charge_id = c.external_charge_id
+                  WHERE c.statement_id = s.id AND c.status = 'refunded' AND p.reversal_kind = 'refund' AND p.reversed_amount >= p.amount) AS fully_refunded
            FROM subscription_statements s WHERE s.id = $1::uuid`,
         statementId,
         rowId,
-      )) as Array<{ status: string; reopened_at: Date | null; total_cents: bigint | number | string; other_intents: number }>;
+      )) as Array<{ status: string; reopened_at: Date | null; total_cents: bigint | number | string; other_intents: number; fully_refunded: string[] | null }>;
       const row = rows[0];
       return row
-        ? { otherIntents: Number(row.other_intents), status: row.status as StatementStatus, reopenedAt: row.reopened_at, totalCents: Number(row.total_cents) }
+        ? {
+            otherIntents: Number(row.other_intents),
+            status: row.status as StatementStatus,
+            reopenedAt: row.reopened_at,
+            totalCents: Number(row.total_cents),
+            // B-ASS-08c1c (plano §4.8): as cobranças do demonstrativo `refunded` NA TABELA com o pagamento do provedor TODO
+            // estornado — o 2º ramo do critério da `P-ASS08C-RECOBRANCA-APOS-ESTORNO` (o valor estornado igual ao pago).
+            fullyRefundedCharges: row.fully_refunded ?? [],
+          }
         : undefined;
     });
   }

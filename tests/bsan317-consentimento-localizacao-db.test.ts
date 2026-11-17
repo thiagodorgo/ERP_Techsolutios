@@ -693,7 +693,7 @@ if (!connectionString) {
       ]);
       release[0]!.open();
       await A;
-      const seenR2 = await waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: R, label: "R depois de A", timeoutMs: 3_000 });
+      const seenR2 = await waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: R, loserPid: rPid, label: "R depois de A", timeoutMs: 3_000 });
       assert.equal(seenR2, "resolvido", `R não pode ficar presa pela posição nova (${seenR2})`);
       release[1]!.open();
       const [a, r, b] = await Promise.all([A, R, B]);

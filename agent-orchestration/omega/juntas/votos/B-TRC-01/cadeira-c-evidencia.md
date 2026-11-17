@@ -24,7 +24,7 @@ papel: cadeira (c) | identidade: jurado-trc01-c-contrato-e-atribuicao-claude (co
 ## Terreno (medido 11:41Z–11:55Z)
 
 - check-runs no objeto: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/5abdf83b…/check-runs?per_page=100` → total 14 | não-verdes 0 | pendentes 0; job dos `-db` = `backend-postgres` (ci.yml do objeto) completed/success (2 runs).
-- worktree próprio: `git worktree add --detach C:/Users/AMP/w-jtrc-c 5abdf83b` ec=0; `.git` presente; `.env` AUSENTE; HEAD=5abdf83b. `npm ci --no-audit --no-fund` próprio ec=0 (326 pacotes), sem junction. `prisma generate` com URL inerte ec=0.
+- worktree próprio: `git worktree add --detach ~/w-jtrc-c 5abdf83b` ec=0; `.git` presente; `.env` AUSENTE; HEAD=5abdf83b. `npm ci --no-audit --no-fund` próprio ec=0 (326 pacotes), sem junction. `prisma generate` com URL inerte ec=0.
 - portas: excludedportrange gravado; 47463 livre mas 47473 OCUPADA pela cadeira (b) (`jtrc01-b-redis`) → escolhi **47465 (pg) / 47475 (redis)**, livres no netstat e fora das faixas. `docker port`: `127.0.0.1:47465`, `127.0.0.1:47475`.
 - containers: `jtrc01-c-pg` (postgres:16 → PostgreSQL 16.14) e `jtrc01-c-redis` (redis:7); senha aleatória por `node -e` em arquivo do $SCRATCH, passada só por ambiente; URLs só como prefixo (wrapper `withdb.sh` no $SCRATCH; URL publicada como `postgresql://postgres:***@127.0.0.1:47465/<db>`), REDIS_URL=redis://127.0.0.1:47475 em todo comando.
 - `prisma migrate deploy` ec=0 — última migração `20260875000000_validate_location_source_check` (anterior `20260874000000_traccar_ingestion_foundation`).
@@ -235,11 +235,11 @@ Fora o achado acima, todo caminho medido grava só pelo ramo "despacho aceito" e
 ### zz-jtrc01c-contrato.mts — md5 9974f95796001e83974b1a06d0ec8c49
 ````
 // Sonda da cadeira (c), item 1(b): parser/adaptador do OBJETO, sem banco. Publica só desfechos (iguais/diferentes, códigos).
-const W = "file:///C:/Users/AMP/w-jtrc-c/";
+const W = "file:///~/w-jtrc-c/";
 const schema = await import(W + "src/integrations/traccar/traccar-position.schema.ts");
 const adapter = await import(W + "src/integrations/traccar/traccar-position.adapter.ts");
 const fs = await import("node:fs");
-const FIX = JSON.parse(fs.readFileSync("C:/Users/AMP/w-jtrc-c/infra/traccar/fixtures/6.16.0/position-osmand.json", "utf8"));
+const FIX = JSON.parse(fs.readFileSync("~/w-jtrc-c/infra/traccar/fixtures/6.16.0/position-osmand.json", "utf8"));
 const base = () => structuredClone(FIX);
 const cmd = (b: any) => adapter.buildTraccarPositionCommand(schema.parseTraccarPositionEnvelope(b), { instanceKey: "inst-x", receivedAt: new Date() });
 const out: string[] = [];
@@ -290,7 +290,7 @@ console.log(out.join("\n"));
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 
-const W = "file:///C:/Users/AMP/w-jtrc-c/";
+const W = "file:///~/w-jtrc-c/";
 const { PrismaPg } = await import(W + "node_modules/@prisma/adapter-pg/dist/index.mjs");
 const { PrismaClient } = await import(W + "node_modules/@prisma/client/default.js");
 const rls = await import(W + "src/database/rls.ts");
@@ -314,7 +314,7 @@ const rt = (appName: string) => { const c = new PrismaClient({ adapter: new Pris
 const bp = (appName: string) => { const c = new PrismaClient({ adapter: new PrismaPg({ connectionString: asRole("jtrc01c_bp", appName) }) }); clients.push(c); return c; };
 
 const INSTANCE = `jtrc-c-${randomUUID().slice(0, 8)}`;
-const FIX = JSON.parse(readFileSync("C:/Users/AMP/w-jtrc-c/infra/traccar/fixtures/6.16.0/position-osmand.json", "utf8"));
+const FIX = JSON.parse(readFileSync("~/w-jtrc-c/infra/traccar/fixtures/6.16.0/position-osmand.json", "utf8"));
 const RELAX = { phaseTwo: { maxWait: 5_000, timeout: 10_000 }, discovery: { maxWait: 5_000, timeout: 10_000 } };
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const out: string[] = [];
@@ -646,7 +646,7 @@ try {
 ````
 // Despacho anterior à migração (operator_assigned_at nulo) — banco jtrc01_c_old (base → linha → migração completa).
 import { readFileSync } from "node:fs";
-const W = "file:///C:/Users/AMP/w-jtrc-c/";
+const W = "file:///~/w-jtrc-c/";
 const { PrismaPg } = await import(W + "node_modules/@prisma/adapter-pg/dist/index.mjs");
 const { PrismaClient } = await import(W + "node_modules/@prisma/client/default.js");
 const service = await import(W + "src/integrations/traccar/traccar-ingestion.service.ts");
@@ -658,7 +658,7 @@ u.username = "jtrc01c_rt"; u.password = process.env.JTRC_PW!; const rt = new Pri
 const T = "11111111-1111-4111-8111-111111111111", V = "33333333-3333-4333-8333-333333333333";
 const pre: any = await admin.$queryRawUnsafe(`SELECT operator_assigned_at IS NULL AS nulo, accepted_at < now() AS aceito FROM field_dispatches WHERE id='55555555-5555-4555-8555-555555555555'`);
 await admin.$executeRawUnsafe(`INSERT INTO vehicle_tracking_bindings (tenant_id, vehicle_id, instance_key, external_device_key, valid_from) VALUES ($1::uuid,$2::uuid,'jtrc-old','olddev', now() - interval '2 hours')`, T, V);
-const FIX = JSON.parse(readFileSync("C:/Users/AMP/w-jtrc-c/infra/traccar/fixtures/6.16.0/position-osmand.json", "utf8"));
+const FIX = JSON.parse(readFileSync("~/w-jtrc-c/infra/traccar/fixtures/6.16.0/position-osmand.json", "utf8"));
 const b = structuredClone(FIX); b.device.uniqueId = "olddev"; const at = new Date(); b.position.fixTime = at.toISOString(); b.position.deviceTime = at.toISOString();
 const svc = service.createTraccarIngestionService({ client: rt, timeoutMs: 15000, resolver: { maxTenants: 500, hintTtlMs: 600000, negativeTtlMs: 60000, cacheMax: 100 }, budgets: { phaseTwo: { maxWait: 5000, timeout: 10000 }, discovery: { maxWait: 5000, timeout: 10000 } }, publish: (async () => ({ event: {}, published: true })) as never });
 const o = await svc.ingest(adapter.buildTraccarPositionCommand(schema.parseTraccarPositionEnvelope(b), { instanceKey: "jtrc-old", receivedAt: new Date() }));
@@ -669,7 +669,7 @@ await rt.$disconnect(); await admin.$disconnect();
 
 ### zz-jtrc01c-once.mts — md5 f34f9361574f47e1c8ef3c876f1676fa
 ````
-const r = await import("file:///C:/Users/AMP/w-jtrc-c/src/integrations/traccar/traccar-resolution.ts");
+const r = await import("file:///~/w-jtrc-c/src/integrations/traccar/traccar-resolution.ts");
 let lists = 0, finds = 0, confirms = 0;
 const ports = { countActiveTenants: async () => 3, listActiveTenantIds: async () => { lists++; return ["a", "b", "c"]; }, findBoundTenant: async () => { finds++; return "b"; } };
 const res = new r.TraccarTenantResolver(ports, { maxTenants: 500, hintTtlMs: 600000, negativeTtlMs: 60000, cacheMax: 100 });
@@ -684,7 +684,7 @@ console.log(`sem orçamento (<1 s): desfecho=${o2.kind}/${(o2 as any).reason} ·
 ````
 // Enumeração das rotas do app público (pilha do roteador do Express) — conjunto ordenado, publicado com md5.
 import { createHash } from "node:crypto";
-const W = "file:///C:/Users/AMP/w-jtrc-c/";
+const W = "file:///~/w-jtrc-c/";
 const { createApp } = await import(W + "src/app.ts");
 const { MemoryCoreSaasAdapter } = await import(W + "src/modules/core-saas/services/memory-core-saas.adapter.ts");
 const app: any = createApp(new MemoryCoreSaasAdapter());
@@ -792,7 +792,7 @@ import path from "node:path";
 import { MUTATIONS } from "./dev-mutations.mjs";
 import { OWN } from "./zz-jtrc01c-own.mjs";
 
-const WT = "C:/Users/AMP/w-jtrc-c";
+const WT = "~/w-jtrc-c";
 const OBJ = "5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91";
 const S = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"));
 const PW = readFileSync(path.join(S, "jtrc01-c.pw"), "utf8").trim();
@@ -896,12 +896,12 @@ export const OWN = [
 ````
 #!/usr/bin/env bash
 # uso: withdb.sh <dbname> <comando...>  — roda no worktree da cadeira com DATABASE_URL/REDIS_URL próprios (prefixo)
-S=/c/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/jtrc01c
+S=~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/jtrc01c
 DB="$1"; shift
-cd C:/Users/AMP/w-jtrc-c || exit 9
+cd ~/w-jtrc-c || exit 9
 DATABASE_URL="postgresql://postgres:$(cat $S/jtrc01-c.pw)@127.0.0.1:47465/$DB?schema=public" REDIS_URL="redis://127.0.0.1:47475" CORE_SAAS_PERSISTENCE=memory LOG_LEVEL=silent "$@"
 ````
 
 ## Fim — objeto e main re-resolvidos; teardown (≈12:45Z)
 - objeto no fim: `git ls-remote origin refs/heads/feat/traccar-b-trc-01` = `gh pr view 426 headRefOid` = 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91 (não andou). `origin/main` no fim: a2506458cf583fcb4471863ad86c1c9db810a91f (andou de 4fe7524e: #437 docs e #438 inventário de fluxos; `pendencias.md` sem mudança em SEC-002; a frase do dono de 2026-09-08 presente) — normas aplicadas iguais nas duas refs.
-- teardown: `log_statement`/`log_line_prefix` resetados (log_statement=none); bancos jtrc01_c_probe/base/old/mut dropados pelo nome (0 restantes); papéis jtrc01c_rt e jtrc01c_bp (o BYPASSRLS do canário) dropados (0); papéis efêmeros o6r_b01_* restantes 0; `docker rm -f -v jtrc01-c-pg jtrc01-c-redis` → `docker ps -a --filter name=jtrc01-c- -q | wc -l` = 0; processos com `w-jtrc-c` na linha de comando = 0 → `git worktree remove --force C:/Users/AMP/w-jtrc-c` ec=0, ausente de `worktree list`; mutações todas restauradas (porcelain 0 antes da remoção); senha: `grep -c` = 0 na evidência e nos logs/TAP; pasta `$SCRATCH/jtrc01c` (sondas, senha, logs) apagada. Base viva `erp-postgres`/`erp-redis` e portas do dono nunca tocadas; containers `jtrc01-a-*`, `jtrc01-b-*`, `trc01-*` não tocados; nenhum servidor público do Traccar; nenhuma imagem do Traccar usada. Em `w-trc01` escrevi só `cadeira-c-evidencia.md` e `cadeira-c-voto.json`. Não li `cadeira-a-*` nem `cadeira-b-*`. Disco C: 19G livres no fim.
+- teardown: `log_statement`/`log_line_prefix` resetados (log_statement=none); bancos jtrc01_c_probe/base/old/mut dropados pelo nome (0 restantes); papéis jtrc01c_rt e jtrc01c_bp (o BYPASSRLS do canário) dropados (0); papéis efêmeros o6r_b01_* restantes 0; `docker rm -f -v jtrc01-c-pg jtrc01-c-redis` → `docker ps -a --filter name=jtrc01-c- -q | wc -l` = 0; processos com `w-jtrc-c` na linha de comando = 0 → `git worktree remove --force ~/w-jtrc-c` ec=0, ausente de `worktree list`; mutações todas restauradas (porcelain 0 antes da remoção); senha: `grep -c` = 0 na evidência e nos logs/TAP; pasta `$SCRATCH/jtrc01c` (sondas, senha, logs) apagada. Base viva `erp-postgres`/`erp-redis` e portas do dono nunca tocadas; containers `jtrc01-a-*`, `jtrc01-b-*`, `trc01-*` não tocados; nenhum servidor público do Traccar; nenhuma imagem do Traccar usada. Em `w-trc01` escrevi só `cadeira-c-evidencia.md` e `cadeira-c-voto.json`. Não li `cadeira-a-*` nem `cadeira-b-*`. Disco C: 19G livres no fim.

@@ -14,7 +14,7 @@ TAP version 13
 not ok 1 - B-SAN3-05 · T10–T12 — plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o superusuário soma
   ---
   duration_ms: 2262.9258
-  location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-05-leituras-de-plataforma-db.test.ts:1:5660'
+  location: '~/w-conf484\\tests\\san3-05-leituras-de-plataforma-db.test.ts:1:5660'
   failureType: 'testCodeFailure'
   error: |-
     {"error":{"code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD","reason":"summary_period_invalid","message":"periodStart must be a unique valid date."}}
@@ -27,7 +27,7 @@ not ok 1 - B-SAN3-05 · T10–T12 — plataforma sob papel NOSUPERUSER NOBYPASSR
   actual: 400
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-05-leituras-de-plataforma-db.test.ts:353:16)
+    TestContext.<anonymous> (~/w-conf484\tests\san3-05-leituras-de-plataforma-db.test.ts:353:16)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)

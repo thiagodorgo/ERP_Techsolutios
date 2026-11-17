@@ -20,6 +20,7 @@ ET5	PAT-processo	gestor	GET /api/v1/impound-processes/{id:processo:EXM2B01}	camp
 ET5	PAT-vistoria	gestor	GET /api/v1/impound-processes/{id:processo:EXM2B01}/inspection	campo(complete)=true E conta(photos)>=11 E existe(photos: set=FRONT)	-	-
 ET5	PAT-cadeia	gestor	GET /api/v1/impound-processes/{id:processo:EXM2B01}/verify	campo(valid)=true E campo(eventCount)>=3	-	-
 ET5	PAT-encargo	gestor	GET /api/v1/impound-processes/{id:processo:EXM2B01}/charges	existe(kind=ADDITIONAL; description=Encargo Exemplo) E conta=1	-	-
+ET6	OPS-perfil-operador	admin	GET /api/v1/operator-profiles?limit=100	existe(userId={id:usuario:tecnica@exemplo.invalid}; trackingConsent=true) E conta(trackingConsent=true)=1	-	-
 ET6	OPS-localizacao	gestor	GET /api/v1/field-locations/latest	existe(operator.email=tecnica@exemplo.invalid) E conta=1	-	-
 ET6	OPS-os-concluida	gestor	GET /api/v1/work-orders/{id:os:EXM Remoção concluída pelo app}/timeline	existe(eventType=work_order_created) E conta(eventType=work_order_assigned)=1 E sequencia(toStatus: accepted,on_route,on_site,in_progress,completed)	-	-
 ET6	OPS-os-tecnica	tecnica	GET /api/v1/work-orders?limit=100	todos(assignedUserId={id:usuario:tecnica@exemplo.invalid}) E existe(title=EXM Remoção atribuída; status=assigned) E existe(title=EXM Remoção concluída pelo app; status=completed) E conta=2	-	-

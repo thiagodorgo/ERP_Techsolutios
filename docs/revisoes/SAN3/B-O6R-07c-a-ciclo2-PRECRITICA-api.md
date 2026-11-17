@@ -16,7 +16,7 @@
 ## Execução (gerado pelo script)
 
 - id: 20261011-133645Z-precrit-07ca-c2 · início 2026-10-11T13:36:46Z · fim 2026-10-11T13:40:24Z
-- worktree: C:\Users\AMP\w-ag-20261011-133646 · removido: True · npm ci: False
+- worktree: ~/w-ag-20261011-133646 · removido: True · npm ci: False
 - agente 2026.10.10 · SDK anthropic 1.13.0
 
 ## Conta e cobrança (gerado pelo script)

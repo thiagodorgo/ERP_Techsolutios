@@ -7,7 +7,7 @@
 ## Medições
 
 ### M0 — terreno (19:36-19:40)
-- `git worktree add --detach C:/Users/.../j-bsan304a-c3 fbda96b0` → ec=0; `rev-parse HEAD` = `fbda96b016ac65f88fe99d695295329e83938bea`; `status --porcelain` = 0 linhas; `/c/c` inexistente (R5 evitada).
+- `git worktree add --detach C:/.../j-bsan304a-c3 fbda96b0` → ec=0; `rev-parse HEAD` = `fbda96b016ac65f88fe99d695295329e83938bea`; `status --porcelain` = 0 linhas; `/c/c` inexistente (R5 evitada).
 - Portas 56445/56446: fora das faixas excluídas (`netsh ... excludedportrange`: primeira faixa acima de 51918 é 56500-56599) e livres (`docker ps -a`: nenhuma publicação nelas).
 - Terreno alheio visto e NÃO tocado: `j-bsan304a-c2`, `j-bsan304a-c2-base` (worktrees) e `j-bsan304a-c2-pg`/`-redis` (56443/56444) vivos — resíduo/trabalho da C2; `j-b04a-*`, `j-b11-*`, `bsan301-*`, `pastrack-*`, `erp-postgres-alt` (exited, 55432), `.claude/worktrees/san2-r`.
 - `npm ci` + `npm --prefix frontend ci` no MEU worktree (em fundo).

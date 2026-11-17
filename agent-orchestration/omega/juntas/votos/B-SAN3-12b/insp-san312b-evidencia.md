@@ -16,7 +16,7 @@ executor: subagente genérico Claude Code · modelo: Claude Opus 5.5 (claude-opu
 - script próprio (toda linha "medido por:" seguida de bloco ``` e nenhum bloco vazio) → 0 MEDIDO sem saída nos 4; md5 sem CR: insp 74fc7ebb…, c1 83b7b136…, c2 75825974…, c3 d895109e… (= os do relatório do preparo); CR=0 nos 4.
 - cláusula de precedência: c1 l.273, c2 l.282, c3 l.325 "Onde o corpo divergir deste mandato quanto a objeto, itens, diretório de votos, régua, bases ou inelegíveis, vale este mandato."
 - corpos das 3 cadeiras lidos DO BLOB (`git show $O:…`), EOL-neutro, sem frontmatter e sem o bloco "Papel para o Codex" → IDENTICO ×3 (c1 fbeb5f4c…, c2 44c8a986…, c3 ea93872e…). Frontmatter sem `model:` (modelo vem do disparo, declarado).
-- S0 em worktree DESCARTÁVEL meu `C:/Users/AMP/j12b-insp-wt` (detached em $O, status 0): `node scripts/sync-agent-agents.mjs --check` → "OK — 92 agentes, espelho consistente." ec=0; status depois 0.
+- S0 em worktree DESCARTÁVEL meu `~/j12b-insp-wt` (detached em $O, status 0): `node scripts/sync-agent-agents.mjs --check` → "OK — 92 agentes, espelho consistente." ec=0; status depois 0.
 - baseline (no w-san312b, node_modules próprios, NÃO junction — LinkType vazio): `npm run check` ec=0; `npm --prefix frontend run check` ec=0 (exit por variável). Gerou `frontend/tsconfig.tsbuildinfo` (ignorado) → removido por mim; status --ignored de volta ao de antes.
 - Fato lateral (§A7): o repositório da sessão (ERP_Techsolutios) está em 539b078e, ANCESTRAL de origin/main c9a2d036 (atrás); os corpos `jurado-san312b-*` NÃO existem no `.claude/agents` da sessão → nenhum jurado pode ser carregado por tipo da sessão; tem de ler o corpo do blob do objeto (como os mandatos já mandam).
 - veredito parcial item 1: VERDE.
@@ -39,14 +39,14 @@ executor: subagente genérico Claude Code · modelo: Claude Opus 5.5 (claude-opu
 - mandatos das cadeiras: `npm ci` próprio (1 cada), proibição de junction (1 cada), `worktree remove` (1 cada), C1/C2 "Sem banco e sem Docker", portas c1 47913, c2 47923, c3 47933/47934; C3 `j12b-c3-wt`, `j12b-c3-pg`, `j12b-c3-redis`; piso 7,5 (2 cada), 4 GB (1 cada); P3/sucessor (c1 4, c2 3, c3 3); base viva/5432 proibida (c1 1, c2 1, c3 3).
 - portas: `netstat -ano` → 47913/47923/47933/47934 livres; `netsh … excludedportrange` → nenhuma faixa contém 47913–47934. 5432/6379 = `erp-postgres`/`erp-redis` (base viva, Up 2 days).
 - Docker: `docker ps -a` → `erp-postgres`, `erp-redis` (vivos), `agv3-proxy` (Exited 34 h, inerte, alheio); trabalhos vivos fora de `erp-*` = 0; `j12b*` = 0.
-- resíduo: containers j12b 0; caminhos `C:/Users/AMP/j12b*` → só `j12b-insp-wt` (MEU, removido no fim); worktrees j12b → só o meu.
+- resíduo: containers j12b 0; caminhos `~/j12b*` → só `j12b-insp-wt` (MEU, removido no fim); worktrees j12b → só o meu.
 - memória: commit livre 9,41 GB (≥ 4); RAM disponível 7,06 GB.
-- disco (`(Get-PSDrive C).Free`): 9,82 GiB às 01:28Z → 9,23 GiB às 01:35Z (df: 11G→10G→9,3G). Causa medida: `C:/Users/AMP/j22r2-c3-wt` criado 22:29 local (01:29Z) — a C3 do #464 (Claude) em voo; `FILA-CODEX-2026-10-27.md` → às 01:39Z o Codex abre mais 2 cadeiras do #464 em paralelo.
+- disco (`(Get-PSDrive C).Free`): 9,82 GiB às 01:28Z → 9,23 GiB às 01:35Z (df: 11G→10G→9,3G). Causa medida: `~/j22r2-c3-wt` criado 22:29 local (01:29Z) — a C3 do #464 (Claude) em voo; `FILA-CODEX-2026-10-27.md` → às 01:39Z o Codex abre mais 2 cadeiras do #464 em paralelo.
 - custo de uma cadeira (robocopy /L /BYTES no w-san312b): `node_modules` raiz 435.246.830 B + `frontend/node_modules` 173.289.590 B = 0,61 GB aparentes (mais o desperdício de cluster de arquivos pequenos); checkout do objeto 77 MB (`git ls-tree -r -l`); precedente medido por outros: worktree+`npm ci` ≈ 0,7–1,1 GB (`w-rev462`: 11 → 9,9 GB). Estimativa de pico: C1/C2 ≈ 1,3 GB; C3 ≈ 1,6 GB (+ volume do Postgres e do Redis no vhdx do Docker, que não encolhe).
-- Chromium do Playwright em cache (`ms-playwright/chromium-1243`), sem download. Node: `node -v` v20.19.5; `nvm list` → 22.14.0 instalado em `C:/Users/AMP/AppData/Local/nvm/v22.14.0` (o D-8 do dev diz "indisponível": mérito da C3).
+- Chromium do Playwright em cache (`ms-playwright/chromium-1243`), sem download. Node: `node -v` v20.19.5; `nvm list` → 22.14.0 instalado em `~/AppData/Local/nvm/v22.14.0` (o D-8 do dev diz "indisponível": mérito da C3).
 - baseline: CI 14/14 success no objeto (item 1); `npm run check` e `npm --prefix frontend run check` ec 0 (item 1).
 - veredito parcial item 3: VERDE com condição de disco por cadeira (o disco é compartilhado com a junta do #464 e está caindo).
 
 ## Limpeza (01:37Z)
-- `git worktree remove --force C:/Users/AMP/j12b-insp-wt` → ec 0; `ls -d C:/Users/AMP/j12b*` → 0; worktrees j12b → 0. w-san312b: HEAD fc5ead6c, 0 modificação, só o diretório de votos não rastreado. Logs temporários do scratchpad removidos (só os meus).
+- `git worktree remove --force ~/j12b-insp-wt` → ec 0; `ls -d ~/j12b*` → 0; worktrees j12b → 0. w-san312b: HEAD fc5ead6c, 0 modificação, só o diretório de votos não rastreado. Logs temporários do scratchpad removidos (só os meus).
 - parecer fechado: LIBERADO COM RESSALVA (7 ressalvas) em insp-san312b-parecer.md.

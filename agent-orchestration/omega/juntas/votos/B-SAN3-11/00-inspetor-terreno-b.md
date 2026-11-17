@@ -3,7 +3,7 @@ papel=inspetor-de-terreno-da-junta (instancia B, nova) | modelo=fable (claude-fa
 # Parecer do inspetor de terreno (B) — junta 1 do B-SAN3-11 (PR 401), pos-correcao pre-junta
 
 Parecer incremental (P1/P2). Cada secao traz a hora UTC, o comando executado, a saida resumida e o veredito parcial.
-Repositorio da sessao: C:/Users/AMP/Documents/GitHub/ERP_Techsolutios (ramo main). Worktrees proprios: C:/Users/AMP/w-insp401b (checkout CRLF, core.autocrlf=true) e C:/Users/AMP/w-insp401lf (core.autocrlf=false), ambos detached no objeto.
+Repositorio da sessao: ~/Documents/GitHub/ERP_Techsolutios (ramo main). Worktrees proprios: ~/w-insp401b (checkout CRLF, core.autocrlf=true) e ~/w-insp401lf (core.autocrlf=false), ambos detached no objeto.
 Convencao: MSYS_NO_PATHCONV=1 usado SO por comando (nunca exportado); timeout em tudo que executa; exit por variavel. O primeiro parecer (votos/B-SAN3-11/00-inspetor-terreno.md) e insumo a re-verificar, nunca fato: nada dele entra aqui sem re-execucao propria.
 
 ## 0. Identidade, corpo e mandato — 2026-10-03T02:08Z
@@ -23,7 +23,7 @@ Convencao: MSYS_NO_PATHCONV=1 usado SO por comando (nunca exportado); timeout em
 - `gh pr view 401 --json headRefOid,...` → head=`3defe84bb1da72383466bf9eb6bed42b6a830259`, ramo `fix/dossie-versao-da-vistoria`, base `main`, OPEN, rascunho=true, **mergeable=MERGEABLE, mergeStateStatus=CLEAN**.
 - `git fetch origin main fix/dossie-versao-da-vistoria` + `git fetch origin refs/pull/401/head` → `origin/fix/dossie-versao-da-vistoria` = `FETCH_HEAD(pull/401/head)` = **3defe84b** (duas fontes concordam). `origin/main` = f03b883f. `git merge-base origin/main 3defe84b` → **f03b883f = origin/main** (a main de agora esta integrada no ramo; confere com o briefing).
 - O MEDIDO do mandato (23:31Z) colou head=`97e5ec12`; o objeto AGORA e **3defe84b** (o commit que versiona o proprio mandato `inspetor-b.md`, por construcao posterior ao pre-voo). Delta 97e5ec12→3defe84b medido na secao 1.1-bis abaixo.
-- Arvore do dev (`C:/Users/AMP/w-nuv11`): `git rev-parse HEAD` → 3defe84b; `git status --porcelain` → **0 linhas** (vazio).
+- Arvore do dev (`~/w-nuv11`): `git rev-parse HEAD` → 3defe84b; `git status --porcelain` → **0 linhas** (vazio).
 - Veredito parcial 1.1: VERDE (objeto = 3defe84b, resolvido por mim por gh e git; arvore do dev limpa). Mutacao viva por md5 arquivo a arquivo: secao 1.1-ter.
 
 ## 4.3 Check-runs CONCLUIDOS no head — 2026-10-03T02:09Z
@@ -54,8 +54,8 @@ Convencao: MSYS_NO_PATHCONV=1 usado SO por comando (nunca exportado); timeout em
 
 ## Worktrees proprios criados — 2026-10-03T02:11Z
 
-- `git worktree add --detach C:/Users/AMP/w-insp401b 3defe84b` → HEAD=3defe84b, `status --porcelain` 0 linhas (checkout **CRLF**, `core.autocrlf=true` do repo; sem `.gitattributes` no head: `git ls-tree 3defe84b .gitattributes` → 0).
-- `git -c core.autocrlf=false worktree add --detach C:/Users/AMP/w-insp401lf 3defe84b` → HEAD=3defe84b, `-c core.autocrlf=false status --porcelain` 0 linhas (checkout **LF**).
+- `git worktree add --detach ~/w-insp401b 3defe84b` → HEAD=3defe84b, `status --porcelain` 0 linhas (checkout **CRLF**, `core.autocrlf=true` do repo; sem `.gitattributes` no head: `git ls-tree 3defe84b .gitattributes` → 0).
+- `git -c core.autocrlf=false worktree add --detach ~/w-insp401lf 3defe84b` → HEAD=3defe84b, `-c core.autocrlf=false status --porcelain` 0 linhas (checkout **LF**).
 - Contagem de CR (`tr -cd '\r' | wc -c`), blob × CRLF × LF: `processes.adapter.ts` 0 × **583** × **0** · `patios-dossie-versao.smoke.test.tsx` 0 × 325 × 0 · `ChecklistRunsPanel.tsx` 0 × 136 × 0 · `scripts/san3-11-dossie-vistoria-censo.mjs` 0 × 135 × 0. Os dois terrenos sao o que o mandato pede (583 CR no adapter do CRLF, como o dev mediu; 0 no LF).
 
 ## 4.1 Fatia S0 — espelho Codex — 2026-10-03T02:13Z
@@ -88,9 +88,9 @@ Convencao: MSYS_NO_PATHCONV=1 usado SO por comando (nunca exportado); timeout em
 
 ## 1.2 Plano de isolamento declarado e verificavel — 2026-10-03T02:15Z
 
-- Lidos no head (`git show 3defe84b:agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/{C1,C2,C3}.md`, 70/71/72 linhas; md5 EOL-neutro cc2c6a79… / 36d40f03… / 589f7348…) e o §10 do plano (l.542-583). Por grep em cada mandato: `w-j11c<n>` 2 · `npm ci` 1 · `junction` 1 · `erp-postgres` 1 · `5432` 1 · `BRIEFING-B-SAN3-11` 2 · `queda` 2 · `relanca` 1 · `PAUSA` 2 · `herda` 2 · `tail -f` 1 · `MSYS_NO_PATHCONV` 1 · `timeout` 1 · `arvore do dev` 1 · `nunca.*mutad` 1 · `evidencia.md` 6 · `voto.json` 1 · `unanimidade` 1 · `escopo` 2/2/4 · `pre-existente` 2 · `nao consigo medir` 1. Cada mandato declara: "worktree proprio detached `C:/Users/AMP/w-j11c<n>` no objeto (caminho curto; conferir que existe), npm ci proprio sem junction", a arvore do dev nunca mutada, base viva `erp-postgres` 5432 / `erp-redis` 6379 nunca alvo, nenhum jurado precisa de banco, worktree removido pelo nome ao fim.
+- Lidos no head (`git show 3defe84b:agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/{C1,C2,C3}.md`, 70/71/72 linhas; md5 EOL-neutro cc2c6a79… / 36d40f03… / 589f7348…) e o §10 do plano (l.542-583). Por grep em cada mandato: `w-j11c<n>` 2 · `npm ci` 1 · `junction` 1 · `erp-postgres` 1 · `5432` 1 · `BRIEFING-B-SAN3-11` 2 · `queda` 2 · `relanca` 1 · `PAUSA` 2 · `herda` 2 · `tail -f` 1 · `MSYS_NO_PATHCONV` 1 · `timeout` 1 · `arvore do dev` 1 · `nunca.*mutad` 1 · `evidencia.md` 6 · `voto.json` 1 · `unanimidade` 1 · `escopo` 2/2/4 · `pre-existente` 2 · `nao consigo medir` 1. Cada mandato declara: "worktree proprio detached `~/w-j11c<n>` no objeto (caminho curto; conferir que existe), npm ci proprio sem junction", a arvore do dev nunca mutada, base viva `erp-postgres` 5432 / `erp-redis` 6379 nunca alvo, nenhum jurado precisa de banco, worktree removido pelo nome ao fim.
 - §10 do plano: "worktree por jurado que muta (C1 e C2 mutam copias/arvores; **nunca** a arvore do dev), `npm ci` proprio por worktree (junction de `node_modules` proibida, §C7.1-ter(c))"; "**Cluster Postgres:** nenhum jurado precisa de banco (os testes sao de componente)". Briefing §"Ambiente de quem mede": idem, mais `uname`/`git --version`/`node -v` e a regra da mutacao por regex em CRLF.
-- `test -e C:/Users/AMP/w-j11c1|c2|c3` → nao existem (nenhuma cadeira nasceu ainda; terreno virgem para elas). `docker ps -a` → a base viva existe e nao e alvo por mandato.
+- `test -e ~/w-j11c1|c2|c3` → nao existem (nenhuma cadeira nasceu ainda; terreno virgem para elas). `docker ps -a` → a base viva existe e nao e alvo por mandato.
 - Cerca dos mandatos: os tres colam `head do PR: 97e5ec12` e `PRE-VOO OK ... head=97e5ec12` — o **pai** do objeto (3defe84b = 97e5ec12 + os proprios mandatos). O briefing diz com todas as letras: "A cerca de cada mandato diz o head em que ele foi gerado, que fica atras do objeto ... a cadeira resolve o objeto por conta propria, confere que o delta e so integracao e registro e nao bloqueia por cerca diferente do objeto" — a R3 do primeiro parecer esta atendida.
 - **R1 (mantida, redacao):** os mandatos mandam a cadeira escrever `C<n>-evidencia.md`/`C<n>-voto.json` em `w-nuv11/.../votos/B-SAN3-11/` (arvore do dev), como arquivos NOVOS (§6 PERMITIDO `omega/juntas/**`). O briefing ja a repassa ("R1: ... Isso nao e mutacao viva do codigo: nenhum arquivo rastreado e tocado"). Durante a junta `git status --porcelain` de w-nuv11 tera `??` nesses arquivos — nenhum rastreado tocado.
 - Veredito parcial 1.2: VERDE.
@@ -128,7 +128,7 @@ Convencao: MSYS_NO_PATHCONV=1 usado SO por comando (nunca exportado); timeout em
 
 ## 4.2 Baseline honesto no head — NOS DOIS TERRENOS — 2026-10-03T02:17Z → 02:20Z
 
-Terrenos: `C:/Users/AMP/w-insp401b` (**CRLF**, `core.autocrlf=true`, adapter 583 CR) e `C:/Users/AMP/w-insp401lf` (**LF**, `-c core.autocrlf=false`, adapter 0 CR), ambos em 3defe84b com arvore limpa; `npm ci --no-audit --no-fund` proprio em `frontend/` nos dois (ec=0, 02:13→02:14Z; `dir /AL` → 0 junction/symlink; `node_modules` reais, 61 entradas cada) e na raiz do CRLF (`--ignore-scripts`, ec=0; `prisma generate` com `DATABASE_URL` ficticia so nesse comando, ec=0). Node v20.19.5. Exit sempre por variavel; `timeout` externo em tudo. **Rodada 1 correu com os dois terrenos em paralelo** (duas suites simultaneas); a errata removeu o teto de 30 s, e o `timeout` externo (600/1200 s) e a unica relacao com o relogio.
+Terrenos: `~/w-insp401b` (**CRLF**, `core.autocrlf=true`, adapter 583 CR) e `~/w-insp401lf` (**LF**, `-c core.autocrlf=false`, adapter 0 CR), ambos em 3defe84b com arvore limpa; `npm ci --no-audit --no-fund` proprio em `frontend/` nos dois (ec=0, 02:13→02:14Z; `dir /AL` → 0 junction/symlink; `node_modules` reais, 61 entradas cada) e na raiz do CRLF (`--ignore-scripts`, ec=0; `prisma generate` com `DATABASE_URL` ficticia so nesse comando, ec=0). Node v20.19.5. Exit sempre por variavel; `timeout` externo em tudo. **Rodada 1 correu com os dois terrenos em paralelo** (duas suites simultaneas); a errata removeu o teto de 30 s, e o `timeout` externo (600/1200 s) e a unica relacao com o relogio.
 
 | terreno | `npm run check` (frontend) | arquivo do bloco (`node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx`) | `npm run test:smoke` |
 |---|---|---|---|
@@ -168,7 +168,7 @@ O fundamento unico do primeiro `BLOQUEADO` (baseline vermelho na maquina da junt
 
 ## Limpeza — 2026-10-03T02:23Z (02:23:26Z→02:23:33Z)
 
-- Criei para medir: worktrees `C:/Users/AMP/w-insp401b` (node_modules proprios em `frontend/` e na raiz, cliente Prisma gerado) e `C:/Users/AMP/w-insp401lf` (node_modules proprio em `frontend/`); logs/saidas `insp401b-*.{log,out}` no scratchpad da sessao (fora do repositorio; sao a evidencia deste parecer). **Nenhum container Docker, nenhum cluster, nada escrito no repositorio, nenhum commit.**
+- Criei para medir: worktrees `~/w-insp401b` (node_modules proprios em `frontend/` e na raiz, cliente Prisma gerado) e `~/w-insp401lf` (node_modules proprio em `frontend/`); logs/saidas `insp401b-*.{log,out}` no scratchpad da sessao (fora do repositorio; sao a evidencia deste parecer). **Nenhum container Docker, nenhum cluster, nada escrito no repositorio, nenhum commit.**
 - Derrubado e confirmado: processos com `w-insp401b|w-insp401lf` na CommandLine = **0** (Get-CimInstance, 02:22:30Z, ANTES de remover); `git worktree remove --force w-insp401b` → ec=0 (nao existe); `git worktree remove --force w-insp401lf` → ec=0 (nao existe); `git worktree list | grep -c w-insp401` → 0; total de worktrees agora 15 (so os alheios); untracked na arvore da sessao = 55 (inalterado); `%TEMP%/.tmp-censo-*` e `tmp-censo-*` → 0 (os `mkdtemp` dos testes se apagaram).
 - Uma linha: removi so o que criei — os dois worktrees e nada mais; nenhum rastro fora do scratchpad.
 

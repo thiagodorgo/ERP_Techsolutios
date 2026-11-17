@@ -3,7 +3,7 @@
 - **Identidade:** `agente-secops` · **Modelo:** `claude-opus-5[1m]`
 - **Corpo aplicado:** lido da ref julgada — `git show 7822deaf:.claude/agents/agente-secops.md`
   (md5 EOL-neutro `dc1a2974877dc56f04a5e3cb43668c75`, identico ao corpo carregado pela sessao).
-- **Terreno proprio:** worktree detached em **`C:/Users/AMP/w-j-san300-c2`** (caminho curto), `7822deaf`,
+- **Terreno proprio:** worktree detached em **`~/w-j-san300-c2`** (caminho curto), `7822deaf`,
   `git status --porcelain -uall` **vazio** ao abrir e ao fechar. **Sem `npm ci`** (a medicao nao precisa de
   build), **sem conteiner**, **a base viva nao recebeu um comando**, **sem junction**.
 - **Forma:** git-bash com `MSYS_NO_PATHCONV=1`; **exit code por variavel**, nunca por pipe; **nunca** a
@@ -179,7 +179,7 @@ rastreados. Sob as regras do objeto: **48 visiveis / 0 escondidos** — todos em
 Removi os **20** arquivos de prova e os diretorios que criei (`zz-c2-prova`, `sub`, `.claude/worktrees`,
 `node_modules/zz-c2`); `.gitignore` restaurado ao blob do objeto (md5 conferido). Estado final do meu
 worktree: `git status --porcelain -uall` **vazio**, `git clean -nxd` **vazio**, `HEAD = 7822deaf`.
-Worktree `C:/Users/AMP/w-j-san300-c2` removido ao fim **pelo nome**. Logs brutos ficam no scratchpad, fora
+Worktree `~/w-j-san300-c2` removido ao fim **pelo nome**. Logs brutos ficam no scratchpad, fora
 da pasta de votos: `c2-diff-completo.txt`, `c2-ignorados-BASE.txt`, `c2-set-base.txt`, `c2-set-objeto.txt`,
 `c2-NOVOS-IGNORADOS.txt`, `c2-status-objeto.txt`, `c2-status-base.txt`, `c2-main-*.txt`.
 **Nao escrevi** na arvore principal nem em worktree alheio; **nao** rodei `prune`, `clean`, `stash`,

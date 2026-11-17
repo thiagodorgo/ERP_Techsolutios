@@ -3,7 +3,7 @@
 - Papel: `critico-adversarial`
 - Modelo: GPT-5.6 Sol (nível menor declarado)
 - Ref julgada: `539b078e311a5521b0d496ba5afae8f73acc43a0`
-- Plano: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-20-plano.md`
+- Plano: `~/erp-pausa-2026-10-03/planos/B-SAN3-20-plano.md`
 - Estado: **CONCLUÍDA — VOLTA AO PLANO**
 
 ## Medições incrementais (P1)

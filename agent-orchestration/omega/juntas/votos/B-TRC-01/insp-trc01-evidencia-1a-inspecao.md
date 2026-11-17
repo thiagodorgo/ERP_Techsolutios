@@ -4,7 +4,7 @@ papel: inspetor-de-terreno-da-junta (identidade nova) · modelo que rodou: Claud
 início: 2026-10-11T23:40:42Z
 
 ## 0. Corpo e mandato (2026-10-11T23:40Z)
-- comando: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch -q origin && git show origin/main:.claude/agents/inspetor-de-terreno-da-junta.md | tr -d '\r' | md5sum`
+- comando: `git -C ~/Documents/GitHub/ERP_Techsolutios fetch -q origin && git show origin/main:.claude/agents/inspetor-de-terreno-da-junta.md | tr -d '\r' | md5sum`
 - saída: `89b4563001df748a4016ae57b05fbd20` · origin/main = `684e9afd7710486682992ee9fb464db17256e68a`
 - comando: `md5sum .../00-mandatos/inspetor-trc01.md` → `5d47fef07d2f9d9e166d4adc48d55346`
 - veredito parcial: corpo e mandato CONFEREM com o disparo. Segue-se o corpo inteiro.
@@ -26,14 +26,14 @@ início: 2026-10-11T23:40:42Z
 - veredito parcial: VERDE — 14/14 concluídos e verdes; nenhum cancelado/queued. O CI do orquestrador (14/14 success) confere. Os vermelhos "conhecidos" citados no mandato (T15, A11, relógio do Console/#427) NÃO aparecem neste head.
 
 ## 4.1 Fatia S0 — espelho Codex (hora do item NÃO medida — escrevi estimativa adiantada; janela real 23:42Z–23:54Z, ver correção no fim)
-- terreno: worktree próprio `git worktree add --detach C:/Users/AMP/w-insp-trc01 31cdd030…` → HEAD 31cdd030, status vazio.
+- terreno: worktree próprio `git worktree add --detach ~/w-insp-trc01 31cdd030…` → HEAD 31cdd030, status vazio.
 - comando: `node scripts/sync-agent-agents.mjs --check` (em w-insp-trc01, exit por variável) → `ec=0`, `[agents-sync] OK — 55 agentes, espelho consistente.`
 - comando: `git ls-tree -r --name-only HEAD .claude/agents` × `.agents/agents` (só `.md`, recursivo) → 55 × 56; `diff` → única diferença `README.md` (protocolo de emulação Codex, esperado). O script é recursivo de propósito (l.66-71 "Recursivo DE PROPOSITO … `especialistas/`").
 - comando: `git ls-tree 31cdd030` nas 3 cadeiras → rastreadas nos DOIS espelhos (`.claude/agents/especialistas/` e `.agents/agents/especialistas/`).
 - veredito parcial: VERDE.
 
 ## 3.3 Corpo carregado × corpo julgado (hora do item NÃO medida — escrevi estimativa adiantada; janela real 23:42Z–23:54Z, ver correção no fim)
-- comando: `ls C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/ | grep -c trc01` → **0**. O diretório da SESSÃO (main 684e9afd) NÃO tem os 3 corpos: eles não carregam por nome. Os mandatos (cadeira-a/b/c l.35-39) declaram o caminho certo: "corpo tirado do blob do objeto …, disparado como general-purpose limitado por escrito a Read, Grep, Glob e Bash; se o md5 EOL-neutro do corpo recebido divergir do publicado no disparo, a cadeira não vota".
+- comando: `ls ~/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/ | grep -c trc01` → **0**. O diretório da SESSÃO (main 684e9afd) NÃO tem os 3 corpos: eles não carregam por nome. Os mandatos (cadeira-a/b/c l.35-39) declaram o caminho certo: "corpo tirado do blob do objeto …, disparado como general-purpose limitado por escrito a Read, Grep, Glob e Bash; se o md5 EOL-neutro do corpo recebido divergir do publicado no disparo, a cadeira não vota".
 - comando: `git show HEAD:.claude/agents/especialistas/<x>.md | tr -d '\r' | md5sum` (blob LF, CR=0, cru = EOL-neutro):
   - jurado-trc01-a-rls-e-banco → `725c583fc448803e57251e33bb05ba07` (611 linhas)
   - jurado-trc01-b-superficie-e-segredo → `b7c63c7d058361a4dddb31b3f2191037` (518 linhas)
@@ -66,7 +66,7 @@ início: 2026-10-11T23:40:42Z
 - veredito parcial: VERDE com 2 ressalvas nomeadas (ciclo não declarado; dba-guardiao pendente).
 
 ## 1.2 Plano de isolamento (hora do item NÃO medida — escrevi estimativa adiantada; janela real 23:42Z–23:54Z, ver correção no fim)
-- comando: leitura dos 3 mandatos l.56-60 → cada cadeira: "worktree proprio detached C:/Users/AMP/w-jtrc-{a,b,c}, npm ci proprio sem junction; Postgres e Redis descartaveis em container Linux proprio com prefixo jtrc01-{a,b,c}-, porta alta so em 127.0.0.1 testada antes, REDIS_URL proprio …, imagem do Traccar so por digest, docker compose down -v sempre com os --profile; nunca a base viva nem as portas do servidor do dono nem servidor publico de demonstracao; containers trc01-* e de outras cadeiras nao sao alvo; remocao so pelo nome, nunca prune". Escrita só nos 2 arquivos próprios em `votos/B-TRC-01/`; "ninguem roda ferramenta no worktree do dev".
+- comando: leitura dos 3 mandatos l.56-60 → cada cadeira: "worktree proprio detached ~/w-jtrc-{a,b,c}, npm ci proprio sem junction; Postgres e Redis descartaveis em container Linux proprio com prefixo jtrc01-{a,b,c}-, porta alta so em 127.0.0.1 testada antes, REDIS_URL proprio …, imagem do Traccar so por digest, docker compose down -v sempre com os --profile; nunca a base viva nem as portas do servidor do dono nem servidor publico de demonstracao; containers trc01-* e de outras cadeiras nao sao alvo; remocao so pelo nome, nunca prune". Escrita só nos 2 arquivos próprios em `votos/B-TRC-01/`; "ninguem roda ferramenta no worktree do dev".
 - veredito parcial: VERDE.
 
 ## 5.1 Plano de perda de jurado (hora do item NÃO medida — escrevi estimativa adiantada; janela real 23:42Z–23:54Z, ver correção no fim)
@@ -77,7 +77,7 @@ início: 2026-10-11T23:40:42Z
 - comando: `docker ps -a --format '{{.Names}} {{.Status}} {{.Ports}} {{.Image}}'` → 4 containers: `erp-postgres` e `erp-redis` (base viva do dono, Up — NÃO são alvo), `erp-postgres-alt` (Exited 255 há 3 semanas, 127.0.0.1:55432), `pastrack-teste-banco-teste-1` (Exited 0 há 2 semanas, outro projeto). **Zero** `trc01-*` (os do dev já não existem), zero `jtrc01-*`, zero `jur-*`/`crit-*`.
 - comando: `docker network ls | grep -ciE 'trc|traccar|jtrc'` → 0; `docker compose ls -a` → só `erp_techsolutios` e `pastrack-teste` (nenhum projeto do Traccar de pé).
 - comando: `docker images --digests | grep traccar` → `traccar/traccar` `sha256:03ebb7ed…51951eda` = o digest do `docker-compose.traccar.yml:45` e de `decisoes.md` (2 menções) no head. Imagem aprovada já em cache (economiza download; não é resíduo com privilégio).
-- comando: `ls -d C:/Users/AMP/w-*` → w-03a, w-agapi2, w-arnes2, w-insp-03a, w-insp-trc01 (meu), w-planos, w-port424, w-pvpr, w-trc01. Nenhum `w-jtrc-*` pré-existente (os worktrees das cadeiras ainda não nasceram — terreno livre para eles). `w-03a`/`w-insp-03a` são da junta paralela (PR 425), não alvo. `w-port424` (detached 9566d55b) e `w-pvpr` (detached 0cccacbc, arnês do pré-voo) são resíduos do orquestrador, inertes para esta junta.
+- comando: `ls -d ~/w-*` → w-03a, w-agapi2, w-arnes2, w-insp-03a, w-insp-trc01 (meu), w-planos, w-port424, w-pvpr, w-trc01. Nenhum `w-jtrc-*` pré-existente (os worktrees das cadeiras ainda não nasceram — terreno livre para eles). `w-03a`/`w-insp-03a` são da junta paralela (PR 425), não alvo. `w-port424` (detached 9566d55b) e `w-pvpr` (detached 0cccacbc, arnês do pré-voo) são resíduos do orquestrador, inertes para esta junta.
 - comando: `git --no-optional-locks status --porcelain --ignored` em w-trc01 (sem ` M` fantasmas e sem node_modules) → só os meus 2 arquivos `??`; nenhum `dist/`, `coverage/`, `.env` ou artefato ignorado solto. `find … -name 'jur-probe*' -o -name '*-probe.ts' -o -name '*probe*.mjs'` → nada.
 - comando (PowerShell): `Get-CimInstance Win32_Process | ? CommandLine -match 'w-trc01|w-jtrc|jtrc01|trc01-'` → `processos=0`. Nenhum processo vivo no worktree do dev.
 - veredito parcial: VERDE (resíduos inertes de outros contextos: erp-postgres-alt e pastrack exited; w-port424/w-pvpr detached — nota, não ressalva).
@@ -106,8 +106,8 @@ início: 2026-10-11T23:40:42Z
 - Os cabeçalhos dos itens de 4.3 em diante traziam horas que eu ESTIMEI e não medi (iam até "00:13Z"); `date -u` às 23:53:45Z provou que estavam adiantadas. Substituí-as pela janela real medida: o item 1.1 foi gravado às 23:42:31Z e a última gravação antes da correção às ~23:53Z. O conteúdo dos itens (comandos e saídas) não muda.
 
 ## Limpeza (23:54:17Z, medido)
-- `git worktree remove --force C:/Users/AMP/w-insp-trc01` → ec=0; `ls -d` → não existe; `git worktree list | grep -c w-insp-trc01` → 0. Junto saíram o `node_modules` e o client Prisma gerados nele.
-- Um `du -sh node_modules` meu (tarefa em segundo plano parada pelo TaskStop) sobreviveu como órfão (PID 18528): encerrado por PID depois de conferir a linha de comando. O outro `du` vivo (PID 28320, `/c/Users/AMP/w-insp-03a/node_modules`) é da junta paralela e não foi tocado.
+- `git worktree remove --force ~/w-insp-trc01` → ec=0; `ls -d` → não existe; `git worktree list | grep -c w-insp-trc01` → 0. Junto saíram o `node_modules` e o client Prisma gerados nele.
+- Um `du -sh node_modules` meu (tarefa em segundo plano parada pelo TaskStop) sobreviveu como órfão (PID 18528): encerrado por PID depois de conferir a linha de comando. O outro `du` vivo (PID 28320, `~/w-insp-03a/node_modules`) é da junta paralela e não foi tocado.
 - Arquivos temporários meus no scratchpad (sync-check, ca, aa, refs, dec, cl, npmci, gen, check) removidos pelo nome → 0 restante. `/tmp/ca.txt` (criado por engano) removido → não existe.
 - Nenhum container, rede ou volume criado por mim. Base viva (`erp-postgres`, `erp-redis`) e portas do dono não tocadas. Disco: 16G livres.
 - No worktree do PR (w-trc01) escrevi SÓ `insp-trc01-evidencia.md` e `insp-trc01-parecer.md`. O meu `git status` inicial (sem `--no-optional-locks`) pode ter regravado o stat-cache do índice de w-trc01. É metadado do índice, não conteúdo.

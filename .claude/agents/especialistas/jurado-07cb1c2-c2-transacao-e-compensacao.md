@@ -26,7 +26,7 @@ Sucessor de caído usa identidade NOVA e reexecuta cada comando registrado, comp
 
 ## Terreno próprio e Docker
 
-- Worktree exclusivo prefixado `C:/Users/AMP/w-j07cb1c2-c2-`, `npm ci` próprio, nenhuma junction de `node_modules`.
+- Worktree exclusivo prefixado `~/w-j07cb1c2-c2-`, `npm ci` próprio, nenhuma junction de `node_modules`.
 - Cluster Postgres descartável próprio, rede própria, nomes `j07cb1c2-c2-*`, nenhuma porta publicada. Redis próprio apenas se a execução exigir; nunca a base viva.
 - **Antes de subir**, liste containers e conte grupos de outros trabalhos, excluindo `erp-*`. No máximo **2 trabalhos Docker na máquina**, incluindo o seu. Se já houver 2 grupos alheios, espere. Não pare/reinicie containers alheios nem `erp-*`.
 - Proibidas base viva e portas `5432`, `6379`, `3000`, `5173`, `5050`, `8899`. Acesso ao seu Postgres é pelo nome DNS da rede Docker, não por porta do host.

@@ -10,7 +10,7 @@ Plano: `B-ASSINATURA` §4.4 (fora do repositório, `erp-pausa-2026-10-03/planos/
 
 ## F0 — comando e terreno
 
-- **Worktree:** `C:/Users/thiag/w-ass04`, no ramo `feat/b-ass-04-demonstrativo`, a partir da `origin/main` `3470db1e` (com o B-ASS-03).
+- **Worktree:** `~/w-ass04`, no ramo `feat/b-ass-04-demonstrativo`, a partir da `origin/main` `3470db1e` (com o B-ASS-03).
 - **Migrações:** a M3 (5 tabelas) e a M3b (permissões) estão cobertas pela fala do dono de 31/10 ~22:15. A M3b é uma das 3 migrações de dados da P1.
 - **Lições do B-ASS-02/03** (Emendas 2–4 ao §4.2 e Emenda 1 ao §4.3): os guards de superfície (censo o6r07c, ratchet san3-05 e as contagens fixas de tabelas e endpoints) são regenerados pelo gerador, com o diff só nas chaves novas.
 

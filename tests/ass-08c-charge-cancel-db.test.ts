@@ -397,6 +397,27 @@ if (!connectionString) {
     });
   });
 
+  // Conserto da J-579 (C2-01/C2-03): o alvo do charge/cancel lê a tabela-verdade. A cobrança em estado DESCONHECIDO (needs_review)
+  // é FORÇADA por UPDATE (declarado: nenhum escritor de produto grava esse estado hoje).
+  test("CC-U: SENT + cobrança needs_review (forçada) → POST …/charge/cancel → 200 cancel_enqueued; despacho com a lista PENDING → 1 DELETE, tabela cancelled", async () => {
+    await withFake({}, async (fake) => {
+      const port = await portOver(fake);
+      const fixture = await seedClosed("ccu");
+      const charged = await api("POST", chargeRoute(fixture), { tenantId: fixture.tenantId });
+      assert.equal(charged.status, 201, JSON.stringify(charged.body));
+      const created = await dispatch(fixture.tenantId, port);
+      assert.equal(created.outcomes.sent, 1, JSON.stringify(created.outcomes));
+      await db.$executeRawUnsafe(`UPDATE subscription_statement_charges SET status = 'needs_review' WHERE statement_id = $1::uuid`, fixture.statementId);
+      const cancel = await api("POST", cancelRoute(fixture), { tenantId: fixture.tenantId, reason: REASON });
+      assert.equal(cancel.status, 200, JSON.stringify(cancel.body));
+      assert.equal(cancel.body.data.result, "cancel_enqueued");
+      const before = deletes(fake);
+      await dispatch(fixture.tenantId, port);
+      assert.equal(deletes(fake) - before, 1, "1 DELETE");
+      assert.equal((await chargeRow(fixture.statementId)).status, "cancelled");
+    });
+  });
+
   test("CC2: a lista diz PAGA → NEEDS_REVIEW charge_already_paid, 0 DELETE", async () => {
     await withFake({}, async (fake) => {
       const port = await portOver(fake);

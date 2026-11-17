@@ -312,7 +312,7 @@
       "erro": {
         "name": "PrismaClientKnownRequestError",
         "code": "P2028",
-        "msg": " Invalid `this.client.stockMovement.aggregate()` invocation in C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\inventory-prisma.repository.ts:480:55 477 } 478 479 private async"
+        "msg": " Invalid `this.client.stockMovement.aggregate()` invocation in ~/Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\inventory-prisma.repository.ts:480:55 477 } 478 479 private async"
       },
       "ajustesGravados": 0,
       "status": "aberta",

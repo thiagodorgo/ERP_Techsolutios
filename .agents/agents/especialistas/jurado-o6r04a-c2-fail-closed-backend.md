@@ -149,7 +149,7 @@ Build que não roda, guard que não executa, head inacessível: o item fica sem 
 ## Terreno — a condição de o seu voto significar alguma coisa
 
 - **Worktree PRÓPRIO, detached, no head do briefing**, com caminho curto:
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c2 <head>`.
+  `git -C ~/Documents/GitHub/ERP_Techsolutios -c core.longpaths=true worktree add --detach ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-b04a-c2-c2 <head>`.
   **Nunca** meça no `b04a`, na árvore principal nem no worktree de outro jurado: nesses, **somente leitura**.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** e `npx prisma generate` com a `DATABASE_URL` só no ambiente do
   comando. **Junction ou symlink de `node_modules` entre worktrees é PROIBIDA** (§C7.1-ter(c)): em 26/08 a

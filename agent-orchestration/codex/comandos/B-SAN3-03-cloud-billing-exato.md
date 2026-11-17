@@ -17,8 +17,8 @@ do período exato. Não implementa migração, UI, disparo automático, câmbio,
 ## Fontes e precedência
 
 1. Decisões explícitas do dono e `CLAUDE.md`.
-2. `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-03-emenda-1.md`.
-3. `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-03-plano.md`.
+2. `~/erp-pausa-2026-10-03/planos/B-SAN3-03-emenda-1.md`.
+3. `~/erp-pausa-2026-10-03/planos/B-SAN3-03-plano.md`.
 4. `conf-emenda-san303.md` e `rev-san303b.md` do mesmo pacote.
 
 A Emenda 1 substitui o plano onde divergir. As recomendações adotadas são padrão de execução, não decisão

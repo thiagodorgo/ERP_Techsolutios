@@ -33,7 +33,7 @@ Você **não** julga RLS, o isolamento da consulta entre organizações, a CI ne
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor — §C7.6, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), **sem
-executar nada e sem `git`** (a fábrica não tem `Bash`), em 2026-10-18, lendo no disco de `C:/Users/AMP/w-trc01`: o plano do ciclo 3 (§0 a
+executar nada e sem `git`** (a fábrica não tem `Bash`), em 2026-10-18, lendo no disco de `~/w-trc01`: o plano do ciclo 3 (§0 a
 §7, em especial §1, §3.3–§3.6, §3.8–§3.10), a ata do ciclo 2, os corpos das três cadeiras do ciclo 2 e `votos/B-TRC-01-ciclo2/00-quedas.md`.
 **A fábrica não viu o código do ciclo 3.** Logo, **todo nome de teste, mutação, linha, motivo e número abaixo vem do plano e é hipótese [A
 RE-VERIFICAR] no objeto**; os nomes são âncoras. Afirmação do plano (inclusive o protótipo do §3.9, que o próprio plano diz não ser insumo de
@@ -98,7 +98,7 @@ ignore global cobre `.claude/` e `.agents/`, e corpo não commitado no ramo julg
 
 1. **O inspetor liberou esta junta, com você nela?** Leia, no objeto, o parecer do inspetor do ciclo 3 no arquivo que o mandato nomear. Só
    vale `LIBERADO` ou `LIBERADO COM RESSALVA` que confira o **seu** nome, o **seu** corpo commitado nos dois espelhos, worktree e containers
-   próprios, e — pelo plano §3.10 — **(i)** o diff sem `prisma/**`; **(ii)** os worktrees `C:/Users/AMP/w-jc2-b` e `C:/Users/AMP/w-jc2-b3`
+   próprios, e — pelo plano §3.10 — **(i)** o diff sem `prisma/**`; **(ii)** os worktrees `~/w-jc2-b` e `~/w-jc2-b3`
    removidos ou declarados; **(iii)** os mandatos marcando A RE-VERIFICAR; e o objeto com check-runs **concluídos**. Sem o parecer, **pare**
    (§C7.1-bis).
 2. **O objeto é um SHA resolvido por você**, por duas fontes: `git ls-remote origin refs/heads/feat/traccar-b-trc-01` **e**
@@ -238,13 +238,13 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   (e o mesmo para `.agents/`). Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `uname -a`, `node -v`, `docker version`
   (servidor), `SELECT version()` do seu Postgres, `df -h /c`, e as variáveis que você definiu (**nunca** valor de segredo; nenhum `export`).
 - **Arquivos de saída:** os que o mandato nomear (padrão deste corpo:
-  `C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/cadeira-c-evidencia.md` e `…/cadeira-c-voto.json`). A sua
+  `~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/cadeira-c-evidencia.md` e `…/cadeira-c-voto.json`). A sua
   **única** escrita em `w-trc01` são esses dois arquivos. Quedas vão para `00-quedas.md` pelo **orquestrador** (P6). Você não commita.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** `C:/…` com `git`, `node`, `npm`; caminhos `/…` só dentro de
   `docker exec … sh -c`.
-- **Worktrees PRÓPRIOS, detached, em caminho CURTO:** o do objeto (padrão `C:/Users/AMP/w-jc3-c`) e o de **`h2`** para o vermelho-controle
-  (padrão `C:/Users/AMP/w-jc3-c-h2`, em `2043c584`), cada um por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <ref>`; **prove** `test -e <caminho>/.git`. Se o
+- **Worktrees PRÓPRIOS, detached, em caminho CURTO:** o do objeto (padrão `~/w-jc3-c`) e o de **`h2`** para o vermelho-controle
+  (padrão `~/w-jc3-c-h2`, em `2043c584`), cada um por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <ref>`; **prove** `test -e <caminho>/.git`. Se o
   caminho já existir, é resíduo alheio: reporte e use o sufixo `2`. Prove `test ! -e <wt>/.env` nos dois. Em cada um,
   `timeout -k 15 900 npm ci --no-audit --no-fund` **próprio** e
   `DATABASE_URL='postgresql://build:build@127.0.0.1:1/build?schema=public' timeout -k 15 300 npx prisma generate`. **Junction ou symlink de
@@ -268,8 +268,8 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   `DATABASE_URL`/`REDIS_URL` **só como prefixo**, nunca em argv nem na evidência (publique com `***`). No fim, `grep -c -F "$(cat …)"` na
   evidência e nos logs = 0, e o arquivo apagado.
 - **Base viva NUNCA é alvo, nem de leitura:** `erp-postgres` (5432), `erp-redis` (6379), `erp-postgres-alt` (55432), qualquer `erp-*`.
-  Nunca o projeto de outra cadeira, nunca resíduo do dev, nunca os worktrees `C:/Users/AMP/w-07cb1`, `C:/Users/AMP/w-jc2-b`,
-  `C:/Users/AMP/w-jc2-b3`. **Nunca** os servidores públicos de demonstração do Traccar; nada desta cadeira sai da máquina. Imagem do Traccar,
+  Nunca o projeto de outra cadeira, nunca resíduo do dev, nunca os worktrees `~/w-07cb1`, `~/w-jc2-b`,
+  `~/w-jc2-b3`. **Nunca** os servidores públicos de demonstração do Traccar; nada desta cadeira sai da máquina. Imagem do Traccar,
   se usada (nenhum item exige): só por
   `traccar/traccar:6.16.0@sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda`, e `docker compose` cai **com os perfis**
   (`--profile capture --profile tools down -v --remove-orphans`).
@@ -282,7 +282,7 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
 - **Remoção só do que você criou, pelo nome exato:** `docker rm -f -v jtrc01c3-c-pg jtrc01c3-c-redis` e
   `docker ps -a --filter name=jtrc01c3-c- -q | wc -l` = 0. Worktrees: antes, conte os processos vivos com o caminho por
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-jc3-c*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`;
-  só com 0, `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force <caminho>` para cada um.
+  só com 0, `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force <caminho>` para cada um.
 - **Mutação restaurável, no SEU worktree** (nenhuma toca `w-trc01`) — vale também para o "src de `h2` por cima" do vermelho-controle do item 2:
   1. mute **por script** (`node -e` ou `.mjs` seu no `$SCRATCH`), âncora **única** e EOL-consciente — **conte antes: tem de ser 1**; para o
      src de `h2`, `git -C <seu-wt> show 2043c584:<f>` gravado por cima, com `-c core.autocrlf=false` ou equivalente, e declare a forma;

@@ -3,7 +3,7 @@ executor: Claude Code (subagente) · identidade: inspetor-trc02-opus · modelo: 
 # Evidência incremental (P1) — inspetor de terreno B-TRC-02 ciclo 1
 
 ## E0 — estado de partida
-- cmd: `git -C C:/Users/AMP/w-trc02 rev-parse HEAD; git status --porcelain; git config core.autocrlf; docker ps`
+- cmd: `git -C ~/w-trc02 rev-parse HEAD; git status --porcelain; git config core.autocrlf; docker ps`
 - saída: HEAD=38504427a7b962545e559bd4d312b520b458ac42 · porcelain = só `?? agent-orchestration/omega/juntas/votos/B-TRC-02/` · autocrlf=true · docker: erp-postgres Up (healthy) 5432, erp-redis Up (healthy) 6379; nenhum outro container vivo.
 - md5 EOL-neutro dos mandatos: cadeira-a 03883c02187e7794436dca5877539aae (259 l) · cadeira-b 04af6fd3f1a6eb51827bf33c81f9011c (258 l) · cadeira-c cc0c0543bdad3c4339064b076ba54011 (230 l) · inspetor a28451116691babbf9f7eff8940bda65 (299 l).
 - nota: o mandato nomeia os outputs `insp-trc02-evidencia.md`/`insp-trc02-parecer.md`; o orquestrador, no disparo, nomeou `inspetor-evidencia.md`/`inspetor-parecer.md`. Segui o disparo (instrução mais recente) e registro a divergência no parecer.
@@ -16,20 +16,20 @@ executor: Claude Code (subagente) · identidade: inspetor-trc02-opus · modelo: 
 - cmd: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<objeto>/check-runs --jq ...`
   saída: total=14, fora de completed/success=0; jobs ×2: authority-portal, backend, backend-postgres, docker, flutter, frontend, owner-portal; concluídos 03:35Z–03:50Z de 21/10.
 - cmd: `cmp redator-trc02/{mandato-preflight,mandato-refs}.sh redator-trc02-v2/...` + md5sum
-  saída: IDENTICO os dois (preflight 560a472f4d7c98501b1104bfc3fa4cb6, refs 1b31b16df5bd931da47f08c6b6bf23cc); contra `origin/chore/mandato-refs-e-preflight`: preflight difere só na l.211 (`RAIZ=C:/Users/AMP/w-trc02`), refs igual.
-- cmd: `cd C:/Users/AMP/w-trc02 && MANDATO_REFS=.../redator-trc02-v2/mandato-refs.sh bash .../redator-trc02-v2/mandato-preflight.sh <mandato> 454` para inspetor-trc02, cadeira-a, cadeira-b, cadeira-c (cabeçalho do script: `uso: mandato-preflight.sh <arquivo.md> [PR]`; mesma forma do `comum_preflight` do lib.sh)
+  saída: IDENTICO os dois (preflight 560a472f4d7c98501b1104bfc3fa4cb6, refs 1b31b16df5bd931da47f08c6b6bf23cc); contra `origin/chore/mandato-refs-e-preflight`: preflight difere só na l.211 (`RAIZ=~/w-trc02`), refs igual.
+- cmd: `cd ~/w-trc02 && MANDATO_REFS=.../redator-trc02-v2/mandato-refs.sh bash .../redator-trc02-v2/mandato-preflight.sh <mandato> 454` para inspetor-trc02, cadeira-a, cadeira-b, cadeira-c (cabeçalho do script: `uso: mandato-preflight.sh <arquivo.md> [PR]`; mesma forma do `comum_preflight` do lib.sh)
   saída: os 4 `PRE-VOO OK`, ec=0; COLAGEM #454 e #426 confere nos 4; só AVISOs de corrida hex em caminho de migração (inspetor 1, a 6, b 3, c 1).
 - cmd: corpo das 3 cadeiras, `.claude` × `.agents` no objeto, EOL-neutro, sem frontmatter e sem o bloco "Papel para o Codex"
   saída: a d8d234dc23576ba03cfa3499c1c03ee1 IDENTICO (blob 649c6f80…) · b 37410bf435da5cf322d9c0af1320cc93 IDENTICO (blob 3fa735d1…) · c 83d0e3a4e26d2da49ff60f7932db41d7 IDENTICO (blob 2b749424…); frontmatter sem `model:` (modelo vem da invocação).
-- cmd: corpos no dir da SESSÃO (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios`, HEAD 539b078e) × objeto
+- cmd: corpos no dir da SESSÃO (`~/Documents/GitHub/ERP_Techsolutios`, HEAD 539b078e) × objeto
   saída: os 3 corpos de jurado AUSENTES no dir da sessão (só existem no objeto); inspetor sessão = objeto (cbbed45074c7098081a9c51d47f3e373). Consequência: nenhuma cadeira pode carregar o corpo "por tipo" a partir da sessão; o corpo tem de ser entregue do blob do objeto.
-- cmd: `git worktree add --detach C:/Users/AMP/w-insp-trc02-s0 <objeto>; node C:/Users/AMP/w-insp-trc02-s0/scripts/sync-agent-agents.mjs --check; git worktree remove --force ...` (script resolve ROOT por import.meta.url)
+- cmd: `git worktree add --detach ~/w-insp-trc02-s0 <objeto>; node ~/w-insp-trc02-s0/scripts/sync-agent-agents.mjs --check; git worktree remove --force ...` (script resolve ROOT por import.meta.url)
   saída: `[agents-sync] OK — 79 agentes, espelho consistente.` ec=0; worktree removido (`git worktree list | grep -c insp-trc02` = 0).
 - cmd: carimbos — `git ls-tree -d` no objeto, `uniq -d`, `git diff --diff-filter=A <merge-base> <objeto> -- prisma/migrations`, máximo do merge-base
   saída: 0 carimbos duplicados; novos do bloco 20260879000000_vehicle_telemetry_events e 20260880000000_validate_receipt_message_kind_check; máximo do merge-base 20260878000000 (_invoice_complementary_title, B-SAN3-02) → os dois do bloco são maiores; cada um dos 3 aparece 1×.
 - cmd: H8 — `git show <objeto>:tests/traccar-event-topology.test.ts | grep '^test('` + logs dos 2 jobs `backend` (`gh api .../actions/jobs/{119023544506,119023529537}/logs`)
   saída: teste na l.234; nos dois jobs `ok 3095 - evento: as 5 fixtures de evento estão sanitizadas…`; totais `# tests 3865 # pass 3863 # fail 0 # skipped 2`.
-- cmd: baseline §4.2 do corpo — `npm run check > log 2>&1; ec=$?` em C:/Users/AMP/w-trc02 (lockfiles sem diff merge-base..objeto: 0 arquivos; node_modules próprio, não é junction)
+- cmd: baseline §4.2 do corpo — `npm run check > log 2>&1; ec=$?` em ~/w-trc02 (lockfiles sem diff merge-base..objeto: 0 arquivos; node_modules próprio, não é junction)
   saída: check_ec=0; `git status --porcelain` depois = só o diretório da junta.
 - veredito parcial item 1: VERDE (objeto, CI 14/14, pré-voo 4/4, espelho, S0, carimbos, H8, baseline). Observação para o item 2: os corpos de jurado não estão no dir da sessão.
 
@@ -56,9 +56,9 @@ executor: Claude Code (subagente) · identidade: inspetor-trc02-opus · modelo: 
 - veredito parcial item 2: VERMELHO por (iv) porteiro ausente do briefing e por mandatos de cadeira incompatíveis com os executores previstos (identidade/executor/modelo/esgotamento/monocultura); inelegibilidade das identidades externas não conferível (sem nome).
 
 ## Item 3 — terreno
-- cmd: `git -C C:/Users/AMP/w-trc02 rev-parse HEAD; git status --porcelain` (re-medido depois do `npm run check`)
+- cmd: `git -C ~/w-trc02 rev-parse HEAD; git status --porcelain` (re-medido depois do `npm run check`)
   saída: 38504427a7b962545e559bd4d312b520b458ac42 · só `?? agent-orchestration/omega/juntas/votos/B-TRC-02/` (mandatos + os 2 arquivos deste inspetor). Sem mutação viva.
-- cmd: `git worktree list`; `ls -d C:/Users/AMP/w-jtrc02-* C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-*`
+- cmd: `git worktree list`; `ls -d ~/w-jtrc02-* ~/erp-pausa-2026-10-03/jtrc02-*`
   saída: worktrees: principal (main 539b078e), w-agapi2, w-plan21, w-planos, w-reg21, w-trc02 — os 4 primeiros alheios (não tocados); nenhum `w-jtrc02-*` nem pasta `jtrc02-*` ainda (nascem com cada cadeira).
 - cmd: `fsutil reparsepoint query` + PowerShell `Get-Item -Force … LinkType` em todo `node_modules` dos worktrees
   saída: LinkType vazio (Directory) em principal, principal/frontend, w-agapi2, w-plan21, w-trc02 → zero junction.

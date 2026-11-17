@@ -1,18 +1,18 @@
 # B-AV-REAL — relatório incremental do DEV
 
 - Executor: `dev-avreal-sol` — Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
-- Worktree: `C:/Users/AMP/w-avreal`.
+- Worktree: `~/w-avreal`.
 - Ramo: `feat/evidence-clamav-scanner`.
 - Base: `origin/main@264c3760ad971dc3b40aec4416ecde3bb9d3e727`.
 - Plano: `docs/revisoes/SAN3/B-AV-REAL-plano.md` (v2).
-- Parecer prevalente: `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/rev-plano-avreal-v2-parecer.md`.
+- Parecer prevalente: `~/erp-pausa-2026-10-03/revisoes/rev-plano-avreal-v2-parecer.md`.
 - Restrições desta execução: sem Docker, sem base viva, sem `Kpis/**`, lockfiles ou dependência npm nova.
 
 ## RETOMADA 1
 
 - UTC: `2026-10-30T12:48:30Z`.
 - Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `264c3760ad971dc3b40aec4416ecde3bb9d3e727`.
 - Disco antes da fatia: `26.266.596 KiB` livres; depois do `npm ci`: `25.687.404 KiB`, acima do piso de 7,5 GB.
 - Vermelho-controle antes da edição: `test -f` nos três artefatos obrigatórios de F1 → exit `1`, pois ainda não existiam.
@@ -32,7 +32,7 @@
 
 - UTC: `2026-10-30T12:52:48Z`.
 - Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `1279454ee6fa6c5c1c0560f8a9c9be9f6fb7519b` (F1 já no remoto).
 - Vermelho-controle antes do código: suíte nova sem o adaptador → exit `1`, zero testes registrados e `ERR_MODULE_NOT_FOUND` para `clamav-scanner.js`.
 - Implementado: `ClamAvEvidenceScanner` com uma conexão por scan, `zINSTREAM\0`, frames `uint32` big-endian de até 64 KiB, terminador zero, escrita serial com callback de backpressure e parser estrito terminado em NUL.
@@ -47,7 +47,7 @@
 
 - UTC: `2026-10-30T12:56:24Z`.
 - Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `6073e3c3277b6eed906b129ca80de8bbe2b02c62` (F2 já no remoto).
 - Vermelho-controle antes do código: o caso novo `buffer acima do teto falha sem abrir socket` contra o cliente de F2 → exit `1`. A tentativa inicial de rodar o arquivo inteiro foi interrompida porque o cliente ainda não tinha prazo e o caso de servidor mudo, por definição, não terminava; o controle válido foi repetido com filtro e terminou vermelho.
 - Implementado: prazo absoluto, destruição/limpeza em todo desfecho, semáforo sem fila, pré-checagem de `sizeBytes`/tamanho, teto de resposta de 4096 bytes e razões internas estáveis.
@@ -64,7 +64,7 @@
 
 - UTC: `2026-10-30T12:58:31Z`.
 - Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `8f07e52c98fe96adea029f736d1fa44cff571655` (F3 já no remoto).
 - Vermelho-controle antes do código: `tests/avreal-config.test.ts` → 15 executados · 0 pass · 15 fail; enum, host, faixas, relação de timeouts, idade e factory ainda não existiam.
 - Implementado: `EVIDENCE_SCANNER=clamav`; sete `CLAMAV_*` com defaults/faixas; host obrigatório; timeout total maior que conexão; idade zero proibida em produção com ClamAV; default de idade 72 h em produção e 0 fora dela.
@@ -105,7 +105,7 @@
 
 - UTC: `2026-10-31T13:16:38Z`.
 - Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `406c67415d72c2151dd6912f7f61a3183d6710f8` (F4 já no remoto).
 - Disco na retomada: `24 GB` livres, acima do piso de 7,5 GB.
 - Parcial encontrado no índice: 7 arquivos de F5; medição antes de seguir → 38/38 testes verdes, `npm run check` e `git diff --check` verdes.
@@ -121,7 +121,7 @@
 
 - UTC: `2026-10-31T13:30:58Z`.
 - Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `2bf0c374` (F5 já no remoto).
 - Vermelho-controle antes do código: `test -f tests/avreal-routes.test.ts` → `AUSENTE_RED`/exit `1`.
 - Implementado: matriz comum de 16 casos — V1–V5 × `clean`/`infected`/`failed`, com scanner e gravação contados, mais `scan_limit_exceeded`; a bateria inclui os tradutores HTTP reais já existentes das cinco vias.
@@ -139,7 +139,7 @@
 
 - UTC: `2026-10-31T13:33:42Z`.
 - Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `10064a12` (F6 já no remoto).
 - Disco: `24 GB` livres, acima do piso de 7,5 GB.
 - Vermelho-controle antes do código: ausência de `erp-clamav`, overlay, `infra/clamav/` e teste dono → `F7_AUSENTE_RED`/exit `1`.
@@ -161,7 +161,7 @@ AGUARDANDO DOCKER (F8, F9)
 
 - UTC: `2026-10-31T13:49:40Z`.
 - Executor/modelo: `dev-avreal-docker-sol`, Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `ae12ddab` (F7 já no remoto); árvore limpa, 24 GB livres e commit livre do Windows 14,86 GB antes de subir Docker.
 - Vermelho-controle antes do código: os dois artefatos de F8 estavam ausentes (`test -f` → exit `1`). Vermelho operacional adicional: o healthcheck original da imagem retornou exit `1` em ambos os containers porque `nc localhost` resolveu fora do listener IPv4, embora o TCP em `127.0.0.1` respondesse.
 - Docker: `erp-clamav` e `erp-clamav-limits` subidos em sequência, por nome de serviço, com `--no-deps`. RSS após ambos: 950,7 MiB e 753,8 MiB na inicialização; commit livre 12,14 GB. Depois estabilizaram em 947,3 MiB e 945,3 MiB; commit livre 11,73 GB. `erp-postgres` e `erp-redis` não foram alvo de nenhum comando.
@@ -180,7 +180,7 @@ AGUARDANDO DOCKER (F8, F9)
 
 - UTC: `2026-10-31T13:55:02Z`.
 - Executor/modelo: `dev-avreal-docker-sol`, Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `3a9b026f` (F8 já no remoto).
 - Vermelho-controle antes do código: os casos nominais de `MaxFileSize`/`StreamMaxLength` e HTTP mobile real não existiam (`grep` duplo → exit `1`). A primeira execução depois de escrevê-los também foi vermelha por comportamento real: o limite INSTREAM responde sem prefixo `stream:` e o caminho A (EICAR anexado ao PNG) ficou `clean` no digest fixado.
 - Implementado: parser fail-closed aceita a resposta real exata `INSTREAM size limit exceeded. ERROR` mesmo antes do terminador; regressão unitária fixa essa forma. Como o caminho A não detectou, foi usado o caminho B previsto: assinatura HDB de teste, montada somente nos serviços dev/CI e copiada pelo entrypoint para a base gravável; fixture PNG determinística de 63 bytes provada diretamente no mesmo daemon antes do HTTP. A via V1 real respondeu 201 para PNG limpo e 422 `evidence_rejected` para a fixture detectável.
@@ -197,7 +197,7 @@ AGUARDANDO DOCKER (F8, F9)
 
 - UTC: `2026-10-31T13:57:12Z`.
 - Executor/modelo: `dev-avreal-docker-sol`, Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `13222ade` (F9 já no remoto).
 - Vermelho-controle antes do código: job `antivirus` ausente (`grep '^  antivirus:'` → exit `1`).
 - Implementado: job Ubuntu/Node 20 isolado, `npm ci`, subida sequencial dos dois serviços por nome com `--no-deps`, espera healthy até 8 min, integração real TAP 8/8 esperada, guard de zero teste/zero pulo, diagnósticos e remoção somente dos dois containers por nome; timeout total 20 min.
@@ -212,7 +212,7 @@ AGUARDANDO DOCKER (F8, F9)
 
 - UTC: `2026-10-31T18:08:40Z`.
 - Executor/modelo: `dev-avreal-docker-sol`, Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
-- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Worktree/ramo: `~/w-avreal` · `feat/evidence-clamav-scanner`.
 - Base/head anterior: `023b565a0029a07f8a14f17d44d10ecc33d9484d` (F10 já no remoto); parcial de F12 medido antes de seguir: 8 arquivos permitidos, 64 inserções/3 remoções, `git diff --check` verde, 24 GB livres e nenhum container próprio vivo.
 - Confirmação F10: run `41207885759`, job `antivirus` `completed/success` em 57 s, ~~8/8 sem pulo~~ **7/8** (`not ok 8 - HTTP real mobile…`, sem cliente Prisma; ficou `success` por `tee` sem `pipefail`) no head `023b565a`. O job global `backend` ficou vermelho por um único caso de protocolo prematuro; o caso foi reexecutado nas baterias focadas e ficou verde.
 - Vermelho-controle F12: os quatro marcadores documentais não existiam no `HEAD` (`RED_HEAD_MISSING_API/DEPLOY/PEND/STATUS`). O parcial os introduziu em `API_CONTRACTS.md`, deployment/AWS/PD, `PLANO_SAN3`, pendências, status e log, sem tocar `Kpis/**`.
@@ -264,9 +264,9 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 ## CONSERTO PÓS-JUNTA (E1–E13)
 
 - Executor/modelo: `fix-avreal-argon`, Gemini 4 Argon pelo Antigravity, nível menor declarado; não achou os defeitos, não planejou nem revisou.
-- Ramo/worktree: `feat/evidence-clamav-scanner` · `C:/Users/AMP/w-avreal`.
+- Ramo/worktree: `feat/evidence-clamav-scanner` · `~/w-avreal`.
 - Head de partida: `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`.
-- Plano de conserto: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-AV-REAL-emenda-junta.md`.
+- Plano de conserto: `~/erp-pausa-2026-10-03/planos/B-AV-REAL-emenda-junta.md`.
 - Terreno inicial: `git status --porcelain` vazio; disco livre 24 GB (> 7,5 GB); commit livre 10,57 GB (> 4 GB).
 
 ### E1 — healthcheck do overlay em 127.0.0.1 e LocalSocket que o `/init` espera (L1 + D1)
@@ -404,19 +404,19 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 - Head antes da fatia: `5a7dcc296f33af6bfcfb6ae9af27391d1ee5626e`.
 - C3-A3: corrigidos `agent-orchestration/docs/status-geral.md:5218`, `agent-orchestration/codex/log-execucao.md:5059-5060` e este `dev.md` (`:217` e `:262`) com o riscado preservado (`~~…~~`): o run `41207885759` (head `023b565a`) teve **7/8** (`not ok 8 - HTTP real mobile…`, sem cliente Prisma) e ficou `success` por `tee` sem `pipefail`; `bf24bb2b` tornou o job vermelho, `b407692a` e `9bad1f7e` seguiram vermelhos, verde em `2746eb60` (`gh run list --repo thiagodorgo/ERP_Techsolutios --commit 2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77 --json databaseId,conclusion` → `[{"conclusion":"success","databaseId":41242348719},{"conclusion":"success","databaseId":41242344243}]`).
 - C3-A8 — execução de F11 (`M-R7`) em worktree descartável:
-  - `git -C C:/Users/AMP/w-avreal worktree add --detach C:/Users/AMP/w-avreal-mut HEAD` → exit `0` (`HEAD is now at 5a7dcc29`).
-  - Mutação `M-R7` em `C:/Users/AMP/w-avreal-mut/mobile/flutter_app/lib/core/evidence/evidence_upload.dart`: apagar o blob local também em `rejected` (`UPLOAD_REJECTED`).
-  - `cd C:/Users/AMP/w-avreal-mut/mobile/flutter_app && flutter pub get && flutter test test/features/b108_evidence_storage_hardening_test.dart --reporter compact` → exit `1`, linha vermelha: `00:01 +7 -1: test/features/b108_evidence_storage_hardening_test.dart: B-108.3 rejected preserva evidencia local e falha segura [E]` (`Expected: true / Actual: <false>` em `await File(item.localPath).exists()`, `00:01 +7 -1: Some tests failed.`).
-  - `git -C C:/Users/AMP/w-avreal worktree remove --force C:/Users/AMP/w-avreal-mut` → exit `0`.
-  - Verde em `C:/Users/AMP/w-avreal/mobile/flutter_app`: `flutter test test/features/b108_evidence_storage_hardening_test.dart --reporter compact` → exit `0`, `00:01 +8: All tests passed!` (8/8).
-  - R12(b): `cd C:/Users/AMP/w-avreal && git diff --quiet "$(git merge-base origin/main HEAD)" -- package.json package-lock.json && echo LOCKFILE-INTACTO` → exit `0`, `LOCKFILE-INTACTO`.
+  - `git -C ~/w-avreal worktree add --detach ~/w-avreal-mut HEAD` → exit `0` (`HEAD is now at 5a7dcc29`).
+  - Mutação `M-R7` em `~/w-avreal-mut/mobile/flutter_app/lib/core/evidence/evidence_upload.dart`: apagar o blob local também em `rejected` (`UPLOAD_REJECTED`).
+  - `cd ~/w-avreal-mut/mobile/flutter_app && flutter pub get && flutter test test/features/b108_evidence_storage_hardening_test.dart --reporter compact` → exit `1`, linha vermelha: `00:01 +7 -1: test/features/b108_evidence_storage_hardening_test.dart: B-108.3 rejected preserva evidencia local e falha segura [E]` (`Expected: true / Actual: <false>` em `await File(item.localPath).exists()`, `00:01 +7 -1: Some tests failed.`).
+  - `git -C ~/w-avreal worktree remove --force ~/w-avreal-mut` → exit `0`.
+  - Verde em `~/w-avreal/mobile/flutter_app`: `flutter test test/features/b108_evidence_storage_hardening_test.dart --reporter compact` → exit `0`, `00:01 +8: All tests passed!` (8/8).
+  - R12(b): `cd ~/w-avreal && git diff --quiet "$(git merge-base origin/main HEAD)" -- package.json package-lock.json && echo LOCKFILE-INTACTO` → exit `0`, `LOCKFILE-INTACTO`.
 - C3-A9:
   - `docs/revisoes/SAN3/PLANO_SAN3.md` (`:191` e `:270`): restaurados riscados `~~contratar/provisionar o serviço~~`, `~~**serviço: junta unânime de 5 + PD** (\`PD-O6R-B07B-CLAMD-INSTREAM\`); código: unanimidade + \`agente-secops\`~~`, `~~junta-5;~~` e `~~EICAR em memória → 422~~ fixture detectável (HDB de teste, só dev/CI) → 422; EICAR puro por HTTP cai no sniff (415) e é provado direto no adaptador`.
   - `agent-orchestration/controle/pendencias.md` (`P-AVREAL-RETRY-AFTER`): dono atualizado para `~~bloco backend de padronização de erros HTTP~~ o bloco que fechar \`P-O6R-B07B-MOBILE-RETRY-PERMANENTE\`` com os 5 caminhos (`src/modules/mobile/mobile.routes.ts`, `src/modules/attachments/attachment.controller.ts`, `src/modules/work-orders/work-order-attachment.controller.ts`, `src/modules/checklists/checklist.controller.ts`, `src/modules/damages/damage.controller.ts`).
 - C3-A7:
   - `docs/omega-pd.md`: `~~OCI multi-arquitetura~~` → `manifesto \`linux/amd64\` + atestação (\`docker manifest inspect\`): **só amd64**; Graviton/ARM exige tag \`-debian\` com digest próprio (PD S8)`.
   - `docs/infra/estudo-aws-migracao.md:30-32`: acrescentado `**Alerta:** a imagem fixada no B-AV-REAL é só amd64; em Fargate ARM usar a tag \`-debian\` (digest a medir) ou tarefa x86.`
-- Emenda versionada: `docs/revisoes/SAN3/B-AV-REAL-emenda-junta.md` copiada verbatim de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-AV-REAL-emenda-junta.md`.
+- Emenda versionada: `docs/revisoes/SAN3/B-AV-REAL-emenda-junta.md` copiada verbatim de `~/erp-pausa-2026-10-03/planos/B-AV-REAL-emenda-junta.md`.
 - 7 pendências residuais registradas ao fim de `agent-orchestration/controle/pendencias.md` (dono `B-AV-REAL-RESIDUAL`, data `2026-10-31`, status `ABERTA`) e índice regenerado por `python agent-orchestration/controle/gerar-indice-pendencias.py` (todas as 7 presentes em `pendencias-indice.md`): `P-AVREAL-TETO-IDADE` · `P-AVREAL-PRAZO-SOMA` · `P-AVREAL-VERSION-FUTURO` · `P-AVREAL-SEGUNDA-RESPOSTA` · `P-AVREAL-ROTAS-ROTULO` · `P-AVREAL-B108-PROVA` · `P-AVREAL-PANE-CI` (não nasce `P-AVREAL-CLAMD-ROOT`, resolvido em E13).
 
 #### Tabela consolidada de todas as mutações do bloco (F2–F9, F10–F12, S1–S5, E1–E10 e E13)
@@ -451,7 +451,7 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 | F8 | `M-R11b` (`AVREAL_CLAMAV_PORT=1`, porta fechada) | `ae12ddab` | `AVREAL_CLAMAV_HOST=127.0.0.1 AVREAL_CLAMAV_PORT=1 node scripts/avreal-integration.mjs` | `1` | 5/5 falhas reais, `0` skips | execução sem edição |
 | F9 | `M-R5r` (`AlertExceedsMax no` em `clamd.limits-test.conf`) | `3a9b026f` | `AVREAL_CLAMAV_HOST=127.0.0.1 AVREAL_CLAMAV_LIMITS_PORT=3311 node scripts/avreal-integration.mjs` | `1` | 1/8 falhou (acima de `MaxFileSize` retornou `clean`) | SHA-256 `34b08bb…` (`git checkout` + recreate) |
 | F10 | `M-R11-CI` (host obrigatório removido do job `antivirus`) | `13222ade` | controle estrutural do job `antivirus` | `1` | `host obrigatório ausente` | SHA-256 `506c9f8…` (`git checkout`) |
-| F11 | `M-R7` (apagar blob local também em `rejected` em `evidence_upload.dart`) | `5a7dcc29` | `flutter test test/features/b108_evidence_storage_hardening_test.dart --reporter compact` | `1` | `+7 -1: B-108.3 rejected preserva evidencia local e falha segura [E]` | `git worktree remove --force C:/Users/AMP/w-avreal-mut` |
+| F11 | `M-R7` (apagar blob local também em `rejected` em `evidence_upload.dart`) | `5a7dcc29` | `flutter test test/features/b108_evidence_storage_hardening_test.dart --reporter compact` | `1` | `+7 -1: B-108.3 rejected preserva evidencia local e falha segura [E]` | `git worktree remove --force ~/w-avreal-mut` |
 | F12 | `M-F12` (marcadores documentais adulterados) | `023b565a` | guard de presença dos 4 marcadores | `1` | 4 vermelhos nomeados (`API/DEPLOY/PEND/STATUS`) | SHA-256 `0990ccf…`/`738a2be…`/`0225d90…`/`eb2df00…` |
 | S1 | `M-S1a` / `M-S1b` (terminador sem esperar `data` / aceitar prematuro) | `8fd0c693` | `npm test -- tests/avreal-scanner-protocol.test.ts` | `1` | 14/15 (`not ok` no caso de resposta prematura) | `git checkout` (`b15c7739`) |
 | S2 | `M-S2a..d` (integração descoberta pelo runner / skip sem host) | `b15c7739` | `npm test -- tests/avreal-scanner-census.test.ts` | `1` | censo 3/4 e wrapper exit `1` | `git checkout` (`1b43e6f0`) |
@@ -495,7 +495,7 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 - **E12.1 — Bateria passo a passo (sem `&&` entre comandos):**
   - `npm run check` → exit `0`.
   - `npm run lint` → exit `0`.
-  - `npm test` (sem `DATABASE_URL`) → exit `1`, `# tests 3608 # pass 3500 # fail 1 # skipped 107`; única falha: `not ok 116 - C:\\Users\\AMP\\w-avreal\\tests\\core-saas-role-authority.test.ts` (`DATABASE_URL is required to initialize Prisma Client`, preexistente, fora do PERMITIDO).
+  - `npm test` (sem `DATABASE_URL`) → exit `1`, `# tests 3608 # pass 3500 # fail 1 # skipped 107`; única falha: `not ok 116 - ~/w-avreal\\tests\\core-saas-role-authority.test.ts` (`DATABASE_URL is required to initialize Prisma Client`, preexistente, fora do PERMITIDO).
   - Prova isolada da causa com URL falsa em porta fechada: `DATABASE_URL="postgresql://x:x@127.0.0.1:1/x?schema=public" npm test -- tests/core-saas-role-authority.test.ts` → exit `0`, `# tests 12 # pass 12 # fail 0 # skipped 0`.
   - `npm run build` → exit `0`.
   - `git diff --check` → exit `0`.

@@ -24,7 +24,8 @@ export async function putRefInTx(
      VALUES ($1::uuid, $2::uuid, $3, $4, $5)
      ON CONFLICT (statement_id) DO UPDATE
        SET provider = COALESCE(EXCLUDED.provider, billing_statement_refs.provider),
-           external_charge_id = COALESCE(EXCLUDED.external_charge_id, billing_statement_refs.external_charge_id)
+           external_charge_id = COALESCE(EXCLUDED.external_charge_id, billing_statement_refs.external_charge_id),
+           created_at = CASE WHEN EXCLUDED.external_charge_id IS NOT NULL AND EXCLUDED.external_charge_id IS DISTINCT FROM billing_statement_refs.external_charge_id THEN EXCLUDED.created_at ELSE billing_statement_refs.created_at END -- [REF-FRESH]
      RETURNING *`,
     ref.statementId,
     ref.tenantId,

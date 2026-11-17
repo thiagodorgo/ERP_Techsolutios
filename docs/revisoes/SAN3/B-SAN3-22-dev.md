@@ -3,7 +3,7 @@
 > **Identidade:** `dev-san322-sol` · papel DEV · Codex `gpt-5.6-sol`, esforço medium, nível menor declarado. Não planejou, não criticou e não vota.
 > **Objeto:** backend, testes e registros da v2 final de `B-SAN3-22`; `frontend/**` está fora desta fatia.
 > **Ref-base medida:** `origin/main` = `b08c755719a6cb0ed192fa04e549ac5fc67a3e67`, após `git fetch origin --prune` em 2026-10-25.
-> **Worktree:** `C:/Users/AMP/w-san322`, branch `fix/checklist-trava-versao`, sem junction.
+> **Worktree:** `~/w-san322`, branch `fix/checklist-trava-versao`, sem junction.
 
 ## P1 — Evidência incremental
 
@@ -18,7 +18,7 @@
 - Comando: `Get-PSDrive C` antes do worktree e antes do `npm ci`.
 - Saída resumida: 11,03 GB antes do worktree; 10,94 GB antes do `npm ci`.
 - Veredito parcial: piso de 10 GB atendido; nova medição obrigatória após a instalação.
-- Comando: `git worktree add -b fix/checklist-trava-versao C:/Users/AMP/w-san322 origin/main`.
+- Comando: `git worktree add -b fix/checklist-trava-versao ~/w-san322 origin/main`.
 - Saída resumida: worktree criado no head-base; branch acompanha `origin/main`.
 - Veredito parcial: conforme.
 - Comando: `npm ci` no worktree próprio.
@@ -76,7 +76,7 @@ Na 1ª execução: parada antes de commits/push (gate de disco). Fechamento, com
 - Comando: `[math]::Round((Get-PSDrive C).Free/1GB,3)`.
 - Saída resumida: `10,700 GiB`; o piso foi reduzido pelo dono de 10 para **7 GiB** em 25/10, portanto o gate de disco está verde.
 - Veredito parcial: retomada autorizada pelo novo limite; medir novamente antes de cada suíte `-db`.
-- Comando: `git status --short`, `git diff --stat`, branch/head e `git diff --check` em `C:/Users/AMP/w-san322`.
+- Comando: `git status --short`, `git diff --stat`, branch/head e `git diff --check` em `~/w-san322`.
 - Saída resumida: branch `fix/checklist-trava-versao`, head-base `b08c7557`; 23 arquivos rastreados modificados e 7 não rastreados; diff `426+ / 111-`; nenhum erro de whitespace. Os arquivos novos têm fechamento sintático; `tests/checklist-template-lock-db.test.ts` tem 231 linhas e oito testes/blocos declarados.
 - Veredito parcial: parcial preservado e mensurável. `tests/checklist-editor-blockers-parity.test.ts`, não citado na contagem resumida de 13 consumidores da pausa, tem uma única linha necessária de `expectedUpdatedAt`; manter e declarar na conferência final de escopo.
 - Comando: `git log b08c7557..origin/main` e `git diff --name-status b08c7557..origin/main`.
@@ -127,7 +127,7 @@ Na 1ª execução: parada antes de commits/push (gate de disco). Fechamento, com
 
 | Comando | Saída resumida | Veredito |
 |---|---|---|
-| `git -C C:/Users/AMP/w-san322 status --short` · `git diff --stat` · `git log -1` | head `b08c7557`, 0 commits; 23 rastreados modificados (+442/−111) e 7 não rastreados (`checklist.template-change.ts`, 3 testes novos, comando, plano, relatório) | parcial preservado |
+| `git -C ~/w-san322 status --short` · `git diff --stat` · `git log -1` | head `b08c7557`, 0 commits; 23 rastreados modificados (+442/−111) e 7 não rastreados (`checklist.template-change.ts`, 3 testes novos, comando, plano, relatório) | parcial preservado |
 | `df -h /c` · `docker ps` | 12 GB livres (piso 7 GB). Fora de `erp-*`, só `dev-san322-pg` (127.0.0.1:55432) e `dev-san322-redis` (127.0.0.1:56379), criados em 25/10 às 23:26Z; banco `dev_san322` com 116 migrações e `TimeZone=UTC` | terreno do ramo, reusado |
 | leitura integral do diff de `src/` e dos 3 testes novos | código coerente com §2–§4 do plano. O `PrismaChecklistRepository` só é construído dentro da transação RLS (`withTenant`), então `FOR UPDATE` e `FOR KEY SHARE` valem até o commit. O teste de memória cobria o §8.1 **só no serviço**: faltavam pela rota CE-2a, CE-3 com GET, CE-7b/7c/7d, CE-8a/8b/8c, CE-9a/9e, CE-10c completo, CE-11b, CE-11c, CE-12, CE-13 e CE-14 (ausente na lista) | lacuna de teste, completada em R3 |
 | `node --test --import tsx tests/checklist-template-change.test.ts tests/checklist-template-lock.test.ts` · `npm run check` | 29/29 verdes; `tsc` verde | o parcial compila e passa |
@@ -217,8 +217,8 @@ Cada uma: backup no scratchpad, mutante, teste nominal, restauro por cópia com 
 ## Fatia web e E3-bis (`dev-san322-web-opus`)
 
 - **Papel:** DEV. **Identidade:** `dev-san322-web-opus`. **Modelo:** Claude Opus 5.5, nível menor **declarado** (§C7.6). Cobre o Codex, sem limite até 14:18Z, por ordem do dono (uma tarefa por vez). Não planejou, não criticou, não vota.
-- **Fonte única:** plano `B-SAN3-22-plano.md` (v2 + E3 + resposta à Q5 + E3-bis). Mandato: `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-san3-22-web.md`.
-- **Objeto de partida:** ramo `fix/checklist-trava-versao`, head `d7483c28` (conferido com `git -C C:/Users/AMP/w-san322 log -1` às 11:23Z de 26/10). Disco livre na partida: 11 GB.
+- **Fonte única:** plano `B-SAN3-22-plano.md` (v2 + E3 + resposta à Q5 + E3-bis). Mandato: `~/erp-pausa-2026-10-03/prompts/dev-san3-22-web.md`.
+- **Objeto de partida:** ramo `fix/checklist-trava-versao`, head `d7483c28` (conferido com `git -C ~/w-san322 log -1` às 11:23Z de 26/10). Disco livre na partida: 11 GB.
 - **Gravação:** P1, uma subseção por etapa, apensada ao ser concluída.
 
 ### W1. Re-medição das citações (head `d7483c28`)
@@ -274,7 +274,7 @@ Tela-modelo: a própria `ChecklistEditorPage.tsx` e `TenantChecklistsPage.tsx` (
 | E3b-21 smoke | `frontend/package.json` | `tests/checklists-editor-lock.smoke.test.tsx` entrou na lista; `aparencia-menu` já estava |
 | E3-16 testes | `checklists-editor-lock.smoke.test.tsx` (novo, 22 testes), `checklists-editor.smoke.test.tsx` (fixture com `activeRuns: 0`; o teste do diálogo cobre o 409 e a linha de horário) | — |
 
-### W4. Bateria (execução real, worktree `C:/Users/AMP/w-san322`)
+### W4. Bateria (execução real, worktree `~/w-san322`)
 
 Disco: 11 GB livres antes do `npm ci`, das suítes `-db` e do `npm test` (piso de 7 GB respeitado). Memória: 6,7 GB físicos e 10 GB de commit livres antes de subir o `vite` e o Edge. Docker: nenhum trabalho fora de `erp-*` antes de subir os meus. Postgres 16 `dev-san322w-pg` (127.0.0.1:55432) e Redis 7 `dev-san322w-redis` (127.0.0.1:56379), descartáveis; base viva (5432/6379) e portas 3000/5173/5050/8899 não tocadas.
 
@@ -370,7 +370,7 @@ O PERMITIDO passou a incluir `tests/checklist-snapshot-dispatch.test.ts`, só pa
 
 ## Ciclo 2 (E4) — `dev-san322-c2-opus`
 
-> **Papel:** DEV do ciclo 2, identidade NOVA `dev-san322-c2-opus`, Claude Opus (nível menor declarado; cobre o Codex sem limite até 19:20Z). Não achou, não planejou, não critica, não vota (§C7.4-bis). **Fonte única:** Emenda E4 (`B-SAN3-22-plano.md`, l.655+) e `R-B-SAN3-22-ciclo1.md`. **Terreno:** worktree `C:/Users/AMP/w-san322`, ramo `fix/checklist-trava-versao`, head de partida `4978f7d9`; `node_modules` (222) e `frontend/node_modules` (61) presentes; disco 11 GB livres; Docker: só `erp-postgres`/`erp-redis` (base viva, não tocada). Registro etapa a etapa (P1).
+> **Papel:** DEV do ciclo 2, identidade NOVA `dev-san322-c2-opus`, Claude Opus (nível menor declarado; cobre o Codex sem limite até 19:20Z). Não achou, não planejou, não critica, não vota (§C7.4-bis). **Fonte única:** Emenda E4 (`B-SAN3-22-plano.md`, l.655+) e `R-B-SAN3-22-ciclo1.md`. **Terreno:** worktree `~/w-san322`, ramo `fix/checklist-trava-versao`, head de partida `4978f7d9`; `node_modules` (222) e `frontend/node_modules` (61) presentes; disco 11 GB livres; Docker: só `erp-postgres`/`erp-redis` (base viva, não tocada). Registro etapa a etapa (P1).
 
 ### C2-0. Partida
 - `git log -1` → `4978f7d9`; `git status --short` vazio.

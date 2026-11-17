@@ -26,7 +26,7 @@ registro**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor — §C7.6, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), **sem
-executar nada e sem `git`** (a fábrica não tem `Bash`), em 2026-10-18, lendo no disco de `C:/Users/AMP/w-trc01`: o plano do ciclo 3 (§0 a
+executar nada e sem `git`** (a fábrica não tem `Bash`), em 2026-10-18, lendo no disco de `~/w-trc01`: o plano do ciclo 3 (§0 a
 §7), a ata do ciclo 2, os corpos das três cadeiras do ciclo 2 e `votos/B-TRC-01-ciclo2/00-quedas.md`. **A fábrica não viu o código do
 ciclo 3.** Logo, **todo nome de arquivo, linha, número e SHA abaixo vem do plano ou da ata e é hipótese [A RE-VERIFICAR] no objeto**.
 Afirmação do plano, do relatório do dev, do parecer do inspetor, das atas dos ciclos 1 e 2 e deste corpo é **roteiro, nunca fato**.
@@ -88,7 +88,7 @@ dois espelhos** (`.claude/agents/especialistas/jurado-trc01c3-b-escopo-superfici
 
 1. **O inspetor liberou esta junta, com você nela?** Leia, no objeto, o parecer do inspetor do ciclo 3 no arquivo que o mandato nomear. Só
    vale `LIBERADO` ou `LIBERADO COM RESSALVA` que confira o **seu** nome, o **seu** corpo commitado nos dois espelhos, worktree e containers
-   próprios, e — pelo plano §3.10 — **(i)** o diff sem `prisma/**`; **(ii)** os worktrees `C:/Users/AMP/w-jc2-b` e `C:/Users/AMP/w-jc2-b3`
+   próprios, e — pelo plano §3.10 — **(i)** o diff sem `prisma/**`; **(ii)** os worktrees `~/w-jc2-b` e `~/w-jc2-b3`
    removidos ou declarados; **(iii)** os mandatos marcando A RE-VERIFICAR; e o objeto com check-runs **concluídos**. Sem o parecer, **pare**
    (§C7.1-bis).
 2. **O objeto é um SHA resolvido por você**, por duas fontes: `git ls-remote origin refs/heads/feat/traccar-b-trc-01` **e**
@@ -197,18 +197,18 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   (e o mesmo para `.agents/`). Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `uname -a`, `node -v`, `docker version`
   (servidor), `df -h /c`, e as variáveis que você definiu (**nunca** valor de segredo; nenhum `export`).
 - **Arquivos de saída:** os que o mandato nomear (padrão deste corpo:
-  `C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/cadeira-b-evidencia.md` e `…/cadeira-b-voto.json`). A sua
+  `~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/cadeira-b-evidencia.md` e `…/cadeira-b-voto.json`). A sua
   **única** escrita em `w-trc01` são esses dois arquivos. Quedas vão para `00-quedas.md` pelo **orquestrador** (P6). Você não commita.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** `C:/…` com `git`, `node`, `npm`; caminhos `/…` só dentro de
   `docker exec … sh -c`.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `C:/Users/AMP/w-jc3-b`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-jc3-b <objeto>`; **prove**
-  `test -e C:/Users/AMP/w-jc3-b/.git`. Se o caminho já existir, é resíduo alheio: reporte e use `C:/Users/AMP/w-jc3-b2` — **nunca** os
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `~/w-jc3-b`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-jc3-b <objeto>`; **prove**
+  `test -e ~/w-jc3-b/.git`. Se o caminho já existir, é resíduo alheio: reporte e use `~/w-jc3-b2` — **nunca** os
   caminhos `w-jc2-b`/`w-jc2-b3` do ciclo 2, que são resíduo alheio a reportar, não a reaproveitar. Prove `test ! -e <seu-wt>/.env`. Depois,
   `timeout -k 15 900 npm ci --no-audit --no-fund` **próprio** e
   `DATABASE_URL='postgresql://build:build@127.0.0.1:1/build?schema=public' timeout -k 15 300 npx prisma generate`. **Junction ou symlink de
   `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)). Para comparar com `h2` (suítes sem banco, rotas), um segundo worktree seu em
-  `2043c584` (`C:/Users/AMP/w-jc3-b-h2`), com `npm ci` próprio — ou, com disco curto (< ~6 GB livres antes do 2º `npm ci`), o mesmo worktree
+  `2043c584` (`~/w-jc3-b-h2`), com `npm ci` próprio — ou, com disco curto (< ~6 GB livres antes do 2º `npm ci`), o mesmo worktree
   trocando de commit **dentro dele**, restaurado e provado depois; declare.
 - **Docker — no máximo 2 TRABALHOS com container na máquina (decisão do dono de 2026-10-17).** Antes de subir qualquer container, grave
   `docker ps --format '{{.Names}}'` em arquivo e **conte os grupos de outros** por prefixo (o dev do ciclo 3, pelo prefixo que o mandato
@@ -224,8 +224,8 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   `127.0.0.1:<porta>`. Senha do Postgres, se subir: aleatória por execução para `$SCRATCH/jtrc01c3-b.pw`, só por ambiente; URLs **só como
   prefixo**, publicadas com `***`; no fim `grep -c -F` da senha nos seus arquivos = 0 e o arquivo apagado.
 - **Base viva NUNCA é alvo, nem de leitura:** `erp-postgres` (5432), `erp-redis` (6379), `erp-postgres-alt` (55432), qualquer `erp-*`.
-  Nunca o projeto de outra cadeira, nunca resíduo do dev, nunca os worktrees `C:/Users/AMP/w-07cb1`, `C:/Users/AMP/w-jc2-b`,
-  `C:/Users/AMP/w-jc2-b3`. **Nunca** os servidores públicos de demonstração do Traccar; nada desta cadeira sai da máquina.
+  Nunca o projeto de outra cadeira, nunca resíduo do dev, nunca os worktrees `~/w-07cb1`, `~/w-jc2-b`,
+  `~/w-jc2-b3`. **Nunca** os servidores públicos de demonstração do Traccar; nada desta cadeira sai da máquina.
 - **Disco:** meça o livre em `C:` antes, depois de cada `npm ci` e no fim. Abaixo de ~3 GB, **pare** e registre.
 - **Somente leitura fora do seu terreno. PROIBIDO:** `git stash`, `git clean`, `git reset`, `git checkout` fora dos seus worktrees,
   `git worktree prune`, `rm -rf` de worktree, `git commit`, `git push`, `docker rm` de container sem o **seu** prefixo, `docker * prune`.
@@ -234,7 +234,7 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
 - **Remoção só do que você criou, pelo nome exato:** `docker rm -f -v jtrc01c3-b-redis jtrc01c3-b-pg` (os que existirem) e
   `docker ps -a --filter name=jtrc01c3-b- -q | wc -l` = 0. Worktree: antes, conte os processos vivos com o caminho por
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-jc3-b*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`;
-  só com 0, `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force <caminho>` para cada um.
+  só com 0, `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force <caminho>` para cada um.
 - **Cópias de controle** (para os vermelhos-controle) vivem no `$SCRATCH` ou, se precisarem estar no worktree, são alterações restauráveis
   no **seu** worktree: por script, âncora única (conte antes: 1), `git diff --numstat` não-vazio, restauro por `git -C <seu-wt> checkout --
   <f>`, prova do restauro (`status --porcelain` vazio, `hash-object` = blob). Nenhuma toca `w-trc01`.
@@ -441,7 +441,7 @@ Cobrar qualquer item abaixo é voto sem defeito; o inspetor e a ata registram e 
    correção (§C7.4-bis) e está no §3.8/§4 com dono.
 6. **O nome dos corpos** (`jurado-trc01c3-*` × `jurado-trc01-{a,b,c}3-*` do plano) — declare, não cobre.
 7. **A ordem com o `B-O6R-07c-b1`** (plano §3.11): quem mergeia primeiro é decisão do orquestrador; você só mede o rebase, se houve. Nunca
-   toque `C:/Users/AMP/w-07cb1`.
+   toque `~/w-07cb1`.
 8. **O que é da (a″)** (isolamento da consulta, CI como execução, regressão de banco) **ou da (c″)** (tabela §3.4, T-P1/T-P2/T-C1/T-C4(e),
    mutações, as 15 suítes). Se tropeçar, anote em `pendencias_que_aceito` com o nome da cadeira.
 9. **Norma citada que não existe na ref julgada** (§A7) e **falha de infraestrutura** não atribuível ao objeto (re-execute e declare; só a

@@ -2,28 +2,28 @@ papel: cadeira C1 | identidade: jurado-san312b-c1-opus | executor: subagente gen
 
 # Evidência — C1 — B-SAN3-12b (PR 469), ciclo 1, junta de DINHEIRO
 
-Início: 2026-10-27T03:05:56Z. Prompt de disparo: C:/Users/AMP/erp-pausa-2026-10-03/prompts/j12b-cadeira.md (md5 cru 4d79665e163a6ef762eba0178045057a).
+Início: 2026-10-27T03:05:56Z. Prompt de disparo: ~/erp-pausa-2026-10-03/prompts/j12b-cadeira.md (md5 cru 4d79665e163a6ef762eba0178045057a).
 Nota do orquestrador no disparo, consignada: durante a junta a origin/main andou de c9a2d036 para f7922ab7 (merge do #464); o PR ficou 1 commit atrás; o objeto continua fc5ead6c.
 
 ## Terreno e legalidade (T0)
 - origin/main no início: `git fetch origin main; git rev-parse origin/main` → f7922ab7360487ced44203a76de75b80c5094140. merge-base(objeto, origin/main) → c9a2d036c1aaff21df92817525d7f9c92cbbe272 (head-base do controle, inalterado).
 - objeto por 2 fontes: `git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas` → fc5ead6c…; `gh pr view 469 --json headRefOid,…` → headRefOid fc5ead6c…, OPEN, isDraft false, mergeable UNKNOWN (a main andou). Coincidem.
 - disco: `df -B1 /c` → 9,28 GiB livres (≥ 8,8 GiB, ressalva 4 do inspetor: pode começar). memória de commit livre (PowerShell Win32_PerfFormattedData_PerfOS_Memory) → 8,94 GB (≥ 4 GB, P8(c)).
-- portas: `netsh interface ipv4 show excludedportrange protocol=tcp` → C:/Users/AMP/erp-pausa-2026-10-03/j12b-c1/netsh.txt; 47913 fora de toda faixa; `netstat -ano | grep :4791` vazio.
-- resíduo: nenhum C:/Users/AMP/j12b-* e nenhum worktree j12b na lista (a C2 não está com worktree vivo).
-- $SCRATCH = C:/Users/AMP/erp-pausa-2026-10-03/j12b-c1/ . node -v (PATH) v20.19.5. Variáveis próprias: S, D, WT (caminhos), nenhuma de segredo, nenhum export.
+- portas: `netsh interface ipv4 show excludedportrange protocol=tcp` → ~/erp-pausa-2026-10-03/j12b-c1/netsh.txt; 47913 fora de toda faixa; `netstat -ano | grep :4791` vazio.
+- resíduo: nenhum ~/j12b-* e nenhum worktree j12b na lista (a C2 não está com worktree vivo).
+- $SCRATCH = ~/erp-pausa-2026-10-03/j12b-c1/ . node -v (PATH) v20.19.5. Variáveis próprias: S, D, WT (caminhos), nenhuma de segredo, nenhum export.
 - Parecer do inspetor: agent-orchestration/omega/juntas/votos/B-SAN3-12b/insp-san312b-parecer.md, inspetor-san312b-opus, LIBERADO COM RESSALVA (7 ressalvas lidas; para a C1: (4) disco ≥ 8,8 GiB no start, uma cadeira por vez; (6) corpo do blob; C1 em Claude Opus liberada; worktree j12b-c1-wt e porta 47913 nomeados). Confere: cadeira C1, executor Claude Opus, worktree j12b-c1-wt — sim (o nome da sessão não é citado pelo parecer; não coincide com nenhum inelegível, inclusive os 4 a mais do prompt: crit-san312-argon, crit-san312-sol, inspetor-san312b-opus, fab-red-san312b-opus).
 - Independência: não abri c2-evidencia.md nem c2-voto.json (existem no diretório).
-- worktree: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j12b-c1-wt fc5ead6c…` → HEAD fc5ead6c; `test -e .git` ok; `test ! -e .env` ok. `npm ci` próprio no frontend (103 pacotes, ec 0) e na raiz com `--ignore-scripts` (326 pacotes, ec 0; só para o Playwright 1.60.0, dependência da raiz). `find node_modules -maxdepth 0 -type l` → vazio (sem junction/symlink). Disco depois: 8,65 GiB.
+- worktree: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j12b-c1-wt fc5ead6c…` → HEAD fc5ead6c; `test -e .git` ok; `test ! -e .env` ok. `npm ci` próprio no frontend (103 pacotes, ec 0) e na raiz com `--ignore-scripts` (326 pacotes, ec 0; só para o Playwright 1.60.0, dependência da raiz). `find node_modules -maxdepth 0 -type l` → vazio (sem junction/symlink). Disco depois: 8,65 GiB.
 - Playwright @playwright/test 1.60.0 · Chromium 148.0.7778.96 (cache ms-playwright/chromium-1243). Memória de commit livre antes do servidor: 9,38 GB.
-- Vite PRÓPRIO: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 47913 --strictPort` (cwd C:/Users/AMP/j12b-c1-wt/frontend) → "ready", `netstat` LISTENING 127.0.0.1:47913 PID 23756 (Windows). Sem VITE_USE_MOCKS (= false), API relativa /api/v1.
-- Dublê: `page.route("**/api/v1/**")` na sonda C:/Users/AMP/erp-pausa-2026-10-03/j12b-c1/zz-j12bc1-harness.mjs, com os bytes do DTO do 12a (mesma forma do dublê do finance-page-live.test.tsx do objeto: `{data}` para resumo/saldo/agregado/política, `{items,pagination}` para listas, envelope `{error:{code,reason,message}}`), + descrição/nome de 200 caracteres. Rota não prevista → 404 (`/navigation/menu` cai nela). Sessão e contexto semeados no localStorage (papel Financeiro, 12 permissões do FINANCE do teste).
+- Vite PRÓPRIO: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 47913 --strictPort` (cwd ~/j12b-c1-wt/frontend) → "ready", `netstat` LISTENING 127.0.0.1:47913 PID 23756 (Windows). Sem VITE_USE_MOCKS (= false), API relativa /api/v1.
+- Dublê: `page.route("**/api/v1/**")` na sonda ~/erp-pausa-2026-10-03/j12b-c1/zz-j12bc1-harness.mjs, com os bytes do DTO do 12a (mesma forma do dublê do finance-page-live.test.tsx do objeto: `{data}` para resumo/saldo/agregado/política, `{items,pagination}` para listas, envelope `{error:{code,reason,message}}`), + descrição/nome de 200 caracteres. Rota não prevista → 404 (`/navigation/menu` cai nela). Sessão e contexto semeados no localStorage (papel Financeiro, 12 permissões do FINANCE do teste).
 - Sondas e capturas só no $SCRATCH: zz-j12bc1-harness.mjs, zz-j12bc1-smoke.mjs, zz-j12bc1-ref.mjs, zz-j12bc1-item1.mjs; cap-obj-1440-rec.png, cap-ref-A-1440.png, cap-ref-A-1280.png.
 
 ## Item 1 — F11 + F12 (indicador que filtra; linha que abre um detalhe por vez)
 
 ### 1(a) testes do bloco no objeto, a partir de frontend/
-- comando: `cd C:/Users/AMP/j12b-c1-wt/frontend && timeout -k 15 600 node --test --import tsx tests/finance-page-live.test.tsx tests/dense-expandable-row.test.tsx tests/finance-contas-extrato.smoke.test.tsx > $S/t-obj.tap; ec=$?`
+- comando: `cd ~/j12b-c1-wt/frontend && timeout -k 15 600 node --test --import tsx tests/finance-page-live.test.tsx tests/dense-expandable-row.test.tsx tests/finance-contas-extrato.smoke.test.tsx > $S/t-obj.tap; ec=$?`
 - saída: ec=0 · tests 31 | pass 31 | fail 0 | skipped 0 (duration 12,0 s). Casos F11: "F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um clique", "F11: 'A conciliar' leva à aba Conciliação filtrada no servidor (reconciled=false)". F12: "F12: linha de uma altura, sem botão; o detalhe abre logo abaixo, um por vez; Enter/Espaço abrem, Escape fecha"; dense-expandable-row 5 casos (inclui "Enter e Espaço alternam…; Escape fecha só a linha aberta").
 - leitura do arnês: DOM mínimo próprio; clique/tecla executados chamando o handler em `__reactProps$` (onClick/onKeyDown) e relendo o DOM — EXECUTA o comportamento da fiação (não é teste de texto), mas NÃO mede layout (altura px, posição y, foco visível, reticências): isso só a sonda de navegador mede.
 - veredito parcial: verde, com a ressalva de alcance (sem layout).
@@ -134,7 +134,7 @@ Nota do orquestrador no disparo, consignada: durante a junta a origin/main andou
 ## Fecho (legalidade no fim e teardown)
 - objeto no fim: `git ls-remote` = `gh pr view 469 --json headRefOid` = fc5ead6cf3191eb2a1485d4a16404a403a00beec (não andou). origin/main no fim f7922ab7360487ced44203a76de75b80c5094140 (igual ao início desta cadeira; já tinha andado de c9a2d036 com o #464, como o orquestrador avisou); merge-base(objeto, origin/main) = c9a2d036 (o head-base usado em todo diff e controle).
 - check-runs: `gh api …/commits/fc5ead6c…/check-runs?per_page=100` → $S/check-runs.json: total 14 | não-verdes 0 | pendentes 0; `frontend` completed/success ×2.
-- teardown: Vite morto pelo PID (`taskkill //PID 23756 //T //F` → 23756 e o filho 17916; `netstat :47913` vazio); processos com `j12b-c1-wt` na linha de comando = 0; `git status --porcelain` do worktree vazio (todas as mutações e o checkout do head-base restaurados, hash-object = blob conferido a cada um); `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force C:/Users/AMP/j12b-c1-wt` ec 0, caminho ausente, 0 na `worktree list`. Nenhum docker. Sondas, logs e capturas só em $S (C:/Users/AMP/erp-pausa-2026-10-03/j12b-c1/). Em w-san312b, só c1-evidencia.md e c1-voto.json. Disco no fim: 10,82 GiB livres. Nada commitado.
+- teardown: Vite morto pelo PID (`taskkill //PID 23756 //T //F` → 23756 e o filho 17916; `netstat :47913` vazio); processos com `j12b-c1-wt` na linha de comando = 0; `git status --porcelain` do worktree vazio (todas as mutações e o checkout do head-base restaurados, hash-object = blob conferido a cada um); `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force ~/j12b-c1-wt` ec 0, caminho ausente, 0 na `worktree list`. Nenhum docker. Sondas, logs e capturas só em $S (~/erp-pausa-2026-10-03/j12b-c1/). Em w-san312b, só c1-evidencia.md e c1-voto.json. Disco no fim: 10,82 GiB livres. Nada commitado.
 - independência: não abri c2-evidencia.md nem c2-voto.json; não li c3-*. Li: corpo (blob), mandato, parecer do inspetor, plano §8.2, relatório do dev (S3–S7, §M), a referência e o código do objeto.
 
 ## VOTO

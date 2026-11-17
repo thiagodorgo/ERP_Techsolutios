@@ -1338,8 +1338,8 @@ na medição. Nomes próprios `trc01-*`, portas só em `127.0.0.1` e fora das do
 os contêineres `erp-*` não são tocados.
 
 ```bash
-R=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios   # clone principal: só se lê refs dele
-W=C:/Users/AMP/w-trc01                             # caminho curto (Windows)
+R=~/Documents/GitHub/ERP_Techsolutios   # clone principal: só se lê refs dele
+W=~/w-trc01                             # caminho curto (Windows)
 timeout 120 git -C "$R" fetch origin --prune
 timeout 120 git -C "$R" worktree add "$W" -b feat/traccar-b-trc-01 origin/main
 cd "$W" && git status --short --branch && git rev-parse HEAD           # registrar o head de partida
@@ -1815,7 +1815,7 @@ ao fim do B-TRC-01, sem esperar as telas e a nuvem completas.
 
 | ID | Comando reproduzível | O que sustenta |
 |---|---|---|
-| M-0 | `git -C C:/Users/AMP/w-traccar rev-parse HEAD; git ... rev-parse origin/main; git ... branch --show-current` | Head/ref/branch exigidos. |
+| M-0 | `git -C ~/w-traccar rev-parse HEAD; git ... rev-parse origin/main; git ... branch --show-current` | Head/ref/branch exigidos. |
 | M-1 | `git show origin/main:CLAUDE.md` | Contrato inteiro, em especial §C7 item 8(4), KPI e quórum. |
 | M-2 | `git show origin/main:agent-orchestration/controle/decisoes.md` | D-TRACCAR, pós-#405, governança, provedor, Ato 2 e modelo. |
 | M-3 | `git show origin/main:agent-orchestration/controle/pendencias.md` | Quatro ressalvas SAN3 exigidas. |
@@ -1841,7 +1841,7 @@ medir a árvore mutável e é EOL-neutro para o propósito do plano. O `git grep
 foi conferido manualmente contra `Vehicle` e `ThirdPartyVehicleIdentity`, não inferido de busca vazia.
 
 
-### 11.2 Medições novas da v2 (2026-10-10, ref `a2937bad`, worktree `C:/Users/AMP/w-traccar` em `1dfd0774`)
+### 11.2 Medições novas da v2 (2026-10-10, ref `a2937bad`, worktree `~/w-traccar` em `1dfd0774`)
 
 | ID | Comando ou fonte | Resultado que sustenta o plano |
 |---|---|---|

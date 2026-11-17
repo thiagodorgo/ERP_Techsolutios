@@ -30,7 +30,7 @@ superfície de rotas e jobs (é a **C3**, `jurado-san305-c2-ratchet-e-superficie
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica`, **sem executar nada** do que está aqui. Tudo o que ele diz sobre o ramo foi **lido** no
-disco de `C:/Users/AMP/w-o05` em 2026-10-09, entre 03:12Z e 03:27Z, com a ref local e a de rastreio do ramo apontando
+disco de `~/w-o05` em 2026-10-09, entre 03:12Z e 03:27Z, com a ref local e a de rastreio do ramo apontando
 `02544a79cead8d9713354697f8ee78dac1575546` (lidas nos arquivos de ref, não por `git`) — e **com o desenvolvedor do ciclo 2 (Codex)
 trabalhando nessa mesma árvore naquele momento**: o disco lido pode ter tido alteração não commitada, e o objeto que você vai julgar
 é posterior. Logo, **todo** arquivo:linha, SHA, contagem e trecho abaixo é **[A RE-VERIFICAR]**. Nenhum deles é fato.
@@ -171,21 +171,21 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo**, e **
   Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `node -v` (container), `psql --version` (container), `docker version`
   (servidor), espaço livre em `C:` (`df -h /c`), e o ambiente (shell, cwd, variáveis que você definiu — nunca valores de segredo).
 - **Arquivos de saída:** os que o seu mandato nomear (padrão deste corpo:
-  `C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo2/C2-evidencia.md` e `…/ciclo2/C2-voto.json`).
+  `~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo2/C2-evidencia.md` e `…/ciclo2/C2-voto.json`).
   **Nunca** grave em `votos/B-SAN3-05/C2-evidencia.md`/`C2-voto.json`: são do ciclo 1. Nunca grave no seu worktree de medição.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Use sempre `C:/…` com `git.exe`, `node.exe`,
   `python.exe`; caminhos `/…` **só dentro** do `sh -c` do container.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `C:/Users/AMP/w-j05c2c2`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `~/w-j05c2c2`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
   `test -e <caminho>/.git`. Se o caminho já existir, é resíduo alheio: reporte e use o sufixo `b`. Ele serve para o git (escopo,
   ancestralidade, `diff --check`); se precisar de `node_modules` nele, `npm ci --no-audit --no-fund` **próprio**. **Junction ou
-  symlink de `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)). `C:/Users/AMP/w-o05` é a árvore do **desenvolvedor**,
+  symlink de `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)). `~/w-o05` é a árvore do **desenvolvedor**,
   viva: a sua **única** escrita lá são os seus dois arquivos de saída.
 - **Containers PRÓPRIOS, prefixo `j05c2-c2-`** (C2.5, l.1569), numa rede Docker própria **sem porta publicada no host**:
-  - **a receita** `C:/Users/AMP/erp-terreno/receita-pg16.sh` (imagem `erp-junta-node20-pg16:local`, Node 20.20.2, `psql` 16.14;
+  - **a receita** `~/erp-terreno/receita-pg16.sh` (imagem `erp-junta-node20-pg16:local`, Node 20.20.2, `psql` 16.14;
     `postgres:16` descartável; modos `normal`/`controle`) — **copie para `$SCRATCH` e adapte**, publicando o `diff` e o md5 da cópia.
     Pontos de leitura da fábrica a conferir: o `RUN_ID` nasce com o prefixo fixo `pg16r-` (l.45) e a remoção da árvore temporária
-    só casa `/c/Users/AMP/t-pg16r-*` (l.63) — trocar um sem o outro **deixa a árvore temporária para trás**; `REPO` por padrão é o
+    só casa `~/t-pg16r-*` (l.63) — trocar um sem o outro **deixa a árvore temporária para trás**; `REPO` por padrão é o
     checkout principal; `TESTS` lista só os dois `-db` do ciclo 1 (l.32) — inclua todo `tests/san3-05-*-db.test.ts` do objeto,
     listado por `git ls-tree` (é o "lote dos arquivos `-db` do bloco" do B6/B8); a contagem de resíduo olha só `s305%` (l.186) —
     some a família efêmera do arnês (lida: `o6r_b01_` em `tests/helpers/auth-identity-fixture.ts` l.331 — **leia você**),

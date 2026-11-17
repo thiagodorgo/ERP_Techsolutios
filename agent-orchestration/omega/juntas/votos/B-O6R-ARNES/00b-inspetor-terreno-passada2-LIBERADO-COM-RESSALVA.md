@@ -62,4 +62,4 @@
 
 **Limpeza:** criei apenas `$TMP/arnes-check.log` (removido, confirmado); nenhum container, worktree, junction ou arquivo no repositório foi criado por esta inspeção; o worktree do dev ficou limpo após o baseline (`status --porcelain` vazio, re-medido).
 
-Caminhos relevantes: `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\agent-orchestration\omega\planos\B-O6R-ARNES-plano.md` · `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\agents\especialistas\jurado-arnes-catalogo-postgres.md` (e os 5 pares/suplentes no mesmo diretório) · `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\arnes-dev` (head julgado).
+Caminhos relevantes: `~/Documents\GitHub\ERP_Techsolutios\agent-orchestration\omega\planos\B-O6R-ARNES-plano.md` · `~/Documents\GitHub\ERP_Techsolutios\.claude\agents\especialistas\jurado-arnes-catalogo-postgres.md` (e os 5 pares/suplentes no mesmo diretório) · `~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\arnes-dev` (head julgado).

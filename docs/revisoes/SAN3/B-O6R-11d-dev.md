@@ -3,7 +3,7 @@
 - **Dev:** `dev-11d-cl`, Claude Opus 5.5, subagente da sessão, nível menor. **Exceção declarada** (§C7 itens 6 e 11(6)): as duas contas Codex estão sem cota semanal até 16/11, a API está reservada para verificação e o Antigravity está no limite de 5 h. Por isso a pré-revisão e a conferência serão de outro modelo, pela API. Não escrevi o plano nem o critiquei.
 - **Plano:** `plano-B-O6R-11d-v2.md` (replano de topo, Opus pela API) com a **Emenda 1** (requisitos da crítica r2, `crit-11d-r2-cl`). A emenda prevalece sobre o corpo.
 - **Respostas do dono** (11/11, `D-DONO-TODAS-RECOMENDACOES-1111`): vale a recomendação de cada pergunta. **Q1 = A**: o app declara `expected_technician_id`; se o técnico da OS não for mais esse, o servidor responde conflito `technician_changed_since_action`, e a ação fica em conflito na fila, para decisão manual.
-- **Ramo:** `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, criado a partir da `origin/main` `da12fec6` (#541) às 10:52 SP.
+- **Ramo:** `fix/mobile-os-contrato-b-o6r-11d`, worktree `~/w-11d`, criado a partir da `origin/main` `da12fec6` (#541) às 10:52 SP.
 - Toda hora abaixo vem de `date` (SP).
 
 ## Perguntas e desvios abertos (para o orquestrador)
@@ -140,7 +140,7 @@
 ## Pré-revisão: conserto (dp-545)
 
 - **Executor:** `dp-545` (DeepSeek Pro, identidade de dev declarada). **Início:** 2026-11-11 16:55 SP.
-- **Origem:** os 3 achados da pré-revisão do #545 (`prerev-545-api`) + o merge do #534. Pré-revisão lida inteira em `C:/Users/thiag/erp-pausa-2026-10-03/saidas-v3/prerev-545/saida/prerev-545.json` e `prerev-545-evidencia.md`.
+- **Origem:** os 3 achados da pré-revisão do #545 (`prerev-545-api`) + o merge do #534. Pré-revisão lida inteira em `~/erp-pausa-2026-10-03/saidas-v3/prerev-545/saida/prerev-545.json` e `prerev-545-evidencia.md`.
 
 ### Merge da main (#534 e #539)
 - `git fetch origin` + `git merge origin/main` → commit `b16c6bed` (merge(main)).
@@ -176,7 +176,7 @@ PRONTO PARA CONFERÊNCIA — head 8ca3e0dc (código) · este registro final em c
 ## Emenda 2 (dp-fix-545)
 
 - **Identidade:** `dp-fix-545`, DeepSeek Pro (DP), identidade de dev declarada. Quem achou: C1/C2/C3 da J-545 e a `conf-545`. Quem planejou: o orquestrador (a Emenda 2). Quem desenvolve: este diário. Quem confere: o Claude, com identidade nova.
-- **Objeto:** `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, head de partida `a0130465`, limpo. `npx prisma generate` rodado (com `DATABASE_URL` local). Toda hora vem de `date` (SP).
+- **Objeto:** `fix/mobile-os-contrato-b-o6r-11d`, worktree `~/w-11d`, head de partida `a0130465`, limpo. `npx prisma generate` rodado (com `DATABASE_URL` local). Toda hora vem de `date` (SP).
 
 ### E2.1 (C1-02, a leitura)
 - A fixture de leitura (`bo6r11d_work_order_contract.json`) passa a ter `assignedOperatorId = ...a02` ≠ `assignedUserId = ...a01` nas três seções (`detail_response`, `status_response`, `assign_response`).
@@ -201,7 +201,7 @@ PRONTO PARA CONFERÊNCIA — head 8ca3e0dc (código) · este registro final em c
 ### Bateria (janela fora do pico)
 - **Flutter** (`mobile/flutter_app`): `flutter test --reporter compact` → `+1156: All tests passed!`; `flutter analyze` → `No issues found!`.
 - **Node do bloco (memória):** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-work-order-contract.test.ts tests/b-o6r-11d-lote-tecnico-esperado.test.ts tests/o6r07c-b-scope.test.ts tests/mobile-work-order-assign-registry.test.ts` → `# tests 204 # pass 204 # fail 0 # skipped 0`.
-- **DB sem Docker** (Postgres 16 local, porta 55556, só `127.0.0.1`, cluster `C:/Users/thiag/pg-dpfix545`, banco UTF8 migrado): `tests/o6r07c-b-scope-db.test.ts` → `# tests 13 # pass 13 # fail 0 # skipped 0` (papel efêmero `NOSUPERUSER NOBYPASSRLS`); `tests/b-san3-23-cancel-race-db.test.ts` → `# tests 21 # pass 21 # fail 0 # skipped 0`.
+- **DB sem Docker** (Postgres 16 local, porta 55556, só `127.0.0.1`, cluster `~/pg-dpfix545`, banco UTF8 migrado): `tests/o6r07c-b-scope-db.test.ts` → `# tests 13 # pass 13 # fail 0 # skipped 0` (papel efêmero `NOSUPERUSER NOBYPASSRLS`); `tests/b-san3-23-cancel-race-db.test.ts` → `# tests 21 # pass 21 # fail 0 # skipped 0`.
 - `npm run check` ec 0 · `npm run lint` ec 0 · `git diff --check` ec 0.
 - Nada tocado em `src/**`, `lib/**`, `prisma/**`, `.github/**`, `Kpis/**`, `.env`, nem portas 3000/5173/5432/6379/8899.
 

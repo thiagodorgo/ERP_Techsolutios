@@ -2,14 +2,14 @@
 
 > **Autor:** `dev-apar-os-opus`, Claude Opus 5.5 (dev e design, `D-DESIGN-SO-CLAUDE`). **Verificador:** Codex GPT-5.6 Sol
 > (`rev-apar-os-sol`, outra casa, §C7 item 11) + `cognicao-visual` (veto visual). Quem fez não verifica.
-> **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-APAR-3-plano.md` §0 e §1 (autor `plano-3apar-opus`). A crítica
+> **Plano:** `~/erp-pausa-2026-10-03/planos/B-APAR-3-plano.md` §0 e §1 (autor `plano-3apar-opus`). A crítica
 > do plano pelo Codex estava marcada para as 18:45 de 03/11 e **não tinha acontecido** quando este dev começou: o que foi
 > medido contra o plano está em "Conflitos com o plano", sem decisão tomada sozinho onde a decisão não é do dev.
 > **Referência (§11):** `docs/claude-code-handoff/screen-refs/ordens-de-servico-3opcoes.reference.html`.
 > **Tela-modelo:** `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (a própria página, no head-base) e o
 > contêiner de `frontend/src/modules/finance/pages/FinanceiroPage.tsx`. Skills: `ts-frontend-full`, `ui-ux-pro-max`.
 > **Head-base:** `origin/main` = `2e7987bd2db04b374ff752a0d40b1467aa65a267` (a mesma ref do plano). Worktree
-> `C:/Users/thiag/w-apar-os`, ramo `feat/web-apar-os` (o pedido nomeou o ramo; o plano dizia `feat/web-aparencias-os`).
+> `~/w-apar-os`, ramo `feat/web-apar-os` (o pedido nomeou o ramo; o plano dizia `feat/web-aparencias-os`).
 
 ## Baseline (head-base, antes de qualquer mudança)
 
@@ -41,7 +41,7 @@ aplicou num commit próprio, antes do merge:
 
 Divergências de forma, menores, também declaradas:
 - **Ramo e caminhos.** O pedido nomeou o ramo `feat/web-apar-os`, o relatório em `docs/revisoes/APAR/` e as capturas em
-  `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/apar-os/` a 1440×900 e 390×844; o plano dizia `feat/web-aparencias-os`,
+  `~/erp-pausa-2026-10-03/revisoes/apar-os/` a 1440×900 e 390×844; o plano dizia `feat/web-aparencias-os`,
   `docs/revisoes/TELAS/` e 1280/1366/1440 + 924. Segui o pedido e **somei** as larguras do plano (1366, 1280, 924). Os
   scripts de captura ficaram ao lado do relatório: `docs/revisoes/TELAS/B-APAR-capturas/`.
 - **Porta.** Vite próprio em `127.0.0.1:5191` (`--strictPort`), como o pedido; o plano sugeria 47xxx.
@@ -162,7 +162,7 @@ Vite próprio `127.0.0.1:5191` em modo real (`VITE_USE_MOCKS=false`); toda chama
 da referência, na ordem do servidor, e o relógio preso em 14/10/2026 10:00; rota sem fixture → 599 (só
 `GET /navigation/menu`, que o shell já trata). Portas 3000/5173 bloqueadas no navegador. Nenhum contato com a demo,
 `erp-postgres`, `erp-redis`, `w-demoint` ou a árvore principal. Capturas em
-`C:/Users/thiag/erp-pausa-2026-10-03/revisoes/apar-os/` (`app-*` do app, `ref-*` da referência; logs `capturas-app.log` e
+`~/erp-pausa-2026-10-03/revisoes/apar-os/` (`app-*` do app, `ref-*` da referência; logs `capturas-app.log` e
 `capturas-ref.log`). Scripts: `docs/revisoes/TELAS/B-APAR-capturas/capture-app.mjs` e `capture-ref.mjs`.
 
 Medido:
@@ -204,5 +204,5 @@ Divergências visuais conscientes (para o `cognicao-visual` e o revisor não ler
 
 ## Limpeza
 
-Só o que este dev criou: Vite da porta 5191 parado ao final; sondas e logs soltos em `C:/Users/thiag/` removidos; nada
+Só o que este dev criou: Vite da porta 5191 parado ao final; sondas e logs soltos em `~/` removidos; nada
 rastreado apagado; `node_modules` do worktree mantido (o revisor usa o mesmo worktree).

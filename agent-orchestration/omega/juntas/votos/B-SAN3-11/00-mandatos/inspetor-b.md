@@ -33,23 +33,23 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed), instancia NOVA para a junta 1 do B-SAN3-11 (PR 401),
   como a secao 15.11 do plano manda depois da correcao pre-junta (a instancia que emitiu o primeiro parecer BLOQUEADO nao repete), em
   Fable por contrato (esgotado o Fable, Opus com a substituicao declarada; esgotado o Opus, para), com o corpo de origin/main, e declara
-  na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md | grep -ic 'mandato_md5'`
+  na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md | grep -ic 'mandato_md5'`
 
 O objeto e o head do PR 401 resolvido pelo proprio inspetor, so com os check-runs CONCLUIDOS; o primeiro parecer em
-  C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-inspetor-terreno.md e insumo a re-verificar, nunca fato; o baseline honesto e re-medido NOS DOIS
+  ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-inspetor-terreno.md e insumo a re-verificar, nunca fato; o baseline honesto e re-medido NOS DOIS
   terrenos desta maquina, um checkout CRLF (o de core.autocrlf=true, onde o primeiro parecer achou vermelho) e um checkout LF, com a
-  contagem de CR colada em cada um: o frontend check, o arquivo de teste do bloco e o test:smoke com N e forma por TAP derruba com: `grep -ic 'CRLF' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md`
+  contagem de CR colada em cada um: o frontend check, o arquivo de teste do bloco e o test:smoke com N e forma por TAP derruba com: `grep -ic 'CRLF' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md`
 
 O tabuleiro: o delta entre o fim do codigo do bloco (nomeado no briefing agent-orchestration/omega/juntas/BRIEFING-B-SAN3-11.md) e o
   objeto so traz as duas integracoes da main e registro, como o briefing descreve, e o diff do PR contra a main fica no escopo do plano; as tres cadeiras (cognicao-visual, guardiao-fail-closed, coordenador-de-acessos) existem no origin/main e a
   inelegibilidade e conferida por nome contra a lista do briefing; um worktree por cadeira que muta (w-j11c1, w-j11c2, w-j11c3) e a
   arvore do orquestrador nunca mutada; S0 (node scripts/sync-agent-agents.mjs --check igual a zero); os mandatos novos das tres cadeiras
-  em C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/ com a cerca igual ao head colado e lendo o briefing; plano de perda (queda relanca a mesma identidade) e de PAUSA derruba com: `grep -ic 'check-run' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md`
+  em ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/ com a cerca igual ao head colado e lendo o briefing; plano de perda (queda relanca a mesma identidade) e de PAUSA derruba com: `grep -ic 'check-run' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md`
 
-O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; o parecer e incremental com hora em C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md e o orquestrador o versiona; worktrees
-  proprios detached C:/Users/AMP/w-insp401b (CRLF) e C:/Users/AMP/w-insp401lf (LF), npm ci proprio sem junction, removidos pelo nome com
+O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; o parecer e incremental com hora em ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md e o orquestrador o versiona; worktrees
+  proprios detached ~/w-insp401b (CRLF) e ~/w-insp401lf (LF), npm ci proprio sem junction, removidos pelo nome com
   0 processo vivo; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout no que executa; base viva nunca alvo; nada escrito no
-  repositorio; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md`
+  repositorio; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/INSPETOR-401-b.md`
 
 ## MEDIDO
 
@@ -57,7 +57,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-19: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/inspetor-b.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/inspetor-b.md
 ec=0
 head=97e5ec12d5aff21d2c7d875b34184d99abbeefbd
 utc=2026-10-02T23:31:53Z

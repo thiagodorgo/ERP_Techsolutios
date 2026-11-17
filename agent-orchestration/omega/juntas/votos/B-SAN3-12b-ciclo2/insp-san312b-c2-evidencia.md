@@ -7,7 +7,7 @@ Papel: inspetor de terreno; não julga mérito.
 
 ## Item 1 — objeto, CI, árvore, recursos e S0 — VERDE
 
-**Comandos executados (Git Bash `-lc`):** `gh pr view 469 --json ... --jq ...`; `git ls-remote origin refs/heads/{feat/web-financeiro-baixa-e-contas,main}`; `git merge-base`/`--is-ancestor`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/e77a5ac1.../check-runs --jq ...`; `git status --porcelain --untracked-files=no`; `git rev-parse -q --verify MERGE_HEAD`; `df -Pk /c`; consulta de memória de commit pelo PowerShell chamado de dentro do Bash; `git worktree add --detach C:/Users/AMP/j12b2-insp-wt e77a5ac1`; `node scripts/sync-agent-agents.mjs --check`; comparação EOL-neutra dos três corpos especialistas descontando frontmatter/preambulo Codex; `git worktree remove --force`.
+**Comandos executados (Git Bash `-lc`):** `gh pr view 469 --json ... --jq ...`; `git ls-remote origin refs/heads/{feat/web-financeiro-baixa-e-contas,main}`; `git merge-base`/`--is-ancestor`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/e77a5ac1.../check-runs --jq ...`; `git status --porcelain --untracked-files=no`; `git rev-parse -q --verify MERGE_HEAD`; `df -Pk /c`; consulta de memória de commit pelo PowerShell chamado de dentro do Bash; `git worktree add --detach ~/j12b2-insp-wt e77a5ac1`; `node scripts/sync-agent-agents.mjs --check`; comparação EOL-neutra dos três corpos especialistas descontando frontmatter/preambulo Codex; `git worktree remove --force`.
 
 **Saída resumida:** PR #469 `OPEN`, `isDraft=false`, `MERGEABLE`; head do PR e ramo remoto = `e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2`. `origin/main` remoto = merge-base = `f076973921539165df8d406b8c061dbf4e4ee127`, ancestral do objeto. Check-runs: `14`, pendentes `0`, conclusões não-success `0`; `backend`, `backend-postgres` e `frontend` têm 2 runs cada, todos `completed/success`. Worktree nomeado: head correto, `0` mudanças rastreadas, nenhum merge em curso. Recursos: `12,66 GB` livres em C (piso `7,5 GB`) e `13,26 GB` de memória de commit livre (piso `4 GB`). S0: `[agents-sync] OK — 95 agentes`; os três corpos julgados são `IDENTICOS` aos espelhos Codex após normalização EOL e retirada do preâmbulo; worktree descartável removido (`exit 0`, alvo ausente).
 
@@ -33,9 +33,9 @@ Papel: inspetor de terreno; não julga mérito.
 
 **Plano vinculante de isolamento:**
 
-- C1: `C:/Users/AMP/j12b-c2-c1r2-wt`, Claude Opus; dependências próprias/zero junction; servidor local `127.0.0.1:48121`; **sem banco**.
-- C2: `C:/Users/AMP/j12b-c2-c2rev-wt`, Codex GPT-5.6 Sol; dependências próprias/zero junction; backend somente em memória em `127.0.0.1:48122` (frontend/sonda, se necessário, `48123`), Redis apontado a porta fechada; **sem Docker e sem base viva**.
-- C3: `C:/Users/AMP/j12b-c2-c3r2-wt`, Codex GPT-5.6 Sol; dependências próprias/zero junction; usa `backend-postgres` concluído como insumo. Este mandato proíbe Docker/base viva nesta inspeção; se a cadeira optar por recurso local, só recurso descartável próprio autorizado no start, nome exclusivo e porta `48124` (app `48125`), nunca `erp-postgres`, com teardown. Não é requisito para iniciar/votar pela forma atual.
+- C1: `~/j12b-c2-c1r2-wt`, Claude Opus; dependências próprias/zero junction; servidor local `127.0.0.1:48121`; **sem banco**.
+- C2: `~/j12b-c2-c2rev-wt`, Codex GPT-5.6 Sol; dependências próprias/zero junction; backend somente em memória em `127.0.0.1:48122` (frontend/sonda, se necessário, `48123`), Redis apontado a porta fechada; **sem Docker e sem base viva**.
+- C3: `~/j12b-c2-c3r2-wt`, Codex GPT-5.6 Sol; dependências próprias/zero junction; usa `backend-postgres` concluído como insumo. Este mandato proíbe Docker/base viva nesta inspeção; se a cadeira optar por recurso local, só recurso descartável próprio autorizado no start, nome exclusivo e porta `48124` (app `48125`), nunca `erp-postgres`, com teardown. Não é requisito para iniciar/votar pela forma atual.
 
 **Ordem compatível com “uma tarefa de cada braço por vez”:** braço Codex: C2 e depois C3, nunca simultâneas. Braço Claude: C1 pode correr junto com C2. Como o disco medido garante com folga **uma** cadeira, mas não prova o custo combinado de duas instalações próprias, a forma segura é: iniciar C1; medir novamente após suas dependências; iniciar C2 em paralelo somente se ainda houver `≥7,5 GB` e `≥4 GB`; caso contrário terminar/derrubar C1 antes de C2; C3 só depois do teardown de C2. Toda cadeira revalida os pisos imediatamente antes de criar dependências/processos.
 
@@ -49,4 +49,4 @@ Papel: inspetor de terreno; não julga mérito.
 
 O tabuleiro está limpo para o start sob essa trava. Junta de DINHEIRO: unanimidade de 3; ciclo 2 é o último em que achado não grave reprova. Nenhuma cadeira começa sem ler este parecer.
 
-**Limpeza:** o único worktree criado pelo inspetor (`C:/Users/AMP/j12b2-insp-wt`) foi removido por `git worktree remove --force`; alvo ausente, nenhum container/Docker/base viva invocado e nenhum temporário de sonda deixado.
+**Limpeza:** o único worktree criado pelo inspetor (`~/j12b2-insp-wt`) foi removido por `git worktree remove --force`; alvo ausente, nenhum container/Docker/base viva invocado e nenhum temporário de sonda deixado.

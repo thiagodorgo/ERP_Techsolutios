@@ -5,7 +5,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
-const WT = (process.env.C2_WT ?? "C:/Users/thiag/w-j484-c2").replace(/\\/g, "/");
+const WT = (process.env.C2_WT ?? "~/w-j484-c2").replace(/\\/g, "/");
 const src = (p: string) => `file:///${WT}/src/${p}`;
 const S = "/api/v1/platform/cloud-cost-allocations/summary";
 const H = { "content-type": "application/json", "x-user-id": "usr_platform", "x-role": "super_admin" };

@@ -137,6 +137,7 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaBindingsSource.listVehicleBindings#withTenantRls": "cenario:runtime.bindings.listVehicleBindings",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementAuditSink.record#withTenantRls": "cenario:runtime.statementaudit.record",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.findStatement#withTenantRls": "cenario:runtime.findStatement",
+  "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.findPayableCharge#withTenantRls": "cenario:runtime.findPayableCharge",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listCredits#withTenantRls": "cenario:runtime.listCredits",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listPayments#withTenantRls": "cenario:runtime.listPayments",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listStatements#withTenantRls": "cenario:runtime.listStatements",
@@ -530,6 +531,97 @@ if (!connectionString) {
     // os desfechos esperados dos cenários (um erro de cenário NÃO é aceito aqui: todos são caminhos de sucesso)
     const failed = runs.filter((run) => run.error !== null).map((run) => `${run.name}: ${run.error}`);
     assert.deepEqual(failed, [], "os cenários de statements/ rodam os caminhos de sucesso");
+  });
+
+  // B-ASS-08c1c (plano §4.10; Emendas 1 e 1.1) — os caminhos novos do bloco, executados sobre o cliente gravado: o fechamento que
+  // enfileira, o refechamento, a marcação imediata (baixa que quita, cancel, reopen), a releitura no registro, a tabela acompanhando
+  // o provedor e a visão do cliente. O canal é um resolver fixo (provedor ligado): o que se julga aqui é a ordem das travas.
+  test("T-LOCK-2 (08c1c): CLOSE-ENQ, REFECHA, EAGER, REG-REREAD, CHG-SYNC e findPayableCharge, executados de verdade", async () => {
+    const [runtime, plansRepo, subsRepo, lookup, inputsModule, serviceModule, settlementModule] = await Promise.all([
+      import("../src/modules/subscription-billing/statements/statement.prisma-runtime.js"),
+      import("../src/modules/subscription-billing/plans/plans-prisma.repository.js"),
+      import("../src/modules/subscription-billing/plans/subscriptions-prisma.repository.js"),
+      import("../src/modules/subscription-billing/plans/tenant-lookup.prisma.js"),
+      import("../src/modules/subscription-billing/statements/statement.inputs-provider.js"),
+      import("../src/modules/subscription-billing/statements/statement.service.js"),
+      import("../src/modules/subscription-billing/statements/statement-settlement.service.js"),
+    ]);
+    const client = recording.client;
+    const repository = new runtime.PrismaStatementRepository(client);
+    const inputs = new inputsModule.RepositoryStatementInputsProvider(
+      new subsRepo.PrismaSubscriptionsRepository(client),
+      new plansRepo.PrismaPlansRepository(client),
+      new lookup.PrismaTenantLookup(client),
+      new runtime.PrismaUsageSource(client),
+      new runtime.PrismaBindingsSource(client),
+    );
+    const audit = new runtime.PrismaStatementAuditSink(client);
+    const plain = new serviceModule.StatementService(repository, inputs, audit);
+    const charging = new serviceModule.StatementService(repository, inputs, audit, { closingCharge: { resolve: async () => ({ provider: "asaas", method: "pix" as const }) } });
+    const settlement = new settlementModule.StatementSettlementService(repository, plain);
+    const outbox = new PrismaOutboxRepository(client);
+    const closeWith = async (service: typeof plain, tenantId: string, source: "job" | "manual" = "job") =>
+      ((await service.close({ tenantId, period: PERIOD, now: NOW, actorId: null, source })) as { statement: { id: string } }).statement.id;
+    const sentWithPendingCharge = async (tenantId: string, statementId: string) => {
+      const chargeId = `pay_lk2c_${randomUUID().slice(0, 8)}`;
+      await db.$executeRawUnsafe(`UPDATE billing_outbox SET status = 'SENT', external_id = $2 WHERE statement_id = $1::uuid AND kind = 'charge_create'`, statementId, chargeId);
+      await db.$executeRawUnsafe(`INSERT INTO subscription_statement_charges (tenant_id, statement_id, provider, external_charge_id, status, created_at) VALUES ($1::uuid, $2::uuid, 'asaas', $3, 'pending', now())`, tenantId, statementId, chargeId);
+      return chargeId;
+    };
+    const before = runs.length;
+    // A: fechado sem canal → reaberto → refechado com o provedor ligado (a 1ª charge_create nasce no refechamento)
+    const t5 = await seedSubscribedTenant("c1c-enq");
+    const s5 = await closeWith(plain, t5);
+    await plain.reopen({ tenantId: t5, statementId: s5, reason: "medição corrigida", actorId: ACTOR, now: NOW });
+    await scenario("service.close.enqueue", () => closeWith(charging, t5, "manual")); // [LK2-CLOSE-ENQ]
+    // B: fechado com o canal (charge_create PENDING) → reaberto por SQL de semente → refechado: a velha SKIPPED, a nova seq 2
+    const t6 = await seedSubscribedTenant("c1c-refecha");
+    const s6 = await closeWith(charging, t6);
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'reopened', reopened_at = now() WHERE id = $1::uuid`, s6);
+    await scenario("service.close.refecha", () => closeWith(charging, t6, "manual"));
+    // C: a baixa que quita com a PENDING; D: o cancel com a SENT e a cobrança pending; E: o reopen com a PENDING
+    const t7 = await seedSubscribedTenant("c1c-pay");
+    const s7 = await closeWith(charging, t7);
+    await scenario("service.recordManualPayment.eager", () => charging.recordManualPayment({ tenantId: t7, statementId: s7, amountCents: 10_000, method: "pix", note: null, actorId: ACTOR, now: NOW }));
+    const t8 = await seedSubscribedTenant("c1c-cancel");
+    const s8 = await closeWith(charging, t8);
+    await sentWithPendingCharge(t8, s8);
+    await scenario("service.cancel.eager", () => charging.cancel({ tenantId: t8, statementId: s8, reason: "cliente encerrou", actorId: ACTOR, now: NOW }));
+    const t9 = await seedSubscribedTenant("c1c-reopen");
+    const s9 = await closeWith(charging, t9);
+    await scenario("service.reopen.eager", () => charging.reopen({ tenantId: t9, statementId: s9, reason: "medição corrigida", actorId: ACTOR, now: NOW }));
+    // F: o registro da cobrança sobre um demonstrativo já pago → a releitura enfileira o charge_cancel no MESMO tx
+    const t10 = await seedSubscribedTenant("c1c-reread");
+    const s10 = await closeWith(charging, t10);
+    const line10 = ((await db.$queryRawUnsafe(`SELECT * FROM billing_outbox WHERE statement_id = $1::uuid AND kind = 'charge_create'`, s10)) as Array<{ id: string }>)[0]!.id;
+    await db.$executeRawUnsafe(`UPDATE billing_outbox SET status = 'PROCESSING', attempts = 1 WHERE id = $1::uuid`, line10);
+    const lease10 = await seedLease(line10, new Date(Math.floor(Date.now() / 1000) * 1000));
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'paid', paid_amount = total_amount, paid_at = now() WHERE id = $1::uuid`, s10);
+    const row10 = await outbox.findById(t10, line10);
+    await scenario("outbox.recordChargeOutcome.reread", () => outbox.recordChargeOutcome(t10, row10!, lease10, { kind: "created", result: { chargeId: `pay_lk2r_${randomUUID().slice(0, 8)}`, status: "pending" } }, NOW));
+    // G: a baixa do provedor acompanha a tabela (CHG-SYNC-PAY) e a visão do cliente lê a cobrança pagável
+    const t11 = await seedSubscribedTenant("c1c-sync");
+    const s11 = await closeWith(charging, t11);
+    const charge11 = await sentWithPendingCharge(t11, s11);
+    await scenario("runtime.findPayableCharge", () => repository.findPayableCharge(t11, s11)); // [LK2-FINDPAYABLE]
+    await scenario("settlement.sync", () => settlement.settle({ tenantId: t11, statementId: s11, source: "asaas", externalChargeId: charge11, paidCents: 10_000, method: "pix", now: NOW }));
+    const mine = runs.slice(before);
+    assert.deepEqual(mine.filter((run) => run.error !== null).map((run) => `${run.name}: ${run.error}`), [], "os cenários do 08c1c rodam os caminhos de sucesso");
+    const facts = (await db.$queryRawUnsafe(
+      `SELECT s.id, s.status,
+              (SELECT string_agg(o.kind || ':' || o.status || ':' || COALESCE(o.skip_reason, '-'), ',' ORDER BY o.kind, o.idempotency_key) FROM billing_outbox o WHERE o.statement_id = s.id) AS lines,
+              (SELECT string_agg(c.status, ',') FROM subscription_statement_charges c WHERE c.statement_id = s.id) AS charges
+         FROM subscription_statements s WHERE s.id = ANY($1::uuid[])`,
+      [s5, s6, s7, s8, s9, s10, s11],
+    )) as Array<{ id: string; status: string; lines: string | null; charges: string | null }>;
+    const by = new Map(facts.map((row) => [row.id, row]));
+    assert.equal(by.get(s5)!.lines, "charge_create:PENDING:-", "o refechamento enfileirou");
+    assert.equal(by.get(s6)!.lines, "charge_create:SKIPPED:statement_reopened,charge_create:PENDING:-", "a velha (seq 1) saiu, a nova (seq 2) nasceu");
+    assert.equal(by.get(s7)!.lines, "charge_create:SKIPPED:statement_paid");
+    assert.equal(by.get(s8)!.lines, "charge_cancel:PENDING:-,charge_create:SENT:-");
+    assert.equal(by.get(s9)!.lines, "charge_create:SKIPPED:statement_reopened");
+    assert.equal(by.get(s10)!.lines, "charge_cancel:PENDING:-,charge_create:SENT:-");
+    assert.equal(by.get(s11)!.charges, "confirmed");
   });
 
   test("T-LOCK-2 (08b): invoices/ — as 10 transações da nota, executadas, com o demonstrativo primeiro", async () => {

@@ -65,7 +65,7 @@ Pre-voo deste mandato no head do ramo, com o pre-voo do ramo do B-GOV-MANDATO co
 ```
 AVISO      sem colagem da ferramenta (cole a saida de: bash scripts/mandato-refs.sh <PR>)
 
-PRE-VOO OK — C:/Users/AMP/w-nuv05d/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/dev-sucessor-2.md
+PRE-VOO OK — ~/w-nuv05d/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/dev-sucessor-2.md
 ec=0
 head=243380db30026485d799ab2cc9c3791ffd1ea582
 utc=2026-10-03T17:06:45Z

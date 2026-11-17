@@ -8,7 +8,7 @@
   da crítica r2, `crit-24-r2-cl`), que prevalece sobre o corpo.
 - **Respostas do dono:** `D-DONO-TODAS-RECOMENDACOES-1111` (11/11, "Sim, todas (Recomendado)"): vale a recomendação de
   cada pergunta. Q1 = **(b)**: o motivo do fechamento forçado entra na auditoria (1 linha no controller).
-- **Terreno:** worktree `C:/Users/thiag/w-24`, ramo `feat/web-cheques-fechamento`, a partir de `origin/main`
+- **Terreno:** worktree `~/w-24`, ramo `feat/web-cheques-fechamento`, a partir de `origin/main`
   `da12fec6` (#541). `npm ci` próprio na raiz e no `frontend/` (sem junction).
 - **Toda hora** vem de `date` (fuso de São Paulo).
 
@@ -218,5 +218,5 @@
 9. **Redis próprio** (`dev24-redis`, 127.0.0.1:56522), além do Postgres do mandato, para a forma do job `backend`.
 
 ### Limpeza
-- Removidos: `frontend/dist/`, `dist/` (saídas de build). Mantidos, como o mandato manda: o worktree `C:/Users/thiag/w-24`
+- Removidos: `frontend/dist/`, `dist/` (saídas de build). Mantidos, como o mandato manda: o worktree `~/w-24`
   e os containers `dev24-pg` e `dev24-redis`.

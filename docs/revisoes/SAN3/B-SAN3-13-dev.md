@@ -2,7 +2,7 @@
 
 - **Dev:** `dev-san313-opus` — Claude **Opus 5.5** (`claude-opus-5-5`), nível menor **DECLARADO**. Cobre o Codex por ordem do dono (24/10): *"vc cobre o codex nessa rodada"*. Não planejou, não criticou, não vota.
 - **Fonte única:** `docs/revisoes/SAN3/B-SAN3-13-plano.md` (PLANO v3 final, `planejador-mestre` Fable) + críticas r1/r2 + medição (cópias versionadas neste PR).
-- **Worktree:** `C:/Users/AMP/w-san313`, ramo `fix/mobile-minhas-os`, base `origin/main` = `8a7885f4` (#454 B-TRC-02 entrou depois da v3; ver Etapa 0).
+- **Worktree:** `~/w-san313`, ramo `fix/mobile-minhas-os`, base `origin/main` = `8a7885f4` (#454 B-TRC-02 entrou depois da v3; ver Etapa 0).
 
 ## Estado (P2 — esqueleto)
 | Etapa | Estado |
@@ -20,7 +20,7 @@
 | Limpeza §C5 | GRAVADO |
 
 ## Etapa 0 — terreno (GRAVADO)
-- `git worktree add -b fix/mobile-minhas-os C:/Users/AMP/w-san313 origin/main` → `HEAD is now at 8a7885f4` (#454 B-TRC-02 entrou depois da v3, que mediu `37a3f360`).
+- `git worktree add -b fix/mobile-minhas-os ~/w-san313 origin/main` → `HEAD is now at 8a7885f4` (#454 B-TRC-02 entrou depois da v3, que mediu `37a3f360`).
 - Re-medição do cabeçalho do plano: `git diff --name-only 37a3f360 8a7885f4 | grep -E 'src/modules/work-orders|src/modules/mobile|mobile/'` → **vazio** (115 arquivos no delta, nenhum na superfície). As linhas do plano valem; deslocamentos de 1 linha anotados onde houve.
 - `npm ci` próprio (sem junction) → `added 326 packages in 3m`; `npm run db:generate` → `Generated Prisma Client (v7.8.0)`.
 - Postgres 16 descartável próprio: `docker run -d --name dev-san313-pg … -p 127.0.0.1:55313:5432 postgres:16-alpine`; `npx prisma migrate deploy` → `All migrations have been successfully applied.` Base viva (5432/6379) intocada; 1 trabalho Docker.
@@ -73,7 +73,7 @@ ok 3 - B18-db …
 - Commits no ramo (não empurrado): `f6b1ea37` (vermelho-controle B1/B14-db/F1) e `9cfa5111` (escopo, resolver estrito, AND por cláusula, `openOnly`), ambos verdes no que cobrem (29/29 sem banco; B17-db e B18-db verdes no Postgres próprio).
 - Não commitado no worktree: o cursor na leitura literal (5 arquivos de `src/modules/work-orders/`, `+62 −13`), cópia em `<scratchpad>/cursor-letra.patch`. Ao retomar: aplicar a emenda do planejador sobre ele.
 - Não iniciados: commits 4-7 (app: rede, reconciliação/retenção/lock/sementes, Home/lista; registro). Nenhum depende da escolha acima, exceto o parâmetro que o app manda na 1ª página (§4.1, CA-13).
-- Terreno: worktree `C:/Users/AMP/w-san313` intacto; container `dev-san313-pg` **parado** (`docker stop`, não removido — `docker start dev-san313-pg` na retomada; porta 127.0.0.1:55313).
+- Terreno: worktree `~/w-san313` intacto; container `dev-san313-pg` **parado** (`docker stop`, não removido — `docker start dev-san313-pg` na retomada; porta 127.0.0.1:55313).
 
 ## Etapa 3 (retomada) — cursor por `id` sob a Emenda E2 (GRAVADO)
 - E2 lida inteira (plano l.432-453; cópia versionada atualizada em `docs/revisoes/SAN3/B-SAN3-13-plano.md`). Aplicada sobre `cursor-letra.patch`: `paginate=cursor` (`parsePaginate`) declara o modo em toda página; `cursor` sem o modo → 400 `invalid_cursor_mode`; `nextCursor` só no modo cursor (`null` no offset); `offset` devolvido `0` no modo cursor. `docker start dev-san313-pg`.
@@ -236,7 +236,7 @@ FM18 purga por isFinal [F23]: VERMELHO pass=5 fail=1 restaurado=True
 
 - **Papel:** DEV do conserto do ciclo 2. Identidade **`dev-san313-c2-opus`**, nova: não achou (`jurado-san313-c2-opus`), não planejou (`planejador-san313-c2-fable`), não vota. **Modelo: Claude Opus 5.5 (`claude-opus-5-5`), nível menor DECLARADO.** O plano nomeava o Codex Sol; ele está sem limite até 20:13 BRT e o dono mandou o Claude cobrir uma tarefa por vez (`D-IAS-EXTERNAS-PRIMEIRO`, cobertura de limite esgotado).
 - **Fonte única:** `B-SAN3-13-plano.md`, seção "Ciclo 2 — plano de resolução" (RQ-1..RQ-6, §C, §E).
-- **Terreno:** worktree `C:/Users/AMP/w-san313`, ramo `fix/mobile-minhas-os`, objeto do ciclo 1 `ed4e229e`. Flutter local 3.41.6 (Dart 3.11.4); formatador da CI = Dart 3.13.4 (SDK avulso no scratchpad). Drift em memória; sem Docker, sem Postgres, sem base viva.
+- **Terreno:** worktree `~/w-san313`, ramo `fix/mobile-minhas-os`, objeto do ciclo 1 `ed4e229e`. Flutter local 3.41.6 (Dart 3.11.4); formatador da CI = Dart 3.13.4 (SDK avulso no scratchpad). Drift em memória; sem Docker, sem Postgres, sem base viva.
 
 ### Estado (P2 — esqueleto)
 | Etapa | Estado |

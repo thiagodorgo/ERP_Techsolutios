@@ -7,7 +7,7 @@ API está no limite do dia até 21:00. Pré-revisão e conferência: de outro mo
 Não escrevi o plano nem o critiquei.
 
 - **Plano:** `erp-pausa-2026-10-03/planos/plano-B-ASS-09a-v2.md` + **Emenda 1** (R2-01 a R2-12). Fora do repositório.
-- **Ramo:** `feat/rateio-automatico-importacao` · **worktree:** `C:/Users/thiag/w-09a` · `npm ci` próprio (sem junction) ·
+- **Ramo:** `feat/rateio-automatico-importacao` · **worktree:** `~/w-09a` · `npm ci` próprio (sem junction) ·
   `npx prisma generate`.
 - **Base:** `origin/main` = `a0979f51` (#530, B-ASS-08b, com a G14 `20260901000000_ass08b_provider_one_enabled_per_kind`).
   O plano mediu em `d0da291e`; `git diff --name-only d0da291e a0979f51` toca, do que o bloco usa, só
@@ -73,7 +73,7 @@ Não escrevi o plano nem o critiquei.
 | 8 | `node scripts/migration-transaction-guard.mjs` | `migrações: 132 · anteriores: 112 · novas: 20 · violações: 0` |
 | 9 | `git diff --check origin/main...HEAD` | vazio |
 | 10 | mutações | **38 aplicadas e revertidas, 38 vermelhas**: as 35 literais do §3 e da Emenda 1 (M1, M1b, M1c, M1d, M1e, M2, M2b, M3, M4a–M4g, M5, M5a, M6, M6b, M6m, M6p, M7, M8, M9, M9b, M9b-db, M9c, M10, M11, M12, M13, M-TAG, sonda CE-G1, R2-02, R2-04) e 3 suplementares (M2 com `globalThis.crypto.randomUUID()`, o marcador antes do `...metadata`, e o `createdBy` do CE-G2). Cada âncora X contou 1 no arquivo indicado. Os tokens † soltos contam mais de 1 onde são nome de tipo ou de campo (`onImportCompleted` 5, `costSource` 7, `autoAllocation` 5 em 4 arquivos), e nenhum deles é âncora de mutação; o `gt: periodStart` saiu da lista † pelo R2-07 (conta 2, um por ponto do R4) |
-| 11 | limpeza | só artefatos de build (`dist/`); o worktree `C:/Users/thiag/w-09a` e os containers `dev09a-pg` e `dev09a-redis` ficam para a pré-revisão e o conserto |
+| 11 | limpeza | só artefatos de build (`dist/`); o worktree `~/w-09a` e os containers `dev09a-pg` e `dev09a-redis` ficam para a pré-revisão e o conserto |
 
 **Escopo:** `git diff --name-only origin/main...HEAD` = 28 arquivos, todos no PERMITIDO do §4 somado aos itens 1 e 3 da Emenda 1; nada do PROIBIDO; `Kpis/*` intocado (KPI congelado); `pendencias.md` só acrescenta (0 linha removida).
 
@@ -93,11 +93,11 @@ Bateria do conserto: `tsc --noEmit` exit 0 · `npm run lint` exit 0 · guard de 
 
 ## Conserto Emenda 4/4.1 — dev `dp-dev-542` (DeepSeek Pro), 2026-11-11 19:19 SP
 
-> **Papel:** dev do conserto único do §C7 10(3)4 (PR #542, rateio automático a partir da importação; DINHEIRO). Não achou nem planejou: achado da junta anterior do #542 (C1-A1, com V1/V2) e das críticas `crit-09a-em4-api` e `dp-crit-542`; plano de `topo-542-opus` (Emenda 4) e `topo-542b` (Emenda 4.1), lido inteiro de `planos/plano-B-ASS-09a-v2.md` (Emenda 4 nas linhas 310-460; Emenda 4.1 nas linhas 461-628). A 4.1 prevalece sobre a 4. Ajustes da crítica r2 viram requisito: **DP542-01** (T-E41-2 `-db` injeta as datas via API Prisma `Date`, `updated.count === 1`, independente de fuso) e **DP542-02** (erro do R41-01 diz a linha de DADOS; forma declarada: o texto diz `at data row N`, com a linha de dados, e linhas em branco não contam). Terreno: worktree `C:/Users/thiag/w-09a`, ramo `feat/rateio-automatico-importacao`, base `cf48cc80`, head de trabalho `af7f23fb` (merge de `origin/main`), limpo.
+> **Papel:** dev do conserto único do §C7 10(3)4 (PR #542, rateio automático a partir da importação; DINHEIRO). Não achou nem planejou: achado da junta anterior do #542 (C1-A1, com V1/V2) e das críticas `crit-09a-em4-api` e `dp-crit-542`; plano de `topo-542-opus` (Emenda 4) e `topo-542b` (Emenda 4.1), lido inteiro de `planos/plano-B-ASS-09a-v2.md` (Emenda 4 nas linhas 310-460; Emenda 4.1 nas linhas 461-628). A 4.1 prevalece sobre a 4. Ajustes da crítica r2 viram requisito: **DP542-01** (T-E41-2 `-db` injeta as datas via API Prisma `Date`, `updated.count === 1`, independente de fuso) e **DP542-02** (erro do R41-01 diz a linha de DADOS; forma declarada: o texto diz `at data row N`, com a linha de dados, e linhas em branco não contam). Terreno: worktree `~/w-09a`, ramo `feat/rateio-automatico-importacao`, base `cf48cc80`, head de trabalho `af7f23fb` (merge de `origin/main`), limpo.
 
 ### Vermelho-controle (F-E4-0 + F-E41-0, antes de qualquer código de produção)
 
-Produção **não alterada** (só os 3 arquivos de teste no `git status`). Postgres 16 descartável em `127.0.0.1:55551` (`C:/Users/thiag/pg-dpdev542`).
+Produção **não alterada** (só os 3 arquivos de teste no `git status`). Postgres 16 descartável em `127.0.0.1:55551` (`~/pg-dpdev542`).
 
 **Memória** — `LOG_LEVEL=silent node --test --import tsx tests/ass-09a-rateio-automatico.test.ts`:
 

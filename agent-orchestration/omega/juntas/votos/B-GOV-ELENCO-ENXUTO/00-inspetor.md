@@ -279,7 +279,7 @@ $ git -C <wt> diff --stat                        -> (vazio; nenhum arquivo rastr
 $ cd <wt> && node scripts/audit-agents-skills.mjs -> ec=0   (worktree segue no baseline)
 ```
 
-**Não toquei na árvore principal** (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios`, `demo/investidor`),
+**Não toquei na árvore principal** (`~/Documents/GitHub/ERP_Techsolutios`, `demo/investidor`),
 nem nos worktrees `b06` e `gov-descuido`, que são de outros blocos vivos: resíduo alheio se reporta, não se
 varre. Os únicos arquivos que criei no worktree são os **meus dois**, no diretório que o briefing autoriza.
 Não sou a fonte da próxima contaminação.

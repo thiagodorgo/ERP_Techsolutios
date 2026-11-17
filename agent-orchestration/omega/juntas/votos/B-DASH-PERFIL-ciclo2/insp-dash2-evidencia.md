@@ -2,7 +2,7 @@ executor efetivo: inspetor-dash2b-opus (Claude Code, identidade NOVA, sucessor P
 
 # Evidência — inspetor de terreno — B-DASH-PERFIL ciclo 2
 
-Corpo seguido: `git -C C:/Users/AMP/w-dash show faad24ce7c00ab4d7610d0784c0beab8a479ddb0:.claude/agents/inspetor-de-terreno-da-junta.md` (lido no objeto). Início do sucessor: 2026-10-19T22:16:52Z.
+Corpo seguido: `git -C ~/w-dash show faad24ce7c00ab4d7610d0784c0beab8a479ddb0:.claude/agents/inspetor-de-terreno-da-junta.md` (lido no objeto). Início do sucessor: 2026-10-19T22:16:52Z.
 
 ## Substituição P3
 
@@ -13,18 +13,18 @@ Corpo seguido: `git -C C:/Users/AMP/w-dash show faad24ce7c00ab4d7610d0784c0beab8
 
 ## Item 1 de 3 — objeto, CI, mandatos, corpos, S0 (medido 2026-10-19 ~22:20Z)
 
-1a. Objeto por duas fontes. Comando: `git ls-remote origin refs/heads/fix/dash-perfil; gh pr view 446 --json headRefOid,headRefName,state,isDraft,mergeable,baseRefName; git -C C:/Users/AMP/w-dash rev-parse HEAD` → `faad24ce7c00ab4d7610d0784c0beab8a479ddb0` nas três; PR OPEN, não-rascunho, MERGEABLE, base main. Head NÃO andou desde a redação (10:36Z). → verde.
+1a. Objeto por duas fontes. Comando: `git ls-remote origin refs/heads/fix/dash-perfil; gh pr view 446 --json headRefOid,headRefName,state,isDraft,mergeable,baseRefName; git -C ~/w-dash rev-parse HEAD` → `faad24ce7c00ab4d7610d0784c0beab8a479ddb0` nas três; PR OPEN, não-rascunho, MERGEABLE, base main. Head NÃO andou desde a redação (10:36Z). → verde.
 
 1b. CI. Comando: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/faad24ce…/check-runs --jq '.total_count, ([.check_runs[]|select(.status!="completed" or .conclusion!="success")]|length), (.check_runs[]|"\(.name)\t\(.status)\t\(.conclusion)")'` → `14` · `0` fora de completed/success; jobs (×2 cada, push + pull_request): docker, flutter, backend-postgres, owner-portal, frontend, backend, authority-portal — todos `completed success`. → verde (14/14).
 
-1c. Pré-voo dos 4 mandatos. A pasta `redator-dash2` do scratch do redator não existe mais nesta máquina (`find C:/Users/AMP/AppData/Local/Temp/claude -maxdepth 4 -type d -name redator-dash2` → vazio). Ferramentas copiadas da MESMA fonte (`git -c core.autocrlf=false show origin/chore/mandato-refs-e-preflight:scripts/{mandato-refs.sh,mandato-preflight.sh}`, ref em `4af61a41`) para `<scratch-insp>/insp-dash2b/`, com a MESMA única adaptação (`RAIZ="C:/Users/AMP/w-dash"`, linha 211; `diff` contra a fonte = só essa linha). Comando: `cd C:/Users/AMP/w-dash; MANDATO_REFS=<scratch-insp>/mandato-refs.sh bash <scratch-insp>/mandato-preflight.sh <mandato> 446` para inspetor-dash2, cadeira-c1, cadeira-c2, cadeira-c3 →
+1c. Pré-voo dos 4 mandatos. A pasta `redator-dash2` do scratch do redator não existe mais nesta máquina (`find ~/AppData/Local/Temp/claude -maxdepth 4 -type d -name redator-dash2` → vazio). Ferramentas copiadas da MESMA fonte (`git -c core.autocrlf=false show origin/chore/mandato-refs-e-preflight:scripts/{mandato-refs.sh,mandato-preflight.sh}`, ref em `4af61a41`) para `<scratch-insp>/insp-dash2b/`, com a MESMA única adaptação (`RAIZ="~/w-dash"`, linha 211; `diff` contra a fonte = só essa linha). Comando: `cd ~/w-dash; MANDATO_REFS=<scratch-insp>/mandato-refs.sh bash <scratch-insp>/mandato-preflight.sh <mandato> 446` para inspetor-dash2, cadeira-c1, cadeira-c2, cadeira-c3 →
    - inspetor-dash2: `COLAGEM l.6-21 confere` · AVISO approved_head NAO DETERMINAVEL (ec=3 do refs, esperado e já declarado no mandato) · `PRE-VOO OK` · ec=0
    - cadeira-c1: `COLAGEM l.6-21 confere` · `COLAGEM l.66-79: refs do PR #25 confere` · mesmo AVISO · `PRE-VOO OK` · ec=0
    - cadeira-c2: `COLAGEM l.6-21 confere` · mesmo AVISO · `PRE-VOO OK` · ec=0
    - cadeira-c3: `COLAGEM l.6-21 confere` · mesmo AVISO · `PRE-VOO OK` · ec=0
    → verde (4/4 PRE-VOO OK).
 
-1d. Seis corpos, EOL-neutro (`git show <rev>:<p> | tr -d '\r' | md5sum`), objeto × ciclo 1 (`849bf840`) × disco do worktree × diretório da SESSÃO (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios`, main `684e9afd`):
+1d. Seis corpos, EOL-neutro (`git show <rev>:<p> | tr -d '\r' | md5sum`), objeto × ciclo 1 (`849bf840`) × disco do worktree × diretório da SESSÃO (`~/Documents/GitHub/ERP_Techsolutios`, main `684e9afd`):
    - .claude/…/jurado-dash-c1-cadeia-de-acesso.md obj=1af93b3df464 c1=igual wt=igual sessão=AUSENTE
    - .agents/…/jurado-dash-c1-cadeia-de-acesso.md obj=10f73b163cba c1=igual wt=igual sessão=AUSENTE
    - .claude/…/jurado-dash-c2-troca-de-organizacao.md obj=afee3f7f17f4 c1=igual wt=igual sessão=AUSENTE
@@ -34,7 +34,7 @@ Corpo seguido: `git -C C:/Users/AMP/w-dash show faad24ce7c00ab4d7610d0784c0beab8
    - corpo do próprio inspetor: obj=89b4563001df = sessão.
    → verde: seis corpos presentes no objeto, idênticos ao ciclo 1. Nota (3.3 do corpo): os corpos NÃO existem no diretório da sessão (main), logo não podem ser carregados como `subagent_type` dela — as cadeiras têm de ler o corpo NO OBJETO (os mandatos já mandam: "Seu corpo canônico é `.claude/agents/especialistas/jurado-dash-cN-…`; confira-o no objeto antes do mérito"). Ressalva de briefing, não bloqueio.
 
-1e. S0. Comando: `git worktree add --detach C:/Users/AMP/w-insp2b-s0 faad24ce…; node C:/Users/AMP/w-insp2b-s0/scripts/sync-agent-agents.mjs --check; echo ec=$?; git worktree remove --force C:/Users/AMP/w-insp2b-s0` → HEAD do wt = faad24ce…; `[agents-sync] OK — 73 agentes, espelho consistente.` ec=0; rm=0; `git worktree list | grep -c insp2b` = 0. → verde.
+1e. S0. Comando: `git worktree add --detach ~/w-insp2b-s0 faad24ce…; node ~/w-insp2b-s0/scripts/sync-agent-agents.mjs --check; echo ec=$?; git worktree remove --force ~/w-insp2b-s0` → HEAD do wt = faad24ce…; `[agents-sync] OK — 73 agentes, espelho consistente.` ec=0; rm=0; `git worktree list | grep -c insp2b` = 0. → verde.
 
 Veredito parcial item 1: VERDE (com nota de briefing: corpo das cadeiras lido no objeto, ausente na sessão).
 
@@ -56,16 +56,16 @@ Veredito parcial item 2: VERDE (0 colisão em 20 inelegíveis gerados; papéis d
 
 ## Item 3 de 3 — terreno (medido ~22:22–22:30Z)
 
-3a. Árvore `C:/Users/AMP/w-dash`. Comando: `git status --porcelain | grep -v -E '^ M \.(agents|claude)/'` → só `?? agent-orchestration/omega/juntas/votos/B-DASH-PERFIL-ciclo2/` (os 4 mandatos + os 2 outputs deste inspetor, `--untracked-files=all`). Os ` M`: 55, todos em `.agents/`/`.claude/`; comando `for f in …; do git show HEAD:$f | tr -d '\r' | md5sum` × `tr -d '\r' < $f | md5sum` → 0 divergentes EOL-neutro (fantasmas de `core.autocrlf=true`). HEAD = faad24ce. → verde, sem mutação viva.
+3a. Árvore `~/w-dash`. Comando: `git status --porcelain | grep -v -E '^ M \.(agents|claude)/'` → só `?? agent-orchestration/omega/juntas/votos/B-DASH-PERFIL-ciclo2/` (os 4 mandatos + os 2 outputs deste inspetor, `--untracked-files=all`). Os ` M`: 55, todos em `.agents/`/`.claude/`; comando `for f in …; do git show HEAD:$f | tr -d '\r' | md5sum` × `tr -d '\r' < $f | md5sum` → 0 divergentes EOL-neutro (fantasmas de `core.autocrlf=true`). HEAD = faad24ce. → verde, sem mutação viva.
 
-3b. Resíduos e isolamento. `git worktree list` → main, w-agapi2, w-dash, w-fix302d, w-planos, w-san3-02, w-trc02 — nenhum `w-jdash*` nem `w-insp2b*`; `ls -d C:/Users/AMP/w-jdash* w-dash-mut w-dash-s0 w-dash2*` → nenhum no disco (ciclo 1 limpo). Sondas `probe`/`jur-` na árvore (`git status --porcelain --ignored | grep -i -E 'probe|jur-'`) → 0. `node_modules` do w-dash e do frontend: `Get-Item … LinkType` vazio, `dir /AL` sem JUNCTION → diretórios reais, zero junction. Worktrees `C:/Users/AMP/w-jdash2-c{1,2,3}-*` e clusters `jdash2-c{1,2,3}-*` AINDA NÃO EXISTEM (nascem com cada cadeira); o plano de isolamento está escrito nos 3 mandatos (parágrafo "Terreno": worktree exclusivo no objeto, `npm ci` próprio, zero junction, cluster/rede `jdash2-cN-*` sem porta publicada, mutação com restauro provado por `git hash-object`, teardown). → verde (plano declarado; existência a provar por cada cadeira).
+3b. Resíduos e isolamento. `git worktree list` → main, w-agapi2, w-dash, w-fix302d, w-planos, w-san3-02, w-trc02 — nenhum `w-jdash*` nem `w-insp2b*`; `ls -d ~/w-jdash* w-dash-mut w-dash-s0 w-dash2*` → nenhum no disco (ciclo 1 limpo). Sondas `probe`/`jur-` na árvore (`git status --porcelain --ignored | grep -i -E 'probe|jur-'`) → 0. `node_modules` do w-dash e do frontend: `Get-Item … LinkType` vazio, `dir /AL` sem JUNCTION → diretórios reais, zero junction. Worktrees `~/w-jdash2-c{1,2,3}-*` e clusters `jdash2-c{1,2,3}-*` AINDA NÃO EXISTEM (nascem com cada cadeira); o plano de isolamento está escrito nos 3 mandatos (parágrafo "Terreno": worktree exclusivo no objeto, `npm ci` próprio, zero junction, cluster/rede `jdash2-cN-*` sem porta publicada, mutação com restauro provado por `git hash-object`, teardown). → verde (plano declarado; existência a provar por cada cadeira).
 
-3c. Docker e portas. Comando: `docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Image}}'` às 22:23Z → `erp-postgres` e `erp-redis` (base viva, 0.0.0.0:5432/6379, fora do alcance de qualquer jurado) + DOIS trabalhos alheios: `tl17924485782852-{pg,redis,run}` (bind `C:/Users/AMP/w-fix302d -> /src`, criado 22:23:04Z = Codex do B-SAN3-02) e `dtrc02-17924485852887-{pg,redis,run}` (bind `<scratch>/trc02/snap-nomig -> /src`, criado 22:23:10Z = dev do B-TRC-02); nenhum publica porta. Redes: `dtrc02-…-net`, `tl…-net`, `erp_techsolutions_local`. Contagem excluindo `erp-*` (`docker ps --format '{{.Names}}' | grep -v '^erp-' | sed -E 's/-(run|pg|redis)$//' | sort -u`) = **2 = teto**. Memória (CIM) às 22:24Z: commit livre 6,65 GB, física livre 4,73 GB. → **ressalva forte R4**: nenhuma cadeira pode subir contêiner agora; C3 (backend com Prisma "só em contêiner Linux", exige ≥3 GB de commit livre) espera vaga; C1 e C2 rodam sem banco no Windows.
+3c. Docker e portas. Comando: `docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Image}}'` às 22:23Z → `erp-postgres` e `erp-redis` (base viva, 0.0.0.0:5432/6379, fora do alcance de qualquer jurado) + DOIS trabalhos alheios: `tl17924485782852-{pg,redis,run}` (bind `~/w-fix302d -> /src`, criado 22:23:04Z = Codex do B-SAN3-02) e `dtrc02-17924485852887-{pg,redis,run}` (bind `<scratch>/trc02/snap-nomig -> /src`, criado 22:23:10Z = dev do B-TRC-02); nenhum publica porta. Redes: `dtrc02-…-net`, `tl…-net`, `erp_techsolutions_local`. Contagem excluindo `erp-*` (`docker ps --format '{{.Names}}' | grep -v '^erp-' | sed -E 's/-(run|pg|redis)$//' | sort -u`) = **2 = teto**. Memória (CIM) às 22:24Z: commit livre 6,65 GB, física livre 4,73 GB. → **ressalva forte R4**: nenhuma cadeira pode subir contêiner agora; C3 (backend com Prisma "só em contêiner Linux", exige ≥3 GB de commit livre) espera vaga; C1 e C2 rodam sem banco no Windows.
 
-3d. Baseline honesto no objeto. Comando: `cd C:/Users/AMP/w-dash; git rev-parse HEAD; npm run check > check.log 2>&1; ec=$?` → HEAD faad24ce, `tsc -p tsconfig.json --noEmit` **ec=0**; `npm --prefix frontend run check` (`tsc -b --noEmit`) **ec=0**; árvore depois: só o `??` deste diretório. → verde.
+3d. Baseline honesto no objeto. Comando: `cd ~/w-dash; git rev-parse HEAD; npm run check > check.log 2>&1; ec=$?` → HEAD faad24ce, `tsc -p tsconfig.json --noEmit` **ec=0**; `npm --prefix frontend run check` (`tsc -b --noEmit`) **ec=0**; árvore depois: só o `??` deste diretório. → verde.
 
 3e. Quórum e paralelismo (texto dos mandatos). `grep -n -E 'P3|P5|sucessor|paralelo' cadeira-c{1,2,3}.md` → os 3 mandatos declaram: sucessor de identidade NOVA re-executa os comandos registrados e mede a cauda (P3); queda em `00-quedas.md` pelo orquestrador (P6); no máximo 2 jurados em paralelo (P5). → verde.
 
-3f. Limpeza do inspetor. Criados: worktree `C:/Users/AMP/w-insp2b-s0` (removido, `git worktree list | grep -c insp2b` = 0) e `<scratch-insp>/insp-dash2b/{mandato-refs.sh,mandato-preflight.sh,check.log,fcheck.log}` (scratch próprio, deixado como prova; nenhum contêiner, rede ou porta criados).
+3f. Limpeza do inspetor. Criados: worktree `~/w-insp2b-s0` (removido, `git worktree list | grep -c insp2b` = 0) e `<scratch-insp>/insp-dash2b/{mandato-refs.sh,mandato-preflight.sh,check.log,fcheck.log}` (scratch próprio, deixado como prova; nenhum contêiner, rede ou porta criados).
 
 Veredito parcial item 3: VERDE com ressalva forte R4 (Docker no teto).

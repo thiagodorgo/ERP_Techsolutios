@@ -13,9 +13,9 @@ prevista no proprio corpo do papel (`D-FALLBACK-MODELO-FABLE-OPUS`), o parecer r
 
 ## 0. Terreno
 
-- Worktree **detached meu**: `C:/Users/AMP/w-port391` em `b8cd22df` (caminho curto, criado com
+- Worktree **detached meu**: `~/w-port391` em `b8cd22df` (caminho curto, criado com
   `MSYS_NO_PATHCONV=1 git worktree add --detach`). **Conferi o caminho que saiu**: veio
-  `C:/Users/AMP/w-port391`, **sem** o prefixo `C:/c/...` que mordeu outra cadeira desta rodada.
+  `~/w-port391`, **sem** o prefixo `C:/c/...` que mordeu outra cadeira desta rodada.
 - `git worktree list`: alem do meu existem `b04a`, `b11`, `gov-descuido`, `gov-elenco`, `san300`
   (bloco irmao vivo, #392) e as duas cadeiras `w-j-san300-c1` / `w-j-san300-c3`. **Residuo alheio se
   reporta, nao se varre** — nada deles foi tocado por mim.
@@ -531,15 +531,15 @@ rastreado. Nao e bloqueio; e aviso com numero.
 
 ### Residuo alheio — REPORTADO, nao varrido
 
-- `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios` (arvore principal) esta em `demo/investidor` com
+- `~/Documents/GitHub/ERP_Techsolutios` (arvore principal) esta em `demo/investidor` com
   4 arquivos ` M` (`critico-c5-adversarial.md` e `jurado-c5-arnes-catalogo-postgres.md` nos dois
   espelhos) e 8 untracked em `agent-orchestration/omega/juntas/` + `results.txt` +
   `scripts/audit-agents-skills.mjs`. **Nao e deste merge e nao e meu.**
 - Worktrees vivos de outras sessoes: `gov-descuido`, `gov-elenco`, `b04a`, `b11`.
 - Worktrees do **bloco irmao vivo (#392)**: `san300` + as cadeiras `w-j-san300-c1` e `w-j-san300-c3`.
   **Nao toquei em nenhum.**
-- O **meu** worktree `C:/Users/AMP/w-port391` foi removido por nome ao fechar este parecer:
-  `git worktree remove --force C:/Users/AMP/w-port391` -> sumiu da lista e do disco, e os cinco
+- O **meu** worktree `~/w-port391` foi removido por nome ao fechar este parecer:
+  `git worktree remove --force ~/w-port391` -> sumiu da lista e do disco, e os cinco
   worktrees alheios seguem intactos. Nao usei junction/symlink de `node_modules` e nao instalei
   dependencia nenhuma (o worktree morreu sem `node_modules`). Os logs de CI que baixei ficaram
   no scratchpad da sessao, fora do repositorio.
@@ -590,7 +590,7 @@ trabalho: planejar, rebasear e montar o briefing desses blocos pode comecar hoje
 
 ## Inventario do que EXECUTEI
 
-    git worktree add --detach C:/Users/AMP/w-port391 b8cd22df   (caminho conferido)
+    git worktree add --detach ~/w-port391 b8cd22df   (caminho conferido)
     git show b8cd22df:.claude/agents/porteiro-pos-merge.md      (corpo da ref)
     git log origin/main -3 ; gh pr view 391 --json state,mergeCommit,headRefOid,mergedAt
     git show --stat b8cd22df ; git show --name-only b8cd22df

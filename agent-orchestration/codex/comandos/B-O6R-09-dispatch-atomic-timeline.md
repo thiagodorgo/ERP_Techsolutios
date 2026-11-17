@@ -9,7 +9,7 @@
   semanal até 16/11, Codex 2 ocupado).
 - **Plano (norma):** `planos/plano-B-O6R-09-v2.md` + ajustes R2-02 a R2-11 da crítica r2 (`revisoes/crit-09-r2-plano.json`) +
   `planos/plano-B-O6R-09-emenda1.md` (item fundido, fatia 6) + a crítica dela (`revisoes/crit-09-em1.json`) + a emenda 1.1
-  (fatia 6), todos em `C:/Users/thiag/erp-pausa-2026-10-03/`. Onde uma emenda muda o v2, vale a emenda.
+  (fatia 6), todos em `~/erp-pausa-2026-10-03/`. Onde uma emenda muda o v2, vale a emenda.
 - **Decisões do dono:** `D-PORTAO-7-RECOMENDACOES-1011` (não permitir dois despachos ativos do mesmo técnico na mesma OS,
   FORA deste bloco: `P-DESPACHO-DUPLICADO-MESMO-TECNICO`) e `D-PORTAO-3-RECOMENDACOES-1111` (o bloco se alarga para a web e
   a CI, Pergunta 1 = (A); a OS em dobro ou órfã da aprovação de orçamento é fundida aqui, Q1 (c)).
