@@ -76,11 +76,12 @@ class _NewExpenseItemScreenState extends State<NewExpenseItemScreen> {
               FilledButton(
                 onPressed: () async {
                   // B-GUI-01a: sem o valor de exemplo, o campo vazio não
-                  // vira um gasto de R$ 0,00.
+                  // vira um gasto de R$ 0,00; zero, negativo e valor não
+                  // finito ("NaN", "Infinity") também são recusados.
                   final amount = double.tryParse(
                     _amountController.text.trim().replaceAll(',', '.'),
                   );
-                  if (amount == null || amount <= 0) {
+                  if (amount == null || !amount.isFinite || amount <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Informe o valor do gasto.'),

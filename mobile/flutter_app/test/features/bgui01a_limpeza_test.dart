@@ -255,6 +255,34 @@ void main() {
       expect(repo.findReport('PC-local-1')!.items.length, antes);
     });
 
+    // DF-591-01 e DF-591-02: zero, negativo e valor não finito são recusados
+    // com a mesma mensagem, e nada é gravado.
+    for (final (caso, valor) in const [
+      ('L3e', '0'),
+      ('L3e', '-5'),
+      ('L3f', 'NaN'),
+      ('L3f', 'Infinity'),
+      ('L3f', '-Infinity'),
+    ]) {
+      testWidgets('$caso. novo gasto com valor "$valor" é recusado', (t) async {
+        fixarTela(t, const Size(390, 812));
+        await t.pumpWidget(_app(initial: '/expenses/PC-local-1/items/new'));
+        await t.pumpAndSettle();
+        final container = ProviderScope.containerOf(
+          t.element(find.byType(NewExpenseItemScreen)),
+        );
+        final repo = container.read(expenseRepositoryProvider);
+        await repo.load();
+        final antes = repo.findReport('PC-local-1')!.items.length;
+        await t.enterText(find.widgetWithText(TextField, 'Valor'), valor);
+        await t.tap(find.text('Salvar gasto'));
+        await t.pumpAndSettle();
+        expect(find.text('Informe o valor do gasto.'), findsOneWidget);
+        expect(find.byType(NewExpenseItemScreen), findsOneWidget);
+        expect(repo.findReport('PC-local-1')!.items.length, antes);
+      });
+    }
+
     testWidgets('L3d. novo gasto com valor salva e volta à prestação', (
       t,
     ) async {
