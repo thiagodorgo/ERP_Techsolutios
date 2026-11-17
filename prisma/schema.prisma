@@ -94,6 +94,7 @@ model Tenant {
   field_dispatches              FieldDispatch[]
   work_order_assignments        WorkOrderAssignment[]
   work_order_events             WorkOrderEvent[]
+  operational_approvals         OperationalApproval[]
   work_orders                   WorkOrder[]
   auth_sessions                 AuthSession[]
   cloud_usage_daily_aggregates  CloudUsageDailyAggregate[]
@@ -200,6 +201,8 @@ model User {
   updated_work_orders              WorkOrder[]             @relation("WorkOrderUpdatedBy")
   work_order_assignments           WorkOrderAssignment[]   @relation("WorkOrderAssignmentUser")
   work_order_events                WorkOrderEvent[]        @relation("WorkOrderEventActor")
+  requested_operational_approvals  OperationalApproval[]   @relation("OperationalApprovalRequestedBy")
+  decided_operational_approvals    OperationalApproval[]   @relation("OperationalApprovalDecidedBy")
   // CHECKLIST P1 PR-04c-A — quem acrescentou e quem RETIROU vistoria do conjunto de uma ordem. As duas
   // relações são RESTRICT: apagar o usuário que retirou a vistoria apagaria a resposta para "quem tirou isto
   // do conjunto, e por quê" — a pergunta de uma disputa sobre o veículo.
@@ -2580,6 +2583,7 @@ model WorkOrder {
   // (aplicativo de campo, despacho, dossiê de custódia, web) lê.
   checklists                      WorkOrderChecklist[]
   events                          WorkOrderEvent[]
+  operational_approvals           OperationalApproval[]
   // Ω5P PR-05 — back-relation one-to-MANY (não 1:1): a idempotência "≤ 1 processo por OS" (D-Ω5P-RECON-B) é
   // enforçada pelo índice PARCIAL único (tenant_id, service_order_id) WHERE NOT NULL (raw-only na migração,
   // como yard_spots_current_process_key), NÃO por cardinalidade Prisma — um @@unique cheio exigiria declarar
@@ -2625,6 +2629,38 @@ model WorkOrderEvent {
   @@index([tenant_id, work_order_id, created_at])
   @@index([tenant_id, event_type])
   @@map("work_order_events")
+}
+
+// B-APROVACOES-DURAVEIS (item 67 do portão) — a fila de Aprovações operacionais, gravada no banco e isolada por
+// organização (ENABLE + FORCE ROW LEVEL SECURITY na migração 20260904000000_operational_approvals). O índice único
+// PARCIAL "no máximo 1 pendente por (organização, tipo, entidade)" vive SÓ na migração, em SQL (o precedente de
+// work_order_checklists): declarado aqui, o client ofereceria busca por chave única sobre 3 colunas que só são únicas
+// entre as pendentes. Os CHECK de coerência, de segregação de função e de OS obrigatória também vivem só na migração.
+model OperationalApproval {
+  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id            String     @db.Uuid
+  entity_type          String
+  entity_id            String
+  work_order_id        String?    @db.Uuid
+  status               String     @default("pending_approval")
+  requested_by_user_id String     @db.Uuid
+  requested_at         DateTime   @default(now()) @db.Timestamptz(6)
+  pending_reason       String
+  decided_by_user_id   String?    @db.Uuid
+  decided_at           DateTime?  @db.Timestamptz(6)
+  decision_note        String?
+  rejection_reason     String?
+  created_at           DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime   @default(now()) @db.Timestamptz(6)
+  tenant               Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  work_order           WorkOrder? @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Cascade)
+  requested_by         User       @relation("OperationalApprovalRequestedBy", fields: [tenant_id, requested_by_user_id], references: [tenant_id, id], onDelete: Restrict)
+  decided_by           User?      @relation("OperationalApprovalDecidedBy", fields: [tenant_id, decided_by_user_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, status, requested_at(sort: Desc)])
+  @@index([tenant_id, work_order_id])
+  @@map("operational_approvals")
 }
 
 model WorkOrderAssignment {
