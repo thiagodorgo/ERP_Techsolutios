@@ -1,5 +1,6 @@
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
 import type {
+  WorkOrderAssignedToActorScope,
   WorkOrderEventType,
   WorkOrderPriority,
   WorkOrderStatus,
@@ -76,6 +77,11 @@ export type DashboardSummaryInput = {
   readonly tenantId: string;
   /** Fixed reference time so "today"/"this week"/"overdue" are deterministic. */
   readonly now: Date;
+  /**
+   * B-WO-LEITURA — o papel de campo: as contagens de OS, a lista crítica e os eventos só das OS atribuídas a ele (o mesmo
+   * predicado da lista de OS). Ausente = organização inteira. O cadastro (clientes, viaturas, equipes, serviços) não muda.
+   */
+  readonly assignedToActor?: WorkOrderAssignedToActorScope;
 };
 
 /**

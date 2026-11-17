@@ -6,6 +6,8 @@ import type {
   WorkOrderPriority,
   WorkOrderStatus,
 } from "../work-orders/work-order.types.js";
+import { assignedToActorOperatorIds } from "../work-orders/work-order.types.js";
+import { isWorkOrderUuid } from "../work-orders/work-order.validators.js";
 import type { DashboardRepository } from "./dashboard.repository.js";
 import {
   startOfDay,
@@ -36,6 +38,12 @@ export class PrismaDashboardRepository implements DashboardRepository {
     const todayStart = startOfDay(now);
     const weekStart = weekAgoFrom(now);
     const nonTerminalStatus = { notIn: [...DASHBOARD_TERMINAL_STATUSES] };
+    // B-WO-LEITURA — o papel de campo: só as OS atribuídas a ele (`assigned_operator_id` = user id ou perfil; ids fora da
+    // forma de UUID não casam com a coluna `@db.Uuid`, como `assignedToActorUuidOperatorIds` na lista de OS). `in: []`
+    // não conta nada. Nos eventos, a relação `work_order` (já existente, sem migração).
+    const scopedIds = input.assignedToActor ? assignedToActorOperatorIds(input.assignedToActor).filter(isWorkOrderUuid) : undefined;
+    const woScope = scopedIds ? { assigned_operator_id: { in: scopedIds } } : {};
+    const eventScope = scopedIds ? { work_order: { assigned_operator_id: { in: scopedIds } } } : {};
 
     const [
       total,
@@ -50,23 +58,24 @@ export class PrismaDashboardRepository implements DashboardRepository {
       criticalRows,
       eventRows,
     ] = await Promise.all([
-      this.client.workOrder.count({ where: { tenant_id: tenantId } }),
+      this.client.workOrder.count({ where: { tenant_id: tenantId, ...woScope } }),
       this.client.workOrder.groupBy({
         by: ["status"],
-        where: { tenant_id: tenantId },
+        where: { tenant_id: tenantId, ...woScope },
         _count: true,
       }),
       this.client.workOrder.count({
-        where: { tenant_id: tenantId, created_at: { gte: todayStart } },
+        where: { tenant_id: tenantId, created_at: { gte: todayStart }, ...woScope },
       }),
       this.client.workOrder.count({
-        where: { tenant_id: tenantId, created_at: { gte: weekStart } },
+        where: { tenant_id: tenantId, created_at: { gte: weekStart }, ...woScope },
       }),
       this.client.workOrder.count({
         where: {
           tenant_id: tenantId,
           scheduled_for: { lt: now },
           status: nonTerminalStatus,
+          ...woScope,
         },
       }),
       this.client.customer.count({ where: { tenant_id: tenantId, is_active: true } }),
@@ -77,6 +86,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
         where: {
           tenant_id: tenantId,
           status: nonTerminalStatus,
+          ...woScope,
           OR: [
             { scheduled_for: { lt: now } },
             { priority: { in: ["high", "urgent"] } },
@@ -93,7 +103,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
       // dashboard — o corpo pode conter PII e o feed é visível a papéis com dashboard:read porém SEM
       // work_orders:read (ex.: support). Comentário é dado de detalhe da OS, não de atividade agregada.
       this.client.workOrderEvent.findMany({
-        where: { tenant_id: tenantId, event_type: { not: "work_order_comment" } },
+        where: { tenant_id: tenantId, event_type: { not: "work_order_comment" }, ...eventScope },
         orderBy: [{ created_at: "desc" }],
         take: DASHBOARD_RECENT_EVENTS_LIMIT,
       }),
