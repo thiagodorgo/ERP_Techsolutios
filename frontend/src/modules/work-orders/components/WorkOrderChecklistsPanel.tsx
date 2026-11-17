@@ -589,7 +589,7 @@ function PanelBanners({
   const items: ReactNode[] = [];
   if (offlineAt !== null) {
     items.push(
-      <div key="offline" role="status" data-state="offline" className="pat-banner" style={bannerDanger}>
+      <div key="offline" role="status" data-faixa="sem-conexao" className="pat-banner" style={bannerDanger}>
         <WifiOff size={14} aria-hidden="true" />
         <span>Sem conexão com o servidor. Você vê o que foi carregado às {offlineAt}; as escolhas voltam quando a conexão voltar.</span>
         <button type="button" className="pat-link" onClick={onRetry}>
@@ -600,7 +600,7 @@ function PanelBanners({
   }
   if (dispatched && !terminal) {
     items.push(
-      <div key="dispatched" role="status" data-state="dispatched" className="pat-banner pat-banner--warning" style={bannerBase}>
+      <div key="dispatched" role="status" data-faixa="enviada" className="pat-banner pat-banner--warning" style={bannerBase}>
         <Send size={14} aria-hidden="true" />
         <span>Esta OS já foi enviada ao guincheiro. Uma vistoria incluída agora só chega ao app num novo envio.</span>
       </div>,
@@ -608,7 +608,7 @@ function PanelBanners({
   }
   if (terminal) {
     items.push(
-      <div key="terminal" role="status" data-state="terminal" className="pat-banner" style={bannerNeutral}>
+      <div key="terminal" role="status" data-faixa="encerrada" className="pat-banner" style={bannerNeutral}>
         <Lock size={14} aria-hidden="true" />
         <span>{READ_ONLY_MESSAGES.terminal}</span>
       </div>,
@@ -616,7 +616,7 @@ function PanelBanners({
   }
   if (readOnlyMessage) {
     items.push(
-      <div key="readonly" role="status" data-state="read-only" className="pat-banner pat-banner--info" style={bannerBase}>
+      <div key="readonly" role="status" data-faixa="so-leitura" className="pat-banner pat-banner--info" style={bannerBase}>
         <Eye size={14} aria-hidden="true" />
         <span>{readOnlyMessage}</span>
       </div>,
@@ -909,7 +909,7 @@ function RequirementIcons({ req }: { readonly req: TemplateRequirements }) {
 
 function SkeletonBlocks({ count, columns }: { readonly count: number; readonly columns: number }) {
   return (
-    <div data-state="loading" aria-hidden="true" style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 10 }}>
+    <div data-carregando aria-hidden="true" style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 10 }}>
       {Array.from({ length: count }, (_, index) => (
         <div key={index} className="pat-kpi">
           <span className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
