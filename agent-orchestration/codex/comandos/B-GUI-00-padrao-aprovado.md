@@ -7,6 +7,8 @@
 - **Branch:** `feat/mobile-gui-00-padrao-aprovado`
 - **Autor:** `dev-gui-00-01a-cl` (Claude Opus 5.5, dev, nível menor declarado)
 - **Plano (norma única):** `~/erp-pausa-2026-10-03/planos/plano-APP-GUINCHO-emenda1.md` §3 e §5.1.
+  Emenda 1 do bloco: `~/erp-pausa-2026-10-03/planos/plano-B-GUI-00-emenda1.md` (sem dono vale o padrão da tela; os testes
+  da Localização que supunham a A).
 - **Decisão do dono:** a decisão H ("o desenho aprovado vira a opção padrão de cada tela"; "siga", 16/11). Atualiza a
   `D-APARENCIA-RESPOSTAS` (b), "A em todas"; conflito `C-GUI-PADRAO-DO-SELETOR`.
 
@@ -19,6 +21,11 @@ com a sua escolha. A Execução do guincho continua na A.
 
 PERMITIDO (em `mobile/flutter_app/`): `lib/core/appearance/app_appearance.dart` (só `defaultAppAppearanceFor` e o
 comentário); `test/core/appearance/**` e `test/features/appearance/**`.
+
+PERMITIDO pela Emenda 1: o comentário de `lib/core/appearance/app_appearance_providers.dart:107`; D5 e D6 de
+`test/features/location/bapp_aparencia_localizacao_test.dart` (`_rootA` → `_rootB` e o título); o preparo que fixa a A da
+Localização no caso 4 de `b121_location_consent_test.dart` e em W2, W5 e W9 de `bsan317_porta_consentimento_test.dart`,
+sem asserção alterada.
 
 PROIBIDO, além do comum (§C4): `lib/core/appearance/app_appearance_store.dart`; as telas; `Kpis/**` (congelado).
 
