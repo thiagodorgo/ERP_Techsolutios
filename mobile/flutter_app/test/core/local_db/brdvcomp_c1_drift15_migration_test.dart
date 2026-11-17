@@ -144,7 +144,7 @@ void main() {
 
       final db = AppDatabase(NativeDatabase(File(path)));
       addTearDown(db.close);
-      // B-SAN3-15b (só fixture): o schema atual do app é 18; a migração 14 → 15 segue a mesma.
+      // B-SAN3-15b (só fixture): o schema atual do app é 19; a migração 14 → 15 segue a mesma.
       expect(await _userVersion(db), 19);
       expect(
         await _columns(db, 'expense_items'),

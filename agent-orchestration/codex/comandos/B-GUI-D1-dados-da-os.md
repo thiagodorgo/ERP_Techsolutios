@@ -52,3 +52,7 @@ provado.
 Junta completa: o bloco expõe dado novo na lista, ao lado da prova de presença do check-in (segurança), e mexe no banco
 do aparelho, onde mora a fila ainda não enviada (perda de dado sem volta). As 3 cadeiras sugeridas estão no §6 da emenda
 1.1.
+
+## Conserto
+
+Conserto da J-597 (17/11): D2 residencial (MYA/MYB), fim da placa por outro campo (MYD), comentários de fixture, registro C1-03/C3-N1, merge da main 89cf79fe.

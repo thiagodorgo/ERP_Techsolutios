@@ -15,7 +15,9 @@ import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.type
 // emenda 1.1):
 //   - a lista de `serviceDetails` é FECHADA (3 chaves); a senha do residencial e o resto nunca saem (D2);
 //   - `plateMasked` nasce da MESMA referência do check-in, sem os 2 finais, e existe se e só se `checkinMode = "plate"`
-//     (D3); o fim da placa desta OS nunca chega por `model`/`color` (D3c, conferido por DOBRA, campo a campo).
+//     (D3); o fim da placa desta OS nunca chega por `model`/`color` (D3c, conferido por DOBRA, campo a campo);
+//   - conserto da J-597: a OS residencial real não manda nenhum dos 4 valores por campo nenhum (D2b, C1-01), e o fim da
+//     placa não chega por `destinationAddress` nem pelos campos de veículo de uma OS com placa e sem destino (D3d, C1-02).
 //
 // VERMELHO-CONTROLE: o arquivo não importa o auxiliar novo no topo. Na base (sem o produto do bloco) ele carrega e cada
 // teste novo falha pelo motivo declarado (chave ausente no item). O F0 é a caracterização da forma de hoje: nasce verde
@@ -138,11 +140,31 @@ function textosDoItem(valor: unknown, saida: string[] = []): string[] {
   return saida;
 }
 
-/** O D3c: nenhum texto do item, dobrado, contém a referência desta OS — salvo o próprio `checkinPlateTail` (2 caracteres). */
+/**
+ * O D3c: nenhum texto do item, dobrado, contém a referência desta OS — salvo o próprio `checkinPlateTail` (2 caracteres).
+ * Conserto da J-597 (C1-02): o FIM (`checkinPlateTail`) também não chega por outro campo da lista. Procurado, dobrado, nos
+ * campos novos e nos de veículo (`destinationAddress`, `attendedVehicle.model`, `attendedVehicle.color`); no
+ * `plateMasked`, por POSIÇÃO (os 2 finais são `**`), porque o prefixo pode conter o fim como texto (`ABC23**`).
+ * `title` e `serviceAddress` ficam FORA desta trava: é a `P-OS-PLACA-NO-TEXTO-LIVRE` (pré-existente, C1-03).
+ */
 function assertFimNaoChegaPorTexto(item: any, referencia: string, rotulo: string) {
-  const { checkinPlateTail: _fim, ...resto } = item;
+  const { checkinPlateTail: fim, ...resto } = item;
   for (const texto of textosDoItem(resto)) {
     assert.equal(dobra(texto).includes(referencia), false, `${rotulo}: o texto ${JSON.stringify(texto)} traz a placa da OS`);
+  }
+  if (typeof fim !== "string" || fim.length === 0) return;
+  const camposDeTexto: ReadonlyArray<[string, unknown]> = [
+    ["destinationAddress", item.destinationAddress],
+    ["attendedVehicle.model", item.attendedVehicle?.model],
+    ["attendedVehicle.color", item.attendedVehicle?.color],
+  ];
+  for (const [campo, valor] of camposDeTexto) {
+    if (typeof valor !== "string") continue;
+    assert.equal(dobra(valor).includes(fim), false, `${rotulo}: ${campo} ${JSON.stringify(valor)} traz o fim da placa (${fim})`);
+  }
+  const mascara = item.attendedVehicle?.plateMasked;
+  if (typeof mascara === "string") {
+    assert.equal(mascara.slice(-2), "**", `${rotulo}: plateMasked ${JSON.stringify(mascara)} traz o fim da placa`);
   }
 }
 
@@ -274,6 +296,29 @@ test("D2 — só as 3 chaves saem de serviceDetails: nada de access_code, object
 });
 
 // ------------------------------------------------------------------------------------------------
+// D2b — conserto da J-597 (C1-01): a forma RESIDENCIAL real, sem `plate`, `vehicle` nem `color` e sem destino. Nenhum
+// dos 4 valores sai por campo nenhum do item (mata MYA: a senha no `model`; MYB: a descrição no `destinationAddress`).
+// ------------------------------------------------------------------------------------------------
+test("D2b — OS residencial real (access_code, object, description, extra): attendedVehicle e destinationAddress null; nenhum dos 4 valores no item", async () => {
+  await withApi(async (ctx) => {
+    const residencial = { access_code: "SENHA-RZ7Q", object: "Portao-RZ4W", description: "Portao azul, interfone RZ12", extra: "EXTRA-RZ5K" };
+    const id = await ctx.osDoTecnico({ serviceAddress: "Rua Residencial, 7", service_details: residencial });
+    const { porId } = await ctx.listaDoTecnico();
+    const item = porId.get(id);
+    assert.ok(item, "a OS residencial não veio na lista do técnico");
+    assert.equal("attendedVehicle" in item, true, "attendedVehicle ausente");
+    assert.equal(item.attendedVehicle, null, "a OS residencial não tem veículo atendido");
+    assert.equal("destinationAddress" in item, true, "destinationAddress ausente");
+    assert.equal(item.destinationAddress, null, "a OS residencial não tem destino");
+    assert.equal("serviceDetails" in item, false, "a lista expôs serviceDetails");
+    const json = JSON.stringify(item);
+    for (const [chave, valor] of Object.entries(residencial)) {
+      assert.equal(json.includes(valor), false, `o valor de ${chave} (${valor}) saiu no item da lista`);
+    }
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
 // D3 — a máscara nasce da referência do check-in; existe se e só se o modo é `plate`; o fim sai por POSIÇÃO.
 // ------------------------------------------------------------------------------------------------
 const CASOS_DE_PLACA: ReadonlyArray<{ plate: unknown; mascara: string | null; fim: string | null; referencia: string | null }> = [
@@ -368,10 +413,32 @@ test("D3c — a placa no modelo ou na cor anula o campo (regra do check-in + dob
       assert.ok(item, `${rotulo}: a OS não veio`);
       assert.equal("attendedVehicle" in item, true, `${rotulo}: attendedVehicle ausente`);
       assert.deepEqual(item.attendedVehicle, caso.esperado, rotulo);
+      // Conserto da J-597 (C1-02): nenhum caso tem destino; o destino não nasce de outro dado da OS.
+      assert.equal(item.destinationAddress, null, `${rotulo}: destinationAddress sem destino`);
       // A conferência é por dobra, campo a campo (a busca crua no JSON não conta).
       assertFimNaoChegaPorTexto(item, PLACA, rotulo);
       if (caso.referencia !== null) assertFimNaoChegaPorTexto(item, caso.referencia, rotulo);
     });
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
+// D3d — conserto da J-597 (C1-02): OS COM placa e SEM destino. O `destinationAddress` é null e o fim da placa não chega
+// por campo novo nem de veículo (mata MYD: `final <fim>` no `destinationAddress`).
+// ------------------------------------------------------------------------------------------------
+test("D3d — OS com placa e sem destino: destinationAddress null e o fim da placa não chega por outro campo do item", async () => {
+  await withApi(async (ctx) => {
+    const id = await ctx.osDoTecnico({ serviceAddress: "Rua Só Coleta, 2", service_details: { plate: PLACA, vehicle: "Onix", color: "Prata" } });
+    const { porId } = await ctx.listaDoTecnico();
+    const item = porId.get(id);
+    assert.ok(item, "a OS não veio na lista do técnico");
+    assert.deepEqual([item.checkinMode, item.checkinPlateTail], ["plate", "23"]);
+    for (const chave of ["destinationAddress", "destinationLatitude", "destinationLongitude"]) {
+      assert.equal(chave in item, true, `a chave ${chave} não está presente`);
+      assert.equal(item[chave], null, `${chave} deveria ser null na OS sem destino`);
+    }
+    assert.deepEqual(item.attendedVehicle, { plateMasked: "ABC1D**", model: "Onix", color: "Prata" });
+    assertFimNaoChegaPorTexto(item, PLACA, "D3d");
   });
 });
 
