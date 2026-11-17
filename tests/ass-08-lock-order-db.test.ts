@@ -655,8 +655,49 @@ if (!connectionString) {
     await scenario("service.requestInvoiceIssue", async () => {
       requested = await withIntents.requestInvoiceIssue({ tenantId: w.tenantId, statementId: w.statementId, actorId: "usr_lk2", now: NOW });
     });
+    // B-ASS-08c2 (plano §4.17, F15): os 3 cenários gravados nas aberturas que já têm chave — a baixa manual que quita (a intenção
+    // de nota NOTA-01 no MESMO tx), o estorno manual total com a nota viva confirmada (a intenção de cancelamento NOTA-ESTORNO) e a
+    // baixa do provedor que reemite (o seq 2 do NOTA-SEQ, sobre a nota 1 rejeitada).
+    const m = await seedStatement("c2-manual", { refs: false });
+    let manualPaymentId = "";
+    await scenario("service.recordManualPayment.invoice", async () => {
+      const { payment } = await withIntents.recordManualPayment({ tenantId: m.tenantId, statementId: m.statementId, amountCents: 10_000, method: "pix", note: null, actorId: ACTOR, now: NOW });
+      manualPaymentId = payment.id;
+    });
+    await db.$executeRawUnsafe(
+      `INSERT INTO subscription_statement_invoices (tenant_id, statement_id, seq, provider, external_ref, serie_dps, numero_dps, status, created_at, updated_at)
+         VALUES ($1::uuid, $2::uuid, 1, 'focusnfe', $4, $3, 1, 'authorized', now(), now())`,
+      m.tenantId,
+      m.statementId,
+      1 + Math.floor(Math.random() * 100000),
+      `${m.statementId}:1`,
+    );
+    let reversedInvoice: unknown;
+    await scenario("service.reverseManualPayment.invoice", async () => {
+      reversedInvoice = (await withIntents.reverseManualPayment({ tenantId: m.tenantId, paymentId: manualPaymentId, reason: "lançado em dobro", actorId: ACTOR, now: NOW, confirmInvoiceCancel: true })).invoice;
+    });
+    const r = await seedStatement("c2-seq", { refs: true });
+    await db.$executeRawUnsafe(
+      `INSERT INTO subscription_statement_invoices (tenant_id, statement_id, seq, provider, external_ref, serie_dps, numero_dps, status, created_at, updated_at)
+         VALUES ($1::uuid, $2::uuid, 1, 'focusnfe', $4, $3, 1, 'rejected', now(), now())`,
+      r.tenantId,
+      r.statementId,
+      1 + Math.floor(Math.random() * 100000),
+      `${r.statementId}:1`,
+    );
+    await scenario("settlement.issueIntent.seq", () => rt.settlementWithIntents.settle({ tenantId: r.tenantId, statementId: r.statementId, source: "asaas", externalChargeId: "pay_lk2_seq", paidCents: 1_000_000, method: "pix", now: NOW }));
     const mine = runs.slice(before);
     assert.deepEqual(mine.filter((run) => run.error !== null).map((run) => `${run.name}: ${run.error}`), [], "os cenários do 08c2 rodam os caminhos de sucesso");
+    const written = (await db.$queryRawUnsafe(
+      `SELECT statement_id::text AS s, kind, split_part(idempotency_key, ':', 3)::int AS seq FROM billing_outbox WHERE statement_id = ANY($1::uuid[]) AND kind IN ('invoice_issue', 'invoice_cancel') ORDER BY statement_id, kind`,
+      [m.statementId, r.statementId],
+    )) as Array<{ s: string; kind: string; seq: number }>;
+    assert.deepEqual(
+      written.map((row) => [row.s === m.statementId ? "manual" : "seq", row.kind, row.seq]).sort(),
+      [["manual", "invoice_cancel", 1], ["manual", "invoice_issue", 1], ["seq", "invoice_issue", 2]].sort(),
+      "os 3 cenários gravaram as intenções DENTRO das transações gravadas",
+    );
+    assert.equal(reversedInvoice, "cancel_requested", "o estorno manual pediu o cancelamento da nota viva");
     assert.deepEqual(swept, { inserted: 1 }, "a varredura executou o INSERT da intenção");
     // a 1ª trava da transação por candidato é o demonstrativo (forte), antes da fila e do índice: o [SWEEP-LOCK]
     for (const transaction of mine.find((run) => run.name === "service.recoverInvoiceIntents")!.transactions.filter((t) => t.events.some((event) => effectsOf(event, context) !== "unknown" && (effectsOf(event, context) as unknown[]).length > 0))) {

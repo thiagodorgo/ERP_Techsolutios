@@ -56,7 +56,7 @@ function intentTx(tx: StatementTx): IntentTx | null {
 }
 
 /** B-ASS-08c2 (plano §4.1 item 3): as funções novas exigem também os fatos da intenção (`invoiceIntentFacts`); sem eles, falha
- * fechado, como o `intentTx` ([INTX-08]). */
+ * fechado, como o `intentTx` (o marcador INTX-08). */
 function invoiceFactsTx(tx: StatementTx): IntentTx & { readonly invoiceIntentFacts: NonNullable<StatementTx["invoiceIntentFacts"]> } {
   const intent = intentTx(tx)!;
   const { invoiceIntentFacts } = tx;
