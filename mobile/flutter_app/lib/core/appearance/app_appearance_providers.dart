@@ -104,7 +104,7 @@ final appAppearancePrefsProvider =
 /// - **Carregando** só quando há sessão autenticada e o bootstrap ainda
 ///   carrega: o dono vai existir daqui a pouco, e desenhar a A antes faria a
 ///   tela pular (Emenda 2, R2-1).
-/// - **A como dado** em todo outro caso sem dono: sessão carregando, com erro,
+/// - **O padrão da tela** em todo outro caso sem dono: sessão carregando, com erro,
 ///   sem sessão, sessão restrita, bootstrap com erro.
 /// - Com dono: a escolha guardada, ou o padrão da tela.
 final screenAppearanceProvider =
