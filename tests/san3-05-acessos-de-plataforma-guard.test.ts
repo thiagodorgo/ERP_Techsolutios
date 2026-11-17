@@ -695,7 +695,8 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     // invoice_sequences) não têm RLS e não entram no L0.
     // B-ASS-09 (M6): 123 → 124 — exatamente a 1 tabela FORCE nova (economic_group_members) e o model dela; as 2 globais da M6
     // (economic_groups, platform_fx_rates) não têm RLS e não entram no L0.
-    assert.match(f2.stdout, /tabelas ENABLE=124 FORCE=124 · acessores Prisma em FORCE=124/);
+    // B-APROVACOES-DURAVEIS (item 67): 124 → 125 — exatamente a 1 tabela FORCE nova (operational_approvals) e o model dela.
+    assert.match(f2.stdout, /tabelas ENABLE=125 FORCE=125 · acessores Prisma em FORCE=125/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);
