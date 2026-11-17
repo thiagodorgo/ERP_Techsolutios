@@ -7,6 +7,7 @@ import '../network/http_client.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 import 'sync_replay_service.dart';
+import 'sync_session_expired.dart';
 
 /// 503 do lote: a ação volta a `pending` sem custo, mas pode ter baixado (outra ação do mesmo
 /// lote é que esgotou o lock). C2 item 9(c): conta como "já esteve `syncing`".
@@ -263,6 +264,17 @@ class InventorySyncReplayService {
         final end = (start + 50).clamp(0, syncing.length);
         results.addAll(await _api.sendBatch(syncing.sublist(start, end)));
       }
+      // dart format off
+    } on ApiSessionExpiredError { // sessão morta: lote de estoque
+      // dart format on
+      for (final action in syncing) {
+        await _queue.update(backToPendingSessionExpired(action));
+      }
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
+      );
     } on ApiServerError catch (error) {
       if (error.statusCode == 503) {
         for (final action in syncing) {

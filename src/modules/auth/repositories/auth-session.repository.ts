@@ -122,12 +122,15 @@ export class AuthSessionRepository {
     });
   }
 
-  rotateRefreshToken(sessionId: string, tenantId: string, refreshTokenHash: string, expiresAt: Date) {
+  // B-APP-SESSAO-RENOVA (S4) — troca CONDICIONAL: só troca quem ainda é o vigente. A renovação que perde a corrida
+  // conta 0 e relê a sessão (o serviço devolve o mesmo sucessor).
+  rotateRefreshToken(sessionId: string, tenantId: string, expectedHash: string, refreshTokenHash: string, expiresAt: Date) {
     return this.client.authSession.updateMany({
       where: {
         id: sessionId,
         tenant_id: tenantId,
         revoked_at: null,
+        refresh_token_hash: expectedHash, // troca condicional: só o vigente
       },
       data: {
         refresh_token_hash: refreshTokenHash,

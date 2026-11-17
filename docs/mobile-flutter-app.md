@@ -218,3 +218,51 @@ fluxo de decisao permanece exclusivo da UI web neste bloco.
 - A base URL da API e configuravel em build/CI:
   `--dart-define=API_BASE_URL=https://.../api/v1` (default: localhost do emulador,
   para dev/test sem rede real).
+
+## B-APP-SESSAO-RENOVA - Sessão do app (item 68 do portão)
+
+O app renova a sessão sozinho e só manda para o login quando o servidor recusa. O
+servidor é quem revoga.
+
+- **Uma porta para toda chamada autenticada** (`core/auth/session_http_client.dart`):
+  todo cliente `Dio` autenticado nasce por `sessionHttpClient(ref, config)`, com o
+  interceptador da renovação. Um 401 pede a renovação ao `AuthNotifier`; há uma
+  renovação por vez no app inteiro, e o pedido é repetido uma vez com o token novo.
+  Um 401 atrasado, com o token já trocado, repete com o token atual sem renovar de
+  novo. A guarda `test/core/auth/bsessao_renova_guarda_test.dart` acusa cliente novo
+  sem a porta.
+- **Só a recusa do servidor expira** (`AuthStatus.expired`, com a frase "Sua sessão
+  expirou. Entre de novo para continuar."). Sem rede, servidor fora do ar ou falha
+  local (armazenamento, resposta ilegível), a sessão fica: o técnico trabalha com os
+  dados guardados (`offlineCached`) e renova no primeiro pedido com rede.
+- **A renovação grava dentro da trava da sessão** e só para a época que a começou
+  (login, "Sair", troca de senha e expiração sobem a época). Renovação velha não
+  mexe na sessão atual, e pedido de outra sessão nunca leva o token desta.
+- **Reenvio e prova de posse:** a renovação perdida pela rede é reenviada com o
+  mesmo token dentro da janela do servidor; o primeiro envio leva o compromisso, os
+  reenvios a prova (o `erp.session_nonce` guardado com a sessão).
+- **O bootstrap guardado é da sessão que o gravou** (`ownerKey`): o próximo login
+  (outra pessoa, outra organização ou outra sessão) não o herda. Renovar não
+  reconstrói clientes nem telas (o `authenticatedApiConfigProvider` segue só a chave
+  da sessão).
+- **O "Sair"** entrega ao servidor o token de renovação vigente e só depois limpa o
+  aparelho. Sem resposta definitiva do servidor, o token espera numa fila sem teto
+  (`erp.pending_revocations`, `core/auth/pending_revocations.dart`), esvaziada na
+  abertura, no login e em cada renovação.
+- **A fila de sincronização com a sessão morta** (`core/sync/sync_session_expired.dart`):
+  o lote que leva 401 com a renovação recusada volta a `pending`, com o mesmo
+  `retryCount` e `SESSION_EXPIRED`, nos 5 replays (despesa, OS, checklist, estoque e
+  evidência) e no comprovante. O dono da fila no replay é a pessoa da sessão, ou a da
+  sessão que expirou (`syncQueueOwnerIdProvider`). A passada é da sessão que a
+  começou: a época muda, a passada para (com a frase só no `expired`). Depois de uma
+  sessão morta, o novo login roda uma passada sozinho; as ações de outra pessoa
+  seguem com o dono delas.
+- **No servidor:** `POST /auth/logout` diz a verdade (`200 {revoked:true}` só quando
+  o token não renova mais nenhuma sessão; 400 sem token; 503 na falha interna) e
+  revoga a sessão inteira com qualquer token dela; um token de renovação
+  já trocado que volta fora do reenvio derruba a sessão (`auth.refresh.failed` com
+  `reason: "reuse_detected"`). Contrato em `API_CONTRACTS.md` (`/auth/refresh` e
+  `/auth/logout`).
+- Testes: `test/core/auth/bsessao_renova_*_test.dart`,
+  `test/core/sync/bsessao_renova_fila_test.dart`; servidor
+  `tests/app-sessao-renova-contrato.test.ts` e `tests/app-sessao-revogacao-db.test.ts`.

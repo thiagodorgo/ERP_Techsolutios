@@ -67,10 +67,17 @@ class AuthSession extends Equatable {
     required this.tokens,
     required this.user,
     this.mustChangePassword = false,
+    this.sessionNonce,
   });
 
   final AuthTokens tokens;
   final AuthUser user;
+
+  /// B-APP-SESSAO-RENOVA (D6c): identificador desta sessão, um uuid gerado a
+  /// cada login. A renovação o mantém. É ele que separa duas sessões da mesma
+  /// pessoa na mesma organização (o dono do cache do bootstrap). `null` numa
+  /// sessão antiga, gravada antes do identificador existir.
+  final String? sessionNonce;
 
   /// B-USERS-ACESSO-SEG (T2): sessão RESTRITA, aberta com a senha provisória.
   /// Só o `login()` do repositório remoto liga esta marca, e só quando a
@@ -81,7 +88,7 @@ class AuthSession extends Equatable {
   bool get isExpired => tokens.isExpired;
 
   @override
-  List<Object?> get props => [tokens, user, mustChangePassword];
+  List<Object?> get props => [tokens, user, mustChangePassword, sessionNonce];
 }
 
 class AuthState extends Equatable {
@@ -90,10 +97,15 @@ class AuthState extends Equatable {
     this.session,
     this.safeError,
     this.safeNotice,
+    this.expiredOwnerSub,
   });
 
   final AuthStatus status;
   final AuthSession? session;
+
+  /// B-APP-SESSAO-RENOVA (D8): na sessão que expirou, o usuário dono dela. A
+  /// fila de sincronização continua dele até o novo login.
+  final String? expiredOwnerSub;
 
   // Safe human-readable message — never contains tokens, passwords, or paths
   final String? safeError;
@@ -123,9 +135,16 @@ class AuthState extends Equatable {
       session: clearSession ? null : (session ?? this.session),
       safeError: clearError ? null : (safeError ?? this.safeError),
       safeNotice: clearNotice ? null : (safeNotice ?? this.safeNotice),
+      expiredOwnerSub: expiredOwnerSub,
     );
   }
 
   @override
-  List<Object?> get props => [status, session, safeError, safeNotice];
+  List<Object?> get props => [
+    status,
+    session,
+    safeError,
+    safeNotice,
+    expiredOwnerSub,
+  ];
 }
