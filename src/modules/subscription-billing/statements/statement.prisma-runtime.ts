@@ -13,6 +13,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { deriveBusinessDate } from "../../../config/business-time.js";
+import { isTransactionStartTimeout } from "../../../infra/logging/public-error.js";
 import { withTenantRls } from "../../../database/rls.js";
 import {
   BILLING_PAYMENT_METHODS,
@@ -30,7 +31,7 @@ import { listByStatementInTx as listChargesByStatementInTx } from "../charges/ch
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import { invoiceLineSqlList, seqOfIdempotencyKey } from "../invoices/invoice-intent-rules.js";
 import { LIVE_SQL } from "../invoices/invoices.prisma.js";
-import { enqueueInTx, listByStatementInTx as listOutboxByStatementInTx } from "../outbox/outbox.prisma.js";
+import { enqueueInTx, listByStatementInTx as listOutboxByStatementInTx, postgresErrorCode } from "../outbox/outbox.prisma.js";
 import { computeStatement, type StatementSnapshot } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
 import { RepositoryStatementInputsProvider, type BindingsSource, type UsageSource } from "./statement.inputs-provider.js";
@@ -51,6 +52,7 @@ import type {
   SubscriptionCredit,
   SubscriptionStatement,
 } from "./statement.types.js";
+import { StatementError } from "./statement.types.js";
 
 type Tx = Prisma.TransactionClient;
 
@@ -395,6 +397,16 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
 }
 
 /** A linha de `audit_logs` dentro do `tx` corrente: se falhar, a transação do movimento cai junto (fail-closed). */
+/** B-ASS-08c2 (plano §4.14, `P-BILLING-P2028-COMO-400`): a falha de banco do movimento que quer dizer "o demonstrativo está
+ * ocupado" — a trava não obtida (55P03, o mesmo helper do pedido de cobrança) ou a transação interativa expirada (P2028). O P2028
+ * de INÍCIO de transação (pool esgotado) não é: ele continua o `infra_down` da casa. */
+function isStatementBusy(error: unknown): boolean {
+  if (postgresErrorCode(error) === "55P03") return true;
+  if (!error || typeof error !== "object") return false;
+  const record = error as Record<string, unknown>;
+  return record.code === "P2028" && !isTransactionStartTimeout(record);
+}
+
 async function writeAuditInTx(tx: Tx, event: StatementAuditEvent): Promise<void> {
   const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
     import("../../core-saas/audit/audit-log.service.js"),
@@ -414,8 +426,15 @@ async function writeAuditInTx(tx: Tx, event: StatementAuditEvent): Promise<void>
 export class PrismaStatementRepository implements StatementRepository {
   constructor(private readonly client: PrismaClient) {}
 
-  transaction<T>(tenantId: string, work: (tx: StatementTx) => Promise<T>): Promise<T> {
-    return withTenantRls(this.client, tenantId, (tx) => work(prismaTx(tx, tenantId)));
+  /** B-ASS-08c2 (plano §4.14): a transação já desfez quando o erro chega; só o MAPEAMENTO muda — "ocupado" vira 409
+   * `statement_busy` (repetível, o precedente do pedido de cobrança); um erro de regra atravessa igual. */
+  async transaction<T>(tenantId: string, work: (tx: StatementTx) => Promise<T>): Promise<T> {
+    try {
+      return await withTenantRls(this.client, tenantId, (tx) => work(prismaTx(tx, tenantId)));
+    } catch (error) {
+      if (isStatementBusy(error)) throw new StatementError(409, "statement_busy", "The statement is busy; try again."); // [STMT-BUSY]
+      throw error;
+    }
   }
 
   listStatements(tenantId: string): Promise<readonly SubscriptionStatement[]> {
