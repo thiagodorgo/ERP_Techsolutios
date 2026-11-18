@@ -26,6 +26,7 @@ import {
   type Resp,
   type Semente,
 } from "./helpers/wo-leitura-census.js";
+import { actorReadsAssignedOnly, type WorkOrderActorContext } from "../src/modules/work-orders/work-order.types.js";
 
 // B-WO-LEITURA-TECNICO (item 71 do portão; `P-WO-LEITURAS-TENANT-WIDE-TECNICO`) — O TÉCNICO DE CAMPO SÓ LÊ O QUE É DELE.
 //
@@ -558,7 +559,7 @@ test("S-W5 — as leituras internas não mudaram: a lista interna de vistorias e
   });
 });
 
-test("S-W6 — os mapas de leitura e de mutação são independentes: auditor+ft lê, mas a escrita dele na OS alheia segue 403", async () => {
+test("S-W6 — os mapas de leitura e de mutação são independentes: a escrita na OS alheia segue 403", async () => {
   // Emenda 1 §1.4: o predicado de MUTAÇÃO segue escopando auditor+ft, e a escrita dele na OS alheia segue 403. A leitura
   // larga desse ator é provada pelo L-UNIAO (rota a rota), não aqui — assim a MR16 e a MR17 deixam o S-W6 verde.
   const tipos = (await import("../src/modules/work-orders/work-order.types.js")) as Record<string, any>;
@@ -594,4 +595,10 @@ test("S-W8 — /mobile/checklist-runs sem workOrderId dá 422 para B e para o ma
     assert.equal(b.k, "422:CHECKLIST_RUN_QUERY_INVALID:work_order_id_required");
     assert.equal(m.k, b.k);
   });
+});
+
+test("S-W9 — ator sem roles (chamador interno) não cai no escopo", () => {
+  // Cast mínimo: o chamador interno (ex.: approvals.listPending) monta o contexto sem `roles`; ausente ≡ [] (07a).
+  const ator = { tenantId: "t", userId: "u", permissions: [] } as unknown as WorkOrderActorContext;
+  assert.equal(actorReadsAssignedOnly(ator), false);
 });

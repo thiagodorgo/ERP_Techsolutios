@@ -168,6 +168,7 @@ if (!connectionString) {
         A: await novoUsuario(T, "tec-a", ["field_technician"]),
         A2: await novoUsuario(T, "tec-a2", ["field_technician"]),
         B: await novoUsuario(T, "tec-b", ["field_technician"]),
+        TEC: await novoUsuario(T, "tec-so", ["technician"]),
         U: await novoUsuario(T, "despachante-campo", ["field_dispatcher", "field_technician"]),
         S: await novoUsuario(T, "suporte-campo", ["support", "field_technician"]),
         F: await novoUsuario(T, "financeiro-campo", ["finance", "technician"]),
@@ -178,7 +179,7 @@ if (!connectionString) {
       };
       const perfilA = await novoPerfil(T, u.A, "Tecnico A");
       const perfilB = await novoPerfil(T, u.B, "Tecnico B");
-      // A2, S, F, V e AU ficam SEM perfil de propósito (A2 atribuído pelo user id; S/F/V/AU sem OS atribuída).
+      // A2, S, F, V, TEC e AU ficam SEM perfil de propósito (A2 atribuído pelo user id; S/F/V/TEC/AU sem OS atribuída).
 
       const [{ createApp }, { PrismaCoreSaasService }, { PrismaCoreSaasStore }, repos, { signAccessToken }] = await Promise.all([
         import("../src/app.js"),
@@ -286,6 +287,9 @@ if (!connectionString) {
 
       for (const e of ENTRADAS) await t.test(`D-POS · ft · ${e.r}`, () => le(e, h(u.A), `D-POS ${e.r}`));
       for (const e of ENTRADAS) await t.test(`D-NEG · ft · ${e.r}`, () => negado(e, h(u.B), 1, `D-NEG ${e.r}`));
+      // D-NEG · technician — o technician sozinho (sem field_dispatch:read, como finance+tec) é escopado: sem OS atribuída,
+      // recebe o inexistente, a lista sem a OS-X e o painel com total = 0.
+      for (const e of ENTRADAS.filter((x) => !DESPACHO.has(x.r))) await t.test(`D-NEG · technician · ${e.r}`, () => negado(e, h(u.TEC), 0, `D-NEG technician ${e.r}`));
       for (const e of ENTRADAS) await t.test(`D-UNIAO · field_dispatcher+ft · ${e.r}`, () => le(e, h(u.U), `D-UNIAO ${e.r}`));
 
       // D-MESMA-REGRA (Emenda 3.1 §3.3 + Emenda 3.2 §3.2): S (support+ft, 19), F (finance+tec, 16 sem R13-R15),
@@ -434,6 +438,7 @@ if (!connectionString) {
       );
       assert.deepEqual([linhaEx.op, linhaEx.st], [perfilB, "accepted"], "o despacho antigo de A segue accepted e a OS-X é de B");
       for (const e of ENTRADAS) await t.test(`D-EX · ft · ${e.r}`, () => negado(e, h(u.A), 0, `D-EX ${e.r}`));
+      for (const e of ENTRADAS.filter((x) => !DESPACHO.has(x.r))) await t.test(`D-EX · technician · ${e.r}`, () => negado(e, h(u.TEC), 0, `D-EX technician ${e.r}`));
     } finally {
       if (server) await new Promise<void>((r) => server!.close(() => r()));
       try {
