@@ -300,10 +300,6 @@
   "GET /api/v1/mobile/checklists/available": {
     "classe": "SEM-DADO-DE-OS"
   },
-  "GET /api/v1/mobile/inventory/availability": {
-    "classe": "SEM-DADO-DE-OS",
-    "pendencia": "P-MOBILE-AVAILABILITY-TENANT-ID"
-  },
   "GET /api/v1/mobile/technician/stock": {
     "classe": "SEM-DADO-DE-OS"
   },
@@ -372,6 +368,9 @@
     "classe": "NAO-ALCANCADA"
   },
   "GET /api/v1/platform/billing/fx-rates": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/invoices/backlog": {
     "classe": "NAO-ALCANCADA"
   },
   "GET /api/v1/platform/billing/outbox": {

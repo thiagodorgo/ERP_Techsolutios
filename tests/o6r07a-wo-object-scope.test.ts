@@ -15,9 +15,9 @@ import type { Tenant } from "../src/modules/core-saas/types/core-saas.types.js";
 // VERMELHO-CONTROLE (§4, linha 3): no head-base o técnico A muta a OS do técnico B com 200. Registro
 // em agent-orchestration/omega/juntas/votos/O6R-07a/dev-d1-d3-autorizacao.md.
 //
-// 403 `WORK_ORDER_NOT_ASSIGNED`, NÃO 404: a ordem existe na organização do ator e ele PODE lê-la
-// (`work_orders:read` é tenant-wide e a lista do app depende disso). 404 segue reservado ao
-// cross-tenant — contrato vigente que este bloco preserva e testa.
+// 403 `WORK_ORDER_NOT_ASSIGNED`, NÃO 404 na ESCRITA: o app de campo depende do 403 (com a marca de
+// ex-técnico do 07c-b1) para abrir o conflito que um superior decide (`D-WO-LEITURA-404-ESCRITA-403`,
+// `C-WO-LEITURA-404-ESCRITA-403`). A leitura de OS alheia passou ao 404 do inexistente no B-WO-LEITURA-TECNICO.
 
 test("D3 — técnico só muta a ordem atribuída a ele (update e status)", async () => {
   await withWorkOrderApi(async ({ baseUrl, seed }) => {

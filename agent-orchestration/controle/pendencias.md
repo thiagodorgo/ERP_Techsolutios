@@ -11969,16 +11969,22 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** `tests/checklist-template-lock-db.test.ts` não está na lista `SUITES` do job `backend-postgres` (banco provisionado com seed, persistência `prisma`), onde o §12 do plano v2 o situa. A redação anterior desta pendência ("bloqueia o merge") supunha que a suíte não rodava em job nenhum; isso não se sustentou na medição.
 - **encerramento:** a emenda decide se a suíte também entra na lista curada do `backend-postgres`; se entrar, executar a forma exata daquele job 3 vezes, com denominador constante e zero falhas/pulos.
 
-## P-WO-LEITURAS-TENANT-WIDE-TECNICO (2026-10-25) — o técnico ainda LÊ OS e despachos de colegas fora da lista — MÉDIA
+## P-WO-LEITURAS-TENANT-WIDE-TECNICO (2026-10-25) — o técnico ainda LÊ OS e despachos de colegas fora da lista — ALTA
 - status: ABERTA
 - **origem:** B-SAN3-13 (revisão adversarial r1, CRIT-4; Q2 do dono: "o detalhe segue legível neste bloco"). O #32 fecha **a lista**.
 - **prova:** `work_orders:read` em `GET /work-orders/:id`, `/:id/timeline`, `/:id/attachments`,
   `/:id/attachments/:attachmentId/download`, `/:id/map-start-points`, `/approvals/pending`, `/approvals/:approvalId`;
   `field_dispatch:read` em `GET /operations/dispatches`, `/:dispatchId`, `/:dispatchId/timeline` — leitura tenant-wide.
 - **escopo:** pre-existente (rotas do 07a/Ω3, anteriores ao bloco).
-- **dono:** `B-SAN3-23` ou bloco novo de escopo de leitura.
+- **dono:** `B-WO-LEITURA-TECNICO` (item 71 do portão, `D-DONO-1711-ITEM-71`; antes, "`B-SAN3-23` ou bloco novo de escopo de leitura").
 - **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
 - **Apenso 2026-11-17 (crítica da Emenda 1 do B-GUI-D1, achado A3, reproduzido):** a gravidade sobe para **ALTA** e o dono passa a `B-WO-LEITURA-TECNICO` (item 71 do portão, `D-DONO-1711-ITEM-71`). Medido: um técnico não atribuído enumera OS alheias por `GET /operations/dispatches` e lê, pelo detalhe, a senha do residencial (`access_code`) e a placa inteira, com 200 — contraria o `RBAC_MATRIX.md:45`.
+- **Apenso 2026-11-17 (`plano-wo-leitura-cl`):** censo na `origin/main` `77f0df07`: o `field_technician` alcança 106 leituras, e 18 têm dado de OS. São as 10 desta pendência, mais `financial-items`, `comments`, `audit-logs`, `checklist-runs` (a lista, a `comparison` e o download) e `dashboard/summary`. **Dono: `B-WO-LEITURA-TECNICO`** (plano em `erp-pausa-2026-10-03/planos/plano-B-WO-LEITURA-TECNICO.md`, fora do repositório). **Encerramento:** o do §5 do plano (o L-NEG ≡ inexistente, rota a rota, nos dois papéis `assigned_only`; o guard T-L0–T-L8; a `-db` sob NOSUPERUSER NOBYPASSRLS).
+- **Apenso 2026-11-17 (Emenda 1, `plano-wo-leitura-e1-fable`):** o escopo de leitura ganha mapa próprio (`WORK_ORDER_READ_SCOPE`); a lista de OS (B-SAN3-13) passa a usá-lo; o guard cobre toda GET montada (208); o despacho é legível pelo alvo E enquanto a OS for dele.
+- **Apenso 2026-11-17 (Emenda 2, `plano-wo-leitura-e2-fable`):** o guard cobre também as camadas `MIDDLEWARE` com caminho próprio (220 chaves) e tem a 4ª forma injetada; todo item das 3 classes tem marcador positivo; as 21 mutações têm conjunto completo; a `-db` exerce as aprovações no Prisma (#586); S-W3 vale para toda leitura por objeto.
+- **Apenso 2026-11-18 (Emenda 3.1, `plano-wo-leitura-e31-r-op`):** o técnico que acumula suporte, estoque ou financeiro lê só o que é dele nas 18 leituras (`nao_alarga` no mapa de leitura de OS, `D-DONO-1811-71-MESMA-REGRA`); 0 vazamento nas 220 chaves para essas uniões; 28 mutações.
+- **Apenso 2026-11-18 (Emenda 3.2, `plano-wo-leitura-e32-op`):** também visualizador e auditor + técnico ficam escopados nas 18 leituras (`D-DONO-1811-71-VISAO-SO-COM-PERMISSAO`); 0 vazamento nas 219 chaves medidas para essas uniões; 29 mutações ativas, MR15 equivalente.
+- **Apenso 2026-11-18 (`dev-wo-leitura-cl` e `agy-dev-71-ar`, ramo `feat/wo-leitura-tecnico`, (PR do bloco)):** a porta `getForRead` (e as irmãs da vistoria, do despacho e da aprovação) e o `WORK_ORDER_READ_SCOPE` com `nao_alarga` para suporte, estoque, financeiro, visualizador e auditor estão nas 18 leituras; o laço L (457 casos), o guard (T-L0–T-L8, 16/16, 4 formas), a `-db` (sob papel efêmero `NOSUPERUSER NOBYPASSRLS`, 3×, com D-MESMA-REGRA, D-CONCEDE e D-MODULO-PROPRIO) e as 29 mutações ativas (MR15 equivalente, N=0) estão verdes no objeto. Fecha no merge do `B-WO-LEITURA-TECNICO`, depois da junta completa.
 
 ## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
 - status: FECHADA (2026-11-15, PR do `B-SAN3-16`, ramo `feat/mobile-fila-os-16`): os 2 tipos sem replay (`approval_request`, `unable_to_start`) passam a sair (A1, A2) e, sem forma de sair, viram erro visível com Descartar (R2, R7); o terceiro, `work_order_material.add`, fechou no #551. Antes: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA, sem o `work_order_material.add`, que saiu dela com o `B-MATERIAL-REENVIO` (PR #551).
@@ -16984,6 +16990,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** o censo do plano `B-WO-LEITURA-TECNICO` (§2.8), 17/11.
 - **fato:** `GET /mobile/inventory/availability` põe `tenant_id` no corpo, expondo o identificador externo de organização (regra de ouro B.2.8 da allowlist).
 - **critério de encerramento:** a rota deixa de pôr `tenant_id` no corpo, com teste.
+- **nota (2026-11-18, rebase do `B-WO-LEITURA-TECNICO` sobre o #582):** a rota `GET /api/v1/mobile/inventory/availability` foi removida da `main` pelo #582 (`B-O6R-04b`), e saiu do instantâneo do guard de leitura; a pendência perdeu o objeto — o orquestrador confere se ela fecha.
 
 ## P-DESPACHO-EX-TECNICO-MUTACAO (2026-11-17) — o ex-técnico ainda transiciona o despacho antigo, e a resposta 200 devolve o despacho inteiro — MÉDIA
 
@@ -16998,6 +17005,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** Emenda 2 do `B-WO-LEITURA-TECNICO` (B4), 17/11.
 - **fato:** a frase do contrato para o despacho ("legível pelo papel de campo só enquanto ele é o alvo E o técnico atual; o despacho antigo responde 404; o ex-técnico perde a leitura") ganha a exceção do `P-DESPACHO-EX-TECNICO-MUTACAO` nas linhas `:671` e `:672`, e o `S-W7` asserta o corpo medido.
 - **critério de encerramento:** o contrato leva a exceção e o teste do corpo medido, junto com a decisão do dono da pendência acima.
+- **complemento (Emenda 2 §4.2, `B-WO-LEITURA-TECNICO`):** a exceção do despacho e o `S-W7` entraram neste bloco; sobra sob este ID a notificação `approval.approved`/`approval.rejected`, que vai ao solicitante já ex-técnico com `sourceId`/`actionUrl` da OS (só status e id, sem conteúdo; dono: o mesmo bloco de notificações da `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO`).
 
 ## P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR (2026-11-17) — com o app aberto, a volta da rede não revoga o token de renovação do "Sair" — MÉDIA
 
@@ -17194,3 +17202,52 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
 - **fato:** a imagem `traccar/traccar:6.16.0` tem `arm64`; o estudo fixou x86; trocar economiza ~US$ 7/mês, depois de medir em staging.
 - **critério de encerramento:** o Traccar roda em ARM em staging e produção, com o custo registrado.
+
+## P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexistente dá 404: oráculo de existência — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (só confirma existência de id que já saiu por outro canal) · **escopo:** `pre-existente` (07a; mantido por `D-WO-LEITURA-404-ESCRITA-403`) · **dono:** o orquestrador, com a pergunta ao dono só se os canais de id fecharem · **bloqueia:** não.
+- **origem:** o plano `B-WO-LEITURA-TECNICO` e as Emendas 1, 2, 3, 3.1 e 3.2 (`erp-pausa-2026-10-03/planos/`, fora do repositório), 17–18/11; registrado no PR do bloco.
+- **N e forma:** `PATCH /work-orders/<alheia>` dá `403:WORK_ORDER_NOT_ASSIGNED:not_assigned_to_actor` e o UUID aleatório dá `404:WORK_ORDER_NOT_FOUND:not_found`; no lote, `rejected:not_assigned_to_actor` × `rejected:not_found`. O 403 fica porque o app depende dele, com a marca de ex-técnico (07c-b1). Conflito registrado: `C-WO-LEITURA-404-ESCRITA-403`.
+- **critério de encerramento:** decisão do dono depois que os canais de id (`P-WO-LEITURA-ID-EM-FROTA`, `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO`) fecharem.
+
+## P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai a todo usuário com `checklist_runs:read`, inclusive o técnico de outra OS — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (id da vistoria e do colega) · **escopo:** `pre-existente` (`notification.recipient-resolver.ts:29-30`) · **dono:** bloco de notificações (a abrir), com a mesma régua do `B-WO-LEITURA-TECNICO` · **bloqueia:** não.
+- **origem:** o plano `B-WO-LEITURA-TECNICO` e as Emendas 1, 2, 3, 3.1 e 3.2 (`erp-pausa-2026-10-03/planos/`, fora do repositório), 17–18/11; registrado no PR do bloco.
+- **N e forma:** `checklist_run.completed` notifica todo usuário com `checklist_runs:read` (os 13 papéis), com `sourceId=runId` e `metadata.actorId` do colega.
+- **critério de encerramento:** o papel de campo só recebe a notificação da OS dele, com teste.
+
+## P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` registrar `work_order`, a leitura tem de passar pela porta de leitura — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (preventiva: hoje `work_order` não é registrado) · **escopo:** `pre-existente` (`attachment-entity-resolver.ts:83`) · **dono:** o bloco que registrar `work_order` no resolvedor de anexos · **bloqueia:** não.
+- **origem:** o plano `B-WO-LEITURA-TECNICO` e as Emendas 1, 2, 3, 3.1 e 3.2 (`erp-pausa-2026-10-03/planos/`, fora do repositório), 17–18/11; registrado no PR do bloco.
+- **N e forma:** a rota `/api/v1/attachments` resolve a permissão no serviço pela entidade-alvo, e o resolvedor registra `damage`, `fine`, `insurance_policy` e `maintenance_order`. O guard do `B-WO-LEITURA-TECNICO` a chama com `?entityType=work_order&entityId=<OS-X>`: se alguém registrar `work_order` sem a porta, o T-L2 acha o canário e o T-L5 exige reclassificar.
+- **critério de encerramento:** registro de `work_order` acompanhado de `getForRead`, com o guard verde.
+
+## P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização inteira, e a `RBAC_MATRIX.md:34` diz `scoped` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (sozinho, sem papel de campo) · **escopo:** `pre-existente` (`RBAC_MATRIX.md:34` × painel) · **dono:** `B-USERS-CONCESSAO-PAINEL` · **bloqueia:** não.
+- **origem:** o plano `B-WO-LEITURA-TECNICO` e as Emendas 1, 2, 3, 3.1 e 3.2 (`erp-pausa-2026-10-03/planos/`, fora do repositório), 17–18/11; registrado no PR do bloco.
+- **N e forma:** o papel `support` sem papel de campo lê `GET /dashboard/summary` da organização inteira (preservado por `L-SOZINHO · support · R18`), enquanto a linha 34 da matriz marca `support = scoped`. O que `scoped` significa para quem não tem OS atribuída é pergunta pré-existente.
+- **critério de encerramento:** o `B-USERS-CONCESSAO-PAINEL` alinha a matriz ou o escopo do suporte sozinho, com decisão do dono e teste.
+
+## P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_technician`, `technician` nem `inventory` como opção no formulário — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (o superior não monta 'técnico + suporte' pela tela; ela só preserva o papel se já veio de outro caminho) · **escopo:** `pre-existente` (`frontend/src/modules/users/users.adapter.ts`, `UserFormModal.tsx`) · **dono:** `B-USERS-CONCESSAO-PAINEL` · **bloqueia:** não.
+- **origem:** o plano `B-WO-LEITURA-TECNICO` e as Emendas 1, 2, 3, 3.1 e 3.2 (`erp-pausa-2026-10-03/planos/`, fora do repositório), 17–18/11; registrado no PR do bloco.
+- **N e forma:** as opções de papel na tela de usuários são `tenant_admin, manager, operator, finance, auditor, support, field_dispatcher`; `field_technician`, `technician`, `inventory` e `viewer` só aparecem se o usuário já os tiver.
+- **critério de encerramento:** a tela de usuários no `B-USERS-CONCESSAO-PAINEL` (3 opções) expõe os papéis e o controle "Visão da organização", com teste.
+
+## P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao `manager` em atribuição de papéis, e o catálogo não implementa o `limited` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (decidida pelo dono para a visão da organização; o resto do `limited` segue pendente) · **escopo:** `pre-existente` (`RBAC_MATRIX.md:33` × `ROLE_PERMISSIONS.manager`) · **dono:** `B-USERS-CONCESSAO-PAINEL` para a concessão da visão da organização; o orquestrador leva o resto do `limited` ao dono · **bloqueia:** não.
+- **origem:** o plano `B-WO-LEITURA-TECNICO` e as Emendas 1, 2, 3, 3.1 e 3.2 (`erp-pausa-2026-10-03/planos/`, fora do repositório), 17–18/11; registrado no PR do bloco.
+- **N e forma:** hoje só quem tem `users.manage` (`tenant_admin`) chama `PATCH /users/:id` (o `manager` recebe 403, provado por `D-CONCEDE · (iv)`). **Decidida pelo dono para a visão da organização (17/11, `D-DONO-1711-GESTOR-CONCEDE`, e 18/11, `D-DONO-1811-MIGRACAO-CONCEDE-PAINEL`):** o gestor concede e retira a "Visão da organização" a qualquer pessoa da própria organização, inclusive a si, por chave e rota estreita próprias no `B-USERS-CONCESSAO-PAINEL`; o resto do `limited` segue pendente.
+- **critério de encerramento:** a rota estreita e a chave nova do gestor entregues no `B-USERS-CONCESSAO-PAINEL`, e o significado do resto de `limited` decidido.
+
+## P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias (R10a, R10b, R11, R12) da organização inteira, que o despachante sozinho não lê — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (fronteira de união rara: quem despacha já lê a OS inteira da organização, mas não tem `checklist_runs:read` sozinho) · **escopo:** fronteira declarada da Emenda 3.2 (§4) do `B-WO-LEITURA-TECNICO` · **dono:** `B-USERS-CONCESSAO-PAINEL` · **bloqueia:** não.
+- **origem:** o plano `B-WO-LEITURA-TECNICO` e as Emendas 1, 2, 3, 3.1 e 3.2 (`erp-pausa-2026-10-03/planos/`, fora do repositório), 17–18/11; registrado no PR do bloco.
+- **N e forma:** o `field_dispatcher` sozinho não tem `checklist_runs:read`; somado ao `field_technician` ou `technician`, ganha a permissão pelo técnico e, como `field_dispatcher` é `tenant_wide` no `WORK_ORDER_READ_SCOPE` (o Console Dispatcher lê R1, R2, R13 e R18 da organização), lê também R10a, R10b, R11 e R12 da organização inteira (8 pares no `L-UNIAO`). Fechar pede o predicado por módulo (§4 da Emenda 3.2: `work-order.types.ts`, `work-order.service.ts`, `checklist.service.ts`; +3 h). **Q-B respondida pelo dono em 18/11 12:49 SP (seletor): "Pendência para depois"** — fica para o `B-USERS-CONCESSAO-PAINEL`, logo depois do 71. Exceção declarada em `API_CONTRACTS.md` §3.5.
+- **critério de encerramento:** predicado de leitura por módulo (`field_dispatcher` não alarga `vistoria`) entregue no `B-USERS-CONCESSAO-PAINEL`, com L-MODULO, mutações e retirada da exceção do `API_CONTRACTS.md`.
