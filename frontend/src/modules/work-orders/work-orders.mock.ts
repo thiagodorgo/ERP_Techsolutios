@@ -1,4 +1,4 @@
-import type { WorkOrderDetail, WorkOrderEvent, WorkOrderListItem, WorkOrdersData } from "./work-orders.types";
+import type { WorkOrderChecklistAdjustmentBody, WorkOrderDetail, WorkOrderEvent, WorkOrderListItem, WorkOrdersData } from "./work-orders.types";
 
 const now = "2026-06-09T12:00:00.000Z";
 
@@ -151,6 +151,17 @@ export function getMockWorkOrderDetail(workOrderId: string): WorkOrderDetail {
       serviceCatalog: { id: "11111111-1111-4111-8111-0000000000s1", name: "Reboque leve até 20 km", basePrice: 320 },
     },
   };
+}
+
+// B-GUI-02 — o ramo de demonstração do ajuste das vistorias: aplica a linha pedida sobre o conjunto de exemplo (a retirada
+// sai, a inclusão vai ao fim) e devolve a OS, como o servidor faria. Só alcançável com `isMockMode()`.
+export function adjustMockWorkOrderChecklists(workOrderId: string, body: WorkOrderChecklistAdjustmentBody): WorkOrderDetail {
+  const current = getMockWorkOrderDetail(workOrderId);
+  const removed = new Set((body.remove ?? []).map((item) => `${item.checklistId}:${item.role}`));
+  const kept = (current.checklists ?? []).filter((line) => !removed.has(`${line.checklistId}:${line.role}`));
+  const base = kept.reduce((max, line) => Math.max(max, line.orderIndex + 1), 0);
+  const added = (body.add ?? []).map((item, index) => ({ checklistId: item.checklistId, role: item.role, source: "manual" as const, ruleId: null, orderIndex: base + index }));
+  return { ...current, checklists: [...kept, ...added] };
 }
 
 export function getMockWorkOrderTimeline(workOrderId: string): WorkOrderEvent[] {

@@ -1,5 +1,7 @@
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/app_database.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/database_provider.dart';
 import 'package:erp_techsolutions_mobile/core/location/gps_service.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_action_factory.dart';
@@ -11,6 +13,7 @@ import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_lo
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_detail_screen.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_execute_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,8 +68,18 @@ WorkOrder _makeWo({
   checkinPlateTail: checkinPlateTail,
 );
 
+// B-GUI-FID1 — o check-in (agendada, despachada, em rota, no local) mora na execução; o resto, no detalhe.
+const _checkin = {
+  WorkOrderStatus.scheduled,
+  WorkOrderStatus.dispatched,
+  WorkOrderStatus.enRoute,
+  WorkOrderStatus.arrived,
+};
+
 GoRouter _makeRouter(WorkOrder wo) => GoRouter(
-  initialLocation: '/work-orders/${wo.localId}',
+  initialLocation: _checkin.contains(wo.status)
+      ? '/work-orders/${wo.localId}/execute'
+      : '/work-orders/${wo.localId}',
   routes: [
     GoRoute(
       path: '/work-orders',
@@ -79,7 +92,8 @@ GoRouter _makeRouter(WorkOrder wo) => GoRouter(
     ),
     GoRoute(
       path: '/work-orders/:id/execute',
-      builder: (_, _) => const Scaffold(body: Text('Execute')),
+      builder: (_, state) =>
+          WorkOrderExecuteScreen(workOrderId: state.pathParameters['id']!),
     ),
     GoRoute(
       path: '/work-orders/:id/approval-request',
@@ -112,8 +126,12 @@ Widget _wrap({
         seedWorkOrders: [wo],
       );
 
+  // B-GUI-FID1 — a execução (onde mora o check-in) lê as vistorias do banco do aparelho: um banco em memória.
+  final db = AppDatabase.openInMemory();
+  addTearDown(db.close);
   return ProviderScope(
     overrides: [
+      appDatabaseProvider.overrideWithValue(db),
       bootstrapSessionProvider.overrideWith((_) async => _session),
       workOrderLocalStoreProvider.overrideWithValue(store),
       syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore([])),
@@ -305,14 +323,14 @@ void main() {
       expect(confirmBtn.onPressed, isNull);
     });
 
-    testWidgets('8. "Nao foi possivel iniciar" visible when enRoute', (
+    testWidgets('8. "Não foi possível iniciar" visible when enRoute', (
       t,
     ) async {
       await t.pumpWidget(_wrap(wo: _makeWo(status: WorkOrderStatus.enRoute)));
       await t.pumpAndSettle();
       await _scrollUntilFound(t, find.byKey(const Key('checkin-block')));
 
-      expect(find.text('Nao foi possivel iniciar'), findsOneWidget);
+      expect(find.text('Não foi possível iniciar'), findsOneWidget);
       expect(find.byKey(const Key('checkin-block')), findsOneWidget);
     });
 

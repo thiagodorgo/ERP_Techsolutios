@@ -1,11 +1,18 @@
+import type { Appearance } from "../appearance/appearance.storage";
+
 // Ω3F-1 — Registro das abas do Hub da OS (spec §1.3: 11 abas). Cada bloco seguinte "acende" a sua
 // com o flip de `visible` (1 linha), sem tocar o shell (hotspot de merge — refinamento do estrategista).
 //
 // C2 (junta J-Ω3F-0, vinculante): REVELAÇÃO PROGRESSIVA — só abas `visible: true` APARECEM no menu.
 // As não-entregues ficam no registro com `visible: false` = AUSENTES (nunca "em breve"/PLANNED, §11).
+//
+// B-GUI-02 (Emenda 1, §5) — a aba "Vistorias" é INSERÇÃO (12 no registro), logo depois de "Informações gerais", e só
+// aparece nas aparências B e C do painel de vistorias (`appearances`); na A o painel vive em Informações gerais. É emenda ao
+// "11 abas" da spec, vinda da maquete aprovada (§11: a referência vence para layout).
 
 export type WorkOrderTabSlug =
   | "informacoes-gerais"
+  | "vistorias"
   | "financeiro"
   | "orcamento"
   | "estoque"
@@ -27,6 +34,8 @@ export interface WorkOrderTabDef {
   readonly requiredPermission?: string;
   /** Bloco Ω3F que entrega a aba (rastreabilidade da revelação progressiva). */
   readonly deliveredBy: string;
+  /** B-GUI-02 — só aparece nestas aparências do painel de vistorias. Ausente = em todas. */
+  readonly appearances?: readonly Appearance[];
 }
 
 export const DEFAULT_TAB: WorkOrderTabSlug = "informacoes-gerais";
@@ -34,6 +43,7 @@ export const DEFAULT_TAB: WorkOrderTabSlug = "informacoes-gerais";
 // Ordem EXATA da spec §1.3 (não reordenar). Fase 1 (Ω3F-1): só "Informações gerais" nasce visível.
 export const WORK_ORDER_TABS: readonly WorkOrderTabDef[] = [
   { slug: "informacoes-gerais", label: "Informações gerais", visible: true, deliveredBy: "Ω3F-1" },
+  { slug: "vistorias", label: "Vistorias", visible: true, requiredPermission: "work_orders:read", appearances: ["B", "C"], deliveredBy: "B-GUI-02" },
   { slug: "financeiro", label: "Financeiro", visible: true, requiredPermission: "work_order_financials:read", deliveredBy: "Ω3F-3" },
   { slug: "orcamento", label: "Orçamento", visible: true, requiredPermission: "service_quotes:read", deliveredBy: "Ω3F-4" },
   { slug: "estoque", label: "Estoque", visible: false, deliveredBy: "Ω3F-10 (Fase 2)" },
@@ -46,9 +56,9 @@ export const WORK_ORDER_TABS: readonly WorkOrderTabDef[] = [
   { slug: "logs", label: "Logs", visible: true, requiredPermission: "work_orders:read", deliveredBy: "Ω3F-8a" },
 ];
 
-/** Abas que aparecem no menu lateral interno (C2: só as `visible`). */
-export function visibleTabs(): readonly WorkOrderTabDef[] {
-  return WORK_ORDER_TABS.filter((tab) => tab.visible);
+/** Abas que aparecem no menu lateral interno (C2: só as `visible`; B-GUI-02: e as da aparência escolhida). */
+export function visibleTabs(appearance: Appearance = "A"): readonly WorkOrderTabDef[] {
+  return WORK_ORDER_TABS.filter((tab) => tab.visible && (!tab.appearances || tab.appearances.includes(appearance)));
 }
 
 /** Uma aba visível é acessível se não exige permissão OU o ator a possui (§7). */
@@ -61,9 +71,9 @@ export function canAccessTab(tab: WorkOrderTabDef, permissions: readonly string[
  * "Informações gerais" (nunca 404 — fid-analista Q6; precedente EstoquePage). Permissão NÃO causa
  * fallback aqui: aba visível-sem-permissão fica ativa e o shell renderiza "acesso não permitido" (§7).
  */
-export function resolveActiveTab(slug: string | null | undefined): WorkOrderTabSlug {
-  const found = WORK_ORDER_TABS.find((tab) => tab.slug === slug);
-  if (!found || !found.visible) return DEFAULT_TAB;
+export function resolveActiveTab(slug: string | null | undefined, appearance: Appearance = "A"): WorkOrderTabSlug {
+  const found = visibleTabs(appearance).find((tab) => tab.slug === slug);
+  if (!found) return DEFAULT_TAB;
   return found.slug;
 }
 

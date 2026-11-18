@@ -8,6 +8,7 @@ import { useAuth } from "../../../providers/AuthProvider";
 import { StaleDataBanner } from "../components/StaleDataBanner";
 import { StatePanel, StatePanelAction } from "../components/StatePanel";
 import { WorkOrderActionBar } from "../components/WorkOrderActionBar";
+import { WorkOrderChecklistsPanel, useWorkOrderChecklistsAppearance } from "../components/WorkOrderChecklistsPanel";
 import { WorkOrderTabsShell } from "../components/WorkOrderTabsShell";
 import { AttachmentsTab } from "../components/tabs/AttachmentsTab";
 import { CommentsTab } from "../components/tabs/CommentsTab";
@@ -41,7 +42,9 @@ export function WorkOrderDetailPage() {
   const { permissions } = usePermissions();
   const { session } = useAuth();
 
-  const activeTab = resolveActiveTab(searchParams.get("aba"));
+  // B-GUI-02 — a aba "Vistorias" só existe nas aparências B e C do painel; na A, `?aba=vistorias` cai em Informações gerais.
+  const appearance = useWorkOrderChecklistsAppearance();
+  const activeTab = resolveActiveTab(searchParams.get("aba"), appearance);
 
   function selectTab(slug: WorkOrderTabSlug) {
     const next = new URLSearchParams(searchParams);
@@ -107,13 +110,16 @@ export function WorkOrderDetailView({
   context,
   permissions,
   currentUserId,
-  activeTab,
+  activeTab: requestedTab,
   onSelectTab,
   onRefresh,
   onBack,
   embedded = false,
 }: WorkOrderDetailViewProps) {
   const navigate = useNavigate();
+  // B-GUI-02 — a janela da OS (aparências B e C da lista) usa esta mesma View: lê a aparência aqui e herda a aba.
+  const appearance = useWorkOrderChecklistsAppearance();
+  const activeTab = resolveActiveTab(requestedTab, appearance);
   const backToList = onBack ?? (() => navigate("/work-orders"));
   const canDecide = permissions.includes("work_orders:cancel") || permissions.includes("work_orders:approve");
   const activeTabDef = findTab(activeTab);
@@ -190,7 +196,7 @@ export function WorkOrderDetailView({
         <WorkOrderActionBar workOrder={workOrder} activeTab={activeTab} context={context} permissions={permissions} onRefresh={onRefresh} />
       </div>
 
-      <WorkOrderTabsShell tabs={visibleTabs()} activeTab={activeTab} accessAllowed={accessAllowed} onSelect={onSelectTab}>
+      <WorkOrderTabsShell tabs={visibleTabs(appearance)} activeTab={activeTab} accessAllowed={accessAllowed} onSelect={onSelectTab}>
         {/* Conteúdo por aba (C2: só abas acesas chegam aqui). Ω3F-3 acende "Financeiro"; as demais
             entram nos blocos seguintes. `accessAllowed=false` já é tratado pelo shell (§7). */}
         {activeTab === "financeiro" ? (
@@ -209,8 +215,27 @@ export function WorkOrderDetailView({
           <MapTab workOrder={workOrder} context={context} permissions={permissions} />
         ) : activeTab === "logs" ? (
           <LogsTab workOrderId={workOrder.id} context={context} permissions={permissions} />
+        ) : activeTab === "vistorias" ? (
+          <WorkOrderChecklistsPanel
+            workOrder={workOrder}
+            timeline={timeline}
+            context={context}
+            permissions={permissions}
+            appearance={appearance}
+            lastUpdatedAt={lastUpdatedAt}
+            onChanged={onRefresh}
+          />
         ) : (
-          <GeneralInfoTab workOrder={workOrder} timeline={timeline} timelineUnavailable={timelineUnavailable} context={context} canDecide={canDecide} />
+          <GeneralInfoTab
+            workOrder={workOrder}
+            timeline={timeline}
+            timelineUnavailable={timelineUnavailable}
+            context={context}
+            canDecide={canDecide}
+            permissions={permissions}
+            lastUpdatedAt={lastUpdatedAt}
+            onChecklistsChanged={onRefresh}
+          />
         )}
       </WorkOrderTabsShell>
     </div>

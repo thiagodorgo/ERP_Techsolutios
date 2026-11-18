@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -259,6 +259,33 @@ class AppDatabase extends GeneratedDatabase {
         // Migração ADITIVA: só CREATE TABLE IF NOT EXISTS, nenhuma linha de outra tabela se perde.
         await m.database.customStatement(_kWorkOrderServiceNotes);
       }
+      if (from < 19) {
+        // B-GUI-D1 — destino, veículo atendido e prazo. ADITIVA: só ALTER TABLE ADD COLUMN, guardado POR COLUNA
+        // (o app antigo devolve o banco à versão anterior COM as colunas; e um degrau interrompido pode deixar parte
+        // delas). Sem `from >= 2`: com a guarda por coluna ele é redundante, e a `work_orders` que já existia num banco
+        // vindo da 1 (o `CREATE TABLE IF NOT EXISTS` não a completa) também se completa aqui. Sem DROP, sem recriar
+        // tabela, sem tocar `sync_actions`: a fila não enviada fica intacta.
+        final tables = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
+            )
+            .get();
+        if (tables.isNotEmpty) {
+          final columns = await m.database
+              .customSelect("PRAGMA table_info('work_orders')")
+              .get();
+          final existing = columns
+              .map((column) => column.read<String>('name'))
+              .toSet();
+          for (final entry in _kWorkOrdersV19Columns.entries) {
+            if (!existing.contains(entry.key)) {
+              await m.database.customStatement(
+                'ALTER TABLE work_orders ADD COLUMN ${entry.key} ${entry.value}',
+              );
+            }
+          }
+        }
+      }
     },
   );
 
@@ -366,8 +393,27 @@ CREATE TABLE IF NOT EXISTS work_orders (
   team_id TEXT,
   team_name TEXT,
   checkin_mode TEXT,
-  checkin_plate_tail TEXT
+  checkin_plate_tail TEXT,
+  destination_address TEXT,
+  destination_latitude REAL,
+  destination_longitude REAL,
+  attended_vehicle_plate_masked TEXT,
+  attended_vehicle_model TEXT,
+  attended_vehicle_color TEXT,
+  sla_due_at INTEGER
 )''';
+
+// B-GUI-D1 — as 7 colunas da v19 em `work_orders`: o degrau `if (from < 19)` as acrescenta, uma a uma, se faltarem.
+// São as 7 últimas linhas de `_kWorkOrders`, para a instalação nova e o aparelho atualizado terem o mesmo esquema.
+const _kWorkOrdersV19Columns = <String, String>{
+  'destination_address': 'TEXT',
+  'destination_latitude': 'REAL',
+  'destination_longitude': 'REAL',
+  'attended_vehicle_plate_masked': 'TEXT',
+  'attended_vehicle_model': 'TEXT',
+  'attended_vehicle_color': 'TEXT',
+  'sla_due_at': 'INTEGER',
+};
 
 const _kWorkOrderTimeline = '''
 CREATE TABLE IF NOT EXISTS work_order_timeline (

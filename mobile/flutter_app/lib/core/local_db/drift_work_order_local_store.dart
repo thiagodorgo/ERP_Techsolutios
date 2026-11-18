@@ -32,8 +32,12 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
       'assigned_user_id, scheduled_at, started_at, arrived_at, '
       'completed_at, checklist_id, sync_status, created_at, updated_at, '
       'service_type, vehicle_id, vehicle_plate, team_id, team_name, '
-      'checkin_mode, checkin_plate_tail) '
-      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      'checkin_mode, checkin_plate_tail, '
+      'destination_address, destination_latitude, destination_longitude, '
+      'attended_vehicle_plate_masked, attended_vehicle_model, '
+      'attended_vehicle_color, sla_due_at) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'
+      '?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(order.localId),
         Variable<String>(order.serverId),
@@ -64,6 +68,14 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         Variable<String>(order.teamName),
         Variable<String>(checkinModeToApi(order.checkinMode)),
         Variable<String>(order.checkinPlateTail),
+        // B-GUI-D1 — destino, veículo atendido e prazo.
+        Variable<String>(order.destinationAddress),
+        Variable<double>(order.destinationLatitude),
+        Variable<double>(order.destinationLongitude),
+        Variable<String>(order.attendedVehiclePlateMasked),
+        Variable<String>(order.attendedVehicleModel),
+        Variable<String>(order.attendedVehicleColor),
+        Variable<int>(_msOrNull(order.slaDueAt)),
       ],
     );
   }
@@ -297,6 +309,15 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
     teamName: row.readNullable<String>('team_name'),
     checkinMode: checkinModeFromApi(row.readNullable<String>('checkin_mode')),
     checkinPlateTail: row.readNullable<String>('checkin_plate_tail'),
+    destinationAddress: row.readNullable<String>('destination_address'),
+    destinationLatitude: row.readNullable<double>('destination_latitude'),
+    destinationLongitude: row.readNullable<double>('destination_longitude'),
+    attendedVehiclePlateMasked: row.readNullable<String>(
+      'attended_vehicle_plate_masked',
+    ),
+    attendedVehicleModel: row.readNullable<String>('attended_vehicle_model'),
+    attendedVehicleColor: row.readNullable<String>('attended_vehicle_color'),
+    slaDueAt: _fromMs(row.readNullable<int>('sla_due_at')),
   );
 
   WorkOrderTimelineEvent _timelineFromRow(QueryRow row) =>

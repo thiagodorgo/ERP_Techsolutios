@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check-in do Guincho</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Roboto:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS (molde lido na origin/main ec91b1f9; erp_mobile_theme.dart:7-30) ─── */
+:root{
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  /* mobile/flutter_app/lib/shared/theme/erp_mobile_theme.dart:7-24 */
+  --m-primary:#2563EB;--m-success:#059669;--m-warning:#D97706;--m-danger:#DC2626;--m-info:#2563EB;--m-purple:#7C3AED;
+  --m-page:#F1F5F9;--m-border:#E2E8F0;--m-ink:#0F172A;--m-muted:#64748B;--m-faint:#94A3B8;--m-navy:#0D1B2A;
+  /* ícones de lista e de cartão do kit (mobile_kit.dart:389, work_order_execute_screen.dart:651) */
+  --m-icon:#475569;
+  /* cores que o Material 3 gera da semente #2563EB e que não estão em código (aproximação declarada no quadro) */
+  --m3-outline:#74777F;--m3-errc:#FFDAD6;--m3-onerrc:#410002;--m3-snack:#313033;--m3-onsnack:#F4EFF4;
+  --m-font:Roboto,"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 240px}
+button{font-family:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.nw{white-space:nowrap}
+
+/* ─── MOLDURA (do molde aprovado troca-senha-claude.html, versão "App de campo") ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.app-stage{position:relative;background:#0f172a;display:flex;justify-content:center;padding:20px 0}
+.app-stage__tag{position:absolute;left:24px;top:22px;display:flex;flex-direction:column;gap:6px;width:min(300px,calc((100vw - 410px) / 2 - 40px))}
+.app-stage__tag b{align-self:flex-start;font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-stage__tag>span{font-size:11.5px;color:#94a3b8;line-height:1.5}
+.app-stage__entrega{color:#e2e8f0!important;font-weight:700}
+.app-stage__lado{position:absolute;right:24px;top:22px;width:min(300px,calc((100vw - 410px) / 2 - 40px));display:flex;flex-direction:column;gap:8px}
+.app-stage__lado h2{font-size:15px;font-weight:800;color:#f8fafc;line-height:1.3}
+.app-stage__lado p{font-size:12px;color:#94a3b8;line-height:1.55}
+.app-stage__lado ul{list-style:none;display:grid;gap:6px}
+.app-stage__lado li{font-size:12px;color:#cbd5e1;line-height:1.45;padding-left:12px;position:relative}
+.app-stage__lado li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:700}
+/* alternador de estados da maquete (fora da tela) */
+.estados{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.estados__grupo{display:flex;flex-direction:column;gap:3px}
+.estados__tit{font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;padding:0 2px}
+.estados button{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid #1e293b;background:#111b2e;color:#cbd5e1;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;line-height:1.3}
+.estados button:hover{border-color:#334155}
+.estados button[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.estados button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.estados button i{font-style:normal;font-size:10px;font-weight:800;color:#94a3b8;min-width:16px}
+.estados button[aria-pressed="true"] i{color:#dbeafe}
+
+.phone{width:410px;height:832px;border-radius:48px;background:#05080f;padding:10px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 30px 60px -20px rgba(0,0,0,.8);flex-shrink:0}
+.phone__screen{width:390px;height:812px;border-radius:38px;overflow:hidden;background:var(--m-page);display:flex;flex-direction:column;font-family:var(--m-font);color:var(--m-ink)}
+.phone__status{height:36px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 28px;font-size:13px;font-weight:600;color:#0F172A}
+.phone__status-ic{display:flex;align-items:center;gap:6px}
+.phone__app{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.phone__app>[data-view]{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* ─── APP DE CAMPO: componentes que já existem ─── */
+.scr{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;background:var(--m-page)}
+.scr__body{flex:1;min-height:0;overflow-y:auto;padding:16px;scroll-behavior:auto}
+.scr__body::-webkit-scrollbar{width:0}
+/* MobileScreenHeader (mobile_kit.dart:239-300) */
+.m-hdr{flex-shrink:0;background:#fff;padding:10px 14px 12px 12px;display:flex;align-items:center;gap:2px}
+.m-hdr__txt{flex:1;min-width:0;padding-left:2px}
+.m-hdr__tit{font-size:18px;font-weight:800;color:var(--m-ink);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-hdr__sub{font-size:12px;color:var(--m-muted);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-hdr__fim{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.m-iconbtn{width:48px;height:48px;border-radius:50%;border:0;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--m-ink);cursor:pointer;flex-shrink:0}
+.m-iconbtn:hover{background:rgba(15,23,42,.06)}
+.m-iconbtn:focus-visible,.m-obtn:focus-visible,.m-fbtn:focus-visible,.m-tbtn:focus-visible,.m-row:focus-visible,.cmp-card:focus-visible,.m-menu button:focus-visible{outline:2px solid var(--m-primary);outline-offset:2px}
+/* MobilePill (mobile_kit.dart:21-63) */
+.m-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap}
+.t-info{background:#EFF6FF;color:var(--m-info)}.t-warning{background:#FFFBEB;color:var(--m-warning)}.t-success{background:#ECFDF5;color:var(--m-success)}
+.t-danger{background:#FEF2F2;color:var(--m-danger)}.t-purple{background:#F5F3FF;color:var(--m-purple)}.t-neutral{background:#F1F5F9;color:#475569}
+/* OperationalStatusChip (erp_components.dart:63-90): Chip do Material 3, cor a 12 % e borda a 45 % */
+.m-chip{display:inline-flex;align-items:center;height:32px;padding:0 10px;border-radius:8px;font-size:13.5px;font-weight:800;border:1px solid;white-space:nowrap;flex-shrink:0}
+.c-success{color:var(--m-success);background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.45)}
+.c-warning{color:var(--m-warning);background:rgba(217,119,6,.12);border-color:rgba(217,119,6,.45)}
+.c-danger{color:var(--m-danger);background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.45)}
+.c-info{color:var(--m-info);background:rgba(37,99,235,.12);border-color:rgba(37,99,235,.45)}
+.c-pending{color:var(--m-purple);background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.45)}
+/* Card (erp_mobile_theme.dart:56-63): raio 14, borda #E2E8F0, sem sombra, margem vertical 6 */
+.m-card{background:#fff;border:1px solid var(--m-border);border-radius:14px;margin:6px 0}
+.m-card--erro{background:var(--m3-errc);border-color:transparent}
+/* ListTile do Material 3 */
+.m-tile{display:flex;align-items:center;gap:16px;padding:8px 16px;min-height:72px}
+.m-tile__ic{color:var(--m-icon);display:flex;flex-shrink:0}
+.m-tile__txt{flex:1;min-width:0}
+.m-tile__t{font-size:16px;line-height:22px;color:var(--m-ink)}
+.m-tile__s{font-size:13.5px;line-height:19px;color:var(--m-muted)}
+.m-card--erro .m-tile__ic{color:var(--m-danger)}
+.m-card--erro .m-tile__t,.m-card--erro .m-tile__s{color:var(--m3-onerrc)}
+/* botões do tema (erp_mobile_theme.dart:64-77): altura 44, raio 8 */
+.m-obtn,.m-fbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;border-radius:8px;font-family:var(--m-font);font-size:14px;font-weight:500;letter-spacing:.1px;cursor:pointer;padding:0 16px;white-space:nowrap}
+.m-obtn{border:1px solid var(--m3-outline);background:#fff;color:var(--m-primary)}
+.m-obtn:hover{background:#F5F8FF}
+.m-fbtn{border:0;background:var(--m-primary);color:#fff}
+.m-fbtn--ok{background:var(--m-success)}
+.m-fbtn--perigo{background:var(--m-danger)}
+.m-fbtn:disabled,.m-obtn:disabled{background:rgba(29,27,32,.12);color:rgba(29,27,32,.38);border-color:transparent;cursor:default}
+.m-obtn:disabled{background:transparent;border:1px solid rgba(29,27,32,.12)}
+.m-tbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;min-width:64px;padding:0 12px;border:0;border-radius:22px;background:transparent;color:var(--m-primary);font-family:var(--m-font);font-size:14px;font-weight:500;cursor:pointer;flex-shrink:0}
+.m-tbtn:hover{background:rgba(37,99,235,.08)}
+.m-sec{font-size:14px;font-weight:700;color:var(--m-ink);line-height:20px;margin:8px 0}
+.m-div{height:1px;background:var(--m-border);margin:12px 0}
+.m-gap8{height:8px}.m-gap12{height:12px}.m-gap16{height:16px}
+/* SyncStatusBanner (erp_components.dart:31-61): cor a 12 %, borda a 35 %, ícone de sincronizar */
+.m-banner{display:flex;align-items:flex-start;gap:8px;padding:12px;border-radius:8px;font-size:13.5px;line-height:19px;color:var(--m-ink)}
+.m-banner svg{flex-shrink:0;margin-top:-2px}
+.b-pending{background:rgba(217,119,6,.10);border:1px solid rgba(217,119,6,.35)}.b-pending svg{color:var(--m-warning)}
+.b-failed{background:rgba(220,38,38,.10);border:1px solid rgba(220,38,38,.35)}.b-failed svg{color:var(--m-danger)}
+/* NetworkStatusBanner (erp_components.dart:175-220): desenho de hoje, texto da situação */
+.m-netwrap{flex-shrink:0;padding:8px 16px 0;background:var(--m-page)}
+.m-net{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border-radius:8px;background:rgba(220,38,38,.10);border:1px solid rgba(220,38,38,.30);font-size:13px;line-height:18px;color:#B91C1C}
+.m-net svg{flex-shrink:0;color:var(--m-danger);margin-top:1px}
+/* faixa de dados desatualizados: o mesmo desenho, tom de atenção */
+.m-desat{display:flex;align-items:center;gap:8px;padding:4px 4px 4px 12px;border-radius:8px;background:rgba(217,119,6,.10);border:1px solid rgba(217,119,6,.35);font-size:13px;line-height:18px;color:#92400E;margin-bottom:6px}
+.m-desat svg{flex-shrink:0;color:var(--m-warning)}
+.m-desat span{flex:1}
+/* WorkOrderStepper (work_order_stepper.dart): círculo 26, número 11/700, rótulo 9 */
+.m-steps{display:flex;align-items:flex-start}
+.m-step{flex:1;display:flex;flex-direction:column;align-items:center;padding:4px 2px;min-width:0}
+.m-step__c{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#E2E8F0;color:var(--m-muted)}
+.m-step__l{margin-top:4px;font-size:9px;font-weight:600;color:var(--m-muted);text-align:center;line-height:1.2}
+.m-step.is-done .m-step__c{background:var(--m-success);color:#fff}.m-step.is-done .m-step__l{color:var(--m-success)}
+.m-step.is-active .m-step__c{background:var(--m-primary);color:#fff}.m-step.is-active .m-step__l{color:var(--m-primary);font-weight:700}
+.m-card--passos{padding:12px 8px}
+/* LinearProgressIndicator */
+.m-prog{height:4px;border-radius:2px;background:#E2E8F0;overflow:hidden}
+.m-prog i{display:block;height:100%;background:var(--m-primary);border-radius:2px}
+.m-prog--ok i{background:var(--m-success)}
+/* CircularProgressIndicator */
+.m-spin{width:36px;height:36px;border-radius:50%;border:4px solid rgba(37,99,235,.18);border-top-color:var(--m-primary);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* EmptyState / ErrorState / PermissionBlockedState (erp_components.dart:92-156) */
+.m-vazio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.m-vazio svg{color:var(--m-primary)}
+.m-vazio h3{font-size:16px;font-weight:700;color:var(--m-ink);margin-top:12px}
+.m-vazio p{font-size:14px;line-height:20px;color:var(--m-ink);margin-top:8px;max-width:300px}
+/* evidência (work_order_execute_screen.dart:618-692) */
+.m-evi{display:flex;align-items:stretch;background:#fff;border:1px solid var(--m-border);border-radius:14px;overflow:hidden;margin-bottom:8px}
+.m-evi__barra{width:4px;background:var(--m-success)}
+.m-evi__in{flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px}
+.m-evi__ic{width:36px;height:36px;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:#475569;flex-shrink:0}
+.m-evi__n{font-size:13px;font-weight:700;color:var(--m-ink)}
+.m-evi__m{font-size:11px;color:var(--m-muted)}
+/* cartão de localização (work_order_operational_map_screen.dart:195-275), resumido */
+.m-loc{padding:12px}
+.m-loc__cab{display:flex;align-items:center;gap:8px}
+.m-loc__cab b{flex:1;font-size:16px;font-weight:700;color:var(--m-ink)}
+.m-loc p{font-size:12px;line-height:16px;color:var(--m-muted);margin-top:8px}
+.m-loc__l{font-size:13.5px;line-height:19px;color:var(--m-ink);margin-top:8px}
+.m-loc__bt{display:flex;gap:8px;margin-top:12px}
+.m-loc__bt .m-fbtn{flex:1}
+.m-loc__bt .m-obtn{width:auto}
+/* SnackBar do Material 3 */
+.m-snack{position:absolute;left:12px;right:12px;bottom:12px;background:var(--m3-snack);color:var(--m3-onsnack);border-radius:4px;padding:14px 16px;font-size:14px;line-height:20px;box-shadow:0 3px 10px rgba(0,0,0,.25);z-index:9}
+/* menu (PopupMenuButton) */
+.m-menu{position:absolute;right:14px;top:58px;background:#fff;border-radius:4px;box-shadow:0 4px 18px rgba(15,23,42,.22);padding:8px 0;min-width:220px;z-index:8}
+.m-menu button{display:flex;align-items:center;gap:12px;width:100%;height:48px;padding:0 16px;border:0;background:transparent;font-family:var(--m-font);font-size:15px;color:var(--m-ink);cursor:pointer;text-align:left}
+.m-menu button:hover{background:#F1F5F9}
+.m-menu button svg{color:var(--m-icon)}
+.m-menu__perigo svg{color:var(--m-danger)!important}
+
+/* ─── SEÇÃO NOVA · peças comuns ─── */
+.fs-nota{display:flex;align-items:center;gap:6px;font-size:12.5px;line-height:17px;color:var(--m-muted);margin-top:4px}
+.fs-nota svg{flex-shrink:0;color:var(--m-faint)}
+.fs-nota--trava{color:#92400E}
+.fs-nota--trava svg{color:var(--m-warning)}
+.fs-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+
+/* opção A: o cartão de vistoria de hoje (_ChecklistStatusCard, :444-501), uma vez por fase */
+.a-fase .m-tile{align-items:flex-start;padding-top:12px}
+.a-fase .m-tile__ic{margin-top:2px}
+.a-fase__acao{padding:0 16px 12px}
+.a-fase__nota{padding:0 16px 10px;margin-top:-4px}
+
+/* opção B: linha do tempo das fases + barra fixa com a próxima ação */
+.b-passos{flex-shrink:0;background:#fff;border-bottom:1px solid var(--m-border);padding:6px 8px 8px}
+.b-tl{padding:14px 16px 6px}
+.b-tl__tit{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.b-tl__tit b{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--m-faint)}
+.b-no{position:relative;padding-left:40px;padding-bottom:14px}
+.b-no::before{content:"";position:absolute;left:12px;top:30px;bottom:2px;width:2px;border-radius:2px;background:#E2E8F0}
+.b-no:last-child::before{display:none}
+.b-no.is-done::before{background:#A7F3D0}
+.b-marca{position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#E2E8F0;color:var(--m-muted)}
+.b-no.is-done .b-marca{background:var(--m-success);color:#fff}
+.b-no.is-active .b-marca{background:var(--m-primary);color:#fff}
+.b-no.is-lock .b-marca{background:#FFFBEB;color:var(--m-warning);box-shadow:inset 0 0 0 1.5px #FCD34D}
+.b-no__cab{display:flex;align-items:center;gap:8px;min-height:26px}
+.b-no__t{flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--m-ink);line-height:1.25}
+.b-no.is-todo .b-no__t{color:var(--m-muted)}
+.b-no__m{font-size:12.5px;line-height:17px;color:var(--m-muted);margin-top:2px}
+.b-no__prog{margin-top:8px}
+.b-no__acao{display:flex;justify-content:flex-start;margin:4px 0 -6px -12px}
+.m-row{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;border:1px dashed #BFDBFE;background:#F8FAFF;border-radius:10px;padding:6px 8px 6px 12px;color:var(--m-primary);font-family:var(--m-font);font-size:14px;font-weight:600;cursor:pointer;text-align:left;margin:-4px 0 14px}
+.m-row span{flex:1}
+.m-row small{display:block;font-size:12px;font-weight:400;color:var(--m-muted);margin-top:1px}
+.m-row svg:last-child{color:var(--m-faint)}
+.m-osmini{padding:14px 16px}
+.m-osmini__cab{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.m-osmini__cod{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--m-primary)}
+.m-osmini__cli{font-size:16px;font-weight:800;color:var(--m-ink);margin-top:8px}
+.m-osmini__grade{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:10px;padding-top:10px;border-top:1px solid #F1F5F9}
+.m-osmini__grade small{display:block;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--m-faint)}
+.m-osmini__grade span{font-size:13px;font-weight:700;color:var(--m-ink)}
+.m-osmini__end{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:#475569;margin-top:10px;line-height:1.4}
+.m-osmini__end svg{flex-shrink:0;color:var(--m-muted)}
+/* MobileStickyBar (mobile_kit.dart:584-605) com texto de apoio, como nas referências */
+.m-sticky{flex-shrink:0;background:#fff;border-top:1px solid var(--m-border);padding:10px 16px 12px}
+.m-sticky__apoio{font-size:12px;line-height:16px;color:var(--m-muted);text-align:center;margin-bottom:8px}
+.m-sticky__apoio--trava{color:#92400E}
+
+/* opção C: coleta e entrega lado a lado + lista do que falta para concluir */
+.c-lado{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:6px 0 8px}
+.c-fase{background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.c-fase.is-atual{border:1.5px solid var(--m-primary);padding:11.5px}
+.c-fase__cab{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:20px}
+.c-fase__cab b{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--m-faint)}
+.c-fase__val{font-size:24px;font-weight:800;color:var(--m-ink);line-height:1.1;margin-top:2px}
+.c-fase__val small{font-size:11.5px;font-weight:500;color:var(--m-muted);margin-left:4px}
+.c-fase__m{font-size:12px;line-height:16px;color:var(--m-muted);min-height:32px}
+.c-fase__txt{font-size:12.5px;line-height:17px;color:#475569;flex:1}
+.c-fase .m-obtn{padding:0 8px}
+.cmp-card{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:10px 12px 10px 14px;cursor:pointer;text-align:left;font-family:var(--m-font);margin:0 0 8px}
+.cmp-card__ic{width:36px;height:36px;border-radius:50%;background:#EFF6FF;color:var(--m-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cmp-card__t{font-size:14px;font-weight:700;color:var(--m-ink)}
+.cmp-card__s{font-size:12.5px;line-height:17px;color:var(--m-muted);margin-top:1px}
+.cmp-card>div{flex:1;min-width:0}
+.cmp-card>svg{color:var(--m-faint);flex-shrink:0}
+.c-req{padding:14px 16px 16px}
+.c-req h3{font-size:14px;font-weight:700;color:var(--m-ink);margin-bottom:10px}
+.c-req ul{list-style:none;display:grid;gap:8px;margin-bottom:14px}
+.c-req li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:19px;color:var(--m-ink)}
+.c-req li svg{flex-shrink:0}
+.c-req .is-ok svg{color:var(--m-success)}
+.c-req .is-pend{color:#92400E}.c-req .is-pend svg{color:var(--m-warning)}
+.c-req .is-fila svg{color:var(--m-warning)}
+.c-req .is-info{color:#475569}.c-req .is-info svg{color:var(--m-faint)}
+
+/* tela de comparação (checklist_comparison_screen.dart), aberta pelo botão */
+.cmp-ov{position:absolute;inset:0;background:var(--m-page);display:flex;flex-direction:column;z-index:7}
+.cmp-item{background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:12px 16px;margin:6px 0}
+.cmp-item h4{font-size:14px;font-weight:700;color:var(--m-ink);margin-bottom:8px}
+.cmp-item__g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp-item__g small{display:block;font-size:11px;font-weight:500;color:var(--m-muted);margin-bottom:4px}
+
+/* ─── seletor A/B/C (fora da tela; molde) ─── */
+.maquete-controles{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:min(470px,calc((100vw - 420px) / 2 - 30px))}
+.seletor-opcoes{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes .dock-rotulo{font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.03em;padding:0 4px 0 6px}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1;font-family:var(--font-sans)}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+
+/* ─── quadro de notas (fora da tela; molde) ─── */
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0;line-height:1.5}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.3}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;overflow-wrap:anywhere}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-box--pergunta{border-color:#2563eb;background:#172554}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+
+/* ─── CHECK-IN E CHEGADA · peças desta maquete (alvo: screen-refs/mobile/checkin-chegada.png) ─── */
+.m-hdr__tit--fase{color:var(--m-ink)}
+.ck-tag{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+.ck-passos{flex-shrink:0;background:#fff;border-bottom:1px solid var(--m-border);padding:4px 8px 8px}
+/* a faixa do mapa da referência, no MVP sem mapa de ruas: mesmo lugar, mesma altura */
+.ck-faixa{flex-shrink:0;position:relative;height:124px;background:linear-gradient(180deg,#EEF2F7 0%,#E6ECF3 100%);border-bottom:1px solid var(--m-border);padding:12px 14px}
+.ck-chipdist{display:inline-flex;align-items:center;gap:6px;background:#fff;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:700;color:var(--m-ink);box-shadow:0 1px 3px rgba(15,23,42,.12)}
+.ck-chipdist svg{color:var(--m-ink)}
+.ck-faixa__dest{margin-top:10px;max-width:200px}
+.ck-faixa__dest small{display:block;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--m-faint)}
+.ck-faixa__dest span{display:block;font-size:13px;font-weight:600;color:#334155;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck-selo{position:absolute;left:12px;bottom:10px;display:inline-flex;align-items:center;gap:5px;background:#334155;color:#fff;border-radius:6px;padding:3px 8px;font-size:10.5px;font-weight:700}
+.ck-selo i{width:6px;height:6px;border-radius:50%;background:#34D399;display:block}
+.ck-selo--cinza i{background:#CBD5E1}
+.ck-ir{position:absolute;right:12px;bottom:10px;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px 0 14px;border:0;border-radius:22px;background:var(--m-primary);color:#fff;font-family:var(--m-font);font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,.35)}
+.ck-ir:focus-visible,.ck-sbtn:focus-visible,.ck-call:focus-visible,.ck-digit:focus-visible{outline:2px solid var(--m-primary);outline-offset:2px}
+.ck-faixa--ok{background:linear-gradient(180deg,#ECFDF5 0%,#E3F7EE 100%)}
+.ck-faixa__ok{display:flex;align-items:center;gap:10px;margin-top:4px}
+.ck-faixa__ok svg{color:var(--m-success);flex-shrink:0}
+.ck-faixa__ok b{font-size:15px;color:var(--m-ink)}
+.ck-faixa__ok span{display:block;font-size:12.5px;color:var(--m-muted)}
+/* cartão da OS da referência (MobileOsCard ampliado) */
+.ck-os{background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:14px 14px 12px;margin:0 0 10px}
+.ck-os__cab{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ck-os__cod{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--m-primary)}
+.ck-svc{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:#EFF6FF;color:#1D4ED8;border-radius:99px;padding:4px 10px 4px 8px;font-size:11.5px;font-weight:700}
+.ck-os__cli{font-size:16px;font-weight:800;color:var(--m-ink);margin-top:10px;line-height:1.25}
+.ck-os__sol{font-size:12.5px;color:var(--m-muted);margin-top:2px}
+.ck-veic{display:flex;gap:12px;align-items:flex-start;margin-top:12px;padding-top:12px;border-top:1px solid #F1F5F9}
+.ck-veic__ic{width:42px;height:42px;border-radius:10px;background:#F8FAFC;border:1px solid var(--m-border);display:flex;align-items:center;justify-content:center;color:#334155;flex-shrink:0}
+.ck-veic__g{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;min-width:0}
+.ck-veic__g small{display:block;font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--m-faint)}
+.ck-veic__g span{display:block;font-size:13px;font-weight:700;color:var(--m-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck-veic__g .ck-placa{font-family:var(--font-mono);letter-spacing:.5px}
+.ck-veic__g .ck-sem{font-family:var(--m-font);font-weight:600;color:#92400E;letter-spacing:0}
+.ck-linhas{margin-top:12px;padding-top:10px;border-top:1px solid #F1F5F9;display:grid;gap:7px}
+.ck-linha{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:#475569;line-height:1.4}
+.ck-linha svg{flex-shrink:0;color:var(--m-muted)}
+/* contato */
+.ck-contato{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:10px 10px 10px 14px;margin:0 0 10px}
+.ck-contato__av{width:36px;height:36px;border-radius:50%;background:#EFF6FF;color:var(--m-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ck-contato__t{flex:1;min-width:0}
+.ck-contato__t b{display:block;font-size:14px;color:var(--m-ink)}
+.ck-contato__t span{font-size:12.5px;color:var(--m-muted)}
+.ck-call{width:44px;height:44px;border-radius:10px;border:0;background:var(--m-primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.ck-naopossivel{display:flex;justify-content:center;margin:2px 0 6px}
+.ck-naopossivel .m-tbtn{color:var(--m-danger)}
+.ck-naopossivel .m-tbtn:hover{background:rgba(220,38,38,.06)}
+/* barra fixa da referência: passos curtos + botão */
+.ck-sbar{flex-shrink:0;background:#fff;border-top:1px solid var(--m-border);padding:8px 16px 12px}
+.ck-short{display:flex;justify-content:space-between;margin:0 6px 8px}
+.ck-sbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:0;padding:0;font-family:var(--m-font);cursor:default}
+.ck-sbtn i{width:22px;height:22px;border-radius:50%;border:1.5px solid #CBD5E1;background:#fff;color:var(--m-muted);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10.5px;font-weight:700}
+.ck-sbtn span{font-size:9.5px;font-weight:600;color:var(--m-muted)}
+.ck-sbtn.is-done i{background:var(--m-success);border-color:var(--m-success);color:#fff}
+.ck-sbtn.is-done span{color:var(--m-success)}
+.ck-sbtn.is-active i{background:var(--m-primary);border-color:var(--m-primary);color:#fff}
+.ck-sbtn.is-active span{color:var(--m-primary);font-weight:700}
+.ck-sbar .m-fbtn{border-radius:10px;font-weight:600}
+.ck-apoio{font-size:12px;line-height:16px;color:var(--m-muted);text-align:center;margin-bottom:8px}
+.ck-apoio--trava{color:#92400E}
+/* diálogo de chegada (o de hoje, _PlateDialog) */
+.ck-scrim{position:absolute;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:24px;z-index:9}
+.ck-dlg{width:100%;max-width:320px;background:#fff;border-radius:18px;padding:22px 22px 12px;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+.ck-dlg__cab{display:flex;gap:12px;align-items:center}
+.ck-dlg__ic{width:38px;height:38px;border-radius:10px;background:#DBE6FF;color:var(--m-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ck-dlg__cab b{display:block;font-size:14.5px;font-weight:600;color:var(--m-ink)}
+.ck-dlg__cab span{display:block;font-size:12.5px;line-height:17px;color:var(--m-muted)}
+.ck-gps{display:flex;align-items:center;gap:6px;margin-top:12px;padding:8px 12px;border-radius:10px;font-size:11.5px;font-weight:600}
+.ck-gps--ok{background:#ECFDF5;color:#047857}
+.ck-gps--off{background:rgba(255,218,214,.6);color:#B91C1C}
+.ck-placain{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px}
+.ck-placain__mask{font-family:var(--font-mono);font-size:21px;color:#64748B;letter-spacing:1px}
+.ck-placain__in{width:64px;height:52px;border:1.5px solid var(--m-primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:21px;color:var(--m-ink);box-shadow:0 0 0 1px var(--m-primary)}
+.ck-placain__in.is-vazio{color:#CBD5E1}
+.ck-placain__in.is-erro{border-color:var(--m-danger);box-shadow:0 0 0 1px var(--m-danger)}
+.ck-dlg__erro{display:flex;align-items:center;gap:4px;margin-top:8px;font-size:11.5px;color:#B91C1C}
+.ck-dlg__acoes{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.ck-dlg__acoes .m-tbtn{min-width:0}
+.ck-dlg__acoes .m-fbtn{width:auto;border-radius:22px;padding:0 20px}
+.ck-dlg__texto{display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:20px;color:var(--m-ink)}
+.ck-dlg__texto svg{color:var(--m-primary);flex-shrink:0}
+/* opção B: folha de baixo com as casas da placa */
+.ck-folha{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:10px 20px 18px;box-shadow:0 -8px 28px rgba(0,0,0,.22)}
+.ck-folha__puxa{width:36px;height:4px;border-radius:2px;background:#CBD5E1;margin:0 auto 14px}
+.ck-folha h3{font-size:17px;font-weight:800;color:var(--m-ink)}
+.ck-folha p{font-size:13px;line-height:18px;color:var(--m-muted);margin-top:4px}
+.ck-casas{display:flex;align-items:center;justify-content:center;gap:6px;margin:18px 0 6px}
+.ck-casa{width:34px;height:52px;border-radius:8px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:20px;font-weight:700;color:#64748B}
+.ck-casa--traco{width:auto;background:transparent;padding:0 1px}
+.ck-digit{width:44px;height:56px;border-radius:10px;border:2px solid var(--m-primary);background:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--m-ink)}
+.ck-digit.is-vazio{border-color:#93C5FD;color:#CBD5E1}
+.ck-digit.is-erro{border-color:var(--m-danger)}
+.ck-folha .ck-gps{margin-top:14px}
+.ck-folha .ck-dlg__erro{justify-content:center}
+.ck-folha__acoes{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;margin-top:16px}
+.ck-folha__acoes .m-fbtn,.ck-folha__acoes .m-obtn{border-radius:10px}
+/* opção B: linha do tempo da chegada (MobilePhaseTimeline, mobile_kit.dart:1490) */
+.ck-tl .b-no__acao{margin:8px 0 -2px 0}
+.ck-tl .b-no__acao .m-obtn{width:auto;height:40px;border-color:#BFDBFE}
+/* opção C: dois cartões de meia largura */
+.ck-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:0 0 10px}
+.ck-meta .c-fase__val{font-size:22px}
+.ck-meta .m-obtn{padding:0 8px;font-size:13.5px}
+.ck-prazo{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#92400E}
+.ck-prazo svg{color:var(--m-warning)}
+.ck-req h3{display:flex;align-items:center;justify-content:space-between}
+.ck-req li small{display:block;font-size:12px;color:var(--m-muted);line-height:16px;margin-top:1px}
+.ck-req .is-voce svg{color:var(--m-primary)}
+/* quadro: a 2ª etapa do GPS desenhada */
+.rv-etapa2{display:flex;gap:18px;align-items:flex-start}
+.rv-etapa2 svg{flex-shrink:0;border-radius:10px;border:1px solid #334155}
+.rv-shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;font-size:12px;color:#cbd5e1}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="app-stage">
+    <div class="app-stage__tag" data-maquete>
+      <b id="app-tag">App de campo · Check-in e chegada · Opção A</b>
+      <span>Aparelho de 390 × 812, tema claro. O guincheiro da OS atribuída até a chegada ao local da coleta: "Iniciar rota", "Ir para a coleta", "Cheguei ao local" com a placa, "Iniciar atendimento".</span>
+      <span class="app-stage__entrega" id="app-entrega">A opção A é o desenho aprovado (Decisão H).</span>
+      <div class="estados" role="group" aria-label="Estado da tela na maquete">
+        <div class="estados__grupo"><span class="estados__tit">Caminho da chegada</span>
+          <button type="button" data-estado="iniciar" aria-pressed="false"><i>1</i>A iniciar (a referência)</button>
+          <button type="button" data-estado="rota" aria-pressed="true"><i>2</i>Em rota para a coleta</button>
+          <button type="button" data-estado="placa" aria-pressed="false"><i>3</i>Confirmar a placa</button>
+          <button type="button" data-estado="placa-erro" aria-pressed="false"><i>4</i>Dígitos não conferem</button>
+          <button type="button" data-estado="local" aria-pressed="false"><i>5</i>No local: iniciar atendimento</button>
+        </div>
+        <div class="estados__grupo"><span class="estados__tit">Outros casos</span>
+          <button type="button" data-estado="semcoord" aria-pressed="false"><i>6</i>OS sem ponto no mapa</button>
+          <button type="button" data-estado="gpsoff" aria-pressed="false"><i>7</i>GPS desligado</button>
+          <button type="button" data-estado="semplaca" aria-pressed="false"><i>8</i>OS sem placa cadastrada</button>
+          <button type="button" data-estado="recusada" aria-pressed="false"><i>9</i>Servidor recusou a chegada</button>
+        </div>
+        <div class="estados__grupo"><span class="estados__tit">Sem sinal e dados velhos</span>
+          <button type="button" data-estado="rota-off" aria-pressed="false"><i>10</i>Em rota, sem sinal</button>
+          <button type="button" data-estado="local-off" aria-pressed="false"><i>11</i>Chegada registrada sem sinal</button>
+          <button type="button" data-estado="desat" aria-pressed="false"><i>12</i>Dados desatualizados</button>
+        </div>
+        <div class="estados__grupo"><span class="estados__tit">Estados da tela</span>
+          <button type="button" data-estado="carregando" aria-pressed="false"><i>13</i>Carregando</button>
+          <button type="button" data-estado="vazio" aria-pressed="false"><i>14</i>Vazio: nada a fazer</button>
+          <button type="button" data-estado="erro" aria-pressed="false"><i>15</i>Erro ao carregar</button>
+          <button type="button" data-estado="acesso" aria-pressed="false"><i>16</i>Acesso não permitido</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone__screen">
+        <div class="phone__status" aria-hidden="true">
+          <span>10:12</span>
+          <span class="phone__status-ic" id="status-ic"></span>
+        </div>
+        <div class="phone__app">
+          <div data-view="a"></div>
+          <div data-view="b" hidden></div>
+          <div data-view="c" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-stage__lado" data-maquete aria-live="polite">
+      <h2 id="lado-tit">Opção A · Fiel ao aprovado</h2>
+      <p id="lado-desc"></p>
+      <ul id="lado-lista"></ul>
+    </div>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono aprovar</div>
+      <h2 id="rv-titulo">Opção A — Fiel ao aprovado</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true" aria-controls="rv-corpo">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc"><strong>Maquete do Claude (Opus, subagente da sessão; <code>D-DESIGN-SO-CLAUDE</code>), montada em 16/11/2026 a partir das 20:25 (São Paulo, hora de <code>date</code>).</strong> É a tela de check-in e chegada do guincheiro, da fase "Rota coleta" até "Cheguei". Pela <strong>Decisão H</strong>, o desenho aprovado <code>screen-refs/mobile/checkin-chegada.png</code> é a opção A, fiel a ele; a B e a C nascem em cima dele. O estilo também segue <code>entrega-inicio.png</code> (título por fase, faixa do mapa) e <code>os-detalhe.png</code> (contato, janela e prazo). O código citado foi medido na <code>origin/main</code> <code>ec91b1f9</code> (#589) com <code>git show</code> e <code>git grep</code>. A tela de hoje é o fim do Detalhe da OS: os botões de check-in em <code>work_order_detail_screen.dart:874-1000</code> e o diálogo da placa em <code>:1003-1291</code> (o fluxo de <code>:819-1125</code> pedido no mandato). A moldura, o alternador de estados, o seletor A/B/C e este quadro vêm do molde aprovado <code>screen-refs/execucao-guincho-3opcoes.reference.html</code>, e o CSS dele foi copiado da <code>origin/main</code>, não de memória. <strong>Os dados e as regras são os mesmos nas três opções; muda a composição.</strong> Regras que valem nas três: <strong>G1</strong>, "Ir para a coleta" abre o app de mapa do celular; <strong>G2</strong>, a chegada não é avisada sozinha, é o "Cheguei ao local" com a placa; <strong>MVP sem mapa de ruas</strong> (a faixa do mapa vira um cartão com distância e tempo); <strong>sem leitura de placa por câmera</strong> (P7 fora). As capturas <code>checkin-app-a/b/c.png</code> estão no estado 2 ("Em rota para a coleta"), o único que mostra de uma vez a distância, "Ir para a coleta" e "Cheguei ao local". A captura extra <code>checkin-app-a-inicio.png</code> mostra a A no estado 1, o mesmo da referência, para comparar lado a lado. <strong>O verificador web (<code>checar-3opcoes.cjs</code>) não se aplica:</strong> ele confere telas do console web, e esta maquete é do app de campo. A conferência é pelas capturas.</p>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li><strong>A máquina de situações da chegada já existe:</strong> Agendada/Despachada → Em rota → No local → Em atendimento (<code>work_order_models.dart:102-107</code>), com os botões "Iniciar rota", "Cheguei ao local" e "Iniciar atendimento" (<code>work_order_detail_screen.dart:884-942</code>).</li>
+          <li><strong>A conferência da placa já existe, e quem decide é o servidor:</strong> o modo (<code>plate</code>, <code>exempt</code>, <code>reference_missing</code>) e os 2 caracteres finais vêm na lista (<code>work-order.dto.ts:160-163</code>, <code>work-order.checkin.ts:255-263</code>; no app, <code>work_order_models.dart:23-29</code> e <code>:209-212</code>). O diálogo é o de <code>work_order_detail_screen.dart:1090-1260</code>; a recusa vira o cartão "Chegada não confirmada" (<code>:279-325</code>), com os textos de <code>work_order_conflict_resolution_service.dart:32-43</code>; a OS sem placa abre o aviso de <code>:1264-1291</code>.</li>
+          <li><strong>Os 6 passos do guincho</strong> (<code>work_order_steps.dart:29-40</code>), com A iniciar = 0, Em rota = 1 e No local = 2 (<code>:105-117</code>).</li>
+          <li><strong>O cartão da OS:</strong> código, título, cliente ("Solicitante do atendimento"), telefone, endereço, início da janela e prioridade (<code>work_order_models.dart:145-212</code>; <code>scheduledFor</code> lido em <code>work_order_remote_api.dart:330</code>).</li>
+          <li><strong>Para a distância:</strong> o GPS (<code>geolocator</code> no <code>pubspec.yaml</code>; ligado e com permissão em <code>gps_service.dart:7-17</code>). O servidor já manda <code>serviceLatitude</code>/<code>serviceLongitude</code> na lista (<code>work-order.dto.ts:149-150</code>) e o app tem os campos (<code>work_order_models.dart:187-188</code>), mas o leitor da lista não os lê (<code>work_order_remote_api.dart:306-345</code>). O fim da janela pode vir do <code>slaDueAt</code>, que a lista já manda (<code>work-order.dto.ts:158</code>) e o app também não lê.</li>
+          <li><strong>"Não foi possível iniciar"</strong> (<code>work_order_detail_screen.dart:852-872</code>, <code>:914-922</code>) e o <strong>seletor de aparência</strong> do app (<code>app_appearance.dart:10</code>, chaves em <code>:63-72</code>; <code>app_appearance_providers.dart:110</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no servidor</h3><ul class="review-list">
+          <li><strong>A placa mascarada ("ABC-1D••") que a referência mostra.</strong> A lista manda só os 2 caracteres finais (<code>work-order.dto.ts:160-163</code>), e a placa inteira fica no detalhe. Falta um campo com a placa sem o fim, derivado de <code>resolveCheckinReference</code> (<code>work-order.checkin.ts:104-113</code>). Assim o guincheiro confere o começo da placa e digita o fim, e a placa inteira continua sem ir para a lista.</li>
+          <li><strong>O modelo e a cor do veículo atendido.</strong> Eles existem em <code>service_details</code> do guincho ({plate, vehicle, color}, <code>schema.prisma:2516-2519</code>), mas só saem no detalhe dentro do objeto inteiro (<code>work-order.dto.ts:74</code>), que no residencial carrega também a senha de acesso. Falta mandar só esses dois campos na lista, e só no guincho.</li>
+          <li><strong>O tipo do veículo ("Carro de passeio")</strong> não existe em <code>service_details</code>: é campo novo no cadastro da OS, ou a linha sai (Pergunta 3).</li>
+          <li><strong>Nada mais no servidor para a A.</strong> A distância e o tempo são calculados no aparelho; a janela usa <code>scheduledFor</code> e <code>slaDueAt</code>, que já vêm.</li>
+          <li><strong>Do lado do app (não é servidor):</strong> ler as coordenadas e o <code>slaDueAt</code>; calcular a distância em linha reta e o tempo estimado; abrir o app de mapa (G1), e para isso o <code>pubspec.yaml</code> não tem <code>url_launcher</code> (dependência nova = decisão crítica do §C7.1) nem canal de plataforma; criar a chave de aparência <code>checkin-chegada</code>.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção A — Fiel ao aprovado</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é o desenho que o dono aprovou, na mesma ordem: título da fase, os 6 passos, a faixa do mapa, o cartão da OS com o veículo para conferir antes da placa, e a barra fixa com os passos curtos e um botão só. A faixa do mapa vira, no MVP, um cartão no mesmo lugar e com a mesma altura, então a 2ª etapa do GPS troca só a faixa. O diálogo da placa é o de hoje, sem mudança de regra. É o menor desvio da referência.</li>
+          <li><strong>Contras:</strong> dois indicadores de passos dizem a mesma coisa com palavras diferentes ("Rota coleta" no topo, "Em rota" embaixo). Sem o mapa, a faixa gasta 124 px para um número e um botão. "Não foi possível iniciar" fica abaixo do contato, cortado no pé da primeira tela (medido na maquete às 20:32: de 381 a 425 px do topo da lista, para 410 px visíveis no estado 2; a faixa e a barra fixa comem o resto). O diálogo mostra "•••••" e não o começo da placa que o cartão mostra.</li>
+          <li><strong>No app:</strong> sai como a aparência padrão da tela (Decisão H). A B e a C entram pelo seletor que já existe no Perfil.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li>O mesmo da opção A: as situações e os botões (<code>work_order_models.dart:102-107</code>, <code>work_order_detail_screen.dart:884-942</code>), o modo da placa e o fim dela (<code>work-order.dto.ts:160-163</code>), os 6 passos (<code>work_order_steps.dart:29-40</code>), o cartão da OS e o GPS.</li>
+          <li><strong>A linha do tempo da chegada</strong> é o <code>MobilePhaseTimeline</code> do kit (<code>mobile_kit.dart:1460-1490</code>), o mesmo da opção B da execução do guincho, e a barra fixa com texto de apoio é o <code>MobileStickyBar</code> (<code>mobile_kit.dart:661</code>, texto de apoio da B-APP-APARENCIA F2).</li>
+          <li><strong>"Mais ações" (⋮)</strong> reúne "Não foi possível iniciar" (<code>work_order_detail_screen.dart:852-872</code>) e "Ligar para o contato" (<code>customerPhone</code>, <code>work_order_models.dart:185</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no servidor</h3><ul class="review-list">
+          <li><strong>O mesmo da opção A</strong>: a placa mascarada, o modelo e a cor na lista, e o tipo do veículo.</li>
+          <li><strong>A placa mascarada pesa mais aqui:</strong> a folha de baixo desenha o começo da placa nas casas cinzas ("A B C – 1 D") e deixa as 2 casas finais para digitar. Sem o campo, a folha cai para "•••••", como o diálogo de hoje.</li>
+          <li><strong>Componente novo, que nasce na biblioteca:</strong> a folha de confirmação com as casas da placa. O resto é do kit.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção B — Por fases</h3><ul class="review-list">
+          <li><strong>Prós:</strong> uma ação por vez, sempre embaixo, com uma frase que diz o porquê ("Ao chegar, confirme com os 2 últimos dígitos da placa."). A linha do tempo troca a barra de passos curtos e mostra o que vem depois: sair, ir, confirmar com a placa, começar. Diz na tela que a chegada não é avisada sozinha (G2). A folha de baixo aparece perto do polegar e mostra a placa inteira menos o fim, então a pessoa compara com a placa do carro à frente. Repete o padrão da opção B da execução do guincho, que já está no app.</li>
+          <li><strong>Contras:</strong> muda a ordem da referência: a faixa do mapa sai, e a distância e "Ir para a coleta" moram dentro do nó "Ir até o local da coleta". "Não foi possível iniciar" vai para o ⋮ (um toque a mais; é ação de exceção). A folha é componente novo e depende da placa mascarada para render tudo o que promete.</li>
+          <li><strong>No app:</strong> entra pelo seletor de aparência do Perfil.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li>O mesmo da opção A: situações, botões, modo da placa, 6 passos, cartão da OS e GPS.</li>
+          <li><strong>Os dois cartões de meia largura</strong> são o <code>MobilePhaseCard</code> (<code>mobile_kit.dart:1675</code>) e a lista "Para confirmar a chegada" é o <code>MobileRequirementList</code> (<code>mobile_kit.dart:1874-1885</code>), os dois da opção C da execução do guincho.</li>
+          <li><strong>A janela e o prazo:</strong> o início vem de <code>scheduledFor</code> (<code>work-order.dto.ts:155</code>) e o fim de <code>slaDueAt</code> (<code>:158</code>), que o app ainda não lê. A prioridade já vem (<code>work_order_models.dart:190</code>).</li>
+          <li><strong>A lista lê só o que o diálogo já lê:</strong> GPS (<code>gps_service.dart:7-17</code>), o modo da placa e a rede.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no servidor</h3><ul class="review-list">
+          <li><strong>O mesmo da opção A.</strong> Nada a mais no servidor.</li>
+          <li><strong>Lógica nova no app:</strong> "Faltam 1h48" é a diferença entre agora e o <code>slaDueAt</code>. É barato, mas pede teste com relógio fixo e a data de negócio no fuso de São Paulo (a lição do arnês que quebra das 21h às 24h).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção C — Painel da chegada</h3><ul class="review-list">
+          <li><strong>Prós:</strong> o que o guincheiro decide na rua fica lado a lado: quanto falta de caminho e quanto falta de prazo ("Faltam 1h48"). A lista "Para confirmar a chegada" mostra a trava antes do toque (GPS, placa, sinal) e diz que a chegada é confirmada por ele (G2). O botão principal fica dentro da lista, na primeira tela (medido na maquete às 20:32: de 381 a 425 px do topo da lista, para 644 px visíveis no estado 2).</li>
+          <li><strong>Contras:</strong> as colunas de cerca de 178 px apertam "Ir para a coleta". A lista repete o que o diálogo diz. Depende de o app ler o <code>slaDueAt</code>. A prioridade "Alta" disputa a atenção com o prazo. O diálogo continua o de hoje.</li>
+          <li><strong>No app:</strong> entra pelo seletor de aparência do Perfil.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box review-box--pergunta">
+        <h3>O que esta maquete assume, e o que precisa do dono</h3>
+        <ul class="review-list">
+          <li><strong>O que o servidor NÃO tem hoje e a maquete desenha:</strong> (1) a placa mascarada na lista; (2) o modelo e a cor do veículo atendido na lista; (3) o tipo do veículo, que não existe em lugar nenhum; (4) na 2ª etapa, o mapa de ruas, a rota e o tempo de trajeto, que pedem um serviço externo.</li>
+          <li><strong>Pergunta 1 · O tempo.</strong> Não há serviço de rotas. A maquete mostra "cerca de 4 min", uma estimativa do aparelho (distância em linha reta e uma velocidade média de cidade), e o tempo de verdade fica no app de mapa que "Ir para a coleta" abre. A alternativa é mostrar só a distância.</li>
+          <li><strong>Pergunta 2 · Como abrir o app de mapa (G1).</strong> Pelo pacote <code>url_launcher</code>, que é dependência nova (decisão crítica, junta de 5), ou pela intenção do Android chamada por um canal de plataforma escrito no app, sem pacote novo. A maquete não depende da escolha.</li>
+          <li><strong>Pergunta 3 · "Tipo: Carro de passeio".</strong> Ou entra como campo novo no cadastro da OS de guincho, ou a linha sai do cartão e a grade fica com placa, modelo e cor.</li>
+          <li><strong>Leitura minha, declarada (§A6):</strong> a janela "10:00–12:00" é <code>scheduledFor</code> até <code>slaDueAt</code>, como o "SLA · Janela até 12:00" de <code>os-detalhe.png</code>. A distância usa a posição do aparelho só no aparelho, sem enviar nada; assumo que isso não pede o consentimento de envio do B-SAN3-17. Se pedir, sem consentimento o cartão mostra só o endereço e "Ir para a coleta".</li>
+          <li><strong>Sem sinal:</strong> a distância continua (o GPS não depende de dados, e as coordenadas ficam no aparelho); a chegada fica na fila e o servidor confere a placa quando o sinal voltar. Se recusar, aparece "Chegada não confirmada" (estado 9).</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>A 2ª etapa do GPS: a faixa com mapa</h3>
+        <div class="rv-etapa2">
+          <svg width="196" height="124" viewBox="0 0 196 124" role="img" aria-label="Desenho da faixa com mapa da 2ª etapa">
+            <rect width="196" height="124" fill="#E8EDF3"/>
+            <path d="M0 40h196M0 92h196M52 0v124M140 0v124M0 66l196-20" stroke="#fff" stroke-width="9"/>
+            <rect x="60" y="48" width="26" height="14" fill="#DCE3EC"/><rect x="150" y="100" width="30" height="16" fill="#DCE3EC"/>
+            <path d="M30 104C60 96 70 70 100 64S150 40 162 30" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="5 4"/>
+            <circle cx="30" cy="104" r="5" fill="#fff" stroke="#2563EB" stroke-width="2.5"/>
+            <path d="M162 18c-4 0-7 3-7 7 0 5 7 12 7 12s7-7 7-12c0-4-3-7-7-7z" fill="#2563EB"/>
+            <rect x="8" y="8" width="78" height="20" rx="6" fill="#fff"/><text x="16" y="22" font-size="9.5" font-weight="700" fill="#0F172A" font-family="Inter,sans-serif">1,2 km · 4 min</text>
+            <rect x="8" y="104" width="46" height="14" rx="4" fill="#334155"/><circle cx="15" cy="111" r="2.5" fill="#34D399"/><text x="21" y="114.5" font-size="8" font-weight="700" fill="#fff" font-family="Inter,sans-serif">Ao vivo</text>
+            <circle cx="174" cy="102" r="14" fill="#2563EB"/><path d="M180 96l-14 6 6 2 2 6z" fill="#fff"/>
+          </svg>
+          <ul class="review-list">
+            <li>É a faixa de <code>checkin-chegada.png</code>: ruas, a posição ao vivo, o pino da coleta, "1,2 km · 4 min" e o selo "Ao vivo".</li>
+            <li><strong>Precisa de:</strong> um provedor de mapa de ruas (serviço externo; se for pago, junta de 5 e pesquisa antes); rota e tempo de um serviço de rotas; e a posição ao vivo na tela, com o consentimento do B-SAN3-17.</li>
+            <li><strong>O MVP já guarda o lugar:</strong> a faixa da A tem a mesma altura (124 px) e o mesmo lugar, então a troca não mexe no resto da tela. Na B e na C, o mapa entraria como uma faixa acima da linha do tempo ou dos cartões.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Os 16 estados (iguais nas três opções) e a regra de cada um</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Estado</th><th>Passo</th><th>Distância</th><th>Ação principal</th><th>Regra e origem</th></tr></thead>
+        <tbody>
+          <tr><td>1 · A iniciar</td><td>1 · Início</td><td>1,2 km · cerca de 4 min</td><td>Iniciar rota</td><td>Agendada/Despachada → Em rota (<code>work_order_models.dart:103-104</code>); é o estado da referência</td></tr>
+          <tr><td>2 · Em rota</td><td>2 · Rota coleta</td><td>idem, com "Ir para a coleta"</td><td>Cheguei ao local</td><td>G1 e G2; Em rota → No local só com a placa (<code>:105</code>)</td></tr>
+          <tr><td>3 · Confirmar a placa</td><td>2</td><td>—</td><td>Confirmar chegada (travado até digitar 2)</td><td><code>work_order_detail_screen.dart:1086-1088</code></td></tr>
+          <tr><td>4 · Dígitos não conferem</td><td>2</td><td>—</td><td>travado; "Os dígitos não conferem com a placa do veículo."</td><td>só no modo <code>plate</code> (<code>:1063-1071</code>); o servidor confere de novo</td></tr>
+          <tr><td>5 · No local</td><td>3 · Coleta</td><td>"Chegada confirmada às 10:31"</td><td>Iniciar atendimento</td><td>No local → Em atendimento e abre a execução (<code>:924-942</code>)</td></tr>
+          <tr><td>6 · OS sem ponto no mapa</td><td>2</td><td>"Distância indisponível"</td><td>Cheguei ao local</td><td>coordenada nula; "Ir para a coleta" abre o mapa pelo endereço</td></tr>
+          <tr><td>7 · GPS desligado</td><td>2</td><td>"Ligue o GPS para ver a distância"</td><td>Confirmar chegada travado</td><td><code>gpsOk</code> exigido (<code>:1087</code>; texto em <code>:1157</code>)</td></tr>
+          <tr><td>8 · OS sem placa</td><td>2</td><td>normal</td><td>"Cheguei ao local" abre o aviso</td><td><code>reference_missing</code> (<code>:1079-1081</code>, <code>:1264-1291</code>; texto em <code>work_order_conflict_resolution_service.dart:32-34</code>)</td></tr>
+          <tr><td>9 · Servidor recusou</td><td>2</td><td>normal</td><td>Confirmar a placa de novo</td><td>cartão "Chegada não confirmada" (<code>:279-325</code>); motivo de <code>work_order_conflict_resolution_service.dart:37-43</code></td></tr>
+          <tr><td>10 · Em rota, sem sinal</td><td>2</td><td>continua (aparelho)</td><td>Cheguei ao local (vai para a fila)</td><td>offline-first; <code>NetworkStatusBanner</code> (<code>erp_components.dart:244</code>)</td></tr>
+          <tr><td>11 · Chegada sem sinal</td><td>3</td><td>"Chegada salva no aparelho"</td><td>Iniciar atendimento</td><td>a placa foi conferida no aparelho; o servidor confere quando o sinal voltar (estado 9 se recusar)</td></tr>
+          <tr><td>12 · Dados desatualizados</td><td>2</td><td>normal</td><td>Cheguei ao local</td><td>§7; a atualização da lista falhou com sinal</td></tr>
+          <tr><td>13 · Carregando</td><td colspan="3">indicador circular na tela inteira</td><td>§7 (o <code>FutureBuilder</code> de <code>:64-66</code>)</td></tr>
+          <tr><td>14 · Vazio</td><td colspan="3">"OS concluída · Nenhuma ação disponível nesta OS."</td><td>§7; OS final (<code>:964-971</code>)</td></tr>
+          <tr><td>15 · Erro</td><td colspan="3">"Ordem de serviço não encontrada."</td><td>§7 (<code>:69-86</code>)</td></tr>
+          <tr><td>16 · Acesso não permitido</td><td colspan="3">"Seu perfil não tem permissão para ver esta OS. Fale com o administrador da sua organização."</td><td>§7 (<code>:44-62</code>, <code>work_orders:read</code>); os botões pedem <code>work_orders:status</code> (<code>:89-92</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas três opções)</h3>
+        <ul class="review-list">
+          <li><strong>Sai o selo "Ao vivo" da referência:</strong> sem mapa no MVP, a tela não mostra posição ao vivo. No lugar fica "GPS ligado", que é o que o app de fato mede (<code>gps_service.dart:7-17</code>).</li>
+          <li><strong>O botão redondo de navegação vira "Ir para a coleta", com texto</strong> (G1): diz o que acontece (abre o app de mapa) e tem 44 px de altura.</li>
+          <li><strong>O diálogo deixa de dizer "Localização confirmada · você está no local"</strong> (<code>work_order_detail_screen.dart:1156</code>). O app só confere se o GPS está ligado e com permissão, não se a pessoa chegou (G2). A maquete diz "GPS ligado".</li>
+          <li><strong>Título por fase:</strong> "Início" na referência; "Rota de coleta" e "Coleta" nos outros estados, como "Rota de entrega" em <code>entrega-inicio.png</code>. Hoje o título é "Detalhe da OS" (<code>:106-110</code>).</li>
+          <li><strong>O cartão cortado embaixo do cartão da OS</strong> na referência foi completado com o "Contato" de <code>os-detalhe.png</code>. O telefone é de exemplo.</li>
+          <li><strong>Acentos corrigidos</strong> (§11.3): "Nao foi possivel iniciar" (<code>:918</code>), os motivos (<code>:1307-1313</code>), "Ordem de servico nao encontrada." (<code>:80</code>), "Nenhuma acao disponivel." (<code>:969</code>) e os rótulos de situação (<code>work_order_models.dart:63-76</code>).</li>
+          <li><strong>Cores e fonte:</strong> tokens de <code>erp_mobile_theme.dart:7-30</code>; Roboto e as cores do Material 3 que não estão em código seguem a aproximação declarada no molde.</li>
+          <li>Nomes, placa, endereço e telefone são exemplos.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Achados desta leitura, para o orquestrador</h3>
+        <ul class="review-list">
+          <li><strong>O texto do diálogo promete o que o app não mede:</strong> "Localização confirmada · você está no local" (<code>work_order_detail_screen.dart:1155-1157</code>) aparece com o GPS só ligado (<code>gps_service.dart:7-17</code>). Contradiz G2. Vale pendência mesmo sem a tela nova.</li>
+          <li><strong>O app não lê as coordenadas que o servidor manda:</strong> <code>serviceLatitude</code>/<code>serviceLongitude</code> vão na lista (<code>work-order.dto.ts:149-150</code>), e <code>_workOrderFromRemoteJson</code> não os passa (<code>work_order_remote_api.dart:306-345</code>). O mapa operacional do app usa <code>wo.latitude</code> (<code>work_order_operational_map_screen.dart:453</code>). Hipótese, não medida em execução: a OS baixada da lista chega sem ponto no mapa.</li>
+          <li><strong>O Detalhe da OS de hoje usa um stepper genérico de 5 passos</strong> ("Agendada … Concluida", <code>work_order_detail_screen.dart:417-431</code>), não os 6 do guincho (<code>work_order_steps.dart:29-40</code>).</li>
+          <li><strong>G1 pede decisão antes do código:</strong> o <code>pubspec.yaml</code> não tem como abrir outro app (Pergunta 2).</li>
+          <li><strong>Com a aprovação</strong>, a maquete vira a referência <code>screen-refs/checkin-chegada-3opcoes.reference.html</code>, escrita pelo orquestrador, com uma linha no <code>screen-refs/README.md</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="maquete-controles" data-maquete>
+  <div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+    <span class="dock-rotulo">Opção</span>
+    <button type="button" data-opcao="a" aria-pressed="true">A · Aprovado</button>
+    <button type="button" data-opcao="b" aria-pressed="false">B · Por fases</button>
+    <button type="button" data-opcao="c" aria-pressed="false">C · Painel da chegada</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+  // ---------- ícones (Material Icons, Apache 2.0) ----------
+  const P = {
+    voltar: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+    build: 'M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z',
+    okc: 'M16.59 7.58L10 14.17l-3.59-3.58L5 12l5 5 8-8zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    okcheio: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
+    vazio: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    alerta: 'M12 5.99L19.53 19H4.47L12 5.99M12 2L1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z',
+    cadeado: 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6zM18 20H6V10h12v10z',
+    wifioff: 'M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zm-6.6 8.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z',
+    sync: 'M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z',
+    relogio: 'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
+    mais: 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+    alvo: 'M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z',
+    gpsoff: 'M20.94 11A8.994 8.994 0 0 0 13 3.06V1h-2v2.06c-1.13.12-2.19.46-3.16.97l1.5 1.5A6.995 6.995 0 0 1 19 12c0 .94-.19 1.84-.52 2.65l1.5 1.5c.5-.96.84-2.02.97-3.15H23v-2h-2.06zM3 4.27l2.04 2.04A8.914 8.914 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06c1.77-.2 3.38-.91 4.69-1.98L19.73 21 21 19.73 4.27 3 3 4.27zm13.27 13.27C15.09 18.45 13.61 19 12 19c-3.87 0-7-3.13-7-7 0-1.61.55-3.09 1.46-4.27l9.81 9.81z',
+    atualizar: 'M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
+    erro: 'M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    caminhao: 'M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z',
+    pino: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+    info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
+    navegar: 'M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z',
+    rota: 'M21.71 11.29l-9-9a.996.996 0 0 0-1.41 0l-9 9a.996.996 0 0 0 0 1.41l9 9c.39.39 1.02.39 1.41 0l9-9a.996.996 0 0 0 0-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z',
+    play: 'M8 5v14l11-7z',
+    telefone: 'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z',
+    pessoa: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+    cancelar: 'M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z',
+    teclado: 'M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z',
+  };
+  const ic = (k, w, extra) => '<svg width="' + (w || 24) + '" height="' + (w || 24) + '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"' + (extra || '') + '><path d="' + P[k] + '"/></svg>';
+  const sinal = (on) => on
+    ? '<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F172A"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>'
+    : '<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F172A"><rect x="0" y="7" width="3" height="4" rx="1" opacity=".3"/><rect x="4.5" y="5" width="3" height="6" rx="1" opacity=".3"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" opacity=".3"/><rect x="13.5" y="0" width="3" height="11" rx="1" opacity=".3"/></svg><svg width="14" height="14" viewBox="0 0 24 24" fill="#0F172A"><path d="' + P.wifioff + '"/></svg>';
+  const bateria = '<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3" stroke="#0F172A" opacity=".45"/><rect x="2" y="2" width="14" height="8" rx="2" fill="#0F172A"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="#0F172A" opacity=".45"/></svg>';
+
+  // ---------- dados de exemplo (os da referência; nenhum é de pessoa real) ----------
+  const EX = {
+    os: 'OS-2891', servico: 'Reboque · veículo avariado', cliente: 'Indústria Alfa',
+    placaMask: 'ABC-1D••', prefixo: ['A', 'B', 'C', '–', '1', 'D'], tipo: 'Carro de passeio', modelo: 'VW Nivus 2023', cor: 'Prata',
+    end: 'Av. Afonso Pena, 2000 — Centro, BH', janela: '13/06 · 10:00–12:00', ini: '10:00', fim: '12:00', resta: '1h48',
+    dist: '1,2 km', tempo: 'cerca de 4 min', contato: 'Portaria da Indústria Alfa', fone: '(31) 90000-0000', prio: 'Alta',
+    saiu: '10:05', chegou: '10:31',
+  };
+  const PASSOS = ['Início', 'Rota coleta', 'Coleta', 'Rota entrega', 'Entrega', 'Conclusão'];
+  const CURTOS = ['Iniciar', 'Em rota', 'Cheguei', 'Serviço', 'Concluir'];
+
+  // ---------- estados (os mesmos nas três opções) ----------
+  const BASE = { net: true, gps: true, coord: true, placa: 'ok' };
+  const E = {
+    iniciar: { st: 'ini' },
+    rota: { st: 'rota' },
+    placa: { st: 'rota', dlg: 'vazio' },
+    'placa-erro': { st: 'rota', dlg: 'erro' },
+    local: { st: 'local' },
+    semcoord: { st: 'rota', coord: false },
+    gpsoff: { st: 'rota', gps: false, dlg: 'gpsoff' },
+    semplaca: { st: 'rota', placa: 'sem', dlg: 'semplaca' },
+    recusada: { st: 'rota', recusada: true },
+    'rota-off': { st: 'rota', net: false },
+    'local-off': { st: 'local', net: false, fila: true },
+    desat: { st: 'rota', desat: true },
+    vazio: { tela: 'vazio' }, carregando: { tela: 'load' }, erro: { tela: 'erro' }, acesso: { tela: 'acesso' },
+  };
+  Object.keys(E).forEach(k => { E[k] = Object.assign({}, BASE, E[k]); });
+  const PASSO = { ini: 0, rota: 1, local: 2 };
+  const CURTO = { ini: 0, rota: 1, local: 3 };
+
+  // ---------- peças comuns ----------
+  const chip = (c) => '<span class="m-chip c-' + c[1] + '">' + c[0] + '</span>';
+  const pill = (txt, tom) => '<span class="m-pill t-' + tom + '">' + txt + '</span>';
+  const banner = (txt, tipo, icone) => '<div class="m-banner b-' + tipo + '" role="status" style="margin-bottom:10px">' + ic(icone || 'sync', 24) + '<span>' + txt + '</span></div>';
+  const T = {
+    net: 'Sem conexão. O que você fizer fica salvo no aparelho e é enviado quando o sinal voltar.',
+    fila: 'Chegada salva no aparelho. Ela vai para o servidor quando o sinal voltar, e o servidor confere a placa de novo.',
+    desat: 'Não foi possível atualizar a OS agora. Os dados podem estar desatualizados.',
+    recusa: 'Os dígitos não conferem com a placa cadastrada.',
+    semplaca: 'Esta OS está sem placa cadastrada. Peça à base para cadastrar a placa ou para registrar a sua chegada.',
+  };
+  const netBanner = () => '<div class="m-netwrap"><div class="m-net" role="alert">' + ic('wifioff', 18) + '<span>' + T.net + '</span></div></div>';
+  const desatBanner = () => '<div class="m-desat" role="status" style="margin-bottom:10px">' + ic('alerta', 18) + '<span>' + T.desat + '</span><button type="button" class="m-tbtn" data-acao="atualizar">Atualizar</button></div>';
+  function passos(step) {
+    return '<div class="m-steps" role="list" aria-label="Passos do guincho">' + PASSOS.map((l, i) => {
+      const cls = i < step ? 'is-done' : i === step ? 'is-active' : '';
+      const est = i < step ? 'concluído' : i === step ? 'atual' : 'a fazer';
+      return '<div class="m-step ' + cls + '" role="listitem" aria-label="Passo ' + (i + 1) + ', ' + l + ', ' + est + '"' + (i === step ? ' aria-current="step"' : '') + '><span class="m-step__c">' + (i < step ? ic('check', 15) : (i + 1)) + '</span><span class="m-step__l">' + l + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function titulo(e) {
+    return {
+      ini: ['Início', '', ''],
+      rota: ['Rota de coleta', EX.os + ' · vá até o local da coleta', pill('<span class="ck-tag">Coleta</span>', 'info')],
+      local: ['Coleta', EX.os + ' · você chegou ao local da coleta', pill('<span class="ck-tag">Coleta</span>', 'info')],
+    }[e.st];
+  }
+  function hdr(tit, sub, fim) {
+    return '<header class="m-hdr"><button type="button" class="m-iconbtn" data-acao="voltar" aria-label="Voltar">' + ic('voltar', 24) + '</button>' +
+      '<div class="m-hdr__txt"><div class="m-hdr__tit">' + tit + '</div>' + (sub ? '<div class="m-hdr__sub">' + sub + '</div>' : '') + '</div>' +
+      (fim ? '<div class="m-hdr__fim">' + fim + '</div>' : '') + '</header>';
+  }
+  function statusTag(e) {
+    if (e.st === 'ini') return pill('<span class="ck-tag">A iniciar</span>', 'neutral');
+    if (e.st === 'rota') return pill('<span class="ck-tag">Em rota</span>', 'warning');
+    return e.fila ? pill('<span class="ck-tag">No local · na fila</span>', 'warning') : pill('<span class="ck-tag">No local</span>', 'success');
+  }
+  function osCard(e, compacto) {
+    const placa = e.placa === 'sem' ? '<span class="ck-sem">Sem placa</span>' : '<span class="ck-placa">' + EX.placaMask + '</span>';
+    return '<div class="ck-os" data-ancora="os"><div class="ck-os__cab"><span class="ck-os__cod">' + EX.os + '</span>' + statusTag(e) + '</div>' +
+      (compacto ? '' : '<span class="ck-svc">' + ic('build', 13) + EX.servico + '</span>') +
+      '<div class="ck-os__cli">' + EX.cliente + '</div><div class="ck-os__sol">' + (compacto ? EX.servico : 'Solicitante do atendimento') + '</div>' +
+      '<div class="ck-veic"><span class="ck-veic__ic">' + ic('caminhao', 22) + '</span><div class="ck-veic__g">' +
+      '<div><small>Placa</small>' + placa + '</div><div><small>Tipo</small><span>' + EX.tipo + '</span></div>' +
+      '<div><small>Modelo</small><span>' + EX.modelo + '</span></div><div><small>Cor</small><span>' + EX.cor + '</span></div></div></div>' +
+      (compacto ? '' : '<div class="ck-linhas"><div class="ck-linha">' + ic('pino', 16) + '<span>' + EX.end + '</span></div><div class="ck-linha">' + ic('relogio', 16) + '<span>' + EX.janela + '</span></div></div>') +
+      '</div>';
+  }
+  const contato = () => '<div class="ck-contato"><span class="ck-contato__av">' + ic('pessoa', 20) + '</span><div class="ck-contato__t"><b>' + EX.contato + '</b><span>Contato no local · ' + EX.fone + '</span></div><button type="button" class="ck-call" data-acao="ligar" aria-label="Ligar para o contato">' + ic('telefone', 20) + '</button></div>';
+  const naoPossivel = () => '<div class="ck-naopossivel" data-ancora="naopossivel"><button type="button" class="m-tbtn" data-acao="nao-possivel">' + ic('cancelar', 18) + 'Não foi possível iniciar</button></div>';
+  function redoCard() {
+    return '<div class="m-card" role="alert" style="border-color:rgba(220,38,38,.45);margin:0 0 10px"><div style="padding:14px 16px"><div style="display:flex;align-items:center;gap:8px">' + '<span style="color:var(--m-danger);display:flex">' + ic('erro', 22) + '</span><b style="flex:1;font-size:15px">Chegada não confirmada</b>' + chip(['Conflito', 'danger']) + '</div>' +
+      '<p style="font-size:13.5px;line-height:19px;margin-top:8px;color:var(--m-ink)">' + T.recusa + ' Confira a placa do veículo e confirme de novo.</p></div></div>';
+  }
+  function topo(e) {
+    let b = '';
+    if (e.desat) b += desatBanner();
+    if (e.recusada) b += redoCard();
+    if (e.fila) b += banner(T.fila, 'pending');
+    return b;
+  }
+  function acaoPrincipal(e) {
+    if (e.recusada) return ['Confirmar a placa de novo', 'teclado', 'cheguei'];
+    if (e.st === 'ini') return ['Iniciar rota', 'rota', 'iniciar-rota'];
+    if (e.st === 'rota') return ['Cheguei ao local', 'pino', 'cheguei'];
+    return ['Iniciar atendimento', 'play', 'iniciar-at'];
+  }
+  const fbtn = (a, extra) => '<button type="button" class="m-fbtn" data-acao="' + a[2] + '"' + (extra || '') + '>' + ic(a[1], 18) + '<span>' + a[0] + '</span></button>';
+  function distTexto(e) {
+    if (!e.coord) return ['pino', 'Distância indisponível'];
+    if (!e.gps) return ['gpsoff', 'Ligue o GPS para ver a distância'];
+    return ['pino', EX.dist + ' · ' + EX.tempo];
+  }
+
+  // ---------- diálogo de chegada (o de hoje) e o aviso da OS sem placa ----------
+  function dialogo(e, modo) {
+    if (modo === 'semplaca') {
+      return '<div class="ck-scrim"><div class="ck-dlg" role="alertdialog" aria-modal="true" aria-label="OS sem placa"><div class="ck-dlg__texto">' + ic('info', 24) + '<span>' + T.semplaca + '</span></div>' +
+        '<div class="ck-dlg__acoes"><button type="button" class="m-fbtn" data-acao="fechar-dlg">Entendi</button></div></div></div>';
+    }
+    const gps = e.gps;
+    const erro = modo === 'erro';
+    const digitado = erro ? '32' : '';
+    const pode = gps && digitado.length === 2 && !erro;
+    return '<div class="ck-scrim"><div class="ck-dlg" role="dialog" aria-modal="true" aria-label="Confirmar veículo">' +
+      '<div class="ck-dlg__cab"><span class="ck-dlg__ic">' + ic('caminhao', 22) + '</span><div><b>Confirmar veículo</b><span>Informe os 2 últimos dígitos da placa do veículo</span></div></div>' +
+      '<div class="ck-gps ' + (gps ? 'ck-gps--ok' : 'ck-gps--off') + '">' + ic(gps ? 'alvo' : 'gpsoff', 14) + '<span>' + (gps ? 'GPS ligado' : 'Ative o GPS para confirmar que chegou ao local') + '</span></div>' +
+      '<div class="ck-placain"><span class="ck-placain__mask" aria-hidden="true">•••••</span><span class="ck-placain__in' + (digitado ? '' : ' is-vazio') + (erro ? ' is-erro' : '') + '" role="textbox" aria-label="2 últimos dígitos da placa">' + (digitado || '__') + '</span></div>' +
+      (erro ? '<div class="ck-dlg__erro" role="alert">' + ic('erro', 14) + '<span>Os dígitos não conferem com a placa do veículo.</span></div>' : '') +
+      '<div class="ck-dlg__acoes"><button type="button" class="m-tbtn" data-acao="fechar-dlg">Cancelar</button><button type="button" class="m-fbtn" data-acao="confirmar"' + (pode ? '' : ' disabled') + '>Confirmar chegada</button></div></div></div>';
+  }
+
+  // ---------- telas de estado (iguais nas três) ----------
+  function telaEstado(e) {
+    let corpo;
+    if (e.tela === 'load') corpo = '<div class="m-vazio" role="status"><span class="m-spin"></span><span class="sr">Carregando</span></div>';
+    else if (e.tela === 'vazio') corpo = '<div class="m-vazio">' + ic('okc', 44) + '<h3>OS concluída</h3><p>Nenhuma ação disponível nesta OS. As próximas OS aparecem na sua lista.</p><div style="width:220px;margin-top:16px"><button type="button" class="m-obtn" data-acao="voltar">' + ic('voltar', 18) + '<span>Voltar para a lista</span></button></div></div>';
+    else if (e.tela === 'erro') corpo = '<div class="m-vazio">' + ic('erro', 44) + '<h3>Não foi possível carregar</h3><p>Ordem de serviço não encontrada.</p><div style="width:200px;margin-top:16px"><button type="button" class="m-obtn" data-acao="atualizar">' + ic('atualizar', 18) + '<span>Tentar de novo</span></button></div></div>';
+    else corpo = '<div class="m-vazio">' + ic('cadeado', 44) + '<h3>Acesso não permitido</h3><p>Seu perfil não tem permissão para ver esta OS. Fale com o administrador da sua organização.</p></div>';
+    return '<div class="scr">' + hdr('Detalhe da OS', e.tela === 'load' ? '' : EX.os) + corpo + '</div>';
+  }
+
+  // ---------- OPÇÃO A: fiel ao aprovado (checkin-chegada.png) ----------
+  function faixaA(e) {
+    if (e.st === 'local') {
+      return '<div class="ck-faixa ck-faixa--ok" data-ancora="faixa"><div class="ck-faixa__ok">' + ic('okcheio', 30) + '<div><b>' + (e.fila ? 'Chegada salva no aparelho às ' : 'Chegada confirmada às ') + EX.chegou + '</b><span>Placa conferida' + (e.fila ? ' no aparelho' : '') + ' · ' + EX.placaMask + '</span></div></div>' +
+        '<div class="ck-faixa__dest" style="margin-top:12px"><small>Local da coleta</small><span>' + EX.end + '</span></div></div>';
+    }
+    const d = distTexto(e);
+    const selo = !e.gps ? '<span class="ck-selo ck-selo--cinza"><i></i>GPS desligado</span>' : !e.coord ? '<span class="ck-selo ck-selo--cinza"><i></i>OS sem ponto no mapa</span>' : '<span class="ck-selo"><i></i>GPS ligado</span>';
+    return '<div class="ck-faixa" data-ancora="faixa"><span class="ck-chipdist">' + ic(d[0], 15) + d[1] + '</span>' +
+      '<div class="ck-faixa__dest"><small>Local da coleta</small><span>' + EX.end + '</span></div>' + selo +
+      '<button type="button" class="ck-ir" data-acao="ir">' + ic('navegar', 18) + 'Ir para a coleta</button></div>';
+  }
+  function barraA(e) {
+    const ativo = CURTO[e.st];
+    const curtos = '<div class="ck-short" role="list" aria-label="Chegada">' + CURTOS.map((l, i) => {
+      const cls = i < ativo ? 'is-done' : i === ativo ? 'is-active' : '';
+      return '<span class="ck-sbtn ' + cls + '" role="listitem"' + (i === ativo ? ' aria-current="step"' : '') + '><i>' + (i < ativo ? ic('check', 13) : i + 1) + '</i><span>' + l + '</span></span>';
+    }).join('') + '</div>';
+    return '<div class="ck-sbar" data-ancora="barra">' + curtos + fbtn(acaoPrincipal(e)) + '</div>';
+  }
+  function telaA(e, dlg) {
+    if (e.tela) return telaEstado(e);
+    const t = titulo(e);
+    let b = topo(e) + osCard(e) + contato();
+    if (e.st === 'rota' && !e.recusada) b += naoPossivel();
+    const corpo = '<div class="scr__body" style="padding:12px">' + b + '</div>';
+    return '<div class="scr">' + hdr(t[0], t[1], t[2]) + '<div class="ck-passos">' + passos(PASSO[e.st]) + '</div>' + (e.net ? '' : netBanner()) + faixaA(e) + corpo + barraA(e) + (dlg ? dialogo(e, dlg) : '') + '</div>';
+  }
+
+  // ---------- OPÇÃO B: por fases (linha do tempo da chegada + folha da placa) ----------
+  function noB(cls, marca, tit, pillHtml, meta, extra) {
+    return '<li class="b-no ' + cls + '"><span class="b-marca" aria-hidden="true">' + marca + '</span><div class="b-no__cab"><span class="b-no__t">' + tit + '</span>' + (pillHtml || '') + '</div>' + (meta ? '<div class="b-no__m">' + meta + '</div>' : '') + (extra || '') + '</li>';
+  }
+  function folhaB(e, modo) {
+    if (modo === 'semplaca') {
+      return '<div class="ck-scrim" style="align-items:flex-end;padding:0"><div class="ck-folha" role="alertdialog" aria-modal="true" aria-label="OS sem placa"><div class="ck-folha__puxa"></div><h3>OS sem placa cadastrada</h3><p>' + T.semplaca + '</p>' +
+        '<div class="ck-folha__acoes" style="grid-template-columns:1fr"><button type="button" class="m-fbtn" data-acao="fechar-dlg">Entendi</button></div></div></div>';
+    }
+    const erro = modo === 'erro';
+    const dg = erro ? ['3', '2'] : ['', ''];
+    const pode = e.gps && !erro && dg[0] && dg[1];
+    return '<div class="ck-scrim" style="align-items:flex-end;padding:0"><div class="ck-folha" role="dialog" aria-modal="true" aria-label="Confirmar o veículo"><div class="ck-folha__puxa"></div>' +
+      '<h3>Confirmar o veículo</h3><p>Confira a placa do veículo à sua frente e digite os 2 últimos dígitos.</p>' +
+      '<div class="ck-casas" aria-label="Placa ' + EX.placaMask + '">' + EX.prefixo.map(c => c === '–' ? '<span class="ck-casa ck-casa--traco">–</span>' : '<span class="ck-casa">' + c + '</span>').join('') +
+      dg.map((d, i) => '<span class="ck-digit' + (d ? '' : ' is-vazio') + (erro ? ' is-erro' : '') + '" role="textbox" tabindex="0" aria-label="Dígito ' + (i + 1) + ' de 2">' + (d || '_') + '</span>').join('') + '</div>' +
+      (erro ? '<div class="ck-dlg__erro" role="alert">' + ic('erro', 14) + '<span>Os dígitos não conferem com a placa do veículo.</span></div>' : '') +
+      '<div class="ck-gps ' + (e.gps ? 'ck-gps--ok' : 'ck-gps--off') + '">' + ic(e.gps ? 'alvo' : 'gpsoff', 14) + '<span>' + (e.gps ? 'GPS ligado' : 'Ative o GPS para confirmar que chegou ao local') + '</span></div>' +
+      '<div class="ck-folha__acoes"><button type="button" class="m-obtn" data-acao="fechar-dlg">Cancelar</button><button type="button" class="m-fbtn" data-acao="confirmar"' + (pode ? '' : ' disabled') + '>' + ic('check', 18) + '<span>Confirmar chegada</span></button></div></div></div>';
+  }
+  function apoioB(e) {
+    if (e.recusada) return ['O servidor não confirmou a chegada. Confira a placa e confirme de novo.', true];
+    if (e.st === 'ini') return ['Ao sair para a coleta, avise que você está em rota.', false];
+    if (e.st === 'local') return [e.fila ? 'A chegada vai para o servidor quando o sinal voltar. Você já pode começar.' : 'Comece pela vistoria de coleta.', false];
+    if (!e.gps) return ['Ligue o GPS para confirmar a chegada.', true];
+    if (e.placa === 'sem') return ['Esta OS está sem placa cadastrada. Peça à base.', true];
+    if (!e.net) return ['Sem sinal: a chegada fica salva e vai quando o sinal voltar.', false];
+    return ['Ao chegar, confirme com os 2 últimos dígitos da placa.', false];
+  }
+  function telaB(e, dlg) {
+    if (e.tela) return telaEstado(e);
+    const t = titulo(e);
+    const d = distTexto(e);
+    const done = (k) => ({ ini: 0, rota: 1, local: 3 }[e.st]) > k;
+    const at = (k) => ({ ini: 0, rota: 1, local: 3 }[e.st]) === k;
+    const cls = (k) => done(k) ? 'is-done' : at(k) ? 'is-active' : 'is-todo';
+    const mk = (k, icone) => done(k) ? ic('check', 15) : ic(icone, 15);
+    const n1 = noB(cls(0), mk(0, 'rota'), 'Iniciar rota', done(0) ? pill('Às ' + EX.saiu, 'success') : '', done(0) ? 'A central vê que você está a caminho.' : 'Avise que você saiu para a coleta.', '');
+    const irBtn = '<div class="b-no__acao"><button type="button" class="m-obtn" data-acao="ir">' + ic('navegar', 18) + '<span>Ir para a coleta</span></button></div>';
+    const n2 = noB(cls(1), mk(1, 'pino'), 'Ir até o local da coleta', at(1) ? pill(e.coord && e.gps ? EX.dist : 'Sem distância', e.coord && e.gps ? 'info' : 'neutral') : '',
+      (done(1) ? 'Chegou às ' + EX.chegou + '. ' : (at(1) ? d[1] + (e.coord && e.gps ? ', em linha reta' : '') + '. ' : '')) + EX.end, at(1) ? irBtn : '');
+    let n3m = 'Com os 2 últimos dígitos da placa ' + (e.placa === 'sem' ? '(sem placa: peça à base)' : EX.placaMask) + '. A chegada não é avisada sozinha.';
+    let n3p = '';
+    let n3c = cls(2);
+    if (done(2)) { n3m = 'Às ' + EX.chegou + ' · placa conferida' + (e.fila ? ' no aparelho' : ''); n3p = e.fila ? pill('Na fila', 'warning') : pill('Confirmada', 'success'); }
+    if (e.recusada) { n3c = 'is-lock'; n3m = T.recusa; n3p = pill('Recusada', 'danger'); }
+    const n3 = noB(n3c, e.recusada ? ic('cadeado', 15) : mk(2, 'teclado'), 'Confirmar a chegada', n3p, n3m, '');
+    const n4 = noB(cls(3), mk(3, 'play'), 'Iniciar atendimento', '', 'Abre a vistoria de coleta.', '');
+    let b = topo(e).replace(redoCard(), '');
+    b += '<div class="m-card" style="margin-top:0"><ol class="b-tl ck-tl" data-ancora="secao" aria-label="Chegada à coleta" style="list-style:none">' +
+      '<li class="b-tl__tit" style="list-style:none"><b>Chegada à coleta</b>' + pill('Janela ' + EX.ini + '–' + EX.fim, 'neutral') + '</li>' + n1 + n2 + n3 + n4 + '</ol></div>';
+    b += '<div class="m-gap8"></div>' + osCard(e) + contato();
+    const ap = apoioB(e);
+    const fim = statusTag(e) + '<button type="button" class="m-iconbtn" data-acao="menu" aria-label="Mais ações" aria-haspopup="menu" aria-expanded="false">' + ic('mais', 24) + '</button>';
+    const menu = '<div class="m-menu" role="menu" hidden><button type="button" role="menuitem" data-acao="ligar">' + ic('telefone', 22) + 'Ligar para o contato</button><button type="button" role="menuitem" class="m-menu__perigo" data-acao="nao-possivel">' + ic('cancelar', 22) + 'Não foi possível iniciar</button></div>';
+    const barra = '<div class="m-sticky" data-ancora="barra"><p class="m-sticky__apoio' + (ap[1] ? ' m-sticky__apoio--trava' : '') + '">' + ap[0] + '</p>' + fbtn(acaoPrincipal(e)) + '</div>';
+    return '<div class="scr">' + hdr(t[0], t[1] || EX.os + ' · ' + EX.cliente, fim) + menu + '<div class="ck-passos">' + passos(PASSO[e.st]) + '</div>' + (e.net ? '' : netBanner()) + '<div class="scr__body" style="padding:12px">' + b + '</div>' + barra + (dlg ? folhaB(e, dlg) : '') + '</div>';
+  }
+
+  // ---------- OPÇÃO C: painel da chegada (distância × janela + requisitos) ----------
+  function telaC(e, dlg) {
+    if (e.tela) return telaEstado(e);
+    const t = titulo(e);
+    let b = topo(e);
+    // distância
+    let dv, dm, dbtn;
+    if (e.st === 'local') { dv = 'No local'; dm = (e.fila ? 'Salva às ' : 'Chegada às ') + EX.chegou; dbtn = ''; }
+    else {
+      dv = e.coord && e.gps ? EX.dist + '<small>' + EX.tempo + '</small>' : '—';
+      dm = !e.coord ? 'A OS ainda não tem ponto no mapa.' : !e.gps ? 'Ligue o GPS para medir.' : 'Em linha reta até a coleta.';
+      dbtn = '<button type="button" class="m-obtn" data-acao="ir">' + ic('navegar', 18) + '<span>Ir para a coleta</span></button>';
+    }
+    const cDist = '<div class="c-fase' + (e.st !== 'local' ? ' is-atual' : '') + '"><div class="c-fase__cab"><b>Distância</b>' + (e.st === 'local' ? pill('Feito', 'success') : '') + '</div><div class="c-fase__val">' + dv + '</div><div class="c-fase__m">' + dm + '</div>' + dbtn + '</div>';
+    const cJan = '<div class="c-fase"><div class="c-fase__cab"><b>Janela</b>' + pill(EX.prio, 'danger') + '</div><div class="c-fase__val">' + EX.ini + '<small>às ' + EX.fim + '</small></div><div class="c-fase__m">13/06 · prazo às ' + EX.fim + '</div><div class="ck-prazo">' + ic('relogio', 16) + '<span>Faltam ' + EX.resta + '</span></div></div>';
+    b += '<div class="ck-meta" data-ancora="meta">' + cDist + cJan + '</div>';
+    // requisitos
+    let titReq, reqs;
+    if (e.st === 'ini') {
+      titReq = 'Para sair para a coleta';
+      reqs = [['is-ok', 'okcheio', 'OS atribuída a você'], ['is-ok', 'okcheio', 'Endereço da coleta', EX.end], e.net ? ['is-ok', 'okcheio', 'Com sinal: a central vê na hora'] : ['is-fila', 'sync', 'Sem sinal: fica salvo e vai quando o sinal voltar']];
+    } else if (e.st === 'local') {
+      titReq = e.fila ? 'Chegada salva no aparelho' : 'Chegada confirmada';
+      reqs = [['is-ok', 'okcheio', 'No local da coleta às ' + EX.chegou], ['is-ok', 'okcheio', 'Placa conferida' + (e.fila ? ' no aparelho' : ''), EX.placaMask], e.fila ? ['is-fila', 'sync', 'Na fila', 'O servidor confere a placa quando o sinal voltar.'] : ['is-ok', 'okcheio', 'Enviada ao servidor'], ['is-info', 'play', 'Próximo: a vistoria de coleta']];
+    } else {
+      titReq = 'Para confirmar a chegada';
+      reqs = [
+        e.gps ? ['is-ok', 'okcheio', 'GPS ligado'] : ['is-pend', 'gpsoff', 'GPS desligado', 'Ligue o GPS para confirmar a chegada.'],
+        ['is-voce', 'pino', 'Estar no local da coleta', 'Você confirma: o app não avisa a chegada sozinho.'],
+        e.recusada ? ['is-pend', 'erro', 'Placa recusada pelo servidor', T.recusa] : e.placa === 'sem' ? ['is-pend', 'vazio', 'Sem placa cadastrada', 'Peça à base para cadastrar a placa ou registrar a chegada.'] : ['is-pend', 'vazio', 'Os 2 últimos dígitos da placa', EX.placaMask],
+        e.net ? ['is-ok', 'okcheio', 'Com sinal: vai para o servidor na hora'] : ['is-fila', 'sync', 'Sem sinal: fica salva no aparelho', 'Vai quando o sinal voltar; o servidor confere a placa.'],
+      ];
+    }
+    b += '<div class="m-card c-req ck-req" data-ancora="concluir" style="margin-top:0"><h3>' + titReq + '</h3><ul>' + reqs.map(r => '<li class="' + r[0] + '">' + ic(r[1], 20) + '<span>' + r[2] + (r[3] ? '<small>' + r[3] + '</small>' : '') + '</span></li>').join('') + '</ul>' + fbtn(acaoPrincipal(e)) + '</div>';
+    b += '<div class="m-gap8"></div>' + osCard(e, true) + contato();
+    if (e.st === 'rota' && !e.recusada) b += naoPossivel();
+    return '<div class="scr">' + hdr(t[0], t[1], t[2]) + '<div class="ck-passos">' + passos(PASSO[e.st]) + '</div>' + (e.net ? '' : netBanner()) + '<div class="scr__body" style="padding:12px">' + b + '</div>' + (dlg ? dialogo(e, dlg) : '') + '</div>';
+  }
+
+  // ---------- desenho e controle ----------
+  const NOMES = { a: 'Fiel ao aprovado', b: 'Por fases', c: 'Painel da chegada' };
+  const LADO = {
+    a: { d: 'O desenho aprovado (checkin-chegada.png), na mesma ordem. No MVP a faixa do mapa vira um cartão no mesmo lugar, com a distância e "Ir para a coleta".', l: ['Título da fase, os 6 passos e a faixa com a distância.', 'Cartão da OS com o veículo, para conferir antes da placa.', 'Barra fixa: passos curtos e um botão só.', 'A placa é confirmada no diálogo de hoje.'] },
+    b: { d: 'Uma ação por vez. A linha do tempo da chegada troca a barra de passos curtos, e a placa é confirmada numa folha de baixo, perto do polegar.', l: ['Iniciar rota → ir até a coleta → confirmar com a placa → iniciar atendimento.', '"Ir para a coleta" mora no passo atual.', 'A folha mostra o começo da placa e pede as 2 casas finais.', '"Não foi possível iniciar" vai para o ⋮.'] },
+    c: { d: 'Distância e janela lado a lado, e a lista do que falta para confirmar a chegada, com o botão dentro dela.', l: ['"Faltam 1h48" para o fim da janela.', 'A trava aparece antes do toque: GPS, placa e sinal.', 'Diz que a chegada é confirmada por você (G2).'] },
+  };
+  const S = { op: 'a', est: 'rota', dlg: null };
+  const RENDER = { a: telaA, b: telaB, c: telaC };
+
+  function desenhar(op) {
+    const v = $('[data-view="' + op + '"]');
+    const e = E[S.est];
+    v.innerHTML = RENDER[op](e, e.tela ? null : S.dlg);
+  }
+  function sincronizar() {
+    $$('[data-view]').forEach(el => { el.hidden = el.dataset.view !== S.op; });
+    $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.opcao === S.op)));
+    $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.estado === S.est)));
+    const e = E[S.est];
+    $('#status-ic').innerHTML = sinal(e.tela ? true : e.net) + bateria;
+    $('#app-tag').textContent = 'App de campo · Check-in e chegada · Opção ' + S.op.toUpperCase();
+    $('#app-entrega').textContent = S.op === 'a' ? 'A opção A é o desenho aprovado (Decisão H) e a aparência padrão.' : 'Nasce em cima da A e entra pelo seletor de aparência do Perfil.';
+    $('#lado-tit').textContent = 'Opção ' + S.op.toUpperCase() + ' · ' + NOMES[S.op];
+    $('#lado-desc').textContent = LADO[S.op].d;
+    $('#lado-lista').innerHTML = LADO[S.op].l.map(x => '<li>' + x + '</li>').join('');
+    $('#rv-titulo').textContent = 'Opção ' + S.op.toUpperCase() + ' — ' + NOMES[S.op];
+    $$('[data-nota]').forEach(n => { n.hidden = n.dataset.nota !== S.op; });
+  }
+  function tudo() { ['a', 'b', 'c'].forEach(desenhar); sincronizar(); }
+  function irEstado(est) { S.est = est; S.dlg = E[est].dlg || null; tudo(); }
+  let snackT = 0;
+  function snack(msg) {
+    const v = $('[data-view="' + S.op + '"] .scr');
+    if (!v) return;
+    $$('.m-snack', v).forEach(s => s.remove());
+    v.insertAdjacentHTML('beforeend', '<div class="m-snack" role="status" style="bottom:120px">' + msg + '</div>');
+    clearTimeout(snackT); snackT = setTimeout(() => { $$('.m-snack').forEach(s => s.remove()); }, 3200);
+  }
+  window.__rolar = function (ancora, folga) {
+    const v = $('[data-view="' + S.op + '"]');
+    const corpo = $('.scr__body', v); const alvo = $('[data-ancora="' + ancora + '"]', v);
+    if (!corpo || !alvo) return -1;
+    corpo.scrollTop = Math.max(0, alvo.offsetTop - corpo.offsetTop - (folga || 8));
+    return corpo.scrollTop;
+  };
+  window.__estado = function (est, op) { if (op) S.op = op; irEstado(est); };
+
+  const MSG = {
+    'ir': 'Abre o app de mapa do celular com o local da coleta.',
+    'ligar': 'Abre o discador do celular.',
+    'nao-possivel': 'Abre "Não foi possível iniciar": motivo e observação.',
+    'atualizar': 'Atualizando a OS…',
+    'voltar': 'Volta para a lista de OS.',
+    'iniciar-at': 'Abre a execução, começando pela vistoria de coleta.',
+  };
+  document.addEventListener('click', ev => {
+    const el = ev.target.closest('button');
+    if (!el) return;
+    if (el.dataset.opcao) { S.op = el.dataset.opcao; tudo(); return; }
+    if (el.dataset.estado) { irEstado(el.dataset.estado); return; }
+    if (el.id === 'rv-recolher') {
+      const corpo = $('#rv-corpo'); const aberto = !corpo.hidden;
+      corpo.hidden = aberto; el.setAttribute('aria-expanded', String(!aberto)); el.textContent = aberto ? 'Mostrar notas' : 'Recolher notas';
+      return;
+    }
+    const a = el.dataset.acao;
+    if (!a || !el.closest('[data-view]')) return;
+    const v = el.closest('[data-view]');
+    if (a === 'menu') { const m = $('.m-menu', v); const ab = m.hidden; m.hidden = !ab; el.setAttribute('aria-expanded', String(ab)); if (ab) $('button', m).focus(); return; }
+    $$('.m-menu', v).forEach(m => { m.hidden = true; });
+    const e = E[S.est];
+    if (a === 'cheguei') { S.dlg = e.placa === 'sem' ? 'semplaca' : (e.gps ? 'vazio' : 'gpsoff'); desenhar(S.op); const f = $('.ck-scrim button', v); if (f) f.focus(); return; }
+    if (a === 'fechar-dlg') { S.dlg = null; desenhar(S.op); return; }
+    if (a === 'confirmar') { irEstado(e.net ? 'local' : 'local-off'); snack(e.net ? 'Chegada confirmada.' : 'Chegada salva no aparelho.'); return; }
+    if (a === 'iniciar-rota') { irEstado('rota'); snack(e.net ? 'Rota iniciada. A central vê que você está a caminho.' : 'Rota iniciada no aparelho. Vai quando o sinal voltar.'); return; }
+    if (MSG[a]) snack(MSG[a]);
+  });
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape') return;
+    const v = $('[data-view="' + S.op + '"]');
+    const m = $('.m-menu:not([hidden])', v);
+    if (m) { m.hidden = true; const b = $('[data-acao="menu"]', v); b.setAttribute('aria-expanded', 'false'); b.focus(); return; }
+    if (S.dlg) { S.dlg = null; desenhar(S.op); }
+  });
+
+  irEstado('rota');
+})();
+</script>
+</body>
+</html>

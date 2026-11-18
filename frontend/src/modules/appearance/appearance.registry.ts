@@ -130,6 +130,17 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Situação primeiro" },
     ],
   },
+  // B-GUI-02 — Vistorias da OS (referência `screen-refs/os-vistorias-3opcoes.reference.html`, a maquete aprovada pelo dono em
+  // 17/11, D-DONO-1711-RETOMADA-APROVA-TUDO item 3). Padrão A, sem entrada em SCREEN_DEFAULT_APPEARANCE.
+  {
+    key: "os-vistorias",
+    label: "Vistorias da OS",
+    options: [
+      { value: "A", label: "Na ficha da OS" },
+      { value: "B", label: "Duas vagas" },
+      { value: "C", label: "Como o app vai ver" },
+    ],
+  },
 ];
 
 /** O escopo da tela; tela fora do registro conta como da organização (o comportamento de antes do escopo). */

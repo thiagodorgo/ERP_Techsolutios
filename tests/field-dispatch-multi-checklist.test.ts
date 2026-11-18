@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { WorkOrderChecklistLink } from "../src/modules/work-orders/work-order-checklists.types.js";
+import { pickPrimaryChecklistLink, type WorkOrderChecklistLink } from "../src/modules/work-orders/work-order-checklists.types.js";
 
 // CHECKLIST P1 PR-04c — O DESPACHO COM UM CONJUNTO DE VISTORIAS.
 //
@@ -835,9 +835,7 @@ async function withDispatch(cb: (ctx: DispatchContext) => Promise<void>): Promis
       return async (...args: Parameters<typeof target.freezeChecklistSnapshot>) => {
         const [, workOrderId, snapshot] = args;
         const result = await target.freezeChecklistSnapshot(...args);
-        const primary = [...(linksByWorkOrder.get(workOrderId) ?? [])].sort(
-          (left, right) => left.orderIndex - right.orderIndex,
-        )[0];
+        const primary = pickPrimaryChecklistLink(linksByWorkOrder.get(workOrderId) ?? []);
         if (primary) carimbaLinha(workOrderId, (link) => link.id === primary.id, snapshot);
         return result;
       };

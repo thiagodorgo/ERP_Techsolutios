@@ -235,8 +235,10 @@ void main() {
       await tester.tap(find.text('Instalacao nav1').last);
       await tester.pumpAndSettle();
 
-      // Navegou para detalhe — AppBar exibe codigo + titulo
-      expect(find.text('OS-B084-nav1 · Instalacao nav1'), findsOneWidget);
+      // Navegou para detalhe — o bloco branco exibe o codigo (B-GUI-FID1: codigo e titulo em linhas proprias)
+      expect(find.text('OS-B084-nav1'), findsOneWidget);
+      expect(find.text('Instalacao nav1'), findsOneWidget);
+      expect(find.byKey(const Key('aparencia-detalhe-os-A')), findsOneWidget);
     });
   });
 

@@ -16719,6 +16719,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
 - **fato:** `tests/bsan317-consentimento-localizacao-db.test.ts:696` chama `waitForOwnBlockedOrSettled` sem `blockedBy` e sem filtrar o pid de R: B, que espera atrás de R (a ordem certa), conta como "R presa pela posição nova". O helper (`tests/helpers/pg-barrier.ts`) não tem filtro pelo pid do perdedor. Os dois arquivos são de fora do `B-SAN3-16` (teste existente e helper), e o bloco proíbe editar teste existente.
 - **critério de encerramento:** a checagem olha só a sessão de R (o pid dela), sem mudar nenhuma asserção do comportamento; 0 queda em N ≥ 50 execuções.
+- **acréscimo (2026-11-16 18:57 SP; registro de 17/11, `fix-593-cl`, pela revisão `rev-593-cl`, A-T17-DUP):** N + 1 no CI, num ramo SEM o conserto. A tentativa 1 do push do item 67 (PR #586, head `a001e22c`, `dev-67-e2-cl`) caiu no `[T-17-FILA-db] (b)` (`bsan317-consentimento-localizacao-db`), e o re-run ficou verde. O head `a001e22c` não descende do #580: `git grep -c loserPid a001e22c -- tests/helpers/pg-barrier.ts tests/bsan317-consentimento-localizacao-db.test.ts` → 0 (rc 1), contra 3 e 1 em `00e46347`. É a mesma checagem que o #580 consertou, e a ocorrência não reabre esta entrada: o conserto chega ao ramo do #586 quando ele integrar a `main`. Ela tinha sido gravada como pendência nova (`P-T17-FILA-INTERMITENTE`), que sai por ser duplicata desta.
 
 ## P-AUTH-REFRESH-VINCULO-APARELHO (2026-11-16) — o token de renovação não é amarrado ao aparelho — BAIXA
 
@@ -16740,4 +16741,147 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** a prova no emulador do `B-APP-SESSAO-RENOVA` (16/11, pilha `b10b-f4`, organização nova com 0 OS atribuídas ao técnico).
 - **N e forma:** 3 atualizações da lista, 3 avisos de falha, e o servidor respondeu 200 nas 3 (`{"items":[],"pagination":{...,"nextCursor":null}}`, uma delas sem 401 antes).
 - **não medido:** onde o app transforma o 200 em falha (a caminhada de "Minhas OS" lê `items` e `pagination.nextCursor`; o erro vem depois dela).
+- **acréscimo (registro de 17/11, `fix-593-m-cl`, na união com a `main`):** o registro de 17/11 tinha aberto a mesma pendência pelo registro do PR #588 (F0 a F7), com a nota "é provavelmente o que o dono viu no Pixel; a causa não foi medida"; as duas entradas viraram esta.
 - **critério de encerramento:** a lista vazia do servidor mostra o estado vazio, sem aviso de falha, com teste.
+
+## P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entrega sem cidade, estado e CEP — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o item da lista nunca levou `serviceCity`; o B-GUI-D1 acrescenta `destinationAddress` no mesmo molde) · **dono:** `B-GUI-15` ("Ir para a coleta" / "Ir para a entrega") · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.1 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toWorkOrderListDto` (`src/modules/work-orders/work-order.dto.ts`) manda `serviceAddress` e `destinationAddress`, sem `*City`, `*State` e `*ZipCode`. Sem a cidade, o botão do mapa pode levar o app de mapa ao lugar errado quando a OS não tem coordenada.
+- **critério de encerramento:** o `B-GUI-15` decide se a lista passa a mandar cidade, estado e CEP (aditivo), com teste, ou registra por que a coordenada basta.
+
+## P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo atendido chega ao app sem modelo e cor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o formulário da web, `frontend/src/modules/work-orders/components/WorkOrderForm.tsx`, só pede `vehicle` e `color` no socorro) · **dono:** `B-WO-FORM-VEICULO` (formulário web da OS com o veículo em campos próprios: placa, modelo, cor; backlog, sem plano ainda; ID dado na triagem da J-597, C3-N1) · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.2 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** numa OS de reboque criada pela web, `serviceDetails` só tem `plate`. Com o B-GUI-D1, `attendedVehicle.model` e `.color` saem `null`, e o cartão Veículo do detalhe fiel (B-GUI-FID1) mostra só a placa mascarada.
+- **critério de encerramento:** o formulário da web pede modelo e cor também no reboque, com teste.
+
+## P-OS-PLACA-NO-TEXTO-LIVRE (2026-11-17) — a placa digitada em texto livre chega à lista; dois residuais do filtro de placa no modelo e na cor do veículo atendido — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (subiu na triagem da J-597, C1-03) · **escopo:** `pre-existente` (a web aceita qualquer texto em `title`, `serviceAddress`, `destinationAddress`, `vehicle` e `color`; o B-GUI-D1 filtra na saída só modelo e cor) · **dono:** `B-WO-FORM-VEICULO`, o bloco de formulário da web que recebe a `P-OS-REBOQUE-SEM-MODELO-E-COR` · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1.1 §1.4 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toAttendedVehicleDto` (`src/modules/work-orders/work-order.attended-vehicle.ts`) anula o modelo ou a cor que traga uma placa (regra do check-in) ou a placa desta OS (dobrada). Passam, medidos: (1) duas placas no texto, nenhuma desta OS (`Uno ABC1234 e DEF5678`), que não mostra o fim desta OS, só perde minimização; (2) o fim sozinho (`Onix final 23`), que ninguém distingue de `Onix 2023` sem apagar modelo legítimo.
+- **fato (apenso da J-597, C1-03, 17/11):** a placa INTEIRA (com o fim) que a base digita num texto livre que não é modelo nem cor chega à lista de OS: por `title` e `serviceAddress` (antes do B-GUI-D1) e, desde o B-GUI-D1, por `destinationAddress`. O filtro do `toAttendedVehicleDto` cobre só `model` e `color`. Medido pela sonda da cadeira C1 (`probe-textolivre.mts`, OS com `title` `Reboque Onix ABC-1D23`, `serviceAddress` `Rua 1 (placa ABC1D23)`, `destinationAddress` `Patio, carro abc1d23`): no objeto `02009efe`, `title`, `serviceAddress` e `destinationAddress` dão `PLACA_INTEIRA`; com o `work-order.dto.ts` da `main`, `title` e `serviceAddress` dão `PLACA_INTEIRA` e `destinationAddress` está ausente. Não é capacidade nova (o detalhe já entrega a placa inteira aos mesmos papéis), mas o fim pode chegar à tela por um texto livre. A trava do servidor `assertFimNaoChegaPorTexto` (`tests/bguid1-dados-da-os.test.ts`) deixa `title` e `serviceAddress` de fora de propósito, até esta pendência fechar.
+- **critério de encerramento:** a web recusa placa nos campos de modelo e cor (o conserto de raiz) e a placa deixa de chegar à lista por `title`, `serviceAddress` e `destinationAddress` (recusa na entrada ou filtro na saída), com teste.
+
+## P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor cancela a nota quando o pagamento dele é todo devolvido, mesmo com outro valor ainda pago no demonstrativo — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
+- **origem:** Emenda 1 do plano do `B-ASS-08c2` (§9, fora do repositório); a pergunta ao dono vai ao artefato quando o 08c3 começar.
+- **fato:** no estorno pelo provedor, a nota é cancelada quando aquele pagamento é todo devolvido, mesmo que o demonstrativo ainda tenha outro valor pago (o caso realista: parte paga pelo provedor, o resto à mão, e o provedor devolve a parte dele). A pergunta ao dono: (a) continuar cancelando, como hoje, ou (b) seguir a regra do estorno manual (só alerta, sem cancelar, até todo o dinheiro ser devolvido). Recomendação: (b). Sem resposta: (a).
+- **critério de encerramento:** a resposta do dono decide (a) ou (b), e o `B-ASS-08c3` implementa o caminho decidido com teste, antes de ligar a nota.
+
+## P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (o teste é de dinheiro; sobe e desce até a causa sair) · **escopo:** `pre-existente` (fora do bloco) · **dono:** o próximo bloco do financeiro de títulos, com o conserto da premissa do arnês · **bloqueia:** não.
+- **origem:** `dp-prerev-08c2-l1` (CI-01). Aberta como BAIXA na Emenda 2 do 08c2, subiu de gravidade na reclassificação do orquestrador (18:41) e voltou para MÉDIA depois do diagnóstico `dp-diag-k11h` (20:25).
+- **N e forma:** 1 queda no CI do 08c2 (o re-run ficou verde). Diagnóstico `dp-diag-k11h`: 50/50 verdes (30 rodadas sozinho, 10 com carga e 10 com carga pesada); o `changeStatus` é um `UPDATE … WHERE status=<lido> … RETURNING` atômico, a sonda ao vivo recusa o perdedor obsoleto, e o "aceitou" do CI só se explica por um estado intermediário legítimo na releitura — aponta para a premissa de ordem no arnês, não para defeito de dinheiro.
+- **critério de encerramento:** a premissa de ordem do arnês é consertada (ou a causa é medida), e o `T-K11h` deixa de cair de forma intermitente.
+
+## P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto com byte NUL nos 8000 primeiros bytes — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** o guarda do repositório (ferramenta do #572) · **dono:** o próximo bloco que tocar o guarda · **bloqueia:** não.
+- **origem:** revisão do refresh do #572 (`rev-572-refresh-cl`), que pediu o registro no próximo PR de registro.
+- **fato:** o guarda pula arquivo de texto que tenha um byte NUL nos 8000 primeiros bytes.
+- **critério de encerramento:** o guarda não pula mais o arquivo com byte NUL (ou documenta o pulo como aceite), com teste.
+
+## P-APP-CHECKLIST-MODELO-DEMO-NO-REAL (2026-11-16) — os modelos de vistoria de demonstração são gravados quando a 1ª busca falha, também no modo real — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (`checklist_repository.dart:163-205`) · **dono:** o bloco que tocar `checklist_repository.dart:163-205` (leitura do redator; o plano do app guincho marca como "de outro bloco", e o `B-GUI-03` declara a dependência no PR) · **bloqueia:** não.
+- **origem:** retrato do app de campo de 16/11 ("App de Campo Hoje"), a confirmar por execução; decisão F (a) do dono: os outros 2 achados do retrato (os de organização) entram no portão, e este vira pendência.
+- **fato:** o app grava modelos de vistoria de demonstração quando a 1ª busca falha, também no modo real.
+- **critério de encerramento:** no modo real, a 1ª busca falha não grava modelo de demonstração, com teste.
+
+## P-APP-TEXTOS-SEM-ACENTO (2026-11-16) — textos do app sem acento — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** app de campo (`pre-existente`) · **dono:** os blocos do app guincho, cada um acentuando o que reescreve (leitura do redator; o `B-GUI-01` só acentua as frases que ele mesmo reescreve) · **bloqueia:** não.
+- **origem:** retrato do app de campo de 16/11 ("App de Campo Hoje"); decisão F (a) do dono: os outros 2 achados do retrato entram no portão, e este vira pendência.
+- **fato:** literais sem acento no app: "Nao foi possivel", "sessao", "alteracoes", "Gestao".
+- **critério de encerramento:** os literais do app saem acentuados (PT-BR de negócio), sem regressão de texto.
+
+## P-KPI-APPEND-FLUTTER-OUTRAS (2026-11-17) — o anexador de histórico de KPI não lê o fim de saída do Flutter — BAIXA
+
+- **status:** FECHADA (2026-11-17, PR #592, squash `abae3cbf` às 11:19 SP; revisão `df-rev-592`, DeepSeek Flash, APROVADO com mutação própria morta; CI verde nas 2 rodadas; registro `fix-593-cl`, pela revisão `rev-593-cl`, A-KPI-STALE) — `scripts/kpi-history-append.mjs` passou a ler o Flutter com testes pulados (`+N ~M: All other tests passed!`), com teste em `tests/kpi-loop-ferramentas.test.ts`. A linha `status` de baixo é a de antes, mantida por acréscimo.
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** ferramenta (`scripts/kpi-history-append.mjs`) · **dono:** um PR de ferramenta próprio · **bloqueia:** não.
+- **origem:** marco de KPI (PR #590, `kpi-1711-grava-cl`), na retomada de 17/11; a proposta foi do DeepSeek Flash e a redação do Claude.
+- **N e forma:** o anexador só lê `+N: All tests passed!`, mas o Flutter termina em `+N ~M: All other tests passed!` desde o #583; o redator gravou 5 entradas com uma cópia fora do repositório, declarada no `backfill_note`.
+- **critério de encerramento:** o anexador lê o fim de saída do Flutter (`+N ~M: All other tests passed!`) e deixa de pular essas entradas, com teste.
+
+## P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA (2026-11-16) — o app não deixa escolher a organização no login — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (produto: quem pertence a mais de uma organização não entra pelo app na organização certa) · **escopo:** `pre-existente` (app de campo, `main` `cf0034d1`) · **dono:** o item 69 do portão (`docs/revisoes/SAN3/PLANO_SAN3.md` §4.1), bloco próprio a abrir (a tela 14 do plano do app guincho; fora do §5) · **gatilho:** a abertura desse bloco; a pendência fecha junto com o item 69 · **bloqueia:** a versão vendável, pelo item 69.
+- **origem:** retrato do app de campo de 16/11 17:56 SP ("App de Campo Hoje", workflow `retrato-do-app`, 7 leitores e 1 crítico, sobre a `main` `cf0034d1`), a confirmar por execução; decisão F (a) do dono (`D-DONO-1711-RETOMADA-APROVA-TUDO`, 17/11): entra no portão como item 69.
+- **N e forma:** achado por leitura do código, ainda não executado: `mobile/flutter_app/lib/features/auth/login_screen.dart` não envia a organização, e o servidor devolve a lista de organizações; 1 tela.
+- **critério de encerramento:** o login do app envia a organização escolhida (o servidor devolve a lista), a escolha chega ao contexto da sessão, e isso está provado por teste no app e no emulador.
+
+## P-APP-TROCA-ORG-NAO-TROCA (2026-11-16) — a troca de organização no app não troca — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (produto e isolamento: o app segue falando com a organização do token e mostra o cache da anterior) · **escopo:** `pre-existente` (app de campo, `main` `cf0034d1`) · **dono:** o item 70 do portão (`docs/revisoes/SAN3/PLANO_SAN3.md` §4.1), bloco próprio a abrir (a tela 15 do plano do app guincho; fora do §5) · **gatilho:** a abertura desse bloco; a pendência fecha junto com o item 70 · **bloqueia:** a versão vendável, pelo item 70.
+- **origem:** retrato do app de campo de 16/11 17:56 SP ("App de Campo Hoje", sobre a `main` `cf0034d1`), a confirmar por execução; decisão F (a) do dono (`D-DONO-1711-RETOMADA-APROVA-TUDO`, 17/11): entra no portão como item 70.
+- **N e forma:** achado por leitura do código, ainda não executado: o servidor usa a organização do token; o app não chama `/auth/active-tenant` e não limpa o cache, embora `mobile/flutter_app/lib/features/auth/tenant_selector_screen.dart` diga que limpa; 1 tela.
+- **critério de encerramento:** ao trocar de organização, o app chama `/auth/active-tenant`, passa a usar o token da organização nova e limpa o cache da anterior, provado por teste no app e no emulador.
+
+## P-GUI00-ERRO-ESCOLHE-A-DIRETO (2026-11-17) — no caminho de erro, três telas do app escolhem a aparência A direto, sem passar pelo padrão da tela — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (hoje inalcançável: o leitor de preferências não devolve erro) · **escopo:** `pre-existente` (fora do PERMITIDO do `B-GUI-00`; nota do dev, sem mudança no bloco) · **dono:** o 1º bloco que tocar essas telas · **gatilho:** o leitor de preferências passar a poder devolver erro, ou um bloco tocar uma das 3 telas · **bloqueia:** não.
+- **origem:** a nota do dev `dev-gui-00-01a-cl` na PARADA do `B-GUI-00` (PR #594), registrada pela Emenda 1 do `B-GUI-00` (`plano-B-GUI-00-emenda1.md`, do orquestrador, 17/11, fora do repositório).
+- **N e forma:** 3 pontos, lidos no código (`w-gui00` em `3cc397ea`): `location_consent_screen.dart:138`, `location_consent_home_card.dart:108` e `profile_screen.dart:505`. Pela decisão H (`D-DONO-1611-H-APROVADO-E-PADRAO`), sem dono vale o padrão da tela, que na Localização é a B.
+- **critério de encerramento:** o caminho de erro das 3 telas usa o padrão da tela, e não a A fixa, com teste.
+
+## P-08C2-CLOSE-POOL-PRESO (2026-11-17) — 10 fechamentos concorrentes de um demonstrativo novo expiram todos em 5 s — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (disponibilidade, sem efeito em dinheiro: hoje são 10 respostas 409, repetíveis) · **escopo:** `pre-existente` para o `B-ASS-08c2` ("não é deste bloco", Emenda 4 §4) · **dono:** o próximo bloco que tocar o `close` (o `B-ASS-08c3`) · **gatilho:** esse bloco abrir · **bloqueia:** não.
+- **origem:** a 4ª leva do 08c2 (`dev-08c2-e4-cl`, head `d2cf41e9`), registrada pela Emenda 4 do 08c2 (`plano-B-ASS-08c2-emenda4.md` §4, do orquestrador, fora do repositório), 17/11.
+- **N e forma:** 10 fechamentos concorrentes de um demonstrativo novo → 10 respostas 409 por expiração em 5 s, repetível; o teste que acompanha é o PB-2 (a). **Causa provável, lida no código e ainda não medida pela contagem de conexões:** o `close` chama `inputs.resolve` com o cliente, e não com o `tx`, dentro da transação.
+- **critério de encerramento:** 10 fechamentos concorrentes → 1 fecha e 9 recebem 409, sem expirar, com teste.
+
+## P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fila, e o despacho usa a 1ª como coleta — ALTA
+
+- **status:** ABERTA (absorvida pelo `B-GUI-02`, Emenda 2; fecha no merge dele) · **gravidade:** ALTA (perda de dado: com Entrega@0 e Coleta@1, o despacho só cria a execução da entrega, e a prova de coleta se perde) · **escopo:** `pre-existente` (`work-order.service.ts:1380`, `work-order.repository.ts:224-226`, lidos na maquete) · **dono:** `B-GUI-02` (Emenda 2; antes era o `B-GUI-02s`, pela Emenda 1 §8) · **gatilho:** o merge do `B-GUI-02` · **bloqueia:** não o portão; a Emenda 1 recomenda fechar antes de o guincho ir a produção.
+- **origem:** os achados das maquetes da 1ª onda (16/11 20:35, item (2)); a Emenda 1 do `B-GUI-02` (§8) a criou; a revisão r2 do plano `cx1-crit-gui02-e11` (Codex, VOLTA, A1 ALTA: aviso na tela não é controle) levou o conserto ao servidor, por decisão do orquestrador, declarada (17/11 11:3x), e a Emenda 2 (§5) a absorve (`plano-B-GUI-02-emenda1.md`, `plano-B-GUI-02-emenda2.md`, fora do repositório).
+- **N e forma:** 1 caminho do servidor: a vistoria incluída entra ao fim da fila (`order_index`), e o despacho toma a 1ª linha como coleta.
+- **critério de encerramento:** o servidor reconhece a coleta e a entrega pela etapa (`collection` sempre primária), com o T1 e o T7 do `B-GUI-02` verdes nas duas formas, memória e `-db`.
+
+## P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da OS mas não lê os modelos — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (o catálogo de permissões; o `B-GUI-02` não muda o servidor de permissões, Emenda 1 §1) · **dono:** bloco próprio, `B-GUI-02p`, de servidor, com **junta completa** (permissão) e pergunta ao dono antes · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§1 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (conserto da J-596, achado C3-01).
+- **fato:** o `field_dispatcher` tem `field_dispatch:create` (grava o `PATCH /work-orders/:id/checklists`) e não tem `tenant_checklists:read`. Dar a ele essa leitura (só dos publicados, como a maquete recomenda) muda o catálogo, a `RBAC_MATRIX.md` e a `role_permissions` (migração de dados, `RBAC_MATRIX.md:154`). Enquanto não fechar, o despachante só vê o painel de vistorias em leitura, com a frase dele (o W2 do `B-GUI-02`).
+- **critério de encerramento:** o despachante lê os modelos publicados e escolhe a vistoria da OS, com a matriz, o catálogo e a `role_permissions` atualizados e a junta completa verde.
+
+## P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistoria já virou execução — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o DTO do detalhe da OS) · **dono:** `B-GUI-02s` (o DTO ganha um campo por linha; a allowlist §2.8 é revista) · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§4 e §8); registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** a tela só sabe, no nível da OS, se ela foi despachada (`checklistSnapshot` ou o evento `field_dispatch_created`). O selo "enviada" por linha da maquete aprovada fica de fora (`D-GUI02-SEM-SELO-ENVIADA`).
+- **critério de encerramento:** o detalhe traz, por linha, se a vistoria já foi enviada (sem chave de armazenamento nem dado interno, §2.8), e a tela mostra o selo.
+
+## P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** `B-GUI-02s` · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§8); registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** a linha do tempo só tem o `actorUserId`, que é opaco; a tela não mostra quem escolheu a vistoria.
+- **critério de encerramento:** o detalhe (ou a linha do tempo) traz o nome de exibição de quem incluiu, e a tela o mostra.
+
+## P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o ajuste que falha no meio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o backend de teste e de desenvolvimento) · **dono:** o `B-GUI-02s` (servidor), ou quem mexer no repositório em memória · **bloqueia:** não.
+- **origem:** Emenda 1.1 do `B-GUI-02` (R1, S1), `plano-B-GUI-02-emenda1.1.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** o `InMemoryWorkOrderRepository.applyChecklists` (`work-order.repository.ts:216-288`, medido na Emenda 1.1) não desfaz o que gravou quando falha no meio. No Prisma, a chamada é transação (R2, leitura de código). Afeta o backend em memória, que é o que o W4 usa.
+- **critério de encerramento:** o ajuste em memória é tudo ou nada, com teste de falha no meio.
+
+## P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o espelho antigo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (as OS em voo pela regra antiga) · **dono:** quem tocar o espelho; ou fica como está se a junta medir que nenhuma OS em produção está nesse estado (hoje não há produção) · **bloqueia:** não.
+- **origem:** Emenda 2 do `B-GUI-02` (§1.3 e §5), `plano-B-GUI-02-emenda2.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** uma OS já congelada com a coleta atrás (Entrega@0 + Coleta@1, congeladas pela regra antiga) mantém o `work_orders.checklist_id` antigo até a próxima escrita do conjunto ou o próximo despacho. A reatribuição já provisiona a coleta certa. Não há backfill, que o dono proibiu.
+- **critério de encerramento:** o espelho se acerta para essas OS, ou a junta mede que não há nenhuma nesse estado.
+
+## P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" numa OS enviada sem coleta, e o servidor recusa — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** a tela de vistorias (fora do conserto da J-596, que só muda o servidor) · **dono:** `B-GUI-02b`, bloco de backlog da tela de vistorias · **bloqueia:** não.
+- **origem:** Emenda 2.2 do `B-GUI-02` (§2), conserto do achado C1-01 da J-596, `plano-B-GUI-02-emenda2.2.md`, fora do repositório.
+- **fato:** com a Emenda 2.2, o servidor recusa a coleta em toda OS já enviada (409 `collection_after_dispatch`, `T10`). A tela continua com `collectionLocked = dispatched && collectionLine !== null` (`WorkOrderChecklistsPanel.tsx`): numa OS enviada sem linha de coleta, "Incluir coleta" aparece, e o operador recebe a frase do 409. O servidor é a autoridade (regra de ouro B.2.4).
+- **critério de encerramento:** a tela esconde "Incluir coleta" na OS enviada sem coleta e mostra a frase da OS enviada, com teste de tela.

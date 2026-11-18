@@ -19,16 +19,15 @@ head, resultado numerado e hashes SHA-256 do roteiro e da evidência, sem descre
 | Data | Head | Executor independente | Fluxo 1 | Fluxo 2 | Fluxo 3 | Fluxo 4 | SHA-256 do roteiro | SHA-256 da evidência |
 |---|---|---|---|---|---|---|---|---|
 | 2026-11-04 | a11d91f2 | demo-exec-10b | ADIADA | ADIADA | ADIADA | ADIADA | `1f1fc91b303b26a911d36718b24ec279c5422b8215da38e670de4c3ef9ea9d80` | `753dcf80224d9d00f75bfc5c15a23d6fb0876625acbecad882d77ccb6e29f9f9` |
+| 2026-11-16 | d00449af | dp-exec-f9-44-v13 | passou | passou | passou | passou | `19378a38321c3b78fdc709869a156416d4c8946b545b041fd8edf6c8d58092d2` | `a406d4886fbf563aabc46e890908d3072927935167066fd75a23684576c18cc7` |
 
-### Adiamentos desta entrega parcial
+### Adiamentos de 04/11, resolvidos em 16 e 17/11
 
-Quatro etapas ficaram ADIADAS nesta entrega: o trecho mobile da Op-8, a Op-10, a F3 (app anterior e rotação no
-emulador isolado) e a F4 (execução independente da demonstração). O veredito de cada uma, com motivo e dono, está na
-seção 3, em "Veredito por procedimento". As três primeiras pararam porque o aplicativo release do ensaio não
-declarava `android.permission.INTERNET`; o conserto entrou depois, no PR #499, e elas voltam na próxima volta deste
-bloco, sem trocar o release por build debug.
-
-Este PR é parcial. O item 44 permanece **PARCIAL** até os quatro adiamentos serem executados com prova real.
+Em 04/11 ficaram adiadas quatro etapas: o trecho mobile da Op-8, a Op-10, a F3 (app anterior e rotação no emulador
+isolado) e a F4 (execução independente da demonstração). As três primeiras pararam porque o aplicativo release do
+ensaio não declarava `android.permission.INTERNET`, consertado no PR #499. A F4 passou em 16/11, pela F9 v13; a Op-8,
+a Op-10 e a F3 passaram em 17/11, pelo ensaio 44-B3 no AVD isolado, com o release e sem build debug.
+Os quatro adiamentos foram executados com prova real; o item 44 deixa de ser PARCIAL.
 
 ## 2. Procedimentos de operação
 
@@ -286,25 +285,29 @@ As linhas resumem saídas saneadas. Logs brutos e valores sensíveis não são v
 | Op-6 | 2026-11-04 | 196d7b48 | bootstrap como escrito, depois da Op-7 | antes da Op-7 recusa RBAC_NOT_PROVISIONED; depois, recusas nomeadas, dry-run sem escrita, criação única, repetição e login 200 | passou | dev-44k-opus |
 | Op-8 | 2026-11-04 | a11d91f2 | rotação na API isolada | ADIADA: backend comprovado; trecho mobile sem INTERNET no release do ensaio, consertado depois no PR #499; dono B-SAN3-10b | ADIADA | dev-44-sol |
 | Op-10 | 2026-11-04 | a11d91f2 | atualização por cima no AVD isolado | ADIADA: release do ensaio sem INTERNET não alcança a API isolada, consertado depois no PR #499; dono B-SAN3-10b | ADIADA | dev-44-sol |
+| Op-8 | 2026-11-17 | 89cf79fe | rotação de JWT com fila offline no emulador | token antigo 401, refresh antigo 401, login novo 200; sessão renovou sozinha (68); fila drenada | passou | ens-44b3-dp |
+| Op-10 | 2026-11-17 | 89cf79fe | atualização por cima no AVD isolado com fila offline | fila preservada; cancel_via_status_forbidden no aparelho; gestor cancelou com decisão; técnico descartou; despesa sem Descartar | passou | ens-44b3-dp |
+| F3 | 2026-11-17 | 89cf79fe | vermelho-controle da permissão de internet no release | app anterior e rotação no emulador isolado: coberto pelo Op-10 e pelo Op-8 no AVD isolado de 17/11; vermelho-controle da permissão de internet (INTERNET=0 sem a linha; APK reprovado) | passou | ens-44b3-dp |
 
 ### Veredito por procedimento
 
 Uma linha por procedimento obrigatório e por fatia adiada, na forma `PASSOU <op>` ou
 `ADIADA <op> — <motivo> — dono <bloco>`. A bateria do bloco confere esta lista contra o conjunto fechado das etapas
-adiadas nesta entrega (Op-8, Op-10, F3 e F4): qualquer uma delas escrita como `PASSOU`, em qualquer linha ou tabela
-deste roteiro, deixa a bateria vermelha, seja qual for o resto da linha; e qualquer outra etapa escrita como `ADIADA`
-também deixa vermelha.
+adiadas, que desde 17/11 é vazio: qualquer etapa escrita como `ADIADA` numa linha de veredito de 16/11 em diante
+deixa a bateria vermelha.
 
 ```text
 PASSOU Op-1
 PASSOU Op-1a
 PASSOU Op-5
 PASSOU Op-6
-ADIADA Op-8 — trecho mobile: o release do ensaio não declarava a permissão de internet (conserto no PR #499); o backend passou — dono B-SAN3-10b
-ADIADA Op-10 — o release do ensaio não alcançava a API isolada sem a permissão de internet (conserto no PR #499) — dono B-SAN3-10b
-ADIADA F3 — app anterior e rotação no emulador isolado, pela mesma causa; build debug não substitui o aceite — dono B-SAN3-10b
-ADIADA F4 — o seed versionado não reproduz o estado funcional exigido pelo roteiro privado — dono B-SAN3-10b-F4-SEED-ISOLADO
+PASSOU Op-8
+PASSOU Op-10
+PASSOU F3
+PASSOU F4
 ```
+
+Em 04/11 as quatro estavam ADIADA (release sem INTERNET); passaram em 16/11 (F4) e 17/11 (Op-8, Op-10, F3).
 
 ## 4. Atos do dono no ambiente real
 

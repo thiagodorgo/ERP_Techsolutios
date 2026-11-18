@@ -2,10 +2,11 @@ import { isMockMode } from "../../config/env";
 import { ApiError, apiRequest } from "../../services/api/client";
 import { adaptWorkOrderResponse, adaptWorkOrdersResponse, adaptWorkOrderTimelineResponse, hasWorkOrdersList } from "./work-orders.adapter";
 import type { WorkOrderAuditLog, WorkOrderAuditLogList } from "./audit-logs.types";
-import { getMockWorkOrderDetail, getMockWorkOrdersData, getMockWorkOrderTimeline } from "./work-orders.mock";
+import { adjustMockWorkOrderChecklists, getMockWorkOrderDetail, getMockWorkOrdersData, getMockWorkOrderTimeline } from "./work-orders.mock";
 import type {
   WorkOrderAssignPayload,
   WorkOrderCancelPayload,
+  WorkOrderChecklistAdjustmentBody,
   WorkOrderCreatePayload,
   WorkOrderDetail,
   WorkOrderDetailResult,
@@ -234,6 +235,24 @@ export async function correctMileage(
   if (payload.mileageEnd !== undefined) body.mileage_end = payload.mileageEnd;
 
   const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/mileage`, {
+    ...context,
+    method: "PATCH",
+    body,
+  });
+  return requireWorkOrder(response);
+}
+
+// B-GUI-02 — o operador escolhe as vistorias da OS: `PATCH /work-orders/:id/checklists` com o corpo de UMA linha que
+// `buildChecklistAdjustmentBody` montou (o painel nunca monta corpo à mão). A resposta 200 é `{ data: <OS com checklists[]> }`.
+// O erro do servidor NÃO é engolido: o painel lê o `reason` do `ApiError` e diz a frase certa (Emenda 1, §2).
+export async function adjustWorkOrderChecklists(
+  context: WorkOrdersApiContext,
+  workOrderId: string,
+  body: WorkOrderChecklistAdjustmentBody,
+): Promise<WorkOrderDetail> {
+  if (isMockMode()) return adjustMockWorkOrderChecklists(workOrderId, body);
+
+  const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/checklists`, {
     ...context,
     method: "PATCH",
     body,

@@ -311,6 +311,11 @@ WorkOrder _workOrderFromRemoteJson(
       (json[camel] as String?) ?? (json[snake] as String?);
   // B-SAN3-15b (P7) — guincho ou prestador, como o servidor decidiu; o resto vira nulo.
   final serviceKindRaw = json['serviceKind'] ?? json['service_kind'];
+  // B-GUI-D1 — o destino, o veículo atendido, o prazo e a coordenada da coleta. Leitura TOLERANTE: chave ausente
+  // (servidor antigo) ou tipo errado vira `null` só naquele campo, sem exceção e sem derrubar o item.
+  // dart format off
+  final attendedVehicle = _mapOrNull(json['attendedVehicle'] ?? json['attended_vehicle']);
+  // dart format on
   return WorkOrder(
     localId: serverId ?? 'wo-remote-${DateTime.now().millisecondsSinceEpoch}',
     serverId: serverId,
@@ -321,6 +326,12 @@ WorkOrder _workOrderFromRemoteJson(
     customerDocument: strOpt('customerDocument', 'customer_document'),
     customerPhone: strOpt('customerPhone', 'customer_phone'),
     serviceAddress: str('serviceAddress', 'service_address'),
+    latitude: _doubleOrNull(
+      json['serviceLatitude'] ?? json['service_latitude'],
+    ),
+    longitude: _doubleOrNull(
+      json['serviceLongitude'] ?? json['service_longitude'],
+    ),
     status: workOrderStatusFromApi(json['status']),
     priority: workOrderPriorityFromApi(json['priority']),
     assignedUserId: strOpt('assignedUserId', 'assigned_user_id'),
@@ -339,8 +350,32 @@ WorkOrder _workOrderFromRemoteJson(
     ),
     checkinPlateTail: strOpt('checkinPlateTail', 'checkin_plate_tail'),
     serviceType: workOrderServiceTypeFromApi(serviceKindRaw),
+    destinationAddress: _textOrNull(
+      json['destinationAddress'] ?? json['destination_address'],
+    ),
+    destinationLatitude: _doubleOrNull(
+      json['destinationLatitude'] ?? json['destination_latitude'],
+    ),
+    destinationLongitude: _doubleOrNull(
+      json['destinationLongitude'] ?? json['destination_longitude'],
+    ),
+    attendedVehiclePlateMasked: _textOrNull(
+      attendedVehicle?['plateMasked'] ?? attendedVehicle?['plate_masked'],
+    ),
+    attendedVehicleModel: _textOrNull(attendedVehicle?['model']),
+    attendedVehicleColor: _textOrNull(attendedVehicle?['color']),
+    slaDueAt: _parseDate(_textOrNull(json['slaDueAt'] ?? json['sla_due_at'])),
   );
 }
+
+// B-GUI-D1 — leitores tolerantes: o valor só passa com o tipo certo; qualquer outro vira `null`.
+String? _textOrNull(Object? value) => value is String ? value : null;
+
+double? _doubleOrNull(Object? value) =>
+    value is num && value.isFinite ? value.toDouble() : null;
+
+Map<String, dynamic>? _mapOrNull(Object? value) =>
+    value is Map<String, dynamic> ? value : null;
 
 /// Nome mantido (o `b109_approval_state_regression_test.dart` o importa); a tradução é a do codec único.
 WorkOrderStatus workOrderStatusFromApiValue(Object? value) =>
