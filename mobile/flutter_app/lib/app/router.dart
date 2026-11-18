@@ -22,9 +22,6 @@ import '../features/checklists/ui/checklist_available_screen.dart';
 import '../features/checklists/ui/checklist_comparison_screen.dart';
 import '../features/checklists/ui/checklist_damage_map_screen.dart';
 import '../features/checklists/ui/checklist_run_screen.dart';
-import '../features/inventory/ui/inventory_list_screen.dart';
-import '../features/inventory/ui/stock_entry_screen.dart';
-import '../features/inventory/ui/stock_exit_screen.dart';
 import '../features/location/ui/location_consent_screen.dart';
 import '../features/prestador/ui/prestador_service_screen.dart';
 import '../features/prestador/ui/technician_stock_screen.dart';
@@ -253,22 +250,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LocationConsentScreen(),
       ),
       GoRoute(
-        path: '/inventory',
-        builder: (context, state) => const InventoryListScreen(),
-      ),
-      GoRoute(
-        path: '/inventory/entry',
-        builder: (context, state) => StockEntryScreen(
-          preselectedItemId: state.uri.queryParameters['itemId'],
-        ),
-      ),
-      GoRoute(
-        path: '/inventory/exit',
-        builder: (context, state) => StockExitScreen(
-          preselectedItemId: state.uri.queryParameters['itemId'],
-        ),
-      ),
-      GoRoute(
         path: '/approvals',
         builder: (context, state) => const ModulePlaceholderScreen(
           title: 'Aprovações',
@@ -436,22 +417,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/location',
       builder: (context, state) => const LocationConsentScreen(),
-    ),
-    GoRoute(
-      path: '/inventory',
-      builder: (context, state) => const InventoryListScreen(),
-    ),
-    GoRoute(
-      path: '/inventory/entry',
-      builder: (context, state) => StockEntryScreen(
-        preselectedItemId: state.uri.queryParameters['itemId'],
-      ),
-    ),
-    GoRoute(
-      path: '/inventory/exit',
-      builder: (context, state) => StockExitScreen(
-        preselectedItemId: state.uri.queryParameters['itemId'],
-      ),
     ),
     GoRoute(
       path: '/approvals',

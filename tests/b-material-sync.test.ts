@@ -312,26 +312,39 @@ test("[RC2(7)] auditor sem permissão recebe 403 no lote", async () => {
   );
 });
 
-test("[RC2(8)] técnico não ganha inventory.consume por alcançar material", async () => {
+// B-O6R-04b (D1/D2): `inventory.consume` deixou de existir; o técnico que alcança material recebe o tipo recusado por
+// ação, sem efeito (o S2 com 1 tipo, Emenda 1.2 §1).
+test("[RC2(8)] técnico não ganha inventory.consume por alcançar material: o tipo é recusado por ação e nada é gravado", async () => {
   const ctx = await setup();
+  const before = await ctx.snapshotLedger();
   const response = await ctx.run(ctx.tecA, [{
     client_action_id: randomUUID(),
     type: "inventory.consume",
     local_created_at: "2026-11-12T12:00:00.000Z",
     payload: { item_id: "inv-item-tow-cable", quantity: 1 },
   }]);
-  assert.equal(response.rejected[0]?.error?.reason, "permission_required");
+  assert.equal(response.accepted.length, 0);
+  assert.equal(response.rejected.length, 1);
+  assert.equal(response.rejected[0]?.error?.reason, "unsupported_action_type");
+  assert.deepEqual(await ctx.snapshotLedger(), before);
 });
 
-test("[RC2(9)] ator de estoque preserva inventory.consume", async () => {
+// B-O6R-04b (D4): a porta do lote tem uma chave só, `work_orders:update`; o ator só de estoque recebe 403 (o S4,
+// Emenda 1.2 §1).
+test("[RC2(9)] ator só de estoque (sem work_orders:update): o lote recusa com 403 e nada é gravado", async () => {
   const ctx = await setup();
-  const response = await ctx.run(ctx.inventoryActor, [{
-    client_action_id: randomUUID(),
-    type: "inventory.consume",
-    local_created_at: "2026-11-12T12:00:00.000Z",
-    payload: { item_id: "inv-item-tow-cable", quantity: 1 },
-  }]);
-  assert.equal(response.accepted.length, 1);
+  const before = await ctx.snapshotLedger();
+  await assert.rejects(
+    ctx.run(ctx.inventoryActor, [{
+      client_action_id: randomUUID(),
+      type: "inventory.consume",
+      local_created_at: "2026-11-12T12:00:00.000Z",
+      payload: { item_id: "inv-item-tow-cable", quantity: 1 },
+    }]),
+    (error: unknown) => typeof error === "object" && error !== null && "statusCode" in error && error.statusCode === 403
+      && "reason" in error && error.reason === "permission_required",
+  );
+  assert.deepEqual(await ctx.snapshotLedger(), before);
 });
 
 test("[RC2(10)] técnico nunca atribuído à OS é recusado sem movimento", async () => {
@@ -693,8 +706,9 @@ test("[RC2(20)] com inventory e sem work_orders só material é recusado por mó
       }],
     },
   });
-  assert.equal(consume.status, 200, JSON.stringify(consume.body));
-  assert.equal(consume.body.data.accepted.length, 1);
+  // B-O6R-04b (D4): o papel `inventory` não tem `work_orders:update`; a porta do lote recusa com 403 (o S4 pelo HTTP).
+  assert.equal(consume.status, 403, JSON.stringify(consume.body));
+  assert.equal(consume.reason, "permission_required");
 });
 
 test("[RC2(20-r)] sem work_orders o remove não estorna a baixa ativa", async () => {

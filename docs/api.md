@@ -149,55 +149,13 @@ Conflitos:
 - conflito de idempotencia retorna `conflict_type=idempotency_payload_mismatch`;
 - cada conflito inclui `client_action_id`, `work_order_id` quando existir, dados locais sanitizados e `next_action`.
 
-`GET /api/v1/mobile/inventory/availability` esta implementado no B-098D como contrato parcial para consulta mobile de disponibilidade. O endpoint usa o tenant do ator autenticado, ignora `tenant_id` externo, aceita filtros seguros (`item_id`, `sku`, `warehouse_id`, `work_order_id`) e exige `inventory.read` ou `inventory.manage`.
+`GET /api/v1/mobile/inventory/availability` saiu no B-O6R-04b (responde 404). Ele respondia uma disponibilidade fabricada, com itens semeados em memoria que sumiam no reinicio, e nenhum cliente o usava. O estoque real do ator no app e `GET /api/v1/mobile/technician/stock` (B-SAN3-15a), com a custodia escolhida pelo servidor e a permissao `inventory.read`.
 
-Resposta:
+`POST /api/v1/mobile/sync/inventory-actions` e, desde o B-O6R-04b, o envio do material da OS (contrato `2026-11.b-o6r-04b`, `implemented`). O lote `{ client_batch_id, actions[] }` exige `work_orders:update` (quem so tem `inventory.manage` recebe 403 `permission_required` no lote) e por acao `client_action_id`, `type`, `local_created_at` e `payload`.
 
-```json
-{
-  "data": {
-    "contract": {
-      "name": "mobile_inventory_availability",
-      "version": "2026-06-15.b098d",
-      "status": "partial"
-    },
-    "tenant_id": "tenant-do-ator",
-    "server_time": "2026-06-15T12:00:00.000Z",
-    "filters": {
-      "item_id": null,
-      "sku": "CABO-REBOQUE-5T",
-      "warehouse_id": null,
-      "work_order_id": "wo-local-1"
-    },
-    "items": [
-      {
-        "item_id": "inv-item-tow-cable",
-        "sku": "CABO-REBOQUE-5T",
-        "name": "Cabo de reboque 5T",
-        "unit": "un",
-        "warehouse_id": "mobile-warehouse-main",
-        "available_quantity": 6,
-        "reserved_quantity": 0,
-        "status": "available"
-      }
-    ]
-  }
-}
-```
+Tipos aceitos: `work_order_material.add` e `work_order_material.remove` (B-MATERIAL-REENVIO), por acao, com escopo por objeto da OS, baixa duravel por origem na custodia de quem lanca e estorno na remocao (detalhes em `docs/mobile-sync-contracts.md`).
 
-`POST /api/v1/mobile/sync/inventory-actions` esta implementado no B-098D como contrato parcial para replay controlado de acoes de inventario. O endpoint exige `inventory.manage`, lote `{ client_batch_id, actions[] }` e por acao `client_action_id`, `type`, `local_created_at` e `payload`.
-
-Tipos aceitos:
-
-- `inventory.reserve`: reserva quantidade de item disponivel.
-- `inventory.consume`: consome quantidade reservada/disponivel.
-- `inventory.shortage_report`: registra falta em campo.
-
-Resposta segue o envelope mobile de sync com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`. A idempotencia usa tenant resolvido do ator + usuario do ator + `client_action_id`; reenvio identico retorna `already_applied`; payload diferente com o mesmo `client_action_id` retorna `idempotency_payload_mismatch`.
-
-Lacunas B-098D: persistencia duravel em banco/Redis, reserva transacional multi-instancia, associacao real com OS/armazem, politicas por estoque e consumo pelo Flutter.
-
-Desde o B-MATERIAL-REENVIO, o mesmo lote aceita `work_order_material.add|remove` de quem tem `work_orders:update` (por acao, com escopo por objeto da OS), com baixa duravel por origem na custodia de quem lanca e estorno na remocao; os 3 tipos acima continuam exigindo `inventory.manage` e em memoria (detalhes em `docs/mobile-sync-contracts.md`).
+Os tipos antigos `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` sairam com o estoque em memoria, e `inventory_entry.create`/`inventory_exit.create` nunca tiveram tipo no servidor: todos saem em `rejected` com `unsupported_action_type`, sem ler a carga e sem efeito.
 
 `POST /api/v1/mobile/sync/evidence-actions` esta implementado no B-098E como contrato parcial para registrar manifestos de evidencias de OS e evidencias genericas de campo. O endpoint nao recebe binario/base64 nem caminho local: registra apenas metadados controlados para posterior upload e persistencia duravel.
 

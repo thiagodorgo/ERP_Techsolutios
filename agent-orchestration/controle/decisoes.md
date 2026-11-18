@@ -5545,11 +5545,35 @@ O dono aprovou as 3 opções da tela de custo e margem da plataforma: *"aprovo a
   - o bloco é o `B-APP-SESSAO-RENOVA`, que também olha a `P-APP-401-FICA-SINCRONIZANDO` e a `P-APP-TELEMETRIA-422`.
 - **Linha do portão:** `docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1, item 68 (registro de 16/11).
 
-## D-O6R-04B-RETIRADA · confirmação do dono (2026-11-14 21:08 SP) — "Nova Entrada", "Nova Saída" e a lista inventada saem do app
+## D-O6R-04B-RETIRADA (2026-11-14, confirmada pelo dono às 21:08 SP; registrada na F0 do B-O6R-04b em 2026-11-15; confirmação do dono registrada em 2026-11-16, #585) — o estoque fabricado sai do app e do servidor (item 31, `Ω6R-QUA-002`); "Nova Entrada", "Nova Saída" e a lista inventada saem do app
+
+**Registro da F0 do `B-O6R-04b` (2026-11-15):**
+
+- **Decisão do dono:** à P1 do plano do `B-O6R-04b`, a resposta (a): "Nova Entrada", "Nova Saída" e a lista inventada saem do app. Em 14/11 às 21:08 SP, depois de ver a página de decisões pendentes, o dono respondeu *"aprovo suas recomendacoes"*. Assim a (a) deixa de valer só pela regra das recomendações e passa a ter a confirmação explícita dele. As P2 (os três tipos em memória e a disponibilidade fabricada saem do servidor), a P3 (a porta "Meu estoque" vai para bloco próprio, com 3 opções de tela) e a P4 (quem só tem `inventory.manage` recebe 403 no lote do app) seguem pela recomendação (a), conforme a `D-DONO-1311-RECOMENDACOES`.
+- **Por quê (fatos do plano):** nenhum cliente usa os três tipos nem a disponibilidade (app 0, web 0), e eles respondem com 3 itens inventados que somem no restart. As telas do app nunca enviaram nada: o replay só envia material. Elas também não estão no protótipo, e a matriz não dá esse movimento ao técnico.
+- **Parte A — três textos do repositório pedem o caminho contrário (§A2, registrado antes do código):**
+  1. a nota de `docs/revisoes/SAN3/PLANO_SAN3.md` (linha do item 31, `B-O6R-04b`): "troca o `Map` pelo Prisma só para `reserve`/`consume`/`shortage_report`";
+  2. o critério da `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA`: "a ação do app tem tipo no servidor, o replay a envia, e o G3 do app aponta para a permissão dela";
+  3. o critério da `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO`: "a tela Estoque tem entrada na navegação do app para quem passa no G2".
+  Os três cedem a esta decisão. O critério da 2 passa a ser: "nenhuma tela do app enfileira ação de estoque sem rota; ação antiga aparece com saída; não há G3". A 3 fecha por remoção, porque a tela deixa de existir.
+- **Parte B — quatro pendências em que o bloco muda o dono ou o critério escritos:**
+  - `P-MOBILE-ESTOQUE-MODULO-SEMENTE`: **fecha por remoção**. O dono passa a ser o `B-O6R-04b`. O critério passa a ser: o módulo não existe, e o T-A8 (ii) roda sem a linha `inventory_repository.dart: 8`. É consequência direta da P1 (a).
+  - `P-O6R-B04-CONSUMIDORES-503`: **não fecha; ganha um APPEND**. A parte do app, no envio de material, está feita. Faltam a web, a contagem e o registro dos dois códigos no contrato. O dono do que falta é designado pelo orquestrador (sugestão: `B-INV-CONTAGEM`); sem designação, o dono fica "a designar (inalterado)".
+  - `P-MOBILE-SYNC-ESTOQUE-TIPOS`: **fecha no `B-O6R-04b`**, se o orquestrador designar o bloco como dono (recomendado pela Emenda 1), com o caso de contrato S6. O conjunto único passa a ser o material (`work_order_material.add` e `.remove`).
+    Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco dono é o B-O6R-04b; fechada por este PR (S6 verde; MS6 e MA3 vermelhas).
+  - `P-MOBILE-CATALOGO-MODULOS-INERTE`: **não fecha; ganha um APPEND**. Depois do 04b, `/inventory` passa a ser a 3ª rota apontada pelo mapa que não existe (`bootstrap_repository.dart`). A parte "Estoque sem porta" vira a `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A dependência do `Ω6R-QUA-002` está cumprida.
+- **Parte C — duas pendências que só mudam de contagem** (APPEND na F5): a `P-MOBILE-DISCARDED-FUTURES` (4 das 16 linhas estão nas duas telas que saem) e a `P-ESTOQUE-DEFEITOS-16-10`, item 9 (resolvido pelo D1).
+- **Re-varredura da F0 (R14, 15/11):** os padrões do M05 da Emenda 1, sobre a `origin/main` `80f5b4d9`, dão os mesmos 18 cabeçalhos de pendência. Nenhuma pendência nova cita o que o bloco remove.
+- **Se o dono mudar a P1 para (b)** ("construir as telas de verdade"): a Parte A e as duas primeiras linhas da Parte B deixam de valer, e o bloco é replanejado.
+- **Comando do bloco:** `agent-orchestration/codex/comandos/B-O6R-04b-mobile-inventory-sync.md`. Plano: `plano-B-O6R-04b.md` e as Emendas 1, 1.1 e 1.2, fora do repositório.
+
+**Registro de 2026-11-16 (#585) — confirmação do dono (2026-11-14 21:08 SP):**
 
 - **Fato (decisão do dono):** a mesma fala de 21:08 (*"aprovo suas recomendacoes"*) respondeu a P1 do plano do item 31 (`B-O6R-04b`) com a recomendação (a): "Nova Entrada", "Nova Saída" e a lista inventada saem do app. A resposta deixa de valer só pela `D-DONO-1311-RECOMENDACOES` e passa a ter a confirmação explícita do dono, que viu a recomendação na página.
 - **O que vale:** a retirada (a); as P2, P3 e P4 do plano 31 seguem pela recomendação (a). A Emenda 1 do plano (14/11 13:34) estendeu a retirada à `P-MOBILE-SYNC-ESTOQUE-TIPOS` e à `P-MOBILE-CATALOGO-MODULOS-INERTE`.
 - **Nota do redator:** o ID `D-O6R-04B-RETIRADA` é citado pelo plano 31 e pelas emendas, fora do repositório; na `main` de 16/11 ele não aparecia em `agent-orchestration` nem em `docs` (`git grep` = 0). Esta é a 1ª entrada com ele.
+
+- **Acréscimo de 17/11:** os dois registros convivem; o do bloco detalha a retirada.
 
 ## D-DONO-1311-RECOMENDACOES · complemento: o "4.item60" e o "3.extra" (2026-11-13 ~23:12 SP)
 
