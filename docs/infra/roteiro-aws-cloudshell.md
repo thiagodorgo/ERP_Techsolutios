@@ -46,7 +46,7 @@ export GH_REPO="<GH_REPO>"
 |---|---|---|---|
 | 0 · Pré-requisitos | conta, MFA, administrador, região, CloudShell, domínio em mãos, orçamento com alerta | — | 0 |
 | 1 · Fundação | VPC (2 AZ), NAT, grupos de segurança, ECR, segredos, OIDC do GitHub, logs | destrava tudo | ~12–15 |
-| 2 · Dados | RDS PostgreSQL 16 (PITR, UTC), papel de runtime sem bypass, Valkey, drill de restore cronometrado | **9** (papel criado; a trava fecha na fase 3) e **10** (conferido na fase 6) | ~72 |
+| 2 · Dados | RDS PostgreSQL 16 (PITR, a recuperação a qualquer minuto dos últimos 7 dias; UTC), papel de runtime sem bypass, Valkey, drill de restore cronometrado | **9** (papel criado; a trava fecha na fase 3) e **10** (conferido na fase 6) | ~72 |
 | 3 · API | cluster ECS, task definition, ALB com HTTPS, serviço, smoke | **9** (trava `runtime database role verified` verde) | ~71 |
 | 4 · Frontend | S3 privado + CloudFront, certificado, build apontando para a API | — | ~3 |
 | 5 · DNS próprio | zona, NS no registrador, `api.` e `app.`, HTTPS de ponta a ponta, a pergunta do IP fixo | — | ~1 |
@@ -90,15 +90,19 @@ Com Traccar (`B-TRC-06`) e ClamAV (`B-AV-REAL`) o estudo soma ~US$ 98 → **~US$
 
 ### 0.1 Abrir a conta — só no console (ato do dono)
 `https://portal.aws.amazon.com/billing/signup` → e-mail da raiz, nome da conta, cartão, verificação por telefone, plano de suporte **Basic** (grátis). A conta nasce com a identidade **raiz**, que só se usa para isto e para o MFA.
+**Desfazer:** só no console, logado como raiz: nome da conta → **Account** → **Close account** (a AWS guarda a conta fechada por 90 dias).
 
 ### 0.2 MFA na raiz — só no console (ato do dono)
 Logado como raiz: canto superior direito → nome da conta → **Security credentials** → **Multi-factor authentication (MFA)** → **Assign MFA device** → *Authenticator app* (Google Authenticator, Authy ou similar). Sem isto, nada mais.
+**Desfazer:** não se desfaz: a raiz nunca fica sem MFA (trocar de aparelho é **Assign** de um novo e **Remove** do antigo, no mesmo lugar).
 
 ### 0.3 Cartão e acesso do administrador ao faturamento — só no console (ato do dono)
 Nome da conta → **Account** → seção **IAM user and role access to Billing information** → **Edit** → **Activate**. Sem isto o usuário administrador não consegue criar o orçamento do passo 0.7.
+**Desfazer:** o mesmo caminho → **Edit** → desmarcar **Activate** (só no console, como raiz).
 
 ### 0.4 Usuário administrador com MFA — só no console (ato do dono)
 IAM → **Users** → **Create user** → nome (ex.: `admin-erp`) → marque **Provide user access to the AWS Management Console** → *I want to create an IAM user* → senha própria → **Attach policies directly** → `AdministratorAccess` → **Create user**. Depois: o usuário → **Security credentials** → **Assign MFA device**. Saia da raiz e **entre com este usuário**. A raiz não se usa no dia a dia. (Alternativa mais robusta, para quando houver mais de uma pessoa: IAM Identity Center. Para uma pessoa, o usuário IAM com MFA basta.)
+**Desfazer:** só no console: IAM → **Users** → o usuário → **Delete**, e só depois de existir outro administrador (senão a conta fica só com a raiz).
 
 ### 0.5 Região e CloudShell
 Canto superior direito → região **South America (São Paulo) `sa-east-1`**. Clique no ícone `>_` (CloudShell). Na primeira abertura demora ~1 min. Aí, no terminal:
@@ -154,15 +158,18 @@ aws budgets create-budget --account-id "$CONTA" --budget file://budget.json --no
 
 ### 0.8 O domínio — ato do dono
 Tenha em mãos o login do painel onde o domínio está registrado (registro.br, GoDaddy, Hostinger, Cloudflare…). Na fase 5 você vai **trocar os servidores DNS** do domínio lá. Nada é feito agora. Se for `.com.br`, ele fica no registro.br (D-AWS-09).
+**Desfazer:** não se aplica (nada é criado aqui).
 
 ### 0.9 Token do GitHub para a imagem — só no console do GitHub (ato do dono)
 A imagem da API é publicada pelo CI em `ghcr.io/<GH_DONO>/erp-backend:<sha>` (job `docker` do `ci.yml`). O ECR vai puxá-la direto do GHCR (pull-through cache, passo 1.7), e o GHCR exige credencial: GitHub → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)** → **Generate new token** → só o escopo **`read:packages`** → validade 90 dias. Guarde-o; ele entra no Secrets Manager no passo 1.7 e nunca no repositório.
+**Desfazer:** no GitHub, o mesmo caminho → o token → **Delete** (o pull-through do 1.6 para de importar imagem nova; as já importadas ficam no ECR).
 
 ### 0.10 Leitura de custo pela linha de comando (opcional, US$ 0,01 por chamada)
 ```bash
 aws ce get-cost-and-usage --time-period Start=$(date -u -d '-7 days' +%F),End=$(date -u +%F) --granularity DAILY --metrics UnblendedCost --query 'ResultsByTime[].Total.UnblendedCost.Amount' --output text
 ```
 (O Cost Explorer precisa ser aberto uma vez no console: **Billing and Cost Management → Cost Explorer**; a API responde ~24 h depois.)
+**Desfazer:** não se aplica (só leitura).
 
 **Conferência da fase inteira:** os 5 comandos do 0.5 e o `describe-budget` do 0.7 respondem como esperado. **O que pode dar errado:** logar com a raiz por hábito (o `Arn` termina em `:root`: saia e entre com o administrador); cartão recusado (a conta fica "pending"); e-mail de alerta cair no spam.
 
@@ -223,10 +230,10 @@ aws ec2 associate-route-table --route-table-id "$RT_PRIV" --subnet-id "$SUB_PRIV
 printf 'IGW_ID=%s\nRT_PUB=%s\nRT_PRIV=%s\n' "$IGW_ID" "$RT_PUB" "$RT_PRIV" >> ~/erp-ids.env
 ```
 **Conferência:** `aws ec2 describe-route-tables --route-table-ids "$RT_PUB" --query 'RouteTables[0].Routes[].[DestinationCidrBlock,GatewayId,State]' --output table` → a linha `0.0.0.0/0 igw-… active`.
-**Desfazer:** `aws ec2 delete-route-table --route-table-id <id>` (depois de desassociar as subnets).
+**Desfazer:** desassociar cada subnet com `aws ec2 disassociate-route-table --association-id <rtbassoc-…>` (os IDs saem do `describe-route-tables`, campo `Associations[].RouteTableAssociationId`) e então `aws ec2 delete-route-table --route-table-id <id>`.
 
 ### 1.4 Grupos de segurança
-**Objetivo:** o firewall entre as peças. Regra do estudo: ALB recebe 443/80 do mundo; API 3000 só do ALB; RDS 5432 só da API (e do CloudShell em VPC); Valkey 6379 só da API (e do CloudShell em VPC); ClamAV 3310 só da API. `erp-sg-ops` é o grupo do CloudShell em VPC (sem entrada nenhuma). `erp-sg-nat` só existe se você escolher a instância NAT.
+**Objetivo:** o firewall entre as peças. A API roda no **Fargate** (o serviço da AWS que roda o contêiner da API sem você cuidar de servidor nenhum). Regra do estudo: ALB recebe 443/80 do mundo; API 3000 só do ALB; RDS 5432 só da API (e do CloudShell em VPC); Valkey 6379 só da API (e do CloudShell em VPC); ClamAV 3310 só da API. `erp-sg-ops` é o grupo do CloudShell em VPC (sem entrada nenhuma). `erp-sg-nat` só existe se você escolher a instância NAT.
 ```bash
 sg() { aws ec2 create-security-group --group-name "$1" --description "$2" --vpc-id "$VPC_ID" --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value=$1}]" --query GroupId --output text; }
 SG_ALB=$(sg erp-sg-alb "ALB publico: 443 e 80 do mundo")
@@ -284,10 +291,14 @@ aws ec2 wait instance-running --instance-ids "$NAT_ID"
 aws ec2 modify-instance-attribute --instance-id "$NAT_ID" --no-source-dest-check
 NAT_ENI=$(aws ec2 describe-instances --instance-ids "$NAT_ID" --query 'Reservations[0].Instances[0].NetworkInterfaces[0].NetworkInterfaceId' --output text)
 aws ec2 create-route --route-table-id "$RT_PRIV" --destination-cidr-block 0.0.0.0/0 --network-interface-id "$NAT_ENI"
-printf 'NAT_ID=%s\nNAT_ENI=%s\n' "$NAT_ID" "$NAT_ENI" >> ~/erp-ids.env
+# IP de saída FIXO: reserva um Elastic IP e o prende à instância (sem isto, o IP automático muda a cada parada e partida)
+EIP_NAT=$(aws ec2 allocate-address --domain vpc --tag-specifications 'ResourceType=elastic-ip,Tags=[{Key=Name,Value=erp-nat-eip}]' --query AllocationId --output text)
+EIP_NAT_ASSOC=$(aws ec2 associate-address --instance-id "$NAT_ID" --allocation-id "$EIP_NAT" --query AssociationId --output text)
+printf 'NAT_ID=%s\nNAT_ENI=%s\nEIP_NAT=%s\nEIP_NAT_ASSOC=%s\n' "$NAT_ID" "$NAT_ENI" "$EIP_NAT" "$EIP_NAT_ASSOC" >> ~/erp-ids.env
 ```
-**Conferência:** `aws ec2 describe-instances --instance-ids "$NAT_ID" --query 'Reservations[0].Instances[0].[State.Name,SourceDestCheck,PublicIpAddress]' --output text` → `running False <ip>`; e `aws ec2 describe-route-tables --route-table-ids "$RT_PRIV" --query 'RouteTables[0].Routes[].[DestinationCidrBlock,NetworkInterfaceId,State]' --output table` → `0.0.0.0/0 eni-… active`. A prova final é do CloudShell em VPC (passo 2.1): `curl` a um site externo responde 200.
-**Desfazer:** `aws ec2 terminate-instances --instance-ids "$NAT_ID"` e trocar a rota (`aws ec2 replace-route …`). **Risco assumido:** uma máquina só; se ela cair, a API perde a saída (não a entrada: o ALB continua). Se isso pesar, troque pelo gateway (opção B) a qualquer hora.
+**Conferência:** `aws ec2 describe-instances --instance-ids "$NAT_ID" --query 'Reservations[0].Instances[0].[State.Name,SourceDestCheck,PublicIpAddress]' --output text` → `running False <ip>`; `aws ec2 describe-addresses --allocation-ids "$EIP_NAT" --query 'Addresses[0].[InstanceId,PublicIp]' --output text` → o `NAT_ID` e o **mesmo** `<ip>` da linha anterior (é esse IP que você passa a um parceiro que pedir o IP de origem); e `aws ec2 describe-route-tables --route-table-ids "$RT_PRIV" --query 'RouteTables[0].Routes[].[DestinationCidrBlock,NetworkInterfaceId,State]' --output table` → `0.0.0.0/0 eni-… active`. A prova final é do CloudShell em VPC (passo 2.1): `curl` a um site externo responde 200.
+**Custo do Elastic IP:** US$ 0,005/h (US$ 3,65/mês), o mesmo IPv4 público já contado no custo da opção A: ao prender o Elastic IP, o IP automático da instância é devolvido, e a instância continua com **um** IPv4 público só. Um Elastic IP solto (sem instância) também é cobrado: não o deixe sobrando.
+**Desfazer:** `aws ec2 disassociate-address --association-id "$EIP_NAT_ASSOC"` e `aws ec2 release-address --allocation-id "$EIP_NAT"` (o IP volta para a AWS e não se recupera); `aws ec2 delete-route --route-table-id "$RT_PRIV" --destination-cidr-block 0.0.0.0/0` (ou trocar a rota para o gateway, abaixo); `aws ec2 terminate-instances --instance-ids "$NAT_ID"`; o perfil: `aws iam remove-role-from-instance-profile --instance-profile-name erp-nat-perfil --role-name erp-nat-ssm`, `aws iam delete-instance-profile --instance-profile-name erp-nat-perfil`, `aws iam detach-role-policy --role-name erp-nat-ssm --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore` e `aws iam delete-role --role-name erp-nat-ssm`. **Risco assumido:** uma máquina só; se ela cair, a API perde a saída (não a entrada: o ALB continua). Se isso pesar, troque pelo gateway (opção B) a qualquer hora.
 
 **Opção B · NAT gateway (~US$ 68/mês + US$ 0,093/GB).** Sem máquina para cuidar.
 ```bash
@@ -316,7 +327,7 @@ aws ecr put-lifecycle-policy --repository-name "github/${GH_DONO}/erp-backend" -
 echo "GHCR_SECRET_ARN=$GHCR_SECRET_ARN" >> ~/erp-ids.env
 ```
 **Conferência:** `aws ecr validate-pull-through-cache-rule --ecr-repository-prefix github` → `"isValid": true`; `aws ecr describe-images --repository-name "github/${GH_DONO}/erp-backend" --image-ids imageTag="$SHA" --query 'imageDetails[0].[imageTags[0],imagePushedAt]' --output text` → a tag e a data.
-**Alternativa sem pull-through** (se o `docker --version` responder no CloudShell da sua região — o Docker no CloudShell é limitado por região): `aws ecr create-repository --repository-name erp-backend --image-scanning-configuration scanOnPush=true --image-tag-mutability IMMUTABLE --encryption-configuration encryptionType=AES256 --query repository.repositoryUri --output text`, depois `aws ecr get-login-password --region "$REGIAO" | docker login --username AWS --password-stdin "${CONTA}.dkr.ecr.${REGIAO}.amazonaws.com"`, `docker pull ghcr.io/${GH_DONO}/erp-backend:${SHA}`, `docker tag …`, `docker push …`. O `get-login-password` existe nas duas versões da CLI (conferido na doc). **Custo:** US$ 0,10/GB-mês. **Desfazer:** `aws ecr delete-repository --repository-name <nome> --force`.
+**Alternativa sem pull-through** (se o `docker --version` responder no CloudShell da sua região — o Docker no CloudShell é limitado por região): `aws ecr create-repository --repository-name erp-backend --image-scanning-configuration scanOnPush=true --image-tag-mutability IMMUTABLE --encryption-configuration encryptionType=AES256 --query repository.repositoryUri --output text`, depois `aws ecr get-login-password --region "$REGIAO" | docker login --username AWS --password-stdin "${CONTA}.dkr.ecr.${REGIAO}.amazonaws.com"`, `docker pull ghcr.io/${GH_DONO}/erp-backend:${SHA}`, `docker tag …`, `docker push …`. O `get-login-password` existe nas duas versões da CLI (conferido na doc). **Custo:** US$ 0,10/GB-mês. **Desfazer:** `aws ecr delete-repository --repository-name <nome> --force` (apaga o repositório e as imagens); a regra do pull-through, `aws ecr delete-pull-through-cache-rule --ecr-repository-prefix github`; e a credencial do GHCR, `aws secretsmanager delete-secret --secret-id ecr-pullthroughcache/github --recovery-window-in-days 7`.
 
 ### 1.7 Segredos da API (Secrets Manager)
 **Objetivo:** tudo que o `env.ts` exige em produção e é segredo nasce aqui, gerado no terminal, sem passar pelo histórico. Um segredo em JSON (`erp/prod/api`) com uma chave por variável; o ECS lê cada chave com `valueFrom` (fase 3). `DATABASE_URL` e `REDIS_URL` entram como `pendente` e são preenchidas na fase 2 (passo 2.10). `PORTAL_TENANT_ID` fica provisório até a fase 6 (D-AWS-06).
@@ -357,7 +368,7 @@ aws iam create-role --role-name erp-github-deploy --assume-role-policy-document 
 ```
 (A IAM valida o emissor do GitHub pela cadeia de certificados raiz; o `--thumbprint-list` é obrigatório na API, e esse é o valor historicamente publicado.) A política do papel (atualizar o serviço ECS, publicar o frontend no S3 e invalidar o CloudFront) entra no passo 4.8, quando o bucket e a distribuição existirem.
 **Conferência:** `aws iam list-open-id-connect-providers --query 'OpenIDConnectProviderList[].Arn' --output text` → 1 ARN com `token.actions.githubusercontent.com`; `aws iam get-role --role-name erp-github-deploy --query 'Role.AssumeRolePolicyDocument.Statement[0].Condition' --output json` → o seu `repo:<GH_DONO>/<GH_REPO>:*`.
-**Desfazer:** `aws iam delete-role-policy --role-name erp-github-deploy --policy-name erp-deploy` e então `aws iam delete-role --role-name erp-github-deploy`.
+**Desfazer:** `aws iam delete-role-policy --role-name erp-github-deploy --policy-name erp-deploy` e então `aws iam delete-role --role-name erp-github-deploy`; o provedor OIDC, `aws iam delete-open-id-connect-provider --open-id-connect-provider-arn "arn:aws:iam::${CONTA}:oidc-provider/token.actions.githubusercontent.com"`.
 
 ### 1.9 Grupo de logs
 ```bash
@@ -390,6 +401,7 @@ aws sts get-caller-identity --query Account --output text                   # <C
 psql --version; node --version; df -h ~ | tail -1; free -m | head -2        # psql 16+, node 20+, espaço e memória
 ```
 O `~/erp-ids.env` **não existe aqui** (ambiente efêmero): copie o conteúdo do CloudShell normal e cole `cat > ~/erp-ids.env <<'EOF' … EOF` a cada sessão em VPC.
+**Desfazer:** na mesma tela do CloudShell, escolha o ambiente `erp-ops` e apague-o (ato do dono; ele não guarda nada, então nada se perde).
 
 ### 2.2 Grupo de subnets e grupo de parâmetros (fuso UTC, TLS obrigatório)
 **Objetivo:** o banco nasce nas duas subnets privadas e com a sessão em `UTC` (a trava `G-DB-TZ` do app recusa subir fora de UTC) e TLS obrigatório.
@@ -399,6 +411,7 @@ aws rds create-db-parameter-group --db-parameter-group-name erp-pg16 --db-parame
 aws rds modify-db-parameter-group --db-parameter-group-name erp-pg16 --parameters "ParameterName=timezone,ParameterValue=UTC,ApplyMethod=immediate" "ParameterName=rds.force_ssl,ParameterValue=1,ApplyMethod=immediate"
 ```
 **Conferência:** `aws rds describe-db-parameters --db-parameter-group-name erp-pg16 --query "Parameters[?ParameterName=='timezone'||ParameterName=='rds.force_ssl'].[ParameterName,ParameterValue]" --output text` → `rds.force_ssl 1` e `timezone UTC`.
+**Custo:** 0. **Desfazer** (só depois de apagar o banco, 2.3, porque os dois estão em uso por ele): `aws rds delete-db-parameter-group --db-parameter-group-name erp-pg16` e `aws rds delete-db-subnet-group --db-subnet-group-name erp-db-subnets`.
 
 ### 2.3 O banco (RDS PostgreSQL 16, `db.t4g.small`, PITR)
 **Objetivo:** PostgreSQL 16 gerenciado, 20 GB gp3, backup automático de 7 dias (que é o PITR), criptografado, sem acesso público, com proteção contra exclusão. A senha mestra **nasce no Secrets Manager** (`--manage-master-user-password`): ninguém a digita.
@@ -428,6 +441,7 @@ export PGPASSWORD="$(aws secretsmanager get-secret-value --secret-id "$RDS_SECRE
 psql -Atc "select version()"
 psql -Atc "show timezone"        # UTC   (docs/deployment.md: fora de UTC, PARE e leve ao dono)
 ```
+**Conferência:** as duas linhas acima são a conferência: `PostgreSQL 16.x …` e `UTC`. **Desfazer:** não se aplica (só leitura); ao sair, `unset PGPASSWORD`.
 
 ### 2.5 O repositório no CloudShell em VPC
 As migrações e os scripts vivem no repositório; o `prisma` e o `tsx` são dependências de desenvolvimento, e a imagem de runtime **não os carrega** (o `Dockerfile` copia só `dist/`, `prisma/` e as dependências de produção; nem o `prisma.config.ts` vai para o runtime). Por isso a migração roda **daqui**, e não como tarefa ECS com a imagem da API (pendência P-AWS-MIGRADOR, §10).
@@ -437,6 +451,7 @@ cd ~/erp && git rev-parse HEAD        # anote: é o SHA que você vai implantar 
 npm ci                                # ~420 MB em node_modules; confira antes o df -h ~ do passo 2.1
 ```
 Se o disco não der (o ambiente em VPC é efêmero e pequeno): rode só a migração com `npx --yes prisma@7 migrate deploy` (baixa só a CLI) e deixe o provisionamento de RBAC para o CloudShell normal **não** alcança o banco — nesse caso a saída é a pendência P-AWS-MIGRADOR (uma imagem "migradora" com `prisma` e `tsx`, rodada por `aws ecs run-task`). Declare o que fez.
+**Desfazer:** não se aplica: o ambiente em VPC apaga o clone e o `node_modules` sozinho quando expira.
 
 ### 2.6 Migrações (forward-only)
 ```bash
@@ -444,6 +459,7 @@ export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:5432/${PGDAT
 npx prisma migrate deploy
 ```
 **Conferência:** `npx prisma migrate status` → `Database schema is up to date!`; `psql -Atc "select count(*) from _prisma_migrations where finished_at is not null"` → o número de migrações do repositório (116+). Antes da migração `20260873000000` com dado legado, veja o censo de duplicatas em `docs/deployment.md`; num banco novo não se aplica.
+**Desfazer:** migração **não volta** (são só aditivas, `docs/deployment.md`); erro se corrige com uma migração nova, para frente. Num banco recém-criado e ainda sem dado, o desfazer é apagar o banco e recomeçar no 2.3.
 
 ### 2.7 Provisionamento de RBAC (papéis e permissões, sem dado de demonstração)
 ```bash
@@ -451,6 +467,7 @@ npm run db:provision-rbac -- --dry-run      # só relata
 npm run db:provision-rbac                   # aplica (aditivo, idempotente)
 ```
 **Conferência:** `psql -Atc "select count(*) from roles where key='super_admin' and tenant_id is null"` → `1` (pré-condição do Runbook B).
+**Desfazer:** não se desfaz por comando: o provisionamento é aditivo e idempotente (rodar de novo não duplica nada).
 
 ### 2.8 Papel de runtime sem superusuário e sem bypass de RLS — item 9 do portão
 **Objetivo:** a API **nunca** conecta como `erp_admin`. O script do repositório cria `erp_runtime` (`LOGIN NOSUPERUSER NOBYPASSRLS NOREPLICATION`, só DML) e termina com a mesma propriedade que a trava de boot `G-DB-ROLE` avalia. A senha entra pelo stdin do `psql \password` sob `setsid` (presente no AL2023), nunca em argumento.
@@ -461,6 +478,7 @@ DB_RUNTIME_ROLE=erp_runtime DB_RUNTIME_PASSWORD="$(cat "$TMP/runtime.pw")" bash 
 ```
 **Saída esperada (uma linha):** `erp_runtime|f|f|f|f|0|0|<n>` (sem superusuário, sem bypass, sem replicação, não escapa, 0 posses, 0 views, `<n>` tabelas com DML). Qualquer `MODO 1–6` na saída: pare e siga a tabela de `docs/deployment.md` ("Papel de banco de runtime").
 **Conferência:** `psql -Atc "select rolname, rolsuper, rolbypassrls, rolreplication from pg_roles where rolname='erp_runtime'"` → `erp_runtime|f|f|f`.
+**Desfazer** (só com a API parada, porque ela conecta com este papel; 3.8 com `--desired-count 0`): `psql -v ON_ERROR_STOP=1 -c 'DROP OWNED BY erp_runtime' -c 'DROP ROLE erp_runtime'` (o `DROP OWNED` tira as permissões que o papel recebeu, e só então o `DROP ROLE` passa). Para só trocar a senha, rode o script de novo: ele converge.
 
 ### 2.9 Valkey (ElastiCache, `cache.t4g.micro`)
 **Objetivo:** a fila de jobs e o sinal de vida do worker. Um nó, rede privada, só a API e o CloudShell em VPC alcançam a porta 6379. Sem TLS em trânsito por enquanto (D-AWS-05).
@@ -473,7 +491,7 @@ VALKEY_HOST=$(aws elasticache describe-cache-clusters --cache-cluster-id erp-pro
 echo "VALKEY_HOST=$VALKEY_HOST" >> ~/erp-ids.env
 ```
 **Conferência (CloudShell em VPC, só com o bash):** `exec 3<>"/dev/tcp/${VALKEY_HOST}/6379"; printf 'PING\r\n' >&3; head -c 7 <&3; exec 3>&-` → `+PONG`.
-**Custo:** US$ 17,5/mês. **Desfazer:** `aws elasticache delete-cache-cluster --cache-cluster-id erp-prod-valkey`.
+**Custo:** US$ 17,5/mês. **Desfazer:** `aws elasticache delete-cache-cluster --cache-cluster-id erp-prod-valkey` e, depois que ele sumir, `aws elasticache delete-cache-subnet-group --cache-subnet-group-name erp-cache-subnets`.
 
 ### 2.10 Preencher `DATABASE_URL` e `REDIS_URL` no segredo da API
 **Objetivo:** a API conecta como `erp_runtime` (não como `erp_admin`) e com TLS; o `REDIS_URL` aponta para o Valkey (fora de localhost, como o portão G5 exige). Lê o segredo, troca duas chaves com `jq`, grava de volta; nada no histórico.
@@ -487,9 +505,10 @@ shred -u "$TMP/api.json" "$TMP/runtime.pw"
 ```
 (Se o `runtime.pw` do passo 2.8 já foi destruído, gere outra senha e rode o `db-runtime-role.sh` de novo: ele converge e troca a senha.) **Não** use `options=-c role=…` na URL (a trava julga o login); o `-c TimeZone=UTC` o app põe sozinho.
 **Conferência:** `aws secretsmanager get-secret-value --secret-id erp/prod/api --query SecretString --output text | jq -r '.DATABASE_URL | sub("://[^@]*@"; "://<credencial>@")'` → `postgresql://<credencial>@<host>:5432/erp?schema=public&sslmode=require` (a credencial é mascarada pela própria conferência).
+**Desfazer:** o Secrets Manager guarda a versão anterior com o rótulo `AWSPREVIOUS`; para voltar a ela: `umask 077; TMP=$(mktemp -d); aws secretsmanager get-secret-value --secret-id erp/prod/api --version-stage AWSPREVIOUS --query SecretString --output text > "$TMP/api.json"; aws secretsmanager put-secret-value --secret-id erp/prod/api --secret-string "file://$TMP/api.json"; shred -u "$TMP/api.json"`.
 
 ### 2.11 Drill de restore cronometrado (R1/R2 do go-live)
-**Objetivo:** provar, antes de ter dado real, que o PITR restaura e em quanto tempo. Restaura o ponto mais recente para um banco novo, mede, confere e apaga.
+**Objetivo:** provar, antes de ter dado real, que o PITR restaura e em quanto tempo. Os dois números que saem daqui: o **RTO** (quanto tempo o sistema leva para voltar depois de um desastre) e o **RPO** (quanto dado se perde, em minutos: a distância entre o último ponto restaurável e agora). Restaura o ponto mais recente para um banco novo, mede, confere e apaga.
 ```bash
 aws rds describe-db-instances --db-instance-identifier "$DB_ID" --query 'DBInstances[0].LatestRestorableTime' --output text   # RPO: deve estar a poucos minutos de agora (date -u)
 INICIO=$(date +%s)
@@ -503,6 +522,7 @@ aws rds delete-db-instance --db-instance-identifier erp-prod-drill --skip-final-
 aws rds wait db-instance-deleted --db-instance-identifier erp-prod-drill
 ```
 Anote o RTO medido e o RPO (`LatestRestorableTime` − agora) na ata de go-live (é a evidência que a trava (c) do CD pede). Repita o drill com dado real antes do go-live (fase 6).
+**Desfazer:** o próprio passo apaga o clone (as duas últimas linhas). Se a sessão cair no meio, rode só essas duas linhas: o clone esquecido custa como um segundo banco.
 **Custo:** só as horas do clone. **O que pode dar errado:** `--use-latest-restorable-time` recusar porque o banco tem menos de ~5 min de vida (espere); o drill ficar de pé esquecido (US$ 54/mês — a conferência da fase é `describe-db-instances` sem `erp-prod-drill`).
 
 **Conferência da fase inteira:** `aws rds describe-db-instances --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text` → só `erp-prod-pg available`; `aws elasticache describe-cache-clusters --cache-cluster-id erp-prod-valkey --query 'CacheClusters[0].CacheClusterStatus' --output text` → `available`; a linha `erp_runtime|f|f|f|f|0|0|<n>` guardada; `jq -r 'keys[]'` do segredo sem `pendente` em `DATABASE_URL`/`REDIS_URL`. **Itens do portão:** o 9 fica *criado* aqui e *fechado* quando a trava passar no boot (3.8); o 10 é conferido na 6.3.
@@ -543,6 +563,7 @@ TASK_ROLE_ARN=$(aws iam create-role --role-name erp-api-tarefa --assume-role-pol
 printf 'EXEC_ROLE_ARN=%s\nTASK_ROLE_ARN=%s\n' "$EXEC_ROLE_ARN" "$TASK_ROLE_ARN" >> ~/erp-ids.env
 ```
 **Conferência:** `aws iam list-attached-role-policies --role-name erp-ecs-execucao --query 'AttachedPolicies[].PolicyName' --output text` → `AmazonECSTaskExecutionRolePolicy`.
+**Custo:** 0. **Desfazer** (só depois de apagar o serviço, 3.8): `aws iam delete-role-policy --role-name erp-ecs-execucao --policy-name erp-segredos-e-cache`, `aws iam detach-role-policy --role-name erp-ecs-execucao --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy` e `aws iam delete-role --role-name erp-ecs-execucao`; para o papel da tarefa, `aws iam delete-role-policy --role-name erp-api-tarefa --policy-name erp-anexos-s3` (se o 6.1 já rodou) e `aws iam delete-role --role-name erp-api-tarefa`.
 
 ### 3.3 Certificado da API (ACM em `sa-east-1`) e a zona DNS, antecipada
 **Objetivo:** HTTPS no ALB exige um certificado **validado**, e a validação é um registro CNAME na sua zona. Então a zona do Route 53 nasce **aqui** (é o passo 5.1 antecipado) e os NS vão para o registrador agora (5.2). A explicação completa do DNS está na fase 5.
@@ -565,6 +586,7 @@ printf 'CERT_API_ARN=%s\nZONA_ID=%s\n' "$CERT_API_ARN" "$ZONA_ID" >> ~/erp-ids.e
 aws acm wait certificate-validated --certificate-arn "$CERT_API_ARN"     # espera até validar (minutos a horas, conforme o registrador)
 ```
 **Conferência:** `aws acm describe-certificate --certificate-arn "$CERT_API_ARN" --query 'Certificate.Status' --output text` → `ISSUED`. **Custo:** certificado grátis; zona US$ 0,50/mês.
+**Desfazer** (só depois de apagar o listener 443, 3.4, que usa o certificado): `aws acm delete-certificate --certificate-arn "$CERT_API_ARN"`; o CNAME de validação sai com o mesmo arquivo trocando a ação, `sed 's/"UPSERT"/"DELETE"/' rr-acm.json > rr-acm-del.json` e `aws route53 change-resource-record-sets --hosted-zone-id "$ZONA_ID" --change-batch file://rr-acm-del.json` (o `DELETE` precisa do registro idêntico ao criado, e o arquivo garante isso). A zona só se apaga vazia (sobrando só os registros `NS` e `SOA` dela): `aws route53 delete-hosted-zone --id "$ZONA_ID"`, e o registrador volta a apontar para os servidores antigos (5.2). Apagar a zona tira o sistema do ar pelo nome.
 
 ### 3.4 Balanceador (ALB), grupo de destino e os dois listeners
 **Objetivo:** a porta de entrada pública da API. 443 com o certificado; 80 só devolve `301` para HTTPS (é o `force_https` que a Fly fazia, agora como regra do listener). O health check é o `/api/v1/health/ready` do `Dockerfile`.
@@ -578,7 +600,7 @@ read -r ALB_DNS ALB_ZONA_ID <<< "$(aws elbv2 describe-load-balancers --load-bala
 printf 'ALB_ARN=%s\nTG_ARN=%s\nALB_DNS=%s\nALB_ZONA_ID=%s\n' "$ALB_ARN" "$TG_ARN" "$ALB_DNS" "$ALB_ZONA_ID" >> ~/erp-ids.env
 ```
 **Conferência:** `aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" --query 'Listeners[].[Port,Protocol,DefaultActions[0].Type]' --output text` → `443 HTTPS forward` e `80 HTTP redirect`.
-**Custo:** US$ 0,034/h + LCU ≈ US$ 33/mês + 2 IPv4. **Desfazer:** `aws elbv2 delete-load-balancer --load-balancer-arn "$ALB_ARN"`; `aws elbv2 delete-target-group --target-group-arn "$TG_ARN"`.
+**Custo:** US$ 0,034/h + LCU (unidade de capacidade do balanceador, cobrada pelo volume de conexões e de tráfego) ≈ US$ 33/mês + 2 IPv4. **Desfazer:** `aws elbv2 delete-load-balancer --load-balancer-arn "$ALB_ARN"`; `aws elbv2 delete-target-group --target-group-arn "$TG_ARN"`.
 
 ### 3.5 O registro `api.<DOMINIO>` (passo 5.4 antecipado)
 Sem ele o smoke do 3.9 não tem como chamar `https://api.<DOMINIO>`.
@@ -592,6 +614,7 @@ MUDANCA=$(aws route53 change-resource-record-sets --hosted-zone-id "$ZONA_ID" --
 aws route53 wait resource-record-sets-changed --id "$MUDANCA"
 ```
 **Conferência:** `aws route53 test-dns-answer --hosted-zone-id "$ZONA_ID" --record-name "api.${DOMINIO}" --record-type A` → `ResponseCode: NOERROR` e os IPs do ALB.
+**Custo:** 0 (consulta a alias de ALB é grátis). **Desfazer:** `sed 's/"UPSERT"/"DELETE"/' rr-api.json > rr-api-del.json` e `aws route53 change-resource-record-sets --hosted-zone-id "$ZONA_ID" --change-batch file://rr-api-del.json`.
 
 ### 3.6 Task definition
 **Objetivo:** a receita da tarefa: imagem do ECR, 0,5 vCPU / 1 GB, porta 3000, variáveis não secretas no claro e os segredos por `valueFrom` (uma chave do JSON `erp/prod/api` por variável). **Arquitetura x86**: o job `docker` do `ci.yml` não declara `platforms`, logo a imagem do GHCR é só `amd64`; ARM64 (24,8 em vez de 31 US$/mês) exige o CI publicar `linux/arm64` (P-AWS-IMAGEM-ARM64). Os gates do `env.ts` estão todos atendidos: `CORE_SAAS_PERSISTENCE=prisma`, `DATABASE_URL`, `JOBS_WORKER_ENABLED=true`, `REDIS_URL` fora de localhost, `DATABASE_RUNTIME_ROLE_GUARD=enforce`, `CORS_ORIGIN` https sem curinga, os 5 `PORTAL_*`, `EVIDENCE_SCANNER=unavailable` (até o `B-AV-REAL`: todo upload responde 503, item 27).
@@ -646,9 +669,11 @@ TASKDEF_ARN=$(aws ecs register-task-definition --cli-input-json file://taskdef.j
 echo "TASKDEF_ARN=$TASKDEF_ARN" >> ~/erp-ids.env
 ```
 **Conferência:** `aws ecs describe-task-definition --task-definition erp-api --query 'taskDefinition.[revision,cpu,memory,runtimePlatform.cpuArchitecture,containerDefinitions[0].image]' --output text` → `1 512 1024 X86_64 <imagem>`.
+**Custo:** 0 (a receita não custa; custa a tarefa rodando, 3.8). **Desfazer:** `aws ecs deregister-task-definition --task-definition erp-api:<revisão>` (a revisão fica inativa: nenhum serviço novo a usa, e o rollback do 3.10 não pode mais apontar para ela).
 
 ### 3.7 A migração vem ANTES do serviço
 Já feita na fase 2 (2.6 e 2.7) a partir do CloudShell em VPC, **no mesmo SHA** da imagem. Em todo deploy futuro a ordem é a mesma do `deploy-production.yml`: `git pull` no CloudShell em VPC → `npx prisma migrate deploy` → `npm run db:provision-rbac` → só então o `update-service` (3.10). A tarefa ECS one-off (`aws ecs run-task`) **não serve** para isso com a imagem atual (sem `prisma` nem `prisma.config.ts` no runtime) — pendência P-AWS-MIGRADOR.
+**Conferência:** a do 2.6 (`npx prisma migrate status` → `Database schema is up to date!`), no mesmo SHA da imagem. **Desfazer:** não se aplica (migração só vai para frente, 2.6).
 
 ### 3.8 O serviço (1 tarefa) e a trava do papel de runtime — item 9 do portão
 ```bash
@@ -675,6 +700,7 @@ curl -sS "https://api.${DOMINIO}/api/v1/health/worker"                          
 curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' "http://api.${DOMINIO}/api/v1/health"   # 301 https://api.<DOMINIO>/api/v1/health
 ```
 (O `GET /api/v1/platform/cloud-usage/summary` sob o papel sem bypass — item 10 — exige login de administrador de plataforma: fica para a 6.3.)
+**Conferência:** as três saídas acima são a conferência. **Desfazer:** não se aplica (só leitura).
 
 ### 3.10 Deploy de uma imagem nova e rollback (o que o CD fará depois)
 ```bash
@@ -687,6 +713,7 @@ aws ecs list-task-definitions --family-prefix erp-api --sort DESC --query 'taskD
 aws ecs update-service --cluster erp-prod --service erp-api --task-definition erp-api:<N-1> --query 'service.taskDefinition' --output text
 ```
 Reler segredos trocados sem imagem nova: `aws ecs update-service --cluster erp-prod --service erp-api --force-new-deployment`.
+**Conferência:** `aws ecs describe-services --cluster erp-prod --services erp-api --query 'services[0].[taskDefinition,runningCount]' --output text` → a revisão esperada e `1`. **Desfazer:** é o próprio rollback acima (apontar para a revisão N−1).
 
 **Conferência da fase inteira:** `healthy` no grupo de destino, `runtime database role verified` com `escapes:0` no log, os 3 `curl` do 3.9. **O que pode dar errado:** `CannotPullContainerError` (o papel de execução sem `ecr:BatchImportUpstreamImage`, ou a tag errada); `ResourceInitializationError … secrets` (o ARN do segredo no `valueFrom` sem a chave `:NOME::`); health check vermelho por `CORS_ORIGIN` ausente (o boot recusa de propósito).
 
@@ -715,6 +742,7 @@ aws acm wait certificate-validated --region us-east-1 --certificate-arn "$CERT_A
 echo "CERT_APP_ARN=$CERT_APP_ARN" >> ~/erp-ids.env
 ```
 **Conferência:** `aws acm describe-certificate --region us-east-1 --certificate-arn "$CERT_APP_ARN" --query 'Certificate.Status' --output text` → `ISSUED`.
+**Custo:** grátis. **Desfazer** (só depois de apagar a distribuição, 4.6): `aws acm delete-certificate --region us-east-1 --certificate-arn "$CERT_APP_ARN"`; o CNAME de validação, `sed 's/"UPSERT"/"DELETE"/' rr-acm-app.json > rr-acm-app-del.json` e `aws route53 change-resource-record-sets --hosted-zone-id "$ZONA_ID" --change-batch file://rr-acm-app-del.json`.
 
 ### 4.2 Bucket privado do app
 ```bash
@@ -723,11 +751,15 @@ aws s3api put-public-access-block --bucket "$BUCKET_APP" --public-access-block-c
 aws s3api put-bucket-encryption --bucket "$BUCKET_APP" --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"},"BucketKeyEnabled":true}]}'
 ```
 **Conferência:** `aws s3api get-public-access-block --bucket "$BUCKET_APP"` → os 4 `true`.
+**Desfazer:** esvaziar e apagar: `aws s3 rm "s3://${BUCKET_APP}/" --recursive` e `aws s3api delete-bucket --bucket "$BUCKET_APP"` (o bucket do app não tem versionamento, então esvaziar basta; o app sai do ar).
 
-### 4.3 Acesso do CloudFront ao bucket (OAC)
+### 4.3 Acesso do CloudFront ao bucket (OAC, a permissão que deixa só o CloudFront ler o bucket)
+**Objetivo:** o bucket fica fechado ao mundo, e só esta distribuição do CloudFront consegue ler os arquivos dele, assinando cada pedido (a política do bucket, no 4.6, diz quem pode).
 ```bash
 OAC_ID=$(aws cloudfront create-origin-access-control --origin-access-control-config '{"Name":"erp-app-oac","Description":"CloudFront -> bucket do app","SigningProtocol":"sigv4","SigningBehavior":"always","OriginAccessControlOriginType":"s3"}' --query 'OriginAccessControl.Id' --output text)
 ```
+**Conferência:** `aws cloudfront get-origin-access-control --id "$OAC_ID" --query 'OriginAccessControl.OriginAccessControlConfig.[Name,SigningBehavior]' --output text` → `erp-app-oac always`.
+**Custo:** grátis. **Desfazer** (só depois de apagar a distribuição, 4.6): `aws cloudfront delete-origin-access-control --id "$OAC_ID" --if-match "$(aws cloudfront get-origin-access-control --id "$OAC_ID" --query ETag --output text)"`.
 
 ### 4.4 As políticas gerenciadas do CloudFront, pelo nome (sem ID cravado)
 ```bash
@@ -737,8 +769,9 @@ REPASSA_TUDO_MENOS_HOST_ID=$(aws cloudfront list-origin-request-policies --type 
 CABECALHOS_SEGUROS_ID=$(aws cloudfront list-response-headers-policies --type managed --query "ResponseHeadersPolicyList.Items[?ResponseHeadersPolicy.ResponseHeadersPolicyConfig.Name=='SecurityHeadersPolicy'].ResponseHeadersPolicy.Id" --output text)
 echo "$CACHE_OTIMIZADA_ID $CACHE_DESLIGADA_ID $REPASSA_TUDO_MENOS_HOST_ID $CABECALHOS_SEGUROS_ID"     # 4 IDs, nenhum vazio
 ```
+**Conferência:** o `echo` acima (4 IDs, nenhum vazio). **Desfazer:** não se aplica (só leitura de políticas que a AWS mantém).
 
-### 4.5 A função que faz a SPA funcionar (sem mascarar erros da API)
+### 4.5 A função que faz a SPA (app de página única: o navegador baixa o app uma vez e troca as telas sem recarregar) funcionar, sem mascarar erros da API
 **Objetivo:** o app é uma SPA: `/work-orders/123` não é arquivo no bucket, é rota do React. Em vez de "página de erro 404 → index.html" (que também reescreveria um 404 **da API** em HTML 200), uma função de viewer-request devolve `/index.html` só para caminhos sem extensão fora de `/api/`.
 ```bash
 cat > spa.js <<'EOF'
@@ -756,9 +789,11 @@ FUNCAO_SPA_ARN=$(aws cloudfront create-function --name erp-spa-reescrita --funct
 ETAG=$(aws cloudfront describe-function --name erp-spa-reescrita --stage DEVELOPMENT --query ETag --output text)
 aws cloudfront publish-function --name erp-spa-reescrita --if-match "$ETAG"
 ```
+**Conferência:** `aws cloudfront describe-function --name erp-spa-reescrita --stage LIVE --query 'FunctionSummary.FunctionMetadata.Stage' --output text` → `LIVE`.
+**Custo:** grátis até 2 milhões de execuções/mês. **Desfazer** (só depois de tirar a função da distribuição ou de apagar a distribuição, 4.6): `aws cloudfront delete-function --name erp-spa-reescrita --if-match "$(aws cloudfront describe-function --name erp-spa-reescrita --query ETag --output text)"`.
 
 ### 4.6 A distribuição do CloudFront
-**Objetivo:** duas origens: o bucket (o app) e `api.<DOMINIO>` (o comportamento `/api/*`, sem cache, repassando tudo menos o `Host`). **Por que a segunda origem:** o frontend usa `VITE_API_BASE_URL`, mas há chamadas relativas cravadas (`frontend/src/modules/platform/platform-health.service.ts:11` chama `/api/v1/health/ready`; `damages.adapter.ts:112` monta `/api/v1/damages/…`): sem o `/api/*` no CloudFront elas bateriam no bucket. Pendência P-FRONT-API-BASE-URL para tirar os caminhos cravados; até lá o comportamento cobre. `PriceClass_All` porque só ele inclui as bordas da América do Sul.
+**Objetivo:** duas origens: o bucket (o app) e `api.<DOMINIO>` (o comportamento `/api/*`, sem cache, repassando tudo menos o `Host`). **Por que a segunda origem:** o frontend usa `VITE_API_BASE_URL`, mas há caminhos relativos cravados em 3 arquivos (`frontend/src/modules/platform/platform-health.service.ts:11` chama `/api/v1/health/ready`; `damages.adapter.ts:112` monta `/api/v1/damages/…`; `frontend/src/services/realtime/pollingClient.ts:23` monta o endereço do fluxo de eventos `/api/v1/events/stream`): sem o `/api/*` no CloudFront eles bateriam no bucket. Pendência P-FRONT-API-BASE-URL para tirar os caminhos cravados; até lá o comportamento cobre. `PriceClass_All` porque só ele inclui as bordas da América do Sul.
 ```bash
 cat > cf-dist.json <<EOF
 {
@@ -816,6 +851,7 @@ aws cloudfront create-invalidation --distribution-id "$CF_ID" --paths '/*'
 ```
 (O CloudShell tem 2 GiB de RAM; se o `vite build` morrer por memória, o caminho é o CD: o papel `erp-github-deploy` já pode publicar — 4.8.)
 **Conferência:** `aws s3 ls "s3://${BUCKET_APP}/"` → `index.html` e `assets/`; `curl -sS -o /dev/null -w '%{http_code}\n' "https://${CF_DOMINIO}/"` → `200` (ainda pelo nome do CloudFront; o `app.<DOMINIO>` é a fase 5).
+**Desfazer:** publicar de novo o build de um SHA anterior (os mesmos comandos, com `git checkout <sha>` antes do `npm ci`); para tirar o app do ar, o desfazer do 4.2.
 
 ### 4.8 A política do papel do GitHub (agora que o bucket e a distribuição existem)
 ```bash
@@ -828,12 +864,22 @@ cat > deploy-policy.json <<EOF
 EOF
 aws iam put-role-policy --role-name erp-github-deploy --policy-name erp-deploy --policy-document file://deploy-policy.json
 ```
+**Conferência:** `aws iam get-role-policy --role-name erp-github-deploy --policy-name erp-deploy --query 'PolicyDocument.Statement[].Action' --output json` → as 4 declarações (ECS, `iam:PassRole`, S3, invalidação). **Desfazer:** `aws iam delete-role-policy --role-name erp-github-deploy --policy-name erp-deploy`.
 
-**Conferência da fase inteira:** `Deployed` e `200` do 4.6/4.7. **O que pode dar errado:** `AccessDenied` do bucket pelo CloudFront (a política do bucket com o `CF_ID` errado); tela branca em rota profunda (a função 4.5 não publicada ou não associada); `vite build` sem memória.
+**Conferência da fase inteira:** `Deployed` e `200` do 4.6/4.7. **O que pode dar errado:**
+- `AccessDenied` do bucket pelo CloudFront (a política do bucket com o `CF_ID` errado); tela branca em rota profunda (a função 4.5 não publicada ou não associada); `vite build` sem memória.
+- **O fluxo de eventos (SSE, a conexão que fica aberta para a API empurrar novidades ao navegador, como no mapa de operações) cair por inatividade.** O ALB corta uma conexão parada há 60 s (o padrão dele), e, quando a conexão passa pelo CloudFront (caminho relativo `/api/*`), ele espera no máximo 60 s entre um pedaço e outro da resposta (`OriginReadTimeout: 60` do 4.6). Hoje isso não deve acontecer: a API manda um sinal de vida a cada 25 s (`src/modules/field-ops-realtime/field-ops-realtime.routes.ts`, `keepAliveIntervalMs = 25_000`), e o mapa reconecta sozinho e mantém a atualização a cada 30 s enquanto isso. Se, mesmo assim, o log ou o usuário mostrar quedas e o cliente não reconectar, suba o tempo do ALB:
+  ```bash
+  aws elbv2 modify-load-balancer-attributes --load-balancer-arn "$ALB_ARN" --attributes Key=idle_timeout.timeout_seconds,Value=120
+  aws elbv2 describe-load-balancer-attributes --load-balancer-arn "$ALB_ARN" --query "Attributes[?Key=='idle_timeout.timeout_seconds'].Value" --output text     # 120
+  ```
+  (desfazer: o mesmo comando com `Value=60`). No CloudFront, o `OriginReadTimeout` da origem `api` aceita até 120 s sem pedido à AWS (acima disso, só com aumento de cota da conta): o caminho é `aws cloudfront get-distribution-config --id "$CF_ID"` → trocar o `OriginReadTimeout` da origem `api` no JSON → `aws cloudfront update-distribution --id "$CF_ID" --distribution-config file://… --if-match <ETag>`, o mesmo caminho do desfazer do 4.6. A edição do JSON fica descrita, não pronta, até ser medida: pendência P-AWS-SSE-TIMEOUT (§10).
 
 ---
 
 ## 8. Fase 5 · DNS próprio — "o meu endereço com o nome do meu sistema"
+
+**Pré-requisitos:** Fases 3 e 4 (a zona do Route 53, o certificado da API e o registro `api.<DOMINIO>` nascem antecipados na fase 3; o certificado do app e a distribuição do CloudFront, na fase 4); o login do painel do registrador do domínio em mãos (0.8); `dig` instalado no CloudShell para o 5.7 (`sudo dnf install -y bind-utils`). **Terminal:** CloudShell normal.
 
 ### 8.1 Como o seu nome chega ao sistema (em língua de dono)
 1. **O domínio** (`<DOMINIO>`) é seu no **registrador** (registro.br, GoDaddy…). O registrador só guarda uma coisa que importa aqui: **quais servidores DNS respondem pelo seu nome**.
@@ -844,14 +890,14 @@ aws iam put-role-policy --role-name erp-github-deploy --policy-name erp-deploy -
 
 **Por que o ALB não tem IP fixo.** O ALB é um conjunto de máquinas da AWS que cresce e troca de lugar; os IPs públicos dele **mudam** com o tempo. Apontar `api.<DOMINIO>` para um IP seria quebrar em semanas. O **alias** resolve: o nome aponta para o ALB, e o ALB responde com os IPs do momento. Para o usuário final e para o app, nada muda.
 
-**Quando um IP fixo é mesmo necessário.** Só quando alguém **do outro lado** precisa cadastrar o seu IP numa lista de permissão: o firewall de um cliente que só aceita chamadas de IPs conhecidos, um parceiro (banco, provedor fiscal) que exige "IP de origem" fixo para webhooks ou integrações. Se nenhum parceiro pediu, não há por que pagar por isso. (Nota: o caminho inverso — a API chamando o Asaas ou outros — já sai sempre do **mesmo** IP público do NAT, que é fixo enquanto a instância/gateway existir; isso cobre a lista de permissão de parceiros que olham o IP de **origem**.)
+**Quando um IP fixo é mesmo necessário.** Só quando alguém **do outro lado** precisa cadastrar o seu IP numa lista de permissão: o firewall de um cliente que só aceita chamadas de IPs conhecidos, um parceiro (banco, provedor fiscal) que exige "IP de origem" fixo para webhooks ou integrações. Se nenhum parceiro pediu, não há por que pagar por isso. (Nota: o caminho inverso — a API chamando o Asaas ou outros — sai sempre pelo IP público do NAT. Ele só é **fixo** porque o NAT usa um **Elastic IP** (um IP público reservado na sua conta): o NAT gateway (opção B) nasce com um, e a instância NAT (opção A) recebe um no passo 1.5. Sem o Elastic IP, o IP automático da instância **muda a cada parada e partida** dela. Com ele, cobre a lista de permissão de parceiros que olham o IP de **origem**.)
 
 **As duas saídas, se precisar (D-AWS-03):**
 
 | Opção | O que é | Custo adicional/mês | A favor | Contra |
 |---|---|---|---|---|
 | **NLB com Elastic IP** na frente do ALB | um Network Load Balancer com 1 IP fixo por zona (2 IPs), passando o tráfego ao ALB atual | NLB US$ 0,034/h ≈ 24,8 + 2 IPv4 (7,3) + LCU ≈ **US$ 32–35** | IPs seus para sempre; mantém o ALB (301, regras, health check HTTP) | mais uma peça; o estudo não o previu |
-| **Global Accelerator** | 2 IPs anycast globais fixos apontando para o ALB | US$ 0,025/h ≈ **US$ 18,25** + taxa por GB (DT-Premium) | 2 IPs fixos, entrada pela borda mais próxima do usuário | taxa por tráfego; o ALB continua existindo (não é substituto) |
+| **Global Accelerator** | 2 IPs anycast (o mesmo IP anunciado em vários pontos do mundo, e o usuário entra pelo mais próximo) globais fixos apontando para o ALB | US$ 0,025/h ≈ **US$ 18,25** + taxa por GB (DT-Premium, a taxa extra por GB que passa pela rede da AWS em vez da internet comum) | 2 IPs fixos, entrada pela borda mais próxima do usuário | taxa por tráfego; o ALB continua existindo (não é substituto) |
 
 **Recomendação:** começar com o **alias no ALB** (custo zero a mais) e só decidir o IP fixo quando um cliente ou parceiro pedir por escrito. **Pergunta ao dono (D-AWS-03):** *"Algum cliente ou parceiro exige IP fixo de entrada para a API? Se sim, NLB+EIP (~US$ 33) ou Global Accelerator (~US$ 18 + tráfego)?"* Padrão sem resposta: sem IP fixo.
 
@@ -863,6 +909,7 @@ aws elbv2 create-load-balancer --name erp-nlb --type network --scheme internet-f
 # Global Accelerator (a API dele vive em us-west-2)
 aws globalaccelerator create-accelerator --name erp-api --ip-address-type IPV4 --enabled --region us-west-2 --query 'Accelerator.[AcceleratorArn,IpSets[0].IpAddresses]' --output text
 ```
+**Desfazer:** o NLB, `aws elbv2 delete-load-balancer --load-balancer-arn <arn do erp-nlb>`, e depois os dois IPs, `aws ec2 release-address --allocation-id "$EIP_A"` e `aws ec2 release-address --allocation-id "$EIP_B"` (IP solto também é cobrado, e um IP devolvido não volta: o parceiro teria de cadastrar outro). O Global Accelerator precisa ser desligado antes de apagado: `aws globalaccelerator update-accelerator --accelerator-arn <arn> --no-enabled --region us-west-2` e, depois que o estado sair de `IN_PROGRESS`, `aws globalaccelerator delete-accelerator --accelerator-arn <arn> --region us-west-2`.
 
 ### 8.2 Passos
 
@@ -870,7 +917,7 @@ aws globalaccelerator create-accelerator --name erp-api --ip-address-type IPV4 -
 set -a; . ~/erp-ids.env; set +a
 ```
 
-**5.1 A zona** — já criada no 3.3. Se estiver começando por aqui: `aws route53 create-hosted-zone --name "$DOMINIO" --caller-reference "erp-$(date +%s)" --hosted-zone-config Comment="ERP: zona publica" --query 'HostedZone.Id' --output text`. Conferência: `aws route53 list-hosted-zones-by-name --dns-name "$DOMINIO" --query 'HostedZones[0].[Id,Name]' --output text`. **Custo:** US$ 0,50/mês + US$ 0,40 por milhão de consultas (consultas a alias de ALB/CloudFront são grátis).
+**5.1 A zona** — já criada no 3.3. Se estiver começando por aqui: `aws route53 create-hosted-zone --name "$DOMINIO" --caller-reference "erp-$(date +%s)" --hosted-zone-config Comment="ERP: zona publica" --query 'HostedZone.Id' --output text`. Conferência: `aws route53 list-hosted-zones-by-name --dns-name "$DOMINIO" --query 'HostedZones[0].[Id,Name]' --output text`. **Custo:** US$ 0,50/mês + US$ 0,40 por milhão de consultas (consultas a alias de ALB/CloudFront são grátis). **Desfazer:** o do 3.3.
 
 **5.2 Os 4 servidores de nome no registrador — só no console do registrador (ato do dono)**
 ```bash
@@ -878,6 +925,7 @@ aws route53 get-hosted-zone --id "$ZONA_ID" --query 'DelegationSet.NameServers' 
 ```
 - **registro.br** (`.com.br`): entre no painel → o domínio → **DNS** → **Alterar servidores DNS** → "Utilizar outros servidores DNS" → cole os 4 → salvar. O registro.br publica em minutos a poucas horas.
 - Outros registradores: "Nameservers / Servidores DNS → Custom → os 4 nomes".
+- **Desfazer:** no mesmo painel, voltar aos servidores DNS de antes (anote-os antes de trocar). O sistema deixa de responder pelo seu nome quando o mundo enxergar a troca.
 - Se o domínio estiver **registrado no Route 53 Domains** (só TLDs que a AWS ainda registra; `.com.br` não): `aws route53domains update-domain-nameservers --region us-east-1 --domain-name "$DOMINIO" --nameservers Name=<ns1> Name=<ns2> Name=<ns3> Name=<ns4>`; conferência `aws route53domains get-domain-detail --region us-east-1 --domain-name "$DOMINIO" --query 'Nameservers[].Name' --output text`; `aws route53domains list-domains --region us-east-1 --query 'Domains[].DomainName' --output text` lista o que você tem lá; `aws route53domains check-domain-availability --region us-east-1 --domain-name <nome>` consulta disponibilidade; `aws route53domains get-operation-detail --region us-east-1 --operation-id <id>` acompanha uma operação.
 
 **5.3 Validação dos certificados** — feita em 3.3 e 4.1 (`ISSUED`).
@@ -896,6 +944,7 @@ aws route53 wait resource-record-sets-changed --id "$MUDANCA"
 aws route53 get-change --id "$MUDANCA" --query 'ChangeInfo.Status' --output text     # INSYNC
 ```
 (`Z2FDTNDATAQYW2` é o ID fixo que a Route 53 define para todo alias de CloudFront; para o ALB, o ID é o `CanonicalHostedZoneId` lido em 3.4.)
+**Desfazer:** `sed 's/"UPSERT"/"DELETE"/' rr-app.json > rr-app-del.json` e `aws route53 change-resource-record-sets --hosted-zone-id "$ZONA_ID" --change-batch file://rr-app-del.json` (apaga o A e o AAAA de `app.`).
 
 **5.6 O que a zona responde (visto de dentro da AWS):**
 ```bash
@@ -903,6 +952,7 @@ aws route53 list-resource-record-sets --hosted-zone-id "$ZONA_ID" --query 'Resou
 aws route53 test-dns-answer --hosted-zone-id "$ZONA_ID" --record-name "api.${DOMINIO}" --record-type A
 aws route53 test-dns-answer --hosted-zone-id "$ZONA_ID" --record-name "app.${DOMINIO}" --record-type A
 ```
+**Conferência:** a tabela mostra `api.` e `app.` com o alias, e os dois `test-dns-answer` respondem `NOERROR`. **Desfazer:** não se aplica (só leitura).
 
 **5.7 Propagação e TTL (visto de fora).** `dig` não vem no CloudShell: `sudo dnf install -y bind-utils`.
 ```bash
@@ -914,6 +964,7 @@ dig +trace "api.${DOMINIO}" | tail -5              # o caminho raiz → .br → 
 nslookup -type=NS "$DOMINIO"                       # o mesmo, pela ferramenta do Windows/Linux
 ```
 - **TTL** é por quanto tempo cada provedor guarda a resposta. Alias para ALB/CloudFront usa o TTL do alvo (60 s): mudanças aparecem em ~1 min. A troca de **NS no registrador** é a parte lenta: horas, raramente até 48 h, porque o TTL dos NS antigos é longo. Enquanto o `dig +short NS` mostrar os servidores antigos, espere.
+- **Desfazer:** não se aplica (só leitura).
 
 **5.8 HTTPS de ponta a ponta:**
 ```bash
@@ -926,7 +977,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' "https://app.${DOMINIO}/api/v1/health"
 openssl s_client -connect "api.${DOMINIO}:443" -servername "api.${DOMINIO}" </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -enddate
 openssl s_client -connect "app.${DOMINIO}:443" -servername "app.${DOMINIO}" </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -enddate
 ```
-`subject=CN=api.<DOMINIO>`, `issuer=…Amazon…`, `notAfter` ~13 meses adiante (o ACM renova sozinho enquanto o CNAME de validação existir — não apague os CNAMEs `_xxxx.api.<DOMINIO>`).
+`subject=CN=api.<DOMINIO>`, `issuer=…Amazon…`, `notAfter` ~13 meses adiante (o ACM renova sozinho enquanto o CNAME de validação existir — não apague os CNAMEs `_xxxx.api.<DOMINIO>`). **Desfazer:** não se aplica (só leitura).
 
 **5.9 A pergunta do IP fixo** — D-AWS-03, acima.
 
@@ -967,6 +1018,7 @@ echo "BUCKET_ANEXOS=$BUCKET_ANEXOS" >> ~/erp-ids.env
 Agora no `taskdef.json` (3.6) troque `CHECKLIST_STORAGE_PROVIDER` para `s3` e acrescente em `environment`:
 `CHECKLIST_STORAGE_S3_BUCKET=<BUCKET_ANEXOS>`, `CHECKLIST_STORAGE_S3_REGION=sa-east-1`, `CHECKLIST_STORAGE_S3_ENDPOINT=https://s3.sa-east-1.amazonaws.com` (explícito, como o portão do comprovante exige), `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE=false`, `CHECKLIST_STORAGE_S3_PREFIX=checklist-attachments`. Registre a revisão e atualize o serviço (3.10).
 **Conferência:** `aws s3api get-bucket-versioning --bucket "$BUCKET_ANEXOS"` → `Enabled`; `aws s3api get-bucket-encryption --bucket "$BUCKET_ANEXOS"` → `AES256`; `aws s3api get-bucket-policy --bucket "$BUCKET_ANEXOS" --query Policy --output text | jq .Statement[0].Sid` → `"SoTLS"`. Enquanto o antivírus não existir (`EVIDENCE_SCANNER=unavailable`, item 27), todo upload responde 503 e nada é gravado — é o esperado.
+**Desfazer:** em produção, **nunca** com anexo dentro (o bucket guarda evidência e comprovante). Antes do 1º anexo real, com o bucket vazio: voltar `CHECKLIST_STORAGE_PROVIDER=local` no `taskdef.json` e atualizar o serviço (3.10), `aws iam delete-role-policy --role-name erp-api-tarefa --policy-name erp-anexos-s3` e `aws s3api delete-bucket --bucket "$BUCKET_ANEXOS"` (com versionamento ligado, ele só apaga se não houver versão nenhuma guardada; se recusar, o bucket não está vazio e o caso vai ao dono).
 
 ### 6.2 O 1º administrador de plataforma (Runbook B, `B-SAN3-09`) — item 43 do portão
 **Terminal:** CloudShell em VPC, no `~/erp` com `npm ci` (2.5), com as variáveis `PG*` do 2.4 e `PGPASSWORD` do administrador do banco (é o migrador que roda o bootstrap).
@@ -987,13 +1039,25 @@ aws secretsmanager put-secret-value --secret-id erp/prod/api --secret-string "fi
 aws ecs update-service --cluster erp-prod --service erp-api --force-new-deployment --query 'service.status' --output text
 aws ecs wait services-stable --cluster erp-prod --services erp-api
 ```
+**Conferência:** a saída `CONVERGIDO` acima, e `aws secretsmanager get-secret-value --secret-id erp/prod/api --query SecretString --output text | jq -r .PORTAL_TENANT_ID` → o ID da organização (não `pendente-runbook-b`).
+**Desfazer:** o administrador não se apaga por comando (o script só cria ou converge; perdeu a senha, `--reset-password`). O `PORTAL_TENANT_ID` volta à versão anterior pelo `AWSPREVIOUS`, como no desfazer do 2.10, seguido do `--force-new-deployment`.
 
 ### 6.3 Leitura da plataforma sob o papel sem bypass — item 10 do portão
+A senha nunca aparece no comando nem no histórico: entra por `read -rs`, vai para um arquivo temporário (o `printf` é do próprio bash, não cria processo com a senha no argumento), o `jq` monta o corpo lendo esse arquivo (`--rawfile`) e o `curl` envia o corpo pelo arquivo (`-d @arquivo`). O login responde `{"data":{…,"accessToken":"…"}}`, por isso o caminho é `.data.accessToken`.
 ```bash
-TOKEN=$(curl -sS -X POST "https://api.${DOMINIO}/api/v1/auth/login" -H 'content-type: application/json' -d '{"email":"<e-mail do admin>","password":"<senha>","tenantId":"<id da organizacao de sistema>"}' | jq -r .accessToken)
+umask 077; TMP=$(mktemp -d)
+read -rs -p "Senha do admin de plataforma: " SENHA; echo
+printf '%s' "$SENHA" > "$TMP/senha"; unset SENHA
+jq -n --arg e '<e-mail do admin>' --arg t '<id da organizacao de sistema>' --rawfile p "$TMP/senha" '{email:$e, password:$p, tenantId:$t}' > "$TMP/login.json"
+shred -u "$TMP/senha"
+TOKEN=$(curl -sS -X POST "https://api.${DOMINIO}/api/v1/auth/login" -H 'content-type: application/json' -d @"$TMP/login.json" | jq -r .data.accessToken)
+shred -u "$TMP/login.json"
+test -n "$TOKEN" && test "$TOKEN" != null && echo "login ok"      # se sair nada: senha, e-mail ou tenantId errado (401)
 curl -sS -H "Authorization: Bearer ${TOKEN}" "https://api.${DOMINIO}/api/v1/platform/cloud-usage/summary" | jq .
+unset TOKEN
 ```
-A resposta soma as organizações (não zera) → fecha `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS`. (O nome exato do campo do token e o formato do corpo são os do `API_CONTRACTS.md`; a senha vai na mão, nunca no histórico: use `read -rs` e um arquivo temporário com `-d @arquivo`, como no 6.2.)
+A resposta soma as organizações (não zera) → fecha `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS`. (O formato do corpo de resposta é o do `API_CONTRACTS.md`.)
+**Desfazer:** não se aplica (só leitura; o token vence sozinho).
 
 ### 6.4 Snapshot manual e o drill de rollback cronometrado (imagem N−1)
 ```bash
@@ -1008,6 +1072,7 @@ aws ecs wait services-stable --cluster erp-prod --services erp-api
 echo "rollback + volta: $(( $(date +%s) - INICIO )) s"
 ```
 Anote o tempo na ata de go-live (é a atestação `rollback_rehearsed` da trava (c)). Lembre a restrição vigente de `docs/deployment.md`: entre imagens que já contêm o 03a, rollback só com um escritor por vez; para destino anterior ao 03a, só fix-forward. Migrações **não** voltam: só aditivas.
+**Desfazer:** o próprio passo volta à revisão N. O snapshot manual custa enquanto existir; apague-o só quando outro mais novo o substituir: `aws rds delete-db-snapshot --db-snapshot-identifier erp-prod-pre-golive-<data>`.
 
 ### 6.5 Alertas (SNS por e-mail + CloudWatch)
 ```bash
@@ -1024,13 +1089,14 @@ aws cloudwatch put-metric-alarm --cli-input-json file://alarme-5xx.json
 aws cloudwatch put-metric-alarm --alarm-name erp-api-sem-alvo-saudavel --namespace AWS/ApplicationELB --metric-name HealthyHostCount --dimensions Name=TargetGroup,Value="$TG_SUFIXO" Name=LoadBalancer,Value="$ALB_SUFIXO" --statistic Minimum --period 60 --evaluation-periods 3 --threshold 1 --comparison-operator LessThanThreshold --treat-missing-data breaching --alarm-actions "$TOPICO_ARN"
 aws cloudwatch put-metric-alarm --alarm-name erp-rds-disco-baixo --namespace AWS/RDS --metric-name FreeStorageSpace --dimensions Name=DBInstanceIdentifier,Value="$DB_ID" --statistic Minimum --period 300 --evaluation-periods 1 --threshold 3000000000 --comparison-operator LessThanThreshold --treat-missing-data notBreaching --alarm-actions "$TOPICO_ARN"
 ```
-**Conferência:** `aws sns list-subscriptions-by-topic --topic-arn "$TOPICO_ARN" --query 'Subscriptions[].SubscriptionArn' --output text` → um ARN (não `PendingConfirmation`); `aws cloudwatch describe-alarms --alarm-names erp-api-5xx erp-api-sem-alvo-saudavel erp-rds-disco-baixo --query 'MetricAlarms[].[AlarmName,StateValue]' --output text` → 3 linhas `OK`/`INSUFFICIENT_DATA`. **Desfazer:** `aws cloudwatch delete-alarms --alarm-names …`. O `uptime-check.yml` do repositório continua valendo: `vars.PROD_HEALTH_URL=https://api.<DOMINIO>/api/v1/health` e `PROD_WORKER_HEALTH_URL=https://api.<DOMINIO>/api/v1/health/worker`.
+**Conferência:** `aws sns list-subscriptions-by-topic --topic-arn "$TOPICO_ARN" --query 'Subscriptions[].SubscriptionArn' --output text` → um ARN (não `PendingConfirmation`); `aws cloudwatch describe-alarms --alarm-names erp-api-5xx erp-api-sem-alvo-saudavel erp-rds-disco-baixo --query 'MetricAlarms[].[AlarmName,StateValue]' --output text` → 3 linhas `OK`/`INSUFFICIENT_DATA`. **Desfazer:** `aws cloudwatch delete-alarms --alarm-names erp-api-5xx erp-api-sem-alvo-saudavel erp-rds-disco-baixo` e `aws sns delete-topic --topic-arn "$TOPICO_ARN"` (apaga também a assinatura do e-mail). O `uptime-check.yml` do repositório continua valendo: `vars.PROD_HEALTH_URL=https://api.<DOMINIO>/api/v1/health` e `PROD_WORKER_HEALTH_URL=https://api.<DOMINIO>/api/v1/health/worker`.
 
 ### 6.6 Orçamento e custo conferidos
 ```bash
 aws budgets describe-budget --account-id "$CONTA" --budget-name erp-producao-mensal --query 'Budget.[BudgetLimit.Amount,CalculatedSpend.ActualSpend.Amount,CalculatedSpend.ForecastedSpend.Amount]' --output text
 aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u +%F) --granularity MONTHLY --metrics UnblendedCost --query 'ResultsByTime[0].Total.UnblendedCost.Amount' --output text
 ```
+**Conferência:** o limite `350`, o gasto do mês e a previsão abaixo do limite; se a previsão passar, o alerta de 100 % da previsão (0.7) já terá chegado. **Desfazer:** não se aplica (só leitura).
 
 ### 6.7 O checklist de go-live (`docs/go-live-readiness.md` §3), reescrito para a AWS
 1. Chave Google Maps exposta: **revogada/rotacionada** no Google Cloud Console e a nova restrita por referer (item 0 do go-live-readiness; continua pendente até o dono confirmar).
@@ -1054,6 +1120,15 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 
 **Conferência da fase inteira:** `CONVERGIDO` do bootstrap; `cloud-usage/summary` somando; `Enabled`/`AES256`/`SoTLS` do bucket; 3 alarmes; tempo de rollback anotado; snapshot `available`.
 
+**O que pode dar errado:**
+- O bootstrap do 6.2 recusar em produção: falta `ALLOW_PROD_BOOTSTRAP=1` ou `PLATFORM_ADMIN_EMAIL`, ou o `super_admin` de plataforma não existe (rode o 2.7 de novo e confira o `count = 1`). O `--dry-run` mostra o que faria sem gravar: rode-o sempre antes.
+- O login do 6.3 devolver 401: senha, e-mail ou `tenantId` errado (o `tenantId` é o da organização de sistema que o bootstrap criou). Sem o runbook `B-O6R-01` (D-AWS-07), o login sem organização não existe: é com `tenantId`.
+- O `cloud-usage/summary` voltar zerado com organizações criadas: é o sinal de que a leitura da plataforma não passa sob o papel sem bypass; o item 10 **não** fecha, e o caso vai ao dono com a resposta guardada.
+- Depois de trocar o `PORTAL_TENANT_ID` (6.2) ou o `taskdef` (6.1), o serviço não estabilizar: veja os eventos (`describe-services`, 3.8) e o log; `Failed to start` nomeando uma variável é portão do `env.ts`.
+- O rollback do 6.4 cruzar a restrição do 03a (`docs/deployment.md`): rollback só com um escritor por vez; para uma imagem anterior ao 03a, só correção para frente. As migrações não voltam.
+- A assinatura do SNS ficar `PendingConfirmation`: o e-mail de confirmação caiu no spam ou não foi clicado; sem confirmar, os alarmes disparam e ninguém recebe.
+- Todo upload responder 503 (anexos, evidências): é o esperado enquanto o antivírus não existir (`EVIDENCE_SCANNER=unavailable`, item 27, `B-AV-REAL`), não é defeito do bucket.
+
 ---
 
 ## 10. Pendências que este roteiro abre (para `agent-orchestration/controle/pendencias.md`, no bloco de infra)
@@ -1064,7 +1139,8 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 | P-AWS-MIGRADOR | a imagem de runtime não tem `prisma`, `tsx` nem `prisma.config.ts`; o CD precisa de uma imagem migradora (ou alvo `migrator` no `Dockerfile`) para `aws ecs run-task` rodar `prisma migrate deploy` e `db:provision-rbac` dentro da VPC | `B-INFRA-AWS-03` |
 | P-AWS-BACKUP-PGDUMP | `backup-database.yml` roda no runner do GitHub e não alcança o RDS privado; decidir: tarefa ECS agendada (`EventBridge Scheduler` + `run-task`) ou só PITR + snapshots | `B-INFRA-AWS-02` |
 | P-AWS-VALKEY-TLS | medir se `REDIS_URL=rediss://` funciona no app (cliente Redis + jobs) e ligar `--transit-encryption-enabled` no Valkey | `B-INFRA-AWS-02` |
-| P-FRONT-API-BASE-URL | `platform-health.service.ts:11` e `damages.adapter.ts:112` usam `/api/v1` relativo em vez de `VITE_API_BASE_URL`; até corrigir, o comportamento `/api/*` do CloudFront cobre | frontend |
+| P-FRONT-API-BASE-URL | 3 arquivos usam `/api/v1` relativo em vez de `VITE_API_BASE_URL`: `platform-health.service.ts:11`, `damages.adapter.ts:112` e `services/realtime/pollingClient.ts:23` (fluxo de eventos `/api/v1/events/stream`); até corrigir, o comportamento `/api/*` do CloudFront cobre | frontend |
+| P-AWS-SSE-TIMEOUT | o fluxo de eventos (SSE) fica aberto por muito tempo; o ALB corta conexão parada há 60 s e o CloudFront, como está no 4.6, espera no máximo 60 s entre pedaços da resposta (`OriginReadTimeout: 60`; aceita até 120 s, acima disso só com aumento de cota). Hoje a API manda um sinal de vida a cada 25 s e o mapa reconecta; se a medição em produção mostrar quedas, subir o tempo do ALB (o comando está em "o que pode dar errado" da Fase 4) e escrever e validar a edição do `OriginReadTimeout` do CloudFront | `B-INFRA-AWS-03` |
 | P-AWS-PORTAL-TENANT | `PORTAL_TENANT_ID` provisório até o 1º tenant; definir o processo (6.2) e o valor do `PORTAL_CORS_ORIGIN` do portal | `B-INFRA-AWS-03` |
 | P-AWS-IP-FIXO | a decisão D-AWS-03 e, se vier, o bloco do NLB+EIP ou do Global Accelerator | dono |
 
@@ -1081,3 +1157,4 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 - ECR: pull-through cache para o GitHub Container Registry (`--upstream-registry-url ghcr.io`, segredo `ecr-pullthroughcache/…`).
 - Global Accelerator: US$ 0,025/h por acelerador (US$ 18,25/mês) + DT-Premium.
 - `dig` (man page), `jq` (manual), `psql` 16, `openssl`, `curl`, `docker`, `git`, `npm`/`npx prisma` — `--help` locais.
+- Revisão do PR #598 (`origin/main` `60c0704a`): `src/modules/auth/routes/auth.routes.ts` (o login responde `data.accessToken`), `frontend/src/services/realtime/pollingClient.ts`, `src/modules/field-ops-realtime/field-ops-realtime.routes.ts` (sinal de vida a cada 25 s), `frontend/src/modules/operations/map/useOperationsMap.ts` (reconexão), `scripts/bootstrap-platform-admin.ts`. Documentação: CloudFront (configurações de origem e cotas: `OriginReadTimeout` de 1 a 120 s), ELB (`idle_timeout.timeout_seconds`, padrão 60 s, no help local), PostgreSQL 16 (`DROP OWNED`, `psql -c` repetido), `jq` 1.7 (`--rawfile`), `curl` (`-d @arquivo`).
