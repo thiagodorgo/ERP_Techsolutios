@@ -79,32 +79,38 @@ test("T-L0 — toda violação que o classificador emite cai numa categoria com 
 
 test("T-L1 — toda chave do universo está no instantâneo, com classe da lista fechada e marcador válido; nenhuma chave morta", async () => {
   const { cl } = await daBase();
-  assert.deepEqual(daCategoria(cl, "NAO-CLASSIFICADA", "ENVELHECIDA", "CLASSE-FORA-DA-LISTA", "MARCADOR-INVALIDO", "SEM-OBSERVACAO"), []);
+  const v1 = daCategoria(cl, "NAO-CLASSIFICADA", "ENVELHECIDA", "CLASSE-FORA-DA-LISTA", "MARCADOR-INVALIDO", "SEM-OBSERVACAO");
+  assert.deepEqual(v1, [], ["violações:", ...v1].join("\n"));
 });
 
 test("T-L2 — nenhum 2xx de nenhuma leitura, para B e C, contém canário de conteúdo da OS-X (nem os bytes da semente)", async () => {
   const { cl } = await daBase();
-  assert.deepEqual(daCategoria(cl, "CANARIO"), []);
+  const v2 = daCategoria(cl, "CANARIO");
+  assert.deepEqual(v2, [], ["violações:", ...v2].join("\n"));
 });
 
 test("T-L3 — em OS·LEITURA-ESCOPO, a OS-X responde o mesmo status:code:reason do UUID aleatório, para B e C", async () => {
   const { cl } = await daBase();
-  assert.deepEqual(daCategoria(cl, "ORACULO-DE-EXISTENCIA"), []);
+  const v3 = daCategoria(cl, "ORACULO-DE-EXISTENCIA");
+  assert.deepEqual(v3, [], ["violações:", ...v3].join("\n"));
 });
 
 test("T-L4 — em LISTA·FILTRO-SERVIDOR, a OS-X não aparece sem filtro e ?workOrderId=<X> ≡ <aleatório> nas duas formas", async () => {
   const { cl } = await daBase();
-  assert.deepEqual(daCategoria(cl, "LISTA-COM-ALHEIA", "FILTRO-DIFERENTE"), []);
+  const v4 = daCategoria(cl, "LISTA-COM-ALHEIA", "FILTRO-DIFERENTE");
+  assert.deepEqual(v4, [], ["violações:", ...v4].join("\n"));
 });
 
 test("T-L5 — a classe bate com a propriedade (caminho, canário, camada)", async () => {
   const { cl } = await daBase();
-  assert.deepEqual(daCategoria(cl, "CLASSE-INCOMPATIVEL"), []);
+  const v5 = daCategoria(cl, "CLASSE-INCOMPATIVEL");
+  assert.deepEqual(v5, [], ["violações:", ...v5].join("\n"));
 });
 
 test("T-L6 — controle positivo: com A (atribuído), toda chave das 3 classes cumpre o seu marcador", async () => {
   const { cl } = await daBase();
-  assert.deepEqual(daCategoria(cl, "ORACULO-CEGO", "SEM-CHAMADA-NATURAL"), []);
+  const v6 = daCategoria(cl, "ORACULO-CEGO", "SEM-CHAMADA-NATURAL");
+  assert.deepEqual(v6, [], ["violações:", ...v6].join("\n"));
   for (const classe of CLASSES_DO_BLOCO) {
     assert.ok(Object.values(INSTANTANEO).some((e) => e.classe === classe), `o instantâneo não tem entrada ${classe}: o oráculo estaria cego`);
   }
@@ -112,12 +118,14 @@ test("T-L6 — controle positivo: com A (atribuído), toda chave das 3 classes c
 
 test("T-L7 — NAO-ALCANCADA só com prova: 401/403 nos dois papéis, com e sem permissão, com id aleatório e com os ids da semente", async () => {
   const { cl } = await daBase();
-  assert.deepEqual(daCategoria(cl, "NAO-ALCANCADA-SEM-PROVA"), []);
+  const v7 = daCategoria(cl, "NAO-ALCANCADA-SEM-PROVA");
+  assert.deepEqual(v7, [], ["violações:", ...v7].join("\n"));
 });
 
 test("T-L8 — nenhuma camada com caminho próprio (sem rota GET de mesmo caminho) responde leitura 2xx", async (t) => {
   const { r, cl } = await daBase();
-  assert.deepEqual(daCategoria(cl, "MIDDLEWARE-RESPONDE-LEITURA"), []);
+  const v8 = daCategoria(cl, "MIDDLEWARE-RESPONDE-LEITURA");
+  assert.deepEqual(v8, [], ["violações:", ...v8].join("\n"));
   // Publicado (Emenda 2 §1.2): a resposta medida de cada camada de hoje, para B e C.
   for (const o of r.oraculo.obs.filter((x) => x.tipo === "MIDDLEWARE")) {
     t.diagnostic(`${o.chave} → ${[...new Set(o.camadaStatus.map((x) => `${x.split(" ")[0]} ${x.split(" ").pop()}`))].join(", ")}`);

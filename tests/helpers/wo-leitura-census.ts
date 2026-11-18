@@ -391,6 +391,15 @@ export function urlNatural(chave: string, query: string, s: Semente): string | u
   return substituir(caminho, ids) + query.replaceAll("{X}", s.osX).replaceAll("{T}", s.checklistId);
 }
 
+/** Um id aleatório da mesma forma: UUID → UUID; `prefixo_<resto>` → o mesmo prefixo e um resto hexadecimal do mesmo tamanho. */
+export function aleatorioDaMesmaForma(id: string): string {
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return randomUUID();
+  const corte = id.lastIndexOf("_");
+  const prefixo = corte >= 0 ? id.slice(0, corte + 1) : "";
+  const resto = id.slice(corte + 1);
+  return prefixo + Array.from({ length: resto.length }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+}
+
 /** Todas as combinações dos ids da semente nos parâmetros (produto cartesiano). */
 function combinacoes(n: number, ids: readonly string[]): string[][] {
   let acc: string[][] = [[]];
@@ -427,7 +436,7 @@ export type Observacao = {
   readonly vazamentos: Vazamento[];
   /** T-L3: a resposta ao UUID aleatório, e as combinações de ids da semente que respondem diferente (por papel). */
   readonly kAleatorio: Record<string, string>;
-  readonly diferencas: Array<{ readonly papel: string; readonly url: string; readonly k: string }>;
+  readonly diferencas: Array<{ readonly papel: string; readonly url: string; readonly k: string; readonly kGemeo: string }>;
   /** T-L4: o id da OS-X na lista pedida sem filtro, e a igualdade ?workOrderId=<X> ≡ <aleatório> nas duas formas. */
   readonly idOsXSemFiltro: Array<{ readonly papel: string }>;
   readonly filtroDiferente: Array<{ readonly papel: string; readonly forma: "a" | "b"; readonly kX: string; readonly kR: string }>;
@@ -464,7 +473,11 @@ export async function observar(
   const obs: Observacao[] = [];
   for (const e of U) {
     const nomes = nomesDeParametro(e.caminho);
-    const urlsSemente = nomes.length === 0 ? variantes.map((q) => e.caminho + q) : combinacoes(nomes.length, ids).map((c) => substituir(e.caminho, c));
+    // Cada chamada com ids da semente tem um GÊMEO com ids aleatórios da MESMA forma (UUID → UUID; `approval_<hex>` →
+    // `approval_<hex>`): o T-L3 compara a OS-X com o inexistente de mesma forma, e o 400 de id malformado não vira oráculo.
+    const combos = nomes.length === 0 ? [] : combinacoes(nomes.length, ids);
+    const urlsSemente = nomes.length === 0 ? variantes.map((q) => e.caminho + q) : combos.map((c) => substituir(e.caminho, c));
+    const gemeos = combos.map((c) => substituir(e.caminho, c.map(aleatorioDaMesmaForma)));
     const aleatorio = substituir(e.caminho, nomes.map(() => randomUUID()));
     const vazamentos: Vazamento[] = [];
     const kAleatorio: Record<string, string> = {};
@@ -480,11 +493,14 @@ export async function observar(
       const rAle = await http(e.method, aleatorio, H);
       kAleatorio[papel] = rAle.k;
       for (const extra of [rAle, await http(e.method, aleatorio, H0)]) if (!ehNegacao(extra.k)) respostasNaoNegadas.push(`${papel} ${aleatorio} ${extra.k}`);
-      for (const url of urlsSemente) {
+      for (const [i, url] of urlsSemente.entries()) {
         const r = await http(e.method, url, H);
         const can = canariosNoCorpo(r, s);
         if (can.length) vazamentos.push({ papel, url, canarios: can });
-        if (nomes.length > 0 && r.k !== rAle.k) diferencas.push({ papel, url, k: r.k });
+        if (nomes.length > 0) {
+          const g = await http(e.method, gemeos[i], H);
+          if (r.k !== g.k) diferencas.push({ papel, url, k: r.k, kGemeo: g.k });
+        }
         if (!ehNegacao(r.k)) respostasNaoNegadas.push(`${papel} ${url} ${r.k}`);
         const r0 = await http(e.method, url, H0);
         if (!ehNegacao(r0.k)) respostasNaoNegadas.push(`${papel}(sem permissão) ${url} ${r0.k}`);
@@ -674,7 +690,7 @@ export function classificarLeitura(c3: any, oraculo: ResultadoOraculo, snap: Ins
     if (e.tipo === "MIDDLEWARE" && !rotasGet.has(e.caminho)) for (const x of o.camada2xx) add("MIDDLEWARE-RESPONDE-LEITURA", `${e.chave} ${x}`);
     if (!en) continue;
     // T-L3 — OS·LEITURA: a OS-X (toda combinação de ids da semente) ≡ o UUID aleatório.
-    if (en.classe === CLASSE_OS) for (const d of o.diferencas) add("ORACULO-DE-EXISTENCIA", `${rotulo(e.chave)} ${d.papel} ${e.chave} ${d.url} ${d.k} ≠ ${o.kAleatorio[d.papel]}`);
+    if (en.classe === CLASSE_OS) for (const d of o.diferencas) add("ORACULO-DE-EXISTENCIA", `${rotulo(e.chave)} ${d.papel} ${e.chave} ${d.url} ${d.k} ≠ ${d.kGemeo} (inexistente de mesma forma)`);
     // T-L4 — LISTA: sem o id da OS-X na lista sem filtro; ?workOrderId=<X> ≡ <aleatório> nas duas formas.
     if (en.classe === CLASSE_LISTA) {
       for (const x of o.idOsXSemFiltro) add("LISTA-COM-ALHEIA", `${rotulo(e.chave)} ${x.papel} ${e.chave}`);

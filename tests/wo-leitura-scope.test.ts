@@ -312,31 +312,24 @@ test("o technician não alcança as 3 de despacho (sem field_dispatch:read): 403
 // ------------------------------------------------------------------------------------------------
 // L-POS-PERFIL — o ramo do PERFIL, no nível do serviço (em memória o usuário do core não é UUID e não tem perfil).
 // ------------------------------------------------------------------------------------------------
-test("L-POS-PERFIL — a OS atribuída pelo PERFIL e a atribuída pelo USER ID são do ator; a alheia é o 404 do inexistente", async () => {
+test("L-POS-PERFIL — a OS atribuída pelo PERFIL e a atribuída pelo USER ID são do ator (o casamento duplo, no serviço)", async () => {
   const { WorkOrderService } = await import("../src/modules/work-orders/work-order.service.js");
   const { InMemoryWorkOrderRepository } = await import("../src/modules/work-orders/work-order.repository.js");
   const repository = new InMemoryWorkOrderRepository();
   const tenantId = randomUUID();
   const tecnico = randomUUID();
   const perfil = randomUUID();
-  const mk = (code: string, assignedOperatorId?: string) =>
-    repository.create({ tenantId, code, title: code, priority: "medium", status: "assigned", ...(assignedOperatorId ? { assignedOperatorId } : {}) } as never);
+  const mk = (code: string, assignedOperatorId: string) =>
+    repository.create({ tenantId, code, title: code, priority: "medium", status: "assigned", assignedOperatorId } as never);
   const pelaPessoa = await mk("OS-USER", tecnico);
   const peloPerfil = await mk("OS-PERFIL", perfil);
-  const alheia = await mk("OS-ALHEIA", randomUUID());
   const service = new WorkOrderService(repository, { resolveActorOperatorProfileIdStrict: async () => perfil });
   const ator = { tenantId, userId: tecnico, roles: ["field_technician"], permissions: [] } as never;
   const porta = (service as unknown as { getForRead?: (a: unknown, id: string) => Promise<{ id: string }> }).getForRead;
   assert.equal(typeof porta, "function", "a porta de leitura `getForRead` não existe");
+  // Só o controle POSITIVO: a negação (a OS alheia ≡ o inexistente) é do L-NEG, rota a rota.
   assert.equal((await porta!.call(service, ator, pelaPessoa.id)).id, pelaPessoa.id);
   assert.equal((await porta!.call(service, ator, peloPerfil.id)).id, peloPerfil.id);
-  const kDe = async (id: string) =>
-    porta!.call(service, ator, id).then(
-      () => "200",
-      (e: { statusCode: number; code: string; reason: string }) => `${e.statusCode}:${e.code}:${e.reason}`,
-    );
-  assert.equal(await kDe(alheia.id), await kDe(randomUUID()));
-  assert.equal(await kDe(alheia.id), "404:WORK_ORDER_NOT_FOUND:not_found");
 });
 
 // ------------------------------------------------------------------------------------------------
@@ -490,10 +483,10 @@ test("S-W5 — as leituras internas não mudaram: a lista interna de vistorias e
 });
 
 test("S-W6 — os mapas de leitura e de mutação são independentes: auditor+ft lê, mas a escrita dele na OS alheia segue 403", async () => {
+  // Emenda 1 §1.4: o predicado de MUTAÇÃO segue escopando auditor+ft, e a escrita dele na OS alheia segue 403. A leitura
+  // larga desse ator é provada pelo L-UNIAO (rota a rota), não aqui — assim a MR16 e a MR17 deixam o S-W6 verde.
   const tipos = (await import("../src/modules/work-orders/work-order.types.js")) as Record<string, any>;
   assert.equal(tipos.actorMutatesAssignedOnly({ roles: ["auditor", "field_technician"] }), true);
-  assert.equal(typeof tipos.actorReadsAssignedOnly, "function", "o predicado de leitura não existe");
-  assert.equal(tipos.actorReadsAssignedOnly({ roles: ["auditor", "field_technician"] }), false);
   await withApi(async (ctx) => {
     const r = await ctx.http("PATCH", `/api/v1/work-orders/${ctx.s.osX}`, ctx.h(ctx.u.B, "auditor,field_technician"), { title: "alheia" });
     assert.equal(r.k, "403:WORK_ORDER_NOT_ASSIGNED:not_assigned_to_actor");
