@@ -176,8 +176,9 @@ export const WORK_ORDER_READ_SCOPE = {
  */
 export function actorReadsAssignedOnly(actor: WorkOrderActorContext): boolean {
   const scopes: Record<string, "tenant_wide" | "assigned_only" | "nao_alarga" | undefined> = WORK_ORDER_READ_SCOPE;
-  const hasFieldRole = actor.roles.some((role) => scopes[role] === "assigned_only");
-  const hasTenantWide = actor.roles.some((role) => scopes[role] === "tenant_wide");
+  const roles = actor.roles ?? [];
+  const hasFieldRole = roles.some((role) => scopes[role] === "assigned_only");
+  const hasTenantWide = roles.some((role) => scopes[role] === "tenant_wide");
   return hasFieldRole && !hasTenantWide; // B-WO-LEITURA:predicado
 }
 
