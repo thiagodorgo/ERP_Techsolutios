@@ -41,9 +41,12 @@ import {
 // Em memória o id do usuário do core é `usr_…`, não UUID: o despacho atribui a OS pelo USER ID (a forma do app). O ramo do
 // PERFIL é exercido no nível do serviço (L-POS-PERFIL, abaixo) e na `-db` (usuários UUID, perfis reais).
 //
-// VERMELHO-CONTROLE (plano §5.5): sobre o `src/` da base do ramo (`60c0704a`), o L-NEG, o L-EX, o S-W1, o S-W3, o S-W6 e o
-// S-W7 ficam vermelhos; L-POS, L-WIDE, L-UNIAO, L-XT, S-W2, S-W4, S-W5 e S-W8 ficam verdes. A lista exata, com N, está no
-// diário do dev (`erp-pausa-2026-10-03/revisoes/wo-leitura/dev-wo-leitura-cl.md`, F0).
+// VERMELHO-CONTROLE (plano §5.5; Emendas 3.1 §3.2/§6.1 e 3.2 §3.1/§6.1): sobre o `src/` da base do ramo (`origin/main`), o
+// L-NEG, o L-EX, o L-MESMA-REGRA, o S-W1, o S-W3 (ft e as 5 uniões), o S-W6 e o S-W7 ficam vermelhos; L-POS, L-WIDE,
+// L-UNIAO, L-SOZINHO, L-MODULO-PROPRIO, L-XT, S-W2, S-W4, S-W5 e S-W8 ficam verdes (sobre o `94003150`: 457 testes, fail
+// 193 = 181 L-MESMA-REGRA + 10 S-W3 uniões + 2 pais; sobre a 3.1: fail 82 = 76 L-MESMA-REGRA viewer/auditor + 4 S-W3 + 2
+// pais; testes da 3.1 sobre o `94003150`: 444 testes, fail 113 = 105 L-MESMA-REGRA + 6 S-W3 + 2 pais). A lista exata, com
+// N, está no diário do dev (`erp-pausa-2026-10-03/revisoes/wo-leitura/dev-wo-leitura-cl.md`).
 
 const DIR_ANEXOS = fs.mkdtempSync(path.join(os.tmpdir(), "wo-leitura-anexos-"));
 process.env.CHECKLIST_STORAGE_LOCAL_DIR = DIR_ANEXOS;
@@ -61,13 +64,20 @@ const DESPACHO = new Set(["R13", "R14", "R15"]);
 type Papel = { readonly nome: string; readonly roles: string };
 const FT: Papel = { nome: "ft", roles: "field_technician" };
 const TEC: Papel = { nome: "tec", roles: "technician" };
+// D-DONO-1811-71-MESMA-REGRA (Emenda 3.1) e D-DONO-1811-71-VISAO-SO-COM-PERMISSAO (Emenda 3.2): o papel de campo somado a
+// um papel `tenant_wide` (gestão, despacho) lê a organização inteira (L-UNIAO); somado a um `nao_alarga` (suporte, estoque,
+// financeiro, visualizador, auditor) lê só o que é dele, em toda rota (L-MESMA-REGRA).
 const UNIOES: Papel[] = [
-  ...["viewer", "finance", "inventory", "auditor", "support"].flatMap((g) => [
+  ...["field_dispatcher"].flatMap((g) => [
     { nome: `${g}+ft`, roles: `${g},field_technician` },
     { nome: `${g}+tec`, roles: `${g},technician` },
   ]),
   { nome: "manager+tec", roles: "manager,technician" },
 ];
+const UNIOES_ESCOPADAS: Papel[] = ["finance", "inventory", "support", "viewer", "auditor"].flatMap((g) => [
+  { nome: `${g}+ft`, roles: `${g},field_technician` },
+  { nome: `${g}+tec`, roles: `${g},technician` },
+]);
 
 let permissoesDe: (roles: readonly string[]) => readonly string[] = () => [];
 /** O papel alcança a rota? As de despacho exigem `field_dispatch:read` (o `technician` não tem); as outras, as do campo. */
@@ -248,11 +258,51 @@ test("L-WIDE — o manager (organização inteira) lê a OS-X em toda rota do bl
   });
 });
 
-test("L-UNIAO — quem acumula um papel de organização inteira com o de campo lê a OS-X (regra de presença)", async (t) => {
+test("L-UNIAO — quem acumula um papel que ALARGA (tenant_wide) com o de campo lê a OS-X (regra de presença)", async (t) => {
   await withApi(async (ctx) => {
     for (const p of UNIOES) for (const e of ENTRADAS) {
       if (!alcanca(p, e)) continue;
       await t.test(`L-UNIAO · ${p.nome} · ${e.r}`, () => assertLe(ctx, e, ctx.h(ctx.u.B, p.roles), `L-UNIAO ${p.nome} ${e.r}`));
+    }
+  });
+});
+
+test("L-MESMA-REGRA — quem acumula suporte, estoque, financeiro, visualizador ou auditor com o de campo lê só o que é dele, em toda rota (D-DONO-1811-71-MESMA-REGRA, D-DONO-1811-71-VISAO-SO-COM-PERMISSAO)", async (t) => {
+  await withApi(async (ctx) => {
+    for (const p of UNIOES_ESCOPADAS) for (const e of ENTRADAS) {
+      if (!alcanca(p, e)) continue;
+      await t.test(`L-MESMA-REGRA · ${p.nome} · ${e.r}`, () => assertNegado(ctx, e, ctx.h(ctx.u.B, p.roles), 1, `L-MESMA-REGRA ${p.nome} ${e.r}`));
+    }
+  });
+});
+
+test("L-SOZINHO — suporte, estoque, financeiro, visualizador e auditor SEM papel de campo seguem lendo a organização (o nao_alarga não escopa)", async (t) => {
+  await withApi(async (ctx) => {
+    const casos: Array<[string, string]> = [
+      ["finance", "R1"], ["finance", "R2"], ["support", "R18"], ["inventory", "R10a"],
+      ["viewer", "R1"], ["viewer", "R13"], ["auditor", "R9"], ["auditor", "R18"],
+    ];
+    // Lido do instantâneo, como os outros laços: a entrada que o instantâneo não tem não vira subteste (quem pega é o T-L1).
+    for (const [papel, r] of casos) for (const e of ENTRADAS.filter((x) => x.r === r)) {
+      await t.test(`L-SOZINHO · ${papel} · ${r}`, () => assertLe(ctx, e, ctx.h(ctx.u.M, papel), `L-SOZINHO ${papel} ${r}`));
+    }
+  });
+});
+
+test("L-MODULO-PROPRIO — o módulo próprio do outro papel segue com o alcance dele: a Auditoria do auditor e do suporte (Emenda 3.2)", async (t) => {
+  await withApi(async (ctx) => {
+    const ids = (r: Resp) => ((r.j?.data ?? []) as Array<{ id: string }>).map((x) => x.id).sort();
+    for (const papel of ["auditor", "support"]) {
+      const sozinho = await ctx.http("GET", "/api/v1/audit-events?limit=200", ctx.h(ctx.u.B, papel));
+      assert.equal(sozinho.s, 200, `L-MODULO-PROPRIO: ${papel} sozinho ${sozinho.k}`);
+      assert.ok(ids(sozinho).length >= 1, `L-MODULO-PROPRIO: ${papel} sozinho sem evento — não provaria nada`);
+      for (const campo of [FT, TEC]) {
+        await t.test(`L-MODULO-PROPRIO · ${papel}+${campo.nome} · audit-events`, async () => {
+          const uniao = await ctx.http("GET", "/api/v1/audit-events?limit=200", ctx.h(ctx.u.B, `${papel},${campo.roles}`));
+          assert.equal(uniao.s, 200, `${papel}+${campo.nome}: ${uniao.k}`);
+          assert.deepEqual(ids(uniao), ids(sozinho), `${papel}+${campo.nome}: a Auditoria encolheu com o papel de campo`);
+        });
+      }
     }
   });
 });
@@ -423,8 +473,9 @@ test("S-W3 — resolvedor de perfil lançando: toda leitura por objeto (R2–R18
     ["R17", (id) => aprovacao.get(ator(), id)],
     ["R18", () => painel.getSummary(ator())],
   ];
+  let papeis = ["field_technician"];
   function ator() {
-    return { tenantId, userId: tecnicoA, roles: ["field_technician"], permissions: [] } as never;
+    return { tenantId, userId: tecnicoA, roles: papeis, permissions: [] } as never;
   }
   for (const [r, ler] of leituras) {
     await t.test(`S-W3 · ft · ${r}`, async () => {
@@ -436,6 +487,26 @@ test("S-W3 — resolvedor de perfil lançando: toda leitura por objeto (R2–R18
         assert.equal(k, "503:WORK_ORDER_SCOPE_UNAVAILABLE:scope_resolution_failed", `${r} (${id === osX.id ? "OS-X" : "aleatório"})`);
       }
     });
+  }
+  // Emenda 3.1: as uniões da mesma regra também caem no 503, nunca na organização inteira.
+  for (const [nome, roles] of [["support+ft", "support,field_technician"], ["inventory+tec", "inventory,technician"], ["finance+ft", "finance,field_technician"], ["viewer+tec", "viewer,technician"], ["auditor+ft", "auditor,field_technician"]] as const) {
+    for (const r of ["R2", "R18"]) {
+      await t.test(`S-W3 · ${nome} · ${r}`, async () => {
+        papeis = roles.split(",");
+        try {
+          const ler = leituras.find(([x]) => x === r)![1];
+          for (const id of [osX.id, randomUUID()]) {
+            const k = await ler(id).then(
+              () => "200",
+              (e: { statusCode?: number; code?: string; reason?: string }) => `${e.statusCode}:${e.code}:${e.reason}`,
+            );
+            assert.equal(k, "503:WORK_ORDER_SCOPE_UNAVAILABLE:scope_resolution_failed", `${nome} ${r} (${id === osX.id ? "OS-X" : "aleatório"})`);
+          }
+        } finally {
+          papeis = ["field_technician"];
+        }
+      });
+    }
   }
 });
 
