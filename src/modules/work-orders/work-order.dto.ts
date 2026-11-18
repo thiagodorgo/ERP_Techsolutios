@@ -7,6 +7,7 @@ import type {
 } from "./work-order.types.js";
 import type { WorkOrderChecklistRole, WorkOrderChecklistSource } from "./work-order-checklists.types.js";
 import type { CheckinListDescription } from "./work-order.checkin.js";
+import { toAttendedVehicleDto } from "./work-order.attended-vehicle.js";
 import type { FieldServiceKind } from "./work-order.field-kind.js";
 
 /**
@@ -156,6 +157,13 @@ export function toWorkOrderListDto(
         // M-7 (J-MAPAS-8 · SLA real do mapa) — CHAVE: o Mapa Operacional lê o prazo de SLA da lista para
         // colorir/ordenar a fila (client-side). null quando a OS não tem prazo. Dado funcional, não sensível.
         slaDueAt: workOrder.slaDueAt?.toISOString() ?? null,
+        // B-GUI-D1 — o destino (endereço e coordenada) e o veículo atendido, para o app de campo. Sempre presentes (valor
+        // ou null). `attendedVehicle` sai por lista FECHADA de 3 chaves de `serviceDetails` (a placa mascarada pela
+        // referência do check-in, o modelo e a cor); o resto de `serviceDetails` continua só no detalhe.
+        destinationAddress: workOrder.destinationAddress ?? null, // B-GUI-D1
+        destinationLatitude: workOrder.destinationLatitude ?? null, // B-GUI-D1
+        destinationLongitude: workOrder.destinationLongitude ?? null, // B-GUI-D1
+        attendedVehicle: toAttendedVehicleDto(workOrder.serviceDetails), // B-GUI-D1
         createdAt: workOrder.createdAt.toISOString(),
         // B-SAN3-26 — só o modo e os 2 caracteres finais da placa; a placa inteira e o `serviceDetails` (que tem a
         // senha de acesso do residencial) ficam no detalhe.
