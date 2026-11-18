@@ -78,6 +78,13 @@ No B-098D, `GET /api/v1/mobile/inventory/availability` e `POST /api/v1/mobile/sy
 - o sync de inventario aceita `inventory.reserve`, `inventory.consume` e `inventory.shortage_report`;
 - o backend ignora `tenant_id` no query/body/payload e resolve o tenant pelo ator autenticado.
 
+No B-O6R-04b, o estoque fabricado saiu do app e do servidor (`D-O6R-04B-RETIRADA`):
+
+- o modulo `lib/features/inventory/**` (lista com pecas inventadas, Nova Entrada e Nova Saida) e as rotas `/inventory` sairam; o estoque real do tecnico e a tela que le `GET /api/v1/mobile/technician/stock`, aberta de dentro da OS;
+- `GET /api/v1/mobile/inventory/availability` saiu (404), e o sync de inventario aceita so `work_order_material.add`/`.remove`, com a porta `work_orders:update`;
+- `feature_flags.inventory_mobile` e `inventory_sync` ficam `implemented`, `mobile_policy.sync.implemented_domains` inclui `inventory`, e `catalogs.endpoints.technician_stock` substitui `inventory_availability`;
+- uma acao antiga `inventory_entry.create`/`inventory_exit.create` na fila do aparelho vira "envio nao concluido", com a frase propria e "Descartar" (`lib/core/sync/sync_action_routing.dart`).
+
 No B-098E, `POST /api/v1/mobile/sync/evidence-actions` passou a existir como contrato parcial para fotos, assinaturas e observacoes de OS/campo:
 
 - `feature_flags.generic_evidence_upload.status=partial` quando modulo e permissao permitem o uso;

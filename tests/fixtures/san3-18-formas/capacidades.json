@@ -9,7 +9,7 @@
   "field_location": { "liga": [["field_operations"]], "endpoints": ["POST /api/v1/mobile/field-locations"] },
   "expense_management": { "liga": [["expense_management"]], "endpoints": ["GET /api/v1/expense-reports", "GET /api/v1/expense-categories", "GET /api/v1/expense-policies"] },
   "expense_sync": { "liga": [["expense_management"]], "endpoints": ["POST /api/v1/mobile/sync/expense-actions"] },
-  "inventory_mobile": { "liga": [["inventory"]], "endpoints": ["GET /api/v1/mobile/inventory/availability"] },
+  "inventory_mobile": { "liga": [["inventory"]], "endpoints": ["GET /api/v1/mobile/technician/stock"] },
   "inventory_sync": { "liga": [["inventory"]], "endpoints": ["POST /api/v1/mobile/sync/inventory-actions"] },
   "generic_evidence_upload": { "liga": [["work_orders"], ["field_operations"]], "endpoints": ["POST /api/v1/mobile/evidence-uploads", "POST /api/v1/mobile/sync/evidence-actions"] }
  }

@@ -43,6 +43,7 @@ export const SCREEN_REFERENCES: Readonly<Record<string, string>> = {
   fechamento: "fechamento-periodo-3opcoes.reference.html",
   "platform-cloud-billing": "platform-cloud-billing-3opcoes.reference.html",
   "minha-assinatura": "minha-assinatura-3opcoes.reference.html",
+  "os-vistorias": "os-vistorias-3opcoes.reference.html",
 };
 
 const LABEL_EXCEPTIONS: ReadonlySet<string> = new Set(["patios:A"]);

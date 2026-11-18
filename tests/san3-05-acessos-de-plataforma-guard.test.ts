@@ -605,6 +605,12 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-ASS-08c1b (F6, [CANCEL-TX], passo 4): `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = 'charge_cancelled' … WHERE id = $1 AND tenant_id = $2 AND kind = 'charge_create' AND status = 'SENT'` — a `charge_create` alvo deixa o conjunto vivo MANTENDO o `external_id` (EK1); billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1: `external_id` mantido, `skip_reason` NULL).",
   ],
+  // B-ASS-08c2 (plano de abertura §4.17 e §4.1 item 5): as chaves que o bloco acrescenta, medidas pelo gerador no head do bloco,
+  // só acréscimo. Gerador e WRAPPERS intocados; literal L0 intocado (nenhuma tabela FORCE nova).
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.invoiceIntentFacts", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_invoices", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c2 (F3, §4.1 item 5): `SELECT COALESCE(max(seq), 0)::int AS max FROM subscription_statement_invoices WHERE statement_id = $1`, só leitura, no MESMO `tx` do movimento (o `tx` de `prismaTx(tx, tenantId)`, que só nasce dentro de `PrismaStatementRepository.transaction` → `withTenantRls(this.client, tenantId, …)`, cujo helper põe o setter do GUC da organização como 1ª instrução, src/database/rls.ts), chamado pelas funções da intenção de nota do settlement DEPOIS da trava do demonstrativo (`lockOrNotFound`/`lockById`). Tabela FORCE da mesma organização: a RLS recorta a leitura.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

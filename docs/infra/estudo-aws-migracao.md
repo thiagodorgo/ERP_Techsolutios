@@ -3,6 +3,7 @@
 - **Autor:** o orquestrador (Claude Opus 5.5), por exceção aberta pelo dono em 13/10: *"faça você ... o estudo da AWS"*.
 - **Fecha:** a parte "estudo" da `P-TRC-AWS-ESTUDO-MIGRACAO`. Desde a `D-INFRA-PROVIDER-AWS` (13/10, "o provedor é o aws"), ela não pergunta mais SE, e sim COMO.
 - **Ref:** `origin/main` `f59ad1d6`.
+- **Execução, passo a passo pelo CloudShell (fases 0–6, comandos validados, DNS próprio):** `docs/infra/roteiro-aws-cloudshell.md`.
 
 ## 1. O que roda hoje e precisa ir para a AWS (medido no repositório)
 | Peça | Hoje | Fonte |

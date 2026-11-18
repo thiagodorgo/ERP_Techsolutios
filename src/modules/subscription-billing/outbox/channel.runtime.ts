@@ -17,13 +17,13 @@ import { missingFiscalFields } from "../providers/provider-config.service.js";
 import { getProviderCatalogEntry } from "../providers/provider.catalog.js";
 import { createDefaultStatementRuntime, type StatementRuntime } from "../statements/statement.factory.js";
 import { InMemoryStatementRepository, type StatementRepository } from "../statements/statement.repository.js";
-import { StatementSettlementService, type InvoiceIntents } from "../statements/statement-settlement.service.js";
+import { StatementSettlementService } from "../statements/statement-settlement.service.js";
 import { createDefaultVaultRuntime, type VaultRuntime } from "../vault/vault.factory.js";
 import type { WebhookEventRepository } from "../webhooks/webhook-events.repository.js";
 import { InMemoryStatementRefRepository, type StatementRefRepository } from "../webhooks/statement-refs.repository.js";
 import { memoryWebhookEvents } from "../webhooks/webhook-runtime.js";
 import type { ChannelDeps } from "./channel.jobs.js";
-import { paymentProviderOn } from "./channel-state.js";
+import { invoiceIntentsNow, invoiceProvidersOn, paymentProviderOn } from "./channel-state.js";
 import { taxProfileFromSettings, type InvoiceIssueContextResolver } from "./invoice.dispatch.js";
 import { InMemoryOutboxRepository, type OutboxRepository } from "./outbox.repository.js";
 
@@ -56,28 +56,21 @@ export async function createChargeIntentRepository(): Promise<ChargeIntentReposi
   return new PrismaChargeIntentRepository(prisma);
 }
 
-/** As portas dos provedores de NOTA ligados. Canal desligado ou cofre indisponível → nenhuma. */
+/** As portas dos provedores de NOTA ligados. Canal desligado ou cofre indisponível → nenhuma. B-ASS-08c2 (§4.1 item 1): o
+ * predicado "ligado" é o de `invoiceProvidersOn` (`channel-state.ts`), o MESMO que a intenção de nota usa; aqui só se montam
+ * os adaptadores. */
 export async function enabledInvoicePorts(vault: VaultRuntime): Promise<Record<string, InvoiceProviderPort>> {
-  if (!env.BILLING_PROVIDERS_ENABLED) return {};
-  if (vault.vault.status() !== "available") return {};
+  const on = await invoiceProvidersOn(vault);
+  if (on.length === 0) return {};
+  const configs = await vault.configs.list();
   const ports: Record<string, InvoiceProviderPort> = {};
-  for (const config of await vault.configs.list()) {
-    const entry = getProviderCatalogEntry(config.provider);
-    if (!entry || entry.kind !== "invoice" || !config.enabled) continue;
-    const client = billingHttpClientFromEnv(entry.id, config.environment);
+  for (const provider of on) {
+    const config = configs.find((candidate) => candidate.provider === provider && candidate.enabled);
+    if (!config) continue;
     // Portão 1 + 1: só o Focus NFe tem adaptador ligado neste pacote (NFE.io e PlugNotas são do B-ASS-15).
-    if (entry.id === "focusnfe") ports.focusnfe = createFocusNfeAdapter(client, vault.vault);
+    if (provider === "focusnfe") ports.focusnfe = createFocusNfeAdapter(billingHttpClientFromEnv(provider, config.environment), vault.vault);
   }
   return ports;
-}
-
-/** O provedor de NOTA ligado (um por vez — G14), para onde vão `invoice_issue` e `invoice_cancel`. */
-async function enabledInvoiceProvider(vault: VaultRuntime): Promise<string | null> {
-  for (const config of await vault.configs.list()) {
-    const entry = getProviderCatalogEntry(config.provider);
-    if (entry?.kind === "invoice" && config.enabled) return entry.id;
-  }
-  return null;
 }
 
 type Repositories = {
@@ -185,26 +178,27 @@ export function issueContextResolver(vault: VaultRuntime, statements: StatementR
   };
 }
 
-/** O provedor de nota da EMISSÃO da rodada (conserto da J-530, §3.1): o ligado; senão o configurado mais recente; senão o
- * Focus NFe (leitura do topo, pergunta 1 ao dono). `enabled` = há porta ligada para ele agora. */
-async function invoiceIssueTarget(vault: VaultRuntime, invoiceProvider: string | null, invoicePorts: Readonly<Record<string, InvoiceProviderPort>>): Promise<InvoiceIntents["issueTarget"]> {
-  let provider = invoiceProvider;
-  if (!provider) {
-    const configured = (await vault.configs.list())
-      .filter((config) => getProviderCatalogEntry(config.provider)?.kind === "invoice")
-      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-    provider = configured[0]?.provider ?? "focusnfe";
+/** B-ASS-08c2 (plano §4.5, §4.6): as organizações da plataforma, sem a de sistema (o precedente do fechamento,
+ * `subscription-billing.jobs.ts`). É leitura de PLATAFORMA da tabela de organizações (sem dado de organização); o que vem
+ * depois roda sob a RLS de cada uma. No modo memória, as organizações que têm demonstrativo no dublê. */
+async function listPlatformTenantIds(statements: StatementRepository): Promise<readonly string[]> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    if (!(statements instanceof InMemoryStatementRepository)) throw new Error("channel_memory_composition_mismatch");
+    return statements.tenantIds();
   }
-  return { provider, enabled: provider in invoicePorts };
+  const { prisma } = await import("../../../database/prisma.js");
+  const tenants = await prisma.tenant.findMany({ select: { id: true, slug: true }, orderBy: { created_at: "asc" } });
+  return tenants.filter((tenant) => (tenant.slug ?? "").toLowerCase() !== "platform").map((tenant) => tenant.id);
 }
 
 /** Monta as dependências de UMA rodada de job (as portas refletem os provedores ligados AGORA). */
 export async function createChannelRuntime(): Promise<ChannelDeps> {
   const [vault, statements] = await Promise.all([createDefaultVaultRuntime(), createDefaultStatementRuntime()]);
   const repos = await repositories(statements.repository);
-  const [ports, invoicePorts, invoiceProvider] = await Promise.all([enabledPaymentPorts(vault), enabledInvoicePorts(vault), enabledInvoiceProvider(vault)]);
-  // (D)/(B): a intenção de nota nasce na transação do settlement — SEMPRE configurada na composição de produção.
-  const invoiceIntents: InvoiceIntents = { issueTarget: await invoiceIssueTarget(vault, invoiceProvider, invoicePorts), enabledInvoiceProviders: Object.keys(invoicePorts) };
+  const [ports, invoicePorts, invoiceIntents] = await Promise.all([enabledPaymentPorts(vault), enabledInvoicePorts(vault), invoiceIntentsNow(vault)]);
+  // (D)/(B): a intenção de nota nasce na transação do settlement — SEMPRE configurada na composição de produção. B-ASS-08c2
+  // (§4.1 item 1): o `issueTarget` (o ligado; senão o configurado mais recente; senão o Focus NFe) e os ligados, pelo MESMO
+  // predicado das portas (`invoiceIntentsNow`, `channel-state.ts`).
   return {
     ...repos,
     ports,
@@ -218,5 +212,8 @@ export async function createChannelRuntime(): Promise<ChannelDeps> {
     resolveIssueContext: issueContextResolver(vault, statements),
     // R-WH-5: o cliente do provedor tem de ser o do perfil da organização dona do demonstrativo (o id guardado — G12).
     resolveExpectedCustomerId: (tenantId, provider) => repos.customers.get(tenantId, provider),
+    // B-ASS-08c2 (plano §4.5): a varredura da nota no despacho e o poll da nota por organização.
+    listTenantIds: () => listPlatformTenantIds(statements.repository),
+    invoiceRecovery: statements.service,
   };
 }

@@ -63,7 +63,8 @@ function toDomain(row: Row): SubscriptionStatementInvoice {
   };
 }
 
-const LIVE_SQL = `status IN ('pending', 'authorized', 'cancel_pending')`;
+/** A vida da nota em SQL, a UMA fonte (B-ASS-08c2, GN1): as consultas novas a interpolam, nunca repetem o literal. */
+export const LIVE_SQL = `status IN ('pending', 'authorized', 'cancel_pending')`;
 
 /** §2.1 do conserto-c2 / §11 (k): o DEMONSTRATIVO PRIMEIRO. Toda transação da nota trava o demonstrativo antes de mexer na
  * linha da nota (o INSERT da nota toma KEY SHARE no demonstrativo pela FK, e o espelho, depois, um UPDATE: sem a trava antes,
@@ -147,6 +148,14 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
     return withTenantRls(this.client, tenantId, async (tx) => {
       const rows = (await tx.$queryRawUnsafe(`SELECT * FROM subscription_statement_invoices WHERE statement_id = $1::uuid AND ${LIVE_SQL} LIMIT 1`, statementId)) as Row[];
       return rows.length > 0 ? toDomain(rows[0]!) : undefined;
+    });
+  }
+
+  /** B-ASS-08c2 (plano §4.6): as notas vivas da organização no estado pedido, numa leitura sob a RLS dela (a vida pelo `LIVE_SQL`). */
+  async listLiveForTenant(tenantId: string, status: "pending" | "cancel_pending"): Promise<readonly SubscriptionStatementInvoice[]> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(`SELECT * FROM subscription_statement_invoices WHERE tenant_id = $1::uuid AND ${LIVE_SQL} AND status = $2 ORDER BY created_at, seq`, tenantId, status)) as Row[];
+      return rows.map(toDomain);
     });
   }
 

@@ -3011,6 +3011,7 @@ em `const inventoryByTenant = new Map<...>()` (`:100`). Coordinator sem estoque:
 **Bloqueia:** feature em estoque (entradas/saídas, custódia, contagem cíclica, baixa automática) e a fatia
 mobile de inventário. Sem fila de trabalho **verificada por mim** hoje em estoque — a proibição vale igualmente
 se surgir.
+- status: FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`): o resto, `Ω6R-QUA-002` (item 31), fecha pela `D-O6R-04B-RETIRADA`. O estoque fabricado sai: no servidor, o estoque em memória (os dois `Map`, a semente, os tipos `inventory.reserve`/`consume`/`shortage_report`) e `GET /mobile/inventory/availability` (S1 a S6 de `tests/bo6r04b-estoque-sem-memoria.test.ts`, com as mutações MS1 a MS6 e MS2b); no app, o módulo `lib/features/inventory/**`, as telas Nova Entrada e Nova Saída e as rotas `/inventory` (A1 a A3 de `mobile/flutter_app/test/features/bo6r04b_estoque_retirado_test.dart`, MA1 a MA3); a ação antiga que ficou na fila do aparelho vira envio não concluído, com Descartar (Q1 a Q4 de `mobile/flutter_app/test/core/sync/bo6r04b_estoque_legado_na_fila_test.dart`, MQ1). O movimento de estoque que o app registra é o material da OS, gravado no razão por origem, que sobrevive a restart (RC3(2) de `tests/b-material-sync-db.test.ts`). A linha `status` de baixo é a de antes, mantida por acréscimo.
 - status: **ABERTA — PARCIAL (2026-10-10): Ω6R-DAT-002 e Ω6R-DAT-003 fechados pelo PR #389 (`ab52ec50`; porteiro em `votos/B-O6R-04a/PORTEIRO-389.md`); segue aberto o Ω6R-QUA-002 (P1, dono `B-O6R-04b`).** Antes: ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.
   Dependência (B-O6R-01) **satisfeita** desde o #357 — é **frente livre**, e o porteiro pós-merge do #359
   a nomeia como tal ("B-04 e B-07 declaram dependência só do B-01").
@@ -8865,6 +8866,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** bloco mobile "portas" (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
 - **impacto vendável:** NAO — estoque mobile já não sincroniza (Ω6R)
 - **teste de encerramento:** todo `route` do catálogo existe no router; home renderiza `visibleModules`
+- **APPEND (2026-11-17, `B-O6R-04b`, PR #582; `D-O6R-04B-RETIRADA`, Parte B):** depois do 04b, `/inventory` passa a ser a 3ª rota apontada pelo mapa de `lib/core/bootstrap/bootstrap_repository.dart` que não existe no router, ao lado de `/checklists` e `/notifications`. A parte "Estoque sem porta" passa a ser a `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A dependência do `Ω6R-QUA-002` está cumprida. O dono e o critério desta pendência não mudam.
 
 ---
 
@@ -9485,6 +9487,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 ---
 
 ## P-SAN3-ROTEIRO-DEMO-OPERACAO (2026-09-11) — não existe roteiro de demonstração e operação (critério 12 do dono) — MÉDIA
+
+- **status:** FECHADA (2026-11-17, PR #599, squash de00d1fc, porteiro porteiro-599-cl LIBERADO COM RESSALVA · ITEM 44: FECHA): as 6 obrigatórias (Op-1, Op-1a, Op-5, Op-6, Op-8, Op-10) passaram no roteiro da main; nenhuma ADIADA vigente; o registro neutro da (d) existe (F9 v13, SHA-256 byte a byte). A linha status de baixo é a de antes, mantida por acréscimo.
 
 - status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
 - **fonte:** orquestrador do SAN3; plano SAN3 §4.1 item 44 e critério 12 do dono (§2 do plano).
@@ -10727,6 +10731,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **dono:** `B-O6R-04b` ou o bloco de frontend de estoque — a designar pelo orquestrador.
 - **bloqueia:** não bloqueia o gate por si; sem ela, o usuário vê erro genérico onde "tente de novo" resolve.
 - **teste de encerramento:** a web e o app recebem 503 `stock_busy`/`cycle_count_busy` e mostram mensagem de repetição (teste de adapter com o status real); `API_CONTRACTS.md` registra os dois códigos.
+- **APPEND (2026-11-17, `B-O6R-04b`, PR #582; Emenda 1 §3.3 do plano):** a parte do app, no envio de material, está feita: o 503 do razão sobe como 503 da chamada (`src/modules/mobile/mobile-inventory-sync.ts`), e o app devolve a ação a "pendente", sem gastar tentativa, com "Servidor ocupado; o envio será refeito." (`mobile/flutter_app/lib/core/sync/inventory_sync_replay_service.dart`; teste RC4(5) de `test/core/sync/bmaterial_replay_test.dart`). O app trata pelo status 503, não pelo código (`stock_busy` = 0 em `lib/`). Faltam a web (0 tratamento em `frontend/src`), a contagem e o registro dos dois códigos no contrato. O `B-O6R-04b` sai da alternativa de dono; o dono do que falta continua **a designar (inalterado)**, e a sugestão do plano é o `B-INV-CONTAGEM`.
 - **APPEND (2026-09-20, ciclo 2 do `B-O6R-04a`, risco R30 do plano) — um segundo caminho de erro chega aos mesmos consumidores.** O C2-04 fechou a classificação de violação de unicidade pela **identidade do índice** (`isUniqueViolationOf`): violação de um índice que os wrappers de V3/V4/V5 **não** conhecem deixa de virar "já estornado"/`undefined` de sucesso silencioso e **propaga**. Medido no ciclo 2 (C10′): com um índice único alheio sobre `stock_movements`, `removeExitForSource` e `reverseMovement` **rejeitam** e o chamador fica sabendo — antes devolviam sucesso com o saldo em 7 onde devia ser 10. Consequência para esta pendência: `src/modules/fuel-logs/fuel-log.service.ts:575` e `src/modules/maintenance-orders/maintenance-order.service.ts:720` (módulos FORA do escopo deste bloco) passam a poder receber **exceção** onde recebiam `undefined`; sem `statusCode`, o `sendRouteError` responde **400 com a mensagem crua** (a classe transversal já registrada nas notas deste arquivo). É o comportamento fail-closed desejado — nunca 2xx sobre estorno que não aconteceu — mas o texto de negócio dessa recusa entra no mesmo teste de encerramento acima. Hoje o caminho só ocorre com índice único alheio: os três índices conhecidos estão pinados ao catálogo pelo teste C9.
 
 ## P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os três códigos novos da contagem — MÉDIA
@@ -11319,6 +11324,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 7. "Onde está" só aparece dentro de Editar (`InventoryItemFormModal.tsx:206-227`), com o botão exigindo `inventory_items:update` (`EstoquePage.tsx:705`): o Operador, que movimenta, nunca vê onde o estoque está.
 8. Depois de Vincular ou Saída na janela do item, a lista não recarrega o saldo (`ItemMovimentacaoTab.tsx:85-92`).
 9. O app de campo lê um estoque em memória, semeado com 3 itens fixos (`src/modules/mobile/mobile-inventory-sync.ts:99-100`, `:503-509`, `:537-560`). **Já registrado:** é o `Ω6R-QUA-002` (P1), item 31 do gate, bloco `B-O6R-04b`.
+   - **APPEND (2026-11-17, `B-O6R-04b`, PR #582):** resolvido pelo D1 do 04b. O estoque em memória e a semente saíram do servidor (S3), e a rota de disponibilidade responde 404 (S1). Os outros itens desta pendência não mudam.
 10. O menu da Operação de Campo e do Técnico mostra Estoque sem `inventory_items:read` (`appSidebarNav.ts:181` × `catalog.ts:628-675`, `:912-962`) — o mesmo achado do inventário de fluxos (#438).
 11. RBAC × catálogo divergem no Estoque: `RBAC_MATRIX.md:47` dá só leitura ao Gestor e o `catalog.ts:529-537` dá tudo; ao Técnico a matriz dá "consume/confirm" e o catálogo nada.
 12. A busca da Contagem procura pelo identificador interno da sessão (`EstoquePage.tsx:1134`).
@@ -11972,6 +11978,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **escopo:** pre-existente (rotas do 07a/Ω3, anteriores ao bloco).
 - **dono:** `B-SAN3-23` ou bloco novo de escopo de leitura.
 - **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
+- **Apenso 2026-11-17 (crítica da Emenda 1 do B-GUI-D1, achado A3, reproduzido):** a gravidade sobe para **ALTA** e o dono passa a `B-WO-LEITURA-TECNICO` (item 71 do portão, `D-DONO-1711-ITEM-71`). Medido: um técnico não atribuído enumera OS alheias por `GET /operations/dispatches` e lê, pelo detalhe, a senha do residencial (`access_code`) e a placa inteira, com 200 — contraria o `RBAC_MATRIX.md:45`.
 
 ## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
 - status: FECHADA (2026-11-15, PR do `B-SAN3-16`, ramo `feat/mobile-fila-os-16`): os 2 tipos sem replay (`approval_request`, `unable_to_start`) passam a sair (A1, A2) e, sem forma de sair, viram erro visível com Descartar (R2, R7); o terceiro, `work_order_material.add`, fechou no #551. Antes: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA, sem o `work_order_material.add`, que saiu dela com o `B-MATERIAL-REENVIO` (PR #551).
@@ -12199,6 +12206,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `analysis_options.yaml` e `flutter analyze` em "No issues found!"; vermelho-controle: descartar uma `Future` num
   handler e ver o analisador acusar.
 - **Portada do ramo `fix/mobile-work-order-contracts` (`a24f58b5`) em 2026-11-02** pelo 1º PR do corte do `B-O6R-11` (emenda 2 §3 R6): texto acima verbatim; os números de linha valem para aquele ramo. O PR #388 fecha sem merge e o ramo fica preservado.
+- **APPEND (2026-11-17, `B-O6R-04b`, PR #582; `D-O6R-04B-RETIRADA`, Parte C):** os 4 sítios de `features/inventory/ui/stock_entry_screen.dart` e `stock_exit_screen.dart` saíram com as telas. Medido no ramo do 04b (head da F4, com a `main` `00e46347` integrada), com `discarded_futures: true` temporário e revertido: `flutter analyze` dá **16 infos em 11 arquivos**, 0 em `features/inventory`. A conta não cai para 12 porque blocos posteriores à medição de 19/09 somaram sítios: `core/appearance/app_appearance_providers.dart:70`, `features/prestador/ui/prestador_service_screen.dart:43,44`, `shared/ui/sync_screen.dart:432` e um segundo em `features/work_orders/ui/work_order_execute_screen.dart` (`:299,314`).
 
 ## P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica conflict — BAIXA
 - status: ABERTA — PARCIAL: a linha de material foi resolvida pelo `B-MATERIAL-REENVIO` (PR #551); a linha da OS segue com o dono.
@@ -13007,7 +13015,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## Errata dos apensos B-SAN3-10b — Emenda 3 (2026-11-04)
 
 - **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** permanece PARCIAL neste PR. Op-1, Op-1a, Op-5 e Op-6 passaram; Op-8
-  mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado.
+  mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado. *(Fechada em 17/11 pelo #599 — porteiro-599, ITEM 44 FECHA: a F4 passou em 16/11 (F9 v13, `d00449af`), e Op-8, Op-10 e F3 passaram no 44-B3 em 17/11; nenhuma ADIADA vigente.)*
 - **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** a recuperação foi repetida com o comportamento real da
   migração: aborto P0001, frase nomeada de duplicidade e censo inalterado.
 
@@ -13032,6 +13040,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-SYNC-ESTOQUE-TIPOS (2026-11-04) — tipos de ação de estoque do app não batem com os do servidor — ALTA
 
+Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco dono é o B-O6R-04b; fechada por este PR (S6 verde; MS6 e MA3 vermelhas).
+
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`) · **dono:** `B-O6R-04b`, pela designação que a Emenda 1 do plano recomendou (§9, item 1) e que a `D-O6R-04B-RETIRADA` registra (Parte B; a confirmação do dono de 14/11 21:08 cobre as recomendações do plano e das emendas) — leitura do dev, declarada: se o orquestrador não ratificar a designação, esta linha volta a ABERTA e o resto fica como apenso. O conjunto único entre app e servidor passa a ser o material (`work_order_material.add` e `.remove`): o caso S6 de `tests/bo6r04b-estoque-sem-memoria.test.ts` lê os tipos que o app conhece (`api_contracts.dart`) e os que o replay envia, e fica vermelho se um lado divergir (MS6 no servidor, MA3 no app). Os dois tipos legados saem da rota "aguarda" de `sync_action_routing.dart` e viram "sem envio", com a frase própria (Q1, Q2); `syncActionAwaitingOwner` fica vazio. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
 - **fato medido:** o app envia `inventory_entry.create`, `inventory_exit.create` e `work_order_material.add`; o servidor só aceita `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` (`src/modules/mobile/mobile-inventory-sync.ts:6`). Re-medido em `origin/main@0c3c7826`: `inventory_entry.create` em 3 arquivos de `mobile/flutter_app/lib` e em 0 de `src`.
 - **relação:** item 31 do portão (`Ω6R-QUA-002`, estoque no app não sincroniza).
@@ -13591,7 +13602,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS08C-NOTA-DA-BAIXA-MANUAL (2026-11-11) — baixa/estorno manuais sem intenção de nota, e o PASSADO sem nota — ALTA (bloqueia ligar o provedor de NOTA)
 
-- **status:** ABERTA · **escopo:** `statements/statement.service.ts` (`recordManualPayment`, `reverseManualPayment`) e o ato de ligar o provedor de nota (nasce no 08c) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** `statements/statement.service.ts` (`recordManualPayment`, `reverseManualPayment`) e o ato de ligar o provedor de nota (nasce no 08c) · **dono:** `B-ASS-08c`.
+- **fechamento:** (1) a varredura de recuperação (`recoverInvoiceIntents`, sob a trava do demonstrativo, com o corte do dono `2026-11-11T09:43:45Z`, no despacho antes do claim, só com provedor de nota ligado, e falha fechada para as emissões: `invoice_sweep_failed`) — VR1 a VR6, VR-P12, VR-SQL, VR-OFF, VR-PERF (`tests/ass-08c-varredura-db.test.ts`); os pagos antes do corte no backlog (`before_cutoff`, BL1); (2) a baixa manual que quita grava a `invoice_issue` na MESMA transação (NOTA-01) — NM1 a NM3, NM-WH, NM-WH-ORDER (`tests/ass-08c-nota-manual-db.test.ts`); o estorno manual segue a Q3 = (a) com os 3 cuidados — EM1 a EM8 (`tests/ass-08c-estorno-manual-db.test.ts`); T-LOCK-2 verde com os cenários `service.recordManualPayment.invoice` e `service.reverseManualPayment.invoice`.
 - **origem:** auditoria do topo do #530 (I9) e `crit-530-cl` CRIT530-03 (medido: F1-c, baixa manual que quita → outbox vazia, nenhuma nota). Anterior ao bloco (B-ASS-04). Nenhuma nota pode ser emitida antes do 08c (`evaluateEnablePreconditions` sem chamador, medido em `6e236f4e`), logo o dano nasce no dia de ligar. Ajustes da rodada 2 do crítico do plano (`crit-530-r2`, CRIT530R2-02 e CRIT530R2-06), incorporados abaixo.
 - **teste de encerramento (cobre o PASSADO e o futuro):**
   - (1) VARREDURA DE RECUPERAÇÃO, pré-condição de QUALQUER forma de ligar o provedor de nota (a rota de ligar, e também o caminho que hoje é o único — SQL direto em `billing_provider_configs`: a varredura não pode depender só da rota; por exemplo, o despacho recusa emitir até a varredura ter rodado para o provedor ligado). Todo demonstrativo com `status = 'paid'`, sem nota viva nem autorizada, e sem linha `invoice_issue` VIVA (não excluir o pago cuja única `invoice_issue` é TERMINAL — `NEEDS_REVIEW statement_not_paid` ou `SENT` de nota cancelada/rejeitada —, CRIT530R2-02), com `paid_at` no corte escolhido pelo dono (pergunta 2 do plano v2 do #530), ganha 1 intenção `invoice_issue` com o `seq` seguinte. O INSERT da intenção acontece DEPOIS de travar o demonstrativo (`FOR NO KEY UPDATE`/`FOR UPDATE`) na mesma transação (CRIT530R2-06: medido pelo crítico na rodada 2 que um INSERT da mesma chave fora da trava fecha ciclo com a reversão e dá 40P01), com teste de barreira no molde do T-INTX-9b. Com uma baixa manual que quitou ANTES da varredura e uma quitação manual depois de parcial do provedor, ligar o provedor deixa 1 `invoice_issue` para cada; demonstrativo fora do corte aparece numa listagem de conferência, sem intenção. Repetir a varredura não duplica.
@@ -13604,25 +13616,29 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS08C-REEMISSAO-APOS-REPAGAMENTO (2026-11-11) — repagar depois de um estorno total não gera intenção de nota — ALTA (bloqueia ligar o provedor de NOTA)
 
-- **status:** ABERTA · **escopo:** a intenção de emissão na 2ª transição para `paid` (`statement-settlement.service.ts`, `#issueIntent`, que hoje grava `invoice_issue:<id>:1` com `ON CONFLICT DO NOTHING`) e a rota `/invoice` (G10, `seq + 1`) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** a intenção de emissão na 2ª transição para `paid` (`statement-settlement.service.ts`, `#issueIntent`, que hoje grava `invoice_issue:<id>:1` com `ON CONFLICT DO NOTHING`) e a rota `/invoice` (G10, `seq + 1`) · **dono:** `B-ASS-08c`.
+- **fechamento:** a intenção nasce com o `seq` seguinte (NOTA-SEQ, `writeInvoiceIssueIntentInTx`), depois da trava, no caminho do provedor e no manual — RE1 e RE2 (`tests/ass-08c-nota-manual-db.test.ts`), RE1-man (`tests/ass-08c-estorno-manual-db.test.ts`); M17 vermelha.
 - **origem:** conserto do #530 e a rodada 2 do crítico (`crit-530-r2`, CRIT530R2-02, medido: R2-REPAY → `paid`, 2 pagamentos, nenhuma nota, a linha `invoice_issue` que sobra diz `NEEDS_REVIEW statement_not_paid`). Depois de um estorno total, o repagamento por outra cobrança leva o demonstrativo a `paid`, e a intenção `invoice_issue:<id>:1` já existe (terminal) → nada nasce. GRAVIDADE SUBIDA de BAIXA para ALTA pelo requisito da rodada 2 do crítico (a alternativa a implementar a reemissão neste conserto); só é alcançável com o provedor de nota ligado, por isso bloqueia ligá-lo.
 - **teste de encerramento:** repagamento depois de estorno total → 1 `invoice_issue` VIVA com o `seq` seguinte (ou a regra escolhida no 08c, com teste dono), gravada DEPOIS de travar o demonstrativo na transação da baixa (CRIT530R2-06), com barreira no molde do T-INTX-9b; a varredura da `P-ASS08C-NOTA-DA-BAIXA-MANUAL` também alcança o caso.
 
 ## P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO (2026-11-11) — `invoice_cancel` em `NEEDS_REVIEW invoice_stuck_processing` não tem saída no produto — MÉDIA (bloqueia ligar o provedor de NOTA)
 
-- **status:** ABERTA · **escopo:** `outbox/invoice.dispatch.ts` (o teto de 72 h do cancelamento), `outbox.prisma.ts` (`retry` só reabre `FAILED`) e a tela/rota de revisão da outbox · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** `outbox/invoice.dispatch.ts` (o teto de 72 h do cancelamento), `outbox.prisma.ts` (`retry` só reabre `FAILED`) e a tela/rota de revisão da outbox · **dono:** `B-ASS-08c`.
+- **fechamento:** a saída já existia desde o 08c1b (`/resolve` → `FAILED`, `/retry` → `PENDING`, e o despacho reconsulta antes de cancelar); o teste-dono NP1 (`tests/ass-08c-nota-presa-db.test.ts`) prova o caminho inteiro com o demonstrativo travado primeiro, e a M19 (o `resolve` sem as linhas de nota) o deixa vermelho.
 - **origem:** rodada 2 do crítico (`crit-530-r2`, CRIT530R2-03). O conserto da J-530 já reconsulta a nota antes de ir a revisão (T-INTX-11f): só vai a `NEEDS_REVIEW invoice_stuck_processing` a nota que o provedor AINDA diz processando depois de 72 h (T-INTX-11e). Mas nenhum `UPDATE` em `src` tira uma linha de `NEEDS_REVIEW`, e o `retry` só reabre `FAILED`: se o provedor autorizar depois, a nota fica de pé sobre receita estornada sem caminho de conserto.
 - **teste de encerramento:** a linha `invoice_cancel` em `NEEDS_REVIEW invoice_stuck_processing` volta a `PENDING` por uma ação com dono (rota de revisão ou job que a reconsulta), travando o demonstrativo primeiro; com a nota autorizada pelo provedor depois do teto, a ação cancela a nota (1 `DELETE`, nota `cancel_pending`/`cancelled`); teste dono `-db` e a mutação "sem a saída" vermelha.
 
 ## P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO (2026-11-11) — nota `pending` que o provedor recusou por validação fica pendente para sempre — BAIXA
 
-- **status:** ABERTA · **escopo:** `outbox/invoice.dispatch.ts` (o `catch` de `InvoiceProviderError` na emissão devolve `needs_review` sem `markRejected`) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** `outbox/invoice.dispatch.ts` (o `catch` de `InvoiceProviderError` na emissão devolve `needs_review` sem `markRejected`) · **dono:** `B-ASS-08c`.
+- **fechamento:** o erro de validação na emissão deixa a nota `rejected` pelo CÓDIGO e a linha `NEEDS_REVIEW` (NOTA-VAL, `outbox/invoice.dispatch.ts`) — NV1 e NV2 (`tests/ass-08c-nota-validacao.test.ts`), M20 e M20b vermelhas; o demonstrativo pago aparece no backlog como `needs_review` (BL1) para a reemissão pelo `POST …/statements/:statementId/invoice` (IN1). A retentativa reconsulta antes de reenviar (NOTA-RETRY; NR1, NR2), para uma duplicidade com texto não reconhecido nunca virar nota rejeitada.
 - **origem:** rodada 2 do crítico (`crit-530-r2`, CRIT530R2-01, a mesma classe, lida por código; anterior ao conserto). Com o demonstrativo pago, a nota fica `pending` sem nota no provedor e a linha `invoice_issue` em `NEEDS_REVIEW`. Se houver estorno, o conserto da J-530 a resolve (o cancelamento reconsulta no teto e a marca rejeitada, porque nunca chegou ao provedor); sem estorno, ela só fica visível.
 - **teste de encerramento:** erro de validação na emissão deixa a nota `rejected` com o motivo (ou a regra do 08c, com teste dono), e o demonstrativo pago aparece para a reemissão.
 
 ## P-ASS08-ZUMBI-ORFA-NOTA (2026-11-11) — trabalhador vivo além do tempo de órfã ainda pode emitir uma nota que o registro deu por abandonada — BAIXA
 
-- **status:** ABERTA · **escopo:** `invoice.dispatch.ts` (o lease da linha `PROCESSING`) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** `invoice.dispatch.ts` (o lease da linha `PROCESSING`) · **dono:** `B-ASS-08c`.
+- **fechamento:** a posse da linha vem do despacho e é conferida logo antes do `port.issue` (LEASE-03; `lease_lost`, 0 envio) — L4 (`tests/ass-08c-lease-db.test.ts`), M21 vermelha.
 - **origem:** conserto do #530 (plano v2 §3.4). Risco anterior ao conserto, que o desenho da órfã de hoje já aceita; o conserto não o piora.
 - **teste de encerramento:** conferência de lease (`claimed_by` + `attempt_started_at`) antes do `port.issue`, ou reconciliação que adota nota autorizada no provedor sem linha viva nossa e enfileira o cancelamento se o demonstrativo não estiver `paid`.
 
@@ -13770,7 +13786,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CONF530-02 (2026-11-11) — comentário de `StatementInvoiceRepository.beginIssue` desatualizado — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); `src/modules/subscription-billing/invoices/invoices.repository.ts:45` · **dono:** `B-ASS-08c` · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); `src/modules/subscription-billing/invoices/invoices.repository.ts:45` · **dono:** `B-ASS-08c` · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **fechamento:** o comentário de `invoices/invoices.repository.ts` diz `StatementNotPaidError` (CA-23).
 - **origem:** CONF530-02 da conferência `conf-530-cl`; dono `B-ASS-08c` pelo porteiro do #530 (R1). Mesma classe da `P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA`.
 - **fato:** o comentário diz que a nota nova sobre demonstrativo não pago lança `InvoiceProviderError("statement_not_paid")`, mas o código (Prisma e dublê) lança `StatementNotPaidError` (o desvio declarado (a) do dev). Sem efeito em execução: o único chamador trata as duas classes.
 - **critério de encerramento:** o comentário diz `StatementNotPaidError`.
@@ -13836,7 +13853,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **nota do `B-USERS-SEG-DESATIVADO` (dev `dev-users-desat-cl`, 2026-11-11):** o bloco NÃO muda o que a suspensão bloqueia (residual 6 do contrato, `API_CONTRACTS.md`). A conferência nova do portão (`src/modules/auth/services/session-liveness.service.ts`) não lê `tenants.status`; se a resposta do dono for "tudo", é nela que a junção com `tenants` entra, uma vez por requisição.
 ## P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA (2026-11-11) — o documento e um comentário dizem "nota autorizada", e o código cancela a nota viva — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530, defasados pelo conserto da J-530); `docs/subscription-billing.md` ("estorno total ou chargeback com nota **autorizada** → `invoice_cancel`") e o comentário `src/modules/subscription-billing/statements/statement-settlement.service.ts:151` ("com nota `authorized`") · **dono:** `B-ASS-08c`, junto da `P-CONF530-02` (a fonte) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530, defasados pelo conserto da J-530); `docs/subscription-billing.md` ("estorno total ou chargeback com nota **autorizada** → `invoice_cancel`") e o comentário `src/modules/subscription-billing/statements/statement-settlement.service.ts:151` ("com nota `authorized`") · **dono:** `B-ASS-08c`, junto da `P-CONF530-02` (a fonte) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **fechamento:** o comentário do `applyReversal` (`statement-settlement.service.ts`) e o `docs/subscription-billing.md` dizem "nota viva (pendente, autorizada ou com cancelamento pendente)", com a ressalva medida no código: com o cancelamento já pendente, não nasce outro (CA-23).
 - **origem:** R4 do porteiro `porteiro-530` (LIBERADO COM RESSALVA; `revisoes/porteiro-530-parecer.md`, fora do repositório).
 - **fato:** o código cancela a nota VIVA: `statement-settlement.service.ts:214` (`findLiveInvoice`) e `statement.prisma-runtime.ts:345` (`status IN (pending, authorized, cancel_pending)`). O documento promete menos do que o código faz, então não há promessa falsa.
 - **critério de encerramento:** o documento e o comentário dizem "nota viva" (pendente, autorizada ou com cancelamento pendente).
@@ -14190,6 +14208,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-ESTOQUE-MODULO-SEMENTE (2026-11-11) — o módulo de estoque do app tem uma segunda semente de 8 peças, sem guarda de modo remoto — MÉDIA
 
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`) por remoção, com o dono e o critério emendados pela `D-O6R-04B-RETIRADA` (Parte B): o dono passa a ser o `B-O6R-04b`, e o critério passa a ser "o módulo não existe (A3) e o T-A8 (ii) roda sem a linha `inventory_repository.dart: 8`". As duas coisas valem: `lib/features/inventory` não existe, e a linha saiu do T-A8 (ii) de `bsan315_estoque_real_test.dart`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **escopo:** `pre-existente` (`mobile/flutter_app/lib/features/inventory/**` está no PROIBIDO do `B-SAN3-15a`) · **dono (proposto pelo plano):** o bloco que abrir a porta `/inventory` do app, o mesmo da `P-MOBILE-CATALOGO-MODULOS-INERTE` · **bloqueia:** não hoje (o módulo não tem porta e não sincroniza, Ω6R-QUA-002); passa a bloquear no dia em que a porta abrir.
 - **fato (plano v2, E1):** `features/inventory/data/inventory_repository.dart` tem 8 literais `IT-001`…`IT-008` e `load({bool seedIfEmpty = true})`, e o provider não tem `allowSeed…` para o modo remoto.
 - **origem:** crítica r1 do plano do `B-SAN3-15` (A-02), lateral.
@@ -15369,6 +15388,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram na fila com tipos que o servidor não conhece — ALTA
 
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`), com o critério emendado pela `D-O6R-04B-RETIRADA` (Parte A, 2): "nenhuma tela do app enfileira ação de estoque sem rota; ação antiga aparece com saída; não há G3". Medido: não há produtor dos dois tipos em `lib/` (A1, lista fechada); a ação antiga vira envio não concluído, com Descartar (Q1 a Q3); G2 e G3 saíram de `mobile_gates.dart` e o T4.1 de `tests/mobile-gate-chave-catalogo.test.ts` fecha o conjunto em `G1, G1b, G4`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (as telas e a fila são de blocos anteriores; o `B-MOBILE-GATE-CHAVE` só põe o gate nelas) · **dono:** `B-O6R-04b` (item 31; nasce depois do 66, e reaponta o G3 para a ação real) · **bloqueia:** não o 66.
 - **origem:** §2.8 do plano v1 do `B-MOBILE-GATE-CHAVE`, com o texto corrigido pela abertura (A2).
 - **fato (medido em `d2737339`):** o replay de estoque existe (`lib/core/sync/inventory_sync_replay_service.dart:148`), mas só envia `work_order_material.add` e `work_order_material.remove` (`:198-199`). As ações `inventory_entry.create` e `inventory_exit.create`, que as telas Nova Entrada e Nova Saída enfileiram, não têm tipo no servidor (`supportedActionTypes` de `src/modules/mobile/mobile-inventory-sync.ts`: `inventory.reserve`, `inventory.consume`, `inventory.shortage_report`).
@@ -15381,6 +15401,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** §2.5 do plano v1 do `B-MOBILE-GATE-CHAVE`.
 - **fato:** `ModuleResolver` (`lib/core/modules/module_resolver.dart`) é o único leitor de `requiredPermissions` e de `_kNavigationModules[*].perms`, e nenhum widget de produção o usa (só `test/core/resolvers_test.dart`). O `B-MOBILE-GATE-CHAVE` trocou as chaves inventadas desses mapas pelas do catálogo, sem ligar o resolvedor.
 - **critério de encerramento:** ligar o resolvedor à navegação (com a regra de `MobileGates`) ou apagá-lo, com o mapa.
+- **apenso (2026-11-17, `B-O6R-04b`, PR #582):** o mapa do bootstrap ainda aponta o módulo de estoque para `/inventory` (`lib/core/bootstrap/bootstrap_repository.dart`), rota que o 04b removeu. Nenhuma tela lê o campo, e o 04b não toca `core/bootstrap/**` (PROIBIDO do plano).
 
 ## P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o formulário da vistoria para quem não pode responder — MÉDIA
 
@@ -15392,6 +15413,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre por link — BAIXA
 
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`) por remoção (`D-O6R-04B-RETIRADA`, Parte A, 3): a tela Estoque deixou de existir, e os dois roteadores não têm rota `/inventory` (A2, com a MA2 da Emenda 1.3). A porta do estoque real do usuário fica na `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`inventory_list_screen.dart` nasceu em `e79616aa`, 13/06/2026; `git grep` de `go('/inventory')`/`push('/inventory')` dá 0 em `729718fe` e no objeto; o plano v1 §2.5 já media "Estoque: nenhuma entrada de navegação") · **dono:** `B-O6R-04b` (item 31) · **bloqueia:** não.
 - **origem:** achado C1-02 da cadeira C1 da J-561, triado como pendência pela ata da J-561.
 - **N e forma:** 1 tela. `/inventory` tem rota registrada, o módulo `inventory` existe e o servidor autoriza 7 perfis (G2), mas nenhum item de navegação do app a abre.
@@ -15555,7 +15577,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 sai sem a permissão de rede — BAIXA
 
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o conserto é o #499, `8d7a99ff`, de 04/11; o
-  bloco não toca `mobile/**`) · **dono:** `B-SAN3-10b` (o texto do Op-10 do `docs/ROTEIRO-DEMO-E-OPERACAO.md`) ·
+  bloco não toca `mobile/**`) · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era o texto do Op-10 do `B-SAN3-10b`, que se encerra — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** ·
   **bloqueia:** não.
 - **origem:** acréscimo do coordenador (44-B1) na Emenda 1 do `B-SAN3-10b-F4-SEED-ISOLADO` (§B1.5), fora do repositório;
   registrada pela F0b.
@@ -15575,7 +15597,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a migração `20260868000000_add_auth_identities`
   é de 2026-08-19, `0a398246`; o texto "o script do papel **não** concede este EXECUTE" entrou no #405, `a9fbe283`,
   2026-10-09) · **classe:** lacuna de operação, **não** defeito de código: o produto falha fechado e avisa · **dono:**
-  `B-SAN3-10b` (o roteiro de operação, item 44 do portão), pelo PR de registro do `B-SAN3-10b-F4-SEED-ISOLADO` (F10) ·
+  `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era o roteiro de operação do item 44 pelo `B-SAN3-10b`, que se encerra — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** ·
   **bloqueia:** a F9 e o 44-B3 do `B-SAN3-10b-F4-SEED-ISOLADO` até o passo da Q-E11-1 rodar com o par medido.
 - **origem:** Emenda 1.1 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), fora do repositório; registrada pela F0b.
 - **N e forma (medido na `main`):** 1 função, `public.auth_login_candidates`, com `REVOKE ALL … FROM PUBLIC` (1 ocorrência
@@ -15705,21 +15727,21 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ROTEIRO-OP10-ASSUMIR-DESCARTAR (2026-11-14) — o Op-10 do roteiro não cita "Assumir" nem avisa para não tocar "Descartar" na ação da versão anterior do app — MÉDIA (texto)
 
-- **status:** ABERTA · **gravidade:** MÉDIA (texto; o técnico pode perder o cancelamento) · **escopo:** `pre-existente` (o texto do roteiro) · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 (`feat/demo-seed-isolado`) ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** MÉDIA (texto; o técnico pode perder o cancelamento) · **escopo:** `pre-existente` (o texto do roteiro) · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** · **PR-alvo:** o PR #565 (`feat/demo-seed-isolado`) ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma (diário do ensaio):** no aparelho do caso §B1.5 (o app de antes da separação por usuário), a primeira seção que aparece em Sincronização é "Ação da versão anterior do app — sem usuário", com **Descartar** e **Assumir**; o envio só acontece depois de **Assumir**. O Op-10 manda procurar "Envio não concluído", não cita "Assumir" e não diz para não tocar "Descartar" nessa seção.
 - **critério de encerramento:** o Op-10 descreve a seção, manda tocar "Assumir" e avisa para não tocar "Descartar" nela.
 
 ## P-ROTEIRO-OP10-OS-PAUSADA (2026-11-14) — o passo 4 do Op-10 não diz que a OS pausada precisa ser retomada antes de cancelar — BAIXA (texto)
 
-- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma:** com a OS pausada, o cancelamento do gestor pela rota do console deu `422 invalid_status_transition`, porque OS pausada não cancela; o cancelamento só valeu depois que o gestor retomou a OS.
 - **critério de encerramento:** o passo 4 diz para retomar a OS pausada antes de cancelar.
 
 ## P-ROTEIRO-OP10-SESSAO-APOS-ATUALIZAR (2026-11-14) — o roteiro não diz que a sessão do app antigo não sobrevive à atualização — BAIXA (texto)
 
-- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma:** depois de atualizar o app, a sessão do app antigo não vale mais, e o técnico precisa entrar de novo, com rede.
 - **critério de encerramento:** o roteiro diz isso no passo da atualização.
@@ -15985,7 +16007,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA (2026-11-15) — depois de quitar à mão (a cobrança é cancelada) e estornar a baixa manual, a conta volta a `closed` sem cobrança viva — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (o dinheiro não se perde; não bloqueia ligar) · **escopo:** fora do `B-ASS-08c1c` (`reverseManualPayment` e a Q3 são do 08c2) · **dono:** `B-ASS-08c2` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA (o dinheiro não se perde; não bloqueia ligar) · **escopo:** fora do `B-ASS-08c1c` (`reverseManualPayment` e a Q3 são do 08c2) · **dono:** `B-ASS-08c2` · **bloqueia:** não.
+- **fechamento:** decidido "deixar o botão, sem recobrar sozinho": depois de quitar à mão, cancelar a cobrança e estornar, a conta volta a `closed` e a cobrança sai pelo `/charge` do operador — EM4 (`tests/ass-08c-estorno-manual-db.test.ts`, pela rota `reverse`).
 - **origem:** CR-06 (a) do parecer r1 do crítico do `B-ASS-08c1c` (`crit-08c1c-cl`), decidida pela Emenda 1 §7 (a); registrada pela F12 do `B-ASS-08c1c` (`dev-08c1c-cl`).
 - **fato:** a baixa manual que quita cancela a cobrança aberta (`[EAGER-01]`); se a baixa for estornada depois (08c2), o demonstrativo volta a `closed` com `paidCents = 0`, a linha velha está `SKIPPED` e não há cobrança viva. O `/charge` passa.
 - **critério de encerramento:** o 08c2 decide e testa o que acontece com a cobrança depois do estorno manual (recobrar sozinho, ou deixar o botão e mostrar ao cliente que não há link), com o caso "quitou à mão → cancelou → estornou" no teste.
@@ -16565,7 +16588,8 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-BILLING-P2028-COMO-400 (2026-11-15) — 10 fechamentos concorrentes expiram (P2028) e a rota responde `400 invalid_request` — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (fail-closed para o dinheiro) · **escopo:** `pre-existente` (#507/#571) · **dono:** `B-ASS-08c2` · **PR-alvo:** o PR do 08c2 · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA (fail-closed para o dinheiro) · **escopo:** `pre-existente` (#507/#571) · **dono:** `B-ASS-08c2` · **PR-alvo:** o PR do 08c2 · **bloqueia:** não.
+- **fechamento:** a falha de banco do movimento do demonstrativo (P2028 de transação expirada, ou 55P03) vira `409 statement_busy`, repetível (STMT-BUSY, `statement.prisma-runtime.ts`); o pool esgotado ao abrir continua indisponibilidade — PB-1 e PB-2 (`tests/ass-08c-statement-busy.test.ts`, `tests/ass-08c-statement-busy-db.test.ts`), M-BUSY vermelha; o contrato dos movimentos do demonstrativo traz o 409 (`API_CONTRACTS.md`, seção `b-ass-08c2`). Ressalva medida: na rajada de 10 fechamentos de um demonstrativo NOVO os 10 expiram (409, nenhum 400); a causa provável é a pendência `P-08C2-CLOSE-POOL-PRESO` (dono 08c3), da Emenda 4.
 - **origem:** J-579, C2-05.
 - **critério de encerramento:** a falha de infraestrutura sai como 5xx (ou 409), não como pedido inválido, com teste.
 
@@ -16597,8 +16621,9 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-04B-ACTIONERROR-RAMO-MORTO (2026-11-15) — um ramo do `ActionError` do sync de estoque não é alcançado — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** `B-O6R-04b` (PR #582) · **PR-alvo:** o #582 ou o próximo PR que tocar esse sync · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco que tocar o sync do material (Emenda 1.2 §2; antes: `B-O6R-04b` (PR #582)) · **PR-alvo:** o próximo PR que tocar esse sync · **bloqueia:** não.
 - **origem:** Emenda 1.2 do 04b (15/11 21:23).
+- **fato (2026-11-17, `B-O6R-04b`, PR #582):** o ramo é o genérico de `actionErrorResult` em `src/modules/mobile/mobile-inventory-sync.ts` (erro que não é de rota → `rejected` `invalid_action`, "Unexpected error."). Depois do D1 e do D2, nenhum caminho chega a ele: o tipo sem dono lança o erro de rota (`unsupported_action_type`), e o material converte a falha que não é recusa em 500 fixo (`unexpectedMaterialFailure`, coberto pelo H4f de `tests/sec-log-http.test.ts`). O #582 não o remove: `actionErrorResult` é auxiliar do material, que o §5 do plano põe no PROIBIDO. O H4d foi reescrito para o caminho que sobra (os 3 tipos legados saem recusados sem ler a carga, 0 sentinela).
 - **critério de encerramento:** o ramo sai, ou ganha um caso que o alcance.
 
 ## P-APP-CONSENTIMENTO-SO-NO-APARELHO (2026-11-15) — o consentimento do app vale só no aparelho em que foi dado — BAIXA
@@ -16615,7 +16640,8 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-579-LINERULE-NAO-EXAUSTIVA (2026-11-15) — a `LineRule` das linhas `charge_create` não é exaustiva — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-ASS-08c1c` · **dono:** `B-ASS-08c2` · **PR-alvo:** o PR do 08c2 · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-ASS-08c1c` · **dono:** `B-ASS-08c2` · **PR-alvo:** o PR do 08c2 · **bloqueia:** não.
+- **fechamento:** as 3 decisões das linhas `charge_create` leem a ação por um `switch` com `default: return unreachable(action)` (ACTION-REFECHA, ACTION-EAGER, ACTION-REOPEN, `statements/statement-charge-lines.ts`) — LR-0 (a matriz 6 × 10 × 3 literal) e LR-1 (`tests/ass-08c-line-actions.test.ts`); M-ACAO (`tsc` com 3 TS2345 nos `default`) e M-ACAO-RT vermelhas.
 - **origem:** C2 refeita da J-579 (`j579-c2r-fechamento-cl`), C2R-01.
 - **critério de encerramento:** a tabela das linhas `charge_create` exaustiva por tipo (`Record` com `satisfies`), com mutação vermelha.
 
@@ -16744,11 +16770,56 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **acréscimo (registro de 17/11, `fix-593-m-cl`, na união com a `main`):** o registro de 17/11 tinha aberto a mesma pendência pelo registro do PR #588 (F0 a F7), com a nota "é provavelmente o que o dono viu no Pixel; a causa não foi medida"; as duas entradas viraram esta.
 - **critério de encerramento:** a lista vazia do servidor mostra o estado vazio, sem aviso de falha, com teste.
 
+## P-ASS08C-NOTA-COMPETENCIA-ANTERIOR (2026-11-17) — a nota de competência anterior ao mês corrente não foi provada no sandbox — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (HIPÓTESE fiscal) · **escopo:** `pre-existente` (R2-14 da Emenda 1 do v2) · **dono:** a homologação `P-ASS-SANDBOX-REAL` (ato do dono) · **bloqueia:** ligar a nota.
+- **origem:** plano de abertura do `B-ASS-08c2` (§3 e §12). A varredura e a reemissão emitem nota de um período já encerrado (a competência é o período do demonstrativo).
+- **critério de encerramento:** o sandbox emite uma nota de competência anterior ao mês corrente e o resultado vai ao diário antes de ligar a nota; o contador confirma a competência de mês anterior no município (recomendação de 13/11).
+
+## P-ASS08C2-TELA-AVISO-ESTORNO-CANCELA-NOTA (2026-11-17) — a tela do estorno manual ainda não avisa que a nota será cancelada — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `frontend` · **dono:** `B-ASS-10b` · **bloqueia:** não (sem a confirmação, o servidor recusa com `422 invoice_cancel_confirmation_required` e nada muda).
+- **origem:** plano de abertura do `B-ASS-08c2` (§12), cuidado 1 da Q3 = (a).
+- **critério de encerramento:** a tela do estorno mostra o aviso antes de confirmar e manda o `confirmInvoiceCancel`.
+
+## P-MOBILE-MEU-ESTOQUE-SEM-PORTA (2026-11-17) — o estoque real do usuário do app só abre de dentro de uma OS — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a tela do estoque do técnico, do `B-SAN3-15a`, exige `workOrderId`) · **dono:** `B-MOBILE-ESTOQUE-PORTA`, a abrir, fora do portão · **bloqueia:** não.
+- **origem:** D9 e P3 do plano do `B-O6R-04b` (respondida pela recomendação (a), `D-O6R-04B-RETIRADA`); nasce da `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO`, que fechou por remoção, e da parte "Estoque sem porta" da `P-MOBILE-CATALOGO-MODULOS-INERTE`.
+- **fato:** depois do 04b o app não tem lista geral de estoque. O estoque real do usuário é `GET /api/v1/mobile/technician/stock`, com a custódia escolhida pelo servidor e a permissão `inventory.read`, e a tela que o lê só abre de dentro de uma OS.
+- **o que a porta precisaria mostrar:** de quem é o estoque (a custódia), peça, código, unidade e quantidade disponível, a hora da última atualização, e os estados do §7 do `CLAUDE.md` (carregando, vazio honesto, erro, acesso não permitido, sem conexão com a lista salva, dado desatualizado).
+- **critério de encerramento:** a tela inicial do app tem a porta "Meu estoque", para quem tem `inventory.read` e o módulo `inventory` ligado, com teste; a tela passa pela maquete com 3 opções antes (`D-TELAS-TRES-OPCOES`, feita pelo Claude).
+
+## P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entrega sem cidade, estado e CEP — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o item da lista nunca levou `serviceCity`; o B-GUI-D1 acrescenta `destinationAddress` no mesmo molde) · **dono:** `B-GUI-15` ("Ir para a coleta" / "Ir para a entrega") · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.1 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toWorkOrderListDto` (`src/modules/work-orders/work-order.dto.ts`) manda `serviceAddress` e `destinationAddress`, sem `*City`, `*State` e `*ZipCode`. Sem a cidade, o botão do mapa pode levar o app de mapa ao lugar errado quando a OS não tem coordenada.
+- **critério de encerramento:** o `B-GUI-15` decide se a lista passa a mandar cidade, estado e CEP (aditivo), com teste, ou registra por que a coordenada basta.
+
+## P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo atendido chega ao app sem modelo e cor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o formulário da web, `frontend/src/modules/work-orders/components/WorkOrderForm.tsx`, só pede `vehicle` e `color` no socorro) · **dono:** `B-WO-FORM-VEICULO` (formulário web da OS com o veículo em campos próprios: placa, modelo, cor; backlog, sem plano ainda; ID dado na triagem da J-597, C3-N1) · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.2 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** numa OS de reboque criada pela web, `serviceDetails` só tem `plate`. Com o B-GUI-D1, `attendedVehicle.model` e `.color` saem `null`, e o cartão Veículo do detalhe fiel (B-GUI-FID1) mostra só a placa mascarada.
+- **critério de encerramento:** o formulário da web pede modelo e cor também no reboque, com teste.
+
+## P-OS-PLACA-NO-TEXTO-LIVRE (2026-11-17) — a placa digitada em texto livre chega à lista; dois residuais do filtro de placa no modelo e na cor do veículo atendido — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (subiu na triagem da J-597, C1-03) · **escopo:** `pre-existente` (a web aceita qualquer texto em `title`, `serviceAddress`, `destinationAddress`, `vehicle` e `color`; o B-GUI-D1 filtra na saída só modelo e cor) · **dono:** `B-WO-FORM-VEICULO`, o bloco de formulário da web que recebe a `P-OS-REBOQUE-SEM-MODELO-E-COR` · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1.1 §1.4 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toAttendedVehicleDto` (`src/modules/work-orders/work-order.attended-vehicle.ts`) anula o modelo ou a cor que traga uma placa (regra do check-in) ou a placa desta OS (dobrada). Passam, medidos: (1) duas placas no texto, nenhuma desta OS (`Uno ABC1234 e DEF5678`), que não mostra o fim desta OS, só perde minimização; (2) o fim sozinho (`Onix final 23`), que ninguém distingue de `Onix 2023` sem apagar modelo legítimo.
+- **fato (apenso da J-597, C1-03, 17/11):** a placa INTEIRA (com o fim) que a base digita num texto livre que não é modelo nem cor chega à lista de OS: por `title` e `serviceAddress` (antes do B-GUI-D1) e, desde o B-GUI-D1, por `destinationAddress`. O filtro do `toAttendedVehicleDto` cobre só `model` e `color`. Medido pela sonda da cadeira C1 (`probe-textolivre.mts`, OS com `title` `Reboque Onix ABC-1D23`, `serviceAddress` `Rua 1 (placa ABC1D23)`, `destinationAddress` `Patio, carro abc1d23`): no objeto `02009efe`, `title`, `serviceAddress` e `destinationAddress` dão `PLACA_INTEIRA`; com o `work-order.dto.ts` da `main`, `title` e `serviceAddress` dão `PLACA_INTEIRA` e `destinationAddress` está ausente. Não é capacidade nova (o detalhe já entrega a placa inteira aos mesmos papéis), mas o fim pode chegar à tela por um texto livre. A trava do servidor `assertFimNaoChegaPorTexto` (`tests/bguid1-dados-da-os.test.ts`) deixa `title` e `serviceAddress` de fora de propósito, até esta pendência fechar.
+- **critério de encerramento:** a web recusa placa nos campos de modelo e cor (o conserto de raiz) e a placa deixa de chegar à lista por `title`, `serviceAddress` e `destinationAddress` (recusa na entrada ou filtro na saída), com teste.
+
 ## P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor cancela a nota quando o pagamento dele é todo devolvido, mesmo com outro valor ainda pago no demonstrativo — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
+- **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `pre-existente` para o `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito: plano §4.7/§9 D-5, Emenda 1 §2.5; triagem da J-587, Emenda 7) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
 - **origem:** Emenda 1 do plano do `B-ASS-08c2` (§9, fora do repositório); a pergunta ao dono vai ao artefato quando o 08c3 começar.
 - **fato:** no estorno pelo provedor, a nota é cancelada quando aquele pagamento é todo devolvido, mesmo que o demonstrativo ainda tenha outro valor pago (o caso realista: parte paga pelo provedor, o resto à mão, e o provedor devolve a parte dele). A pergunta ao dono: (a) continuar cancelando, como hoje, ou (b) seguir a regra do estorno manual (só alerta, sem cancelar, até todo o dinheiro ser devolvido). Recomendação: (b). Sem resposta: (a).
+- **pergunta ao dono (o orquestrador a leva quando o 08c3 começar):** "Quando o Asaas devolve o pagamento dele, mas ainda sobrou dinheiro pago à mão no mesmo mês, a nota deve (a) continuar sendo cancelada, como hoje, ou (b) seguir a regra do estorno manual: só alerta, sem cancelar, até todo o dinheiro ser devolvido?" Recomendação: (b). Sem resposta: fica (a). O caso NÃO aparece no backlog: o demonstrativo não pago com a nota cancelada pelo estorno do provedor fica com `null`; a decisão de reemitir ou não é do dono.
+- **acréscimo (integração da `main` no PR #587, `dev-08c2-m-cl`, 17/11, na união):** o ramo do `B-ASS-08c2` tinha aberto a mesma pendência (datada de 2026-11-17, com a pergunta ao dono acima, literal); as duas entradas viraram esta. **Divergência registrada, não resolvida (§A2):** a entrada do ramo dizia `escopo: pre-existente` (caminho do provedor, da 08b) e `bloqueia: ligar a nota`; esta, da `main`, diz `dentro-do-bloco` e `bloqueia: não`. Fica o texto da `main` até o orquestrador decidir.
+- **acréscimo (triagem da J-587, Emenda 7 do `B-ASS-08c2`, 17/11, do orquestrador, fora do repositório; gravado por `fix-587-r-cl`, 18/11):** o escopo fica `pre-existente` (a evidência da C3 sustenta: o caminho do provedor é da 08b). E o texto da pergunta foi corrigido: dizia "Sem resposta: fica (a), e o caso aparece no backlog", e o caso não aparece (achado C2-02 da J-587, sondas em `revisoes/j587/votos/c2-sondas/`, fora do repositório). O demonstrativo PAGO cuja nota da época foi cancelada é outro caso e passou a aparecer no backlog como `needs_review` (C2-01, Emenda 7 §1). O campo `bloqueia` segue o da `main` (`não`); a divergência do `bloqueia` acima **foi fechada em 18/11 pelo orquestrador: `bloqueia: não`** — a reemissão pelo `/invoice` existe, e o caso do não pago fica para a decisão do dono.
 - **critério de encerramento:** a resposta do dono decide (a) ou (b), e o `B-ASS-08c3` implementa o caminho decidido com teste, antes de ligar a nota.
 
 ## P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA
@@ -16813,6 +16884,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA (disponibilidade, sem efeito em dinheiro: hoje são 10 respostas 409, repetíveis) · **escopo:** `pre-existente` para o `B-ASS-08c2` ("não é deste bloco", Emenda 4 §4) · **dono:** o próximo bloco que tocar o `close` (o `B-ASS-08c3`) · **gatilho:** esse bloco abrir · **bloqueia:** não.
 - **origem:** a 4ª leva do 08c2 (`dev-08c2-e4-cl`, head `d2cf41e9`), registrada pela Emenda 4 do 08c2 (`plano-B-ASS-08c2-emenda4.md` §4, do orquestrador, fora do repositório), 17/11.
 - **N e forma:** 10 fechamentos concorrentes de um demonstrativo novo → 10 respostas 409 por expiração em 5 s, repetível; o teste que acompanha é o PB-2 (a). **Causa provável, lida no código e ainda não medida pela contagem de conexões:** o `close` chama `inputs.resolve` com o cliente, e não com o `tx`, dentro da transação.
+- **N+1 (J-587, C1-NG2 e nota da C1, triagem da Emenda 7, 17/11):** mais 2 formas medidas, mesma família. (1) O PB-2 aceita só 200/409 e fica intermitente quando o pool do papel de runtime satura: a transação não abre (`Unable to start a transaction in the given time`), a rota responde `500 unknown_error` (`infra_down`, o caminho que o plano §4.14 e o PB-1 mandam manter), nada é gravado (0 demonstrativo, 0 fila, 0 auditoria) e o `close` seguinte fecha; sonda `SONDA500` com 10 seguradas → 10× 500. (2) O NM-X (`ass-08c-nota-manual-db`, `pendingInvoice`) sob a carga da lista inteira do `backend-postgres`: a baixa manual responde 409 (`statement_busy`, trava expirada) em vez de 201. Nenhuma asserção de dinheiro foi afrouxada para acomodar a saturação.
 - **critério de encerramento:** 10 fechamentos concorrentes → 1 fecha e 9 recebem 409, sem expirar, com teste.
 
 ## P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fila, e o despacho usa a 1ª como coleta — ALTA
@@ -16821,3 +16893,304 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** os achados das maquetes da 1ª onda (16/11 20:35, item (2)); a Emenda 1 do `B-GUI-02` (§8) a criou; a revisão r2 do plano `cx1-crit-gui02-e11` (Codex, VOLTA, A1 ALTA: aviso na tela não é controle) levou o conserto ao servidor, por decisão do orquestrador, declarada (17/11 11:3x), e a Emenda 2 (§5) a absorve (`plano-B-GUI-02-emenda1.md`, `plano-B-GUI-02-emenda2.md`, fora do repositório).
 - **N e forma:** 1 caminho do servidor: a vistoria incluída entra ao fim da fila (`order_index`), e o despacho toma a 1ª linha como coleta.
 - **critério de encerramento:** o servidor reconhece a coleta e a entrega pela etapa (`collection` sempre primária), com o T1 e o T7 do `B-GUI-02` verdes nas duas formas, memória e `-db`.
+
+## P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — o corte da varredura na composição em memória não é exercido por teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (produção roda em `prisma`; o mesmo limite no SQL é coberto pelos `-db`) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (fatias F7/F8), fora da leva julgada · **dono:** `B-ASS-08c3` (fatias F7/F8) · **bloqueia:** não.
+- **origem:** a pré-revisão `prerev-08c2-l6-cl` (achado L6-01, mutação própria ML6-b), 17/11; registrada pelo `dev-08c2-m-cl` na integração da `main` no PR #587.
+- **N e forma:** a composição em memória da varredura (`statement.repository.ts:408`, `<` vs `<=` no corte `paidAt` × `cutoff`) não é exercida por teste; a mutação ML6-b (`<` → `<=`) sobrevive 31/31 (`varredura-db` + `nota-manual-db`). Só os `-db` cobrem a varredura (a ML6-a, o mesmo limite no SQL, morre no VR4-linha). Risco: as duas composições (memória e `prisma`) derivarem.
+- **critério de encerramento:** um teste da composição em memória que fica vermelho com a ML6-b.
+
+## P-08C2-GSISO-ANTIGOS (2026-11-16) — o critério GS-ISO só vale para os arquivos de teste novos do 08c2; 6 antigos ficam sem `tenantIds` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (os 6 pontos estão em arquivos anteriores ao bloco) · **dono:** `B-ASS-08c3` · **bloqueia:** não.
+- **origem:** Emenda 3 do `B-ASS-08c2` (item 2, do orquestrador, 16/11, fora do repositório): "O comando literal dá 6, todos em arquivos anteriores ao bloco. O critério passa a valer só para os arquivos de teste NOVOS deste ramo: 4 de 4 com `tenantIds`. Os 6 antigos viram a pendência `P-08C2-GSISO-ANTIGOS` (BAIXA)." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 6 pontos do comando GS-ISO, em arquivos de teste anteriores ao bloco.
+- **critério de encerramento:** o comando GS-ISO dá 0 nos arquivos antigos (todos com `tenantIds`), ou cada um dos 6 fica declarado como aceite, com motivo.
+
+## P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — a reconsulta da nota não preenche o `provider_invoice_id` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-ASS-08c2`, fora do PERMITIDO dele (`#applyLookup`) · **dono:** `B-ASS-08c3` · **bloqueia:** não.
+- **origem:** Emenda 5 do `B-ASS-08c2` (item 1, do orquestrador, 17/11, fora do repositório): "o `provider_invoice_id` continua nulo depois da reconsulta. Para preenchê-lo seria preciso mexer em `#applyLookup`, que está fora do PERMITIDO. O plano passa a dizer "segue nulo" e a afirmar isso no NR1." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 1 caminho (`invoice.dispatch.ts`, `#applyLookup`, ramo `processing`). O NR1 (`tests/ass-08c-nota-retry-db.test.ts`) afirma o "segue nulo" depois da reconsulta (Emenda 7 §2); a mutação que preenche o campo nesse ramo o deixa vermelho.
+- **critério de encerramento:** a reconsulta grava o id da nota no provedor, e o NR1 passa a afirmar o id preenchido, com teste.
+
+## P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 do `B-SAN3-05` compara a porta com `includes` no log inteiro — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (teste do `B-SAN3-05`) · **dono:** o bloco de ferramentas de teste · **bloqueia:** não.
+- **origem:** Emenda 5 do `B-ASS-08c2` (do orquestrador, 17/11, fora do repositório): "O T15 compara a porta com `includes` no log inteiro e caiu 1 vez no run 44106675745, sem mudança de `src`." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 1 queda no CI (run 44106675745), sem mudança de `src`.
+- **critério de encerramento:** o T15 compara a porta por campo (não por substring no log inteiro), com teste.
+
+## P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da OS mas não lê os modelos — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (o catálogo de permissões; o `B-GUI-02` não muda o servidor de permissões, Emenda 1 §1) · **dono:** bloco próprio, `B-GUI-02p`, de servidor, com **junta completa** (permissão) e pergunta ao dono antes · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§1 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (conserto da J-596, achado C3-01).
+- **fato:** o `field_dispatcher` tem `field_dispatch:create` (grava o `PATCH /work-orders/:id/checklists`) e não tem `tenant_checklists:read`. Dar a ele essa leitura (só dos publicados, como a maquete recomenda) muda o catálogo, a `RBAC_MATRIX.md` e a `role_permissions` (migração de dados, `RBAC_MATRIX.md:154`). Enquanto não fechar, o despachante só vê o painel de vistorias em leitura, com a frase dele (o W2 do `B-GUI-02`).
+- **critério de encerramento:** o despachante lê os modelos publicados e escolhe a vistoria da OS, com a matriz, o catálogo e a `role_permissions` atualizados e a junta completa verde.
+
+## P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistoria já virou execução — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o DTO do detalhe da OS) · **dono:** `B-GUI-02s` (o DTO ganha um campo por linha; a allowlist §2.8 é revista) · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§4 e §8); registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** a tela só sabe, no nível da OS, se ela foi despachada (`checklistSnapshot` ou o evento `field_dispatch_created`). O selo "enviada" por linha da maquete aprovada fica de fora (`D-GUI02-SEM-SELO-ENVIADA`).
+- **critério de encerramento:** o detalhe traz, por linha, se a vistoria já foi enviada (sem chave de armazenamento nem dado interno, §2.8), e a tela mostra o selo.
+
+## P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** `B-GUI-02s` · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§8); registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** a linha do tempo só tem o `actorUserId`, que é opaco; a tela não mostra quem escolheu a vistoria.
+- **critério de encerramento:** o detalhe (ou a linha do tempo) traz o nome de exibição de quem incluiu, e a tela o mostra.
+
+## P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o ajuste que falha no meio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o backend de teste e de desenvolvimento) · **dono:** o `B-GUI-02s` (servidor), ou quem mexer no repositório em memória · **bloqueia:** não.
+- **origem:** Emenda 1.1 do `B-GUI-02` (R1, S1), `plano-B-GUI-02-emenda1.1.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** o `InMemoryWorkOrderRepository.applyChecklists` (`work-order.repository.ts:216-288`, medido na Emenda 1.1) não desfaz o que gravou quando falha no meio. No Prisma, a chamada é transação (R2, leitura de código). Afeta o backend em memória, que é o que o W4 usa.
+- **critério de encerramento:** o ajuste em memória é tudo ou nada, com teste de falha no meio.
+
+## P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o espelho antigo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (as OS em voo pela regra antiga) · **dono:** quem tocar o espelho; ou fica como está se a junta medir que nenhuma OS em produção está nesse estado (hoje não há produção) · **bloqueia:** não.
+- **origem:** Emenda 2 do `B-GUI-02` (§1.3 e §5), `plano-B-GUI-02-emenda2.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** uma OS já congelada com a coleta atrás (Entrega@0 + Coleta@1, congeladas pela regra antiga) mantém o `work_orders.checklist_id` antigo até a próxima escrita do conjunto ou o próximo despacho. A reatribuição já provisiona a coleta certa. Não há backfill, que o dono proibiu.
+- **critério de encerramento:** o espelho se acerta para essas OS, ou a junta mede que não há nenhuma nesse estado.
+
+## P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" numa OS enviada sem coleta, e o servidor recusa — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** a tela de vistorias (fora do conserto da J-596, que só muda o servidor) · **dono:** `B-GUI-02b`, bloco de backlog da tela de vistorias · **bloqueia:** não.
+- **origem:** Emenda 2.2 do `B-GUI-02` (§2), conserto do achado C1-01 da J-596, `plano-B-GUI-02-emenda2.2.md`, fora do repositório.
+- **fato:** com a Emenda 2.2, o servidor recusa a coleta em toda OS já enviada (409 `collection_after_dispatch`, `T10`). A tela continua com `collectionLocked = dispatched && collectionLine !== null` (`WorkOrderChecklistsPanel.tsx`): numa OS enviada sem linha de coleta, "Incluir coleta" aparece, e o operador recebe a frase do 409. O servidor é a autoridade (regra de ouro B.2.4).
+- **critério de encerramento:** a tela esconde "Incluir coleta" na OS enviada sem coleta e mostra a frase da OS enviada, com teste de tela.
+
+## P-WO-LEITURA-ID-EM-FROTA (2026-11-17) — `damages`, `fuel-logs` e `service-quotes` expõem ao técnico o `workOrderId` de OS alheia — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (rotas de frota, fora da OS) · **dono:** o `B-WO-LEITURA-TECNICO` (item 71 do portão; a pergunta da pendência seguinte) · **bloqueia:** o item 71.
+- **origem:** o censo do plano `B-WO-LEITURA-TECNICO` (17/11 14:2x, fora do repositório); a Emenda 1 acrescenta `expense-reports` e `inventory` ao conjunto.
+- **fato:** `damages`, `fuel-logs` e `service-quotes` expõem ao técnico o `workOrderId` de OS alheia; com a porta `getForRead` do item 71, esse id passa a dar 404, e a pendência fecha junto.
+- **critério de encerramento:** nas três rotas, o técnico não lê o `workOrderId` de OS alheia (404 do inexistente), com teste.
+
+## P-RBAC-TECNICO-LEITURAS-FORA-DE-OS (2026-11-17) — o catálogo dá ao técnico leitura da organização inteira em rotas fora da OS — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o catálogo de permissões × `RBAC_MATRIX.md`) · **dono:** pergunta de matriz para o dono (decisão do dono); depois bloco próprio · **bloqueia:** não o item 71, mas é a mesma família de leitura tenant-wide.
+- **origem:** o censo do plano `B-WO-LEITURA-TECNICO` (17/11 14:2x); reforçada pela crítica da Emenda 3 (a série por dia `operations/work-orders-timeseries`).
+- **fato:** o catálogo dá ao técnico leitura da organização inteira em `service_quotes` (com valores), `impound` (15 rotas de pátio), `damages`, `fines`, `maintenance_orders`, `fuel_logs`, `customers` e `operator-profiles`, e a contagem diária de `operations/work-orders-timeseries`. A matriz diz "Finance: none" e "Reports: field-scoped".
+- **critério de encerramento:** o dono decide o escopo de cada rota, e o catálogo/a matriz passam a refletir a decisão, com teste.
+
+## P-MOBILE-AVAILABILITY-TENANT-ID (2026-11-17) — `GET /mobile/inventory/availability` põe `tenant_id` no corpo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (contrato do app) · **dono:** bloco de estoque do app (o `B-O6R-04b` fechou no #582; fica para um bloco novo) · **bloqueia:** não.
+- **origem:** o censo do plano `B-WO-LEITURA-TECNICO` (§2.8), 17/11.
+- **fato:** `GET /mobile/inventory/availability` põe `tenant_id` no corpo, expondo o identificador externo de organização (regra de ouro B.2.8 da allowlist).
+- **critério de encerramento:** a rota deixa de pôr `tenant_id` no corpo, com teste.
+
+## P-DESPACHO-EX-TECNICO-MUTACAO (2026-11-17) — o ex-técnico ainda transiciona o despacho antigo, e a resposta 200 devolve o despacho inteiro — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (regra do alvo `D-07c-DESPACHO-ALVO`) · **dono:** o orquestrador leva a pergunta ao dono; depois bloco próprio · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-WO-LEITURA-TECNICO` (§8); a Emenda 2 (B4) mediu que a resposta 200 do `PATCH …/status` devolve o despacho inteiro (`workOrderId` + `observation`), e por isso é também um **canal de leitura** do despacho antigo.
+- **fato:** depois do re-despacho, o despacho antigo segue `accepted` e o ex-técnico ainda o transiciona (`PATCH …/status` 200, regra do alvo), enquanto a leitura dele passa a 404. Pergunta ao dono: o re-despacho encerra o despacho anterior, ou a mutação também passa a exigir "OS ainda é dele"? Premissa do Traccar (`B-TRC-01` lê `accepted_at`) a conferir.
+- **critério de encerramento:** a decisão do dono vira regra e teste (mutação do despacho antigo encerrada ou escopada).
+
+## P-NOTIF-DECISAO-EX-TECNICO (2026-11-17) — a exceção do ex-técnico no `API_CONTRACTS.md` precisa do apenso da decisão — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** registro (contrato) · **dono:** o `B-WO-LEITURA-TECNICO` (item 71) · **bloqueia:** não.
+- **origem:** Emenda 2 do `B-WO-LEITURA-TECNICO` (B4), 17/11.
+- **fato:** a frase do contrato para o despacho ("legível pelo papel de campo só enquanto ele é o alvo E o técnico atual; o despacho antigo responde 404; o ex-técnico perde a leitura") ganha a exceção do `P-DESPACHO-EX-TECNICO-MUTACAO` nas linhas `:671` e `:672`, e o `S-W7` asserta o corpo medido.
+- **critério de encerramento:** o contrato leva a exceção e o teste do corpo medido, junto com a decisão do dono da pendência acima.
+
+## P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR (2026-11-17) — com o app aberto, a volta da rede não revoga o token de renovação do "Sair" — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** o `B-APP-SESSAO-RENOVA` (item 68, já fechado); residual da triagem · **dono:** bloco próprio de sessão do app, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** triagem da J-588, achado C3-A2 (`P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR`); o porteiro-588 (R1) pede dono, PR-alvo e `bloqueia`.
+- **fato:** com o app aberto, a volta da rede não esvazia a fila do "Sair", e o token de renovação segue válido até o app ser reaberto. Divergência registrada pelo dev e não decidida.
+- **critério de encerramento:** a volta da rede revoga a família do token do "Sair" (ou o comportamento fica registrado como decidido), com teste.
+
+## P-APP-INICIO-PENDENTES-FANTASMA (2026-11-17) — a Início mostra "2 pendentes" com 0 pendentes no servidor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (telas Início e Finanças do app) · **dono:** bloco próprio do app, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** triagem da J-588, achado C3-A3; o porteiro-588 (R1) pede dono, PR-alvo e `bloqueia`.
+- **fato:** depois da sincronização, a Início segue "2 pendentes a sincronizar" e Finanças mostra "Sync pendente", mesmo com 0 pendentes e 200 no servidor. Causa não medida; anterior ao bloco.
+- **critério de encerramento:** as duas telas refletem a fila real (0 pendentes → sem selo), com teste.
+
+## P-APP-TESTE-OSCILA-MAQUINA-CARREGADA (2026-11-17) — flakiness do teste de sessão sob contenda de máquina — BAIXA (ambiente)
+
+- **status:** ABERTA · **gravidade:** BAIXA (ambiente) · **escopo:** o arnês de teste do app · **dono:** bloco de ferramentas de teste · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** triagem da J-588, achado C2-A1; o porteiro-588 (R1) pede dono, PR-alvo e `bloqueia`.
+- **fato:** sob contenda de máquina, o `[T3j]` deu 1 vermelho na linha de base, e re-execuções verdes de M2/M5 caíram com restauro; nenhum dos três é reprodutível isolado e o CI do objeto está verde. Ambiente, sem defeito de produto.
+- **critério de encerramento:** o teste para de oscilar sob carga (tempo-limite ou isolamento), ou fica registrado como tolerância conhecida.
+
+## P-APP-LIGAR-SEM-DISCADOR (2026-11-17) — o botão de ligar do detalhe do app exige um pacote novo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** a tela de detalhe da OS no app (fora do `B-GUI-FID1`) · **dono:** a tela 14 do plano do app guincho (bloco próprio, a abrir) · **bloqueia:** não.
+- **origem:** conferência visual do #595 (17/11 14:3x).
+- **fato:** abrir o discador exige o pacote `url_launcher`, que é dependência nova do Flutter e passa por decisão.
+- **critério de encerramento:** a decisão sobre o `url_launcher` é registrada e o botão de ligar abre o discador, com teste.
+
+## P-APROV-MEMORIA-SEM-CAS (2026-11-17) — o repositório em memória das aprovações não é CAS sob concorrência — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a classe de teste/desenvolvimento; a produção recusa o modo memória) · **dono:** o bloco que tocar o modo memória das aprovações · **bloqueia:** não.
+- **origem:** triagem da J-586, achado C2-01; o porteiro-586 (R3) pede dono e PR-alvo.
+- **fato:** `InMemoryApprovalRepository.decide` não é CAS sob concorrência: há um `await findById` entre a leitura e a escrita, e 2 decisões simultâneas passam as duas.
+- **critério de encerramento:** o `decide` em memória é CAS (2 decisões simultâneas → 1 passa), com teste.
+
+## P-OS-CONCLUSAO-EVENTO-DUPLO (2026-11-17) — duas conclusões simultâneas da mesma OS gravam dois eventos `work_order_completed` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o evento de conclusão da OS) · **dono:** o bloco que tocar o evento de conclusão da OS · **bloqueia:** não.
+- **origem:** triagem da J-586, achado C2-02; o porteiro-586 (R3) pede dono e PR-alvo.
+- **fato:** 2 conclusões simultâneas da mesma OS gravam 2 eventos `work_order_completed`; a aprovação continua única.
+- **critério de encerramento:** a conclusão da OS grava 1 evento, mesmo em corrida, com teste.
+
+## P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — a composição em memória da varredura não tem teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a produção roda em Prisma; o modo memória é de teste) · **dono:** o `B-ASS-08c3` (F7/F8) · **bloqueia:** não.
+- **origem:** pré-revisão da 6ª leva do 08c2 (`prerev-08c2-l6-cl`), achado L6-01, 17/11.
+- **fato:** a composição em memória da varredura não tem teste dono: a mutação ML6-b sobrevive 31/31.
+- **critério de encerramento:** a composição em memória tem teste que morre com a mutação, ou fica registrado que o modo memória não é suportado.
+
+## P-08C2-GSISO-ANTIGOS (2026-11-17) — seis suítes antigas ainda criam o outbox sem `tenantIds` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (suítes antigas, fora do 08c2) · **dono:** o `B-ASS-08c3` (próximo bloco que tocar o outbox) · **bloqueia:** não.
+- **origem:** Emenda 3 do `B-ASS-08c2` (GS-ISO), 16/11; confirmada pela C3 da J-587 (ausente do `pendencias.md`).
+- **fato:** o critério GS-ISO passa a valer só para os arquivos de teste NOVOS do ramo (4 de 4 com `tenantIds`); os 6 antigos — `outbox-review` ×3, `reconsulta`, `register` ×2 — criam `new PrismaOutboxRepository(` sem `{ tenantIds }`.
+- **critério de encerramento:** as 6 suítes antigas passam o GS-ISO (ou ficam listadas como fora do critério por decisão).
+
+## P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — o `provider_invoice_id` continua nulo depois da reconsulta — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `#applyLookup`, fora do PERMITIDO do 08c2) · **dono:** o `B-ASS-08c3` · **bloqueia:** não.
+- **origem:** Emenda 5 do `B-ASS-08c2` (NR1), 17/11; confirmada pela C3 da J-587 (ausente do `pendencias.md`).
+- **fato:** o `provider_invoice_id` continua nulo depois da reconsulta; para preenchê-lo seria preciso mexer em `#applyLookup`. O plano passa a dizer "segue nulo".
+- **critério de encerramento:** o `#applyLookup` preenche o `provider_invoice_id` (ou o plano registra por que não), com teste.
+
+## P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 compara a porta com `includes` no log inteiro e oscila — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a asserção do teste) · **dono:** bloco de ferramentas de teste · **bloqueia:** não.
+- **origem:** relatório do `dev-08c2-e5-cl` (Emenda 5), 17/11; confirmada pela C3 da J-587 (ausente do `pendencias.md`).
+- **fato:** o T15 compara a porta com `includes` no log inteiro e caiu 1× no run 44106675745, sem mudança de `src`.
+- **critério de encerramento:** a asserção compara a porta exata (sem `includes` no log inteiro), com teste.
+
+## P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS (2026-11-17) — o `npm test` local trava sem fim no `ass-05-vault-routes` — MÉDIA (ambiente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA (ambiente) · **escopo:** o arnês de teste no Windows · **dono:** bloco de ferramenta (põe tempo-limite no servidor-filho) · **bloqueia:** não.
+- **origem:** 17/11 17:5x, no dev do item 31 (`dev-04b-e1-cl`).
+- **fato:** o `npm test` local trava sem fim no `ass-05-vault-routes` (o servidor-filho nunca sai). Custou 7,5 h de um dev no dia.
+- **critério de encerramento:** o servidor-filho do teste tem tempo-limite e o `npm test` termina sozinho, com teste.
+
+## P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a leitura de ambiente da porta de plataforma) · **dono:** `B-NODE-ENV-FAIL-CLOSED` · **bloqueia:** não.
+- **origem:** crítica do plano do 72 (`crit-plat-perm-cl`, A7) e Emenda 1 do 72, 17/11.
+- **fato:** com `NODE_ENV` ausente, a porta de plataforma conta como dev (fail-open), quando deveria falhar fechado em produção.
+- **critério de encerramento:** `NODE_ENV` ausente falha fechado, com teste.
+
+## P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.env.example` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `.env.example`) · **dono:** PR de registro/ferramentas · **bloqueia:** não.
+- **origem:** revisão do #598 (`rev-598-cl`), 17/11.
+- **fato:** `DATABASE_RUNTIME_ROLE_GUARD` não está no `.env.example`, e os 5 `PORTAL_*` só em comentário.
+- **critério de encerramento:** o `.env.example` documenta o `DATABASE_RUNTIME_ROLE_GUARD` e os `PORTAL_*`.
+
+## P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchForWorkOrder` não tem teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** o conserto da J-596 (Emenda 2.2) · **dono:** `B-GUI-02b` · **bloqueia:** não.
+- **origem:** conferência da J-596 (`verif-596-df`), achado VN-01, 17/11.
+- **fato:** trocar o `catch` de `hasDispatchForWorkOrder` para `return false` não deixa nenhum teste vermelho — o fail-closed está certo por leitura, mas sem teste.
+- **critério de encerramento:** uma mutação do `catch` (voltar `false`) deixa um teste vermelho.
+
+## P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia-noite e a requisição corre depois — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o cenário do teste) · **dono:** bloco de ferramentas de teste · **bloqueia:** não.
+- **origem:** 18/11 00:10, no job backend do #598 (só docs), que falhou na virada de dia.
+- **fato:** o cenário calcula `subscriptionValidFrom` (data de SP) antes da meia-noite e a requisição corre depois dela → 422 `subscription_retroactive` ("antes de hoje"). Flaky de virada de dia, não do PR.
+- **critério de encerramento:** a data é calculada no momento da requisição (ou o relógio é fixado), com teste.
+
+## P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma falha aberta, e 5 rotas pedem chaves fora do catálogo — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (escalada de privilégio de plataforma, hoje sem papel em produção) · **escopo:** `pre-existente` (o desenho da porta de plataforma × o catálogo) · **dono:** `B-PLAT-PERMISSAO` (o item 72 saiu do portão por `D-DONO-1711-72-FORA-DO-PORTAO`) · **gatilho:** a volta do bloco `B-PLAT-PERMISSAO` · **bloqueia:** depois dos bloqueantes (não entra no portão).
+- **origem:** a correção do orquestrador sobre o item 72 (17/11 16:0x, §A2) e a decisão do dono de 22:00 (`D-DONO-1711-72-FORA-DO-PORTAO`).
+- **fato:** o `requirePlatformPermission` não confere a permissão (falha aberta); 5 rotas pedem 6 chaves que não estão no catálogo; o banco (a migração do B-ASS-04, `settle` só para o `super_admin`) diverge do catálogo. O plano + Emendas 1 e 2 ficaram prontos, e a migração das 6 chaves (só para o `super_admin`) segue autorizada (`D-DONO-1711-72-P1`).
+- **critério de encerramento:** a checagem falha fechada, as 6 chaves entram no catálogo (migração autorizada) e as 5 rotas passam a exigir a permissão que de fato possuem, com teste e junta completa.
+
+## P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-sync.ts` ainda cita `"inventory.manage"` sem uso — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (resíduo do #582) · **dono:** o bloco que tocar `mobile-inventory-sync.ts` · **bloqueia:** não.
+- **origem:** nota do porteiro-582 (18/11 00:19).
+- **fato:** a união de tipos em `mobile-inventory-sync.ts:671,678` ainda cita `"inventory.manage"` sem uso.
+- **critério de encerramento:** a união de tipos deixa de citar a permissão sem uso (ou fica registrado o motivo), com teste.
+
+## P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AWS paga x86 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (custo, sem risco de produto) · **escopo:** `pre-existente` (a CI) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** o job `docker` do `ci.yml` publica só `amd64`; acrescentar `platforms: linux/amd64,linux/arm64` e trocar `cpuArchitecture` para `ARM64` economiza ~US$ 6/mês.
+- **critério de encerramento:** a imagem sai em `linux/amd64,linux/arm64`, a task definition usa `ARM64` e o custo medido cai.
+
+## P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (bloqueia o CD de produção) · **escopo:** `pre-existente` (a imagem de runtime e o CD) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** o CD de produção (o `prisma migrate deploy` e o `db:provision-rbac`).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a imagem de runtime não tem `prisma`, `tsx` nem `prisma.config.ts`; o CD precisa de uma imagem migradora (ou de um alvo `migrator` no `Dockerfile`) para o `aws ecs run-task` rodar `prisma migrate deploy` e `db:provision-rbac` dentro da VPC.
+- **critério de encerramento:** uma tarefa ECS roda a migração e o provisionamento de RBAC na VPC, com o log da trava de runtime verde.
+
+## P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS privado — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (recuperação) · **escopo:** `pre-existente` (o `backup-database.yml`) · **dono:** `B-INFRA-AWS-02` · **bloqueia:** não (o PITR e os snapshots cobrem enquanto a decisão não sai).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** o `backup-database.yml` roda no runner do GitHub e não alcança o RDS privado; decidir entre uma tarefa ECS agendada (`EventBridge Scheduler` + `run-task`) ou só PITR + snapshots.
+- **critério de encerramento:** a decisão está escrita e o caminho escolhido tem prova de restauração.
+
+## P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a configuração do Valkey) · **dono:** `B-INFRA-AWS-02` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** medir se `REDIS_URL=rediss://` funciona no app (cliente Redis e jobs) e ligar `--transit-encryption-enabled` no Valkey.
+- **critério de encerramento:** o app conecta por `rediss://` com a criptografia em trânsito ligada, medido no ambiente.
+
+## P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em vez de `VITE_API_BASE_URL` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o frontend) · **dono:** o bloco de frontend que tocar os 3 arquivos · **bloqueia:** não (o comportamento `/api/*` do CloudFront cobre até corrigir).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** 3 arquivos usam `/api/v1` relativo em vez de `VITE_API_BASE_URL`: `platform-health.service.ts:11`, `damages.adapter.ts:112` e `services/realtime/pollingClient.ts:23` (fluxo de eventos `/api/v1/events/stream`).
+- **critério de encerramento:** os 3 arquivos leem a base da variável, com teste.
+
+## P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou pelo CloudFront — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o fluxo de eventos e o balanceador) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não; mede-se em produção.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** o SSE fica aberto por muito tempo; o ALB corta conexão parada há 60 s, e o CloudFront, como está no roteiro, espera no máximo 60 s entre pedaços (`OriginReadTimeout: 60`; aceita até 120 s, acima disso só com aumento de cota). Hoje a API manda um sinal de vida a cada 25 s e o mapa reconecta; se a medição em produção mostrar quedas, subir o tempo do ALB e escrever e validar a edição do `OriginReadTimeout` do CloudFront.
+- **critério de encerramento:** a medição em produção está registrada e, se houver queda, os dois tempos foram ajustados e validados.
+
+## P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a configuração do portal) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não (o valor provisório cobre até o 1º tenant).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** `PORTAL_TENANT_ID` provisório até o 1º tenant; definir o processo (6.2) e o valor do `PORTAL_CORS_ORIGIN` do portal.
+- **critério de encerramento:** o processo está escrito e as duas variáveis têm o valor real do 1º tenant.
+
+## P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco do NLB+EIP — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (decisão de infraestrutura) · **dono:** o dono (`D-AWS-03`) · **bloqueia:** não (a porta dos rastreadores depende do `G-TRC-NLB`, não deste).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a decisão `D-AWS-03` e, se vier, o bloco do NLB+EIP ou do Global Accelerator.
+- **critério de encerramento:** a decisão está registrada e, se for pelo IP fixo, o bloco foi entregue e medido.
+
+## P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (custo, sem risco de produto) · **escopo:** `pre-existente` (a imagem do antivírus) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a imagem `clamav/clamav:1.4.6` fixada no `B-AV-REAL` só tem `amd64`; medir a tag `-debian` (que tem `arm64`) e o digest dela para a fase 3b rodar em ARM (economia de ~US$ 8/mês).
+- **critério de encerramento:** a tag e o digest ARM estão medidos e a fase 3b roda em ARM, com o custo registrado.
+
+## P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no início do contêiner — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a imagem do antivírus) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a fase 3b.3 entrega o `clamd.conf` por variável e grava o arquivo no início do contêiner; o caminho limpo é uma imagem derivada (`FROM` o digest fixado + `COPY infra/clamav/clamd.conf`) publicada pelo CI.
+- **critério de encerramento:** a imagem derivada é publicada pelo CI e a fase 3b sobe com ela, sem gravar configuração em tempo de execução.
+
+## P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (custo, sem risco de produto) · **escopo:** `pre-existente` (a imagem do Traccar) · **dono:** `B-TRC-06` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a imagem `traccar/traccar:6.16.0` tem `arm64`; o estudo fixou x86; trocar economiza ~US$ 7/mês, depois de medir em staging.
+- **critério de encerramento:** o Traccar roda em ARM em staging e produção, com o custo registrado.

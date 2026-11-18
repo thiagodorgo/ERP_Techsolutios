@@ -91,7 +91,6 @@ if (!connectionString) {
       profileByActor,
       servicesFor,
       sync: syncModule.syncMobileInventoryActions,
-      resetSync: syncModule.resetMobileInventoryRuntimeForTests,
       tenants: [] as string[],
     };
   }
@@ -378,7 +377,6 @@ if (!connectionString) {
     const sourceId = randomUUID();
     assert.equal((await run(h, h.roleA, s, addAction(s, sourceId))).accepted.length, 1);
 
-    h.resetSync();
     const replay = await run(h, h.roleA, s, addAction(s, sourceId));
     assert.equal(replay.already_applied.length, 1);
     assert.equal(replay.already_applied[0]?.status, "already_applied");
@@ -530,7 +528,6 @@ if (!connectionString) {
     assert.equal((await run(h, h.roleA, s, addAction(s, sourceId))).accepted.length, 1);
     const otherWorkOrder = await extraWorkOrder(h, s);
 
-    h.resetSync();
     const replay = await run(h, h.roleB, s, addAction(s, sourceId, 2, { workOrderId: otherWorkOrder }));
     assert.equal(replay.already_applied.length, 0);
     assert.equal(replay.conflicts[0]?.conflict?.conflict_type, "idempotency_payload_mismatch");
@@ -546,7 +543,6 @@ if (!connectionString) {
     assert.equal((await run(h, h.roleA, s, addAction(s, sourceId))).accepted.length, 1);
     const otherSku = await extraItemSku(h, s);
 
-    h.resetSync();
     const replay = await run(h, h.roleB, s, addAction(s, sourceId, 2, { sku: otherSku }));
     assert.equal(replay.already_applied.length, 0);
     assert.equal(replay.conflicts[0]?.conflict?.conflict_type, "idempotency_payload_mismatch");
@@ -579,7 +575,6 @@ if (!connectionString) {
     const rows = await sourceRows(h, s.tenantId, sourceId);
     assert.equal(rows.length, 1, "a baixa foi gravada antes da falha");
 
-    h.resetSync();
     const retry = await run(h, h.roleB, s, action);
     assert.equal(retry.rejected.length, 0);
     assert.equal(retry.conflicts.length, 0);

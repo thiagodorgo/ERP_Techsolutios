@@ -118,6 +118,9 @@ function memoryChannel(): StatementChannel {
         return { provider: on.provider, method: closingMethodOf((await memoryProfiles.find(tenantId))?.paymentMethod) };
       },
     },
+    // B-ASS-08c2 (plano §4.1 item 2): liga as QUATRO lojas no dublê (`createChargeIntentRepository`) antes de ler o predicado,
+    // para a intenção de nota rodar no MESMO `tx` serializado do movimento.
+    invoiceIntents: { resolve: async () => { const [{ createChargeIntentRepository }, { createDefaultVaultRuntime }, { invoiceIntentsNow }] = await Promise.all([import("../outbox/channel.runtime.js"), import("../vault/vault.factory.js"), import("../outbox/channel-state.js")]); await createChargeIntentRepository(); return invoiceIntentsNow(await createDefaultVaultRuntime()); } }, // [NOTA-INTENTS-MEM]
   };
 }
 

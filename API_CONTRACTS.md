@@ -511,6 +511,38 @@ novo**; muda o efeito das rotas que já existem. **Tudo continua DESLIGADO por p
   não prova que a cobrança está aberta; o reopen e o refechamento continuam recusando. (Conserto da J-579: a regra de cada estado
   da cobrança vive numa tabela-verdade única, `charges/charge-rules.ts`.)
 
+**A nota da baixa manual, a reemissão, a varredura, o estorno manual com nota, o `/invoice` e o backlog — `subscription_billing_channel@2026-11-17.b-ass-08c2`.**
+Fontes: `statements/statement.service.ts`, `statements/statement-settlement.service.ts`, `statements/statements.platform.routes.ts`,
+`statements/statement.prisma-runtime.ts`, `invoices/invoice-intent-rules.ts`, `outbox/invoice.dispatch.ts`, `outbox/outbox.dispatcher.ts`,
+`outbox/channel.jobs.ts`, `outbox/invoice-sweep.ts`. **Tudo continua DESLIGADO por padrão** (`BILLING_PROVIDERS_ENABLED=false`): com o
+canal desligado, as intenções de nota nascem `PENDING` com `skipReason = provider_disabled` e nada sai. **Nenhuma rota fala com o
+provedor**; quem emite e cancela a nota é o despacho. Erro = `{ error: { reason } }`.
+
+| Método | Caminho | Permissão | Corpo / consulta | Sucesso | Recusas (`reason`) |
+|---|---|---|---|---|---|
+| POST | `/platform/billing/statements/:statementId/invoice` | `platform:billing:settle` | `{ tenantId }` | `200` `{ data: { statementId, seq, providerDisabled } }`: nasce uma `invoice_issue` `PENDING` com o `seq` seguinte (a reemissão depois de uma nota rejeitada, ou a nota que a automática não criou), com a trilha `subscription_statement.invoice_requested` na mesma transação | `400` `tenant_id_required` · `404` `statement_not_found` (inclusive id de outra organização) · `409` `statement_busy` · `422` `statement_not_paid` (não pago, ou total zero), `invoice_already_live` (já há nota viva), `invoice_issue_pending` (há pedido de nota em voo ou em conferência; a saída é o `/resolve` da linha) |
+| GET | `/platform/billing/invoices/backlog?tenantId=` | `platform:billing:read` | — | `200` `{ data: [ { statementId, period, status, category, invoiceStatus, lastLineStatus, lastLineError, totalAmount } ] }`, ordenado pela categoria e, dentro dela, pelo período. Categorias, a primeira que casar: `live_on_unpaid` (nota viva num demonstrativo que não está pago: o estorno de só uma parte, ou a recusa do cancelamento), `before_cutoff` (pago antes do corte, sem pedido de nota da época: para o contador decidir), `awaiting_provider` (pedido da época esperando o provedor ser ligado), `needs_review` (pedido da época em conferência ou falho, ou nota da época rejeitada ou cancelada sobre o pago: a reemissão é pelo `/invoice`), `no_intent` (pago desde o corte, sem pedido da época: a varredura o cria quando a nota for ligada). O que não casa (pedido em voo, nota autorizada sobre pago) não aparece. Nunca o id da nota no provedor, a referência externa, URL de documento nem a organização | `400` `tenant_id_required` |
+
+- **A baixa manual que quita** (`POST …/statements/:statementId/payments`) grava, na mesma transação, uma `invoice_issue` com o
+  `seq` seguinte (uma linha viva por época de pagamento) e o índice da organização, depois da marcação imediata da cobrança.
+- **O estorno manual** (`POST …/statements/:statementId/payments/:paymentId/reverse`) aceita `confirmInvoiceCancel` (booleano;
+  outro tipo → `400` `invalid_confirmation`). Estorno que devolve TODO o pago com nota viva: sem a confirmação → `422`
+  `invoice_cancel_confirmation_required` e nada é gravado; com ela → a `invoice_cancel` na mesma transação. Estorno de só uma
+  parte não cancela a nota (vira alerta no backlog, `live_on_unpaid`). A resposta passa a trazer `data.invoice`:
+  `cancel_requested`, `cancel_in_progress`, `kept_partial_reversal` ou `none`.
+- **O fechamento e os outros movimentos do demonstrativo** (`POST …/statements/close`, `…/reopen`, `…/payments`, `…/reverse`,
+  `…/cancel`, `…/invoice`): **a falha de banco do movimento (a transação expirou ou a trava não veio) sai como `409`
+  `statement_busy`, repetível**, e não mais como `400` `invalid_request`; o pool esgotado ao abrir a transação continua
+  indisponibilidade. Nada é gravado pela metade: a transação desfaz.
+- **A varredura de recuperação** roda no despacho, antes do claim, só com provedor de nota ligado: os demonstrativos pagos desde
+  o corte do dono (`2026-11-11T09:43:45Z`) sem pedido de nota da época ganham um, sob a trava do demonstrativo. Se a varredura
+  falhar numa organização, as emissões não órfãs da rodada são adiadas (`lastError = invoice_sweep_failed`), sem gastar
+  tentativa.
+- **A emissão no despacho:** o erro de validação do provedor (dado fiscal incompleto, validação) deixa a nota `rejected` com o
+  CÓDIGO (nunca o texto do provedor) e a linha em `NEEDS_REVIEW`; a retentativa de uma nota já começada reconsulta pela
+  referência antes de reenviar; a posse da linha é conferida logo antes do envio (`billing_outbox.lease_lost`, sem envio, se
+  outro despacho a reclamou). O poll da nota pendente e o da que espera cancelamento leem as notas vivas por organização.
+
 ### 3.4 Navegação
 
 Fonte: `src/modules/navigation/navigation.routes.ts` (montado em `/api/v1/navigation`).
@@ -527,7 +559,7 @@ colidir com o router base.
 
 | Método | Caminho | Permissão RBAC | Descrição |
 |---|---|---|---|
-| GET | `/work-orders` | `work_orders:read` | Lista OS. **B-SAN3-26:** cada item traz `checkinMode` (`plate` · `exempt` · `reference_missing`, calculado pelo servidor) e `checkinPlateTail` (os 2 caracteres finais da placa do veículo atendido, ou `null`). Nunca a placa inteira nem `serviceDetails` (a senha do residencial fica só no detalhe). **B-SAN3-15b:** cada item traz `serviceKind` (`tow` · `provider` · `unknown`), o tipo de atendimento de campo decidido pelo servidor a partir do tipo do serviço no catálogo (`reboque` → `tow`; `socorro`, `residencial` e `outro` → `provider`; sem catálogo, catálogo sem tipo, tipo fora da lista ou catálogo que não resolve na organização do ator → `unknown`, fail-closed). Contrato `work_order_service_kind@2026-11.b-san3-15b`. |
+| GET | `/work-orders` | `work_orders:read` | Lista OS. **B-SAN3-26:** cada item traz `checkinMode` (`plate` · `exempt` · `reference_missing`, calculado pelo servidor) e `checkinPlateTail` (os 2 caracteres finais da placa do veículo atendido, ou `null`). Nunca a placa inteira nem `serviceDetails` (a senha do residencial fica só no detalhe). **B-SAN3-15b:** cada item traz `serviceKind` (`tow` · `provider` · `unknown`), o tipo de atendimento de campo decidido pelo servidor a partir do tipo do serviço no catálogo (`reboque` → `tow`; `socorro`, `residencial` e `outro` → `provider`; sem catálogo, catálogo sem tipo, tipo fora da lista ou catálogo que não resolve na organização do ator → `unknown`, fail-closed). Contrato `work_order_service_kind@2026-11.b-san3-15b`. **B-GUI-D1:** cada item traz também, sempre presentes (valor ou `null`), `destinationAddress`, `destinationLatitude` e `destinationLongitude` (o destino da OS) e `attendedVehicle` (`{ plateMasked, model, color }` ou `null`, quando nenhum dos três existe). `attendedVehicle` sai de `serviceDetails` por lista FECHADA de 3 chaves (`plate`, `vehicle`, `color`); o resto de `serviceDetails` continua só no detalhe. `plateMasked` é a referência do check-in sem os 2 caracteres finais (`ABC1D**`, 7 caracteres, sem hífen) e existe se e só se `checkinMode = "plate"`; o fim fica só em `checkinPlateTail`. `model`/`color` só passam se forem texto e não trouxerem uma placa (a regra do check-in) nem a placa desta OS (comparação sem separadores); senão vêm `null`. Contrato `work_order_list_destination_vehicle@2026-11.b-gui-d1`. |
 | POST | `/work-orders` | `work_orders:create` | Cria OS. |
 | GET | `/work-orders/:workOrderId` | `work_orders:read` | Detalhe da OS. **B-SAN3-15b:** traz `serviceKind` pela mesma regra da lista. As outras respostas de OS (criação, mudança de situação, atribuição, o `server_state` do lote do app) **não** levam a chave. |
 | PATCH | `/work-orders/:workOrderId` | `work_orders:update` | Atualiza OS. **B-O6R-07a (Ω6R-SEC-002):** ator que só alcança a OS por papel de CAMPO muta apenas a OS **atribuída a ele** (`assigned_operator_id` = perfil de operador do ator); OS de outro ou sem atribuição → **403 `not_assigned_to_actor`** — nunca 404, que segue reservado a cross-tenant. Papéis de gestão/despacho seguem tenant-wide. Cumpre `RBAC_MATRIX.md:45` (`field_technician = execute/update-assigned`), que o 200 anterior contrariava. **B-SAN3-26:** quem não é SÓ base (tem `field_technician`/`technician`, ou papel fora das duas listas do check-in) não muda a placa do veículo atendido: corpo cujo `service_details` resulta numa placa normalizada diferente da atual (trocar, omitir, `plate: null`, `plate: ""`, ou pôr placa onde não havia) → **403 `checkin_reference_not_editable`**. Mudança só de forma (`"abc-1d23"` no lugar de `"ABC1D23"`) passa. |
@@ -622,7 +654,7 @@ identidade viva de cada linha é `(organização, ordem, modelo, **etapa**)`: o 
 **e** a entrega da mesma ordem — é esse par que a tela de comparação do app confronta.
 
 **Retrocompatibilidade (aditiva).** `checklistId` e `checklistSnapshot` continuam no payload, com o mesmo
-significado, agora como **espelho da linha primária** (a de menor `orderIndex`; `null` quando o conjunto vivo é
+significado, agora como **espelho da linha primária** (a vistoria de coleta viva de menor `orderIndex`; sem coleta, a de menor `orderIndex`; `null` quando o conjunto vivo é
 vazio). Nenhum consumidor atual precisa mudar.
 
 `GET /work-orders/:id` e o `PATCH /work-orders/:id/checklists` acrescentam a chave `checklists[]`:
@@ -655,7 +687,7 @@ altera o conjunto nem gera evento — a escrita da junção só acontece depois 
 
 **`PATCH /work-orders/:id/checklists`** — `{ "add": [{ "checklistId", "role"? }], "remove": [{ "checklistId",
 "role", "reason", "confirmCustomerScoped"? }] }`. Retirar exige **etapa** e **motivo**. Erros: 400
-`checklist_not_published` · 409 `duplicate_checklist_phase` · 409 `checklist_already_dispatched` (vistoria já
+`checklist_not_published` · 409 `duplicate_checklist_phase` · 409 `collection_after_dispatch` (a OS já foi enviada; a coleta não entra depois do envio, com ou sem vistoria congelada) · 409 `checklist_already_dispatched` (vistoria já
 enviada ao técnico — o caminho é a reabertura) · 409 `checklist_customer_scoped_confirmation_required` (a
 vistoria veio de regra com cliente nomeado) · 409 `work_order_terminal` · 404 `checklist_link_not_found`.
 Remoção é **soft** (guarda quem/quando/por quê) e vira evento na timeline da OS, visível ao técnico.
@@ -1045,9 +1077,8 @@ sync não declaram `requirePermission` no router (autorização resolvida no ser
 | GET | `/mobile/bootstrap` | Autenticado (ator do JWT) | Estado inicial do app (dados + flags de sync). |
 | POST | `/mobile/sync/work-order-actions` | Autenticado (idempotente) | Replay de ações de OS. **B-SAN3-14:** a conclusão com vistoria de entrega em andamento sai `rejected` com `delivery_checklist_pending` (422, sem recibo de idempotência), e a MESMA ação é aceita depois que a entrega conclui. `work_order.status_change` (B-O6R-07a) e `work_order.mileage` (**B-O6R-07c-a**) seguem o escopo por objeto: ator só de campo em OS que não é dele recebe a ação `rejected` com `not_assigned_to_actor`, **por ação, dentro do lote 200**. O recibo de idempotência é consultado antes (reenvio no mesmo processo → `already_applied`); ele é em memória por processo, então depois de reinício ou noutra instância o reenvio de uma km já aplicada a uma OS redistribuída sai `rejected` (o valor já está gravado). **B-SAN3-26:** o `status_change` para `on_site` leva `checkin_confirmation: { last_digits }` e segue o §3.5.2; a recusa do check-in sai em `conflicts[]` com `next_action: "redo_checkin"`, e nenhum conflito do lote devolve `checkin_confirmation` no `conflict.local`. **B-SAN3-16 (item 5; contrato `2026-11-14.b-san3-16`):** dois tipos novos, só do técnico da OS (escopo por objeto antes de ler o corpo; ex-técnico → `conflicts[]` `assignment_changed_pending_review`; OS de outra organização → `rejected` `not_found`, igual à inexistente). `work_order.approval_request` (`work_order_id`, `reason` ≤ 500, `impact` ≤ 1000 opcional, `urgency` ∈ low/normal/high/critical, padrão normal) exige `work_orders:update`; `work_order.unable_to_start` (`work_order_id`, `reason` ≤ 200, `note` ≤ 1000 opcional) exige `work_orders:status`. Recusas por ação: `permission_required` (403); validação 400 (motivo ausente, `invalid_urgency`, texto acima do limite); `work_order_closed` (422, OS terminal); `approval_unavailable` e `notification_unavailable` (503, reenviáveis). Os dois gravam evento na linha do tempo da OS (`work_order_approval_requested`, `work_order_unable_to_start`, metadados por lista fechada) e não mudam o status. **Repetição durável pelo evento:** organização + usuário + `client_action_id`, na OS e no tipo — depois de reinício, o reenvio sai `accepted` sem gravar de novo (vale o primeiro conteúdo gravado); em outra OS ou no outro tipo, os dois gravam. O pedido de aprovação é uma aprovação própria na fila (`entity_type` `work_order`, `entity_id` opaco do pedido, `work_order_id` da OS), chamada antes do evento; a aprovação de conclusão da mesma OS é outra; o evento guarda o `approval_id`. A aprovação do pedido e o evento são gravados na mesma transação: ficam os dois, ou nenhum. O "não iniciou" avisa no sino quem atribuiu a OS por último (se não for o próprio técnico), com o motivo rotulado em PT-BR e chave de repetição durável. |
 | POST | `/mobile/sync/checklist-actions` | Autenticado (idempotente) | Replay de ações de checklist. |
-| POST | `/mobile/sync/inventory-actions` | Autenticado (idempotente) | Replay de ações de estoque. |
+| POST | `/mobile/sync/inventory-actions` | `work_orders:update` (no serviço) | Replay do material da OS. **B-O6R-04b (contrato `2026-11.b-o6r-04b`, `implemented`):** o lote aceita só `work_order_material.add` e `work_order_material.remove`, gravados no razão de estoque por origem (sobrevivem a reinício). A porta do lote exige `work_orders:update`: quem só tem `inventory.manage` recebe 403 `permission_required`. Todo outro tipo, inclusive os antigos `inventory.reserve`, `inventory.consume`, `inventory.shortage_report`, `inventory_entry.create` e `inventory_exit.create`, sai `rejected` com `unsupported_action_type`, sem ler a carga e sem efeito. O módulo não guarda estado em memória. A antiga `GET /mobile/inventory/availability` saiu (404); o estoque do técnico no app é `GET /mobile/technician/stock`. |
 | POST | `/mobile/sync/evidence-actions` | Autenticado (idempotente) | Replay de ações de evidência. |
-| GET | `/mobile/inventory/availability` | Autenticado | Disponibilidade de estoque para o campo. |
 | POST | `/mobile/evidence-uploads` | Autenticado | Upload de evidência (multipart); contrato `mobile_evidence_file_upload@2026-06-18.b108`. |
 | POST | `/mobile/telemetry` | Autenticado (consent-gate LGPD) | Ingestão de heartbeat/km/recusas de telemetria. |
 

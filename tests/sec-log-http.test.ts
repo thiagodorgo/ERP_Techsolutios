@@ -410,7 +410,10 @@ test("H4c sync de evidência com serviço que lança P1001: rejected, Unexpected
   conferirRejeitadaFixa("sync de evidência", saida);
 });
 
-test("H4d sync de estoque, ramo genérico (quantity lança P1001 na 2ª leitura): rejected, invalid_action, Unexpected error., 0 sentinela", async () => {
+// B-O6R-04b (D1/D2, Emenda 1.2 §2): os 3 tipos legados de estoque deixaram de existir. Eles saem `rejected` com
+// `unsupported_action_type` e a mensagem fixa, SEM ler a carga (o `quantity` que lançaria P1001 nunca é lido). A
+// resposta e o log têm 0 sentinela. O material segue coberto pelo H4f (500 fixo, 0 sentinela).
+test("H4d sync de estoque, tipos legados (o quantity lançaria P1001): rejected, unsupported_action_type, mensagem fixa, carga não lida, 0 sentinela", async () => {
   const nunca = servicoQueLanca(() => new Error("o serviço não deveria ser chamado"));
   for (const tipo of ["inventory.reserve", "inventory.consume", "inventory.shortage_report"]) {
     const payload: Record<string, unknown> = { item_id: "itm-h4d", warehouse_id: "wh-h4d", sku: "ELE-0102" };
@@ -419,18 +422,25 @@ test("H4d sync de estoque, ramo genérico (quantity lança P1001 na 2ª leitura)
       enumerable: true,
       get() {
         leituras += 1;
-        if (leituras <= 1) return 1;
         throw p1001Modelo();
       },
     });
-    const saida = await syncMobileInventoryActions(
-      ator(["inventory"], ["inventory.read", "inventory.manage"]),
-      { client_batch_id: randomUUID(), actions: [{ client_action_id: randomUUID(), type: tipo, local_created_at: AGORA, payload }] },
-      { inventory: nunca as never, workOrders: nunca as never, workOrdersModuleEnabled: async () => true },
+    const { valor: saida, linhas } = await comLog(() =>
+      syncMobileInventoryActions(
+        ator(["manager"], ["work_orders:update"]),
+        { client_batch_id: randomUUID(), actions: [{ client_action_id: randomUUID(), type: tipo, local_created_at: AGORA, payload }] },
+        { inventory: nunca as never, workOrders: nunca as never, workOrdersModuleEnabled: async () => true },
+      ),
     );
-    conferirRejeitadaFixa(`sync de estoque (${tipo})`, saida);
-    assert.equal(rejeitadas(saida)[0].error?.reason, "invalid_action", tipo);
-    assert.ok(leituras >= 2, `${tipo}: o caminho não chegou à 2ª leitura do quantity (${leituras})`);
+    const texto = JSON.stringify(saida);
+    const lista = rejeitadas(saida);
+    assert.equal(lista.length, 1, `${tipo}: ${texto.slice(0, 400)}`);
+    assert.equal(lista[0].status, "rejected", tipo);
+    assert.equal(lista[0].error?.reason, "unsupported_action_type", tipo);
+    assert.equal(lista[0].error?.message, "type is not supported.", `${tipo}: ${texto.slice(0, 400)}`);
+    assert.equal(leituras, 0, `${tipo}: a carga foi lida (${leituras} leitura(s) do quantity)`);
+    assertSemSentinela(texto, `saída do sync de estoque (${tipo})`);
+    assertSemSentinela(JSON.stringify(linhas), `log do sync de estoque (${tipo})`);
   }
 });
 
@@ -506,34 +516,13 @@ async function syncEvidencia(erro: () => unknown) {
   );
 }
 
-/** O ramo genérico do sync de estoque, como no H4d: o `quantity` lança na 2ª leitura. */
-async function syncEstoque(erro: () => unknown) {
-  const nunca = servicoQueLanca(() => new Error("o serviço não deveria ser chamado"));
-  const payload: Record<string, unknown> = { item_id: "itm-h4g", warehouse_id: "wh-h4g", sku: "ELE-0102" };
-  let leituras = 0;
-  Object.defineProperty(payload, "quantity", {
-    enumerable: true,
-    get() {
-      leituras += 1;
-      if (leituras <= 1) return 1;
-      throw erro();
-    },
-  });
-  const saida = await syncMobileInventoryActions(
-    ator(["inventory"], ["inventory.read", "inventory.manage"]),
-    { client_batch_id: randomUUID(), actions: [{ client_action_id: randomUUID(), type: "inventory.reserve", local_created_at: AGORA, payload }] },
-    { inventory: nunca as never, workOrders: nunca as never, workOrdersModuleEnabled: async () => true },
-  );
-  assert.ok(leituras >= 2, `o caminho não chegou à 2ª leitura do quantity (${leituras})`);
-  return saida;
-}
-
-test("H4g os 4 syncs com erro opaco (arquivo, bucket, Redis e o pg com e-mail): rejected com a mensagem fixa", async () => {
+// B-O6R-04b (Emenda 1.2 §2): o sync de estoque saiu desta lista. Os tipos legados não têm mais ramo genérico (o H4d
+// prova a recusa sem ler a carga), e o material converte erro opaco em 500 fixo (H4f).
+test("H4g os 3 syncs com erro opaco (arquivo, bucket, Redis e o pg com e-mail): rejected com a mensagem fixa", async () => {
   const syncs = [
     ["sync de OS", syncOrdemDeServico],
     ["sync de vistoria", syncVistoria],
     ["sync de evidência", syncEvidencia],
-    ["sync de estoque", syncEstoque],
   ] as const;
   for (const [rotuloDoErro, erro] of await errosOpacos()) {
     for (const [rotuloDoSync, sincronizar] of syncs) {

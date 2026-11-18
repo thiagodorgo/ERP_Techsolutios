@@ -284,7 +284,8 @@ com o `B-TRC-04`, por cadastro de módulos na versão do adicional.
   de ids), nunca do payload; o estado e o valor vêm de `getCharge`/`getInvoice`; o cliente do provedor tem de bater com o
   perfil da organização. Pago → baixa monotônica (excedente vira crédito); estorno/chargeback → reversão (primeiro do
   crédito que o pagamento gerou); disputa → `chargeback_disputed` sem derrubar "em dia"; estorno total ou chargeback com
-  nota autorizada → `invoice_cancel` automático (salvo "manter nota").
+  nota viva (pendente, autorizada ou com cancelamento pendente) → `invoice_cancel` automático (salvo "manter nota"; com o
+  cancelamento já pendente, não nasce outro).
 - **Outbox (claim–chamada–registro):** claim por organização com `FOR UPDATE SKIP LOCKED` em transação curta; a chamada ao
   provedor fora de transação; o registro em outra transação curta. Linha `PROCESSING` órfã há > 10 min é reconsultada por
   referência antes de repetir (nunca cobra nem emite 2×). Backoff 1/5/15/60 min; 8 falhas → `FAILED`; linha de provedor
@@ -315,9 +316,22 @@ com o `B-TRC-04`, por cadastro de módulos na versão do adicional.
   com pagamento parcial. A tabela de cobranças acompanha o provedor (pago, estorno, chargeback, disputa), o `poll-pending`
   reconsulta pela tabela, o índice data a cobrança vigente, a recobrança depois de estorno total sai, e o cliente vê o link da
   cobrança vigente (com o aviso `full_amount_charge_open` quando há pagamento parcial).
+- **O ciclo da nota (B-ASS-08c2):** a baixa manual que quita grava, na mesma transação, o pedido de nota (`invoice_issue`) com o
+  `seq` seguinte e o índice da organização; o estorno que devolve todo o pago e depois o repagamento geram a reemissão com o
+  `seq` seguinte, sempre uma linha viva por época de pagamento. **O estorno manual com nota (Q3 = (a), com os 3 cuidados):**
+  estorno que devolve todo o pago com nota viva exige a confirmação do operador (`confirmInvoiceCancel`; sem ela, `422`
+  `invoice_cancel_confirmation_required` e nada muda) e então pede o cancelamento da nota na mesma transação; estorno de só uma
+  parte não cancela a nota, vira alerta no backlog. **A varredura de recuperação** roda no despacho antes do claim, só com provedor
+  de nota ligado: os demonstrativos pagos desde o corte do dono (`2026-11-11T09:43:45Z`) sem pedido da época ganham um, sob a trava
+  do demonstrativo; os pagos antes do corte ficam no backlog para o contador decidir; falha da varredura adia as emissões não
+  órfãs da rodada (`invoice_sweep_failed`). **O poll da nota** (a pendente e a que espera cancelamento) lê as notas vivas por
+  organização. **O backlog** (`GET …/invoices/backlog`) mostra, por demonstrativo, a 1ª categoria que casar: nota viva sobre conta
+  não paga, pago antes do corte, esperando o provedor, em conferência (inclusive a nota rejeitada ou cancelada sobre o pago, que aparece como `needs_review`: a reemissão é pelo
+  `POST …/statements/:statementId/invoice`), e pago sem pedido. **Na emissão:** o erro de validação do provedor deixa a nota
+  `rejected` pelo código e a linha em conferência; a retentativa de uma nota já começada reconsulta antes de reenviar; a posse da
+  linha é conferida logo antes do envio. A falha de banco de um movimento do demonstrativo sai como `409 statement_busy`, repetível.
 - **Ainda não (pendências com dono):** ligar/desligar/testar/registrar webhook persistidos pela tela (F9 do B-ASS-08; hoje
-  nenhum caminho grava `enabled = true`); `invoicePdfAvailable` das notas na visão do cliente; baixa manual → nota (T-FLX-13,
-  08c2); `refund` na outbox; a reconsulta da cobrança em estado desconhecido (`P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA`: hoje nenhum
+  nenhum caminho grava `enabled = true`); `invoicePdfAvailable` das notas na visão do cliente; `refund` na outbox; a reconsulta da cobrança em estado desconhecido (`P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA`: hoje nenhum
   escritor grava esse estado; desde o conserto da J-579, se ele aparecer, a baixa que quita, o `cancel()` e o `charge/cancel` pedem o
   cancelamento, e o despacho lista primeiro).
 - **Rollback:** `BILLING_PROVIDERS_ENABLED=false` para o canal (a outbox fica visível); reverter o PR não apaga linhas. As

@@ -331,13 +331,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": true,
@@ -349,8 +347,6 @@
       "libera": {
         "G1": true,
         "G1b": true,
-        "G2": true,
-        "G3": true,
         "G4": true
       }
     },
@@ -667,13 +663,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": true,
@@ -685,8 +679,6 @@
       "libera": {
         "G1": true,
         "G1b": true,
-        "G2": true,
-        "G3": true,
         "G4": true
       }
     },
@@ -956,13 +948,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": true,
@@ -974,8 +964,6 @@
       "libera": {
         "G1": true,
         "G1b": false,
-        "G2": true,
-        "G3": false,
         "G4": true
       }
     },
@@ -1172,13 +1160,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": true,
@@ -1190,8 +1176,6 @@
       "libera": {
         "G1": true,
         "G1b": true,
-        "G2": true,
-        "G3": false,
         "G4": false
       }
     },
@@ -1382,13 +1366,11 @@
           },
           "inventory_mobile": {
             "enabled": false,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": false,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": false,
@@ -1400,8 +1382,6 @@
       "libera": {
         "G1": true,
         "G1b": false,
-        "G2": false,
-        "G3": false,
         "G4": false
       }
     },
@@ -1547,13 +1527,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
-            "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "enabled": false,
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": false,
@@ -1565,8 +1543,6 @@
       "libera": {
         "G1": true,
         "G1b": false,
-        "G2": true,
-        "G3": true,
         "G4": false
       }
     },
@@ -1744,13 +1720,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": true,
@@ -1762,8 +1736,6 @@
       "libera": {
         "G1": true,
         "G1b": true,
-        "G2": true,
-        "G3": false,
         "G4": false
       }
     },
@@ -1949,13 +1921,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": false,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": false,
@@ -1967,8 +1937,6 @@
       "libera": {
         "G1": true,
         "G1b": false,
-        "G2": true,
-        "G3": false,
         "G4": false
       }
     },
@@ -2108,13 +2076,11 @@
           },
           "inventory_mobile": {
             "enabled": false,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": false,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": false,
@@ -2126,8 +2092,6 @@
       "libera": {
         "G1": true,
         "G1b": false,
-        "G2": false,
-        "G3": false,
         "G4": false
       }
     }
@@ -2445,13 +2409,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": true,
@@ -2774,669 +2736,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
-          },
-          "generic_evidence_upload": {
-            "enabled": true,
-            "status": "partial",
-            "reason": "metadata_and_binary_upload_partial"
-          }
-        }
-      },
-      "libera": false
-    },
-    "G2_sem_modulo": {
-      "gate": "G2",
-      "papel": "tenant_admin",
-      "bootstrap": {
-        "tenant": {
-          "id": "org-G2_sem_modulo",
-          "name": "Organização G2_sem_modulo"
-        },
-        "user": {
-          "id": "user-G2_sem_modulo",
-          "email": "G2_sem_modulo@exemplo.test"
-        },
-        "roles": [
-          "tenant_admin"
-        ],
-        "permissions": [
-          "auction:appraise",
-          "audit.read",
-          "audit:read",
-          "authority_credentials:manage",
-          "billing:read",
-          "branches:create",
-          "branches:read",
-          "branches:update",
-          "charging:create",
-          "charging:online_payment",
-          "charging:read",
-          "charging:settle",
-          "checklist_runs:acknowledge",
-          "checklist_runs:complete",
-          "checklist_runs:create",
-          "checklist_runs:read",
-          "checklist_runs:reopen",
-          "checklist_runs:update",
-          "cheques:create",
-          "cheques:read",
-          "cheques:unlink_title",
-          "cheques:update",
-          "commissions:adjust",
-          "commissions:approve",
-          "commissions:audit",
-          "commissions:calculate",
-          "commissions:manage_policy",
-          "commissions:read",
-          "commissions:read_own",
-          "commissions:settle",
-          "customers:create",
-          "customers:read",
-          "customers:update",
-          "cycle_counts:create",
-          "cycle_counts:read",
-          "damages:create",
-          "damages:read",
-          "damages:update",
-          "dashboard:read",
-          "expense_audit:read",
-          "expense_policy:manage",
-          "expense_policy:read",
-          "expense_receipt:attach",
-          "expense_report:approve_finance",
-          "expense_report:approve_manager",
-          "expense_report:create",
-          "expense_report:pay",
-          "expense_report:read",
-          "expense_report:read_own",
-          "expense_report:reject",
-          "expense_report:return",
-          "expense_report:submit",
-          "expense_report:update",
-          "expense_sync:write",
-          "field_dispatch:cancel",
-          "field_dispatch:create",
-          "field_dispatch:read",
-          "field_dispatch:reassign",
-          "field_dispatch:update",
-          "field_location:history",
-          "field_location:read",
-          "field_location:send",
-          "field_operator:action",
-          "field_operator:read",
-          "finance.manage",
-          "finance.read",
-          "finance:read",
-          "financial_accounts:create",
-          "financial_accounts:read",
-          "financial_accounts:update",
-          "financial_entries:create",
-          "financial_entries:read",
-          "financial_entries:unreconcile",
-          "financial_entries:update",
-          "financial_period:close",
-          "financial_period:read",
-          "financial_period:reopen",
-          "financial_titles:create",
-          "financial_titles:read",
-          "financial_titles:update",
-          "fines:create",
-          "fines:read",
-          "fines:update",
-          "fuel_logs:create",
-          "fuel_logs:read",
-          "fuel_logs:update",
-          "impound:allocate",
-          "impound:create",
-          "impound:inspect",
-          "impound:notify",
-          "impound:read",
-          "impound:transition",
-          "impound:update",
-          "insurance_policies:create",
-          "insurance_policies:read",
-          "insurance_policies:update",
-          "inventory.manage",
-          "inventory.read",
-          "inventory_items:create",
-          "inventory_items:read",
-          "inventory_items:update",
-          "invoices:read",
-          "jurisdiction:create",
-          "jurisdiction:read",
-          "jurisdiction:update",
-          "logistics:read",
-          "logistics_routes:read",
-          "maintenance_orders:create",
-          "maintenance_orders:read",
-          "maintenance_orders:update",
-          "notifications:create",
-          "notifications:read",
-          "notifications:update",
-          "operator_profiles:create",
-          "operator_profiles:read",
-          "operator_profiles:update",
-          "os.manage",
-          "os.read",
-          "payments:read",
-          "pois:create",
-          "pois:read",
-          "pois:update",
-          "price_tables:create",
-          "price_tables:read",
-          "price_tables:update",
-          "professional_statements:create",
-          "professional_statements:read",
-          "professional_statements:update",
-          "purchase_orders:create",
-          "purchase_orders:read",
-          "release:approve",
-          "release:process",
-          "reports:read",
-          "roles.manage",
-          "service_catalog:create",
-          "service_catalog:read",
-          "service_catalog:update",
-          "service_quotes:approve",
-          "service_quotes:create",
-          "service_quotes:read",
-          "service_quotes:update",
-          "sessions:read",
-          "sessions:revoke",
-          "stock_movements:create",
-          "stock_movements:read",
-          "suppliers:create",
-          "suppliers:read",
-          "suppliers:update",
-          "tags:create",
-          "tags:read",
-          "tags:update",
-          "tariffs:create",
-          "tariffs:read",
-          "tariffs:update",
-          "teams:create",
-          "teams:read",
-          "teams:update",
-          "telemetry:read",
-          "tenant.manage",
-          "tenant_checklists:create",
-          "tenant_checklists:publish",
-          "tenant_checklists:read",
-          "tenant_checklists:update",
-          "tenant_settings:read",
-          "tenant_settings:update",
-          "users.manage",
-          "users.read",
-          "users:read",
-          "vehicle_identity:merge",
-          "vehicles:create",
-          "vehicles:read",
-          "vehicles:update",
-          "work_order_financials:create",
-          "work_order_financials:read",
-          "work_order_financials:update",
-          "work_orders:approve",
-          "work_orders:assign",
-          "work_orders:cancel",
-          "work_orders:comment",
-          "work_orders:create",
-          "work_orders:delete",
-          "work_orders:mileage_correct",
-          "work_orders:read",
-          "work_orders:status",
-          "work_orders:update",
-          "yard:create",
-          "yard:read",
-          "yard:update"
-        ],
-        "modules": [
-          {
-            "key": "approvals",
-            "enabled": true
-          },
-          {
-            "key": "audit",
-            "enabled": true
-          },
-          {
-            "key": "customers",
-            "enabled": true
-          },
-          {
-            "key": "expense_management",
-            "enabled": true
-          },
-          {
-            "key": "field_operations",
-            "enabled": true
-          },
-          {
-            "key": "finance",
-            "enabled": true
-          },
-          {
-            "key": "logistics",
-            "enabled": true
-          },
-          {
-            "key": "master_data",
-            "enabled": true
-          },
-          {
-            "key": "notifications",
-            "enabled": true
-          },
-          {
-            "key": "patios",
-            "enabled": true
-          },
-          {
-            "key": "quotes",
-            "enabled": true
-          },
-          {
-            "key": "suppliers",
-            "enabled": true
-          },
-          {
-            "key": "telemetry",
-            "enabled": true
-          },
-          {
-            "key": "tenant_checklist",
-            "enabled": true
-          },
-          {
-            "key": "vehicles",
-            "enabled": true
-          },
-          {
-            "key": "work_orders",
-            "enabled": true
-          }
-        ],
-        "feature_flags": {
-          "mobile_bootstrap_expanded": {
-            "enabled": true,
             "status": "implemented"
-          },
-          "expense_management": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "work_orders": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "checklists": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "notifications": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "field_location": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "expense_sync": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "work_order_sync": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "checklist_sync": {
-            "enabled": true,
-            "status": "partial",
-            "reason": "minimal_replay_contract"
-          },
-          "inventory_mobile": {
-            "enabled": false,
-            "status": "unavailable",
-            "reason": "module_disabled"
-          },
-          "inventory_sync": {
-            "enabled": false,
-            "status": "unavailable",
-            "reason": "module_disabled"
-          },
-          "generic_evidence_upload": {
-            "enabled": true,
-            "status": "partial",
-            "reason": "metadata_and_binary_upload_partial"
-          }
-        }
-      },
-      "libera": false
-    },
-    "G3_sem_modulo": {
-      "gate": "G3",
-      "papel": "tenant_admin",
-      "bootstrap": {
-        "tenant": {
-          "id": "org-G3_sem_modulo",
-          "name": "Organização G3_sem_modulo"
-        },
-        "user": {
-          "id": "user-G3_sem_modulo",
-          "email": "G3_sem_modulo@exemplo.test"
-        },
-        "roles": [
-          "tenant_admin"
-        ],
-        "permissions": [
-          "auction:appraise",
-          "audit.read",
-          "audit:read",
-          "authority_credentials:manage",
-          "billing:read",
-          "branches:create",
-          "branches:read",
-          "branches:update",
-          "charging:create",
-          "charging:online_payment",
-          "charging:read",
-          "charging:settle",
-          "checklist_runs:acknowledge",
-          "checklist_runs:complete",
-          "checklist_runs:create",
-          "checklist_runs:read",
-          "checklist_runs:reopen",
-          "checklist_runs:update",
-          "cheques:create",
-          "cheques:read",
-          "cheques:unlink_title",
-          "cheques:update",
-          "commissions:adjust",
-          "commissions:approve",
-          "commissions:audit",
-          "commissions:calculate",
-          "commissions:manage_policy",
-          "commissions:read",
-          "commissions:read_own",
-          "commissions:settle",
-          "customers:create",
-          "customers:read",
-          "customers:update",
-          "cycle_counts:create",
-          "cycle_counts:read",
-          "damages:create",
-          "damages:read",
-          "damages:update",
-          "dashboard:read",
-          "expense_audit:read",
-          "expense_policy:manage",
-          "expense_policy:read",
-          "expense_receipt:attach",
-          "expense_report:approve_finance",
-          "expense_report:approve_manager",
-          "expense_report:create",
-          "expense_report:pay",
-          "expense_report:read",
-          "expense_report:read_own",
-          "expense_report:reject",
-          "expense_report:return",
-          "expense_report:submit",
-          "expense_report:update",
-          "expense_sync:write",
-          "field_dispatch:cancel",
-          "field_dispatch:create",
-          "field_dispatch:read",
-          "field_dispatch:reassign",
-          "field_dispatch:update",
-          "field_location:history",
-          "field_location:read",
-          "field_location:send",
-          "field_operator:action",
-          "field_operator:read",
-          "finance.manage",
-          "finance.read",
-          "finance:read",
-          "financial_accounts:create",
-          "financial_accounts:read",
-          "financial_accounts:update",
-          "financial_entries:create",
-          "financial_entries:read",
-          "financial_entries:unreconcile",
-          "financial_entries:update",
-          "financial_period:close",
-          "financial_period:read",
-          "financial_period:reopen",
-          "financial_titles:create",
-          "financial_titles:read",
-          "financial_titles:update",
-          "fines:create",
-          "fines:read",
-          "fines:update",
-          "fuel_logs:create",
-          "fuel_logs:read",
-          "fuel_logs:update",
-          "impound:allocate",
-          "impound:create",
-          "impound:inspect",
-          "impound:notify",
-          "impound:read",
-          "impound:transition",
-          "impound:update",
-          "insurance_policies:create",
-          "insurance_policies:read",
-          "insurance_policies:update",
-          "inventory.manage",
-          "inventory.read",
-          "inventory_items:create",
-          "inventory_items:read",
-          "inventory_items:update",
-          "invoices:read",
-          "jurisdiction:create",
-          "jurisdiction:read",
-          "jurisdiction:update",
-          "logistics:read",
-          "logistics_routes:read",
-          "maintenance_orders:create",
-          "maintenance_orders:read",
-          "maintenance_orders:update",
-          "notifications:create",
-          "notifications:read",
-          "notifications:update",
-          "operator_profiles:create",
-          "operator_profiles:read",
-          "operator_profiles:update",
-          "os.manage",
-          "os.read",
-          "payments:read",
-          "pois:create",
-          "pois:read",
-          "pois:update",
-          "price_tables:create",
-          "price_tables:read",
-          "price_tables:update",
-          "professional_statements:create",
-          "professional_statements:read",
-          "professional_statements:update",
-          "purchase_orders:create",
-          "purchase_orders:read",
-          "release:approve",
-          "release:process",
-          "reports:read",
-          "roles.manage",
-          "service_catalog:create",
-          "service_catalog:read",
-          "service_catalog:update",
-          "service_quotes:approve",
-          "service_quotes:create",
-          "service_quotes:read",
-          "service_quotes:update",
-          "sessions:read",
-          "sessions:revoke",
-          "stock_movements:create",
-          "stock_movements:read",
-          "suppliers:create",
-          "suppliers:read",
-          "suppliers:update",
-          "tags:create",
-          "tags:read",
-          "tags:update",
-          "tariffs:create",
-          "tariffs:read",
-          "tariffs:update",
-          "teams:create",
-          "teams:read",
-          "teams:update",
-          "telemetry:read",
-          "tenant.manage",
-          "tenant_checklists:create",
-          "tenant_checklists:publish",
-          "tenant_checklists:read",
-          "tenant_checklists:update",
-          "tenant_settings:read",
-          "tenant_settings:update",
-          "users.manage",
-          "users.read",
-          "users:read",
-          "vehicle_identity:merge",
-          "vehicles:create",
-          "vehicles:read",
-          "vehicles:update",
-          "work_order_financials:create",
-          "work_order_financials:read",
-          "work_order_financials:update",
-          "work_orders:approve",
-          "work_orders:assign",
-          "work_orders:cancel",
-          "work_orders:comment",
-          "work_orders:create",
-          "work_orders:delete",
-          "work_orders:mileage_correct",
-          "work_orders:read",
-          "work_orders:status",
-          "work_orders:update",
-          "yard:create",
-          "yard:read",
-          "yard:update"
-        ],
-        "modules": [
-          {
-            "key": "approvals",
-            "enabled": true
-          },
-          {
-            "key": "audit",
-            "enabled": true
-          },
-          {
-            "key": "customers",
-            "enabled": true
-          },
-          {
-            "key": "expense_management",
-            "enabled": true
-          },
-          {
-            "key": "field_operations",
-            "enabled": true
-          },
-          {
-            "key": "finance",
-            "enabled": true
-          },
-          {
-            "key": "logistics",
-            "enabled": true
-          },
-          {
-            "key": "master_data",
-            "enabled": true
-          },
-          {
-            "key": "notifications",
-            "enabled": true
-          },
-          {
-            "key": "patios",
-            "enabled": true
-          },
-          {
-            "key": "quotes",
-            "enabled": true
-          },
-          {
-            "key": "suppliers",
-            "enabled": true
-          },
-          {
-            "key": "telemetry",
-            "enabled": true
-          },
-          {
-            "key": "tenant_checklist",
-            "enabled": true
-          },
-          {
-            "key": "vehicles",
-            "enabled": true
-          },
-          {
-            "key": "work_orders",
-            "enabled": true
-          }
-        ],
-        "feature_flags": {
-          "mobile_bootstrap_expanded": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "expense_management": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "work_orders": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "checklists": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "notifications": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "field_location": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "expense_sync": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "work_order_sync": {
-            "enabled": true,
-            "status": "implemented"
-          },
-          "checklist_sync": {
-            "enabled": true,
-            "status": "partial",
-            "reason": "minimal_replay_contract"
-          },
-          "inventory_mobile": {
-            "enabled": false,
-            "status": "unavailable",
-            "reason": "module_disabled"
-          },
-          "inventory_sync": {
-            "enabled": false,
-            "status": "unavailable",
-            "reason": "module_disabled"
           },
           "generic_evidence_upload": {
             "enabled": true,
@@ -4302,13 +3606,11 @@
           },
           "inventory_mobile": {
             "enabled": true,
-            "status": "partial",
-            "reason": "availability_and_sync_partial"
+            "status": "implemented"
           },
           "inventory_sync": {
             "enabled": true,
-            "status": "partial",
-            "reason": "in_memory_contract"
+            "status": "implemented"
           },
           "generic_evidence_upload": {
             "enabled": true,

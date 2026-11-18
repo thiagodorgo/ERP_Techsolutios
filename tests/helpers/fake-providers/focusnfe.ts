@@ -23,6 +23,19 @@ export function resetFocusNfeFakeState(): void {
 
 export type FocusNfeWebhookEvent = { readonly ref: string; readonly status: string; readonly id?: string };
 
+/** B-ASS-08c2 (Emenda 1 §5.1, o modo `hold`): o PRÓXIMO POST de emissão grava a nota e SEGURA a resposta num portão — `reached`
+ * resolve quando a nota já está gravada no falso, e `release()` deixa a resposta sair. Sem relógio: a ordem é a do portão. */
+type IssueHold = { readonly arrive: () => void; readonly released: Promise<void> };
+let issueHold: IssueHold | undefined;
+export function holdNextIssue(): { readonly reached: Promise<void>; release(): void } {
+  let arrive!: () => void;
+  let release!: () => void;
+  const reached = new Promise<void>((resolve) => (arrive = resolve));
+  const released = new Promise<void>((resolve) => (release = resolve));
+  issueHold = { arrive, released };
+  return { reached, release };
+}
+
 /**
  * B-ASS-08 · F4 — o falso Focus NFe EMITE um webhook para a nossa URL, com a autenticidade do Focus: header
  * nomeado por nós (`X-Webhook-Token`) = o segredo registrado (`webhook_secret`). `badSecret` reproduz o ataque.
@@ -71,6 +84,8 @@ export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeSer
       const ref = url.searchParams.get("ref") ?? "";
       const existing = invoices.get(ref);
       if (existing || selected === "duplicate_ref") {
+        // B-ASS-08c2 (Emenda 1 §4.2, NR2): a duplicidade com um texto que o adaptador NÃO reconhece (vira validação, não `already_issued`).
+        if (existing && selected === "duplicate_ref_unrecognized") return sendJson(res, 422, { status: "erro_validacao", mensagem: "DPS duplicada para esta série" });
         return sendJson(res, 422, { status: "erro_validacao", id: existing?.id ?? "nfse_existing", mensagem: "Já existe um DPS com esta referência" });
       }
       const parsed = body ? (JSON.parse(body) as Record<string, unknown>) : {};
@@ -81,6 +96,17 @@ export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeSer
       const id = `nfse_${sequence++}`;
       dpsNumbers.add(dpsKey);
       invoices.set(ref, { id, ref, serie: Number(parsed.serie_dps), numero: Number(parsed.numero_dps), queryCount: 0, status: selected === "rejected" ? "erro_autorizacao" : "processando_autorizacao" });
+      // B-ASS-08c2 (Emenda 1 §4.2, NR1/NR2): o provedor CRIOU a nota e a resposta se perdeu — o socket cai sem resposta.
+      if (selected === "create_then_drop" || selected === "duplicate_ref_unrecognized") {
+        res.socket?.destroy();
+        return;
+      }
+      const hold = issueHold;
+      if (hold) {
+        issueHold = undefined;
+        hold.arrive();
+        await hold.released;
+      }
       return sendJson(res, 202, { id, ref, status: "processando_autorizacao" });
     }
 

@@ -369,6 +369,22 @@ jobs:
           SUITES="$SUITES tests/b-aprov-duraveis-rls-db.test.ts"
           SUITES="$SUITES tests/b-aprov-duraveis-migration-drill-db.test.ts"
           SUITES="$SUITES tests/b-aprov-duraveis-sod-audit-db.test.ts"
+          # B-ASS-08c2 (item 60; D-DONO-1611-SUITES-REGRA-FIXA) — as 7 suítes `-db` novas da nota fiscal do canal de cobrança,
+          # que continua desligado: a baixa manual que quita grava a intenção de nota e o índice na mesma transação, a reemissão
+          # com o seq seguinte, a varredura de recuperação à prova de falha, o estorno manual que cancela a nota viva só com
+          # confirmação, a rota /invoice e o backlog, a nota presa, a retentativa que reconsulta e a falha de banco do movimento
+          # como 409 repetível; sob papel efêmero SEM BYPASSRLS. Medida a lista inteira 3× nesta forma antes de entrar (86
+          # arquivos, antes da linha do B-APP-SESSAO-RENOVA; banco migrado e semeado): 728 casos nas 3, 0 pulo, denominador
+          # constante; os 58 casos das 7 suítes
+          # novas, 0 falha nas 3 (as falhas locais foram só de suítes anteriores, de carga e de trava de arquivo do Windows).
+          SUITES="$SUITES tests/ass-08c-nota-manual-db.test.ts"
+          SUITES="$SUITES tests/ass-08c-varredura-db.test.ts"
+          SUITES="$SUITES tests/ass-08c-estorno-manual-db.test.ts"
+          SUITES="$SUITES tests/ass-08c-invoice-route-db.test.ts"
+          SUITES="$SUITES tests/ass-08c-nota-presa-db.test.ts"
+          SUITES="$SUITES tests/ass-08c-nota-retry-db.test.ts"
+          SUITES="$SUITES tests/ass-08c-statement-busy-db.test.ts"
+          SUITES="$SUITES tests/bgui02-ordem-por-etapa-db.test.ts"
           # B-WO-LEITURA-TECNICO (item 71 do portão; Emendas 1, 2, 3.1 e 3.2) — o escopo de leitura do técnico de campo no Postgres
           # real, sob papel efêmero NOSUPERUSER NOBYPASSRLS: as 18 rotas do bloco (D-POS, D-NEG, D-UNIAO, D-MESMA-REGRA para
           # support+ft, finance+tec, viewer+tec e auditor+ft, D-CONCEDE (i)-(v), D-MODULO-PROPRIO, D-XT, D-POS-USERID, D-PAINEL e D-EX).

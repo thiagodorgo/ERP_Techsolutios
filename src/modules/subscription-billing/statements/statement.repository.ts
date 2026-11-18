@@ -8,9 +8,11 @@ import type { ChargeIntentAuditEvent, ChargeIntentTx } from "../charges/charge-i
 import { CHARGE_RULES } from "../charges/charge-rules.js";
 import type { InMemoryStatementChargeRepository } from "../charges/charges.repository.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
+import { INVOICE_ISSUE_LINE_RULES, seqOfIdempotencyKey } from "../invoices/invoice-intent-rules.js";
 import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
+import { LIVE_INVOICE_STATUSES, type StatementInvoiceStatus } from "../invoices/invoices.types.js";
 import type { InMemoryOutboxRepository, OutboxRepository } from "../outbox/outbox.repository.js";
-import type { BillingOutboxRow, NewOutboxRow } from "../outbox/outbox.types.js";
+import { idempotencyKeyOf, type BillingOutboxRow, type NewOutboxRow, type OutboxSkipReason, type OutboxStatus } from "../outbox/outbox.types.js";
 import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.repository.js";
 import type {
   ChargeStatus,
@@ -26,6 +28,23 @@ export type NewCredit = Omit<SubscriptionCredit, "id" | "status" | "appliedToSta
 
 /** A nota VIVA do demonstrativo, lida DENTRO da transação, depois da trava do demonstrativo (conserto da J-530, B). */
 export type LiveInvoiceRef = { readonly provider: string; readonly seq: number; readonly status: "pending" | "authorized" | "cancel_pending" };
+
+/** B-ASS-08c2 (plano §4.1 item 5): os fatos da intenção de nota, lidos no MESMO `tx` e depois da trava do demonstrativo — as
+ * linhas `invoice_issue` da fila, o maior `seq` da tabela da nota (0 sem nota) e a nota viva. */
+export type InvoiceIntentFacts = {
+  readonly lines: readonly Pick<BillingOutboxRow, "kind" | "status" | "idempotencyKey" | "occurredAt" | "skipReason">[];
+  readonly maxInvoiceSeq: number;
+  readonly live: LiveInvoiceRef | undefined;
+};
+
+/** B-ASS-08c2 (plano §4.9): os fatos de uma linha do backlog da nota — o demonstrativo, se há nota viva, a última `invoice_issue`
+ * da fila e a última nota. A categoria é da regra pura (`backlogCategory`); esta leitura não decide nada. */
+export type InvoiceBacklogFacts = {
+  readonly statement: Pick<SubscriptionStatement, "id" | "period" | "status" | "invoiceStatus" | "totalCents" | "paidAt">;
+  readonly live: boolean;
+  readonly lastLine: { readonly status: OutboxStatus; readonly skipReason: OutboxSkipReason | null; readonly occurredAt: Date; readonly seq: number; readonly lastError: string | null } | undefined;
+  readonly lastInvoice: { readonly seq: number; readonly status: StatementInvoiceStatus } | undefined;
+};
 
 /** Operações dentro de UMA transação da organização. */
 export type StatementTx = {
@@ -47,6 +66,9 @@ export type StatementTx = {
   enqueueOutbox?(row: NewOutboxRow, now: Date): Promise<void>;
   /** A nota VIVA (`pending`/`authorized`/`cancel_pending`) do demonstrativo, lida da tabela da nota (não do espelho). */
   findLiveInvoice?(statementId: string): Promise<LiveInvoiceRef | undefined>;
+  /** B-ASS-08c2 (§4.1 item 5): os fatos da intenção de nota (as linhas, o maior `seq` e a nota viva), no MESMO `tx`. Ausente = este
+   * `tx` não sustenta a intenção de nota nova; as funções do settlement falham fechado (`invoice_intent_tx_unsupported`). */
+  invoiceIntentFacts?(statementId: string): Promise<InvoiceIntentFacts>;
   /** B-ASS-08c1b (P8, A7/A8) — OBRIGATÓRIO: há linha da fila em `NEEDS_REVIEW` para o demonstrativo? Lida NO MESMO `tx`,
    * depois da trava do demonstrativo (o `reopen` a chama no o marcador GUARD-01). O dublê sem as lojas do canal devolve `false`:
    * não há fila. */
@@ -68,7 +90,7 @@ export type ChargeSyncMatch = { readonly externalChargeId: string } | { readonly
  * `reopen` (B-ASS-08c1b, P8). */
 export type InMemoryChannelStores = {
   readonly outbox: Pick<OutboxRepository, "enqueue" | "listByStatement"> & Partial<Pick<InMemoryOutboxRepository, "skipPendingChargeCreate" | "skipChargeCreate">>;
-  readonly invoices: Pick<StatementInvoiceRepository, "findLive">;
+  readonly invoices: Pick<StatementInvoiceRepository, "findLive"> & Partial<Pick<StatementInvoiceRepository, "listByStatement">>;
   /** B-ASS-08c1c (plano §4.0 item 2): a tabela de cobranças e o índice. Com as QUATRO lojas o `tx` sustenta a cobrança
    * (`charging()`); com menos, um "sem canal" (lista vazia; toda escrita lança `charge_channel_tx_unsupported`). */
   readonly charges?: InMemoryStatementChargeRepository;
@@ -84,7 +106,17 @@ export type StatementRepository = {
   /** B-ASS-08c1c (P11b, plano §4.9): a cobrança `pending` da tabela que o cliente pode pagar — a do fechamento VIGENTE (a
    * `charge_create` SENT dela nasceu depois da última reabertura, com o total atual) e sem `charge_cancel` vivo. */
   findPayableCharge(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined>;
+  /** B-ASS-08c2 (plano §4.5): os demonstrativos `paid` com total > 0, pagos desde o `cutoff`, sem nota viva, sem `invoice_issue`
+   * em voo e sem `invoice_issue` da época (`occurred_at >= paid_at`), em ordem de `paid_at`, no máximo 200. A consulta ENCONTRA;
+   * quem DECIDE é a regra, sob a trava de cada um. */
+  listInvoiceIntentCandidates(tenantId: string, cutoff: Date): Promise<readonly string[]>;
+  /** B-ASS-08c2 (plano §4.9): o backlog da nota da organização — os demonstrativos `paid`, mais os NÃO pagos com nota viva, com
+   * a última `invoice_issue` e a última nota de cada um, em ordem de período. Uma leitura, sem trava. */
+  listInvoiceBacklog(tenantId: string): Promise<readonly InvoiceBacklogFacts[]>;
 };
+
+/** B-ASS-08c2 (plano §4.5): o teto de candidatos por organização e rodada da varredura (o resto sai na rodada seguinte). */
+export const INVOICE_SWEEP_LIMIT = 200;
 
 export function emptyStatement(input: NewStatement, now: Date): SubscriptionStatement {
   return {
@@ -164,16 +196,32 @@ export class InMemoryStatementRepository implements StatementRepository {
     const channel = this.channel;
     const own = <T extends { tenantId: string }>(row: T | undefined): T | undefined =>
       row && row.tenantId === tenantId ? row : undefined;
-    const intent: Pick<StatementTx, "enqueueOutbox" | "findLiveInvoice"> = channel
+    const findLiveInvoice = async (statementId: string): Promise<LiveInvoiceRef | undefined> => {
+      const live = await channel!.invoices.findLive(tenantId, statementId);
+      return live && (live.status === "pending" || live.status === "authorized" || live.status === "cancel_pending")
+        ? { provider: live.provider, seq: live.seq, status: live.status }
+        : undefined;
+    };
+    const intent: Pick<StatementTx, "enqueueOutbox" | "findLiveInvoice" | "invoiceIntentFacts"> = channel
       ? {
           async enqueueOutbox(row, now) {
             pending.push({ row, now });
           },
-          async findLiveInvoice(statementId) {
-            const live = await channel.invoices.findLive(tenantId, statementId);
-            return live && (live.status === "pending" || live.status === "authorized" || live.status === "cancel_pending")
-              ? { provider: live.provider, seq: live.seq, status: live.status }
-              : undefined;
+          findLiveInvoice,
+          // B-ASS-08c2 (§4.1 item 5): a fila (com as linhas que ESTE `tx` já gravou, como o banco as veria) e a nota.
+          async invoiceIntentFacts(statementId) {
+            const listInvoices = channel.invoices.listByStatement;
+            if (!listInvoices) throw new Error("invoice_intent_tx_unsupported");
+            const stored = (await channel.outbox.listByStatement(tenantId, statementId)).filter((row) => row.kind === "invoice_issue");
+            const buffered = pending
+              .filter((item) => item.row.tenantId === tenantId && item.row.statementId === statementId && item.row.kind === "invoice_issue")
+              .map((item) => ({ kind: item.row.kind, status: "PENDING" as const, idempotencyKey: idempotencyKeyOf(item.row.kind, item.row.statementId, item.row.seq), occurredAt: item.now, skipReason: item.row.skipReason ?? null }));
+            const invoices = await listInvoices.call(channel.invoices, tenantId, statementId);
+            return {
+              lines: [...stored, ...buffered],
+              maxInvoiceSeq: invoices.reduce((max, invoice) => Math.max(max, invoice.seq), 0),
+              live: await findLiveInvoice(statementId),
+            };
           },
         }
       : {};
@@ -343,6 +391,57 @@ export class InMemoryStatementRepository implements StatementRepository {
 
   async listCredits(tenantId: string) {
     return [...this.credits.values()].filter((row) => row.tenantId === tenantId);
+  }
+
+  /** B-ASS-08c2 (plano §4.6): as organizações que têm demonstrativo no dublê (a enumeração do modo memória). */
+  tenantIds(): readonly string[] {
+    return [...new Set([...this.statements.values()].map((row) => row.tenantId))];
+  }
+
+  /** B-ASS-08c2 (plano §4.5): a MESMA busca da consulta do Prisma, sobre as lojas do canal. Sem as lojas não há onde olhar a
+   * fila nem a nota: falha fechado (a varredura daquela organização falha e as emissões da rodada esperam). */
+  async listInvoiceIntentCandidates(tenantId: string, cutoff: Date): Promise<readonly string[]> {
+    const channel = this.channel;
+    if (!channel) throw new Error("invoice_intent_tx_unsupported");
+    const found: SubscriptionStatement[] = [];
+    for (const statement of this.statements.values()) {
+      if (statement.tenantId !== tenantId || statement.status !== "paid" || statement.totalCents <= 0 || !statement.paidAt || statement.paidAt.getTime() < cutoff.getTime()) continue;
+      const live = await channel.invoices.findLive(tenantId, statement.id);
+      if (live && (LIVE_INVOICE_STATUSES as readonly string[]).includes(live.status)) continue;
+      const lines = (await channel.outbox.listByStatement(tenantId, statement.id)).filter((row) => row.kind === "invoice_issue");
+      if (lines.some((row) => INVOICE_ISSUE_LINE_RULES[row.status].inFlight || row.occurredAt.getTime() >= statement.paidAt!.getTime())) continue;
+      found.push(statement);
+    }
+    return found
+      .sort((a, b) => a.paidAt!.getTime() - b.paidAt!.getTime() || a.id.localeCompare(b.id))
+      .slice(0, INVOICE_SWEEP_LIMIT)
+      .map((row) => row.id);
+  }
+
+  /** B-ASS-08c2 (plano §4.9): a MESMA leitura do Prisma, sobre as lojas do canal. Sem a fila e a lista das notas não há como
+   * calcular o backlog: falha fechado (`invoice_intent_tx_unsupported`), em vez de "backlog vazio". */
+  async listInvoiceBacklog(tenantId: string): Promise<readonly InvoiceBacklogFacts[]> {
+    const channel = this.channel;
+    const listInvoices = channel?.invoices.listByStatement?.bind(channel.invoices);
+    if (!channel || !listInvoices) throw new Error("invoice_intent_tx_unsupported");
+    const rows: InvoiceBacklogFacts[] = [];
+    const statements = [...this.statements.values()].filter((row) => row.tenantId === tenantId).sort((a, b) => a.period.localeCompare(b.period) || a.id.localeCompare(b.id));
+    for (const statement of statements) {
+      const found = await channel.invoices.findLive(tenantId, statement.id);
+      const live = found !== undefined && (LIVE_INVOICE_STATUSES as readonly string[]).includes(found.status);
+      if (statement.status !== "paid" && !live) continue;
+      const lines = (await channel.outbox.listByStatement(tenantId, statement.id)).filter((row) => row.kind === "invoice_issue");
+      const last = lines.reduce<BillingOutboxRow | undefined>((best, row) => (!best || row.occurredAt.getTime() > best.occurredAt.getTime() || (row.occurredAt.getTime() === best.occurredAt.getTime() && seqOfIdempotencyKey(row.idempotencyKey) > seqOfIdempotencyKey(best.idempotencyKey)) ? row : best), undefined);
+      const invoices = await listInvoices(tenantId, statement.id);
+      const lastInvoice = invoices.reduce<(typeof invoices)[number] | undefined>((best, row) => (!best || row.seq > best.seq ? row : best), undefined);
+      rows.push({
+        statement: { id: statement.id, period: statement.period, status: statement.status, invoiceStatus: statement.invoiceStatus, totalCents: statement.totalCents, paidAt: statement.paidAt },
+        live,
+        lastLine: last ? { status: last.status, skipReason: last.skipReason, occurredAt: last.occurredAt, seq: seqOfIdempotencyKey(last.idempotencyKey), lastError: last.lastError } : undefined,
+        lastInvoice: lastInvoice ? { seq: lastInvoice.seq, status: lastInvoice.status } : undefined,
+      });
+    }
+    return rows;
   }
 
   /** Só para testes: força o estado da cobrança/nota (o canal do B-ASS-06..08 ainda não existe). */
