@@ -48,12 +48,15 @@ export GH_REPO="<GH_REPO>"
 | 1 · Fundação | VPC (2 AZ), NAT, grupos de segurança, ECR, segredos, OIDC do GitHub, logs | destrava tudo | ~12–15 |
 | 2 · Dados | RDS PostgreSQL 16 (PITR, a recuperação a qualquer minuto dos últimos 7 dias; UTC), papel de runtime sem bypass, Valkey, drill de restore cronometrado | **9** (papel criado; a trava fecha na fase 3) e **10** (conferido na fase 6) | ~72 |
 | 3 · API | cluster ECS, task definition, ALB com HTTPS, serviço, smoke | **9** (trava `runtime database role verified` verde) | ~71 |
+| 3b · Antivírus | ClamAV privado (Fargate x86 0,5 vCPU / 3 GB), nome interno `clamav.erp.local`, a API com `EVIDENCE_SCANNER=clamav` | **27** (fecha quando o antivírus responder no ambiente e o upload deixar de dar 503) | ~43 |
+| 3c · Traccar | Traccar privado (Fargate x86 0,5 vCPU / 2 GB) + RDS `db.t4g.micro` **dedicado**, ponte privada para a ingestão da API (3200), **nenhuma porta pública** | — (prepara o `B-TRC-06`) | ~66 |
+| 3d · Porta dos rastreadores | NLB público só GT06 (5023) e OsmAnd (5055), 2 IPs fixos, logs de fluxo e alarmes — **trava: modelo de ameaças do `G-TRC-NLB` + junta 5/5 antes de executar** | — | ~35 |
 | 4 · Frontend | S3 privado + CloudFront, certificado, build apontando para a API | — | ~3 |
 | 5 · DNS próprio | zona, NS no registrador, `api.` e `app.`, HTTPS de ponta a ponta, a pergunta do IP fixo | — | ~1 |
-| 6 · Go-live | 1º tenant e 1º admin, S3 de anexos, rollback ensaiado, alertas, checklist | **43** (1º admin), **10** (leitura da plataforma sob o papel), 27 fica para `B-AV-REAL` | ~2 |
-| **Total** | produção mínima (sem Traccar e sem ClamAV) | | **~US$ 160–175** |
+| 6 · Go-live | 1º tenant e 1º admin, S3 de anexos, rollback ensaiado, alertas, checklist | **43** (1º admin), **10** (leitura da plataforma sob o papel); o 27 fecha na 3b | ~2 |
+| **Total** | produção mínima, **com ClamAV e Traccar** (fases 0–3c e 4–6) | | **~US$ 270–285** |
 
-Com Traccar (`B-TRC-06`) e ClamAV (`B-AV-REAL`) o estudo soma ~US$ 98 → **~US$ 260–275/mês**, perto dos US$ 255 do estudo com instância NAT (a diferença: IPv4 público agora é cobrado, US$ 0,005/h por endereço, e a API começa em x86, ver 3.6).
+Por decisão do dono em 17/11 (*"o traccar e antivirus ja entram"*), o mínimo já inclui o antivírus (3b) e o Traccar (3c): **~US$ 270–285/mês**, contra os US$ 255 do estudo com instância NAT. A diferença: o IPv4 público agora é cobrado (US$ 0,005/h por endereço), e a API e o ClamAV começam em x86 (3.6 e 3b: as imagens publicadas hoje são só `amd64`; o estudo contava ARM). Com a porta dos rastreadores aberta (3d, depois da trava), **~US$ 305–320/mês**: ainda abaixo do teto de US$ 350 do orçamento (D-AWS-02), mas perto; ao abrir a 3d, reveja o teto.
 
 **A etapa 1 que o dono se comprometeu a fazer até 18/11 é a Fase 0 inteira mais o começo da Fase 1.** Exatamente isto precisa estar feito até lá, para o resto correr por comando:
 
@@ -81,6 +84,8 @@ Com Traccar (`B-TRC-06`) e ClamAV (`B-AV-REAL`) o estudo soma ~US$ 98 → **~US$
 | D-AWS-08 | API em x86 até o CI publicar imagem `arm64` (pendência P-AWS-IMAGEM-ARM64) | x86 agora (+US$ 6/mês); trocar para ARM no PR do CI | x86 |
 | D-AWS-09 | Transferir o domínio para o Route 53 Domains? | `.com.br` **não pode** (a AWS encerrou registro e transferência de `.com.br`); outros TLDs: não precisa, a zona funciona com qualquer registrador | manter no registrador atual |
 | D-AWS-10 | RDS Multi-AZ? | não no começo (dobra o custo do banco) | single-AZ, PITR ligado |
+| D-AWS-11 | Abrir a porta de protocolo dos rastreadores (GT06 e OsmAnd)? | **decidido pelo dono em 17/11:** *"porta aberta com os devidos cuidados"* → fase 3d, só depois do modelo de ameaças do gate `G-TRC-NLB` e da junta de 5 unânime | (decidido) |
+| D-AWS-12 | Banco do Traccar: RDS dedicado ou um banco dentro do RDS do ERP? | **decidido pelo dono em 17/11:** *"banco proprio traccar"* → RDS `db.t4g.micro` dedicado (3c.2), como manda o plano do Traccar | (decidido) |
 
 ---
 
@@ -617,7 +622,7 @@ aws route53 wait resource-record-sets-changed --id "$MUDANCA"
 **Custo:** 0 (consulta a alias de ALB é grátis). **Desfazer:** `sed 's/"UPSERT"/"DELETE"/' rr-api.json > rr-api-del.json` e `aws route53 change-resource-record-sets --hosted-zone-id "$ZONA_ID" --change-batch file://rr-api-del.json`.
 
 ### 3.6 Task definition
-**Objetivo:** a receita da tarefa: imagem do ECR, 0,5 vCPU / 1 GB, porta 3000, variáveis não secretas no claro e os segredos por `valueFrom` (uma chave do JSON `erp/prod/api` por variável). **Arquitetura x86**: o job `docker` do `ci.yml` não declara `platforms`, logo a imagem do GHCR é só `amd64`; ARM64 (24,8 em vez de 31 US$/mês) exige o CI publicar `linux/arm64` (P-AWS-IMAGEM-ARM64). Os gates do `env.ts` estão todos atendidos: `CORE_SAAS_PERSISTENCE=prisma`, `DATABASE_URL`, `JOBS_WORKER_ENABLED=true`, `REDIS_URL` fora de localhost, `DATABASE_RUNTIME_ROLE_GUARD=enforce`, `CORS_ORIGIN` https sem curinga, os 5 `PORTAL_*`, `EVIDENCE_SCANNER=unavailable` (até o `B-AV-REAL`: todo upload responde 503, item 27).
+**Objetivo:** a receita da tarefa: imagem do ECR, 0,5 vCPU / 1 GB, porta 3000, variáveis não secretas no claro e os segredos por `valueFrom` (uma chave do JSON `erp/prod/api` por variável). **Arquitetura x86**: o job `docker` do `ci.yml` não declara `platforms`, logo a imagem do GHCR é só `amd64`; ARM64 (24,8 em vez de 31 US$/mês) exige o CI publicar `linux/arm64` (P-AWS-IMAGEM-ARM64). Os gates do `env.ts` estão todos atendidos: `CORE_SAAS_PERSISTENCE=prisma`, `DATABASE_URL`, `JOBS_WORKER_ENABLED=true`, `REDIS_URL` fora de localhost, `DATABASE_RUNTIME_ROLE_GUARD=enforce`, `CORS_ORIGIN` https sem curinga, os 5 `PORTAL_*`, `EVIDENCE_SCANNER=unavailable` (até a Fase 3b ligar o antivírus: até lá, todo upload responde 503, item 27).
 ```bash
 cat > taskdef.json <<EOF
 {
@@ -716,6 +721,376 @@ Reler segredos trocados sem imagem nova: `aws ecs update-service --cluster erp-p
 **Conferência:** `aws ecs describe-services --cluster erp-prod --services erp-api --query 'services[0].[taskDefinition,runningCount]' --output text` → a revisão esperada e `1`. **Desfazer:** é o próprio rollback acima (apontar para a revisão N−1).
 
 **Conferência da fase inteira:** `healthy` no grupo de destino, `runtime database role verified` com `escapes:0` no log, os 3 `curl` do 3.9. **O que pode dar errado:** `CannotPullContainerError` (o papel de execução sem `ecr:BatchImportUpstreamImage`, ou a tag errada); `ResourceInitializationError … secrets` (o ARN do segredo no `valueFrom` sem a chave `:NOME::`); health check vermelho por `CORS_ORIGIN` ausente (o boot recusa de propósito).
+
+---
+
+## 6b. Fase 3b · Antivírus (ClamAV, item 27)
+
+**Por que agora:** decisão do dono, 17/11 (*"o traccar e antivirus ja entram"*). Até esta fase, a API roda com `EVIDENCE_SCANNER=unavailable` e **todo upload responde 503** (nada é gravado): é o fail-closed do `B-O6R-07b`. Esta fase põe o antivírus de verdade (o `clamd` do ClamAV) numa tarefa privada, e a API passa a mandar cada arquivo para ele antes de gravar (protocolo `INSTREAM`, desenho da `PD-O6R-B07B-CLAMD-INSTREAM` e do `B-AV-REAL`, já na `main`).
+
+**Pré-requisitos:** Fases 1–3 (VPC, NAT, `erp-sg-clamav`, cluster, papel de execução, a API no ar). A ativação no ambiente de produção é contratação de serviço pago: junta de 5 unânime registrada (como toda a conta, §6.7 item 3). **Terminais:** CloudShell normal para a API da AWS; CloudShell em VPC para a conferência do 3b.6. **Custo:** Fargate **x86** 0,5 vCPU / 3 GB ≈ **US$ 42/mês** (0,5 × 0,0696 + 3 × 0,0076 US$/h × 730 h); o estudo previa ARM (US$ 33,7), mas a imagem fixada no `B-AV-REAL` (`clamav/clamav:1.4.6@sha256:982e28f9…`) só tem `amd64` (o índice da imagem lido no registro: `amd64` e um item de atestação), por isso x86 (pendência P-AWS-CLAMAV-ARM64). Mais ~US$ 0,50/mês da zona privada do Cloud Map e ~US$ 1 de logs.
+
+**Como a API acha o antivírus:** pela **descoberta de serviço do ECS** (AWS Cloud Map, um nome DNS privado `clamav.erp.local` que aponta sempre para o IP da tarefa do momento). A documentação do ECS a sustenta em `sa-east-1`, no Fargate, com registro `A` para tarefas `awsvpc`, saúde do registro dada pela própria checagem de saúde do contêiner, e sem custo além da zona privada e das consultas. **Declarado:** a PD do antivírus citava o *Service Connect* (o mesmo Cloud Map, mais um proxy dentro de cada tarefa); aqui fica a descoberta por DNS, sem proxy, porque o cliente da API já tem o próprio tempo-limite de conexão e de varredura (`CLAMAV_CONNECT_TIMEOUT_MS`, `CLAMAV_SCAN_TIMEOUT_MS`) e o proxy só somaria uma peça. Um NLB interno também serviria, mas custa ~US$ 25/mês a mais sem ganho para uma tarefa só.
+
+```bash
+set -a; . ~/erp-ids.env; set +a
+export IMAGEM_CLAMAV="clamav/clamav@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0"   # a tag 1.4.6, presa pelo digest (o mesmo do docker-compose.clamav.yml)
+```
+
+### 3b.1 O espaço de nomes privado (`erp.local`)
+**Objetivo:** uma zona DNS só da VPC, onde cada serviço interno ganha um nome (`clamav.erp.local`, depois `traccar.erp.local` e `api.erp.local`).
+```bash
+OP_ID=$(aws servicediscovery create-private-dns-namespace --name erp.local --vpc "$VPC_ID" --description "ERP: nomes internos da VPC" --query OperationId --output text)
+aws servicediscovery get-operation --operation-id "$OP_ID" --query 'Operation.Status' --output text     # repita até SUCCESS
+NS_ID=$(aws servicediscovery get-operation --operation-id "$OP_ID" --query 'Operation.Targets.NAMESPACE' --output text)
+echo "NS_ID=$NS_ID" >> ~/erp-ids.env
+```
+**Conferência:** `aws servicediscovery list-namespaces --query "Namespaces[?Name=='erp.local'].[Id,Type]" --output text` → `ns-… DNS_PRIVATE`. **Custo:** ~US$ 0,50/mês (a zona privada do Route 53 que o Cloud Map cria). **Desfazer** (só depois de apagar os serviços de descoberta do 3b.2 e do 3c.4): `aws servicediscovery delete-namespace --id "$NS_ID"`.
+
+### 3b.2 O nome do antivírus e a regra de entrada para a conferência
+```bash
+SD_CLAMAV_ARN=$(aws servicediscovery create-service --name clamav --namespace-id "$NS_ID" --dns-config 'RoutingPolicy=MULTIVALUE,DnsRecords=[{Type=A,TTL=10}]' --health-check-custom-config FailureThreshold=1 --query Service.Arn --output text)
+aws ec2 authorize-security-group-ingress --group-id "$SG_CLAMAV" --protocol tcp --port 3310 --source-group "$SG_OPS"     # só para a conferência do 3b.6, a partir do CloudShell em VPC
+aws logs create-log-group --log-group-name /ecs/erp-clamav --tags app=erp
+aws logs put-retention-policy --log-group-name /ecs/erp-clamav --retention-in-days 30
+echo "SD_CLAMAV_ARN=$SD_CLAMAV_ARN" >> ~/erp-ids.env
+```
+**Conferência:** `aws ec2 describe-security-groups --group-ids "$SG_CLAMAV" --query 'SecurityGroups[0].IpPermissions[].[FromPort,UserIdGroupPairs[].GroupId]' --output text` → `3310` só com `erp-sg-api` e `erp-sg-ops`. **Desfazer:** `aws servicediscovery delete-service --id <id do serviço clamav>` (o ID é o fim do `SD_CLAMAV_ARN`, `srv-…`), `aws ec2 revoke-security-group-ingress --group-id "$SG_CLAMAV" --protocol tcp --port 3310 --source-group "$SG_OPS"` e `aws logs delete-log-group --log-group-name /ecs/erp-clamav`.
+
+### 3b.3 A receita da tarefa do antivírus
+**Objetivo:** o contêiner oficial do ClamAV com a **mesma configuração do repositório** (`infra/clamav/clamd.conf`: os limites que, sem `AlertExceedsMax yes`, dariam "limpo" por engano). O Fargate não monta arquivo do repositório; então a receita leva o conteúdo do `clamd.conf` numa variável e, antes de subir, o contêiner o grava em `/etc/clamav/clamd.conf` e chama o mesmo início da imagem (`/init`, lido na configuração da imagem no registro). O `freshclam` (atualização da base de vírus) roda dentro da mesma tarefa, como a imagem faz por padrão, e sai pela internet pelo NAT da fase 1. A checagem de saúde é a da própria imagem (`clamdcheck.sh`); o ECS aceita no máximo 300 s de carência, e a primeira base leva alguns minutos para baixar, por isso 10 tentativas de 30 s depois da carência.
+```bash
+cd ~/erp 2>/dev/null || git clone --depth 1 --branch main "https://github.com/${GH_DONO}/${GH_REPO}.git" ~/erp
+jq -n --rawfile conf ~/erp/infra/clamav/clamd.conf --arg img "$IMAGEM_CLAMAV" --arg exe "$EXEC_ROLE_ARN" --arg reg "$REGIAO" '{
+  family: "erp-clamav", networkMode: "awsvpc", requiresCompatibilities: ["FARGATE"], cpu: "512", memory: "3072",
+  runtimePlatform: { cpuArchitecture: "X86_64", operatingSystemFamily: "LINUX" },
+  executionRoleArn: $exe,
+  containerDefinitions: [ {
+    name: "clamav", image: $img, essential: true,
+    portMappings: [ { containerPort: 3310, protocol: "tcp" } ],
+    environment: [ { name: "CLAMD_CONF", value: $conf } ],
+    entryPoint: ["/bin/sh", "-c"],
+    command: ["printf \"%s\\n\" \"$CLAMD_CONF\" > /etc/clamav/clamd.conf && exec /init"],
+    logConfiguration: { logDriver: "awslogs", options: { "awslogs-group": "/ecs/erp-clamav", "awslogs-region": $reg, "awslogs-stream-prefix": "clamav" } },
+    healthCheck: { command: ["CMD-SHELL", "clamdcheck.sh"], interval: 30, timeout: 10, retries: 10, startPeriod: 300 }
+  } ] }' > clamav-taskdef.json
+CLAMAV_TASKDEF_ARN=$(aws ecs register-task-definition --cli-input-json file://clamav-taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text)
+echo "CLAMAV_TASKDEF_ARN=$CLAMAV_TASKDEF_ARN" >> ~/erp-ids.env
+```
+**Conferência:** `aws ecs describe-task-definition --task-definition erp-clamav --query 'taskDefinition.[cpu,memory,runtimePlatform.cpuArchitecture,containerDefinitions[0].image]' --output text` → `512 3072 X86_64 clamav/clamav@sha256:982e…`. **Custo:** 0 (a receita não custa). **Desfazer:** `aws ecs deregister-task-definition --task-definition erp-clamav:<revisão>`.
+
+### 3b.4 O serviço do antivírus (1 tarefa, privada)
+```bash
+aws ecs create-service --cluster erp-prod --service-name erp-clamav --task-definition "$CLAMAV_TASKDEF_ARN" --desired-count 1 --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[${SUB_PRIV_A},${SUB_PRIV_B}],securityGroups=[${SG_CLAMAV}],assignPublicIp=DISABLED}" \
+  --service-registries "registryArn=${SD_CLAMAV_ARN}" --tags key=app,value=erp --query 'service.status' --output text
+aws ecs wait services-stable --cluster erp-prod --services erp-clamav      # a 1ª base de vírus leva minutos
+```
+**Conferência:** `aws ecs describe-services --cluster erp-prod --services erp-clamav --query 'services[0].[status,runningCount]' --output text` → `ACTIVE 1`; `aws logs tail /ecs/erp-clamav --since 15m --format short` (só na CLI v2 do CloudShell) mostra a base baixada e o `clamd` escutando. **Custo:** ~US$ 42/mês. **Desfazer:** `aws ecs update-service --cluster erp-prod --service erp-clamav --desired-count 0` e `aws ecs delete-service --cluster erp-prod --service erp-clamav --force` — **antes** volte a API para `EVIDENCE_SCANNER=unavailable` (desfazer do 3b.5), senão todo upload passa a responder 503 por antivírus fora do ar, que é o lado seguro, mas é uma queda.
+
+### 3b.5 A API passa a usar o antivírus
+**Objetivo:** os nomes reais do `src/config/env.ts`: `EVIDENCE_SCANNER=clamav`, `CLAMAV_HOST` (obrigatório com `clamav`), `CLAMAV_PORT` (padrão 3310) e `CLAMAV_MAX_DB_AGE_HOURS` (em produção, no mínimo 1; o `docker-compose.clamav.yml` usa 72: base de vírus mais velha que isso faz o upload responder 503).
+```bash
+jq '(.containerDefinitions[0].environment[] | select(.name=="EVIDENCE_SCANNER") | .value) = "clamav"
+    | .containerDefinitions[0].environment += [ {name:"CLAMAV_HOST", value:"clamav.erp.local"}, {name:"CLAMAV_PORT", value:"3310"}, {name:"CLAMAV_MAX_DB_AGE_HOURS", value:"72"} ]' taskdef.json > taskdef.novo.json && mv taskdef.novo.json taskdef.json
+aws ecs register-task-definition --cli-input-json file://taskdef.json --query 'taskDefinition.revision' --output text
+aws ecs update-service --cluster erp-prod --service erp-api --task-definition erp-api --query 'service.taskDefinition' --output text
+aws ecs wait services-stable --cluster erp-prod --services erp-api
+```
+**Conferência:** `aws ecs describe-task-definition --task-definition erp-api --query "taskDefinition.containerDefinitions[0].environment[?starts_with(name,'CLAMAV')||name=='EVIDENCE_SCANNER']" --output text` → as 4 variáveis com `clamav`, `clamav.erp.local`, `3310`, `72`. **Desfazer:** a mesma edição com `EVIDENCE_SCANNER=unavailable` (as `CLAMAV_*` podem ficar: sem `clamav` elas não são lidas), nova revisão e `update-service`; ou o rollback do 3.10 para a revisão anterior.
+
+### 3b.6 A prova do item 27: o antivírus responde no ambiente e o upload deixa de dar 503
+**Terminal:** CloudShell em VPC (ele alcança a 3310 pela regra do 3b.2).
+```bash
+getent hosts clamav.erp.local                                                     # 10.40.1x.y   (o nome do Cloud Map resolve)
+exec 3<>/dev/tcp/clamav.erp.local/3310; printf 'zPING\0' >&3; head -c 4 <&3; echo; exec 3>&-       # PONG
+exec 3<>/dev/tcp/clamav.erp.local/3310; printf 'zVERSION\0' >&3; tr -d '\0' <&3 | head -c 120; echo; exec 3>&-   # ClamAV 1.4.6/<versão da base>/<data da base>
+```
+Depois, pela API (em qualquer CloudShell), um envio real de anexo de um registro de teste que você tenha criado na console (por exemplo um dano, `entity_type=damage`), com o token de administrador obtido como no 6.3:
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${TOKEN}" -F entity_type=damage -F entity_id=<id do dano de teste> -F "file=@<um PDF ou imagem pequenos e legítimos>" "https://api.${DOMINIO}/api/v1/attachments"   # 201 (ou 2xx), e NÃO 503
+```
+**Conferência:** `PONG`; a versão com a data da base de hoje ou de ontem; o upload com 2xx em vez de 503. **Esse é o critério do item 27** ("fecha só com o serviço respondendo no ambiente"). Um arquivo de teste de vírus padrão (o EICAR, gerado na hora, nunca guardado no repositório) deve voltar `422` (`scanner_infected`). **Desfazer:** não se aplica (só leitura; apague o anexo de teste pela console). Se quiser fechar a porta da conferência: `aws ec2 revoke-security-group-ingress --group-id "$SG_CLAMAV" --protocol tcp --port 3310 --source-group "$SG_OPS"`.
+
+**Conferência da fase inteira:** `ACTIVE 1` no `erp-clamav`; `PONG` e a versão da base pelo CloudShell em VPC; upload 2xx. **Item do portão:** o **27** fecha aqui, quando o serviço responder no ambiente.
+
+**O que pode dar errado:**
+- A tarefa reiniciar por falta de memória na recarga da base: o `clamd` recarrega a base nova ao lado da antiga e, por instantes, usa quase o dobro. Se o log mostrar `OutOfMemory` ou a tarefa cair na hora da atualização, suba para 4 GB (a PD media 4 GB; o estudo fixou 3 GB) — nova revisão com `memory: "4096"` (+US$ 5,5/mês).
+- A primeira base não baixar: o `freshclam` precisa de saída pela internet (NAT da fase 1) para `database.clamav.net` na 443; com NAT parado, a tarefa fica sem base e a checagem de saúde a derruba depois de ~10 min. O CDN da ClamAV também limita downloads por IP (o IP do NAT é seu, não compartilhado).
+- A imagem vir do Docker Hub, que limita downloads anônimos por IP: o pull é raro (só na troca de tarefa), mas se aparecer `toomanyrequests`, espelhe a imagem no ECR (pull-through do Docker Hub, que exige credencial do Docker Hub no Secrets Manager, como o 1.6 faz para o GHCR).
+- O upload continuar 503 com o `clamd` respondendo: a base passou de 72 h (`CLAMAV_MAX_DB_AGE_HOURS`), ou o grupo de segurança não deixa a API chegar à 3310 (`erp-sg-clamav` só aceita `erp-sg-api`, fase 1), ou o nome não resolve (a VPC precisa de DNS ligado, passo 1.1).
+
+---
+
+## 6c. Fase 3c · Traccar (`B-TRC-06`)
+
+**Por que agora:** decisão do dono, 17/11 (*"o traccar e antivirus ja entram"*). O Traccar recebe a posição dos rastreadores e a entrega à API **pela rede privada** (`D-TRACCAR-HTTP-PRIVADO-AWS`: "sem exposição externa da API do Traccar nem dos endpoints de ingestão do ERP"). Esta fase sobe o Traccar **sem nenhuma porta pública**; a porta dos rastreadores é a fase 3d, com trava própria.
+
+**Pré-requisitos:** Fases 1–3 e o 3b.1 (o espaço de nomes `erp.local`); o `B-SAN3-05` (papel de banco sem bypass) na `main`, que é o pré-requisito de ingestão em produção. Pelo plano do Traccar (§7.1), o `B-TRC-06` é decisão crítica: **junta de 5 unânime** antes de provisionar. **Terminais:** CloudShell normal; CloudShell em VPC para o banco (3c.3) e a conferência (3c.7). **Custo:** Traccar em Fargate x86 0,5 vCPU / 2 GB ≈ **US$ 36,5/mês** · RDS PostgreSQL `db.t4g.micro` dedicado + 20 GB ≈ **US$ 28/mês** · 1 segredo US$ 0,40 · logs ~US$ 1. (A imagem `traccar/traccar:6.16.0` também tem `arm64`; o estudo fixou x86, e a troca para ARM economizaria ~US$ 7/mês: pendência P-AWS-TRACCAR-ARM64.)
+
+**Decisões do dono que esta fase cumpre:** D-AWS-12 (banco **dedicado** do Traccar, decidido pelo dono em 17/11) e as regras do Traccar: nunca o `tenant_id` do conteúdo como contexto confiável; dispositivo não mapeado vai para a **quarentena** (já no código, `B-TRC-01`); vínculo ambíguo falha fechado; o token nunca em código, log, endereço, frontend ou corpo de resposta, comparado em tempo constante; nenhuma porta pública sem decisão, modelo de ameaças e junta; nunca os servidores públicos de demonstração do Traccar.
+
+```bash
+set -a; . ~/erp-ids.env; set +a
+export IMAGEM_TRACCAR="traccar/traccar@sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda"   # a tag 6.16.0, presa pelo digest (o mesmo do docker-compose.traccar.yml)
+export TRC_DB_ID=erp-prod-traccar-pg TRC_DB_ADMIN=trc_admin
+```
+
+### 3c.1 Grupos de segurança do Traccar e do banco dele
+**Objetivo:** o Traccar só fala com a API (porta 3200, a ingestão, nunca a 3000 pública) e com o banco dele; ninguém de fora fala com o Traccar. Por enquanto só o CloudShell em VPC alcança a porta OsmAnd (5055), para a conferência. A 8082 (tela e REST do Traccar) **não tem regra de entrada nenhuma**.
+```bash
+SG_TRACCAR=$(sg erp-sg-traccar "Traccar: sem entrada publica; 5055 so do CloudShell em VPC")
+SG_RDS_TRC=$(sg erp-sg-rds-traccar "RDS do Traccar: 5432 so do Traccar e do CloudShell em VPC")
+aws ec2 authorize-security-group-ingress --group-id "$SG_API" --protocol tcp --port 3200 --source-group "$SG_TRACCAR"
+aws ec2 authorize-security-group-ingress --group-id "$SG_TRACCAR" --protocol tcp --port 5055 --source-group "$SG_OPS"
+aws ec2 authorize-security-group-ingress --group-id "$SG_RDS_TRC" --protocol tcp --port 5432 --source-group "$SG_TRACCAR"
+aws ec2 authorize-security-group-ingress --group-id "$SG_RDS_TRC" --protocol tcp --port 5432 --source-group "$SG_OPS"
+printf 'SG_TRACCAR=%s\nSG_RDS_TRC=%s\n' "$SG_TRACCAR" "$SG_RDS_TRC" >> ~/erp-ids.env
+```
+(A função `sg` é a do passo 1.4; numa sessão nova, cole-a de novo.)
+**Conferência:** `aws ec2 describe-security-groups --group-ids "$SG_TRACCAR" "$SG_API" --query 'SecurityGroups[].[GroupName,IpPermissions[].[FromPort,UserIdGroupPairs[].GroupId,IpRanges[].CidrIp]]' --output json` → `erp-sg-traccar` com só `5055` vinda de `erp-sg-ops`; `erp-sg-api` com `3000` do ALB e `3200` só de `erp-sg-traccar`; nenhum `0.0.0.0/0`. **Custo:** 0. **Desfazer:** `aws ec2 revoke-security-group-ingress --group-id "$SG_API" --protocol tcp --port 3200 --source-group "$SG_TRACCAR"` e `aws ec2 delete-security-group --group-id <id>` para os dois grupos novos (depois de apagar o que os usa: 3c.2 e 3c.6).
+
+### 3c.2 O banco dedicado do Traccar (D-AWS-12)
+**Objetivo:** um PostgreSQL só do Traccar, separado do banco do ERP (decisão do dono: banco próprio), nas mesmas subnets privadas e com o mesmo grupo de parâmetros (UTC e TLS obrigatório).
+```bash
+aws rds create-db-instance --db-instance-identifier "$TRC_DB_ID" --db-instance-class db.t4g.micro --engine postgres --engine-version "$PG_VERSAO" \
+  --master-username "$TRC_DB_ADMIN" --manage-master-user-password \
+  --allocated-storage 20 --storage-type gp3 --storage-encrypted \
+  --db-subnet-group-name erp-db-subnets --vpc-security-group-ids "$SG_RDS_TRC" --db-parameter-group-name erp-pg16 \
+  --backup-retention-period 7 --preferred-backup-window 05:00-06:00 --copy-tags-to-snapshot \
+  --no-publicly-accessible --no-multi-az --deletion-protection --auto-minor-version-upgrade \
+  --tags Key=app,Value=erp-traccar --query 'DBInstance.DBInstanceStatus' --output text
+aws rds wait db-instance-available --db-instance-identifier "$TRC_DB_ID"
+RDS_TRC_HOST=$(aws rds describe-db-instances --db-instance-identifier "$TRC_DB_ID" --query 'DBInstances[0].Endpoint.Address' --output text)
+RDS_TRC_SECRET_ARN=$(aws rds describe-db-instances --db-instance-identifier "$TRC_DB_ID" --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text)
+printf 'RDS_TRC_HOST=%s\nRDS_TRC_SECRET_ARN=%s\n' "$RDS_TRC_HOST" "$RDS_TRC_SECRET_ARN" >> ~/erp-ids.env
+```
+(`PG_VERSAO` é a do 2.3; numa sessão nova, rode de novo a primeira linha do 2.3.)
+**Conferência:** `aws rds describe-db-instances --db-instance-identifier "$TRC_DB_ID" --query 'DBInstances[0].[DBInstanceStatus,DBInstanceClass,PubliclyAccessible,DeletionProtection,BackupRetentionPeriod]' --output text` → `available db.t4g.micro False True 7`. **Custo:** ~US$ 28/mês. **Desfazer:** `aws rds modify-db-instance --db-instance-identifier "$TRC_DB_ID" --no-deletion-protection --apply-immediately` e `aws rds delete-db-instance --db-instance-identifier "$TRC_DB_ID" --skip-final-snapshot --delete-automated-backups` (apaga o histórico de posições do Traccar; o que já entrou no ERP fica no ERP).
+
+### 3c.3 O usuário do Traccar no banco e os segredos
+**Objetivo:** o Traccar **não** conecta como administrador do banco: ganha um papel `traccar`, dono só do banco `traccar`. A senha nasce no terminal, vai para um segredo e entra no `psql` lida de um arquivo pelo próprio `psql` (o `\set` com o comando entre crases, documentado no `psql` 16), nunca por argumento. O token do encaminhamento (o `X-Traccar-Forward-Token` que a API confere) nasce aqui também, com 64 caracteres (o `env.ts` exige ≥ 32 e recusa os valores de desenvolvimento), e vai para os **dois** segredos: no do Traccar como o cabeçalho inteiro, no da API como o valor.
+**Terminal:** CloudShell em VPC (para o `psql`; a parte do Secrets Manager também funciona daqui).
+```bash
+umask 077; TMP=$(mktemp -d)
+openssl rand -base64 48 | tr -d '\n' > "$TMP/trc-db.pw"
+openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n' > "$TMP/trc-fwd.tok"
+export PGHOST="$RDS_TRC_HOST" PGPORT=5432 PGUSER="$TRC_DB_ADMIN" PGDATABASE=postgres PGSSLMODE=require
+export PGPASSWORD="$(aws secretsmanager get-secret-value --secret-id "$RDS_TRC_SECRET_ARN" --query SecretString --output text | jq -r .password)"
+export TRC_PW_FILE="$TMP/trc-db.pw"
+psql -v ON_ERROR_STOP=1 <<'SQL'
+\set senha `cat "$TRC_PW_FILE"`
+CREATE ROLE traccar LOGIN PASSWORD :'senha';
+GRANT traccar TO CURRENT_USER;
+CREATE DATABASE traccar OWNER traccar;
+SQL
+jq -n --rawfile pw "$TMP/trc-db.pw" --rawfile tok "$TMP/trc-fwd.tok" '{DATABASE_PASSWORD:$pw, FORWARD_HEADER:("X-Traccar-Forward-Token: " + $tok)}' > "$TMP/trc.json"
+SEGREDO_TRC_ARN=$(aws secretsmanager create-secret --name erp/prod/traccar --description "Segredos do Traccar em producao" --secret-string "file://$TMP/trc.json" --tags Key=app,Value=erp-traccar --query ARN --output text)
+aws secretsmanager get-secret-value --secret-id erp/prod/api --query SecretString --output text | jq --rawfile tok "$TMP/trc-fwd.tok" '.TRACCAR_FORWARD_SECRET_CURRENT=$tok' > "$TMP/api.json"
+aws secretsmanager put-secret-value --secret-id erp/prod/api --secret-string "file://$TMP/api.json"
+shred -u "$TMP/trc-db.pw" "$TMP/trc-fwd.tok" "$TMP/trc.json" "$TMP/api.json"; unset PGPASSWORD TRC_PW_FILE
+echo "SEGREDO_TRC_ARN=$SEGREDO_TRC_ARN" >> ~/erp-ids.env      # e copie esta linha para o ~/erp-ids.env do CloudShell normal
+```
+**Conferência:** `PGPASSWORD=… psql -Atc "select rolname, rolsuper, rolcreaterole, rolcreatedb from pg_roles where rolname='traccar'"` → `traccar|f|f|f`; `psql -Atc "select datname, pg_get_userbyid(datdba) from pg_database where datname='traccar'"` → `traccar|traccar`; `aws secretsmanager get-secret-value --secret-id erp/prod/traccar --query SecretString --output text | jq -r 'keys[]'` → `DATABASE_PASSWORD FORWARD_HEADER` (só os nomes); e `… --secret-id erp/prod/api … | jq -r 'has("TRACCAR_FORWARD_SECRET_CURRENT")'` → `true`. **Custo:** US$ 0,40/mês (o segredo novo). **Desfazer:** `psql -v ON_ERROR_STOP=1 -c 'DROP DATABASE traccar' -c 'DROP ROLE traccar'` (com o Traccar parado), `aws secretsmanager delete-secret --secret-id erp/prod/traccar --recovery-window-in-days 7`, e a chave `TRACCAR_FORWARD_SECRET_CURRENT` sai do segredo da API pelo `AWSPREVIOUS` (desfazer do 2.10).
+
+### 3c.4 Os nomes internos do Traccar e da API, e a permissão de ler o segredo
+**Objetivo:** o Traccar entrega em `http://api.erp.local:3200`; a API ganha um nome no Cloud Map (só a 3200 interessa a quem vem por ele: o ALB continua sendo a entrada pública da 3000). O papel de execução da tarefa passa a poder ler o segredo do Traccar.
+```bash
+SD_TRACCAR_ARN=$(aws servicediscovery create-service --name traccar --namespace-id "$NS_ID" --dns-config 'RoutingPolicy=MULTIVALUE,DnsRecords=[{Type=A,TTL=10}]' --health-check-custom-config FailureThreshold=1 --query Service.Arn --output text)
+SD_API_ARN=$(aws servicediscovery create-service --name api --namespace-id "$NS_ID" --dns-config 'RoutingPolicy=MULTIVALUE,DnsRecords=[{Type=A,TTL=10}]' --health-check-custom-config FailureThreshold=1 --query Service.Arn --output text)
+cat > exec-traccar.json <<EOF
+{ "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": "secretsmanager:GetSecretValue", "Resource": "${SEGREDO_TRC_ARN}" } ] }
+EOF
+aws iam put-role-policy --role-name erp-ecs-execucao --policy-name erp-segredos-traccar --policy-document file://exec-traccar.json
+aws logs create-log-group --log-group-name /ecs/erp-traccar --tags app=erp-traccar
+aws logs put-retention-policy --log-group-name /ecs/erp-traccar --retention-in-days 30
+printf 'SD_TRACCAR_ARN=%s\nSD_API_ARN=%s\n' "$SD_TRACCAR_ARN" "$SD_API_ARN" >> ~/erp-ids.env
+```
+**Conferência:** `aws servicediscovery list-namespaces --query "Namespaces[?Name=='erp.local'].Properties.DnsProperties.HostedZoneId" --output text` → a zona privada; `aws iam get-role-policy --role-name erp-ecs-execucao --policy-name erp-segredos-traccar --query 'PolicyDocument.Statement[0].Resource' --output text` → o ARN do `erp/prod/traccar`. **Custo:** 0 (as consultas internas custam centavos). **Desfazer:** `aws servicediscovery delete-service --id <srv-… do traccar>` e `--id <srv-… da api>` (depois de tirar os serviços ECS deles), `aws iam delete-role-policy --role-name erp-ecs-execucao --policy-name erp-segredos-traccar` e `aws logs delete-log-group --log-group-name /ecs/erp-traccar`.
+
+### 3c.5 A API escuta a ingestão na rede privada
+**Objetivo:** os nomes reais do `src/config/env.ts`: `TRACCAR_INGEST_ENABLED=true`, `TRACCAR_INGEST_HOST=0.0.0.0` (a escuta é na interface da tarefa; quem chega é decidido pelo grupo de segurança: só `erp-sg-traccar`, 3c.1), `TRACCAR_INGEST_PORT=3200` (diferente de `PORT`, como o `env.ts` exige), `TRACCAR_INSTANCE_KEY=erp-prod` (casa `^[a-z0-9-]{3,40}$`) e o `TRACCAR_FORWARD_SECRET_CURRENT` pelo segredo. A 3200 **não** entra no grupo de destino do ALB: nenhuma rota pública chega a ela (o app da ingestão é outro app Express, `src/integrations/traccar/traccar-ingest.app.ts`).
+```bash
+jq --arg seg "$SEGREDO_API_ARN" '.containerDefinitions[0].portMappings += [ {containerPort:3200, protocol:"tcp"} ]
+    | .containerDefinitions[0].environment += [ {name:"TRACCAR_INGEST_ENABLED", value:"true"}, {name:"TRACCAR_INGEST_HOST", value:"0.0.0.0"}, {name:"TRACCAR_INGEST_PORT", value:"3200"}, {name:"TRACCAR_INSTANCE_KEY", value:"erp-prod"} ]
+    | .containerDefinitions[0].secrets += [ {name:"TRACCAR_FORWARD_SECRET_CURRENT", valueFrom:($seg + ":TRACCAR_FORWARD_SECRET_CURRENT::")} ]' taskdef.json > taskdef.novo.json && mv taskdef.novo.json taskdef.json
+aws ecs register-task-definition --cli-input-json file://taskdef.json --query 'taskDefinition.revision' --output text
+aws ecs update-service --cluster erp-prod --service erp-api --task-definition erp-api --service-registries "registryArn=${SD_API_ARN}" --query 'service.taskDefinition' --output text
+aws ecs wait services-stable --cluster erp-prod --services erp-api
+```
+**Conferência:** `aws logs filter-log-events --log-group-name /ecs/erp-api --filter-pattern '"Traccar ingest listener up"' --start-time $(( ($(date +%s) - 900) * 1000 )) --query 'events[].message' --output text` → uma linha com `"port":3200`; e o alvo do ALB continua `healthy` (3.8). **Desfazer:** a mesma edição ao contrário (tirar a porta 3200, as 4 variáveis e o segredo; ou `TRACCAR_INGEST_ENABLED=false`, que deixa o listener desligado: o log diz `Traccar ingest listener disabled`), nova revisão e `update-service`.
+
+### 3c.6 A receita e o serviço do Traccar (privado, sem porta pública)
+**Objetivo:** a imagem oficial **pinada por digest** (a mesma do `docker-compose.traccar.yml` e da `PD-TRC-616`), configurada só por variáveis de ambiente (`CONFIG_USE_ENVIRONMENT_VARIABLES=true`; o Traccar troca `.` por `_` e maiúscula por `_` + letra, regra do `Config.java` da tag `v6.16.0`): banco PostgreSQL dedicado, só os protocolos **OsmAnd (5055)** e **GT06 (5023)** (portas padrão do `PortConfigSuffix.java` da mesma tag), encaminhamento JSON de posição e de evento para a API com o cabeçalho do token, geocodificação desligada. `DATABASE_REGISTER_UNKNOWN=true` só enquanto não há porta pública (a conferência usa um identificador de teste); a fase 3d o desliga antes de abrir a porta. Sem tarefa de papel IAM: o Traccar não chama a AWS.
+```bash
+jq -n --arg img "$IMAGEM_TRACCAR" --arg exe "$EXEC_ROLE_ARN" --arg reg "$REGIAO" --arg seg "$SEGREDO_TRC_ARN" \
+      --arg dburl "jdbc:postgresql://${RDS_TRC_HOST}:5432/traccar?sslmode=require" '{
+  family: "erp-traccar", networkMode: "awsvpc", requiresCompatibilities: ["FARGATE"], cpu: "512", memory: "2048",
+  runtimePlatform: { cpuArchitecture: "X86_64", operatingSystemFamily: "LINUX" },
+  executionRoleArn: $exe,
+  containerDefinitions: [ {
+    name: "traccar", image: $img, essential: true,
+    portMappings: [ { containerPort: 5055, protocol: "tcp" }, { containerPort: 5023, protocol: "tcp" } ],
+    environment: [
+      { name: "CONFIG_USE_ENVIRONMENT_VARIABLES", value: "true" },
+      { name: "DATABASE_DRIVER", value: "org.postgresql.Driver" },
+      { name: "DATABASE_URL", value: $dburl },
+      { name: "DATABASE_USER", value: "traccar" },
+      { name: "DATABASE_REGISTER_UNKNOWN", value: "true" },
+      { name: "PROTOCOLS_ENABLE", value: "osmand,gt06" },
+      { name: "FORWARD_TYPE", value: "json" },
+      { name: "FORWARD_URL", value: "http://api.erp.local:3200/ingest/traccar/v1/positions" },
+      { name: "FORWARD_RETRY_ENABLE", value: "true" },
+      { name: "EVENT_FORWARD_URL", value: "http://api.erp.local:3200/ingest/traccar/v1/events" },
+      { name: "CLIENT_CONNECT_TIMEOUT", value: "5000" },
+      { name: "CLIENT_READ_TIMEOUT", value: "5000" },
+      { name: "GEOCODER_ENABLE", value: "false" }
+    ],
+    secrets: [
+      { name: "DATABASE_PASSWORD",    valueFrom: ($seg + ":DATABASE_PASSWORD::") },
+      { name: "FORWARD_HEADER",       valueFrom: ($seg + ":FORWARD_HEADER::") },
+      { name: "EVENT_FORWARD_HEADER", valueFrom: ($seg + ":FORWARD_HEADER::") }
+    ],
+    logConfiguration: { logDriver: "awslogs", options: { "awslogs-group": "/ecs/erp-traccar", "awslogs-region": $reg, "awslogs-stream-prefix": "traccar" } },
+    healthCheck: { command: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8082/api/server || exit 1"], interval: 30, timeout: 5, retries: 5, startPeriod: 120 }
+  } ] }' > traccar-taskdef.json
+TRACCAR_TASKDEF_ARN=$(aws ecs register-task-definition --cli-input-json file://traccar-taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text)
+aws ecs create-service --cluster erp-prod --service-name erp-traccar --task-definition "$TRACCAR_TASKDEF_ARN" --desired-count 1 --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[${SUB_PRIV_A},${SUB_PRIV_B}],securityGroups=[${SG_TRACCAR}],assignPublicIp=DISABLED}" \
+  --service-registries "registryArn=${SD_TRACCAR_ARN}" --tags key=app,value=erp-traccar --query 'service.status' --output text
+aws ecs wait services-stable --cluster erp-prod --services erp-traccar
+echo "TRACCAR_TASKDEF_ARN=$TRACCAR_TASKDEF_ARN" >> ~/erp-ids.env
+```
+(A checagem de saúde usa o `wget` do BusyBox da imagem, que é Alpine — lido no histórico da imagem no registro — e pergunta à REST do próprio Traccar **dentro do contêiner**; a 8082 continua sem regra de entrada.)
+**Conferência:** `aws ecs describe-services --cluster erp-prod --services erp-traccar --query 'services[0].[status,runningCount]' --output text` → `ACTIVE 1`; `aws ecs describe-task-definition --task-definition erp-traccar --query 'taskDefinition.containerDefinitions[0].[image,portMappings[].containerPort]' --output json` → a imagem com `@sha256:03ebb7ed…` e só `5055` e `5023`. **Custo:** ~US$ 36,5/mês. **Desfazer:** `aws ecs update-service --cluster erp-prod --service erp-traccar --desired-count 0`, `aws ecs delete-service --cluster erp-prod --service erp-traccar --force` e `aws ecs deregister-task-definition --task-definition erp-traccar:<revisão>`.
+
+### 3c.7 A prova da ponte privada: rastreador → Traccar → API → quarentena
+**Terminal:** CloudShell em VPC. Uma posição OsmAnd com um identificador de teste que **não** está mapeado a viatura nenhuma: o caminho certo é o Traccar aceitar (200), encaminhar para a API pela rede privada e a API pôr a posição em **quarentena** (202 para o Traccar, nada gravado em organização nenhuma).
+```bash
+getent hosts traccar.erp.local api.erp.local                                            # os dois nomes resolvem para 10.40.1x.y
+curl -sS -o /dev/null -w '%{http_code}\n' "http://traccar.erp.local:5055/?id=smoke-$(date +%Y%m%d)&lat=-23.5505&lon=-46.6333&timestamp=$(date +%s)&speed=0"   # 200
+timeout 5 bash -c '</dev/tcp/api.erp.local/3200' && echo "ABERTA (errado)" || echo "fechada (certo: a 3200 só aceita o Traccar)"
+timeout 5 bash -c '</dev/tcp/traccar.erp.local/8082' && echo "ABERTA (errado)" || echo "fechada (certo: a 8082 não tem entrada)"
+```
+No banco do ERP (as variáveis `PG*` do 2.4, como administrador):
+```bash
+psql -Atc "select reason, delivery_count, last_seen_at from traccar_quarantine_items where instance_key='erp-prod' order by last_seen_at desc limit 1"   # a quarentena do identificador de teste
+```
+**Conferência:** `200`; as duas portas `fechada`; uma linha na `traccar_quarantine_items` com `instance_key='erp-prod'`. **Desfazer:** não se aplica (a quarentena é o lugar certo do teste; resolva o item pela console do ERP). **Não use** servidores públicos de demonstração do Traccar para testar, em ambiente nenhum.
+
+**Conferência da fase inteira:** `ACTIVE 1` no `erp-traccar`; o log `Traccar ingest listener up` na API; a quarentena do teste; as portas 3200 (de fora do Traccar) e 8082 fechadas; nenhum `0.0.0.0/0` em `erp-sg-traccar` nem em `erp-sg-rds-traccar`.
+
+**O que pode dar errado:**
+- O Traccar não subir por banco: a URL JDBC, o usuário `traccar` ou a senha do segredo errados (o log mostra a exceção do driver); o TLS é obrigatório pelo `rds.force_ssl=1`, por isso o `sslmode=require` na URL.
+- A posição não chegar à quarentena: o grupo `erp-sg-api` sem a 3200 vinda de `erp-sg-traccar`, a API sem a revisão do 3c.5 (`Traccar ingest listener disabled` no log), o nome `api.erp.local` sem registro (a API sem `--service-registries`), ou o token diferente nos dois segredos (a API responde 401 e o Traccar repete; o token nunca aparece no log).
+- A checagem de saúde derrubar a tarefa no início: o Traccar cria as tabelas no primeiro boot; se 120 s não bastarem, aumente o `startPeriod` (máximo 300 s).
+- Estado online/sem sinal: o `EVENT_STATUS_ENABLE`/`STATUS_TIMEOUT` do ambiente de desenvolvimento ficou de fora; em produção é decisão do `B-TRC-06` (pendência P-TRC02-STATUS-TIMEOUT-PROD).
+
+---
+
+## 6d. Fase 3d · Porta dos rastreadores (D-AWS-11, gate `G-TRC-NLB`)
+
+> **TRAVA — não execute esta fase antes de:** (1) o **modelo de ameaças** do gate `G-TRC-NLB` estar escrito e aprovado; e (2) a **junta de 5, por unanimidade**, aprovar a abertura, com ata registrada. É a regra do próprio dono para o Traccar ("nenhuma porta pública sem decisão, threat model e junta") e a do plano do Traccar (§6.2: NLB público por protocolo só nasce depois de modelo do dispositivo, portas, limite de taxa e de ataque, modelo de ameaças próprio e junta unânime). **A decisão de abrir é do dono** (D-AWS-11, 17/11: *"porta aberta com os devidos cuidados"*); esta fase é o "como", e os cuidados abaixo são a parte dela.
+
+**Objetivo:** os rastreadores reais (na rua, com chip de dados) precisam de um endereço público para mandar posição. Abre-se **só** o que a `PD-TRC-616` aprovou: **GT06 na 5023** e **OsmAnd na 5055**, num **Network Load Balancer (NLB)** público com **2 IPs fixos** (Elastic IP, um por zona: o endereço que você configura em cada rastreador), passando ao Traccar privado. Nada da 8082 (tela e REST do Traccar), nada da 3200 (ingestão da API), nada do banco.
+
+**Pré-requisitos:** a trava acima; a Fase 3c no ar; **os rastreadores reais já cadastrados no Traccar e mapeados a viaturas no ERP** (`B-TRC-03`), porque esta fase desliga o cadastro automático de dispositivo desconhecido. **Terminal:** CloudShell normal (e um computador fora da AWS, ou o próprio CloudShell normal, para a prova de fora). **Custo:** NLB US$ 0,034/h ≈ US$ 24,8 + NLCU (centavos com poucos rastreadores) + 2 IPv4 fixos US$ 7,3 ≈ **US$ 33/mês** (o preço de hora do estudo para `sa-east-1`; a emenda que trouxe esta fase citava US$ 18–20, que é o preço de outra região) + logs de fluxo ~US$ 1–3/mês.
+
+**Os cuidados, e quem cuida de cada um:**
+
+| Cuidado | Onde | Como (comando abaixo) |
+|---|---|---|
+| Só os 2 protocolos aprovados | NLB + grupo do NLB + grupo do Traccar | 2 listeners TCP (5023, 5055); o grupo do NLB só aceita essas portas; o do Traccar só aceita do NLB nessas portas |
+| Rastreador desconhecido não entra | Traccar (`DATABASE_REGISTER_UNKNOWN=false`) e ERP (quarentena) | o Traccar ignora identificador não cadastrado; o que for cadastrado e não mapeado no ERP vai para a quarentena (`B-TRC-01`); `tenant_id` do conteúdo nunca é confiável (regra do dono) |
+| Conexão parada não fica aberta | Traccar (`SERVER_TIMEOUT`) | a conexão sem dado cai depois do tempo (o padrão do Traccar é 1800 s; aqui 300 s) |
+| Limite de conexões e de taxa | **o NLB não limita** conexões nem taxa por origem e não aceita WAF; o AWS Shield Standard (grátis, automático) cobre ataques de rede volumosos | o limite fica no Traccar (tempo de conexão, filtro de posição) e, depois dele, na ingestão da API (`TRACCAR_INGEST_RATE_PER_SECOND`, `TRACCAR_INGEST_BURST`, `TRACCAR_INGEST_MAX_CONCURRENCY` do `env.ts`, padrões 20/s, 100 e 10) |
+| Saber quem bateu | VPC Flow Logs nas interfaces do NLB | logs de fluxo no CloudWatch (aceitos e recusados) |
+| Saber de pico | CloudWatch | alarme de fluxos ativos e de fluxos bloqueados pelo grupo do NLB |
+| Fechar na hora | NLB | apagar os listeners fecha as portas imediatamente (desfazer) |
+
+```bash
+set -a; . ~/erp-ids.env; set +a
+```
+
+### 3d.1 O Traccar para de aceitar rastreador desconhecido e corta conexão parada
+```bash
+jq '(.containerDefinitions[0].environment[] | select(.name=="DATABASE_REGISTER_UNKNOWN") | .value) = "false"
+    | .containerDefinitions[0].environment += [ {name:"SERVER_TIMEOUT", value:"300"}, {name:"FILTER_ENABLE", value:"true"}, {name:"FILTER_INVALID", value:"true"}, {name:"FILTER_ZERO", value:"true"}, {name:"FILTER_DUPLICATE", value:"true"} ]' traccar-taskdef.json > traccar-taskdef.novo.json && mv traccar-taskdef.novo.json traccar-taskdef.json
+TRACCAR_TASKDEF_ARN=$(aws ecs register-task-definition --cli-input-json file://traccar-taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text)
+aws ecs update-service --cluster erp-prod --service erp-traccar --task-definition "$TRACCAR_TASKDEF_ARN" --query 'service.taskDefinition' --output text
+aws ecs wait services-stable --cluster erp-prod --services erp-traccar
+```
+**Conferência:** `aws ecs describe-task-definition --task-definition erp-traccar --query "taskDefinition.containerDefinitions[0].environment[?name=='DATABASE_REGISTER_UNKNOWN'||name=='SERVER_TIMEOUT']" --output text` → `false` e `300`; repetir a posição de teste do 3c.7 com um identificador novo não cria quarentena nova (o Traccar a ignora). **Desfazer:** a revisão anterior (`update-service --task-definition erp-traccar:<N-1>`).
+
+### 3d.2 Os grupos de segurança: o do NLB e a entrada do Traccar só a partir dele
+**Objetivo:** o grupo fica **preso ao NLB desde a criação** (a AWS não deixa pôr grupo num NLB depois); o Traccar aceita 5023/5055 **só** vindo do grupo do NLB, então ninguém fala direto com a tarefa.
+```bash
+SG_NLB=$(sg erp-sg-nlb-rastreadores "NLB publico: so 5023 (GT06) e 5055 (OsmAnd)")
+aws ec2 authorize-security-group-ingress --group-id "$SG_NLB" --protocol tcp --port 5023 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id "$SG_NLB" --protocol tcp --port 5055 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id "$SG_TRACCAR" --protocol tcp --port 5023 --source-group "$SG_NLB"
+aws ec2 authorize-security-group-ingress --group-id "$SG_TRACCAR" --protocol tcp --port 5055 --source-group "$SG_NLB"
+echo "SG_NLB=$SG_NLB" >> ~/erp-ids.env
+```
+**Conferência:** `aws ec2 describe-security-groups --group-ids "$SG_NLB" --query 'SecurityGroups[0].IpPermissions[].[FromPort,ToPort,IpRanges[].CidrIp]' --output text` → só `5023` e `5055`. **Desfazer:** `aws ec2 revoke-security-group-ingress` das 4 regras (mesmos parâmetros) e `aws ec2 delete-security-group --group-id "$SG_NLB"` (depois de apagar o NLB).
+
+### 3d.3 O NLB com 2 IPs fixos, os grupos de destino e os 2 listeners
+```bash
+EIP_TRC_A=$(aws ec2 allocate-address --domain vpc --tag-specifications 'ResourceType=elastic-ip,Tags=[{Key=Name,Value=erp-rastreadores-a}]' --query AllocationId --output text)
+EIP_TRC_B=$(aws ec2 allocate-address --domain vpc --tag-specifications 'ResourceType=elastic-ip,Tags=[{Key=Name,Value=erp-rastreadores-b}]' --query AllocationId --output text)
+NLB_ARN=$(aws elbv2 create-load-balancer --name erp-nlb-rastreadores --type network --scheme internet-facing \
+  --subnet-mappings "SubnetId=${SUB_PUB_A},AllocationId=${EIP_TRC_A}" "SubnetId=${SUB_PUB_B},AllocationId=${EIP_TRC_B}" \
+  --security-groups "$SG_NLB" --tags Key=app,Value=erp-traccar --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+TG_GT06_ARN=$(aws elbv2 create-target-group --name erp-trc-gt06 --protocol TCP --port 5023 --vpc-id "$VPC_ID" --target-type ip --health-check-protocol TCP --query 'TargetGroups[0].TargetGroupArn' --output text)
+TG_OSMAND_ARN=$(aws elbv2 create-target-group --name erp-trc-osmand --protocol TCP --port 5055 --vpc-id "$VPC_ID" --target-type ip --health-check-protocol TCP --query 'TargetGroups[0].TargetGroupArn' --output text)
+LST_GT06_ARN=$(aws elbv2 create-listener --load-balancer-arn "$NLB_ARN" --protocol TCP --port 5023 --default-actions Type=forward,TargetGroupArn="$TG_GT06_ARN" --query 'Listeners[0].ListenerArn' --output text)
+LST_OSMAND_ARN=$(aws elbv2 create-listener --load-balancer-arn "$NLB_ARN" --protocol TCP --port 5055 --default-actions Type=forward,TargetGroupArn="$TG_OSMAND_ARN" --query 'Listeners[0].ListenerArn' --output text)
+aws ecs update-service --cluster erp-prod --service erp-traccar \
+  --load-balancers "targetGroupArn=${TG_GT06_ARN},containerName=traccar,containerPort=5023" "targetGroupArn=${TG_OSMAND_ARN},containerName=traccar,containerPort=5055" \
+  --query 'service.loadBalancers[].containerPort' --output text
+aws ecs wait services-stable --cluster erp-prod --services erp-traccar
+printf 'EIP_TRC_A=%s\nEIP_TRC_B=%s\nNLB_ARN=%s\nTG_GT06_ARN=%s\nTG_OSMAND_ARN=%s\nLST_GT06_ARN=%s\nLST_OSMAND_ARN=%s\n' "$EIP_TRC_A" "$EIP_TRC_B" "$NLB_ARN" "$TG_GT06_ARN" "$TG_OSMAND_ARN" "$LST_GT06_ARN" "$LST_OSMAND_ARN" >> ~/erp-ids.env
+aws ec2 describe-addresses --allocation-ids "$EIP_TRC_A" "$EIP_TRC_B" --query 'Addresses[].PublicIp' --output text     # os 2 IPs que vão em cada rastreador
+```
+(A checagem de saúde do NLB é TCP nas mesmas portas; ela sai do NLB e entra pelo grupo do Traccar, que já aceita o grupo do NLB nessas portas.)
+**Conferência:** `aws elbv2 describe-listeners --load-balancer-arn "$NLB_ARN" --query 'Listeners[].[Port,Protocol]' --output text` → **só** `5023 TCP` e `5055 TCP`; `aws elbv2 describe-target-health --target-group-arn "$TG_GT06_ARN" --query 'TargetHealthDescriptions[].TargetHealth.State' --output text` → `healthy` (o mesmo para `$TG_OSMAND_ARN`). **Desfazer:** **fechar na hora:** `aws elbv2 delete-listener --listener-arn "$LST_GT06_ARN"` e `aws elbv2 delete-listener --listener-arn "$LST_OSMAND_ARN"` (as portas param de responder imediatamente); depois tirar os grupos de destino do serviço (`aws ecs update-service --cluster erp-prod --service erp-traccar --load-balancers '[]'`), `aws elbv2 delete-load-balancer --load-balancer-arn "$NLB_ARN"`, `aws elbv2 delete-target-group --target-group-arn` dos dois, e `aws ec2 release-address --allocation-id` dos dois IPs (um IP devolvido não volta: cada rastreador precisaria ser reconfigurado).
+
+### 3d.4 Logs de fluxo da VPC nas interfaces do NLB e o alarme de pico
+```bash
+cat > flowlogs-trust.json <<'EOF'
+{ "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Principal": { "Service": "vpc-flow-logs.amazonaws.com" }, "Action": "sts:AssumeRole" } ] }
+EOF
+cat > flowlogs-policy.json <<'EOF'
+{ "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogGroups", "logs:DescribeLogStreams"], "Resource": "*" } ] }
+EOF
+FLOW_ROLE_ARN=$(aws iam create-role --role-name erp-flowlogs --assume-role-policy-document file://flowlogs-trust.json --description "VPC Flow Logs para o CloudWatch" --query Role.Arn --output text)
+aws iam put-role-policy --role-name erp-flowlogs --policy-name erp-flowlogs-escrita --policy-document file://flowlogs-policy.json
+aws logs create-log-group --log-group-name /vpc/erp-nlb-rastreadores --tags app=erp-traccar
+aws logs put-retention-policy --log-group-name /vpc/erp-nlb-rastreadores --retention-in-days 30
+NLB_NOME=${NLB_ARN#*:loadbalancer/}
+NLB_ENIS=$(aws ec2 describe-network-interfaces --filters "Name=description,Values=ELB ${NLB_NOME}" --query 'NetworkInterfaces[].NetworkInterfaceId' --output text)
+aws ec2 create-flow-logs --resource-type NetworkInterface --resource-ids $NLB_ENIS --traffic-type ALL --log-destination-type cloud-watch-logs --log-group-name /vpc/erp-nlb-rastreadores --deliver-logs-permission-arn "$FLOW_ROLE_ARN" --query 'FlowLogIds' --output text
+aws cloudwatch put-metric-alarm --alarm-name erp-rastreadores-pico-de-conexoes --namespace AWS/NetworkELB --metric-name ActiveFlowCount --dimensions Name=LoadBalancer,Value="$NLB_NOME" --statistic Maximum --period 300 --evaluation-periods 1 --threshold 500 --comparison-operator GreaterThanThreshold --treat-missing-data notBreaching --alarm-actions "$TOPICO_ARN"
+aws cloudwatch put-metric-alarm --alarm-name erp-rastreadores-bloqueios --namespace AWS/NetworkELB --metric-name SecurityGroupBlockedFlowCount_Inbound --dimensions Name=LoadBalancer,Value="$NLB_NOME" --statistic Sum --period 300 --evaluation-periods 1 --threshold 1000 --comparison-operator GreaterThanThreshold --treat-missing-data notBreaching --alarm-actions "$TOPICO_ARN"
+```
+(O `TOPICO_ARN` é o do 6.5; se esta fase vier antes do 6.5, rode primeiro as duas primeiras linhas dele. O limite de 500 conexões ativas é um ponto de partida: ajuste para algumas vezes o número de rastreadores que você tem.)
+**Conferência:** `aws ec2 describe-flow-logs --query "FlowLogs[?LogGroupName=='/vpc/erp-nlb-rastreadores'].[FlowLogId,FlowLogStatus]" --output text` → uma linha por interface do NLB, `ACTIVE`; `aws cloudwatch describe-alarms --alarm-names erp-rastreadores-pico-de-conexoes erp-rastreadores-bloqueios --query 'MetricAlarms[].[AlarmName,StateValue]' --output text` → 2 linhas. **Custo:** ~US$ 1–3/mês (ingestão dos logs de fluxo, US$ 0,50/GB, e 30 dias de guarda). **Desfazer:** `aws ec2 delete-flow-logs --flow-log-ids <ids>`, `aws cloudwatch delete-alarms --alarm-names erp-rastreadores-pico-de-conexoes erp-rastreadores-bloqueios`, `aws logs delete-log-group --log-group-name /vpc/erp-nlb-rastreadores`, `aws iam delete-role-policy --role-name erp-flowlogs --policy-name erp-flowlogs-escrita` e `aws iam delete-role --role-name erp-flowlogs`.
+
+### 3d.5 A prova por comando: só aquelas duas portas estão abertas
+**De fora da VPC** (CloudShell normal, que sai pela internet, ou qualquer computador):
+```bash
+read -r IP_TRC_A IP_TRC_B <<< "$(aws ec2 describe-addresses --allocation-ids "$EIP_TRC_A" "$EIP_TRC_B" --query 'Addresses[].PublicIp' --output text)"
+for p in 5023 5055; do timeout 5 bash -c "</dev/tcp/${IP_TRC_A}/${p}" && echo "$p aberta (certo)" || echo "$p FECHADA (errado)"; done
+for p in 8082 3200 3000 5432 22; do timeout 5 bash -c "</dev/tcp/${IP_TRC_A}/${p}" && echo "$p ABERTA (ERRADO: feche o NLB, desfazer do 3d.3)" || echo "$p fechada (certo)"; done
+# com o nc, se preferir (sudo dnf install -y nmap-ncat): nc -vz -w 5 "$IP_TRC_A" 8082   → tem de falhar
+```
+Repita para o `IP_TRC_B`. **Conferência:** 5023 e 5055 abertas; 8082, 3200, 3000, 5432 e 22 fechadas; `describe-listeners` (3d.3) com só as duas portas; `describe-security-groups` (3d.2) com só as duas portas. Uma posição real de um rastreador **cadastrado e mapeado** aparece no mapa do ERP; a de um não cadastrado não entra. **Desfazer:** não se aplica (só leitura).
+
+**Conferência da fase inteira:** a do 3d.5, os alvos `healthy`, os logs de fluxo `ACTIVE`, os 2 alarmes. **O que pode dar errado:**
+- Alvo `unhealthy`: o grupo do Traccar sem a regra vinda do grupo do NLB (3d.2), ou o serviço sem os grupos de destino (3d.3).
+- Rastreador conectado e posição não chegando: o rastreador não está cadastrado no Traccar (com `DATABASE_REGISTER_UNKNOWN=false` ele é ignorado) ou não está mapeado a viatura no ERP (vai para a quarentena, e aparece lá).
+- Ataque de conexões: o NLB repassa tudo que o grupo deixa; o alarme de pico avisa, o `SERVER_TIMEOUT` derruba conexão parada e o limitador da ingestão protege a API. Se precisar parar já: o desfazer do 3d.3 (apagar os listeners) fecha a porta na hora, sem tocar no resto.
+- GT06 e OsmAnd **não têm criptografia** na rede (é o protocolo do aparelho): o que trafega é posição e identificador, e o identificador não dá acesso a nada no ERP sem o mapeamento. Por isso a PD preferiu APN/VPN privada da operadora quando houver; o NLB público é o caminho para chip comum.
 
 ---
 
@@ -1017,7 +1392,7 @@ echo "BUCKET_ANEXOS=$BUCKET_ANEXOS" >> ~/erp-ids.env
 ```
 Agora no `taskdef.json` (3.6) troque `CHECKLIST_STORAGE_PROVIDER` para `s3` e acrescente em `environment`:
 `CHECKLIST_STORAGE_S3_BUCKET=<BUCKET_ANEXOS>`, `CHECKLIST_STORAGE_S3_REGION=sa-east-1`, `CHECKLIST_STORAGE_S3_ENDPOINT=https://s3.sa-east-1.amazonaws.com` (explícito, como o portão do comprovante exige), `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE=false`, `CHECKLIST_STORAGE_S3_PREFIX=checklist-attachments`. Registre a revisão e atualize o serviço (3.10).
-**Conferência:** `aws s3api get-bucket-versioning --bucket "$BUCKET_ANEXOS"` → `Enabled`; `aws s3api get-bucket-encryption --bucket "$BUCKET_ANEXOS"` → `AES256`; `aws s3api get-bucket-policy --bucket "$BUCKET_ANEXOS" --query Policy --output text | jq .Statement[0].Sid` → `"SoTLS"`. Enquanto o antivírus não existir (`EVIDENCE_SCANNER=unavailable`, item 27), todo upload responde 503 e nada é gravado — é o esperado.
+**Conferência:** `aws s3api get-bucket-versioning --bucket "$BUCKET_ANEXOS"` → `Enabled`; `aws s3api get-bucket-encryption --bucket "$BUCKET_ANEXOS"` → `AES256`; `aws s3api get-bucket-policy --bucket "$BUCKET_ANEXOS" --query Policy --output text | jq .Statement[0].Sid` → `"SoTLS"`. Com o antivírus da Fase 3b no ar (`EVIDENCE_SCANNER=clamav`), o upload grava aqui; sem ele (`unavailable`), todo upload responde 503 e nada é gravado.
 **Desfazer:** em produção, **nunca** com anexo dentro (o bucket guarda evidência e comprovante). Antes do 1º anexo real, com o bucket vazio: voltar `CHECKLIST_STORAGE_PROVIDER=local` no `taskdef.json` e atualizar o serviço (3.10), `aws iam delete-role-policy --role-name erp-api-tarefa --policy-name erp-anexos-s3` e `aws s3api delete-bucket --bucket "$BUCKET_ANEXOS"` (com versionamento ligado, ele só apaga se não houver versão nenhuma guardada; se recusar, o bucket não está vazio e o caso vai ao dono).
 
 ### 6.2 O 1º administrador de plataforma (Runbook B, `B-SAN3-09`) — item 43 do portão
@@ -1103,6 +1478,7 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 2. R1 ratificado: dado no Brasil → `sa-east-1` (feito pela `D-INFRA-PROVIDER-AWS`).
 3. Conta AWS + cartão + MFA + administrador (Fase 0) — contratação de serviço pago: **junta de 5 unânime + PD** registradas antes da primeira cobrança (`D-SAN-AUTONOMIA`, etapa 1 do estudo).
 4. Fundação, banco (PITR 7 dias, UTC, TLS), papel de runtime sem bypass, Valkey (Fases 1–2).
+4b. Antivírus no ar e o upload sem 503 (Fase 3b, item 27); Traccar privado com a ponte para a ingestão provada pela quarentena do teste (Fase 3c). A porta dos rastreadores (Fase 3d) só com o modelo de ameaças do `G-TRC-NLB` e a junta de 5 unânime.
 5. Domínio + DNS: zona, NS no registrador, `api.` e `app.`, certificados ACM, HTTPS (Fases 3–5).
 6. Segredos: tudo no Secrets Manager (`erp/prod/api`), nenhum no GitHub Environment além do que o CD futuro precisar (`AWS_ROLE_ARN` do OIDC não é segredo).
 7. S3 de anexos privado + SSE + versionamento + TLS-only (6.1); **backup `pg_dump` → S3** do `backup-database.yml`: o runner do GitHub não alcança o RDS privado — até o `B-INFRA-AWS-03` dar o caminho (pendência P-AWS-BACKUP-PGDUMP), a cópia é o PITR + snapshot manual (6.4) e o RPO ≤ 5 min do RDS.
@@ -1113,8 +1489,9 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 12. `vars.PROD_HEALTH_URL`/`PROD_WORKER_HEALTH_URL` → o `uptime-check` acorda.
 
 ### 6.8 O que fica para depois (e já tem lugar reservado)
-- **Traccar (`B-TRC-06`):** Fargate x86 privado + RDS `db.t4g.micro` dedicado, sem porta pública, nas subnets privadas desta VPC (junta completa de segurança; `B-SAN3-05` já mergeado é o pré-requisito).
-- **ClamAV (`B-AV-REAL`, item 27):** Fargate ARM privado em `erp-priv-*` com `erp-sg-clamav` (já criado); `freshclam` sai pelo NAT; `EVIDENCE_SCANNER=clamav`, `CLAMAV_HOST=<descoberta de serviço>`.
+- **Traccar e ClamAV saíram desta lista** (decisão do dono, 17/11): são as Fases 3b e 3c. A porta pública dos rastreadores é a Fase 3d, que **fica fechada até o gate `G-TRC-NLB`** (modelo de ameaças + junta de 5 unânime).
+- **Rastreadores por rede privada da operadora (APN/VPN):** a saída preferida pelo plano do Traccar quando a operadora oferecer; elimina a porta pública da 3d.
+- **Imagens ARM do ClamAV e do Traccar** (P-AWS-CLAMAV-ARM64, P-AWS-TRACCAR-ARM64) e a imagem do ClamAV com o `clamd.conf` embutido (P-AWS-CLAMAV-IMAGEM), em vez da configuração por variável do 3b.3.
 - **CD GitHub Actions para a AWS (`B-INFRA-AWS-03`):** o papel `erp-github-deploy` e o OIDC já existem; o workflow reescreve `deploy-production.yml` (migração por imagem migradora, `update-service`, build do frontend, `s3 sync`, invalidation, smoke).
 - **Staging** (metade do tamanho, desligável): ~US$ 80–120/mês, quando o dono decidir.
 
@@ -1127,7 +1504,7 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 - Depois de trocar o `PORTAL_TENANT_ID` (6.2) ou o `taskdef` (6.1), o serviço não estabilizar: veja os eventos (`describe-services`, 3.8) e o log; `Failed to start` nomeando uma variável é portão do `env.ts`.
 - O rollback do 6.4 cruzar a restrição do 03a (`docs/deployment.md`): rollback só com um escritor por vez; para uma imagem anterior ao 03a, só correção para frente. As migrações não voltam.
 - A assinatura do SNS ficar `PendingConfirmation`: o e-mail de confirmação caiu no spam ou não foi clicado; sem confirmar, os alarmes disparam e ninguém recebe.
-- Todo upload responder 503 (anexos, evidências): é o esperado enquanto o antivírus não existir (`EVIDENCE_SCANNER=unavailable`, item 27, `B-AV-REAL`), não é defeito do bucket.
+- Todo upload responder 503 (anexos, evidências): o antivírus da Fase 3b está fora do ar, a base de vírus passou de 72 h, ou a API ainda roda com `EVIDENCE_SCANNER=unavailable` (veja "o que pode dar errado" da 3b); não é defeito do bucket.
 
 ---
 
@@ -1143,6 +1520,11 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 | P-AWS-SSE-TIMEOUT | o fluxo de eventos (SSE) fica aberto por muito tempo; o ALB corta conexão parada há 60 s e o CloudFront, como está no 4.6, espera no máximo 60 s entre pedaços da resposta (`OriginReadTimeout: 60`; aceita até 120 s, acima disso só com aumento de cota). Hoje a API manda um sinal de vida a cada 25 s e o mapa reconecta; se a medição em produção mostrar quedas, subir o tempo do ALB (o comando está em "o que pode dar errado" da Fase 4) e escrever e validar a edição do `OriginReadTimeout` do CloudFront | `B-INFRA-AWS-03` |
 | P-AWS-PORTAL-TENANT | `PORTAL_TENANT_ID` provisório até o 1º tenant; definir o processo (6.2) e o valor do `PORTAL_CORS_ORIGIN` do portal | `B-INFRA-AWS-03` |
 | P-AWS-IP-FIXO | a decisão D-AWS-03 e, se vier, o bloco do NLB+EIP ou do Global Accelerator | dono |
+| P-AWS-CLAMAV-ARM64 | a imagem `clamav/clamav:1.4.6` fixada no `B-AV-REAL` só tem `amd64`; medir a tag `-debian` (que tem `arm64`) e o digest dela para a 3b rodar em ARM (−US$ 8/mês) | `B-INFRA-AWS-03` |
+| P-AWS-CLAMAV-IMAGEM | a 3b.3 entrega o `clamd.conf` por variável e grava o arquivo no início do contêiner; o caminho limpo é uma imagem derivada (`FROM` o digest fixado + `COPY infra/clamav/clamd.conf`) publicada pelo CI | `B-INFRA-AWS-03` |
+| P-AWS-TRACCAR-ARM64 | a imagem `traccar/traccar:6.16.0` tem `arm64`; o estudo fixou x86; trocar economiza ~US$ 7/mês, depois de medir em staging | `B-TRC-06` |
+| P-TRC02-STATUS-TIMEOUT-PROD | o estado online/sem sinal (`EVENT_STATUS_ENABLE`, `STATUS_TIMEOUT`) ficou fora da receita de produção do 3c.6 | `B-TRC-06` |
+| G-TRC-NLB | o modelo de ameaças e a junta de 5 unânime que destravam a Fase 3d (porta dos rastreadores) | dono + junta |
 
 ---
 
@@ -1157,4 +1539,5 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 - ECR: pull-through cache para o GitHub Container Registry (`--upstream-registry-url ghcr.io`, segredo `ecr-pullthroughcache/…`).
 - Global Accelerator: US$ 0,025/h por acelerador (US$ 18,25/mês) + DT-Premium.
 - `dig` (man page), `jq` (manual), `psql` 16, `openssl`, `curl`, `docker`, `git`, `npm`/`npx prisma` — `--help` locais.
+- Fases 3b, 3c e 3d (`origin/main` `de00d1fc`): `src/config/env.ts` (`EVIDENCE_SCANNER`, `CLAMAV_*`, `TRACCAR_*` e as travas de produção), `docker-compose.clamav.yml` (imagem e digest do ClamAV, `CLAMAV_MAX_DB_AGE_HOURS=72`), `infra/clamav/clamd.conf`, `docker-compose.traccar.yml` (imagem e digest do Traccar, URLs do encaminhamento), `src/integrations/traccar/traccar-forward-auth.ts` (cabeçalho `X-Traccar-Forward-Token`), `traccar-ingest.app.ts` (rotas e 202 da quarentena), `prisma/schema.prisma` (`traccar_quarantine_items`), `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §6.2 e §7.1, `docs/omega-pd.md` (`PD-O6R-B07B-CLAMD-INSTREAM`, `PD-TRC-616`), `agent-orchestration/controle/decisoes.md` (`D-TRACCAR-HTTP-PRIVADO-AWS`). Traccar `v6.16.0` no GitHub: `Config.java` (variáveis de ambiente), `Keys.java` (chaves), `PortConfigSuffix.java` (GT06 5023, OsmAnd 5055). Registro de imagens: índices e configuração das imagens do ClamAV (só `amd64`; `Entrypoint /init`; saúde `clamdcheck.sh`) e do Traccar (`amd64` e `arm64`; Alpine). Documentação da AWS: descoberta de serviço do ECS (Cloud Map), checagem de saúde do contêiner (carência até 300 s), grupos de segurança do NLB (só na criação; referência pelo grupo; métrica `SecurityGroupBlockedFlowCount_Inbound`).
 - Revisão do PR #598 (`origin/main` `60c0704a`): `src/modules/auth/routes/auth.routes.ts` (o login responde `data.accessToken`), `frontend/src/services/realtime/pollingClient.ts`, `src/modules/field-ops-realtime/field-ops-realtime.routes.ts` (sinal de vida a cada 25 s), `frontend/src/modules/operations/map/useOperationsMap.ts` (reconexão), `scripts/bootstrap-platform-admin.ts`. Documentação: CloudFront (configurações de origem e cotas: `OriginReadTimeout` de 1 a 120 s), ELB (`idle_timeout.timeout_seconds`, padrão 60 s, no help local), PostgreSQL 16 (`DROP OWNED`, `psql -c` repetido), `jq` 1.7 (`--rawfile`), `curl` (`-d @arquivo`).
