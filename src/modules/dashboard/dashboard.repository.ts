@@ -150,8 +150,14 @@ export class InMemoryDashboardRepository implements DashboardRepository {
     const { tenantId, now } = input;
     const workOrderRepository = getMemoryWorkOrderRepositoryForTests();
 
+    // B-WO-LEITURA — o papel de campo conta só as OS dele (o mesmo filtro da lista de OS); os eventos saem dessas OS.
     const workOrders = (
-      await workOrderRepository.list({ tenantId, limit: FULL_SCAN_LIMIT, offset: 0 })
+      await workOrderRepository.list({
+        tenantId,
+        limit: FULL_SCAN_LIMIT,
+        offset: 0,
+        ...(input.assignedToActor ? { assignedToActor: input.assignedToActor } : {}),
+      })
     ).items;
 
     const byStatus = emptyWorkOrdersByStatus();

@@ -19,11 +19,20 @@ import type {
   RequestOperationalApprovalInput,
 } from "./approval.types.js";
 import { APPROVAL_ENTITY_TYPES, ApprovalError } from "./approval.types.js";
+import type { WorkOrderService } from "./work-order.service.js";
+import { actorReadsAssignedOnly, WorkOrderError, type WorkOrderAssignedToActorScope } from "./work-order.types.js";
+
+/** B-WO-LEITURA — a porta de leitura da OS, injetada (import preguiçoso do serviço de OS, como `checklist.service`). */
+export type ApprovalReadScope = {
+  readScopeFor(actor: ApprovalActorContext): Promise<WorkOrderAssignedToActorScope | undefined>;
+  canRead(actor: ApprovalActorContext, workOrderId: string): Promise<boolean>;
+};
 
 export class ApprovalService {
   constructor(
     private readonly repository: ApprovalRepository,
     private readonly notifications?: NotificationService,
+    private readonly readScope?: ApprovalReadScope,
   ) {}
 
   async request(input: RequestOperationalApprovalInput): Promise<OperationalApproval> {
@@ -34,19 +43,40 @@ export class ApprovalService {
     return this.repository.request({ ...input, pendingReason });
   }
 
-  listPending(actor: ApprovalActorContext, query: Record<string, unknown> = {}) {
-    return this.repository.listPending({
+  async listPending(actor: ApprovalActorContext, query: Record<string, unknown> = {}): Promise<readonly OperationalApproval[]> {
+    const canRead = await this.readFilterFor(actor); // B-WO-LEITURA:aprovacao-lista
+    const approvals = await this.repository.listPending({
       tenantId: actor.tenantId,
       workOrderId: optionalText(query.work_order_id ?? query.workOrderId),
     });
+    if (!canRead) return approvals;
+    const visible: OperationalApproval[] = [];
+    for (const approval of approvals) if (approval.workOrderId && (await canRead(approval.workOrderId))) visible.push(approval);
+    return visible;
   }
 
   async get(actor: ApprovalActorContext, approvalId: string): Promise<OperationalApproval> {
+    const canRead = await this.readFilterFor(actor); // o escopo resolve ANTES do findById (S-W3, Emenda 2 §5.5)
     const approval = await this.repository.findById(actor.tenantId, approvalId);
-    if (!approval) {
-      throw new ApprovalError(404, "APPROVAL_NOT_FOUND", "not_found", "Approval was not found.");
-    }
+    if (!approval) throw approvalNotFoundError();
+    if (canRead && !(approval.workOrderId && (await canRead(approval.workOrderId)))) throw approvalNotFoundError(); // B-WO-LEITURA:aprovacao-detalhe
     return approval;
+  }
+
+  /**
+   * B-WO-LEITURA — `undefined` para quem lê a organização inteira; para o campo, a função memoizada por OS. Sem a
+   * dependência: 503 fail-closed, como a lista de OS. `readScopeFor` é chamado aqui para que a falha do resolvedor
+   * (503) nasça ANTES de qualquer leitura — inexistente e alheia respondem igual também nessa janela.
+   */
+  private async readFilterFor(actor: ApprovalActorContext): Promise<((workOrderId: string) => Promise<boolean>) | undefined> {
+    if (!actorReadsAssignedOnly(actor)) return undefined;
+    const readScope = this.readScope;
+    if (!readScope) {
+      throw new ApprovalError(503, "APPROVAL_SCOPE_UNAVAILABLE", "scope_resolver_unavailable", "Não foi possível montar as suas aprovações agora. Tente de novo.");
+    }
+    await readScope.readScopeFor(actor);
+    const memo = new Map<string, Promise<boolean>>();
+    return (workOrderId) => memo.get(workOrderId) ?? memo.set(workOrderId, readScope.canRead(actor, workOrderId)).get(workOrderId)!;
   }
 
   approve(actor: ApprovalActorContext, approvalId: string, body: Record<string, unknown>, context?: ApprovalAuditContext) {
@@ -122,7 +152,7 @@ export class ApprovalService {
     if (!approval) {
       const reread = await this.repository.findById(input.tenantId, input.approvalId);
       if (!reread) {
-        throw new ApprovalError(404, "APPROVAL_NOT_FOUND", "not_found", "Approval was not found.");
+        throw approvalNotFoundError();
       }
       throw new ApprovalError(
         409,
@@ -165,7 +195,29 @@ const memoryRepository = getMemoryApprovalRepository();
 let defaultServicePromise: Promise<ApprovalService> | undefined;
 
 export function createMemoryApprovalService(): ApprovalService {
-  return new ApprovalService(memoryRepository, createMemoryNotificationService());
+  return new ApprovalService(memoryRepository, createMemoryNotificationService(), createWorkOrderReadScope());
+}
+
+/**
+ * B-WO-LEITURA — a porta de leitura da OS para as aprovações: `readScopeFor` e `canRead` = `getForRead` sem erro
+ * (`WorkOrderError` 404/400 → `false`; o resto sobe, fail-closed). Sem o serviço, o padrão por import preguiçoso
+ * (`createDefaultWorkOrderService`), como `checklist.service` faz com `resolveWorkOrderService`.
+ */
+export function createWorkOrderReadScope(service?: WorkOrderService): ApprovalReadScope {
+  const resolve = async (): Promise<WorkOrderService> =>
+    service ?? (await (await import("./work-order.service.js")).createDefaultWorkOrderService());
+  return {
+    readScopeFor: async (actor) => (await resolve()).readScopeFor(actor),
+    canRead: async (actor, workOrderId) => {
+      try {
+        await (await resolve()).getForRead(actor, workOrderId);
+        return true;
+      } catch (error) {
+        if (error instanceof WorkOrderError && (error.statusCode === 404 || error.statusCode === 400)) return false;
+        throw error;
+      }
+    },
+  };
 }
 
 export async function createDefaultApprovalService(): Promise<ApprovalService> {
@@ -187,7 +239,12 @@ export function getApprovalAuditEventsForTests(): readonly ApprovalAuditEvent[] 
 async function createRuntimeApprovalService(): Promise<ApprovalService> {
   const repository: ApprovalRepository =
     env.CORE_SAAS_PERSISTENCE === "prisma" ? await (await import("./approval-prisma.repository.js")).createPrismaApprovalRepository() : memoryRepository; // B-APROV:fabrica-runtime
-  return new ApprovalService(repository, await createDefaultNotificationService());
+  return new ApprovalService(repository, await createDefaultNotificationService(), createWorkOrderReadScope());
+}
+
+// B-WO-LEITURA — o 404 da aprovação, num lugar só: o inexistente e a que não é do papel de campo lançam ESTE erro.
+function approvalNotFoundError(): ApprovalError {
+  return new ApprovalError(404, "APPROVAL_NOT_FOUND", "not_found", "Approval was not found.");
 }
 
 function assertEntityType(value: string): asserts value is ApprovalEntityType {

@@ -89,6 +89,9 @@ export type ListFieldDispatchesInput = {
   readonly search?: string;
   readonly limit: number;
   readonly offset: number;
+  // B-WO-LEITURA — só o despacho cuja OS está atribuída a um destes `assigned_operator_id` (o escopo de leitura do
+  // papel de campo: user id e perfil). Lista vazia = nenhum despacho.
+  readonly workOrderAssignedOperatorIn?: readonly string[];
 };
 
 export type ListFieldDispatchesResult = {

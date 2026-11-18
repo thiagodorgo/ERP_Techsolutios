@@ -170,10 +170,14 @@ export class ChecklistController {
   // FASE: só ele recebe a vistoria de entrega e a chave `role`. Sem o parâmetro, a resposta é a de antes deste bloco
   // (sem entrega, sem `role`), porque o app que já está nos aparelhos casa só por modelo e gravaria a coleta na
   // entrega. A permissão não muda: a rota segue com `checklist_runs:read`.
+  //
+  // B-WO-LEITURA — a rota pede a lista PARA LER (`listRunsForWorkOrderForRead`): o papel de campo recebe as vistorias só
+  // da OS dele; para a alheia, a mesma lista vazia do inexistente. A leitura interna (a trava da conclusão) segue em
+  // `listRunsForWorkOrder`.
   async listRunsForWorkOrder(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const roleAware = request.query.roleAware === "1";
-    const runs = await service.listRunsForWorkOrder(actor, request.query.workOrderId, request.query.checklistId, {
+    const runs = await service.listRunsForWorkOrderForRead(actor, request.query.workOrderId, request.query.checklistId, {
       roleAware,
     });
 

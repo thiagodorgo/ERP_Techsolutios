@@ -57,10 +57,13 @@ import type {
 } from "./work-order.types.js";
 import {
   actorMutatesAssignedOnly,
+  actorReadsAssignedOnly,
   cancelTransientConflictError,
+  matchesAssignedToActor,
   WORK_ORDER_SERVICE_STARTED,
   WorkOrderError,
   workOrderNotAssignedError,
+  workOrderNotFoundError,
 } from "./work-order.types.js";
 import {
   assertNonEmptyString,
@@ -432,7 +435,7 @@ export class WorkOrderService {
    * (via get()). §2.8: nunca tenant_id/place_id/segredo; coordenada NUNCA logada.
    */
   async listMapStartPoints(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrderMapStartPoints> {
-    const workOrder = await this.get(actor, workOrderId);
+    const workOrder = await this.getForRead(actor, workOrderId); // B-WO-LEITURA:wo-map
 
     const origin = hasValidCoordinate(workOrder.serviceLatitude, workOrder.serviceLongitude)
       ? {
@@ -478,7 +481,8 @@ export class WorkOrderService {
       offset: parseOffset(query.offset),
     };
     // B-SAN3-13 (#32) — a lista do técnico é IMPOSTA aqui: o ator que só alcança OS por papel de campo
-    // (`actorMutatesAssignedOnly`, a mesma régua do guard) recebe só as que pode mutar, peça o que pedir; os demais
+    // (B-WO-LEITURA — `actorReadsAssignedOnly`, a régua de LEITURA — o mesmo predicado da porta `getForRead`; a de
+    // mutação escopava também quem acumula um papel de leitura larga, como `auditor`) recebe só as suas, peça o que pedir; os demais
     // filtros (`assignedUserId`, `status`, `search`, …) INTERSECTAM — `?assignedUserId=<colega>` dá 200 vazio, não
     // a OS do colega. `scope=assigned` oferece o mesmo recorte a qualquer papel (a gestão no app vê só as suas).
     const scope = parseListScope(query.scope);
@@ -505,7 +509,7 @@ export class WorkOrderService {
       );
     }
     const assignedToActor =
-      scope === "assigned" || actorMutatesAssignedOnly(actor) ? await this.resolveListActorScope(actor) : undefined;
+      scope === "assigned" || actorReadsAssignedOnly(actor) ? await this.resolveListActorScope(actor) : undefined; // B-WO-LEITURA:lista-os
 
     return this.repository.list({
       ...input,
@@ -927,7 +931,7 @@ export class WorkOrderService {
     const workOrder = await this.repository.findById(actor.tenantId, parseRequiredUuid(workOrderId, "workOrderId"));
 
     if (!workOrder) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+      throw workOrderNotFoundError();
     }
 
     return workOrder;
@@ -939,7 +943,7 @@ export class WorkOrderService {
    * get() callers (update/status/assign/timeline) stay cheap and unchanged.
    */
   async getWithLinks(actor: WorkOrderActorContext, workOrderId: string) {
-    const workOrder = await this.get(actor, workOrderId);
+    const workOrder = await this.getForRead(actor, workOrderId); // B-WO-LEITURA:wo-detail
     const links = await this.resolveLinks(actor, workOrder);
     // CHECKLIST P1 PR-04c-A — o detalhe passa a carregar o CONJUNTO. A web dizia "Vinculado" para uma ordem com
     // duas vistorias; meia-verdade sobre prova é o mesmo que mentira.
@@ -966,11 +970,11 @@ export class WorkOrderService {
    * Quem cai no guard: o ator que alcança a ordem SÓ por papel de campo (ver `actorMutatesAssignedOnly`).
    * Para ele, a mutação exige que a ordem esteja atribuída ao SEU perfil de operador.
    *
-   * 403, NÃO 404 — deliberado, e é o contrato que muda. 404 continua reservado ao cross-tenant (a ordem
-   * de OUTRA organização não existe para este ator, e é assim que o `findById` tenant-scoped já
-   * responde). Aqui a ordem EXISTE na organização do ator, ele pode LÊ-LA (`work_orders:read` é
-   * tenant-wide, e a lista do app depende disso) — o que ele não pode é MUTÁ-LA. Devolver 404 mentiria
-   * sobre um objeto que a mesma sessão acabou de listar.
+   * 403, NÃO 404, na ESCRITA — deliberado (`D-WO-LEITURA-404-ESCRITA-403`, decisão do dono de 17/11). Na LEITURA,
+   * desde o B-WO-LEITURA, a OS que não é do papel de campo responde o MESMO 404 do id inexistente (`getForRead`); a
+   * escrita segue 403 `not_assigned_to_actor` porque o app depende dele, com a marca de ex-técnico, para virar um
+   * conflito que um superior decide (07c-b1, `isPreviouslyAssignedRefusal`). O oráculo de existência 403×404 da
+   * escrita existe e está registrado (`P-WO-ORACULO-403-404-ESCRITA`, `C-WO-LEITURA-404-ESCRITA-403`).
    *
    * Sem resolver de perfil injetado a recusa é a mesma: para um ator de campo, não conseguir provar a
    * atribuição é não ter a atribuição. Fail-closed por composição incompleta, nunca por omissão.
@@ -1110,13 +1114,30 @@ export class WorkOrderService {
    * B-O6R-07c-a (`P-O6R-SUBRECURSO-OBJECT-SCOPE`) — a OS para quem vai ESCREVER num subrecurso dela: anexo,
    * comentário, tag de comentário, geocode e a km pela fila do app. É `get` (404 do cross-tenant, inalterado)
    * seguido do escopo por objeto do 07a (`assertMutationObjectScope`, corpo intocado): o técnico de campo só
-   * escreve na OS atribuída a ele. Leitura (listar, baixar) segue em `get`.
+   * escreve na OS atribuída a ele. Leitura (listar, baixar) passa pela porta irmã `getForRead` (B-WO-LEITURA).
    *
    * A porta da regra é `assertMutationObjectScope`, não este método: `update` e `changeStatus` a chamam direto.
    */
   async getForMutation(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrder> {
     const workOrder = await this.get(actor, workOrderId);
     await this.assertMutationObjectScope(actor, workOrder);
+    return workOrder;
+  }
+
+  /** B-WO-LEITURA — o escopo de LEITURA do ator: `undefined` = organização inteira; senão, o mesmo escopo da lista (B-SAN3-13). */
+  async readScopeFor(actor: WorkOrderActorContext): Promise<WorkOrderAssignedToActorScope | undefined> {
+    return actorReadsAssignedOnly(actor) ? this.resolveListActorScope(actor) : undefined; // B-WO-LEITURA:escopo
+  }
+
+  /**
+   * B-WO-LEITURA — a OS para quem vai LER. O escopo resolve ANTES do `get` (A8): inexistente e alheia respondem
+   * igual também na janela de falha do resolvedor (503 para as duas). Para o papel de campo, a OS alheia dá o
+   * MESMO 404 do id inexistente.
+   */
+  async getForRead(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrder> {
+    const scope = await this.readScopeFor(actor);
+    const workOrder = await this.get(actor, workOrderId);
+    if (scope && !matchesAssignedToActor(workOrder, scope)) throw workOrderNotFoundError(); // B-WO-LEITURA:porta
     return workOrder;
   }
 
@@ -2378,7 +2399,7 @@ export class WorkOrderService {
   }
 
   async timeline(actor: WorkOrderActorContext, workOrderId: string): Promise<readonly WorkOrderEvent[]> {
-    const workOrder = await this.get(actor, workOrderId);
+    const workOrder = await this.getForRead(actor, workOrderId); // B-WO-LEITURA:wo-timeline
 
     return this.repository.listTimeline(actor.tenantId, workOrder.id);
   }

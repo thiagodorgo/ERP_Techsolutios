@@ -48,7 +48,7 @@ export class WorkOrderFinancialService {
   ) {}
 
   async list(actor: WorkOrderFinancialActorContext, workOrderId: string): Promise<ListWorkOrderFinancialResult> {
-    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    const workOrder = await this.assertWorkOrderForRead(actor, workOrderId); // B-WO-LEITURA:financeiro-lista
     const items = await this.repository.listByWorkOrder(actor.tenantId, workOrder.id);
     // B1 (lição recorrente) — o total agregado é SOMADO AQUI (backend), só de itens não-deletados
     // (o repositório já os exclui). O front nunca soma.
@@ -282,6 +282,19 @@ export class WorkOrderFinancialService {
   async zeroActiveItems(actor: WorkOrderFinancialActorContext, workOrderId: string): Promise<number> {
     const workOrder = await this.assertWorkOrder(actor, workOrderId);
     return this.repository.softDeleteAllByWorkOrder(actor.tenantId, workOrder.id, actor.userId);
+  }
+
+  // B-WO-LEITURA — a OS para LER: `getForRead` (o papel de campo só lê a OS dele; a alheia é o 404 do inexistente), com
+  // a MESMA conversão do 404 de `assertWorkOrder`: o alheio e o inexistente respondem igual.
+  private async assertWorkOrderForRead(actor: WorkOrderFinancialActorContext, workOrderId: string) {
+    try {
+      return await this.workOrderService.getForRead(actor, workOrderId);
+    } catch (error) {
+      if (error instanceof WorkOrderError && error.statusCode === 404) {
+        throw new WorkOrderFinancialError(404, "WORK_ORDER_NOT_FOUND", "work_order_not_found", "Work order was not found.");
+      }
+      throw error;
+    }
   }
 
   // OS in-tenant? senão 404 (não vaza cross-tenant). Reusa o WorkOrderService — padrão

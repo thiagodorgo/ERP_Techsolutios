@@ -28,7 +28,7 @@ export class WorkOrderAttachmentService {
   ) {}
 
   async listAttachments(actor: WorkOrderAttachmentActorContext, workOrderId: string): Promise<readonly WorkOrderAttachment[]> {
-    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    const workOrder = await this.assertWorkOrderForRead(actor, workOrderId); // B-WO-LEITURA:anexo-lista
     return this.repository.listAttachments(actor.tenantId, workOrder.id);
   }
 
@@ -154,6 +154,16 @@ export class WorkOrderAttachmentService {
     }
   }
 
+  // B-WO-LEITURA — a OS para LER (listar e baixar): `getForRead` (o papel de campo só lê a OS dele; a alheia é o 404
+  // do inexistente). A conversão do 404 é a mesma de `assertWorkOrder`, e por isso o alheio e o inexistente respondem igual.
+  private async assertWorkOrderForRead(actor: WorkOrderAttachmentActorContext, workOrderId: string) {
+    try {
+      return await this.workOrderService.getForRead(actor, workOrderId);
+    } catch (error) {
+      throw toAttachmentWorkOrderError(error);
+    }
+  }
+
   // B-O6R-07c-a — a OS para ESCREVER: `getForMutation` (404 do cross-tenant + escopo por objeto do 07a). A conversão
   // do 404 é a mesma de `assertWorkOrder`; o 403 `not_assigned_to_actor` atravessa como está.
   private async assertWorkOrderForMutation(actor: WorkOrderAttachmentActorContext, workOrderId: string) {
@@ -169,7 +179,7 @@ export class WorkOrderAttachmentService {
     workOrderId: string,
     attachmentId: string,
   ): Promise<WorkOrderAttachment> {
-    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    const workOrder = await this.assertWorkOrderForRead(actor, workOrderId); // B-WO-LEITURA:anexo-download
     return this.findAttachment(actor, workOrder.id, attachmentId);
   }
 

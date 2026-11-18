@@ -385,6 +385,11 @@ jobs:
           SUITES="$SUITES tests/ass-08c-nota-retry-db.test.ts"
           SUITES="$SUITES tests/ass-08c-statement-busy-db.test.ts"
           SUITES="$SUITES tests/bgui02-ordem-por-etapa-db.test.ts"
+          # B-WO-LEITURA-TECNICO (item 71 do portão; Emendas 1, 2, 3.1 e 3.2) — o escopo de leitura do técnico de campo no Postgres
+          # real, sob papel efêmero NOSUPERUSER NOBYPASSRLS: as 18 rotas do bloco (D-POS, D-NEG, D-UNIAO, D-MESMA-REGRA para
+          # support+ft, finance+tec, viewer+tec e auditor+ft, D-CONCEDE (i)-(v), D-MODULO-PROPRIO, D-XT, D-POS-USERID, D-PAINEL e D-EX).
+          # Medida 3× antes de entrar: 176/176, 0 falha, 0 pulo, denominador constante.
+          SUITES="$SUITES tests/wo-leitura-scope-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
