@@ -110,7 +110,12 @@ export type InvoiceDispatchResult =
   | { readonly kind: "needs_review"; readonly code: string }
   | { readonly kind: "skipped"; readonly reason: OutboxSkipReason }
   /** (C) A nota ainda está pendente: a linha é ADIADA, sem gastar tentativa, até a reconsulta decidir a nota. */
-  | { readonly kind: "deferred"; readonly code: "invoice_still_processing" };
+  | { readonly kind: "deferred"; readonly code: "invoice_still_processing" | "invoice_sweep_failed" }
+  /** B-ASS-08c2 (plano §4.12): a posse da linha foi perdida antes do `port.issue` — 0 escrita, o despacho registra `lease_lost`. */
+  | { readonly kind: "lease_lost" };
+
+/** B-ASS-08c2 (plano §4.12): a posse da linha, vinda do despacho (o `confirmLease` da reclamação em curso). */
+export type InvoiceLeaseCheck = { readonly confirm: () => Promise<boolean> };
 
 function payloadSeq(row: BillingOutboxRow): number {
   const value = row.payload.seq;
@@ -125,7 +130,7 @@ export class InvoiceOutboxHandler {
     return Object.keys(this.deps.ports);
   }
 
-  async issue(row: BillingOutboxRow, wasOrphan: boolean, now: Date): Promise<InvoiceDispatchResult> {
+  async issue(row: BillingOutboxRow, wasOrphan: boolean, now: Date, posse: InvoiceLeaseCheck): Promise<InvoiceDispatchResult> {
     const port = this.deps.ports[row.provider];
     if (!port) return { kind: "skipped", reason: "provider_disabled" };
     const statement = await this.deps.statements.findStatement(row.tenantId, row.statementId);
@@ -140,7 +145,7 @@ export class InvoiceOutboxHandler {
     const context = await this.deps.resolveIssueContext({ tenantId: row.tenantId, statementId: row.statementId, provider: row.provider, statement });
     if ("reason" in context) return { kind: "needs_review", code: context.reason };
 
-    let begun: { readonly invoice: SubscriptionStatementInvoice; readonly statementPaid: boolean };
+    let begun: { readonly invoice: SubscriptionStatementInvoice; readonly created: boolean; readonly statementPaid: boolean };
     try {
       begun = await this.deps.invoices.beginIssue(
         { tenantId: row.tenantId, statementId: row.statementId, seq: payloadSeq(row), provider: row.provider, environment: context.environment, serie: context.serie },
@@ -158,8 +163,10 @@ export class InvoiceOutboxHandler {
     if (!begun.statementPaid) return this.#resolveWithoutIssuing(row, invoice, port, now);
 
     // Órfã de crash, ou emissão que já chegou ao provedor: RECONSULTA pela `ref` ANTES de repetir (G8). `unknown` = nunca
-    // chegou → emitir (e a `ref` repetida é recusada pelo provedor como `already_issued`, idempotente).
-    if (wasOrphan || invoice.providerInvoiceId) {
+    // chegou → emitir (e a `ref` repetida é recusada pelo provedor como `already_issued`, idempotente). B-ASS-08c2 (Emenda 1
+    // §4.1): também a RETENTATIVA de uma nota já começada (`created: false`) — o POST anterior pode ter chegado e a resposta se
+    // perdido; sem a reconsulta, uma duplicidade com texto não reconhecido viraria nota `rejected` (o NOTA-VAL) e uma 2ª nota.
+    if (wasOrphan || invoice.providerInvoiceId || !begun.created) { // [NOTA-RETRY]
       const lookup = await port.getInvoice(invoice.externalRef);
       if (lookup.status !== "unknown") {
         await this.#applyLookup(invoice, lookup, port, now);
@@ -167,6 +174,8 @@ export class InvoiceOutboxHandler {
       }
     }
 
+    // O zumbi da órfã (P19): a posse é conferida logo antes do POST; se outro worker reclamou a linha, este não emite.
+    if (!(await posse.confirm())) return { kind: "lease_lost" }; // [LEASE-03]
     try {
       const result = await port.issue({
         externalRef: invoice.externalRef,
@@ -181,16 +190,17 @@ export class InvoiceOutboxHandler {
       await this.deps.invoices.markIssued(row.tenantId, invoice.id, result.providerInvoiceId ?? null, now);
       return { kind: "sent", externalId: result.providerInvoiceId ?? invoice.externalRef };
     } catch (error) {
-      if (error instanceof InvoiceProviderError) {
-        if (error.code === "already_issued") {
-          await this.deps.invoices.markIssued(row.tenantId, invoice.id, error.existingId ?? null, now);
-          return { kind: "sent", externalId: error.existingId ?? invoice.externalRef };
-        }
-        // Dado fiscal incompleto / IBS-CBS / rota municipal para Simples: não é transitório — revisão humana, visível.
-        return { kind: "needs_review", code: error.code };
+      if (error instanceof InvoiceProviderError && error.code === "already_issued") {
+        await this.deps.invoices.markIssued(row.tenantId, invoice.id, error.existingId ?? null, now);
+        return { kind: "sent", externalId: error.existingId ?? invoice.externalRef };
       }
-      if (error instanceof ProviderValidationError) return { kind: "needs_review", code: "provider_validation" };
-      throw error; // transitório (rede, 5xx, 429): o dispatcher aplica o backoff
+      // Dado fiscal incompleto / IBS-CBS / rota municipal para Simples / validação do provedor: não é transitório. A nota fica
+      // `rejected` pelo CÓDIGO (nunca o texto do provedor, §2.8) e a linha vai a revisão, visível; o demonstrativo pago aparece no
+      // backlog para a reemissão pelo `/invoice` com o `seq` seguinte (P18).
+      const rejection = error instanceof InvoiceProviderError ? error.code : error instanceof ProviderValidationError ? "provider_validation" : null;
+      if (rejection === null) throw error; // transitório (rede, 5xx, 429): o dispatcher aplica o backoff
+      await this.deps.invoices.markRejected(row.tenantId, invoice.id, rejection, now); // [NOTA-VAL]
+      return { kind: "needs_review", code: rejection };
     }
   }
 

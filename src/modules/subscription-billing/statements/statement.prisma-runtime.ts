@@ -13,6 +13,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { deriveBusinessDate } from "../../../config/business-time.js";
+import { isTransactionStartTimeout } from "../../../infra/logging/public-error.js";
 import { withTenantRls } from "../../../database/rls.js";
 import {
   BILLING_PAYMENT_METHODS,
@@ -28,12 +29,14 @@ import { prismaChargeIntentTx } from "../charges/charge-intent.prisma.js";
 import { sqlStatusList } from "../charges/charge-rules.js";
 import { listByStatementInTx as listChargesByStatementInTx } from "../charges/charges.prisma.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
-import { enqueueInTx } from "../outbox/outbox.prisma.js";
+import { invoiceLineSqlList, seqOfIdempotencyKey } from "../invoices/invoice-intent-rules.js";
+import { LIVE_SQL } from "../invoices/invoices.prisma.js";
+import { enqueueInTx, listByStatementInTx as listOutboxByStatementInTx, postgresErrorCode } from "../outbox/outbox.prisma.js";
 import { computeStatement, type StatementSnapshot } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
 import { RepositoryStatementInputsProvider, type BindingsSource, type UsageSource } from "./statement.inputs-provider.js";
 import type { UsageDayRow, VehicleBindingWindow } from "./statement.inputs.js";
-import { emptyStatement, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
+import { emptyStatement, INVOICE_SWEEP_LIMIT, type InvoiceBacklogFacts, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
 import { closingMethodOf } from "./statement-charge-lines.js";
 import { StatementService, type StatementAuditSink, type StatementChannel } from "./statement.service.js";
 import type {
@@ -49,6 +52,7 @@ import type {
   SubscriptionCredit,
   SubscriptionStatement,
 } from "./statement.types.js";
+import { StatementError } from "./statement.types.js";
 
 type Tx = Prisma.TransactionClient;
 
@@ -233,7 +237,7 @@ function mapCredit(record: CreditRecord): SubscriptionCredit {
 }
 
 function prismaTx(tx: Tx, tenantId: string): StatementTx {
-  return {
+  const self: StatementTx = {
     async insertIfAbsentAndLock(input) {
       const draft = emptyStatement(input, new Date());
       const inserted = await tx.subscriptionStatement.createMany({
@@ -353,6 +357,14 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       const row = rows[0];
       return row ? { provider: row.provider, seq: Number(row.seq), status: row.status } : undefined;
     },
+    // B-ASS-08c2 (plano §4.1 item 5): os fatos da intenção de nota no MESMO `tx`, depois da trava — as linhas `invoice_issue` (a
+    // leitura da fila de sempre, filtrada pelo tipo), o maior `seq` da tabela da nota e a nota viva (a MESMA consulta acima).
+    async invoiceIntentFacts(statementId) {
+      if (!isUuid(statementId)) return { lines: [], maxInvoiceSeq: 0, live: undefined };
+      const lines = (await listOutboxByStatementInTx(tx, statementId)).filter((row) => row.kind === "invoice_issue");
+      const max = (await tx.$queryRawUnsafe(`SELECT COALESCE(max(seq), 0)::int AS max FROM subscription_statement_invoices WHERE statement_id = $1::uuid`, statementId)) as Array<{ max: number }>;
+      return { lines, maxInvoiceSeq: Number(max[0]?.max ?? 0), live: await self.findLiveInvoice!(statementId) };
+    },
     // B-ASS-08c1b (P8, A7/A8): a leitura da fila do `reopen`, no MESMO `tx` e depois da trava do demonstrativo (1 conexão).
     async hasOutboxNeedsReview(statementId) {
       if (!isUuid(statementId)) return false;
@@ -381,6 +393,17 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       );
     },
   };
+  return self;
+}
+
+/** B-ASS-08c2 (plano §4.14, `P-BILLING-P2028-COMO-400`): a falha de banco do movimento que quer dizer "o demonstrativo está
+ * ocupado" — a trava não obtida (55P03, o mesmo helper do pedido de cobrança) ou a transação interativa expirada (P2028). O P2028
+ * de INÍCIO de transação (pool esgotado) não é: ele continua o `infra_down` da casa. */
+function isStatementBusy(error: unknown): boolean {
+  if (postgresErrorCode(error) === "55P03") return true;
+  if (!error || typeof error !== "object") return false;
+  const record = error as Record<string, unknown>;
+  return record.code === "P2028" && !isTransactionStartTimeout(record);
 }
 
 /** A linha de `audit_logs` dentro do `tx` corrente: se falhar, a transação do movimento cai junto (fail-closed). */
@@ -403,8 +426,15 @@ async function writeAuditInTx(tx: Tx, event: StatementAuditEvent): Promise<void>
 export class PrismaStatementRepository implements StatementRepository {
   constructor(private readonly client: PrismaClient) {}
 
-  transaction<T>(tenantId: string, work: (tx: StatementTx) => Promise<T>): Promise<T> {
-    return withTenantRls(this.client, tenantId, (tx) => work(prismaTx(tx, tenantId)));
+  /** B-ASS-08c2 (plano §4.14): a transação já desfez quando o erro chega; só o MAPEAMENTO muda — "ocupado" vira 409
+   * `statement_busy` (repetível, o precedente do pedido de cobrança); um erro de regra atravessa igual. */
+  async transaction<T>(tenantId: string, work: (tx: StatementTx) => Promise<T>): Promise<T> {
+    try {
+      return await withTenantRls(this.client, tenantId, (tx) => work(prismaTx(tx, tenantId)));
+    } catch (error) {
+      if (isStatementBusy(error)) throw new StatementError(409, "statement_busy", "The statement is busy; try again."); // [STMT-BUSY]
+      throw error;
+    }
   }
 
   listStatements(tenantId: string): Promise<readonly SubscriptionStatement[]> {
@@ -460,6 +490,61 @@ export class PrismaStatementRepository implements StatementRepository {
       const id = rows[0]?.id;
       if (!id) return undefined;
       return (await listChargesByStatementInTx(tx, statementId)).find((charge) => charge.id === id);
+    });
+  }
+
+  /** B-ASS-08c2 (plano §4.5): os candidatos da varredura da nota, numa leitura sob a RLS da organização. A vida da nota vem do
+   * `LIVE_SQL` e a da linha da tabela `INVOICE_ISSUE_LINE_RULES` (a lista gerada): nenhum literal novo decide. */
+  listInvoiceIntentCandidates(tenantId: string, cutoff: Date): Promise<readonly string[]> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT s.id FROM subscription_statements s
+          WHERE s.tenant_id = $1::uuid AND s.status = 'paid' AND s.total_amount > 0 AND s.paid_at >= $2
+            AND NOT EXISTS (SELECT 1 FROM subscription_statement_invoices i WHERE i.statement_id = s.id AND i.tenant_id = s.tenant_id AND i.${LIVE_SQL})
+            AND NOT EXISTS (SELECT 1 FROM billing_outbox o WHERE o.statement_id = s.id AND o.tenant_id = s.tenant_id AND o.kind = 'invoice_issue'
+                              AND (o.status IN (${invoiceLineSqlList("inFlight")})
+                                   OR o.occurred_at >= s.paid_at))
+          ORDER BY s.paid_at, s.id
+          LIMIT ${INVOICE_SWEEP_LIMIT}`,
+        tenantId,
+        cutoff,
+      )) as Array<{ id: string }>;
+      return rows.map((row) => row.id);
+    });
+  }
+
+  /** B-ASS-08c2 (plano §4.9): o backlog da nota, UMA leitura sob `withTenantRls` (sem trava): os `paid`, mais os não pagos com
+   * nota viva (pela MESMA `LIVE_SQL`), com a última `invoice_issue` e a última nota de cada um. Quem categoriza é a regra pura. */
+  listInvoiceBacklog(tenantId: string): Promise<readonly InvoiceBacklogFacts[]> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT s.id, s.period, s.status, s.invoice_status, round(s.total_amount * 100)::int AS total_cents, s.paid_at,
+                (lv.one IS NOT NULL) AS live,
+                ll.status AS line_status, ll.skip_reason AS line_skip_reason, ll.occurred_at AS line_occurred_at, ll.idempotency_key AS line_key, ll.last_error AS line_last_error,
+                ln.seq AS invoice_seq, ln.status AS invoice_last_status
+           FROM subscription_statements s
+           LEFT JOIN LATERAL (SELECT 1 AS one FROM subscription_statement_invoices i WHERE i.statement_id = s.id AND i.tenant_id = s.tenant_id AND i.${LIVE_SQL} LIMIT 1) lv ON true
+           LEFT JOIN LATERAL (SELECT o.status, o.skip_reason, o.occurred_at, o.idempotency_key, o.last_error FROM billing_outbox o
+                               WHERE o.statement_id = s.id AND o.tenant_id = s.tenant_id AND o.kind = 'invoice_issue'
+                               ORDER BY o.occurred_at DESC, o.created_at DESC LIMIT 1) ll ON true
+           LEFT JOIN LATERAL (SELECT n.seq, n.status FROM subscription_statement_invoices n
+                               WHERE n.statement_id = s.id AND n.tenant_id = s.tenant_id ORDER BY n.seq DESC LIMIT 1) ln ON true
+          WHERE s.tenant_id = $1::uuid AND (s.status = 'paid' OR lv.one IS NOT NULL)
+          ORDER BY s.period, s.id`,
+        tenantId,
+      )) as Array<{
+        id: string; period: string; status: string; invoice_status: string; total_cents: number; paid_at: Date | null; live: boolean;
+        line_status: string | null; line_skip_reason: string | null; line_occurred_at: Date | null; line_key: string | null; line_last_error: string | null;
+        invoice_seq: number | null; invoice_last_status: string | null;
+      }>;
+      return rows.map((row) => ({
+        statement: { id: row.id, period: row.period, status: row.status as InvoiceBacklogFacts["statement"]["status"], invoiceStatus: row.invoice_status as InvoiceBacklogFacts["statement"]["invoiceStatus"], totalCents: Number(row.total_cents), paidAt: row.paid_at },
+        live: row.live === true,
+        lastLine: row.line_status !== null && row.line_key !== null && row.line_occurred_at !== null
+          ? { status: row.line_status as NonNullable<InvoiceBacklogFacts["lastLine"]>["status"], skipReason: row.line_skip_reason as NonNullable<InvoiceBacklogFacts["lastLine"]>["skipReason"], occurredAt: row.line_occurred_at, seq: seqOfIdempotencyKey(row.line_key), lastError: row.line_last_error }
+          : undefined,
+        lastInvoice: row.invoice_seq !== null && row.invoice_last_status !== null ? { seq: Number(row.invoice_seq), status: row.invoice_last_status as NonNullable<InvoiceBacklogFacts["lastInvoice"]>["status"] } : undefined,
+      }));
     });
   }
 }
@@ -609,6 +694,9 @@ export async function createPrismaStatementRuntime(): Promise<StatementRuntime> 
         return { provider: on.provider, method: closingMethodOf((await billingProfiles.find(tenantId))?.paymentMethod) };
       },
     },
+    // B-ASS-08c2 (plano §4.1 item 2): a intenção de nota da baixa manual, do estorno, da varredura e do `/invoice`, pelo MESMO
+    // predicado das portas (`invoiceIntentsNow`). Import dinâmico, como o `closingCharge`: `vault/` e `outbox/` sem ciclo.
+    invoiceIntents: { resolve: async () => (await import("../outbox/channel-state.js")).invoiceIntentsNow(await (await import("../vault/vault.factory.js")).createDefaultVaultRuntime()) }, // [NOTA-INTENTS]
   };
   return {
     service: new StatementService(repository, inputs, audit, channel),

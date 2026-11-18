@@ -59,5 +59,6 @@ test("T40 módulos não vaza código interno e inventário conserva 23 endpoints
   assert.doesNotMatch(source, /P0\d|plano \{tenant\.plan\}/);
   const output = execFileSync(process.execPath, [path.join(REPO, "scripts/san3-06b-endpoints-de-plataforma.mjs"), REPO], { encoding: "utf8", timeout: 120_000 });
   // B-ASS-09 (F6): 53 → 63, as 10 rotas da visão de custo, do câmbio e dos grupos (`/api/v1/platform/billing/overview`, `/fx-rates`, `/economic-groups`).
-  assert.match(output, /endpoints sob \/api\/v1\/platform = 70/);
+  // B-ASS-08c2 (F11): 70 → 72, as 2 rotas novas (`POST …/statements/:statementId/invoice` e `GET …/invoices/backlog`).
+  assert.match(output, /endpoints sob \/api\/v1\/platform = 72/);
 });

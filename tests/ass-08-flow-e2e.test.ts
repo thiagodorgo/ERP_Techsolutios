@@ -67,8 +67,8 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
       },
     });
     const invoiceStore = new InMemoryStatementInvoiceRepository(statements);
-    statements.attachChannelStores({ outbox, invoices: invoiceStore });
     const refs = new InMemoryStatementRefRepository();
+    statements.attachChannelStores({ outbox, invoices: invoiceStore, charges, refs });
     // Conserto J-522 (C3-01): a intenção entra pelo caminho de PRODUÇÃO — `requestChargeCreate` trava o demonstrativo,
     // aplica a elegibilidade (R-CHG-2/D1) e grava refs + linha; o payload NÃO carrega `customerId` (R-PRF-1).
     await requestChargeCreate(

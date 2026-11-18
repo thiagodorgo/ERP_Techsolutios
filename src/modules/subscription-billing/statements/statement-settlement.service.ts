@@ -11,6 +11,7 @@
 // commita, nenhuma falha posterior a apaga. Provedor de nota desligado → a linha nasce `provider_disabled` (visível).
 
 import { CreditService } from "../credits/credit.service.js";
+import { invoiceIntentDecision, type InvoiceIntentMode, type InvoiceIntentNoneReason } from "../invoices/invoice-intent-rules.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
 import type { StatementService } from "./statement.service.js";
 import type { ChargeStatus, PaymentSource, StatementPayment, SubscriptionCredit, SubscriptionStatement } from "./statement.types.js";
@@ -54,6 +55,72 @@ function intentTx(tx: StatementTx): IntentTx | null {
   return { enqueueOutbox, findLiveInvoice };
 }
 
+/** B-ASS-08c2 (plano §4.1 item 3): as funções novas exigem também os fatos da intenção (`invoiceIntentFacts`); sem eles, falha
+ * fechado, como o `intentTx` (o marcador INTX-08). */
+function invoiceFactsTx(tx: StatementTx): IntentTx & { readonly invoiceIntentFacts: NonNullable<StatementTx["invoiceIntentFacts"]> } {
+  const intent = intentTx(tx)!;
+  const { invoiceIntentFacts } = tx;
+  if (!invoiceIntentFacts) throw new Error("invoice_intent_tx_unsupported");
+  return { ...intent, invoiceIntentFacts };
+}
+
+export type InvoiceIssueOutcome =
+  | { readonly kind: "created"; readonly seq: number; readonly providerDisabled: boolean }
+  | { readonly kind: "none"; readonly reason: InvoiceIntentNoneReason };
+
+export type InvoiceCancelOutcome = { readonly kind: "enqueued" } | { readonly kind: "confirmation_required" } | { readonly kind: "in_progress" } | { readonly kind: "none" };
+
+/**
+ * B-ASS-08c2 (plano §4.1 item 3, §4.2 a §4.5, §4.9) — a ÚNICA porta da intenção de EMISSÃO de nota nova: a baixa manual que
+ * quita, o 1º pagamento e o monotônico do provedor, a varredura de recuperação e o `/invoice` do operador. Roda no `tx` do
+ * movimento, DEPOIS da trava do demonstrativo: lê os fatos no MESMO `tx`, decide pela regra pura (`invoiceIntentDecision`) e,
+ * se for criar, grava a linha com o `seq` seguinte e o índice do demonstrativo (com `provider` nulo e a organização do
+ * demonstrativo TRAVADO). Provedor de nota desligado → a linha nasce `provider_disabled`, visível; o claim a limpa ao religar.
+ */
+export async function writeInvoiceIssueIntentInTx(
+  tx: StatementTx,
+  intents: InvoiceIntents,
+  input: { readonly statement: SubscriptionStatement; readonly now: Date; readonly mode: InvoiceIntentMode; readonly cutoff?: Date },
+): Promise<InvoiceIssueOutcome> {
+  const { statement, now } = input;
+  const intent = invoiceFactsTx(tx);
+  const facts = await intent.invoiceIntentFacts(statement.id);
+  const decision = invoiceIntentDecision({ statement, lines: facts.lines, live: facts.live !== undefined, maxInvoiceSeq: facts.maxInvoiceSeq, mode: input.mode, ...(input.cutoff ? { cutoff: input.cutoff } : {}) });
+  if (decision.kind === "none") return decision;
+  await intent.enqueueOutbox({ tenantId: statement.tenantId, statementId: statement.id, kind: "invoice_issue", provider: intents.issueTarget.provider, seq: decision.seq, payload: { seq: decision.seq }, skipReason: intents.issueTarget.enabled ? null : "provider_disabled" }, now); // [NOTA-SEQ]
+  await tx.charging().putRef({ statementId: statement.id, tenantId: statement.tenantId, provider: null }, now); // [NOTA-REF]
+  return { kind: "created", seq: decision.seq, providerDisabled: !intents.issueTarget.enabled };
+}
+
+/**
+ * B-ASS-08c2 (plano §4.7, Emenda 1 §2.2) — a intenção de CANCELAR a nota viva no estorno manual que devolveu todo o valor, no
+ * `tx` do estorno e depois da trava. Nota `pending`/`authorized`: sem `confirm`, nada é gravado e volta `confirmation_required`
+ * (o cuidado 1 do dono: quem chama desfaz o estorno); com `confirm`, o `invoice_cancel` vai ao provedor e ao `seq` DELA (o molde
+ * do cancelamento do provedor), `provider_disabled` se ele não estiver ligado. `cancel_pending` → o cancelamento já está em
+ * curso. Sem nota viva → nada.
+ */
+export async function writeInvoiceCancelIntentInTx(
+  tx: StatementTx,
+  intents: InvoiceIntents,
+  input: { readonly statementId: string; readonly tenantId: string; readonly now: Date; readonly confirm: boolean },
+): Promise<InvoiceCancelOutcome> {
+  const intent = invoiceFactsTx(tx);
+  const live = await intent.findLiveInvoice(input.statementId);
+  if (!live) return { kind: "none" };
+  if (live.status === "cancel_pending") return { kind: "in_progress" };
+  if (!input.confirm) return { kind: "confirmation_required" };
+  const skipReason = intents.enabledInvoiceProviders.includes(live.provider) ? null : "provider_disabled";
+  await intent.enqueueOutbox({ tenantId: input.tenantId, statementId: input.statementId, kind: "invoice_cancel", provider: live.provider, seq: live.seq, payload: { reason: "payment_reversed" }, skipReason }, input.now);
+  return { kind: "enqueued" };
+}
+
+/** B-ASS-08c2 (Emenda 1 §2.2): só leitura, no `tx` do estorno de só uma parte — o que acontece com a nota viva que FICA. */
+export async function describeLiveInvoiceInTx(tx: StatementTx, statementId: string): Promise<"kept_partial_reversal" | "cancel_in_progress" | "none"> {
+  const live = await intentTx(tx)!.findLiveInvoice(statementId);
+  if (!live) return "none";
+  return live.status === "cancel_pending" ? "cancel_in_progress" : "kept_partial_reversal";
+}
+
 export class StatementSettlementService {
   readonly #credits = new CreditService();
 
@@ -67,11 +134,8 @@ export class StatementSettlementService {
   async #issueIntent(tx: StatementTx, change: { readonly before: SubscriptionStatement; readonly after: SubscriptionStatement }, now: Date): Promise<void> {
     const intents = this.invoiceIntents;
     if (!intents || change.before.status === "paid" || change.after.status !== "paid") return;
-    const intent = intentTx(tx);
-    if (!intent) return;
     // [INTX-06a]
-    const skipReason = intents.issueTarget.enabled ? null : "provider_disabled";
-    await intent.enqueueOutbox({ tenantId: change.after.tenantId, statementId: change.after.id, kind: "invoice_issue", provider: intents.issueTarget.provider, seq: 1, payload: { seq: 1 }, skipReason }, now);
+    await writeInvoiceIssueIntentInTx(tx, intents, { statement: change.after, now, mode: "auto" });
   }
 
   /** B-ASS-08c1c (R2-03, plano §4.7): o 1º pagamento do provedor, no `tx` da baixa — a tabela de cobranças passa a `confirmed`
@@ -156,7 +220,8 @@ export class StatementSettlementService {
   /**
    * Estorno/chargeback de um pagamento do provedor (R-CB-1, R-SET-3/D4). Desconta PRIMEIRO do crédito que o pagamento
    * gerou e só o resto de `applied_amount`. `cancelled` NUNCA volta a `closed`. Devolve `shouldCancelInvoice` para o
-   * reconcile enfileirar `invoice_cancel` — só em estorno TOTAL ou chargeback, com nota `authorized` e sem `keepInvoice`.
+   * reconcile enfileirar `invoice_cancel` — só em estorno TOTAL ou chargeback, com nota viva (pendente ou autorizada; com o
+   * cancelamento já pendente, não nasce outro) e sem `keepInvoice`.
    */
   async applyReversal(input: {
     readonly tenantId: string;

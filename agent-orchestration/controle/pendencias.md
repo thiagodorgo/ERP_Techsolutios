@@ -13599,7 +13599,8 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-ASS08C-NOTA-DA-BAIXA-MANUAL (2026-11-11) — baixa/estorno manuais sem intenção de nota, e o PASSADO sem nota — ALTA (bloqueia ligar o provedor de NOTA)
 
-- **status:** ABERTA · **escopo:** `statements/statement.service.ts` (`recordManualPayment`, `reverseManualPayment`) e o ato de ligar o provedor de nota (nasce no 08c) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** `statements/statement.service.ts` (`recordManualPayment`, `reverseManualPayment`) e o ato de ligar o provedor de nota (nasce no 08c) · **dono:** `B-ASS-08c`.
+- **fechamento:** (1) a varredura de recuperação (`recoverInvoiceIntents`, sob a trava do demonstrativo, com o corte do dono `2026-11-11T09:43:45Z`, no despacho antes do claim, só com provedor de nota ligado, e falha fechada para as emissões: `invoice_sweep_failed`) — VR1 a VR6, VR-P12, VR-SQL, VR-OFF, VR-PERF (`tests/ass-08c-varredura-db.test.ts`); os pagos antes do corte no backlog (`before_cutoff`, BL1); (2) a baixa manual que quita grava a `invoice_issue` na MESMA transação (NOTA-01) — NM1 a NM3, NM-WH, NM-WH-ORDER (`tests/ass-08c-nota-manual-db.test.ts`); o estorno manual segue a Q3 = (a) com os 3 cuidados — EM1 a EM8 (`tests/ass-08c-estorno-manual-db.test.ts`); T-LOCK-2 verde com os cenários `service.recordManualPayment.invoice` e `service.reverseManualPayment.invoice`.
 - **origem:** auditoria do topo do #530 (I9) e `crit-530-cl` CRIT530-03 (medido: F1-c, baixa manual que quita → outbox vazia, nenhuma nota). Anterior ao bloco (B-ASS-04). Nenhuma nota pode ser emitida antes do 08c (`evaluateEnablePreconditions` sem chamador, medido em `6e236f4e`), logo o dano nasce no dia de ligar. Ajustes da rodada 2 do crítico do plano (`crit-530-r2`, CRIT530R2-02 e CRIT530R2-06), incorporados abaixo.
 - **teste de encerramento (cobre o PASSADO e o futuro):**
   - (1) VARREDURA DE RECUPERAÇÃO, pré-condição de QUALQUER forma de ligar o provedor de nota (a rota de ligar, e também o caminho que hoje é o único — SQL direto em `billing_provider_configs`: a varredura não pode depender só da rota; por exemplo, o despacho recusa emitir até a varredura ter rodado para o provedor ligado). Todo demonstrativo com `status = 'paid'`, sem nota viva nem autorizada, e sem linha `invoice_issue` VIVA (não excluir o pago cuja única `invoice_issue` é TERMINAL — `NEEDS_REVIEW statement_not_paid` ou `SENT` de nota cancelada/rejeitada —, CRIT530R2-02), com `paid_at` no corte escolhido pelo dono (pergunta 2 do plano v2 do #530), ganha 1 intenção `invoice_issue` com o `seq` seguinte. O INSERT da intenção acontece DEPOIS de travar o demonstrativo (`FOR NO KEY UPDATE`/`FOR UPDATE`) na mesma transação (CRIT530R2-06: medido pelo crítico na rodada 2 que um INSERT da mesma chave fora da trava fecha ciclo com a reversão e dá 40P01), com teste de barreira no molde do T-INTX-9b. Com uma baixa manual que quitou ANTES da varredura e uma quitação manual depois de parcial do provedor, ligar o provedor deixa 1 `invoice_issue` para cada; demonstrativo fora do corte aparece numa listagem de conferência, sem intenção. Repetir a varredura não duplica.
@@ -13612,25 +13613,29 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-ASS08C-REEMISSAO-APOS-REPAGAMENTO (2026-11-11) — repagar depois de um estorno total não gera intenção de nota — ALTA (bloqueia ligar o provedor de NOTA)
 
-- **status:** ABERTA · **escopo:** a intenção de emissão na 2ª transição para `paid` (`statement-settlement.service.ts`, `#issueIntent`, que hoje grava `invoice_issue:<id>:1` com `ON CONFLICT DO NOTHING`) e a rota `/invoice` (G10, `seq + 1`) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** a intenção de emissão na 2ª transição para `paid` (`statement-settlement.service.ts`, `#issueIntent`, que hoje grava `invoice_issue:<id>:1` com `ON CONFLICT DO NOTHING`) e a rota `/invoice` (G10, `seq + 1`) · **dono:** `B-ASS-08c`.
+- **fechamento:** a intenção nasce com o `seq` seguinte (NOTA-SEQ, `writeInvoiceIssueIntentInTx`), depois da trava, no caminho do provedor e no manual — RE1 e RE2 (`tests/ass-08c-nota-manual-db.test.ts`), RE1-man (`tests/ass-08c-estorno-manual-db.test.ts`); M17 vermelha.
 - **origem:** conserto do #530 e a rodada 2 do crítico (`crit-530-r2`, CRIT530R2-02, medido: R2-REPAY → `paid`, 2 pagamentos, nenhuma nota, a linha `invoice_issue` que sobra diz `NEEDS_REVIEW statement_not_paid`). Depois de um estorno total, o repagamento por outra cobrança leva o demonstrativo a `paid`, e a intenção `invoice_issue:<id>:1` já existe (terminal) → nada nasce. GRAVIDADE SUBIDA de BAIXA para ALTA pelo requisito da rodada 2 do crítico (a alternativa a implementar a reemissão neste conserto); só é alcançável com o provedor de nota ligado, por isso bloqueia ligá-lo.
 - **teste de encerramento:** repagamento depois de estorno total → 1 `invoice_issue` VIVA com o `seq` seguinte (ou a regra escolhida no 08c, com teste dono), gravada DEPOIS de travar o demonstrativo na transação da baixa (CRIT530R2-06), com barreira no molde do T-INTX-9b; a varredura da `P-ASS08C-NOTA-DA-BAIXA-MANUAL` também alcança o caso.
 
 ## P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO (2026-11-11) — `invoice_cancel` em `NEEDS_REVIEW invoice_stuck_processing` não tem saída no produto — MÉDIA (bloqueia ligar o provedor de NOTA)
 
-- **status:** ABERTA · **escopo:** `outbox/invoice.dispatch.ts` (o teto de 72 h do cancelamento), `outbox.prisma.ts` (`retry` só reabre `FAILED`) e a tela/rota de revisão da outbox · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** `outbox/invoice.dispatch.ts` (o teto de 72 h do cancelamento), `outbox.prisma.ts` (`retry` só reabre `FAILED`) e a tela/rota de revisão da outbox · **dono:** `B-ASS-08c`.
+- **fechamento:** a saída já existia desde o 08c1b (`/resolve` → `FAILED`, `/retry` → `PENDING`, e o despacho reconsulta antes de cancelar); o teste-dono NP1 (`tests/ass-08c-nota-presa-db.test.ts`) prova o caminho inteiro com o demonstrativo travado primeiro, e a M19 (o `resolve` sem as linhas de nota) o deixa vermelho.
 - **origem:** rodada 2 do crítico (`crit-530-r2`, CRIT530R2-03). O conserto da J-530 já reconsulta a nota antes de ir a revisão (T-INTX-11f): só vai a `NEEDS_REVIEW invoice_stuck_processing` a nota que o provedor AINDA diz processando depois de 72 h (T-INTX-11e). Mas nenhum `UPDATE` em `src` tira uma linha de `NEEDS_REVIEW`, e o `retry` só reabre `FAILED`: se o provedor autorizar depois, a nota fica de pé sobre receita estornada sem caminho de conserto.
 - **teste de encerramento:** a linha `invoice_cancel` em `NEEDS_REVIEW invoice_stuck_processing` volta a `PENDING` por uma ação com dono (rota de revisão ou job que a reconsulta), travando o demonstrativo primeiro; com a nota autorizada pelo provedor depois do teto, a ação cancela a nota (1 `DELETE`, nota `cancel_pending`/`cancelled`); teste dono `-db` e a mutação "sem a saída" vermelha.
 
 ## P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO (2026-11-11) — nota `pending` que o provedor recusou por validação fica pendente para sempre — BAIXA
 
-- **status:** ABERTA · **escopo:** `outbox/invoice.dispatch.ts` (o `catch` de `InvoiceProviderError` na emissão devolve `needs_review` sem `markRejected`) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** `outbox/invoice.dispatch.ts` (o `catch` de `InvoiceProviderError` na emissão devolve `needs_review` sem `markRejected`) · **dono:** `B-ASS-08c`.
+- **fechamento:** o erro de validação na emissão deixa a nota `rejected` pelo CÓDIGO e a linha `NEEDS_REVIEW` (NOTA-VAL, `outbox/invoice.dispatch.ts`) — NV1 e NV2 (`tests/ass-08c-nota-validacao.test.ts`), M20 e M20b vermelhas; o demonstrativo pago aparece no backlog como `needs_review` (BL1) para a reemissão pelo `POST …/statements/:statementId/invoice` (IN1). A retentativa reconsulta antes de reenviar (NOTA-RETRY; NR1, NR2), para uma duplicidade com texto não reconhecido nunca virar nota rejeitada.
 - **origem:** rodada 2 do crítico (`crit-530-r2`, CRIT530R2-01, a mesma classe, lida por código; anterior ao conserto). Com o demonstrativo pago, a nota fica `pending` sem nota no provedor e a linha `invoice_issue` em `NEEDS_REVIEW`. Se houver estorno, o conserto da J-530 a resolve (o cancelamento reconsulta no teto e a marca rejeitada, porque nunca chegou ao provedor); sem estorno, ela só fica visível.
 - **teste de encerramento:** erro de validação na emissão deixa a nota `rejected` com o motivo (ou a regra do 08c, com teste dono), e o demonstrativo pago aparece para a reemissão.
 
 ## P-ASS08-ZUMBI-ORFA-NOTA (2026-11-11) — trabalhador vivo além do tempo de órfã ainda pode emitir uma nota que o registro deu por abandonada — BAIXA
 
-- **status:** ABERTA · **escopo:** `invoice.dispatch.ts` (o lease da linha `PROCESSING`) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **escopo:** `invoice.dispatch.ts` (o lease da linha `PROCESSING`) · **dono:** `B-ASS-08c`.
+- **fechamento:** a posse da linha vem do despacho e é conferida logo antes do `port.issue` (LEASE-03; `lease_lost`, 0 envio) — L4 (`tests/ass-08c-lease-db.test.ts`), M21 vermelha.
 - **origem:** conserto do #530 (plano v2 §3.4). Risco anterior ao conserto, que o desenho da órfã de hoje já aceita; o conserto não o piora.
 - **teste de encerramento:** conferência de lease (`claimed_by` + `attempt_started_at`) antes do `port.issue`, ou reconciliação que adota nota autorizada no provedor sem linha viva nossa e enfileira o cancelamento se o demonstrativo não estiver `paid`.
 
@@ -13778,7 +13783,8 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-CONF530-02 (2026-11-11) — comentário de `StatementInvoiceRepository.beginIssue` desatualizado — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); `src/modules/subscription-billing/invoices/invoices.repository.ts:45` · **dono:** `B-ASS-08c` · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); `src/modules/subscription-billing/invoices/invoices.repository.ts:45` · **dono:** `B-ASS-08c` · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **fechamento:** o comentário de `invoices/invoices.repository.ts` diz `StatementNotPaidError` (CA-23).
 - **origem:** CONF530-02 da conferência `conf-530-cl`; dono `B-ASS-08c` pelo porteiro do #530 (R1). Mesma classe da `P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA`.
 - **fato:** o comentário diz que a nota nova sobre demonstrativo não pago lança `InvoiceProviderError("statement_not_paid")`, mas o código (Prisma e dublê) lança `StatementNotPaidError` (o desvio declarado (a) do dev). Sem efeito em execução: o único chamador trata as duas classes.
 - **critério de encerramento:** o comentário diz `StatementNotPaidError`.
@@ -13844,7 +13850,8 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 - **nota do `B-USERS-SEG-DESATIVADO` (dev `dev-users-desat-cl`, 2026-11-11):** o bloco NÃO muda o que a suspensão bloqueia (residual 6 do contrato, `API_CONTRACTS.md`). A conferência nova do portão (`src/modules/auth/services/session-liveness.service.ts`) não lê `tenants.status`; se a resposta do dono for "tudo", é nela que a junção com `tenants` entra, uma vez por requisição.
 ## P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA (2026-11-11) — o documento e um comentário dizem "nota autorizada", e o código cancela a nota viva — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530, defasados pelo conserto da J-530); `docs/subscription-billing.md` ("estorno total ou chargeback com nota **autorizada** → `invoice_cancel`") e o comentário `src/modules/subscription-billing/statements/statement-settlement.service.ts:151` ("com nota `authorized`") · **dono:** `B-ASS-08c`, junto da `P-CONF530-02` (a fonte) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530, defasados pelo conserto da J-530); `docs/subscription-billing.md` ("estorno total ou chargeback com nota **autorizada** → `invoice_cancel`") e o comentário `src/modules/subscription-billing/statements/statement-settlement.service.ts:151` ("com nota `authorized`") · **dono:** `B-ASS-08c`, junto da `P-CONF530-02` (a fonte) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **fechamento:** o comentário do `applyReversal` (`statement-settlement.service.ts`) e o `docs/subscription-billing.md` dizem "nota viva (pendente, autorizada ou com cancelamento pendente)", com a ressalva medida no código: com o cancelamento já pendente, não nasce outro (CA-23).
 - **origem:** R4 do porteiro `porteiro-530` (LIBERADO COM RESSALVA; `revisoes/porteiro-530-parecer.md`, fora do repositório).
 - **fato:** o código cancela a nota VIVA: `statement-settlement.service.ts:214` (`findLiveInvoice`) e `statement.prisma-runtime.ts:345` (`status IN (pending, authorized, cancel_pending)`). O documento promete menos do que o código faz, então não há promessa falsa.
 - **critério de encerramento:** o documento e o comentário dizem "nota viva" (pendente, autorizada ou com cancelamento pendente).
@@ -15997,7 +16004,8 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA (2026-11-15) — depois de quitar à mão (a cobrança é cancelada) e estornar a baixa manual, a conta volta a `closed` sem cobrança viva — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (o dinheiro não se perde; não bloqueia ligar) · **escopo:** fora do `B-ASS-08c1c` (`reverseManualPayment` e a Q3 são do 08c2) · **dono:** `B-ASS-08c2` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA (o dinheiro não se perde; não bloqueia ligar) · **escopo:** fora do `B-ASS-08c1c` (`reverseManualPayment` e a Q3 são do 08c2) · **dono:** `B-ASS-08c2` · **bloqueia:** não.
+- **fechamento:** decidido "deixar o botão, sem recobrar sozinho": depois de quitar à mão, cancelar a cobrança e estornar, a conta volta a `closed` e a cobrança sai pelo `/charge` do operador — EM4 (`tests/ass-08c-estorno-manual-db.test.ts`, pela rota `reverse`).
 - **origem:** CR-06 (a) do parecer r1 do crítico do `B-ASS-08c1c` (`crit-08c1c-cl`), decidida pela Emenda 1 §7 (a); registrada pela F12 do `B-ASS-08c1c` (`dev-08c1c-cl`).
 - **fato:** a baixa manual que quita cancela a cobrança aberta (`[EAGER-01]`); se a baixa for estornada depois (08c2), o demonstrativo volta a `closed` com `paidCents = 0`, a linha velha está `SKIPPED` e não há cobrança viva. O `/charge` passa.
 - **critério de encerramento:** o 08c2 decide e testa o que acontece com a cobrança depois do estorno manual (recobrar sozinho, ou deixar o botão e mostrar ao cliente que não há link), com o caso "quitou à mão → cancelou → estornou" no teste.
@@ -16577,7 +16585,8 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-BILLING-P2028-COMO-400 (2026-11-15) — 10 fechamentos concorrentes expiram (P2028) e a rota responde `400 invalid_request` — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (fail-closed para o dinheiro) · **escopo:** `pre-existente` (#507/#571) · **dono:** `B-ASS-08c2` · **PR-alvo:** o PR do 08c2 · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA (fail-closed para o dinheiro) · **escopo:** `pre-existente` (#507/#571) · **dono:** `B-ASS-08c2` · **PR-alvo:** o PR do 08c2 · **bloqueia:** não.
+- **fechamento:** a falha de banco do movimento do demonstrativo (P2028 de transação expirada, ou 55P03) vira `409 statement_busy`, repetível (STMT-BUSY, `statement.prisma-runtime.ts`); o pool esgotado ao abrir continua indisponibilidade — PB-1 e PB-2 (`tests/ass-08c-statement-busy.test.ts`, `tests/ass-08c-statement-busy-db.test.ts`), M-BUSY vermelha; o contrato dos movimentos do demonstrativo traz o 409 (`API_CONTRACTS.md`, seção `b-ass-08c2`). Ressalva medida: na rajada de 10 fechamentos de um demonstrativo NOVO os 10 expiram (409, nenhum 400); a causa provável é a pendência `P-08C2-CLOSE-POOL-PRESO` (dono 08c3), da Emenda 4.
 - **origem:** J-579, C2-05.
 - **critério de encerramento:** a falha de infraestrutura sai como 5xx (ou 409), não como pedido inválido, com teste.
 
@@ -16628,7 +16637,8 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-579-LINERULE-NAO-EXAUSTIVA (2026-11-15) — a `LineRule` das linhas `charge_create` não é exaustiva — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-ASS-08c1c` · **dono:** `B-ASS-08c2` · **PR-alvo:** o PR do 08c2 · **bloqueia:** não.
+- **status:** FECHADA (2026-11-17, PR #587, `B-ASS-08c2`) · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-ASS-08c1c` · **dono:** `B-ASS-08c2` · **PR-alvo:** o PR do 08c2 · **bloqueia:** não.
+- **fechamento:** as 3 decisões das linhas `charge_create` leem a ação por um `switch` com `default: return unreachable(action)` (ACTION-REFECHA, ACTION-EAGER, ACTION-REOPEN, `statements/statement-charge-lines.ts`) — LR-0 (a matriz 6 × 10 × 3 literal) e LR-1 (`tests/ass-08c-line-actions.test.ts`); M-ACAO (`tsc` com 3 TS2345 nos `default`) e M-ACAO-RT vermelhas.
 - **origem:** C2 refeita da J-579 (`j579-c2r-fechamento-cl`), C2R-01.
 - **critério de encerramento:** a tabela das linhas `charge_create` exaustiva por tipo (`Record` com `satisfies`), com mutação vermelha.
 
@@ -16757,6 +16767,18 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **acréscimo (registro de 17/11, `fix-593-m-cl`, na união com a `main`):** o registro de 17/11 tinha aberto a mesma pendência pelo registro do PR #588 (F0 a F7), com a nota "é provavelmente o que o dono viu no Pixel; a causa não foi medida"; as duas entradas viraram esta.
 - **critério de encerramento:** a lista vazia do servidor mostra o estado vazio, sem aviso de falha, com teste.
 
+## P-ASS08C-NOTA-COMPETENCIA-ANTERIOR (2026-11-17) — a nota de competência anterior ao mês corrente não foi provada no sandbox — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (HIPÓTESE fiscal) · **escopo:** `pre-existente` (R2-14 da Emenda 1 do v2) · **dono:** a homologação `P-ASS-SANDBOX-REAL` (ato do dono) · **bloqueia:** ligar a nota.
+- **origem:** plano de abertura do `B-ASS-08c2` (§3 e §12). A varredura e a reemissão emitem nota de um período já encerrado (a competência é o período do demonstrativo).
+- **critério de encerramento:** o sandbox emite uma nota de competência anterior ao mês corrente e o resultado vai ao diário antes de ligar a nota; o contador confirma a competência de mês anterior no município (recomendação de 13/11).
+
+## P-ASS08C2-TELA-AVISO-ESTORNO-CANCELA-NOTA (2026-11-17) — a tela do estorno manual ainda não avisa que a nota será cancelada — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `frontend` · **dono:** `B-ASS-10b` · **bloqueia:** não (sem a confirmação, o servidor recusa com `422 invoice_cancel_confirmation_required` e nada muda).
+- **origem:** plano de abertura do `B-ASS-08c2` (§12), cuidado 1 da Q3 = (a).
+- **critério de encerramento:** a tela do estorno mostra o aviso antes de confirmar e manda o `confirmInvoiceCancel`.
+
 ## P-MOBILE-MEU-ESTOQUE-SEM-PORTA (2026-11-17) — o estoque real do usuário do app só abre de dentro de uma OS — BAIXA
 
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a tela do estoque do técnico, do `B-SAN3-15a`, exige `workOrderId`) · **dono:** `B-MOBILE-ESTOQUE-PORTA`, a abrir, fora do portão · **bloqueia:** não.
@@ -16789,9 +16811,12 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor cancela a nota quando o pagamento dele é todo devolvido, mesmo com outro valor ainda pago no demonstrativo — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
+- **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `pre-existente` para o `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito: plano §4.7/§9 D-5, Emenda 1 §2.5; triagem da J-587, Emenda 7) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
 - **origem:** Emenda 1 do plano do `B-ASS-08c2` (§9, fora do repositório); a pergunta ao dono vai ao artefato quando o 08c3 começar.
 - **fato:** no estorno pelo provedor, a nota é cancelada quando aquele pagamento é todo devolvido, mesmo que o demonstrativo ainda tenha outro valor pago (o caso realista: parte paga pelo provedor, o resto à mão, e o provedor devolve a parte dele). A pergunta ao dono: (a) continuar cancelando, como hoje, ou (b) seguir a regra do estorno manual (só alerta, sem cancelar, até todo o dinheiro ser devolvido). Recomendação: (b). Sem resposta: (a).
+- **pergunta ao dono (o orquestrador a leva quando o 08c3 começar):** "Quando o Asaas devolve o pagamento dele, mas ainda sobrou dinheiro pago à mão no mesmo mês, a nota deve (a) continuar sendo cancelada, como hoje, ou (b) seguir a regra do estorno manual: só alerta, sem cancelar, até todo o dinheiro ser devolvido?" Recomendação: (b). Sem resposta: fica (a). O caso NÃO aparece no backlog: o demonstrativo não pago com a nota cancelada pelo estorno do provedor fica com `null`; a decisão de reemitir ou não é do dono.
+- **acréscimo (integração da `main` no PR #587, `dev-08c2-m-cl`, 17/11, na união):** o ramo do `B-ASS-08c2` tinha aberto a mesma pendência (datada de 2026-11-17, com a pergunta ao dono acima, literal); as duas entradas viraram esta. **Divergência registrada, não resolvida (§A2):** a entrada do ramo dizia `escopo: pre-existente` (caminho do provedor, da 08b) e `bloqueia: ligar a nota`; esta, da `main`, diz `dentro-do-bloco` e `bloqueia: não`. Fica o texto da `main` até o orquestrador decidir.
+- **acréscimo (triagem da J-587, Emenda 7 do `B-ASS-08c2`, 17/11, do orquestrador, fora do repositório; gravado por `fix-587-r-cl`, 18/11):** o escopo fica `pre-existente` (a evidência da C3 sustenta: o caminho do provedor é da 08b). E o texto da pergunta foi corrigido: dizia "Sem resposta: fica (a), e o caso aparece no backlog", e o caso não aparece (achado C2-02 da J-587, sondas em `revisoes/j587/votos/c2-sondas/`, fora do repositório). O demonstrativo PAGO cuja nota da época foi cancelada é outro caso e passou a aparecer no backlog como `needs_review` (C2-01, Emenda 7 §1). O campo `bloqueia` segue o da `main` (`não`); a divergência do `bloqueia` acima continua aberta para o orquestrador.
 - **critério de encerramento:** a resposta do dono decide (a) ou (b), e o `B-ASS-08c3` implementa o caminho decidido com teste, antes de ligar a nota.
 
 ## P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA
@@ -16856,6 +16881,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA (disponibilidade, sem efeito em dinheiro: hoje são 10 respostas 409, repetíveis) · **escopo:** `pre-existente` para o `B-ASS-08c2` ("não é deste bloco", Emenda 4 §4) · **dono:** o próximo bloco que tocar o `close` (o `B-ASS-08c3`) · **gatilho:** esse bloco abrir · **bloqueia:** não.
 - **origem:** a 4ª leva do 08c2 (`dev-08c2-e4-cl`, head `d2cf41e9`), registrada pela Emenda 4 do 08c2 (`plano-B-ASS-08c2-emenda4.md` §4, do orquestrador, fora do repositório), 17/11.
 - **N e forma:** 10 fechamentos concorrentes de um demonstrativo novo → 10 respostas 409 por expiração em 5 s, repetível; o teste que acompanha é o PB-2 (a). **Causa provável, lida no código e ainda não medida pela contagem de conexões:** o `close` chama `inputs.resolve` com o cliente, e não com o `tx`, dentro da transação.
+- **N+1 (J-587, C1-NG2 e nota da C1, triagem da Emenda 7, 17/11):** mais 2 formas medidas, mesma família. (1) O PB-2 aceita só 200/409 e fica intermitente quando o pool do papel de runtime satura: a transação não abre (`Unable to start a transaction in the given time`), a rota responde `500 unknown_error` (`infra_down`, o caminho que o plano §4.14 e o PB-1 mandam manter), nada é gravado (0 demonstrativo, 0 fila, 0 auditoria) e o `close` seguinte fecha; sonda `SONDA500` com 10 seguradas → 10× 500. (2) O NM-X (`ass-08c-nota-manual-db`, `pendingInvoice`) sob a carga da lista inteira do `backend-postgres`: a baixa manual responde 409 (`statement_busy`, trava expirada) em vez de 201. Nenhuma asserção de dinheiro foi afrouxada para acomodar a saturação.
 - **critério de encerramento:** 10 fechamentos concorrentes → 1 fecha e 9 recebem 409, sem expirar, com teste.
 
 ## P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fila, e o despacho usa a 1ª como coleta — ALTA
@@ -16864,6 +16890,34 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** os achados das maquetes da 1ª onda (16/11 20:35, item (2)); a Emenda 1 do `B-GUI-02` (§8) a criou; a revisão r2 do plano `cx1-crit-gui02-e11` (Codex, VOLTA, A1 ALTA: aviso na tela não é controle) levou o conserto ao servidor, por decisão do orquestrador, declarada (17/11 11:3x), e a Emenda 2 (§5) a absorve (`plano-B-GUI-02-emenda1.md`, `plano-B-GUI-02-emenda2.md`, fora do repositório).
 - **N e forma:** 1 caminho do servidor: a vistoria incluída entra ao fim da fila (`order_index`), e o despacho toma a 1ª linha como coleta.
 - **critério de encerramento:** o servidor reconhece a coleta e a entrega pela etapa (`collection` sempre primária), com o T1 e o T7 do `B-GUI-02` verdes nas duas formas, memória e `-db`.
+
+## P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — o corte da varredura na composição em memória não é exercido por teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (produção roda em `prisma`; o mesmo limite no SQL é coberto pelos `-db`) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (fatias F7/F8), fora da leva julgada · **dono:** `B-ASS-08c3` (fatias F7/F8) · **bloqueia:** não.
+- **origem:** a pré-revisão `prerev-08c2-l6-cl` (achado L6-01, mutação própria ML6-b), 17/11; registrada pelo `dev-08c2-m-cl` na integração da `main` no PR #587.
+- **N e forma:** a composição em memória da varredura (`statement.repository.ts:408`, `<` vs `<=` no corte `paidAt` × `cutoff`) não é exercida por teste; a mutação ML6-b (`<` → `<=`) sobrevive 31/31 (`varredura-db` + `nota-manual-db`). Só os `-db` cobrem a varredura (a ML6-a, o mesmo limite no SQL, morre no VR4-linha). Risco: as duas composições (memória e `prisma`) derivarem.
+- **critério de encerramento:** um teste da composição em memória que fica vermelho com a ML6-b.
+
+## P-08C2-GSISO-ANTIGOS (2026-11-16) — o critério GS-ISO só vale para os arquivos de teste novos do 08c2; 6 antigos ficam sem `tenantIds` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (os 6 pontos estão em arquivos anteriores ao bloco) · **dono:** `B-ASS-08c3` · **bloqueia:** não.
+- **origem:** Emenda 3 do `B-ASS-08c2` (item 2, do orquestrador, 16/11, fora do repositório): "O comando literal dá 6, todos em arquivos anteriores ao bloco. O critério passa a valer só para os arquivos de teste NOVOS deste ramo: 4 de 4 com `tenantIds`. Os 6 antigos viram a pendência `P-08C2-GSISO-ANTIGOS` (BAIXA)." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 6 pontos do comando GS-ISO, em arquivos de teste anteriores ao bloco.
+- **critério de encerramento:** o comando GS-ISO dá 0 nos arquivos antigos (todos com `tenantIds`), ou cada um dos 6 fica declarado como aceite, com motivo.
+
+## P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — a reconsulta da nota não preenche o `provider_invoice_id` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-ASS-08c2`, fora do PERMITIDO dele (`#applyLookup`) · **dono:** `B-ASS-08c3` · **bloqueia:** não.
+- **origem:** Emenda 5 do `B-ASS-08c2` (item 1, do orquestrador, 17/11, fora do repositório): "o `provider_invoice_id` continua nulo depois da reconsulta. Para preenchê-lo seria preciso mexer em `#applyLookup`, que está fora do PERMITIDO. O plano passa a dizer "segue nulo" e a afirmar isso no NR1." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 1 caminho (`invoice.dispatch.ts`, `#applyLookup`, ramo `processing`). O NR1 (`tests/ass-08c-nota-retry-db.test.ts`) afirma o "segue nulo" depois da reconsulta (Emenda 7 §2); a mutação que preenche o campo nesse ramo o deixa vermelho.
+- **critério de encerramento:** a reconsulta grava o id da nota no provedor, e o NR1 passa a afirmar o id preenchido, com teste.
+
+## P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 do `B-SAN3-05` compara a porta com `includes` no log inteiro — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (teste do `B-SAN3-05`) · **dono:** o bloco de ferramentas de teste · **bloqueia:** não.
+- **origem:** Emenda 5 do `B-ASS-08c2` (do orquestrador, 17/11, fora do repositório): "O T15 compara a porta com `includes` no log inteiro e caiu 1 vez no run 44106675745, sem mudança de `src`." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 1 queda no CI (run 44106675745), sem mudança de `src`.
+- **critério de encerramento:** o T15 compara a porta por campo (não por substring no log inteiro), com teste.
 
 ## P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da OS mas não lê os modelos — ALTA
 
