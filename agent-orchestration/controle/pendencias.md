@@ -3011,6 +3011,7 @@ em `const inventoryByTenant = new Map<...>()` (`:100`). Coordinator sem estoque:
 **Bloqueia:** feature em estoque (entradas/saídas, custódia, contagem cíclica, baixa automática) e a fatia
 mobile de inventário. Sem fila de trabalho **verificada por mim** hoje em estoque — a proibição vale igualmente
 se surgir.
+- status: FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge): o resto, `Ω6R-QUA-002` (item 31), fecha pela `D-O6R-04B-RETIRADA`. O estoque fabricado sai: no servidor, o estoque em memória (os dois `Map`, a semente, os tipos `inventory.reserve`/`consume`/`shortage_report`) e `GET /mobile/inventory/availability` (S1 a S6 de `tests/bo6r04b-estoque-sem-memoria.test.ts`, com as mutações MS1 a MS6 e MS2b); no app, o módulo `lib/features/inventory/**`, as telas Nova Entrada e Nova Saída e as rotas `/inventory` (A1 a A3 de `mobile/flutter_app/test/features/bo6r04b_estoque_retirado_test.dart`, MA1 a MA3); a ação antiga que ficou na fila do aparelho vira envio não concluído, com Descartar (Q1 a Q4 de `mobile/flutter_app/test/core/sync/bo6r04b_estoque_legado_na_fila_test.dart`, MQ1). O movimento de estoque que o app registra é o material da OS, gravado no razão por origem, que sobrevive a restart (RC3(2) de `tests/b-material-sync-db.test.ts`). A linha `status` de baixo é a de antes, mantida por acréscimo.
 - status: **ABERTA — PARCIAL (2026-10-10): Ω6R-DAT-002 e Ω6R-DAT-003 fechados pelo PR #389 (`ab52ec50`; porteiro em `votos/B-O6R-04a/PORTEIRO-389.md`); segue aberto o Ω6R-QUA-002 (P1, dono `B-O6R-04b`).** Antes: ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.
   Dependência (B-O6R-01) **satisfeita** desde o #357 — é **frente livre**, e o porteiro pós-merge do #359
   a nomeia como tal ("B-04 e B-07 declaram dependência só do B-01").
@@ -8865,6 +8866,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** bloco mobile "portas" (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
 - **impacto vendável:** NAO — estoque mobile já não sincroniza (Ω6R)
 - **teste de encerramento:** todo `route` do catálogo existe no router; home renderiza `visibleModules`
+- **APPEND (2026-11-17, `B-O6R-04b`, PR #582; `D-O6R-04B-RETIRADA`, Parte B):** depois do 04b, `/inventory` passa a ser a 3ª rota apontada pelo mapa de `lib/core/bootstrap/bootstrap_repository.dart` que não existe no router, ao lado de `/checklists` e `/notifications`. A parte "Estoque sem porta" passa a ser a `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A dependência do `Ω6R-QUA-002` está cumprida. O dono e o critério desta pendência não mudam.
 
 ---
 
@@ -10727,6 +10729,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **dono:** `B-O6R-04b` ou o bloco de frontend de estoque — a designar pelo orquestrador.
 - **bloqueia:** não bloqueia o gate por si; sem ela, o usuário vê erro genérico onde "tente de novo" resolve.
 - **teste de encerramento:** a web e o app recebem 503 `stock_busy`/`cycle_count_busy` e mostram mensagem de repetição (teste de adapter com o status real); `API_CONTRACTS.md` registra os dois códigos.
+- **APPEND (2026-11-17, `B-O6R-04b`, PR #582; Emenda 1 §3.3 do plano):** a parte do app, no envio de material, está feita: o 503 do razão sobe como 503 da chamada (`src/modules/mobile/mobile-inventory-sync.ts`), e o app devolve a ação a "pendente", sem gastar tentativa, com "Servidor ocupado; o envio será refeito." (`mobile/flutter_app/lib/core/sync/inventory_sync_replay_service.dart`; teste RC4(5) de `test/core/sync/bmaterial_replay_test.dart`). O app trata pelo status 503, não pelo código (`stock_busy` = 0 em `lib/`). Faltam a web (0 tratamento em `frontend/src`), a contagem e o registro dos dois códigos no contrato. O `B-O6R-04b` sai da alternativa de dono; o dono do que falta continua **a designar (inalterado)**, e a sugestão do plano é o `B-INV-CONTAGEM`.
 - **APPEND (2026-09-20, ciclo 2 do `B-O6R-04a`, risco R30 do plano) — um segundo caminho de erro chega aos mesmos consumidores.** O C2-04 fechou a classificação de violação de unicidade pela **identidade do índice** (`isUniqueViolationOf`): violação de um índice que os wrappers de V3/V4/V5 **não** conhecem deixa de virar "já estornado"/`undefined` de sucesso silencioso e **propaga**. Medido no ciclo 2 (C10′): com um índice único alheio sobre `stock_movements`, `removeExitForSource` e `reverseMovement` **rejeitam** e o chamador fica sabendo — antes devolviam sucesso com o saldo em 7 onde devia ser 10. Consequência para esta pendência: `src/modules/fuel-logs/fuel-log.service.ts:575` e `src/modules/maintenance-orders/maintenance-order.service.ts:720` (módulos FORA do escopo deste bloco) passam a poder receber **exceção** onde recebiam `undefined`; sem `statusCode`, o `sendRouteError` responde **400 com a mensagem crua** (a classe transversal já registrada nas notas deste arquivo). É o comportamento fail-closed desejado — nunca 2xx sobre estorno que não aconteceu — mas o texto de negócio dessa recusa entra no mesmo teste de encerramento acima. Hoje o caminho só ocorre com índice único alheio: os três índices conhecidos estão pinados ao catálogo pelo teste C9.
 
 ## P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os três códigos novos da contagem — MÉDIA
@@ -11319,6 +11322,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 7. "Onde está" só aparece dentro de Editar (`InventoryItemFormModal.tsx:206-227`), com o botão exigindo `inventory_items:update` (`EstoquePage.tsx:705`): o Operador, que movimenta, nunca vê onde o estoque está.
 8. Depois de Vincular ou Saída na janela do item, a lista não recarrega o saldo (`ItemMovimentacaoTab.tsx:85-92`).
 9. O app de campo lê um estoque em memória, semeado com 3 itens fixos (`src/modules/mobile/mobile-inventory-sync.ts:99-100`, `:503-509`, `:537-560`). **Já registrado:** é o `Ω6R-QUA-002` (P1), item 31 do gate, bloco `B-O6R-04b`.
+   - **APPEND (2026-11-17, `B-O6R-04b`, PR #582):** resolvido pelo D1 do 04b. O estoque em memória e a semente saíram do servidor (S3), e a rota de disponibilidade responde 404 (S1). Os outros itens desta pendência não mudam.
 10. O menu da Operação de Campo e do Técnico mostra Estoque sem `inventory_items:read` (`appSidebarNav.ts:181` × `catalog.ts:628-675`, `:912-962`) — o mesmo achado do inventário de fluxos (#438).
 11. RBAC × catálogo divergem no Estoque: `RBAC_MATRIX.md:47` dá só leitura ao Gestor e o `catalog.ts:529-537` dá tudo; ao Técnico a matriz dá "consume/confirm" e o catálogo nada.
 12. A busca da Contagem procura pelo identificador interno da sessão (`EstoquePage.tsx:1134`).
@@ -12199,6 +12203,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `analysis_options.yaml` e `flutter analyze` em "No issues found!"; vermelho-controle: descartar uma `Future` num
   handler e ver o analisador acusar.
 - **Portada do ramo `fix/mobile-work-order-contracts` (`a24f58b5`) em 2026-11-02** pelo 1º PR do corte do `B-O6R-11` (emenda 2 §3 R6): texto acima verbatim; os números de linha valem para aquele ramo. O PR #388 fecha sem merge e o ramo fica preservado.
+- **APPEND (2026-11-17, `B-O6R-04b`, PR #582; `D-O6R-04B-RETIRADA`, Parte C):** os 4 sítios de `features/inventory/ui/stock_entry_screen.dart` e `stock_exit_screen.dart` saíram com as telas. Medido no ramo do 04b (head da F4, com a `main` `00e46347` integrada), com `discarded_futures: true` temporário e revertido: `flutter analyze` dá **16 infos em 11 arquivos**, 0 em `features/inventory`. A conta não cai para 12 porque blocos posteriores à medição de 19/09 somaram sítios: `core/appearance/app_appearance_providers.dart:70`, `features/prestador/ui/prestador_service_screen.dart:43,44`, `shared/ui/sync_screen.dart:432` e um segundo em `features/work_orders/ui/work_order_execute_screen.dart` (`:299,314`).
 
 ## P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica conflict — BAIXA
 - status: ABERTA — PARCIAL: a linha de material foi resolvida pelo `B-MATERIAL-REENVIO` (PR #551); a linha da OS segue com o dono.
@@ -13032,6 +13037,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-SYNC-ESTOQUE-TIPOS (2026-11-04) — tipos de ação de estoque do app não batem com os do servidor — ALTA
 
+Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco dono é o B-O6R-04b; fechada por este PR (S6 verde; MS6 e MA3 vermelhas).
+
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge) · **dono:** `B-O6R-04b`, pela designação que a Emenda 1 do plano recomendou (§9, item 1) e que a `D-O6R-04B-RETIRADA` registra (Parte B; a confirmação do dono de 14/11 21:08 cobre as recomendações do plano e das emendas) — leitura do dev, declarada: se o orquestrador não ratificar a designação, esta linha volta a ABERTA e o resto fica como apenso. O conjunto único entre app e servidor passa a ser o material (`work_order_material.add` e `.remove`): o caso S6 de `tests/bo6r04b-estoque-sem-memoria.test.ts` lê os tipos que o app conhece (`api_contracts.dart`) e os que o replay envia, e fica vermelho se um lado divergir (MS6 no servidor, MA3 no app). Os dois tipos legados saem da rota "aguarda" de `sync_action_routing.dart` e viram "sem envio", com a frase própria (Q1, Q2); `syncActionAwaitingOwner` fica vazio. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
 - **fato medido:** o app envia `inventory_entry.create`, `inventory_exit.create` e `work_order_material.add`; o servidor só aceita `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` (`src/modules/mobile/mobile-inventory-sync.ts:6`). Re-medido em `origin/main@0c3c7826`: `inventory_entry.create` em 3 arquivos de `mobile/flutter_app/lib` e em 0 de `src`.
 - **relação:** item 31 do portão (`Ω6R-QUA-002`, estoque no app não sincroniza).
@@ -14197,6 +14205,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-ESTOQUE-MODULO-SEMENTE (2026-11-11) — o módulo de estoque do app tem uma segunda semente de 8 peças, sem guarda de modo remoto — MÉDIA
 
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge) por remoção, com o dono e o critério emendados pela `D-O6R-04B-RETIRADA` (Parte B): o dono passa a ser o `B-O6R-04b`, e o critério passa a ser "o módulo não existe (A3) e o T-A8 (ii) roda sem a linha `inventory_repository.dart: 8`". As duas coisas valem: `lib/features/inventory` não existe, e a linha saiu do T-A8 (ii) de `bsan315_estoque_real_test.dart`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **escopo:** `pre-existente` (`mobile/flutter_app/lib/features/inventory/**` está no PROIBIDO do `B-SAN3-15a`) · **dono (proposto pelo plano):** o bloco que abrir a porta `/inventory` do app, o mesmo da `P-MOBILE-CATALOGO-MODULOS-INERTE` · **bloqueia:** não hoje (o módulo não tem porta e não sincroniza, Ω6R-QUA-002); passa a bloquear no dia em que a porta abrir.
 - **fato (plano v2, E1):** `features/inventory/data/inventory_repository.dart` tem 8 literais `IT-001`…`IT-008` e `load({bool seedIfEmpty = true})`, e o provider não tem `allowSeed…` para o modo remoto.
 - **origem:** crítica r1 do plano do `B-SAN3-15` (A-02), lateral.
@@ -15376,6 +15385,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram na fila com tipos que o servidor não conhece — ALTA
 
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge), com o critério emendado pela `D-O6R-04B-RETIRADA` (Parte A, 2): "nenhuma tela do app enfileira ação de estoque sem rota; ação antiga aparece com saída; não há G3". Medido: não há produtor dos dois tipos em `lib/` (A1, lista fechada); a ação antiga vira envio não concluído, com Descartar (Q1 a Q3); G2 e G3 saíram de `mobile_gates.dart` e o T4.1 de `tests/mobile-gate-chave-catalogo.test.ts` fecha o conjunto em `G1, G1b, G4`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (as telas e a fila são de blocos anteriores; o `B-MOBILE-GATE-CHAVE` só põe o gate nelas) · **dono:** `B-O6R-04b` (item 31; nasce depois do 66, e reaponta o G3 para a ação real) · **bloqueia:** não o 66.
 - **origem:** §2.8 do plano v1 do `B-MOBILE-GATE-CHAVE`, com o texto corrigido pela abertura (A2).
 - **fato (medido em `d2737339`):** o replay de estoque existe (`lib/core/sync/inventory_sync_replay_service.dart:148`), mas só envia `work_order_material.add` e `work_order_material.remove` (`:198-199`). As ações `inventory_entry.create` e `inventory_exit.create`, que as telas Nova Entrada e Nova Saída enfileiram, não têm tipo no servidor (`supportedActionTypes` de `src/modules/mobile/mobile-inventory-sync.ts`: `inventory.reserve`, `inventory.consume`, `inventory.shortage_report`).
@@ -15388,6 +15398,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** §2.5 do plano v1 do `B-MOBILE-GATE-CHAVE`.
 - **fato:** `ModuleResolver` (`lib/core/modules/module_resolver.dart`) é o único leitor de `requiredPermissions` e de `_kNavigationModules[*].perms`, e nenhum widget de produção o usa (só `test/core/resolvers_test.dart`). O `B-MOBILE-GATE-CHAVE` trocou as chaves inventadas desses mapas pelas do catálogo, sem ligar o resolvedor.
 - **critério de encerramento:** ligar o resolvedor à navegação (com a regra de `MobileGates`) ou apagá-lo, com o mapa.
+- **apenso (2026-11-17, `B-O6R-04b`, PR #582):** o mapa do bootstrap ainda aponta o módulo de estoque para `/inventory` (`lib/core/bootstrap/bootstrap_repository.dart`), rota que o 04b removeu. Nenhuma tela lê o campo, e o 04b não toca `core/bootstrap/**` (PROIBIDO do plano).
 
 ## P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o formulário da vistoria para quem não pode responder — MÉDIA
 
@@ -15399,6 +15410,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre por link — BAIXA
 
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge) por remoção (`D-O6R-04B-RETIRADA`, Parte A, 3): a tela Estoque deixou de existir, e os dois roteadores não têm rota `/inventory` (A2, com a MA2 da Emenda 1.3). A porta do estoque real do usuário fica na `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`inventory_list_screen.dart` nasceu em `e79616aa`, 13/06/2026; `git grep` de `go('/inventory')`/`push('/inventory')` dá 0 em `729718fe` e no objeto; o plano v1 §2.5 já media "Estoque: nenhuma entrada de navegação") · **dono:** `B-O6R-04b` (item 31) · **bloqueia:** não.
 - **origem:** achado C1-02 da cadeira C1 da J-561, triado como pendência pela ata da J-561.
 - **N e forma:** 1 tela. `/inventory` tem rota registrada, o módulo `inventory` existe e o servidor autoriza 7 perfis (G2), mas nenhum item de navegação do app a abre.
@@ -16606,8 +16618,9 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-04B-ACTIONERROR-RAMO-MORTO (2026-11-15) — um ramo do `ActionError` do sync de estoque não é alcançado — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** `B-O6R-04b` (PR #582) · **PR-alvo:** o #582 ou o próximo PR que tocar esse sync · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco que tocar o sync do material (Emenda 1.2 §2; antes: `B-O6R-04b` (PR #582)) · **PR-alvo:** o próximo PR que tocar esse sync · **bloqueia:** não.
 - **origem:** Emenda 1.2 do 04b (15/11 21:23).
+- **fato (2026-11-17, `B-O6R-04b`, PR #582):** o ramo é o genérico de `actionErrorResult` em `src/modules/mobile/mobile-inventory-sync.ts` (erro que não é de rota → `rejected` `invalid_action`, "Unexpected error."). Depois do D1 e do D2, nenhum caminho chega a ele: o tipo sem dono lança o erro de rota (`unsupported_action_type`), e o material converte a falha que não é recusa em 500 fixo (`unexpectedMaterialFailure`, coberto pelo H4f de `tests/sec-log-http.test.ts`). O #582 não o remove: `actionErrorResult` é auxiliar do material, que o §5 do plano põe no PROIBIDO. O H4d foi reescrito para o caminho que sobra (os 3 tipos legados saem recusados sem ler a carga, 0 sentinela).
 - **critério de encerramento:** o ramo sai, ou ganha um caso que o alcance.
 
 ## P-APP-CONSENTIMENTO-SO-NO-APARELHO (2026-11-15) — o consentimento do app vale só no aparelho em que foi dado — BAIXA
@@ -16766,6 +16779,36 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** plano de abertura do `B-ASS-08c2` (§12), cuidado 1 da Q3 = (a).
 - **critério de encerramento:** a tela do estorno mostra o aviso antes de confirmar e manda o `confirmInvoiceCancel`.
 
+## P-MOBILE-MEU-ESTOQUE-SEM-PORTA (2026-11-17) — o estoque real do usuário do app só abre de dentro de uma OS — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a tela do estoque do técnico, do `B-SAN3-15a`, exige `workOrderId`) · **dono:** `B-MOBILE-ESTOQUE-PORTA`, a abrir, fora do portão · **bloqueia:** não.
+- **origem:** D9 e P3 do plano do `B-O6R-04b` (respondida pela recomendação (a), `D-O6R-04B-RETIRADA`); nasce da `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO`, que fechou por remoção, e da parte "Estoque sem porta" da `P-MOBILE-CATALOGO-MODULOS-INERTE`.
+- **fato:** depois do 04b o app não tem lista geral de estoque. O estoque real do usuário é `GET /api/v1/mobile/technician/stock`, com a custódia escolhida pelo servidor e a permissão `inventory.read`, e a tela que o lê só abre de dentro de uma OS.
+- **o que a porta precisaria mostrar:** de quem é o estoque (a custódia), peça, código, unidade e quantidade disponível, a hora da última atualização, e os estados do §7 do `CLAUDE.md` (carregando, vazio honesto, erro, acesso não permitido, sem conexão com a lista salva, dado desatualizado).
+- **critério de encerramento:** a tela inicial do app tem a porta "Meu estoque", para quem tem `inventory.read` e o módulo `inventory` ligado, com teste; a tela passa pela maquete com 3 opções antes (`D-TELAS-TRES-OPCOES`, feita pelo Claude).
+
+## P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entrega sem cidade, estado e CEP — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o item da lista nunca levou `serviceCity`; o B-GUI-D1 acrescenta `destinationAddress` no mesmo molde) · **dono:** `B-GUI-15` ("Ir para a coleta" / "Ir para a entrega") · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.1 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toWorkOrderListDto` (`src/modules/work-orders/work-order.dto.ts`) manda `serviceAddress` e `destinationAddress`, sem `*City`, `*State` e `*ZipCode`. Sem a cidade, o botão do mapa pode levar o app de mapa ao lugar errado quando a OS não tem coordenada.
+- **critério de encerramento:** o `B-GUI-15` decide se a lista passa a mandar cidade, estado e CEP (aditivo), com teste, ou registra por que a coordenada basta.
+
+## P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo atendido chega ao app sem modelo e cor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o formulário da web, `frontend/src/modules/work-orders/components/WorkOrderForm.tsx`, só pede `vehicle` e `color` no socorro) · **dono:** `B-WO-FORM-VEICULO` (formulário web da OS com o veículo em campos próprios: placa, modelo, cor; backlog, sem plano ainda; ID dado na triagem da J-597, C3-N1) · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.2 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** numa OS de reboque criada pela web, `serviceDetails` só tem `plate`. Com o B-GUI-D1, `attendedVehicle.model` e `.color` saem `null`, e o cartão Veículo do detalhe fiel (B-GUI-FID1) mostra só a placa mascarada.
+- **critério de encerramento:** o formulário da web pede modelo e cor também no reboque, com teste.
+
+## P-OS-PLACA-NO-TEXTO-LIVRE (2026-11-17) — a placa digitada em texto livre chega à lista; dois residuais do filtro de placa no modelo e na cor do veículo atendido — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (subiu na triagem da J-597, C1-03) · **escopo:** `pre-existente` (a web aceita qualquer texto em `title`, `serviceAddress`, `destinationAddress`, `vehicle` e `color`; o B-GUI-D1 filtra na saída só modelo e cor) · **dono:** `B-WO-FORM-VEICULO`, o bloco de formulário da web que recebe a `P-OS-REBOQUE-SEM-MODELO-E-COR` · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1.1 §1.4 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toAttendedVehicleDto` (`src/modules/work-orders/work-order.attended-vehicle.ts`) anula o modelo ou a cor que traga uma placa (regra do check-in) ou a placa desta OS (dobrada). Passam, medidos: (1) duas placas no texto, nenhuma desta OS (`Uno ABC1234 e DEF5678`), que não mostra o fim desta OS, só perde minimização; (2) o fim sozinho (`Onix final 23`), que ninguém distingue de `Onix 2023` sem apagar modelo legítimo.
+- **fato (apenso da J-597, C1-03, 17/11):** a placa INTEIRA (com o fim) que a base digita num texto livre que não é modelo nem cor chega à lista de OS: por `title` e `serviceAddress` (antes do B-GUI-D1) e, desde o B-GUI-D1, por `destinationAddress`. O filtro do `toAttendedVehicleDto` cobre só `model` e `color`. Medido pela sonda da cadeira C1 (`probe-textolivre.mts`, OS com `title` `Reboque Onix ABC-1D23`, `serviceAddress` `Rua 1 (placa ABC1D23)`, `destinationAddress` `Patio, carro abc1d23`): no objeto `02009efe`, `title`, `serviceAddress` e `destinationAddress` dão `PLACA_INTEIRA`; com o `work-order.dto.ts` da `main`, `title` e `serviceAddress` dão `PLACA_INTEIRA` e `destinationAddress` está ausente. Não é capacidade nova (o detalhe já entrega a placa inteira aos mesmos papéis), mas o fim pode chegar à tela por um texto livre. A trava do servidor `assertFimNaoChegaPorTexto` (`tests/bguid1-dados-da-os.test.ts`) deixa `title` e `serviceAddress` de fora de propósito, até esta pendência fechar.
+- **critério de encerramento:** a web recusa placa nos campos de modelo e cor (o conserto de raiz) e a placa deixa de chegar à lista por `title`, `serviceAddress` e `destinationAddress` (recusa na entrada ou filtro na saída), com teste.
+
 ## P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor cancela a nota quando o pagamento dele é todo devolvido, mesmo com outro valor ainda pago no demonstrativo — MÉDIA
 
 - **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `pre-existente` para o `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito: plano §4.7/§9 D-5, Emenda 1 §2.5; triagem da J-587, Emenda 7) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
@@ -16875,3 +16918,45 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** Emenda 5 do `B-ASS-08c2` (do orquestrador, 17/11, fora do repositório): "O T15 compara a porta com `includes` no log inteiro e caiu 1 vez no run 44106675745, sem mudança de `src`." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
 - **N e forma:** 1 queda no CI (run 44106675745), sem mudança de `src`.
 - **critério de encerramento:** o T15 compara a porta por campo (não por substring no log inteiro), com teste.
+
+## P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da OS mas não lê os modelos — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (o catálogo de permissões; o `B-GUI-02` não muda o servidor de permissões, Emenda 1 §1) · **dono:** bloco próprio, `B-GUI-02p`, de servidor, com **junta completa** (permissão) e pergunta ao dono antes · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§1 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (conserto da J-596, achado C3-01).
+- **fato:** o `field_dispatcher` tem `field_dispatch:create` (grava o `PATCH /work-orders/:id/checklists`) e não tem `tenant_checklists:read`. Dar a ele essa leitura (só dos publicados, como a maquete recomenda) muda o catálogo, a `RBAC_MATRIX.md` e a `role_permissions` (migração de dados, `RBAC_MATRIX.md:154`). Enquanto não fechar, o despachante só vê o painel de vistorias em leitura, com a frase dele (o W2 do `B-GUI-02`).
+- **critério de encerramento:** o despachante lê os modelos publicados e escolhe a vistoria da OS, com a matriz, o catálogo e a `role_permissions` atualizados e a junta completa verde.
+
+## P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistoria já virou execução — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o DTO do detalhe da OS) · **dono:** `B-GUI-02s` (o DTO ganha um campo por linha; a allowlist §2.8 é revista) · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§4 e §8); registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** a tela só sabe, no nível da OS, se ela foi despachada (`checklistSnapshot` ou o evento `field_dispatch_created`). O selo "enviada" por linha da maquete aprovada fica de fora (`D-GUI02-SEM-SELO-ENVIADA`).
+- **critério de encerramento:** o detalhe traz, por linha, se a vistoria já foi enviada (sem chave de armazenamento nem dado interno, §2.8), e a tela mostra o selo.
+
+## P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** `B-GUI-02s` · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§8); registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** a linha do tempo só tem o `actorUserId`, que é opaco; a tela não mostra quem escolheu a vistoria.
+- **critério de encerramento:** o detalhe (ou a linha do tempo) traz o nome de exibição de quem incluiu, e a tela o mostra.
+
+## P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o ajuste que falha no meio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o backend de teste e de desenvolvimento) · **dono:** o `B-GUI-02s` (servidor), ou quem mexer no repositório em memória · **bloqueia:** não.
+- **origem:** Emenda 1.1 do `B-GUI-02` (R1, S1), `plano-B-GUI-02-emenda1.1.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** o `InMemoryWorkOrderRepository.applyChecklists` (`work-order.repository.ts:216-288`, medido na Emenda 1.1) não desfaz o que gravou quando falha no meio. No Prisma, a chamada é transação (R2, leitura de código). Afeta o backend em memória, que é o que o W4 usa.
+- **critério de encerramento:** o ajuste em memória é tudo ou nada, com teste de falha no meio.
+
+## P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o espelho antigo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (as OS em voo pela regra antiga) · **dono:** quem tocar o espelho; ou fica como está se a junta medir que nenhuma OS em produção está nesse estado (hoje não há produção) · **bloqueia:** não.
+- **origem:** Emenda 2 do `B-GUI-02` (§1.3 e §5), `plano-B-GUI-02-emenda2.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** uma OS já congelada com a coleta atrás (Entrega@0 + Coleta@1, congeladas pela regra antiga) mantém o `work_orders.checklist_id` antigo até a próxima escrita do conjunto ou o próximo despacho. A reatribuição já provisiona a coleta certa. Não há backfill, que o dono proibiu.
+- **critério de encerramento:** o espelho se acerta para essas OS, ou a junta mede que não há nenhuma nesse estado.
+
+## P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" numa OS enviada sem coleta, e o servidor recusa — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** a tela de vistorias (fora do conserto da J-596, que só muda o servidor) · **dono:** `B-GUI-02b`, bloco de backlog da tela de vistorias · **bloqueia:** não.
+- **origem:** Emenda 2.2 do `B-GUI-02` (§2), conserto do achado C1-01 da J-596, `plano-B-GUI-02-emenda2.2.md`, fora do repositório.
+- **fato:** com a Emenda 2.2, o servidor recusa a coleta em toda OS já enviada (409 `collection_after_dispatch`, `T10`). A tela continua com `collectionLocked = dispatched && collectionLine !== null` (`WorkOrderChecklistsPanel.tsx`): numa OS enviada sem linha de coleta, "Incluir coleta" aparece, e o operador recebe a frase do 409. O servidor é a autoridade (regra de ouro B.2.4).
+- **critério de encerramento:** a tela esconde "Incluir coleta" na OS enviada sem coleta e mostra a frase da OS enviada, com teste de tela.

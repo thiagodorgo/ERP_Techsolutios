@@ -94,9 +94,11 @@ import {
 } from "./work-order.validators.js";
 import {
   effectiveChecklistSet,
+  isChecklistSetFrozen,
   liveChecklistLinks,
   syntheticChecklistSet,
   workOrderChecklistAlreadyDispatchedError,
+  workOrderChecklistCollectionAfterDispatchError,
   workOrderChecklistCustomerScopedConfirmationError,
   workOrderChecklistDuplicateError,
   workOrderChecklistLinkNotFoundError,
@@ -193,6 +195,10 @@ export type WorkOrderReferenceResolvers = {
     actor: WorkOrderActorContext,
     input: { readonly workOrderId: string; readonly checklistId: string; readonly role: WorkOrderChecklistRole },
   ) => Promise<boolean>;
+  // B-GUI-02 (Emenda 2.2, achado C1-01 da J-596) — esta OS já foi ENVIADA (existe despacho dela que não foi cancelado)? É a
+  // irmã da referência acima, mas pela OS, não pela linha: numa OS enviada SEM vistoria nada foi congelado, e só o despacho
+  // sabe que ela foi a campo. A guarda `collection_after_dispatch` a usa. Verdadeiro em erro (fail-closed, ver a raiz).
+  readonly hasDispatchForWorkOrder?: (actor: WorkOrderActorContext, input: { readonly workOrderId: string }) => Promise<boolean>;
   // CHECKLIST P1 PR-04c-A (§10.2.9) — a regra que produziu esta linha nomeia um CLIENTE? Só o booleano
   // atravessa a fronteira: o id do cliente NUNCA entra em auditoria/metadata (§2.8).
   readonly isApplicabilityRuleCustomerScoped?: (
@@ -1355,6 +1361,12 @@ export class WorkOrderService {
       }
     }
     await this.assertChecklistsArePublished(actor, add.map((item) => item.checklistId));
+    // Emenda 2.2 — a coleta não entra depois do envio, com ou sem vistoria congelada: `dispatched` (o despacho) OU o
+    // conjunto congelado. Sem a referência montada, a guarda degrada para só o congelado, como as demais referências.
+    const dispatched = add.some((item) => item.role === "collection") && (await this.references.hasDispatchForWorkOrder?.(actor, { workOrderId: current.id })) === true;
+    if (add.some((item) => item.role === "collection") && (dispatched || isChecklistSetFrozen(current, links)) && !effective.some((line) => line.role === "collection" && !removalKeys.has(checklistPhaseKey(line)))) {
+      throw workOrderChecklistCollectionAfterDispatchError();
+    }
 
     const customerScopedKeys = new Set<string>();
     for (const item of remove) {
@@ -2676,6 +2688,27 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
         // Falha de leitura NÃO pode virar "pode remover": a trava existe para proteger prova. Sem resposta
         // confiável, o ajuste é recusado (fail-closed) — o oposto do fail-open do provisionamento, porque aqui
         // o erro destrói informação em vez de adiar trabalho.
+        return true;
+      }
+    },
+    // B-GUI-02 (Emenda 2.2) — a OS já foi enviada? Lê os despachos da OS no repositório PADRÃO do despacho (o mesmo que
+    // as rotas usam: em memória, o singleton; no Prisma, o repositório com RLS da organização), na mesma escolha de
+    // repositório de `hasActiveDispatchAtSite` (field-dispatch.service.ts). "Enviada" = algum despacho que não foi
+    // cancelado. DYNAMIC import pelo mesmo motivo do de checklists: field-dispatch importa work-orders. Erro → verdadeiro
+    // (fail-closed, como a irmã acima): aqui o erro deixaria entrar uma primária que o despacho nunca congelou (BLOQ 3).
+    hasDispatchForWorkOrder: async (actor, { workOrderId }) => {
+      try {
+        const repository =
+          env.CORE_SAAS_PERSISTENCE === "prisma"
+            ? await (await import("../field-dispatch/field-dispatch-prisma.repository.js")).createPrismaFieldDispatchRepository()
+            : (await import("../field-dispatch/field-dispatch.service.js")).getMemoryFieldDispatchRepositoryForTests();
+        const limit = 100;
+        for (let offset = 0; ; offset += limit) {
+          const { items, total } = await repository.list({ tenantId: actor.tenantId, workOrderId, limit, offset });
+          if (items.some((dispatch) => dispatch.status !== "cancelled")) return true;
+          if (items.length === 0 || offset + limit >= total) return false;
+        }
+      } catch {
         return true;
       }
     },

@@ -173,6 +173,13 @@ class WorkOrder extends Equatable {
     this.teamName,
     this.checkinMode = CheckinMode.unknown,
     this.checkinPlateTail,
+    this.destinationAddress,
+    this.destinationLatitude,
+    this.destinationLongitude,
+    this.attendedVehiclePlateMasked,
+    this.attendedVehicleModel,
+    this.attendedVehicleColor,
+    this.slaDueAt,
   });
 
   final String localId;
@@ -211,6 +218,17 @@ class WorkOrder extends Equatable {
   final CheckinMode checkinMode;
   final String? checkinPlateTail;
 
+  // B-GUI-D1 — o destino (entrega), o veículo atendido e o prazo, como o servidor manda na lista de OS. A coordenada da
+  // COLETA fica em `latitude`/`longitude`, acima. `attendedVehiclePlateMasked` é a placa SEM os 2 finais (`ABC1D**`):
+  // o fim só existe em `checkinPlateTail`, e a tela nunca o mostra.
+  final String? destinationAddress;
+  final double? destinationLatitude;
+  final double? destinationLongitude;
+  final String? attendedVehiclePlateMasked;
+  final String? attendedVehicleModel;
+  final String? attendedVehicleColor;
+  final DateTime? slaDueAt;
+
   WorkOrder copyWith({
     String? localId,
     String? serverId,
@@ -241,6 +259,13 @@ class WorkOrder extends Equatable {
     String? teamName,
     CheckinMode? checkinMode,
     String? checkinPlateTail,
+    String? destinationAddress,
+    double? destinationLatitude,
+    double? destinationLongitude,
+    String? attendedVehiclePlateMasked,
+    String? attendedVehicleModel,
+    String? attendedVehicleColor,
+    DateTime? slaDueAt,
     bool clearServerId = false,
     bool clearAssignedUserId = false,
     bool clearServiceType = false,
@@ -281,6 +306,16 @@ class WorkOrder extends Equatable {
       teamName: clearTeam ? null : (teamName ?? this.teamName),
       checkinMode: checkinMode ?? this.checkinMode,
       checkinPlateTail: checkinPlateTail ?? this.checkinPlateTail,
+      // B-GUI-D1 — uma linha por campo (a forma exigida pela emenda 1.1, §2; âncoras de mutação).
+      // dart format off
+      destinationAddress: destinationAddress ?? this.destinationAddress,
+      destinationLatitude: destinationLatitude ?? this.destinationLatitude,
+      destinationLongitude: destinationLongitude ?? this.destinationLongitude,
+      attendedVehiclePlateMasked: attendedVehiclePlateMasked ?? this.attendedVehiclePlateMasked,
+      attendedVehicleModel: attendedVehicleModel ?? this.attendedVehicleModel,
+      attendedVehicleColor: attendedVehicleColor ?? this.attendedVehicleColor,
+      slaDueAt: slaDueAt ?? this.slaDueAt,
+      // dart format on
     );
   }
 
@@ -315,6 +350,13 @@ class WorkOrder extends Equatable {
     teamName,
     checkinMode,
     checkinPlateTail,
+    destinationAddress,
+    destinationLatitude,
+    destinationLongitude,
+    attendedVehiclePlateMasked,
+    attendedVehicleModel,
+    attendedVehicleColor,
+    slaDueAt,
   ];
 }
 

@@ -5551,11 +5551,35 @@ O dono aprovou as 3 opções da tela de custo e margem da plataforma: *"aprovo a
   - o bloco é o `B-APP-SESSAO-RENOVA`, que também olha a `P-APP-401-FICA-SINCRONIZANDO` e a `P-APP-TELEMETRIA-422`.
 - **Linha do portão:** `docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1, item 68 (registro de 16/11).
 
-## D-O6R-04B-RETIRADA · confirmação do dono (2026-11-14 21:08 SP) — "Nova Entrada", "Nova Saída" e a lista inventada saem do app
+## D-O6R-04B-RETIRADA (2026-11-14, confirmada pelo dono às 21:08 SP; registrada na F0 do B-O6R-04b em 2026-11-15; confirmação do dono registrada em 2026-11-16, #585) — o estoque fabricado sai do app e do servidor (item 31, `Ω6R-QUA-002`); "Nova Entrada", "Nova Saída" e a lista inventada saem do app
+
+**Registro da F0 do `B-O6R-04b` (2026-11-15):**
+
+- **Decisão do dono:** à P1 do plano do `B-O6R-04b`, a resposta (a): "Nova Entrada", "Nova Saída" e a lista inventada saem do app. Em 14/11 às 21:08 SP, depois de ver a página de decisões pendentes, o dono respondeu *"aprovo suas recomendacoes"*. Assim a (a) deixa de valer só pela regra das recomendações e passa a ter a confirmação explícita dele. As P2 (os três tipos em memória e a disponibilidade fabricada saem do servidor), a P3 (a porta "Meu estoque" vai para bloco próprio, com 3 opções de tela) e a P4 (quem só tem `inventory.manage` recebe 403 no lote do app) seguem pela recomendação (a), conforme a `D-DONO-1311-RECOMENDACOES`.
+- **Por quê (fatos do plano):** nenhum cliente usa os três tipos nem a disponibilidade (app 0, web 0), e eles respondem com 3 itens inventados que somem no restart. As telas do app nunca enviaram nada: o replay só envia material. Elas também não estão no protótipo, e a matriz não dá esse movimento ao técnico.
+- **Parte A — três textos do repositório pedem o caminho contrário (§A2, registrado antes do código):**
+  1. a nota de `docs/revisoes/SAN3/PLANO_SAN3.md` (linha do item 31, `B-O6R-04b`): "troca o `Map` pelo Prisma só para `reserve`/`consume`/`shortage_report`";
+  2. o critério da `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA`: "a ação do app tem tipo no servidor, o replay a envia, e o G3 do app aponta para a permissão dela";
+  3. o critério da `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO`: "a tela Estoque tem entrada na navegação do app para quem passa no G2".
+  Os três cedem a esta decisão. O critério da 2 passa a ser: "nenhuma tela do app enfileira ação de estoque sem rota; ação antiga aparece com saída; não há G3". A 3 fecha por remoção, porque a tela deixa de existir.
+- **Parte B — quatro pendências em que o bloco muda o dono ou o critério escritos:**
+  - `P-MOBILE-ESTOQUE-MODULO-SEMENTE`: **fecha por remoção**. O dono passa a ser o `B-O6R-04b`. O critério passa a ser: o módulo não existe, e o T-A8 (ii) roda sem a linha `inventory_repository.dart: 8`. É consequência direta da P1 (a).
+  - `P-O6R-B04-CONSUMIDORES-503`: **não fecha; ganha um APPEND**. A parte do app, no envio de material, está feita. Faltam a web, a contagem e o registro dos dois códigos no contrato. O dono do que falta é designado pelo orquestrador (sugestão: `B-INV-CONTAGEM`); sem designação, o dono fica "a designar (inalterado)".
+  - `P-MOBILE-SYNC-ESTOQUE-TIPOS`: **fecha no `B-O6R-04b`**, se o orquestrador designar o bloco como dono (recomendado pela Emenda 1), com o caso de contrato S6. O conjunto único passa a ser o material (`work_order_material.add` e `.remove`).
+    Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco dono é o B-O6R-04b; fechada por este PR (S6 verde; MS6 e MA3 vermelhas).
+  - `P-MOBILE-CATALOGO-MODULOS-INERTE`: **não fecha; ganha um APPEND**. Depois do 04b, `/inventory` passa a ser a 3ª rota apontada pelo mapa que não existe (`bootstrap_repository.dart`). A parte "Estoque sem porta" vira a `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A dependência do `Ω6R-QUA-002` está cumprida.
+- **Parte C — duas pendências que só mudam de contagem** (APPEND na F5): a `P-MOBILE-DISCARDED-FUTURES` (4 das 16 linhas estão nas duas telas que saem) e a `P-ESTOQUE-DEFEITOS-16-10`, item 9 (resolvido pelo D1).
+- **Re-varredura da F0 (R14, 15/11):** os padrões do M05 da Emenda 1, sobre a `origin/main` `80f5b4d9`, dão os mesmos 18 cabeçalhos de pendência. Nenhuma pendência nova cita o que o bloco remove.
+- **Se o dono mudar a P1 para (b)** ("construir as telas de verdade"): a Parte A e as duas primeiras linhas da Parte B deixam de valer, e o bloco é replanejado.
+- **Comando do bloco:** `agent-orchestration/codex/comandos/B-O6R-04b-mobile-inventory-sync.md`. Plano: `plano-B-O6R-04b.md` e as Emendas 1, 1.1 e 1.2, fora do repositório.
+
+**Registro de 2026-11-16 (#585) — confirmação do dono (2026-11-14 21:08 SP):**
 
 - **Fato (decisão do dono):** a mesma fala de 21:08 (*"aprovo suas recomendacoes"*) respondeu a P1 do plano do item 31 (`B-O6R-04b`) com a recomendação (a): "Nova Entrada", "Nova Saída" e a lista inventada saem do app. A resposta deixa de valer só pela `D-DONO-1311-RECOMENDACOES` e passa a ter a confirmação explícita do dono, que viu a recomendação na página.
 - **O que vale:** a retirada (a); as P2, P3 e P4 do plano 31 seguem pela recomendação (a). A Emenda 1 do plano (14/11 13:34) estendeu a retirada à `P-MOBILE-SYNC-ESTOQUE-TIPOS` e à `P-MOBILE-CATALOGO-MODULOS-INERTE`.
 - **Nota do redator:** o ID `D-O6R-04B-RETIRADA` é citado pelo plano 31 e pelas emendas, fora do repositório; na `main` de 16/11 ele não aparecia em `agent-orchestration` nem em `docs` (`git grep` = 0). Esta é a 1ª entrada com ele.
+
+- **Acréscimo de 17/11:** os dois registros convivem; o do bloco detalha a retirada.
 
 ## D-DONO-1311-RECOMENDACOES · complemento: o "4.item60" e o "3.extra" (2026-11-13 ~23:12 SP)
 
@@ -5653,6 +5677,25 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Cruzamento:** o dev é Claude; a pré-revisão é da outra casa quando houver crédito (§C7 11(1)), ou identidade Claude nova, com "sem cruzamento" declarado.
 - **Gravado por:** `dev-16-cl` (Claude Opus 5.5, dev do bloco), em 14/11/2026.
 
+## C-GUI-PLACA-NA-LISTA (registro de CONFLITO, §A2, 2026-11-17) — "nunca a placa inteira" (#534) × o prefixo da placa no desenho aprovado
+
+- **Cabeçalho unificado (decisão do orquestrador, 17/11, depois da união do merge da `main` no ramo do B-GUI-D1):** os dois registros abaixo tinham o mesmo ID; ficam sob um cabeçalho só, em ordem cronológica.
+
+### 2026-11-16 — o registro do plano do app guincho
+
+- **Os dois lados:** o `B-SAN3-26` deixou a placa fora da lista de propósito, e o desenho aprovado pede a placa (com o fim escondido) no detalhe.
+- **Estado:** o `B-GUI-D1` leva isso à junta completa.
+- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
+
+### 2026-11-17 — o registro do B-GUI-D1 (texto do §5 da emenda 1.1)
+
+- **Lados:** o corpo do PR #534 (B-SAN3-26, merge `68a208ad`): "a lista leva só o modo do check-in e os 2 caracteres finais da placa; nunca a placa inteira nem `serviceDetails`"; × o desenho aprovado do detalhe (`os-detalhe.png`), que mostra `ABC-1D**`, levado à lista pelo B-GUI-D1 como `attendedVehicle.plateMasked`.
+- **Fato medido:** com o B-GUI-D1, o item da lista traz o prefixo (`ABC1D**`) e o fim (`checkinPlateTail`), e a placa fica remontável no item. Nenhum campo a traz inteira. O fim nunca chega à tela (D3, D3c, D7).
+- **Leitura do planejador (`plano-guid1-e1-cl`), declarada (§A6):** a minimização do #534 não protegia um segredo (o risco 3 do plano dele diz que o controle prova atenção, não sigilo). Os mesmos atores já leem a placa inteira no detalhe. A conferência é do servidor.
+- **Crítica (`crit-guid1-e1-cl`):** aceita, com as condições "o fim nunca na tela" e este registro. Mandar só `ABC****` não compra segurança, só minimização.
+- **Quem decide:** a junta completa do B-GUI-D1. A saída alternativa custa uma linha no auxiliar (o prefixo só com as 3 letras).
+- **Registrado por:** `dev-guid1-cl`, no PR do B-GUI-D1 (texto do §5 da emenda 1.1, só acrescentado).
+
 ## D-DONO-1611-DEEPSEEK-FAZ-TUDO (2026-11-16 ~13:5x SP) — o DeepSeek faz tudo; só o visual fica com o Claude
 
 - **Fato (decisão do dono):** resposta à pergunta sobre a regra de 13/11 ("DeepSeek fora de dinheiro e permissão"). Fala literal: *"Deepseek faz tudo, só o visual que só confio em ti que ele não faz"* (transcrição no registro fora do repositório, `REGISTRO-PENDENTE.md`, 16/11).
@@ -5749,8 +5792,23 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Estado:** resolvido na Emenda 1 do plano do app guincho — o lugar é desenhado na M-H, e o botão só aparece quando o `B-GUI-15` entrar.
 - **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
 
-## C-GUI-PLACA-NA-LISTA (registro de CONFLITO, §A2, 2026-11-16) — a placa na lista de OS do app
+## D-GUI02-PRIMARIA-POR-ETAPA (registro de CONFLITO, §A2, 2026-11-17) — a primária é a coleta pela etapa, e o comentário da migração diz "a de menor `order_index`"
 
-- **Os dois lados:** o `B-SAN3-26` deixou a placa fora da lista de propósito, e o desenho aprovado pede a placa (com o fim escondido) no detalhe.
-- **Estado:** o `B-GUI-D1` leva isso à junta completa.
-- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
+- **Os dois lados:** o comentário da migração `20260865000000` (l.67-71) diz "a de menor `order_index` é a PRIMÁRIA"; o código do `B-GUI-02` (Emenda 2, §1.2: `checklistRoleRank` no comparador, no espelho da criação e no `sort` do despacho) faz da coleta viva a primária, e o `API_CONTRACTS.md` (l.625) foi corrigido.
+- **Estado:** vale o código novo e o `API_CONTRACTS.md`. A migração aplicada não se edita.
+- **Fonte:** Emenda 2 do `B-GUI-02` (§1.2 e §5), `plano-B-GUI-02-emenda2.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (conserto da J-596, achado C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.
+
+## D-GUI02-CODIGOS-REAIS (registro de CONFLITO, §A2, 2026-11-17) — os códigos do ajuste de vistorias são os do código, não os do plano
+
+- **Os dois lados:** o §4.2 do plano do app guincho previa 422 para "modelo não publicado" e "OS encerrada"; o código real é 400 `checklist_not_published` e 409 `work_order_terminal`.
+- **Estado:** vale o código. O contrato da tela segue o mapa de recusas da Emenda 1 §2 (o W3 e o W4c do `B-GUI-02` os provam pelo servidor).
+- **Fonte:** Emenda 1 do `B-GUI-02` (§2 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.
+
+## D-GUI02-SEM-SELO-ENVIADA (registro de CONFLITO, §A2, 2026-11-17) — o selo "enviada" por vistoria da maquete fica de fora
+
+- **Os dois lados:** a maquete aprovada desenha o selo "enviada" por vistoria; o servidor não diz qual linha já virou execução.
+- **Estado:** o selo fica de fora até a `P-GUI02-VISTORIA-ENVIADA-POR-LINHA`. A tela mostra só, no nível da OS, a faixa "já foi enviada".
+- **Fonte:** Emenda 1 do `B-GUI-02` (§4 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.

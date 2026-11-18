@@ -1,5 +1,13 @@
 # Status Geral
 
+## Atualização 2026-11-17 — item 31, `B-O6R-04b`: o estoque fabricado sai do app e do servidor (PR #582, em rascunho)
+
+- **Autor:** `dev-04b-cl` (F0 a F3, 15/11) e `dev-04b-e1-cl` (F4 e F5, 17/11), Claude Opus 5.5, dev, nível menor declarado, cobrindo o Codex por ordem do dono; sem cruzamento, declarado. Lei: o plano do bloco e as Emendas 1, 1.1, 1.2 e 1.3, fora do repositório. Ramo `fix/mobile-inventory-sync`, com a `main` `00e46347` (#580, o 16) integrada por merge. Registro do próprio bloco; `Kpis/**` congelado.
+- **O que o bloco faz (`D-O6R-04B-RETIRADA`):** no servidor saem o estoque em memória, os tipos `inventory.reserve`/`consume`/`shortage_report` e `GET /mobile/inventory/availability` (404); a porta do lote do app passa a `work_orders:update`, e o bootstrap deixa de marcar o estoque como parcial. No app saem o módulo `lib/features/inventory/**` (8 peças inventadas, Nova Entrada e Nova Saída) e as regras G2 e G3. A ação antiga de entrada ou saída na fila do aparelho vira envio não concluído, com frase própria e Descartar (F4, na tabela de rotas do 16). O movimento de estoque que o app registra é o material da OS, que já grava no razão e sobrevive a restart.
+- **Nível de revisão:** junta completa (perda de dado, permissão e superfície externa, plano §7).
+- **Item 31 do portão:** fecha no merge deste PR (a nota do `PLANO_SAN3.md`); a contagem do portão fica para o registro do orquestrador.
+- **Pendências:** fecham, ao entrar na `main`, a `P-O6R-B04` (o resto, `Ω6R-QUA-002`), a `P-MOBILE-ESTOQUE-MODULO-SEMENTE`, a `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA`, a `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO` e a `P-MOBILE-SYNC-ESTOQUE-TIPOS` (esta pela designação recomendada na Emenda 1, a ratificar pelo orquestrador); ganham apenso a `P-O6R-B04-CONSUMIDORES-503`, a `P-MOBILE-MODULE-RESOLVER-MORTO`, a `P-MOBILE-CATALOGO-MODULOS-INERTE`, a `P-MOBILE-DISCARDED-FUTURES`, a `P-ESTOQUE-DEFEITOS-16-10` e a `P-04B-ACTIONERROR-RAMO-MORTO` (dono passa ao próximo bloco que tocar o sync do material); nasce a `P-MOBILE-MEU-ESTOQUE-SEM-PORTA` (BAIXA, fora do portão).
+
 ## Atualização 2026-11-16 (noite) — B-APP-SESSAO-RENOVA (item 68): o dev terminou as fatias no PR #588
 
 - **O bloco:** a sessão do app se renova sozinha, e o servidor é quem revoga (`D-PORTAO-ITEM-68-SESSAO-APP`, `D-DONO-1511-68-NAO-DESLOGAR`). Plano v3 com as emendas 3.1 a 3.5, fora do repositório; comando em `agent-orchestration/codex/comandos/B-APP-SESSAO-RENOVA.md`.

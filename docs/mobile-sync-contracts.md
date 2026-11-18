@@ -233,44 +233,22 @@ Regras obrigatorias:
 - payload invalido, tipo nao suportado ou permissao por acao ausente retorna rejeicao/erro estruturado sem stack trace.
 - lacunas B-098C: idempotencia duravel em banco/Redis, anexos/markers/divergencia/acknowledgement em lote e implementacao Flutter consumindo o endpoint.
 
-### GET /api/v1/mobile/inventory/availability
+### GET /api/v1/mobile/inventory/availability (removido no B-O6R-04b)
 
-- Permissao: `inventory.read` ou `inventory.manage`.
-- Status B-098D: parcial para consulta mobile de disponibilidade, com dados em memoria e sem reserva duravel.
-- Request: filtros opcionais `item_id`, `sku`, `warehouse_id` e `work_order_id`.
-- Response: envelope em `data` com `contract`, `tenant_id`, `server_time`, `filters` e `items`.
-- Erros de contexto/permissao: 403 com envelope JSON seguro.
-- Idempotencia: leitura.
-- Offline: fonte para cache local de saldos permitidos.
-
-Campos minimos de `data.items[]`:
-
-- `item_id`
-- `sku`
-- `name`
-- `unit`
-- `warehouse_id`
-- `available_quantity`
-- `reserved_quantity`
-- `status`
-
-Regras obrigatorias:
-
-- `tenant_id` de query/body nao e confiavel e nao decide tenant.
-- `work_order_id` e aceito como filtro seguro, mas ainda nao cruza relacionamento real de OS/estoque.
-- resposta nao deve incluir dados de outro tenant.
+- Responde 404. Respondia uma disponibilidade fabricada, semeada em memoria, sem cliente no app nem na web.
+- O estoque real do ator no app e `GET /api/v1/mobile/technician/stock` (B-SAN3-15a; `catalogs.endpoints.technician_stock` no bootstrap).
 
 ### POST /api/v1/mobile/sync/inventory-actions
 
-- Permissao do lote: `inventory.manage` **ou** `work_orders:update` (sem nenhuma das duas: 403 `permission_required` no lote). No catalogo real do repo ainda nao existem permissoes separadas `inventory:reserve`/`inventory:consume`.
-- Permissao por acao (B-MATERIAL-REENVIO): `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` continuam exigindo `inventory.manage` (quem so tem `work_orders:update` recebe `rejected permission_required` nelas); `work_order_material.add` e `work_order_material.remove` exigem `work_orders:update`.
-- Status B-098D: parcial para replay offline controlado de inventario, sem persistencia duravel. Status B-MATERIAL-REENVIO: o material da OS e duravel (baixa por origem no razao de estoque); os 3 tipos antigos continuam em memoria ate o B-O6R-04b. `contract.version` = `2026-11.b-material-reenvio`; `contract.status` continua `partial`.
+- Permissao do lote (B-O6R-04b): `work_orders:update` (`MOBILE_INVENTORY_SYNC_PERMISSION`); sem ela, 403 `permission_required` no lote, inclusive para quem so tem `inventory.manage`.
+- Permissao por acao: `work_order_material.add` e `work_order_material.remove` exigem `work_orders:update`.
+- Status B-O6R-04b: o lote e so o material da OS, duravel (baixa por origem no razao de estoque). O estoque em memoria e os tipos `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` sairam; todo tipo fora do material sai `rejected` com `unsupported_action_type`, sem efeito. `contract.version` = `2026-11.b-o6r-04b`; `contract.status` = `implemented`.
 - Area contratada: a rota exige o modulo `inventory` (403 `module_not_enabled` no lote, antes do handler); o material tambem exige o modulo `work_orders`, por acao (`rejected module_not_enabled`).
 - Request: lote `{ client_batch_id, actions[] }`, cada acao com `client_action_id`, `type`, `local_created_at` e `payload`.
 - Response: envelope em `data` com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`.
 - Erros de envelope/contexto: 400 ou 403 com envelope JSON seguro.
 - Idempotencia: obrigatoria por tenant resolvido do ator + usuario do ator + `client_action_id`.
-- Offline: contrato minimo para reserva, consumo e registro de falta em campo.
+- Offline: o app reenvia o material da OS (`InventorySyncReplayService`). As acoes antigas `inventory_entry.create`/`inventory_exit.create` que ficaram na fila do aparelho viram "envio nao concluido", com "Descartar" (B-O6R-04b, `sync_action_routing.dart`).
 
 Request:
 
@@ -280,11 +258,11 @@ Request:
   "actions": [
     {
       "client_action_id": "inventory-action-local-1",
-      "type": "inventory.reserve",
+      "type": "work_order_material.add",
       "local_created_at": "2026-06-15T12:00:00.000Z",
       "payload": {
-        "item_id": "inv-item-tow-cable",
-        "warehouse_id": "mobile-warehouse-main",
+        "work_order_id": "7d1a3f40-0000-4000-8000-000000000001",
+        "sku": "CABO-REBOQUE-5T",
         "quantity": 2
       }
     }
@@ -294,9 +272,6 @@ Request:
 
 Tipos implementados:
 
-- `inventory.reserve`: payload com `item_id`, `quantity` e `warehouse_id?`.
-- `inventory.consume`: payload com `item_id`, `quantity` e `warehouse_id?`.
-- `inventory.shortage_report`: payload com `item_id`, `quantity`, `reason` e `warehouse_id?`.
 - `work_order_material.add` (B-MATERIAL-REENVIO): `client_action_id` UUID; payload com `work_order_id` (UUID da OS no servidor, obrigatorio), `sku`, `quantity` (inteiro > 0), `work_order_local_id?` e `material_local_id?` (ecoados na resposta, nunca lidos).
 - `work_order_material.remove` (B-MATERIAL-REENVIO): `client_action_id` UUID; payload com `source_client_action_id` (o `client_action_id` da adicao), `work_order_id`, `work_order_local_id?` e `material_local_id?`.
 
@@ -305,7 +280,7 @@ Material da OS (B-MATERIAL-REENVIO):
 - **Escopo por objeto.** Papel de campo (`assigned_only`) passa por `getForMutation` da OS: nunca atribuido → `rejected not_assigned_to_actor`; ex-tecnico da OS → `conflict assignment_changed_pending_review` com `next_action` `await_supervisor_review`. Gestao (`tenant_wide`, inclusive o gerente) passa por `get`. OS de outra organizacao → `rejected not_found`. Toda recusa nasce antes de qualquer baixa.
 - **Ordem do `add`:** validacao do payload → area `work_orders` → escopo por objeto → item por `sku` (igualdade exata) → baixa ja existente para a origem → custodia do ator → baixa → conferencia do movimento devolvido.
 - **Custodia.** A peca sai da custodia profissional de quem lanca; o ator `tenant_wide` sem cadastro de profissional baixa da BASE; outro ator sem cadastro → `rejected operator_profile_required`. O saldo e o DESSA custodia: faltou nela → `conflict insufficient_balance`, mesmo que outra custodia tenha a peca. O estorno volta a custodia do movimento original. Combustivel e manutencao seguem na BASE (RN-BAIXA-04).
-- **Durabilidade e idempotencia.** A baixa e um movimento `saida` com `source_type` `work_order_material`, `source_id` = `client_action_id`, `work_order_id` gravado e `reason` `baixa_material_os`; o indice unico por (organizacao, origem) garante um movimento so, apos reinicio e sob corrida. Mesmo ator, mesmo (item, quantidade, OS) → `already_applied`; outro ator → `conflict action_owned_by_other_actor`; mesmo ator com outro payload → `conflict idempotency_payload_mismatch`. O mapa em memoria dos tipos antigos nao e lido nem escrito para o material.
+- **Durabilidade e idempotencia.** A baixa e um movimento `saida` com `source_type` `work_order_material`, `source_id` = `client_action_id`, `work_order_id` gravado e `reason` `baixa_material_os`; o indice unico por (organizacao, origem) garante um movimento so, apos reinicio e sob corrida. Mesmo ator, mesmo (item, quantidade, OS) → `already_applied`; outro ator → `conflict action_owned_by_other_actor`; mesmo ator com outro payload → `conflict idempotency_payload_mismatch`. O modulo nao guarda estado em memoria (B-O6R-04b).
 - **Ordem do `remove` (N4):** acha a baixa pela origem (ausente → `already_applied`, inocuo) → escopo por objeto sobre a OS DA BAIXA → `work_order_id` do payload diferente da baixa → `rejected work_order_mismatch` → autor diferente → `conflict action_owned_by_other_actor` → estorno (`accepted`, `result_ref` = movimento de estorno). Reenvio do `add` depois do estorno → `conflict stock_baixa_reversed`.
 - **503** (`stock_busy`, `custody_lookup_unavailable`) propaga: o lote inteiro responde 503 e o app volta a acao para a fila sem gastar tentativa.
 

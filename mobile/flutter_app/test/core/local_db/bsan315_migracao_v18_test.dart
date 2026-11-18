@@ -242,7 +242,7 @@ void main() {
       addTearDown(db.close);
 
       expect(await _tableExists(db, 'work_order_service_notes'), isTrue);
-      expect(await _userVersion(db), 18);
+      expect(await _userVersion(db), 19);
       final after = {
         for (final table in before.keys) table: await _count(db, table),
       };

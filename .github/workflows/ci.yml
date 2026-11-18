@@ -384,6 +384,7 @@ jobs:
           SUITES="$SUITES tests/ass-08c-nota-presa-db.test.ts"
           SUITES="$SUITES tests/ass-08c-nota-retry-db.test.ts"
           SUITES="$SUITES tests/ass-08c-statement-busy-db.test.ts"
+          SUITES="$SUITES tests/bgui02-ordem-por-etapa-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
