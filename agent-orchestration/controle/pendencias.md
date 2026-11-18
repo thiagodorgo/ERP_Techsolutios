@@ -3011,7 +3011,7 @@ em `const inventoryByTenant = new Map<...>()` (`:100`). Coordinator sem estoque:
 **Bloqueia:** feature em estoque (entradas/saídas, custódia, contagem cíclica, baixa automática) e a fatia
 mobile de inventário. Sem fila de trabalho **verificada por mim** hoje em estoque — a proibição vale igualmente
 se surgir.
-- status: FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge): o resto, `Ω6R-QUA-002` (item 31), fecha pela `D-O6R-04B-RETIRADA`. O estoque fabricado sai: no servidor, o estoque em memória (os dois `Map`, a semente, os tipos `inventory.reserve`/`consume`/`shortage_report`) e `GET /mobile/inventory/availability` (S1 a S6 de `tests/bo6r04b-estoque-sem-memoria.test.ts`, com as mutações MS1 a MS6 e MS2b); no app, o módulo `lib/features/inventory/**`, as telas Nova Entrada e Nova Saída e as rotas `/inventory` (A1 a A3 de `mobile/flutter_app/test/features/bo6r04b_estoque_retirado_test.dart`, MA1 a MA3); a ação antiga que ficou na fila do aparelho vira envio não concluído, com Descartar (Q1 a Q4 de `mobile/flutter_app/test/core/sync/bo6r04b_estoque_legado_na_fila_test.dart`, MQ1). O movimento de estoque que o app registra é o material da OS, gravado no razão por origem, que sobrevive a restart (RC3(2) de `tests/b-material-sync-db.test.ts`). A linha `status` de baixo é a de antes, mantida por acréscimo.
+- status: FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`): o resto, `Ω6R-QUA-002` (item 31), fecha pela `D-O6R-04B-RETIRADA`. O estoque fabricado sai: no servidor, o estoque em memória (os dois `Map`, a semente, os tipos `inventory.reserve`/`consume`/`shortage_report`) e `GET /mobile/inventory/availability` (S1 a S6 de `tests/bo6r04b-estoque-sem-memoria.test.ts`, com as mutações MS1 a MS6 e MS2b); no app, o módulo `lib/features/inventory/**`, as telas Nova Entrada e Nova Saída e as rotas `/inventory` (A1 a A3 de `mobile/flutter_app/test/features/bo6r04b_estoque_retirado_test.dart`, MA1 a MA3); a ação antiga que ficou na fila do aparelho vira envio não concluído, com Descartar (Q1 a Q4 de `mobile/flutter_app/test/core/sync/bo6r04b_estoque_legado_na_fila_test.dart`, MQ1). O movimento de estoque que o app registra é o material da OS, gravado no razão por origem, que sobrevive a restart (RC3(2) de `tests/b-material-sync-db.test.ts`). A linha `status` de baixo é a de antes, mantida por acréscimo.
 - status: **ABERTA — PARCIAL (2026-10-10): Ω6R-DAT-002 e Ω6R-DAT-003 fechados pelo PR #389 (`ab52ec50`; porteiro em `votos/B-O6R-04a/PORTEIRO-389.md`); segue aberto o Ω6R-QUA-002 (P1, dono `B-O6R-04b`).** Antes: ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.
   Dependência (B-O6R-01) **satisfeita** desde o #357 — é **frente livre**, e o porteiro pós-merge do #359
   a nomeia como tal ("B-04 e B-07 declaram dependência só do B-01").
@@ -9488,6 +9488,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-ROTEIRO-DEMO-OPERACAO (2026-09-11) — não existe roteiro de demonstração e operação (critério 12 do dono) — MÉDIA
 
+- **status:** FECHADA (2026-11-17, PR #599, squash de00d1fc, porteiro porteiro-599-cl LIBERADO COM RESSALVA · ITEM 44: FECHA): as 6 obrigatórias (Op-1, Op-1a, Op-5, Op-6, Op-8, Op-10) passaram no roteiro da main; nenhuma ADIADA vigente; o registro neutro da (d) existe (F9 v13, SHA-256 byte a byte). A linha status de baixo é a de antes, mantida por acréscimo.
+
 - status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
 - **fonte:** orquestrador do SAN3; plano SAN3 §4.1 item 44 e critério 12 do dono (§2 do plano).
 - **prova** (presença no HEAD `c9ed9b91`): nenhum arquivo de roteiro no repositório (`git ls-tree -r --name-only HEAD | grep -ci roteiro` → 0); o plano cria `docs/ROTEIRO-DEMO-E-OPERACAO.md` como arquivo novo no `B-SAN3-10` (§5.5).
@@ -11976,6 +11978,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **escopo:** pre-existente (rotas do 07a/Ω3, anteriores ao bloco).
 - **dono:** `B-SAN3-23` ou bloco novo de escopo de leitura.
 - **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
+- **Apenso 2026-11-17 (crítica da Emenda 1 do B-GUI-D1, achado A3, reproduzido):** a gravidade sobe para **ALTA** e o dono passa a B-WO-LEITURA-TECNICO (item 71 do portão, D-DONO-1711-ITEM-71). Medido: um técnico não atribuído enumera OS alheias por GET /operations/dispatches e lê, pelo detalhe, a senha do residencial (ccess_code) e a placa inteira, com 200 — contraria o RBAC_MATRIX.md:45.
 
 ## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
 - status: FECHADA (2026-11-15, PR do `B-SAN3-16`, ramo `feat/mobile-fila-os-16`): os 2 tipos sem replay (`approval_request`, `unable_to_start`) passam a sair (A1, A2) e, sem forma de sair, viram erro visível com Descartar (R2, R7); o terceiro, `work_order_material.add`, fechou no #551. Antes: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA, sem o `work_order_material.add`, que saiu dela com o `B-MATERIAL-REENVIO` (PR #551).
@@ -13012,7 +13015,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## Errata dos apensos B-SAN3-10b — Emenda 3 (2026-11-04)
 
 - **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** permanece PARCIAL neste PR. Op-1, Op-1a, Op-5 e Op-6 passaram; Op-8
-  mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado.
+  mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado. *(Fechada em 17/11 pelo #599 — porteiro-599, ITEM 44 FECHA: Op-8, Op-10, F3 e F4 passaram no 44-B3 em 17/11; nenhuma ADIADA vigente.)*
 - **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** a recuperação foi repetida com o comportamento real da
   migração: aborto P0001, frase nomeada de duplicidade e censo inalterado.
 
@@ -13039,7 +13042,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco dono é o B-O6R-04b; fechada por este PR (S6 verde; MS6 e MA3 vermelhas).
 
-- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge) · **dono:** `B-O6R-04b`, pela designação que a Emenda 1 do plano recomendou (§9, item 1) e que a `D-O6R-04B-RETIRADA` registra (Parte B; a confirmação do dono de 14/11 21:08 cobre as recomendações do plano e das emendas) — leitura do dev, declarada: se o orquestrador não ratificar a designação, esta linha volta a ABERTA e o resto fica como apenso. O conjunto único entre app e servidor passa a ser o material (`work_order_material.add` e `.remove`): o caso S6 de `tests/bo6r04b-estoque-sem-memoria.test.ts` lê os tipos que o app conhece (`api_contracts.dart`) e os que o replay envia, e fica vermelho se um lado divergir (MS6 no servidor, MA3 no app). Os dois tipos legados saem da rota "aguarda" de `sync_action_routing.dart` e viram "sem envio", com a frase própria (Q1, Q2); `syncActionAwaitingOwner` fica vazio. A linha `status` de baixo é a de antes, mantida por acréscimo.
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`) · **dono:** `B-O6R-04b`, pela designação que a Emenda 1 do plano recomendou (§9, item 1) e que a `D-O6R-04B-RETIRADA` registra (Parte B; a confirmação do dono de 14/11 21:08 cobre as recomendações do plano e das emendas) — leitura do dev, declarada: se o orquestrador não ratificar a designação, esta linha volta a ABERTA e o resto fica como apenso. O conjunto único entre app e servidor passa a ser o material (`work_order_material.add` e `.remove`): o caso S6 de `tests/bo6r04b-estoque-sem-memoria.test.ts` lê os tipos que o app conhece (`api_contracts.dart`) e os que o replay envia, e fica vermelho se um lado divergir (MS6 no servidor, MA3 no app). Os dois tipos legados saem da rota "aguarda" de `sync_action_routing.dart` e viram "sem envio", com a frase própria (Q1, Q2); `syncActionAwaitingOwner` fica vazio. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
 - **fato medido:** o app envia `inventory_entry.create`, `inventory_exit.create` e `work_order_material.add`; o servidor só aceita `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` (`src/modules/mobile/mobile-inventory-sync.ts:6`). Re-medido em `origin/main@0c3c7826`: `inventory_entry.create` em 3 arquivos de `mobile/flutter_app/lib` e em 0 de `src`.
 - **relação:** item 31 do portão (`Ω6R-QUA-002`, estoque no app não sincroniza).
@@ -14198,7 +14201,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-MOBILE-ESTOQUE-MODULO-SEMENTE (2026-11-11) — o módulo de estoque do app tem uma segunda semente de 8 peças, sem guarda de modo remoto — MÉDIA
 
-- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge) por remoção, com o dono e o critério emendados pela `D-O6R-04B-RETIRADA` (Parte B): o dono passa a ser o `B-O6R-04b`, e o critério passa a ser "o módulo não existe (A3) e o T-A8 (ii) roda sem a linha `inventory_repository.dart: 8`". As duas coisas valem: `lib/features/inventory` não existe, e a linha saiu do T-A8 (ii) de `bsan315_estoque_real_test.dart`. A linha `status` de baixo é a de antes, mantida por acréscimo.
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`) por remoção, com o dono e o critério emendados pela `D-O6R-04B-RETIRADA` (Parte B): o dono passa a ser o `B-O6R-04b`, e o critério passa a ser "o módulo não existe (A3) e o T-A8 (ii) roda sem a linha `inventory_repository.dart: 8`". As duas coisas valem: `lib/features/inventory` não existe, e a linha saiu do T-A8 (ii) de `bsan315_estoque_real_test.dart`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **escopo:** `pre-existente` (`mobile/flutter_app/lib/features/inventory/**` está no PROIBIDO do `B-SAN3-15a`) · **dono (proposto pelo plano):** o bloco que abrir a porta `/inventory` do app, o mesmo da `P-MOBILE-CATALOGO-MODULOS-INERTE` · **bloqueia:** não hoje (o módulo não tem porta e não sincroniza, Ω6R-QUA-002); passa a bloquear no dia em que a porta abrir.
 - **fato (plano v2, E1):** `features/inventory/data/inventory_repository.dart` tem 8 literais `IT-001`…`IT-008` e `load({bool seedIfEmpty = true})`, e o provider não tem `allowSeed…` para o modo remoto.
 - **origem:** crítica r1 do plano do `B-SAN3-15` (A-02), lateral.
@@ -15378,7 +15381,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram na fila com tipos que o servidor não conhece — ALTA
 
-- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge), com o critério emendado pela `D-O6R-04B-RETIRADA` (Parte A, 2): "nenhuma tela do app enfileira ação de estoque sem rota; ação antiga aparece com saída; não há G3". Medido: não há produtor dos dois tipos em `lib/` (A1, lista fechada); a ação antiga vira envio não concluído, com Descartar (Q1 a Q3); G2 e G3 saíram de `mobile_gates.dart` e o T4.1 de `tests/mobile-gate-chave-catalogo.test.ts` fecha o conjunto em `G1, G1b, G4`. A linha `status` de baixo é a de antes, mantida por acréscimo.
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`), com o critério emendado pela `D-O6R-04B-RETIRADA` (Parte A, 2): "nenhuma tela do app enfileira ação de estoque sem rota; ação antiga aparece com saída; não há G3". Medido: não há produtor dos dois tipos em `lib/` (A1, lista fechada); a ação antiga vira envio não concluído, com Descartar (Q1 a Q3); G2 e G3 saíram de `mobile_gates.dart` e o T4.1 de `tests/mobile-gate-chave-catalogo.test.ts` fecha o conjunto em `G1, G1b, G4`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (as telas e a fila são de blocos anteriores; o `B-MOBILE-GATE-CHAVE` só põe o gate nelas) · **dono:** `B-O6R-04b` (item 31; nasce depois do 66, e reaponta o G3 para a ação real) · **bloqueia:** não o 66.
 - **origem:** §2.8 do plano v1 do `B-MOBILE-GATE-CHAVE`, com o texto corrigido pela abertura (A2).
 - **fato (medido em `d2737339`):** o replay de estoque existe (`lib/core/sync/inventory_sync_replay_service.dart:148`), mas só envia `work_order_material.add` e `work_order_material.remove` (`:198-199`). As ações `inventory_entry.create` e `inventory_exit.create`, que as telas Nova Entrada e Nova Saída enfileiram, não têm tipo no servidor (`supportedActionTypes` de `src/modules/mobile/mobile-inventory-sync.ts`: `inventory.reserve`, `inventory.consume`, `inventory.shortage_report`).
@@ -15403,7 +15406,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre por link — BAIXA
 
-- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; o merge entra no registro pós-merge) por remoção (`D-O6R-04B-RETIRADA`, Parte A, 3): a tela Estoque deixou de existir, e os dois roteadores não têm rota `/inventory` (A2, com a MA2 da Emenda 1.3). A porta do estoque real do usuário fica na `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A linha `status` de baixo é a de antes, mantida por acréscimo.
+- **status:** FECHADA (2026-11-17, PR #582 `B-O6R-04b`, ramo `fix/mobile-inventory-sync`; merge `3fa7fc1b`) por remoção (`D-O6R-04B-RETIRADA`, Parte A, 3): a tela Estoque deixou de existir, e os dois roteadores não têm rota `/inventory` (A2, com a MA2 da Emenda 1.3). A porta do estoque real do usuário fica na `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`inventory_list_screen.dart` nasceu em `e79616aa`, 13/06/2026; `git grep` de `go('/inventory')`/`push('/inventory')` dá 0 em `729718fe` e no objeto; o plano v1 §2.5 já media "Estoque: nenhuma entrada de navegação") · **dono:** `B-O6R-04b` (item 31) · **bloqueia:** não.
 - **origem:** achado C1-02 da cadeira C1 da J-561, triado como pendência pela ata da J-561.
 - **N e forma:** 1 tela. `/inventory` tem rota registrada, o módulo `inventory` existe e o servidor autoriza 7 perfis (G2), mas nenhum item de navegação do app a abre.
@@ -15567,7 +15570,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 ## P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 sai sem a permissão de rede — BAIXA
 
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o conserto é o #499, `8d7a99ff`, de 04/11; o
-  bloco não toca `mobile/**`) · **dono:** `B-SAN3-10b` (o texto do Op-10 do `docs/ROTEIRO-DEMO-E-OPERACAO.md`) ·
+  bloco não toca `mobile/**`) · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era o texto do Op-10 do `B-SAN3-10b`, que se encerra — decisão do orquestrador, porteiro-599 R2) ·
   **bloqueia:** não.
 - **origem:** acréscimo do coordenador (44-B1) na Emenda 1 do `B-SAN3-10b-F4-SEED-ISOLADO` (§B1.5), fora do repositório;
   registrada pela F0b.
@@ -15587,7 +15590,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 - **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a migração `20260868000000_add_auth_identities`
   é de 2026-08-19, `0a398246`; o texto "o script do papel **não** concede este EXECUTE" entrou no #405, `a9fbe283`,
   2026-10-09) · **classe:** lacuna de operação, **não** defeito de código: o produto falha fechado e avisa · **dono:**
-  `B-SAN3-10b` (o roteiro de operação, item 44 do portão), pelo PR de registro do `B-SAN3-10b-F4-SEED-ISOLADO` (F10) ·
+  `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era o roteiro de operação do item 44 pelo `B-SAN3-10b`, que se encerra — decisão do orquestrador, porteiro-599 R2) ·
   **bloqueia:** a F9 e o 44-B3 do `B-SAN3-10b-F4-SEED-ISOLADO` até o passo da Q-E11-1 rodar com o par medido.
 - **origem:** Emenda 1.1 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), fora do repositório; registrada pela F0b.
 - **N e forma (medido na `main`):** 1 função, `public.auth_login_candidates`, com `REVOKE ALL … FROM PUBLIC` (1 ocorrência
@@ -15717,21 +15720,21 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-ROTEIRO-OP10-ASSUMIR-DESCARTAR (2026-11-14) — o Op-10 do roteiro não cita "Assumir" nem avisa para não tocar "Descartar" na ação da versão anterior do app — MÉDIA (texto)
 
-- **status:** ABERTA · **gravidade:** MÉDIA (texto; o técnico pode perder o cancelamento) · **escopo:** `pre-existente` (o texto do roteiro) · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 (`feat/demo-seed-isolado`) ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** MÉDIA (texto; o técnico pode perder o cancelamento) · **escopo:** `pre-existente` (o texto do roteiro) · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2) · **PR-alvo:** o PR #565 (`feat/demo-seed-isolado`) ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma (diário do ensaio):** no aparelho do caso §B1.5 (o app de antes da separação por usuário), a primeira seção que aparece em Sincronização é "Ação da versão anterior do app — sem usuário", com **Descartar** e **Assumir**; o envio só acontece depois de **Assumir**. O Op-10 manda procurar "Envio não concluído", não cita "Assumir" e não diz para não tocar "Descartar" nessa seção.
 - **critério de encerramento:** o Op-10 descreve a seção, manda tocar "Assumir" e avisa para não tocar "Descartar" nela.
 
 ## P-ROTEIRO-OP10-OS-PAUSADA (2026-11-14) — o passo 4 do Op-10 não diz que a OS pausada precisa ser retomada antes de cancelar — BAIXA (texto)
 
-- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2) · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma:** com a OS pausada, o cancelamento do gestor pela rota do console deu `422 invalid_status_transition`, porque OS pausada não cancela; o cancelamento só valeu depois que o gestor retomou a OS.
 - **critério de encerramento:** o passo 4 diz para retomar a OS pausada antes de cancelar.
 
 ## P-ROTEIRO-OP10-SESSAO-APOS-ATUALIZAR (2026-11-14) — o roteiro não diz que a sessão do app antigo não sobrevive à atualização — BAIXA (texto)
 
-- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2) · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma:** depois de atualizar o app, a sessão do app antigo não vale mais, e o técnico precisa entrar de novo, com rede.
 - **critério de encerramento:** o roteiro diz isso no passo da atualização.
@@ -16906,3 +16909,157 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** Emenda 2.2 do `B-GUI-02` (§2), conserto do achado C1-01 da J-596, `plano-B-GUI-02-emenda2.2.md`, fora do repositório.
 - **fato:** com a Emenda 2.2, o servidor recusa a coleta em toda OS já enviada (409 `collection_after_dispatch`, `T10`). A tela continua com `collectionLocked = dispatched && collectionLine !== null` (`WorkOrderChecklistsPanel.tsx`): numa OS enviada sem linha de coleta, "Incluir coleta" aparece, e o operador recebe a frase do 409. O servidor é a autoridade (regra de ouro B.2.4).
 - **critério de encerramento:** a tela esconde "Incluir coleta" na OS enviada sem coleta e mostra a frase da OS enviada, com teste de tela.
+
+## P-WO-LEITURA-ID-EM-FROTA (2026-11-17) — `damages`, `fuel-logs` e `service-quotes` expõem ao técnico o `workOrderId` de OS alheia — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (rotas de frota, fora da OS) · **dono:** o `B-WO-LEITURA-TECNICO` (item 71 do portão; a pergunta da pendência seguinte) · **bloqueia:** o item 71.
+- **origem:** o censo do plano `B-WO-LEITURA-TECNICO` (17/11 14:2x, fora do repositório); a Emenda 1 acrescenta `expense-reports` e `inventory` ao conjunto.
+- **fato:** `damages`, `fuel-logs` e `service-quotes` expõem ao técnico o `workOrderId` de OS alheia; com a porta `getForRead` do item 71, esse id passa a dar 404, e a pendência fecha junto.
+- **critério de encerramento:** nas três rotas, o técnico não lê o `workOrderId` de OS alheia (404 do inexistente), com teste.
+
+## P-RBAC-TECNICO-LEITURAS-FORA-DE-OS (2026-11-17) — o catálogo dá ao técnico leitura da organização inteira em rotas fora da OS — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o catálogo de permissões × `RBAC_MATRIX.md`) · **dono:** pergunta de matriz para o dono (decisão do dono); depois bloco próprio · **bloqueia:** não o item 71, mas é a mesma família de leitura tenant-wide.
+- **origem:** o censo do plano `B-WO-LEITURA-TECNICO` (17/11 14:2x); reforçada pela crítica da Emenda 3 (a série por dia `operations/work-orders-timeseries`).
+- **fato:** o catálogo dá ao técnico leitura da organização inteira em `service_quotes` (com valores), `impound` (15 rotas de pátio), `damages`, `fines`, `maintenance_orders`, `fuel_logs`, `customers` e `operator-profiles`, e a contagem diária de `operations/work-orders-timeseries`. A matriz diz "Finance: none" e "Reports: field-scoped".
+- **critério de encerramento:** o dono decide o escopo de cada rota, e o catálogo/a matriz passam a refletir a decisão, com teste.
+
+## P-MOBILE-AVAILABILITY-TENANT-ID (2026-11-17) — `GET /mobile/inventory/availability` põe `tenant_id` no corpo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (contrato do app) · **dono:** bloco de estoque do app (o `B-O6R-04b` fechou no #582; fica para um bloco novo) · **bloqueia:** não.
+- **origem:** o censo do plano `B-WO-LEITURA-TECNICO` (§2.8), 17/11.
+- **fato:** `GET /mobile/inventory/availability` põe `tenant_id` no corpo, expondo o identificador externo de organização (regra de ouro B.2.8 da allowlist).
+- **critério de encerramento:** a rota deixa de pôr `tenant_id` no corpo, com teste.
+
+## P-DESPACHO-EX-TECNICO-MUTACAO (2026-11-17) — o ex-técnico ainda transiciona o despacho antigo, e a resposta 200 devolve o despacho inteiro — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (regra do alvo `D-07c-DESPACHO-ALVO`) · **dono:** o orquestrador leva a pergunta ao dono; depois bloco próprio · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-WO-LEITURA-TECNICO` (§8); a Emenda 2 (B4) mediu que a resposta 200 do `PATCH …/status` devolve o despacho inteiro (`workOrderId` + `observation`), e por isso é também um **canal de leitura** do despacho antigo.
+- **fato:** depois do re-despacho, o despacho antigo segue `accepted` e o ex-técnico ainda o transiciona (`PATCH …/status` 200, regra do alvo), enquanto a leitura dele passa a 404. Pergunta ao dono: o re-despacho encerra o despacho anterior, ou a mutação também passa a exigir "OS ainda é dele"? Premissa do Traccar (`B-TRC-01` lê `accepted_at`) a conferir.
+- **critério de encerramento:** a decisão do dono vira regra e teste (mutação do despacho antigo encerrada ou escopada).
+
+## P-NOTIF-DECISAO-EX-TECNICO (2026-11-17) — a exceção do ex-técnico no `API_CONTRACTS.md` precisa do apenso da decisão — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** registro (contrato) · **dono:** o `B-WO-LEITURA-TECNICO` (item 71) · **bloqueia:** não.
+- **origem:** Emenda 2 do `B-WO-LEITURA-TECNICO` (B4), 17/11.
+- **fato:** a frase do contrato para o despacho ("legível pelo papel de campo só enquanto ele é o alvo E o técnico atual; o despacho antigo responde 404; o ex-técnico perde a leitura") ganha a exceção do `P-DESPACHO-EX-TECNICO-MUTACAO` nas linhas `:671` e `:672`, e o `S-W7` asserta o corpo medido.
+- **critério de encerramento:** o contrato leva a exceção e o teste do corpo medido, junto com a decisão do dono da pendência acima.
+
+## P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR (2026-11-17) — com o app aberto, a volta da rede não revoga o token de renovação do "Sair" — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** o `B-APP-SESSAO-RENOVA` (item 68, já fechado); residual da triagem · **dono:** bloco próprio de sessão do app, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** triagem da J-588, achado C3-A2 (`P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR`); o porteiro-588 (R1) pede dono, PR-alvo e `bloqueia`.
+- **fato:** com o app aberto, a volta da rede não esvazia a fila do "Sair", e o token de renovação segue válido até o app ser reaberto. Divergência registrada pelo dev e não decidida.
+- **critério de encerramento:** a volta da rede revoga a família do token do "Sair" (ou o comportamento fica registrado como decidido), com teste.
+
+## P-APP-INICIO-PENDENTES-FANTASMA (2026-11-17) — a Início mostra "2 pendentes" com 0 pendentes no servidor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (telas Início e Finanças do app) · **dono:** bloco próprio do app, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** triagem da J-588, achado C3-A3; o porteiro-588 (R1) pede dono, PR-alvo e `bloqueia`.
+- **fato:** depois da sincronização, a Início segue "2 pendentes a sincronizar" e Finanças mostra "Sync pendente", mesmo com 0 pendentes e 200 no servidor. Causa não medida; anterior ao bloco.
+- **critério de encerramento:** as duas telas refletem a fila real (0 pendentes → sem selo), com teste.
+
+## P-APP-TESTE-OSCILA-MAQUINA-CARREGADA (2026-11-17) — flakiness do teste de sessão sob contenda de máquina — BAIXA (ambiente)
+
+- **status:** ABERTA · **gravidade:** BAIXA (ambiente) · **escopo:** o arnês de teste do app · **dono:** bloco de ferramentas de teste · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** triagem da J-588, achado C2-A1; o porteiro-588 (R1) pede dono, PR-alvo e `bloqueia`.
+- **fato:** sob contenda de máquina, o `[T3j]` deu 1 vermelho na linha de base, e re-execuções verdes de M2/M5 caíram com restauro; nenhum dos três é reprodutível isolado e o CI do objeto está verde. Ambiente, sem defeito de produto.
+- **critério de encerramento:** o teste para de oscilar sob carga (tempo-limite ou isolamento), ou fica registrado como tolerância conhecida.
+
+## P-APP-LIGAR-SEM-DISCADOR (2026-11-17) — o botão de ligar do detalhe do app exige um pacote novo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** a tela de detalhe da OS no app (fora do `B-GUI-FID1`) · **dono:** a tela 14 do plano do app guincho (bloco próprio, a abrir) · **bloqueia:** não.
+- **origem:** conferência visual do #595 (17/11 14:3x).
+- **fato:** abrir o discador exige o pacote `url_launcher`, que é dependência nova do Flutter e passa por decisão.
+- **critério de encerramento:** a decisão sobre o `url_launcher` é registrada e o botão de ligar abre o discador, com teste.
+
+## P-APROV-MEMORIA-SEM-CAS (2026-11-17) — o repositório em memória das aprovações não é CAS sob concorrência — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a classe de teste/desenvolvimento; a produção recusa o modo memória) · **dono:** o bloco que tocar o modo memória das aprovações · **bloqueia:** não.
+- **origem:** triagem da J-586, achado C2-01; o porteiro-586 (R3) pede dono e PR-alvo.
+- **fato:** `InMemoryApprovalRepository.decide` não é CAS sob concorrência: há um `await findById` entre a leitura e a escrita, e 2 decisões simultâneas passam as duas.
+- **critério de encerramento:** o `decide` em memória é CAS (2 decisões simultâneas → 1 passa), com teste.
+
+## P-OS-CONCLUSAO-EVENTO-DUPLO (2026-11-17) — duas conclusões simultâneas da mesma OS gravam dois eventos `work_order_completed` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o evento de conclusão da OS) · **dono:** o bloco que tocar o evento de conclusão da OS · **bloqueia:** não.
+- **origem:** triagem da J-586, achado C2-02; o porteiro-586 (R3) pede dono e PR-alvo.
+- **fato:** 2 conclusões simultâneas da mesma OS gravam 2 eventos `work_order_completed`; a aprovação continua única.
+- **critério de encerramento:** a conclusão da OS grava 1 evento, mesmo em corrida, com teste.
+
+## P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — a composição em memória da varredura não tem teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a produção roda em Prisma; o modo memória é de teste) · **dono:** o `B-ASS-08c3` (F7/F8) · **bloqueia:** não.
+- **origem:** pré-revisão da 6ª leva do 08c2 (`prerev-08c2-l6-cl`), achado L6-01, 17/11.
+- **fato:** a composição em memória da varredura não tem teste dono: a mutação ML6-b sobrevive 31/31.
+- **critério de encerramento:** a composição em memória tem teste que morre com a mutação, ou fica registrado que o modo memória não é suportado.
+
+## P-08C2-GSISO-ANTIGOS (2026-11-17) — seis suítes antigas ainda criam o outbox sem `tenantIds` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (suítes antigas, fora do 08c2) · **dono:** o `B-ASS-08c3` (próximo bloco que tocar o outbox) · **bloqueia:** não.
+- **origem:** Emenda 3 do `B-ASS-08c2` (GS-ISO), 16/11; confirmada pela C3 da J-587 (ausente do `pendencias.md`).
+- **fato:** o critério GS-ISO passa a valer só para os arquivos de teste NOVOS do ramo (4 de 4 com `tenantIds`); os 6 antigos — `outbox-review` ×3, `reconsulta`, `register` ×2 — criam `new PrismaOutboxRepository(` sem `{ tenantIds }`.
+- **critério de encerramento:** as 6 suítes antigas passam o GS-ISO (ou ficam listadas como fora do critério por decisão).
+
+## P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — o `provider_invoice_id` continua nulo depois da reconsulta — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `#applyLookup`, fora do PERMITIDO do 08c2) · **dono:** o `B-ASS-08c3` · **bloqueia:** não.
+- **origem:** Emenda 5 do `B-ASS-08c2` (NR1), 17/11; confirmada pela C3 da J-587 (ausente do `pendencias.md`).
+- **fato:** o `provider_invoice_id` continua nulo depois da reconsulta; para preenchê-lo seria preciso mexer em `#applyLookup`. O plano passa a dizer "segue nulo".
+- **critério de encerramento:** o `#applyLookup` preenche o `provider_invoice_id` (ou o plano registra por que não), com teste.
+
+## P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 compara a porta com `includes` no log inteiro e oscila — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a asserção do teste) · **dono:** bloco de ferramentas de teste · **bloqueia:** não.
+- **origem:** relatório do `dev-08c2-e5-cl` (Emenda 5), 17/11; confirmada pela C3 da J-587 (ausente do `pendencias.md`).
+- **fato:** o T15 compara a porta com `includes` no log inteiro e caiu 1× no run 44106675745, sem mudança de `src`.
+- **critério de encerramento:** a asserção compara a porta exata (sem `includes` no log inteiro), com teste.
+
+## P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS (2026-11-17) — o `npm test` local trava sem fim no `ass-05-vault-routes` — MÉDIA (ambiente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA (ambiente) · **escopo:** o arnês de teste no Windows · **dono:** bloco de ferramenta (põe tempo-limite no servidor-filho) · **bloqueia:** não.
+- **origem:** 17/11 17:5x, no dev do item 31 (`dev-04b-e1-cl`).
+- **fato:** o `npm test` local trava sem fim no `ass-05-vault-routes` (o servidor-filho nunca sai). Custou 7,5 h de um dev no dia.
+- **critério de encerramento:** o servidor-filho do teste tem tempo-limite e o `npm test` termina sozinho, com teste.
+
+## P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a leitura de ambiente da porta de plataforma) · **dono:** `B-NODE-ENV-FAIL-CLOSED` · **bloqueia:** não.
+- **origem:** crítica do plano do 72 (`crit-plat-perm-cl`, A7) e Emenda 1 do 72, 17/11.
+- **fato:** com `NODE_ENV` ausente, a porta de plataforma conta como dev (fail-open), quando deveria falhar fechado em produção.
+- **critério de encerramento:** `NODE_ENV` ausente falha fechado, com teste.
+
+## P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.env.example` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `.env.example`) · **dono:** PR de registro/ferramentas · **bloqueia:** não.
+- **origem:** revisão do #598 (`rev-598-cl`), 17/11.
+- **fato:** `DATABASE_RUNTIME_ROLE_GUARD` não está no `.env.example`, e os 5 `PORTAL_*` só em comentário.
+- **critério de encerramento:** o `.env.example` documenta o `DATABASE_RUNTIME_ROLE_GUARD` e os `PORTAL_*`.
+
+## P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchForWorkOrder` não tem teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** o conserto da J-596 (Emenda 2.2) · **dono:** `B-GUI-02b` · **bloqueia:** não.
+- **origem:** conferência da J-596 (`verif-596-df`), achado VN-01, 17/11.
+- **fato:** trocar o `catch` de `hasDispatchForWorkOrder` para `return false` não deixa nenhum teste vermelho — o fail-closed está certo por leitura, mas sem teste.
+- **critério de encerramento:** uma mutação do `catch` (voltar `false`) deixa um teste vermelho.
+
+## P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia-noite e a requisição corre depois — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o cenário do teste) · **dono:** bloco de ferramentas de teste · **bloqueia:** não.
+- **origem:** 18/11 00:10, no job backend do #598 (só docs), que falhou na virada de dia.
+- **fato:** o cenário calcula `subscriptionValidFrom` (data de SP) antes da meia-noite e a requisição corre depois dela → 422 `subscription_retroactive` ("antes de hoje"). Flaky de virada de dia, não do PR.
+- **critério de encerramento:** a data é calculada no momento da requisição (ou o relógio é fixado), com teste.
+
+## P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma falha aberta, e 5 rotas pedem chaves fora do catálogo — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (escalada de privilégio de plataforma, hoje sem papel em produção) · **escopo:** `pre-existente` (o desenho da porta de plataforma × o catálogo) · **dono:** `B-PLAT-PERMISSAO` (o item 72 saiu do portão por `D-DONO-1711-72-FORA-DO-PORTAO`) · **gatilho:** a volta do bloco `B-PLAT-PERMISSAO` · **bloqueia:** depois dos bloqueantes (não entra no portão).
+- **origem:** a correção do orquestrador sobre o item 72 (17/11 16:0x, §A2) e a decisão do dono de 22:00 (`D-DONO-1711-72-FORA-DO-PORTAO`).
+- **fato:** o `requirePlatformPermission` não confere a permissão (falha aberta); 5 rotas pedem 6 chaves que não estão no catálogo; o banco (a migração do B-ASS-04, `settle` só para o `super_admin`) diverge do catálogo. O plano + Emendas 1 e 2 ficaram prontos, e a migração das 6 chaves (só para o `super_admin`) segue autorizada (`D-DONO-1711-72-P1`).
+- **critério de encerramento:** a checagem falha fechada, as 6 chaves entram no catálogo (migração autorizada) e as 5 rotas passam a exigir a permissão que de fato possuem, com teste e junta completa.
+
+## P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-sync.ts` ainda cita `"inventory.manage"` sem uso — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (resíduo do #582) · **dono:** o bloco que tocar `mobile-inventory-sync.ts` · **bloqueia:** não.
+- **origem:** nota do porteiro-582 (18/11 00:19).
+- **fato:** a união de tipos em `mobile-inventory-sync.ts:671,678` ainda cita `"inventory.manage"` sem uso.
+- **critério de encerramento:** a união de tipos deixa de citar a permissão sem uso (ou fica registrado o motivo), com teste.
