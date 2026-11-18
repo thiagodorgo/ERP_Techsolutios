@@ -16744,6 +16744,28 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **acréscimo (registro de 17/11, `fix-593-m-cl`, na união com a `main`):** o registro de 17/11 tinha aberto a mesma pendência pelo registro do PR #588 (F0 a F7), com a nota "é provavelmente o que o dono viu no Pixel; a causa não foi medida"; as duas entradas viraram esta.
 - **critério de encerramento:** a lista vazia do servidor mostra o estado vazio, sem aviso de falha, com teste.
 
+## P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entrega sem cidade, estado e CEP — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o item da lista nunca levou `serviceCity`; o B-GUI-D1 acrescenta `destinationAddress` no mesmo molde) · **dono:** `B-GUI-15` ("Ir para a coleta" / "Ir para a entrega") · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.1 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toWorkOrderListDto` (`src/modules/work-orders/work-order.dto.ts`) manda `serviceAddress` e `destinationAddress`, sem `*City`, `*State` e `*ZipCode`. Sem a cidade, o botão do mapa pode levar o app de mapa ao lugar errado quando a OS não tem coordenada.
+- **critério de encerramento:** o `B-GUI-15` decide se a lista passa a mandar cidade, estado e CEP (aditivo), com teste, ou registra por que a coordenada basta.
+
+## P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo atendido chega ao app sem modelo e cor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o formulário da web, `frontend/src/modules/work-orders/components/WorkOrderForm.tsx`, só pede `vehicle` e `color` no socorro) · **dono:** `B-WO-FORM-VEICULO` (formulário web da OS com o veículo em campos próprios: placa, modelo, cor; backlog, sem plano ainda; ID dado na triagem da J-597, C3-N1) · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1 §1.2 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** numa OS de reboque criada pela web, `serviceDetails` só tem `plate`. Com o B-GUI-D1, `attendedVehicle.model` e `.color` saem `null`, e o cartão Veículo do detalhe fiel (B-GUI-FID1) mostra só a placa mascarada.
+- **critério de encerramento:** o formulário da web pede modelo e cor também no reboque, com teste.
+
+## P-OS-PLACA-NO-TEXTO-LIVRE (2026-11-17) — a placa digitada em texto livre chega à lista; dois residuais do filtro de placa no modelo e na cor do veículo atendido — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (subiu na triagem da J-597, C1-03) · **escopo:** `pre-existente` (a web aceita qualquer texto em `title`, `serviceAddress`, `destinationAddress`, `vehicle` e `color`; o B-GUI-D1 filtra na saída só modelo e cor) · **dono:** `B-WO-FORM-VEICULO`, o bloco de formulário da web que recebe a `P-OS-REBOQUE-SEM-MODELO-E-COR` · **bloqueia:** não.
+- **origem:** `B-GUI-D1`, emenda 1.1 §1.4 (`plano-guid1-e1-cl`), gravada pelo dev `dev-guid1-cl`.
+- **fato:** `toAttendedVehicleDto` (`src/modules/work-orders/work-order.attended-vehicle.ts`) anula o modelo ou a cor que traga uma placa (regra do check-in) ou a placa desta OS (dobrada). Passam, medidos: (1) duas placas no texto, nenhuma desta OS (`Uno ABC1234 e DEF5678`), que não mostra o fim desta OS, só perde minimização; (2) o fim sozinho (`Onix final 23`), que ninguém distingue de `Onix 2023` sem apagar modelo legítimo.
+- **fato (apenso da J-597, C1-03, 17/11):** a placa INTEIRA (com o fim) que a base digita num texto livre que não é modelo nem cor chega à lista de OS: por `title` e `serviceAddress` (antes do B-GUI-D1) e, desde o B-GUI-D1, por `destinationAddress`. O filtro do `toAttendedVehicleDto` cobre só `model` e `color`. Medido pela sonda da cadeira C1 (`probe-textolivre.mts`, OS com `title` `Reboque Onix ABC-1D23`, `serviceAddress` `Rua 1 (placa ABC1D23)`, `destinationAddress` `Patio, carro abc1d23`): no objeto `02009efe`, `title`, `serviceAddress` e `destinationAddress` dão `PLACA_INTEIRA`; com o `work-order.dto.ts` da `main`, `title` e `serviceAddress` dão `PLACA_INTEIRA` e `destinationAddress` está ausente. Não é capacidade nova (o detalhe já entrega a placa inteira aos mesmos papéis), mas o fim pode chegar à tela por um texto livre. A trava do servidor `assertFimNaoChegaPorTexto` (`tests/bguid1-dados-da-os.test.ts`) deixa `title` e `serviceAddress` de fora de propósito, até esta pendência fechar.
+- **critério de encerramento:** a web recusa placa nos campos de modelo e cor (o conserto de raiz) e a placa deixa de chegar à lista por `title`, `serviceAddress` e `destinationAddress` (recusa na entrada ou filtro na saída), com teste.
+
 ## P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor cancela a nota quando o pagamento dele é todo devolvido, mesmo com outro valor ainda pago no demonstrativo — MÉDIA
 
 - **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
