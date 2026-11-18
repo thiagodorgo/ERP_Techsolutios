@@ -41,12 +41,12 @@ Consolidar a prontidao do backend Node.js/TypeScript para o MVP mobile Flutter, 
 | Expenses | `GET /api/v1/expense-policies` | implementado | politicas de despesas |
 | Expenses | `GET/POST /api/v1/expense-reports` | implementado | fluxo online de prestacao de contas |
 | Expenses | `POST /api/v1/mobile/sync/expense-actions` | implementado | sync idempotente MVP para acoes de despesas |
-| Inventory | `GET /api/v1/mobile/inventory/availability` | parcial | disponibilidade mobile tenant-scoped, com dados em memoria |
+| Inventory | `GET /api/v1/mobile/technician/stock` | implementado | estoque do tecnico, na custodia escolhida pelo servidor (B-SAN3-15a); a antiga disponibilidade em memoria saiu no B-O6R-04b |
 | Evidence/Attachments | `POST /api/v1/mobile/sync/evidence-actions` | parcial | manifesto de foto, assinatura e observacao para OS/campo; sem upload binario |
 | Sync | `POST /api/v1/mobile/sync/expense-actions` | implementado parcial | despesas apenas |
 | Sync | `POST /api/v1/mobile/sync/work-order-actions` | implementado | replay offline controlado de status/atribuicao de OS |
 | Sync | `POST /api/v1/mobile/sync/checklist-actions` | parcial | replay offline minimo de respostas, notas e conclusao de checklist |
-| Sync | `POST /api/v1/mobile/sync/inventory-actions` | parcial | replay minimo de reserva, consumo e falta em campo |
+| Sync | `POST /api/v1/mobile/sync/inventory-actions` | implementado | material da OS (`work_order_material.add`/`.remove`), duravel no razao; porta `work_orders:update` (B-O6R-04b) |
 | Sync | `POST /api/v1/mobile/sync/evidence-actions` | parcial | replay de metadados de evidencia por tenant/usuario |
 | Notifications | `GET /api/v1/notifications` | implementado | retorna `data` como array direto |
 | Notifications | `GET /api/v1/notifications/unread-count` | implementado | contador de nao lidas |
@@ -96,7 +96,7 @@ Estado atual:
 - despesas: `POST /api/v1/mobile/sync/expense-actions` existe e retorna `data.results`;
 - work orders: `POST /api/v1/mobile/sync/work-order-actions` existe e retorna `accepted`, `rejected`, `conflicts` e `already_applied`;
 - checklists: `POST /api/v1/mobile/sync/checklist-actions` existe em status `partial` para `checklist.item_answer`, `checklist.item_note` e `checklist.complete`;
-- inventory: `GET /api/v1/mobile/inventory/availability` e `POST /api/v1/mobile/sync/inventory-actions` existem em status `partial`;
+- inventory: `POST /api/v1/mobile/sync/inventory-actions` e `implemented` para o material da OS, e `GET /api/v1/mobile/technician/stock` le o estoque do tecnico; `GET /api/v1/mobile/inventory/availability` saiu no B-O6R-04b (404);
 - evidencias: checklist possui upload online protegido; B-098E adiciona manifesto parcial de OS/generico em `POST /api/v1/mobile/sync/evidence-actions`.
 
 Regras para proximas fases:

@@ -17,24 +17,12 @@ import {
 type RawRecord = Record<string, unknown>;
 
 type MobileInventoryActionOutcome = "accepted" | "rejected" | "conflict" | "already_applied";
-type InventoryActionType = "inventory.reserve" | "inventory.consume" | "inventory.shortage_report";
 
 type MobileInventoryAction = {
   readonly client_action_id: string;
   readonly type: string;
   readonly payload: RawRecord;
   readonly local_created_at: string;
-};
-
-type InventoryItemState = {
-  readonly item_id: string;
-  readonly sku: string;
-  readonly name: string;
-  readonly unit: string;
-  readonly warehouse_id: string;
-  readonly available_quantity: number;
-  readonly reserved_quantity: number;
-  readonly status: "available" | "low_stock" | "out_of_stock";
 };
 
 type MobileInventoryActionResult = {
@@ -47,14 +35,7 @@ type MobileInventoryActionResult = {
   readonly work_order_local_id?: string;
   readonly material_local_id?: string;
   readonly result_ref?: string;
-  readonly server_state?: InventoryItemState | {
-    readonly shortage_report_id: string;
-    readonly item_id: string;
-    readonly warehouse_id?: string;
-    readonly reported_quantity: number;
-    readonly reason: string;
-    readonly status: "reported";
-  } | {
+  readonly server_state?: {
     readonly movement_id: string;
     readonly item_id: string;
     readonly sku: string;
@@ -75,33 +56,11 @@ type MobileInventoryActionResult = {
   };
 };
 
-type MobileInventorySyncReceipt = {
-  readonly fingerprint: string;
-  readonly result: MobileInventoryActionResult;
-};
-
-export type MobileInventoryAvailabilityResponse = {
-  readonly contract: {
-    readonly name: "mobile_inventory_availability";
-    readonly version: "2026-06-15.b098d";
-    readonly status: "partial";
-  };
-  readonly tenant_id: string;
-  readonly server_time: string;
-  readonly filters: {
-    readonly item_id: string | null;
-    readonly sku: string | null;
-    readonly warehouse_id: string | null;
-    readonly work_order_id: string | null;
-  };
-  readonly items: readonly InventoryItemState[];
-};
-
 export type MobileInventorySyncResponse = {
   readonly contract: {
     readonly name: "mobile_inventory_actions_sync";
-    readonly version: "2026-11.b-material-reenvio";
-    readonly status: "partial";
+    readonly version: "2026-11.b-o6r-04b";
+    readonly status: "implemented";
   };
   readonly client_batch_id: string | null;
   readonly tenant_id: string;
@@ -121,43 +80,16 @@ export type MobileInventorySyncResponse = {
 
 const MAX_BATCH_SIZE = 50;
 const logger = createLogger();
-const syncReceipts = new Map<string, MobileInventorySyncReceipt>();
-const inventoryByTenant = new Map<string, Map<string, InventoryItemState>>();
-const supportedActionTypes: readonly InventoryActionType[] = [
-  "inventory.reserve",
-  "inventory.consume",
-  "inventory.shortage_report",
-];
+
+// B-O6R-04b (D4) — a porta do lote do app tem uma chave só. O lote só aceita o material da OS (`work_order_material.add`
+// e `.remove`), que exige esta mesma chave por ação; quem só cuida do almoxarifado recebe 403 `permission_required`.
+export const MOBILE_INVENTORY_SYNC_PERMISSION = "work_orders:update" as const;
 
 export type MobileInventorySyncDeps = {
   readonly inventory: InventoryService;
   readonly workOrders: WorkOrderService;
   readonly workOrdersModuleEnabled: () => Promise<boolean>;
 };
-
-export function getMobileInventoryAvailability(
-  actor: AuthenticatedActor | undefined,
-  query: unknown,
-): MobileInventoryAvailabilityResponse {
-  assertAvailabilityActor(actor);
-  const filters = parseAvailabilityFilters(query);
-  const inventory = listTenantInventory(actor.tenantId)
-    .filter((item) => !filters.item_id || item.item_id === filters.item_id)
-    .filter((item) => !filters.sku || item.sku === filters.sku)
-    .filter((item) => !filters.warehouse_id || item.warehouse_id === filters.warehouse_id);
-
-  return {
-    contract: {
-      name: "mobile_inventory_availability",
-      version: "2026-06-15.b098d",
-      status: "partial",
-    },
-    tenant_id: actor.tenantId,
-    server_time: new Date().toISOString(),
-    filters,
-    items: inventory,
-  };
-}
 
 export async function syncMobileInventoryActions(
   actor: AuthenticatedActor | undefined,
@@ -172,30 +104,9 @@ export async function syncMobileInventoryActions(
   const alreadyApplied: MobileInventoryActionResult[] = [];
 
   for (const action of request.actions) {
-    const legacyAction = isSupportedActionType(action.type);
-    const fingerprint = fingerprintAction(action);
-    const receiptKey = legacyAction ? buildReceiptKey(actor, action.client_action_id) : undefined;
-    const existingReceipt = receiptKey ? syncReceipts.get(receiptKey) : undefined;
-
-    if (existingReceipt) {
-      if (existingReceipt.fingerprint === fingerprint) {
-        alreadyApplied.push({
-          ...existingReceipt.result,
-          status: "already_applied",
-        });
-        continue;
-      }
-
-      conflicts.push(buildIdempotencyConflict(action, existingReceipt.result));
-      continue;
-    }
-
     const result = await processAction(deps, actor, action);
 
     if (result.status === "accepted") {
-      if (receiptKey && fingerprint) {
-        syncReceipts.set(receiptKey, { fingerprint, result });
-      }
       accepted.push(result);
       continue;
     }
@@ -216,8 +127,8 @@ export async function syncMobileInventoryActions(
   return {
     contract: {
       name: "mobile_inventory_actions_sync",
-      version: "2026-11.b-material-reenvio",
-      status: "partial",
+      version: "2026-11.b-o6r-04b",
+      status: "implemented",
     },
     client_batch_id: request.client_batch_id,
     tenant_id: actor.tenantId,
@@ -236,34 +147,15 @@ export async function syncMobileInventoryActions(
   };
 }
 
-export function resetMobileInventoryRuntimeForTests(): void {
-  syncReceipts.clear();
-  inventoryByTenant.clear();
-}
-
-// B-MOBILE-GATE-CHAVE (item 66) — a régua da leitura de estoque e a das ações de estoque, exportadas para o guard do app
-// (`tests/mobile-gate-chave-catalogo.test.ts`, T4.1) comparar os gates G2 e G3 com o que a rota confere de fato. Os
-// valores e o comportamento são os de antes; a porta do envio (`assertSyncActor`) não muda.
-export const MOBILE_INVENTORY_READ_PERMISSIONS = ["inventory.read", "inventory.manage"] as const;
-export const MOBILE_INVENTORY_STOCK_ACTION_PERMISSION = "inventory.manage" as const;
-
-function assertAvailabilityActor(actor: AuthenticatedActor | undefined): asserts actor is AuthenticatedActor {
-  assertBaseActor(actor);
-
-  if (!hasAnyPermission(actor, MOBILE_INVENTORY_READ_PERMISSIONS)) {
-    throw routeError(403, "FORBIDDEN", "permission_required", "One of these permissions is required: inventory.read, inventory.manage.");
-  }
-}
-
 function assertSyncActor(actor: AuthenticatedActor | undefined): asserts actor is AuthenticatedActor {
   assertBaseActor(actor);
 
-  if (!hasAnyPermission(actor, ["inventory.manage", "work_orders:update"])) {
+  if (!hasAnyPermission(actor, [MOBILE_INVENTORY_SYNC_PERMISSION])) {
     throw routeError(
       403,
       "FORBIDDEN",
       "permission_required",
-      "One of these permissions is required: inventory.manage, work_orders:update.",
+      `One of these permissions is required: ${MOBILE_INVENTORY_SYNC_PERMISSION}.`,
     );
   }
 }
@@ -280,17 +172,6 @@ function assertBaseActor(actor: AuthenticatedActor | undefined): asserts actor i
   if (actor.roles.length === 0) {
     throw routeError(403, "FORBIDDEN", "role_required", "Role is required.");
   }
-}
-
-function parseAvailabilityFilters(query: unknown): MobileInventoryAvailabilityResponse["filters"] {
-  const record = asRecord(query ?? {}, "query");
-
-  return {
-    item_id: parseOptionalQueryString(record.item_id),
-    sku: parseOptionalQueryString(record.sku),
-    warehouse_id: parseOptionalQueryString(record.warehouse_id),
-    work_order_id: parseOptionalQueryString(record.work_order_id),
-  };
 }
 
 function parseSyncRequest(body: unknown): {
@@ -340,30 +221,17 @@ async function processAction(
 ): Promise<MobileInventoryActionResult> {
   try {
     if (action.type === "work_order_material.add") {
-      requireActionPermission(actor, "work_orders:update");
+      requireActionPermission(actor, MOBILE_INVENTORY_SYNC_PERMISSION);
       return withMaterialEcho(action, await addWorkOrderMaterial(deps, actor, action));
     }
 
     if (action.type === "work_order_material.remove") {
-      requireActionPermission(actor, "work_orders:update");
+      requireActionPermission(actor, MOBILE_INVENTORY_SYNC_PERMISSION);
       return withMaterialEcho(action, await removeWorkOrderMaterial(deps, actor, action));
     }
 
-    if (!isSupportedActionType(action.type)) {
-      throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
-    }
-
-    requireActionPermission(actor, MOBILE_INVENTORY_STOCK_ACTION_PERMISSION);
-
-    if (action.type === "inventory.reserve") {
-      return reserveInventory(actor, action);
-    }
-
-    if (action.type === "inventory.consume") {
-      return consumeInventory(actor, action);
-    }
-
-    return reportShortage(actor, action);
+    // B-O6R-04b (D2): todo tipo que não é o material da OS é recusado por ação, sem processar a carga.
+    throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
   } catch (error) {
     if (isRouteLikeError(error) && error.statusCode === 503) throw error;
     if (isMaterialActionType(action.type) && !isMaterialRefusal(error)) {
@@ -574,85 +442,6 @@ function materialReplayResult(
   };
 }
 
-function reserveInventory(
-  actor: AuthenticatedActor,
-  action: MobileInventoryAction,
-): MobileInventoryActionResult {
-  const quantity = parsePositiveNumber(action.payload.quantity, "quantity");
-  const item = getRequiredItem(actor.tenantId, action);
-
-  if (item.available_quantity < quantity) {
-    return quantityConflict(action, item, "insufficient_available_quantity");
-  }
-
-  const updated = updateItem(actor.tenantId, item.item_id, {
-    available_quantity: item.available_quantity - quantity,
-    reserved_quantity: item.reserved_quantity + quantity,
-  });
-
-  return acceptedItemResult(action, updated);
-}
-
-function consumeInventory(
-  actor: AuthenticatedActor,
-  action: MobileInventoryAction,
-): MobileInventoryActionResult {
-  const quantity = parsePositiveNumber(action.payload.quantity, "quantity");
-  const item = getRequiredItem(actor.tenantId, action);
-
-  if (item.available_quantity + item.reserved_quantity < quantity) {
-    return quantityConflict(action, item, "insufficient_total_quantity");
-  }
-
-  const reservedConsumed = Math.min(item.reserved_quantity, quantity);
-  const availableConsumed = quantity - reservedConsumed;
-  const updated = updateItem(actor.tenantId, item.item_id, {
-    available_quantity: item.available_quantity - availableConsumed,
-    reserved_quantity: item.reserved_quantity - reservedConsumed,
-  });
-
-  return acceptedItemResult(action, updated);
-}
-
-function reportShortage(
-  actor: AuthenticatedActor,
-  action: MobileInventoryAction,
-): MobileInventoryActionResult {
-  const quantity = parsePositiveNumber(action.payload.quantity, "quantity");
-  const reason = parseRequiredString(action.payload.reason, "reason");
-  const item = getRequiredItem(actor.tenantId, action);
-
-  return {
-    client_action_id: action.client_action_id,
-    type: action.type,
-    status: "accepted",
-    item_id: item.item_id,
-    warehouse_id: item.warehouse_id,
-    server_state: {
-      shortage_report_id: `shortage:${actor.tenantId}:${action.client_action_id}`,
-      item_id: item.item_id,
-      warehouse_id: item.warehouse_id,
-      reported_quantity: quantity,
-      reason,
-      status: "reported",
-    },
-  };
-}
-
-function acceptedItemResult(
-  action: MobileInventoryAction,
-  item: InventoryItemState,
-): MobileInventoryActionResult {
-  return {
-    client_action_id: action.client_action_id,
-    type: action.type,
-    status: "accepted",
-    item_id: item.item_id,
-    warehouse_id: item.warehouse_id,
-    server_state: item,
-  };
-}
-
 function actionErrorResult(
   action: MobileInventoryAction,
   error: unknown,
@@ -773,167 +562,6 @@ function materialServerState(
   };
 }
 
-function buildIdempotencyConflict(
-  action: MobileInventoryAction,
-  existingResult: MobileInventoryActionResult,
-): MobileInventoryActionResult {
-  return {
-    client_action_id: action.client_action_id,
-    type: action.type,
-    status: "conflict",
-    item_id: readItemId(action),
-    warehouse_id: readWarehouseId(action),
-    conflict: {
-      conflict_type: "idempotency_payload_mismatch",
-      server_id: existingResult.item_id,
-      local: sanitizeActionForConflict(action),
-      remote: {
-        status: existingResult.status,
-        type: existingResult.type,
-        item_id: existingResult.item_id,
-        warehouse_id: existingResult.warehouse_id,
-      },
-      next_action: "drop_duplicate_or_create_new_client_action_id",
-    },
-    error: {
-      code: "MOBILE_SYNC_CONFLICT",
-      reason: "idempotency_payload_mismatch",
-      message: "client_action_id was already applied with a different payload.",
-    },
-  };
-}
-
-function quantityConflict(
-  action: MobileInventoryAction,
-  item: InventoryItemState,
-  conflictType: "insufficient_available_quantity" | "insufficient_total_quantity",
-): MobileInventoryActionResult {
-  return {
-    client_action_id: action.client_action_id,
-    type: action.type,
-    status: "conflict",
-    item_id: item.item_id,
-    warehouse_id: item.warehouse_id,
-    conflict: {
-      conflict_type: conflictType,
-      server_id: item.item_id,
-      local: sanitizeActionForConflict(action),
-      remote: item,
-      next_action: "refresh_inventory_availability_and_retry",
-    },
-    error: {
-      code: "MOBILE_SYNC_CONFLICT",
-      reason: conflictType,
-      message: "Requested quantity is not available.",
-    },
-  };
-}
-
-function getRequiredItem(tenantId: string, action: MobileInventoryAction): InventoryItemState {
-  const itemId = parseRequiredString(action.payload.item_id, "item_id");
-  const item = getTenantInventory(tenantId).get(itemId);
-
-  if (!item) {
-    throw routeError(404, "INVENTORY_ITEM_NOT_FOUND", "inventory_item_not_found", "Inventory item not found.");
-  }
-
-  const warehouseId = parseOptionalString(action.payload.warehouse_id);
-
-  if (warehouseId && item.warehouse_id !== warehouseId) {
-    throw routeError(404, "INVENTORY_ITEM_NOT_FOUND", "inventory_item_not_found", "Inventory item not found.");
-  }
-
-  return item;
-}
-
-function listTenantInventory(tenantId: string): InventoryItemState[] {
-  return [...getTenantInventory(tenantId).values()]
-    .sort((left, right) => left.sku.localeCompare(right.sku));
-}
-
-function getTenantInventory(tenantId: string): Map<string, InventoryItemState> {
-  let inventory = inventoryByTenant.get(tenantId);
-
-  if (!inventory) {
-    inventory = new Map(seedInventory().map((item) => [item.item_id, item]));
-    inventoryByTenant.set(tenantId, inventory);
-  }
-
-  return inventory;
-}
-
-function updateItem(
-  tenantId: string,
-  itemId: string,
-  patch: Pick<InventoryItemState, "available_quantity" | "reserved_quantity">,
-): InventoryItemState {
-  const inventory = getTenantInventory(tenantId);
-  const existing = inventory.get(itemId);
-
-  if (!existing) {
-    throw routeError(404, "INVENTORY_ITEM_NOT_FOUND", "inventory_item_not_found", "Inventory item not found.");
-  }
-
-  const updated: InventoryItemState = {
-    ...existing,
-    ...patch,
-    status: resolveInventoryStatus(patch.available_quantity),
-  };
-
-  inventory.set(itemId, updated);
-
-  return updated;
-}
-
-function seedInventory(): InventoryItemState[] {
-  return [
-    {
-      item_id: "inv-item-tow-cable",
-      sku: "CABO-REBOQUE-5T",
-      name: "Cabo de reboque 5T",
-      unit: "un",
-      warehouse_id: "mobile-warehouse-main",
-      available_quantity: 6,
-      reserved_quantity: 0,
-      status: "available",
-    },
-    {
-      item_id: "inv-item-safety-cone",
-      sku: "CONE-SINALIZACAO",
-      name: "Cone de sinalizacao",
-      unit: "un",
-      warehouse_id: "mobile-warehouse-main",
-      available_quantity: 12,
-      reserved_quantity: 2,
-      status: "available",
-    },
-    {
-      item_id: "inv-item-fuse-kit",
-      sku: "KIT-FUSIVEL",
-      name: "Kit de fusiveis",
-      unit: "kit",
-      warehouse_id: "mobile-warehouse-secondary",
-      available_quantity: 2,
-      reserved_quantity: 1,
-      status: "low_stock",
-    },
-  ];
-}
-
-function resolveInventoryStatus(availableQuantity: number): InventoryItemState["status"] {
-  if (availableQuantity <= 0) return "out_of_stock";
-  if (availableQuantity <= 2) return "low_stock";
-
-  return "available";
-}
-
-function fingerprintAction(action: MobileInventoryAction): string {
-  return JSON.stringify({
-    type: action.type,
-    payload: normalizePayload(action.payload),
-  });
-}
-
 function normalizePayload(record: RawRecord): RawRecord {
   return sortRecord(
     Object.fromEntries(
@@ -953,10 +581,6 @@ function sortRecord(record: RawRecord): RawRecord {
   );
 }
 
-function buildReceiptKey(actor: AuthenticatedActor, clientActionId: string): string {
-  return `${actor.tenantId}:${actor.userId}:${clientActionId}`;
-}
-
 function parseRequiredString(value: unknown, field: string): string {
   const normalized = typeof value === "string" ? value.trim() : "";
 
@@ -971,22 +595,6 @@ function parseOptionalString(value: unknown): string | null {
   const normalized = typeof value === "string" ? value.trim() : "";
 
   return normalized || null;
-}
-
-function parseOptionalQueryString(value: unknown): string | null {
-  if (Array.isArray(value)) {
-    return parseOptionalQueryString(value[0]);
-  }
-
-  return parseOptionalString(value);
-}
-
-function parsePositiveNumber(value: unknown, field: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-    throw routeError(400, "BAD_REQUEST", "invalid_quantity", `${field} must be a positive number.`);
-  }
-
-  return value;
 }
 
 function parsePositiveInteger(value: unknown, field: string): number {
@@ -1036,10 +644,6 @@ function asRecord(value: unknown, field: string): RawRecord {
 
 function isPlainRecord(value: unknown): value is RawRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isSupportedActionType(type: string): type is InventoryActionType {
-  return supportedActionTypes.includes(type as InventoryActionType);
 }
 
 function readItemId(action: MobileInventoryAction): string | undefined {

@@ -44,10 +44,6 @@ const _tituloPorArquivo = <String, String>{
   'lib/features/work_orders/ui/work_order_approval_request_screen.dart': _acao,
   'lib/features/expenses/ui/expense_list_screen.dart': _acao,
   'lib/features/checklists/ui/checklist_available_screen.dart': _acesso,
-  'lib/features/inventory/ui/inventory_list_screen.dart': _acesso,
-  // B-MOBILE-GATE-CHAVE (A5, REV66-02): as telas de movimento são telas de AÇÃO.
-  'lib/features/inventory/ui/stock_entry_screen.dart': _acao,
-  'lib/features/inventory/ui/stock_exit_screen.dart': _acao,
   'lib/features/prestador/ui/technician_stock_screen.dart': _acesso,
   'lib/shared/ui/module_placeholder_screen.dart': _acesso,
   'lib/features/location/ui/location_consent_screen.dart': _acesso,
@@ -81,18 +77,6 @@ const _gateMobilePorTela = <String, (String, MobileGate)>{
   'lib/features/checklists/ui/checklist_available_screen.dart': (
     'checklistsDaOs',
     MobileGates.checklistsDaOs,
-  ),
-  'lib/features/inventory/ui/inventory_list_screen.dart': (
-    'estoque',
-    MobileGates.estoque,
-  ),
-  'lib/features/inventory/ui/stock_entry_screen.dart': (
-    'movimentarEstoque',
-    MobileGates.movimentarEstoque,
-  ),
-  'lib/features/inventory/ui/stock_exit_screen.dart': (
-    'movimentarEstoque',
-    MobileGates.movimentarEstoque,
   ),
 };
 

@@ -14,20 +14,20 @@ import { abrirArnesDoGate, TODOS_OS_MODULOS, type ArnesDoGate, type Resposta } f
 //     `x-role` NÃO serve: o gate de módulo só decide quando há ator do JWT (`module-gate.middleware.ts`, "sem
 //     `request.actor`: segue"), e sem ele os casos de módulo da R2.1 não teriam como dar 403 `module_not_enabled`;
 //   - para cada um dos 9 papéis canônicos: o bootstrap (`permissions` e `modules`) e o veredito de cada rota que a
-//     tela usa — G1 `GET /mobile/checklists/available`, G2 `GET /mobile/inventory/availability`, G3 uma ação
-//     `inventory.reserve` no `POST /mobile/sync/inventory-actions`, G4 `POST /approvals/:id/approve` e G1b um
-//     `checklist.item_answer` no `POST /mobile/sync/checklist-actions`;
-//   - G1, G2 e G4: libera = status ≠ 403; todo 403 traz `reason` ∈ {permission_required, module_not_enabled}, e
+//     tela usa — G1 `GET /mobile/checklists/available`, G4 `POST /approvals/:id/approve` e G1b um
+//     `checklist.item_answer` no `POST /mobile/sync/checklist-actions`. G2 e G3 (as telas de estoque fabricado)
+//     saíram do app no B-O6R-04b, com a rota de disponibilidade e os tipos `inventory.*` do servidor;
+//   - G1 e G4: libera = status ≠ 403; todo 403 traz `reason` ∈ {permission_required, module_not_enabled}, e
 //     qualquer outro 403 FALHA (R1.5);
-//   - G1b e G3: decididos pelo RESULTADO DA AÇÃO, nunca só pelo status (R1.3, RA1.4). Libera ⇔ 200 e a ação em
+//   - G1b: decidido pelo RESULTADO DA AÇÃO, nunca só pelo status (R1.3, RA1.4). Libera ⇔ 200 e a ação em
 //     `accepted`/`already_applied`; bloqueia ⇔ 403 com o motivo acima OU 200 com a ação em `rejected` e
 //     `reason == "permission_required"`. Qualquer outro desfecho FALHA na hora e a fixture não é gravada;
-//   - os 7 casos de módulo (R2.1): G1, G1b, G2 e G3 numa organização sem o módulo; G4 com só `approvals`, só
+//   - os 5 casos de módulo (R2.1): G1 e G1b numa organização sem o módulo; G4 com só `approvals`, só
 //     `work_orders` e nenhum dos dois;
 //   - a matriz é comparada com `mobile/flutter_app/test/fixtures/mobile_gate_matrix.json`, que é GERADA aqui
 //     (`UPDATE_MOBILE_GATE_FIXTURE=1`) e nunca escrita à mão. O app lê a mesma fixture (T1 e T3);
 //   - os casos explícitos (R1.4, RA1.5) leem a MESMA matriz que vai para a fixture e nunca recalculam a decisão
-//     (REV66-01), para que trocar a decisão por `status !== 403` (M15, M17) fique vermelho.
+//     (REV66-01), para que trocar a decisão por `status !== 403` (M15) fique vermelho.
 // O teste nunca confere o texto `message` de erro, só `status` e `reason` (abertura §2, A1).
 
 const ESTE_ARQUIVO = fileURLToPath(import.meta.url);
@@ -45,13 +45,9 @@ const PAPEIS = [
   "support",
 ] as const;
 type Papel = (typeof PAPEIS)[number];
-type Gate = "G1" | "G1b" | "G2" | "G3" | "G4";
-const GATES: readonly Gate[] = ["G1", "G1b", "G2", "G3", "G4"];
+type Gate = "G1" | "G1b" | "G4";
+const GATES: readonly Gate[] = ["G1", "G1b", "G4"];
 const MOTIVOS_DE_BLOQUEIO = new Set(["permission_required", "module_not_enabled"]);
-
-// O payload do G3 é literal (REV66-05): sem `tenant_id` no corpo nem no payload. A linha
-// `tests/mobile-backend-contracts.test.ts:1611-1622` foi só o molde.
-const PAYLOAD_G3 = { item_id: "inv-item-tow-cable", warehouse_id: "mobile-warehouse-main", quantity: 1 } as const;
 
 type Bootstrap = {
   readonly tenant: { readonly id: string; readonly name: string };
@@ -76,12 +72,10 @@ type Medicao = {
 };
 
 let gate: ArnesDoGate;
-let resetEstoque: () => void;
 let medicao: Promise<Medicao> | undefined;
 
 before(async () => {
   gate = await abrirArnesDoGate();
-  ({ resetMobileInventoryRuntimeForTests: resetEstoque } = await import("../src/modules/mobile/mobile-inventory-sync.js"));
 });
 
 after(async () => {
@@ -125,7 +119,7 @@ function bruto(r: Resposta, balde = "", motivoDaAcao = ""): Bruto {
   return { status: r.status, reason: r.reason, balde, motivoDaAcao };
 }
 
-// G1, G2 e G4 (R1.5): libera = status ≠ 403; um 403 fora dos dois motivos derruba a medição inteira.
+// G1 e G4 (R1.5): libera = status ≠ 403; um 403 fora dos dois motivos derruba a medição inteira.
 function decidirPorStatus(rotulo: string, r: Resposta): boolean {
   if (r.status !== 403) return true;
   if (!MOTIVOS_DE_BLOQUEIO.has(r.reason)) {
@@ -134,7 +128,7 @@ function decidirPorStatus(rotulo: string, r: Resposta): boolean {
   return false;
 }
 
-// G1b e G3 (R1.3, RA1.4): pelo resultado da ação. Todo desfecho fora dos três previstos derruba a medição.
+// G1b (R1.3, RA1.4): pelo resultado da ação. Todo desfecho fora dos três previstos derruba a medição.
 function decidirPorAcao(rotulo: string, r: Resposta, clientActionId: string): { libera: boolean; bruto: Bruto } {
   if (r.status === 403) {
     if (!MOTIVOS_DE_BLOQUEIO.has(r.reason)) {
@@ -159,30 +153,6 @@ function decidirPorAcao(rotulo: string, r: Resposta, clientActionId: string): { 
 
 async function chamarG1(token: string) {
   return gate.chamar("GET", "/api/v1/mobile/checklists/available", { token });
-}
-
-async function chamarG2(token: string) {
-  return gate.chamar("GET", "/api/v1/mobile/inventory/availability", { token });
-}
-
-async function chamarG3(token: string, clientActionId: string) {
-  // RA1.4: o estoque em memória volta ao semeado antes de cada papel; o recibo é por usuário e o
-  // `client_action_id` é único por papel, então nada passa como `already_applied` emprestado.
-  resetEstoque();
-  return gate.chamar("POST", "/api/v1/mobile/sync/inventory-actions", {
-    token,
-    body: {
-      client_batch_id: `g3-lote-${clientActionId}`,
-      actions: [
-        {
-          client_action_id: clientActionId,
-          type: "inventory.reserve",
-          local_created_at: "2026-11-14T03:00:00.000Z",
-          payload: { ...PAYLOAD_G3 },
-        },
-      ],
-    },
-  });
 }
 
 async function chamarG4(token: string) {
@@ -270,9 +240,6 @@ async function medirTudo(): Promise<Medicao> {
     const bootstrap = normalizarBootstrap(papel, await gate.chamar("GET", "/api/v1/mobile/bootstrap", { token: ator.token }));
 
     const r1 = await chamarG1(ator.token);
-    const r2 = await chamarG2(ator.token);
-    const idG3 = `g3-${papel}-${randomUUID()}`;
-    const g3 = decidirPorAcao(`${papel}/G3`, await chamarG3(ator.token, idG3), idG3);
     const r4 = await chamarG4(ator.token);
     const idG1b = `g1b-${papel}-${randomUUID()}`;
     const g1b = decidirPorAcao(`${papel}/G1b`, await chamarG1b(ator.token, await novaRun(tokenAdmin, alvoDoDespacho), idG1b), idG1b);
@@ -282,12 +249,10 @@ async function medirTudo(): Promise<Medicao> {
       libera: {
         G1: decidirPorStatus(`${papel}/G1`, r1),
         G1b: g1b.libera,
-        G2: decidirPorStatus(`${papel}/G2`, r2),
-        G3: g3.libera,
         G4: decidirPorStatus(`${papel}/G4`, r4),
       },
     };
-    brutos[papel] = { G1: bruto(r1), G1b: g1b.bruto, G2: bruto(r2), G3: g3.bruto, G4: bruto(r4) };
+    brutos[papel] = { G1: bruto(r1), G1b: g1b.bruto, G4: bruto(r4) };
   }
 
   // R2.1 — os casos de módulo, sempre com o administrador da organização (tem toda chave; só o módulo decide).
@@ -295,8 +260,6 @@ async function medirTudo(): Promise<Medicao> {
   const casos: Array<{ nome: string; gate: Gate; modulos: readonly string[] }> = [
     { nome: "G1_sem_modulo", gate: "G1", modulos: semModulo("tenant_checklist") },
     { nome: "G1b_sem_modulo", gate: "G1b", modulos: semModulo("tenant_checklist") },
-    { nome: "G2_sem_modulo", gate: "G2", modulos: semModulo("inventory") },
-    { nome: "G3_sem_modulo", gate: "G3", modulos: semModulo("inventory") },
     { nome: "G4_so_approvals", gate: "G4", modulos: ["approvals"] },
     { nome: "G4_so_work_orders", gate: "G4", modulos: ["work_orders"] },
     { nome: "G4_nenhum", gate: "G4", modulos: semModulo("approvals").filter((m) => m !== "work_orders") },
@@ -311,19 +274,10 @@ async function medirTudo(): Promise<Medicao> {
       const r = await chamarG1(ator.token);
       libera = decidirPorStatus(caso.nome, r);
       registro = bruto(r);
-    } else if (caso.gate === "G2") {
-      const r = await chamarG2(ator.token);
-      libera = decidirPorStatus(caso.nome, r);
-      registro = bruto(r);
     } else if (caso.gate === "G4") {
       const r = await chamarG4(ator.token);
       libera = decidirPorStatus(caso.nome, r);
       registro = bruto(r);
-    } else if (caso.gate === "G3") {
-      const id = `${caso.nome}-${randomUUID()}`;
-      const d = decidirPorAcao(caso.nome, await chamarG3(ator.token, id), id);
-      libera = d.libera;
-      registro = d.bruto;
     } else {
       // Sem o módulo a run não nasce (a rota da run também é do módulo); a ação vai com alvo inexistente, e o gate
       // de módulo responde antes do corpo. Um 200 aqui cairia em "outro desfecho" e derrubaria a medição.
@@ -363,7 +317,7 @@ test("T2 — a matriz papel × gate medida no servidor é a da fixture versionad
   const versionada = readFileSync(FIXTURE, "utf8").replace(/\r\n/g, "\n");
   assert.deepEqual(JSON.parse(versionada), JSON.parse(atual), "a fixture diverge do servidor; regenere com UPDATE_MOBILE_GATE_FIXTURE=1");
   assert.equal(Object.keys(matriz.papeis).length, 9);
-  assert.equal(Object.keys(matriz.modulos).length, 7);
+  assert.equal(Object.keys(matriz.modulos).length, 5);
   for (const papel of PAPEIS) {
     assert.deepEqual(Object.keys(matriz.papeis[papel].libera).sort(), [...GATES].sort());
   }
@@ -381,27 +335,11 @@ test("T2 · R1.4 — G1b: o gestor passa no HTTP e é recusado na ação; o téc
   assert.equal(brutos.field_technician.G1b.balde, "accepted");
 });
 
-test("T2 · RA1.5 — G3: gestor, operador e técnico passam na porta e são recusados na ação; o estoque reserva", async () => {
-  const { matriz, brutos } = await medir();
-  // A matriz primeiro: é ela que vai para a fixture, e é nela que decidir por status (M17) aparece.
-  for (const papel of ["field_technician", "manager", "operator"] as const) {
-    assert.equal(matriz.papeis[papel].libera.G3, false, `${papel}: G3`);
-  }
-  assert.equal(matriz.papeis.inventory.libera.G3, true, "inventory: G3");
-  for (const papel of ["field_technician", "manager", "operator"] as const) {
-    assert.equal(brutos[papel].G3.status, 200, `${papel}: HTTP`);
-    assert.equal(brutos[papel].G3.balde, "rejected", `${papel}: balde`);
-    assert.equal(brutos[papel].G3.motivoDaAcao, "permission_required", `${papel}: motivo`);
-  }
-  assert.equal(brutos.inventory.G3.status, 200);
-  assert.equal(brutos.inventory.G3.balde, "accepted");
-});
-
 test("T2 · R2.1 — módulo: qualquer um de approvals/work_orders libera o G4; sem o módulo, 403 module_not_enabled", async () => {
   const { matriz, brutos } = await medir();
   assert.equal(matriz.modulos.G4_so_approvals.libera, true);
   assert.equal(matriz.modulos.G4_so_work_orders.libera, true);
-  for (const nome of ["G4_nenhum", "G1_sem_modulo", "G1b_sem_modulo", "G2_sem_modulo", "G3_sem_modulo"]) {
+  for (const nome of ["G4_nenhum", "G1_sem_modulo", "G1b_sem_modulo"]) {
     const caso = matriz.modulos[nome];
     assert.equal(caso.libera, false, `${nome}: libera`);
     const r = brutos[nome][caso.gate];

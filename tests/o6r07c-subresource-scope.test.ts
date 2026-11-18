@@ -424,7 +424,6 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     tagModule.resetTagRuntimeForTests();
     syncModule.resetMobileWorkOrderSyncRuntimeForTests();
     inventoryModule.resetInventoryRuntimeForTests();
-    inventorySyncModule.resetMobileInventoryRuntimeForTests();
   };
   resetAll();
 
