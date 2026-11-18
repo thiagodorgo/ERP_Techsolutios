@@ -11978,7 +11978,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **escopo:** pre-existente (rotas do 07a/Ω3, anteriores ao bloco).
 - **dono:** `B-SAN3-23` ou bloco novo de escopo de leitura.
 - **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
-- **Apenso 2026-11-17 (crítica da Emenda 1 do B-GUI-D1, achado A3, reproduzido):** a gravidade sobe para **ALTA** e o dono passa a B-WO-LEITURA-TECNICO (item 71 do portão, D-DONO-1711-ITEM-71). Medido: um técnico não atribuído enumera OS alheias por GET /operations/dispatches e lê, pelo detalhe, a senha do residencial (ccess_code) e a placa inteira, com 200 — contraria o RBAC_MATRIX.md:45.
+- **Apenso 2026-11-17 (crítica da Emenda 1 do B-GUI-D1, achado A3, reproduzido):** a gravidade sobe para **ALTA** e o dono passa a `B-WO-LEITURA-TECNICO` (item 71 do portão, `D-DONO-1711-ITEM-71`). Medido: um técnico não atribuído enumera OS alheias por `GET /operations/dispatches` e lê, pelo detalhe, a senha do residencial (`access_code`) e a placa inteira, com 200 — contraria o `RBAC_MATRIX.md:45`.
 
 ## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
 - status: FECHADA (2026-11-15, PR do `B-SAN3-16`, ramo `feat/mobile-fila-os-16`): os 2 tipos sem replay (`approval_request`, `unable_to_start`) passam a sair (A1, A2) e, sem forma de sair, viram erro visível com Descartar (R2, R7); o terceiro, `work_order_material.add`, fechou no #551. Antes: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA, sem o `work_order_material.add`, que saiu dela com o `B-MATERIAL-REENVIO` (PR #551).
@@ -13015,7 +13015,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## Errata dos apensos B-SAN3-10b — Emenda 3 (2026-11-04)
 
 - **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** permanece PARCIAL neste PR. Op-1, Op-1a, Op-5 e Op-6 passaram; Op-8
-  mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado. *(Fechada em 17/11 pelo #599 — porteiro-599, ITEM 44 FECHA: Op-8, Op-10, F3 e F4 passaram no 44-B3 em 17/11; nenhuma ADIADA vigente.)*
+  mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado. *(Fechada em 17/11 pelo #599 — porteiro-599, ITEM 44 FECHA: a F4 passou em 16/11 (F9 v13, `d00449af`), e Op-8, Op-10 e F3 passaram no 44-B3 em 17/11; nenhuma ADIADA vigente.)*
 - **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** a recuperação foi repetida com o comportamento real da
   migração: aborto P0001, frase nomeada de duplicidade e censo inalterado.
 
@@ -15577,7 +15577,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 ## P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 sai sem a permissão de rede — BAIXA
 
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o conserto é o #499, `8d7a99ff`, de 04/11; o
-  bloco não toca `mobile/**`) · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era o texto do Op-10 do `B-SAN3-10b`, que se encerra — decisão do orquestrador, porteiro-599 R2) ·
+  bloco não toca `mobile/**`) · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era o texto do Op-10 do `B-SAN3-10b`, que se encerra — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** ·
   **bloqueia:** não.
 - **origem:** acréscimo do coordenador (44-B1) na Emenda 1 do `B-SAN3-10b-F4-SEED-ISOLADO` (§B1.5), fora do repositório;
   registrada pela F0b.
@@ -15597,7 +15597,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 - **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a migração `20260868000000_add_auth_identities`
   é de 2026-08-19, `0a398246`; o texto "o script do papel **não** concede este EXECUTE" entrou no #405, `a9fbe283`,
   2026-10-09) · **classe:** lacuna de operação, **não** defeito de código: o produto falha fechado e avisa · **dono:**
-  `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era o roteiro de operação do item 44 pelo `B-SAN3-10b`, que se encerra — decisão do orquestrador, porteiro-599 R2) ·
+  `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era o roteiro de operação do item 44 pelo `B-SAN3-10b`, que se encerra — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** ·
   **bloqueia:** a F9 e o 44-B3 do `B-SAN3-10b-F4-SEED-ISOLADO` até o passo da Q-E11-1 rodar com o par medido.
 - **origem:** Emenda 1.1 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), fora do repositório; registrada pela F0b.
 - **N e forma (medido na `main`):** 1 função, `public.auth_login_candidates`, com `REVOKE ALL … FROM PUBLIC` (1 ocorrência
@@ -15727,21 +15727,21 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-ROTEIRO-OP10-ASSUMIR-DESCARTAR (2026-11-14) — o Op-10 do roteiro não cita "Assumir" nem avisa para não tocar "Descartar" na ação da versão anterior do app — MÉDIA (texto)
 
-- **status:** ABERTA · **gravidade:** MÉDIA (texto; o técnico pode perder o cancelamento) · **escopo:** `pre-existente` (o texto do roteiro) · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2) · **PR-alvo:** o PR #565 (`feat/demo-seed-isolado`) ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** MÉDIA (texto; o técnico pode perder o cancelamento) · **escopo:** `pre-existente` (o texto do roteiro) · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** · **PR-alvo:** o PR #565 (`feat/demo-seed-isolado`) ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma (diário do ensaio):** no aparelho do caso §B1.5 (o app de antes da separação por usuário), a primeira seção que aparece em Sincronização é "Ação da versão anterior do app — sem usuário", com **Descartar** e **Assumir**; o envio só acontece depois de **Assumir**. O Op-10 manda procurar "Envio não concluído", não cita "Assumir" e não diz para não tocar "Descartar" nessa seção.
 - **critério de encerramento:** o Op-10 descreve a seção, manda tocar "Assumir" e avisa para não tocar "Descartar" nela.
 
 ## P-ROTEIRO-OP10-OS-PAUSADA (2026-11-14) — o passo 4 do Op-10 não diz que a OS pausada precisa ser retomada antes de cancelar — BAIXA (texto)
 
-- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2) · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma:** com a OS pausada, o cancelamento do gestor pela rota do console deu `422 invalid_status_transition`, porque OS pausada não cancela; o cancelamento só valeu depois que o gestor retomou a OS.
 - **critério de encerramento:** o passo 4 diz para retomar a OS pausada antes de cancelar.
 
 ## P-ROTEIRO-OP10-SESSAO-APOS-ATUALIZAR (2026-11-14) — o roteiro não diz que a sessão do app antigo não sobrevive à atualização — BAIXA (texto)
 
-- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2) · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** `B-ROTEIRO-TEXTO-1` (bloco de docs, revisão simples; era a F10 do `B-SAN3-10b-F4-SEED-ISOLADO` — decisão do orquestrador, porteiro-599 R2). **Dono ratificado pelo orquestrador em 18/11 (as 5 são texto do mesmo roteiro).** · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
 - **N e forma:** depois de atualizar o app, a sessão do app antigo não vale mais, e o técnico precisa entrar de novo, com rede.
 - **critério de encerramento:** o roteiro diz isso no passo da atualização.
@@ -16819,7 +16819,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **fato:** no estorno pelo provedor, a nota é cancelada quando aquele pagamento é todo devolvido, mesmo que o demonstrativo ainda tenha outro valor pago (o caso realista: parte paga pelo provedor, o resto à mão, e o provedor devolve a parte dele). A pergunta ao dono: (a) continuar cancelando, como hoje, ou (b) seguir a regra do estorno manual (só alerta, sem cancelar, até todo o dinheiro ser devolvido). Recomendação: (b). Sem resposta: (a).
 - **pergunta ao dono (o orquestrador a leva quando o 08c3 começar):** "Quando o Asaas devolve o pagamento dele, mas ainda sobrou dinheiro pago à mão no mesmo mês, a nota deve (a) continuar sendo cancelada, como hoje, ou (b) seguir a regra do estorno manual: só alerta, sem cancelar, até todo o dinheiro ser devolvido?" Recomendação: (b). Sem resposta: fica (a). O caso NÃO aparece no backlog: o demonstrativo não pago com a nota cancelada pelo estorno do provedor fica com `null`; a decisão de reemitir ou não é do dono.
 - **acréscimo (integração da `main` no PR #587, `dev-08c2-m-cl`, 17/11, na união):** o ramo do `B-ASS-08c2` tinha aberto a mesma pendência (datada de 2026-11-17, com a pergunta ao dono acima, literal); as duas entradas viraram esta. **Divergência registrada, não resolvida (§A2):** a entrada do ramo dizia `escopo: pre-existente` (caminho do provedor, da 08b) e `bloqueia: ligar a nota`; esta, da `main`, diz `dentro-do-bloco` e `bloqueia: não`. Fica o texto da `main` até o orquestrador decidir.
-- **acréscimo (triagem da J-587, Emenda 7 do `B-ASS-08c2`, 17/11, do orquestrador, fora do repositório; gravado por `fix-587-r-cl`, 18/11):** o escopo fica `pre-existente` (a evidência da C3 sustenta: o caminho do provedor é da 08b). E o texto da pergunta foi corrigido: dizia "Sem resposta: fica (a), e o caso aparece no backlog", e o caso não aparece (achado C2-02 da J-587, sondas em `revisoes/j587/votos/c2-sondas/`, fora do repositório). O demonstrativo PAGO cuja nota da época foi cancelada é outro caso e passou a aparecer no backlog como `needs_review` (C2-01, Emenda 7 §1). O campo `bloqueia` segue o da `main` (`não`); a divergência do `bloqueia` acima continua aberta para o orquestrador.
+- **acréscimo (triagem da J-587, Emenda 7 do `B-ASS-08c2`, 17/11, do orquestrador, fora do repositório; gravado por `fix-587-r-cl`, 18/11):** o escopo fica `pre-existente` (a evidência da C3 sustenta: o caminho do provedor é da 08b). E o texto da pergunta foi corrigido: dizia "Sem resposta: fica (a), e o caso aparece no backlog", e o caso não aparece (achado C2-02 da J-587, sondas em `revisoes/j587/votos/c2-sondas/`, fora do repositório). O demonstrativo PAGO cuja nota da época foi cancelada é outro caso e passou a aparecer no backlog como `needs_review` (C2-01, Emenda 7 §1). O campo `bloqueia` segue o da `main` (`não`); a divergência do `bloqueia` acima **foi fechada em 18/11 pelo orquestrador: `bloqueia: não`** — a reemissão pelo `/invoice` existe, e o caso do não pago fica para a decisão do dono.
 - **critério de encerramento:** a resposta do dono decide (a) ou (b), e o `B-ASS-08c3` implementa o caminho decidido com teste, antes de ligar a nota.
 
 ## P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA
@@ -17117,3 +17117,80 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** nota do porteiro-582 (18/11 00:19).
 - **fato:** a união de tipos em `mobile-inventory-sync.ts:671,678` ainda cita `"inventory.manage"` sem uso.
 - **critério de encerramento:** a união de tipos deixa de citar a permissão sem uso (ou fica registrado o motivo), com teste.
+
+## P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AWS paga x86 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (custo, sem risco de produto) · **escopo:** `pre-existente` (a CI) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** o job `docker` do `ci.yml` publica só `amd64`; acrescentar `platforms: linux/amd64,linux/arm64` e trocar `cpuArchitecture` para `ARM64` economiza ~US$ 6/mês.
+- **critério de encerramento:** a imagem sai em `linux/amd64,linux/arm64`, a task definition usa `ARM64` e o custo medido cai.
+
+## P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (bloqueia o CD de produção) · **escopo:** `pre-existente` (a imagem de runtime e o CD) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** o CD de produção (o `prisma migrate deploy` e o `db:provision-rbac`).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a imagem de runtime não tem `prisma`, `tsx` nem `prisma.config.ts`; o CD precisa de uma imagem migradora (ou de um alvo `migrator` no `Dockerfile`) para o `aws ecs run-task` rodar `prisma migrate deploy` e `db:provision-rbac` dentro da VPC.
+- **critério de encerramento:** uma tarefa ECS roda a migração e o provisionamento de RBAC na VPC, com o log da trava de runtime verde.
+
+## P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS privado — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (recuperação) · **escopo:** `pre-existente` (o `backup-database.yml`) · **dono:** `B-INFRA-AWS-02` · **bloqueia:** não (o PITR e os snapshots cobrem enquanto a decisão não sai).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** o `backup-database.yml` roda no runner do GitHub e não alcança o RDS privado; decidir entre uma tarefa ECS agendada (`EventBridge Scheduler` + `run-task`) ou só PITR + snapshots.
+- **critério de encerramento:** a decisão está escrita e o caminho escolhido tem prova de restauração.
+
+## P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a configuração do Valkey) · **dono:** `B-INFRA-AWS-02` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** medir se `REDIS_URL=rediss://` funciona no app (cliente Redis e jobs) e ligar `--transit-encryption-enabled` no Valkey.
+- **critério de encerramento:** o app conecta por `rediss://` com a criptografia em trânsito ligada, medido no ambiente.
+
+## P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em vez de `VITE_API_BASE_URL` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o frontend) · **dono:** o bloco de frontend que tocar os 3 arquivos · **bloqueia:** não (o comportamento `/api/*` do CloudFront cobre até corrigir).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** 3 arquivos usam `/api/v1` relativo em vez de `VITE_API_BASE_URL`: `platform-health.service.ts:11`, `damages.adapter.ts:112` e `services/realtime/pollingClient.ts:23` (fluxo de eventos `/api/v1/events/stream`).
+- **critério de encerramento:** os 3 arquivos leem a base da variável, com teste.
+
+## P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou pelo CloudFront — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o fluxo de eventos e o balanceador) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não; mede-se em produção.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** o SSE fica aberto por muito tempo; o ALB corta conexão parada há 60 s, e o CloudFront, como está no roteiro, espera no máximo 60 s entre pedaços (`OriginReadTimeout: 60`; aceita até 120 s, acima disso só com aumento de cota). Hoje a API manda um sinal de vida a cada 25 s e o mapa reconecta; se a medição em produção mostrar quedas, subir o tempo do ALB e escrever e validar a edição do `OriginReadTimeout` do CloudFront.
+- **critério de encerramento:** a medição em produção está registrada e, se houver queda, os dois tempos foram ajustados e validados.
+
+## P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a configuração do portal) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não (o valor provisório cobre até o 1º tenant).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** `PORTAL_TENANT_ID` provisório até o 1º tenant; definir o processo (6.2) e o valor do `PORTAL_CORS_ORIGIN` do portal.
+- **critério de encerramento:** o processo está escrito e as duas variáveis têm o valor real do 1º tenant.
+
+## P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco do NLB+EIP — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (decisão de infraestrutura) · **dono:** o dono (`D-AWS-03`) · **bloqueia:** não (a porta dos rastreadores depende do `G-TRC-NLB`, não deste).
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a decisão `D-AWS-03` e, se vier, o bloco do NLB+EIP ou do Global Accelerator.
+- **critério de encerramento:** a decisão está registrada e, se for pelo IP fixo, o bloco foi entregue e medido.
+
+## P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (custo, sem risco de produto) · **escopo:** `pre-existente` (a imagem do antivírus) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a imagem `clamav/clamav:1.4.6` fixada no `B-AV-REAL` só tem `amd64`; medir a tag `-debian` (que tem `arm64`) e o digest dela para a fase 3b rodar em ARM (economia de ~US$ 8/mês).
+- **critério de encerramento:** a tag e o digest ARM estão medidos e a fase 3b roda em ARM, com o custo registrado.
+
+## P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no início do contêiner — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a imagem do antivírus) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a fase 3b.3 entrega o `clamd.conf` por variável e grava o arquivo no início do contêiner; o caminho limpo é uma imagem derivada (`FROM` o digest fixado + `COPY infra/clamav/clamd.conf`) publicada pelo CI.
+- **critério de encerramento:** a imagem derivada é publicada pelo CI e a fase 3b sobe com ela, sem gravar configuração em tempo de execução.
+
+## P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (custo, sem risco de produto) · **escopo:** `pre-existente` (a imagem do Traccar) · **dono:** `B-TRC-06` · **bloqueia:** não.
+- **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
+- **fato:** a imagem `traccar/traccar:6.16.0` tem `arm64`; o estudo fixou x86; trocar economiza ~US$ 7/mês, depois de medir em staging.
+- **critério de encerramento:** o Traccar roda em ARM em staging e produção, com o custo registrado.
