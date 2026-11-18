@@ -5671,6 +5671,25 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Cruzamento:** o dev é Claude; a pré-revisão é da outra casa quando houver crédito (§C7 11(1)), ou identidade Claude nova, com "sem cruzamento" declarado.
 - **Gravado por:** `dev-16-cl` (Claude Opus 5.5, dev do bloco), em 14/11/2026.
 
+## C-GUI-PLACA-NA-LISTA (registro de CONFLITO, §A2, 2026-11-17) — "nunca a placa inteira" (#534) × o prefixo da placa no desenho aprovado
+
+- **Cabeçalho unificado (decisão do orquestrador, 17/11, depois da união do merge da `main` no ramo do B-GUI-D1):** os dois registros abaixo tinham o mesmo ID; ficam sob um cabeçalho só, em ordem cronológica.
+
+### 2026-11-16 — o registro do plano do app guincho
+
+- **Os dois lados:** o `B-SAN3-26` deixou a placa fora da lista de propósito, e o desenho aprovado pede a placa (com o fim escondido) no detalhe.
+- **Estado:** o `B-GUI-D1` leva isso à junta completa.
+- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
+
+### 2026-11-17 — o registro do B-GUI-D1 (texto do §5 da emenda 1.1)
+
+- **Lados:** o corpo do PR #534 (B-SAN3-26, merge `68a208ad`): "a lista leva só o modo do check-in e os 2 caracteres finais da placa; nunca a placa inteira nem `serviceDetails`"; × o desenho aprovado do detalhe (`os-detalhe.png`), que mostra `ABC-1D**`, levado à lista pelo B-GUI-D1 como `attendedVehicle.plateMasked`.
+- **Fato medido:** com o B-GUI-D1, o item da lista traz o prefixo (`ABC1D**`) e o fim (`checkinPlateTail`), e a placa fica remontável no item. Nenhum campo a traz inteira. O fim nunca chega à tela (D3, D3c, D7).
+- **Leitura do planejador (`plano-guid1-e1-cl`), declarada (§A6):** a minimização do #534 não protegia um segredo (o risco 3 do plano dele diz que o controle prova atenção, não sigilo). Os mesmos atores já leem a placa inteira no detalhe. A conferência é do servidor.
+- **Crítica (`crit-guid1-e1-cl`):** aceita, com as condições "o fim nunca na tela" e este registro. Mandar só `ABC****` não compra segurança, só minimização.
+- **Quem decide:** a junta completa do B-GUI-D1. A saída alternativa custa uma linha no auxiliar (o prefixo só com as 3 letras).
+- **Registrado por:** `dev-guid1-cl`, no PR do B-GUI-D1 (texto do §5 da emenda 1.1, só acrescentado).
+
 ## D-DONO-1611-DEEPSEEK-FAZ-TUDO (2026-11-16 ~13:5x SP) — o DeepSeek faz tudo; só o visual fica com o Claude
 
 - **Fato (decisão do dono):** resposta à pergunta sobre a regra de 13/11 ("DeepSeek fora de dinheiro e permissão"). Fala literal: *"Deepseek faz tudo, só o visual que só confio em ti que ele não faz"* (transcrição no registro fora do repositório, `REGISTRO-PENDENTE.md`, 16/11).
@@ -5765,10 +5784,4 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 
 - **Os dois lados:** o G1 pede o botão "depois das telas aprovadas", e os desenhos aprovados do detalhe e do check-in já trazem o botão de rota.
 - **Estado:** resolvido na Emenda 1 do plano do app guincho — o lugar é desenhado na M-H, e o botão só aparece quando o `B-GUI-15` entrar.
-- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
-
-## C-GUI-PLACA-NA-LISTA (registro de CONFLITO, §A2, 2026-11-16) — a placa na lista de OS do app
-
-- **Os dois lados:** o `B-SAN3-26` deixou a placa fora da lista de propósito, e o desenho aprovado pede a placa (com o fim escondido) no detalhe.
-- **Estado:** o `B-GUI-D1` leva isso à junta completa.
 - **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
