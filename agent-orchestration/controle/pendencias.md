@@ -16768,11 +16768,12 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor cancela a nota quando o pagamento dele é todo devolvido, mesmo com outro valor ainda pago no demonstrativo — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `dentro-do-bloco` do `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
+- **status:** ABERTA · **gravidade:** MÉDIA (dinheiro; a decidir antes de ligar o canal) · **escopo:** `pre-existente` para o `B-ASS-08c2` (o caminho do provedor é da 08b e o plano o manteve de propósito: plano §4.7/§9 D-5, Emenda 1 §2.5; triagem da J-587, Emenda 7) · **dono:** `B-ASS-08c3`, ANTES de ligar a nota · **bloqueia:** não (o canal está desligado, e hoje nenhuma nota é emitida em produção).
 - **origem:** Emenda 1 do plano do `B-ASS-08c2` (§9, fora do repositório); a pergunta ao dono vai ao artefato quando o 08c3 começar.
 - **fato:** no estorno pelo provedor, a nota é cancelada quando aquele pagamento é todo devolvido, mesmo que o demonstrativo ainda tenha outro valor pago (o caso realista: parte paga pelo provedor, o resto à mão, e o provedor devolve a parte dele). A pergunta ao dono: (a) continuar cancelando, como hoje, ou (b) seguir a regra do estorno manual (só alerta, sem cancelar, até todo o dinheiro ser devolvido). Recomendação: (b). Sem resposta: (a).
-- **pergunta ao dono (o orquestrador a leva quando o 08c3 começar):** "Quando o Asaas devolve o pagamento dele, mas ainda sobrou dinheiro pago à mão no mesmo mês, a nota deve (a) continuar sendo cancelada, como hoje, ou (b) seguir a regra do estorno manual: só alerta, sem cancelar, até todo o dinheiro ser devolvido?" Recomendação: (b). Sem resposta: fica (a), e o caso aparece no backlog.
+- **pergunta ao dono (o orquestrador a leva quando o 08c3 começar):** "Quando o Asaas devolve o pagamento dele, mas ainda sobrou dinheiro pago à mão no mesmo mês, a nota deve (a) continuar sendo cancelada, como hoje, ou (b) seguir a regra do estorno manual: só alerta, sem cancelar, até todo o dinheiro ser devolvido?" Recomendação: (b). Sem resposta: fica (a). O caso NÃO aparece no backlog: o demonstrativo não pago com a nota cancelada pelo estorno do provedor fica com `null`; a decisão de reemitir ou não é do dono.
 - **acréscimo (integração da `main` no PR #587, `dev-08c2-m-cl`, 17/11, na união):** o ramo do `B-ASS-08c2` tinha aberto a mesma pendência (datada de 2026-11-17, com a pergunta ao dono acima, literal); as duas entradas viraram esta. **Divergência registrada, não resolvida (§A2):** a entrada do ramo dizia `escopo: pre-existente` (caminho do provedor, da 08b) e `bloqueia: ligar a nota`; esta, da `main`, diz `dentro-do-bloco` e `bloqueia: não`. Fica o texto da `main` até o orquestrador decidir.
+- **acréscimo (triagem da J-587, Emenda 7 do `B-ASS-08c2`, 17/11, do orquestrador, fora do repositório; gravado por `fix-587-r-cl`, 18/11):** o escopo fica `pre-existente` (a evidência da C3 sustenta: o caminho do provedor é da 08b). E o texto da pergunta foi corrigido: dizia "Sem resposta: fica (a), e o caso aparece no backlog", e o caso não aparece (achado C2-02 da J-587, sondas em `revisoes/j587/votos/c2-sondas/`, fora do repositório). O demonstrativo PAGO cuja nota da época foi cancelada é outro caso e passou a aparecer no backlog como `needs_review` (C2-01, Emenda 7 §1). O campo `bloqueia` segue o da `main` (`não`); a divergência do `bloqueia` acima continua aberta para o orquestrador.
 - **critério de encerramento:** a resposta do dono decide (a) ou (b), e o `B-ASS-08c3` implementa o caminho decidido com teste, antes de ligar a nota.
 
 ## P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA
@@ -16837,6 +16838,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA (disponibilidade, sem efeito em dinheiro: hoje são 10 respostas 409, repetíveis) · **escopo:** `pre-existente` para o `B-ASS-08c2` ("não é deste bloco", Emenda 4 §4) · **dono:** o próximo bloco que tocar o `close` (o `B-ASS-08c3`) · **gatilho:** esse bloco abrir · **bloqueia:** não.
 - **origem:** a 4ª leva do 08c2 (`dev-08c2-e4-cl`, head `d2cf41e9`), registrada pela Emenda 4 do 08c2 (`plano-B-ASS-08c2-emenda4.md` §4, do orquestrador, fora do repositório), 17/11.
 - **N e forma:** 10 fechamentos concorrentes de um demonstrativo novo → 10 respostas 409 por expiração em 5 s, repetível; o teste que acompanha é o PB-2 (a). **Causa provável, lida no código e ainda não medida pela contagem de conexões:** o `close` chama `inputs.resolve` com o cliente, e não com o `tx`, dentro da transação.
+- **N+1 (J-587, C1-NG2 e nota da C1, triagem da Emenda 7, 17/11):** mais 2 formas medidas, mesma família. (1) O PB-2 aceita só 200/409 e fica intermitente quando o pool do papel de runtime satura: a transação não abre (`Unable to start a transaction in the given time`), a rota responde `500 unknown_error` (`infra_down`, o caminho que o plano §4.14 e o PB-1 mandam manter), nada é gravado (0 demonstrativo, 0 fila, 0 auditoria) e o `close` seguinte fecha; sonda `SONDA500` com 10 seguradas → 10× 500. (2) O NM-X (`ass-08c-nota-manual-db`, `pendingInvoice`) sob a carga da lista inteira do `backend-postgres`: a baixa manual responde 409 (`statement_busy`, trava expirada) em vez de 201. Nenhuma asserção de dinheiro foi afrouxada para acomodar a saturação.
 - **critério de encerramento:** 10 fechamentos concorrentes → 1 fecha e 9 recebem 409, sem expirar, com teste.
 
 ## P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fila, e o despacho usa a 1ª como coleta — ALTA
@@ -16852,3 +16854,24 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** a pré-revisão `prerev-08c2-l6-cl` (achado L6-01, mutação própria ML6-b), 17/11; registrada pelo `dev-08c2-m-cl` na integração da `main` no PR #587.
 - **N e forma:** a composição em memória da varredura (`statement.repository.ts:408`, `<` vs `<=` no corte `paidAt` × `cutoff`) não é exercida por teste; a mutação ML6-b (`<` → `<=`) sobrevive 31/31 (`varredura-db` + `nota-manual-db`). Só os `-db` cobrem a varredura (a ML6-a, o mesmo limite no SQL, morre no VR4-linha). Risco: as duas composições (memória e `prisma`) derivarem.
 - **critério de encerramento:** um teste da composição em memória que fica vermelho com a ML6-b.
+
+## P-08C2-GSISO-ANTIGOS (2026-11-16) — o critério GS-ISO só vale para os arquivos de teste novos do 08c2; 6 antigos ficam sem `tenantIds` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (os 6 pontos estão em arquivos anteriores ao bloco) · **dono:** `B-ASS-08c3` · **bloqueia:** não.
+- **origem:** Emenda 3 do `B-ASS-08c2` (item 2, do orquestrador, 16/11, fora do repositório): "O comando literal dá 6, todos em arquivos anteriores ao bloco. O critério passa a valer só para os arquivos de teste NOVOS deste ramo: 4 de 4 com `tenantIds`. Os 6 antigos viram a pendência `P-08C2-GSISO-ANTIGOS` (BAIXA)." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 6 pontos do comando GS-ISO, em arquivos de teste anteriores ao bloco.
+- **critério de encerramento:** o comando GS-ISO dá 0 nos arquivos antigos (todos com `tenantIds`), ou cada um dos 6 fica declarado como aceite, com motivo.
+
+## P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — a reconsulta da nota não preenche o `provider_invoice_id` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-ASS-08c2`, fora do PERMITIDO dele (`#applyLookup`) · **dono:** `B-ASS-08c3` · **bloqueia:** não.
+- **origem:** Emenda 5 do `B-ASS-08c2` (item 1, do orquestrador, 17/11, fora do repositório): "o `provider_invoice_id` continua nulo depois da reconsulta. Para preenchê-lo seria preciso mexer em `#applyLookup`, que está fora do PERMITIDO. O plano passa a dizer "segue nulo" e a afirmar isso no NR1." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 1 caminho (`invoice.dispatch.ts`, `#applyLookup`, ramo `processing`). O NR1 (`tests/ass-08c-nota-retry-db.test.ts`) afirma o "segue nulo" depois da reconsulta (Emenda 7 §2); a mutação que preenche o campo nesse ramo o deixa vermelho.
+- **critério de encerramento:** a reconsulta grava o id da nota no provedor, e o NR1 passa a afirmar o id preenchido, com teste.
+
+## P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 do `B-SAN3-05` compara a porta com `includes` no log inteiro — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (teste do `B-SAN3-05`) · **dono:** o bloco de ferramentas de teste · **bloqueia:** não.
+- **origem:** Emenda 5 do `B-ASS-08c2` (do orquestrador, 17/11, fora do repositório): "O T15 compara a porta com `includes` no log inteiro e caiu 1 vez no run 44106675745, sem mudança de `src`." Registrada aqui pela triagem da J-587 (C3, Emenda 7 §3).
+- **N e forma:** 1 queda no CI (run 44106675745), sem mudança de `src`.
+- **critério de encerramento:** o T15 compara a porta por campo (não por substring no log inteiro), com teste.
