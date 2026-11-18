@@ -326,7 +326,7 @@ com o `B-TRC-04`, por cadastro de módulos na versão do adicional.
   do demonstrativo; os pagos antes do corte ficam no backlog para o contador decidir; falha da varredura adia as emissões não
   órfãs da rodada (`invoice_sweep_failed`). **O poll da nota** (a pendente e a que espera cancelamento) lê as notas vivas por
   organização. **O backlog** (`GET …/invoices/backlog`) mostra, por demonstrativo, a 1ª categoria que casar: nota viva sobre conta
-  não paga, pago antes do corte, esperando o provedor, em conferência (inclusive a nota rejeitada: a reemissão é pelo
+  não paga, pago antes do corte, esperando o provedor, em conferência (inclusive a nota rejeitada ou cancelada sobre o pago, que aparece como `needs_review`: a reemissão é pelo
   `POST …/statements/:statementId/invoice`), e pago sem pedido. **Na emissão:** o erro de validação do provedor deixa a nota
   `rejected` pelo código e a linha em conferência; a retentativa de uma nota já começada reconsulta antes de reenviar; a posse da
   linha é conferida logo antes do envio. A falha de banco de um movimento do demonstrativo sai como `409 statement_busy`, repetível.

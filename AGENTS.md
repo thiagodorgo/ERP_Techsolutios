@@ -135,7 +135,7 @@ e pagou o preço.
   reprovação por construção — a patologia que a auditoria de 2026-08-28 mediu em **11 de 16** bloqueantes.
 
 ## A8. Decisão ao dono vai em artefato (decisão do dono, 2026-11-16, `D-DONO-1611-DECISAO-EM-ARTEFATO`)
-Nas palavras do dono: *"A partir de agora para minhas decisoes vc tem que montar um artefato, com imagens, geficos e tudo mais para melhorar meu entendimento como analise e recomendacao de cada ponto. documente e espalhe a noficia."* **O que vale:** toda decisão que o orquestrador pede ao dono vai num artefato com gráficos e imagens, análise e recomendação por ponto, e o que vale se ele não responder; o chat fica curto.
+Nas palavras do dono: *"A partir de agora para minhas decisoes vc tem que montar um artefato, com imagens, geficos e tudo mais para melhorar meu entendimento como analise e recomendacao de cada ponto. documente e espalhe a noficia."* **O que vale:** toda decisão que o orquestrador pede ao dono vai num artefato com gráficos e imagens, análise e recomendação por ponto, e o que vale se ele não responder; o chat fica curto. **O canal da resposta (decisão do dono, 2026-11-17, `D-DONO-1711-CANAL-ARTEFATO`):** o dono responde pelo seletor do próprio artefato — a recomendação vem primeiro, com nota opcional, e há um campo de comando livre —, e o orquestrador lê as respostas e os comandos do artefato a cada turno, confirma cada resposta no chat e marca o comando executado como lido.
 
 ---
 
@@ -777,7 +777,7 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      limite de sessão), o primeiro comando é o roteiro de retomada (`retomada.sh`), que lê o registro e mede, de uma
      vez, memória, disco, Docker, saída e worktree de cada agente não concluído, processos externos e vigias. Cada
      agente vivo é retomado pelo id e **mede o parcial antes de seguir** (P3/P7). Vigia, auditor e guarda de uma
-     sessão anterior são **órfãos** (ninguém os escuta): mata-se e relança-se na sessão nova.
+     sessão anterior são **órfãos** (ninguém os escuta): mata-se e relança-se na sessão nova. **Antes de qualquer outra coisa, a retomada liga o painel do ERP e os medidores de limite das IAs:** o painel fica sempre aberto enquanto houver trabalho e a aquisição de limites é a cada **60 s** (decisão do dono, 2026-11-18, `D-DONO-1811-PAINEL-OBRIGATORIO-60S`).
      **(c) Orçamento da máquina: até o limite, com a saúde vigiada (emenda por decisão do dono, 2026-11-10 —
      `D-AGENTES-ATE-O-LIMITE-1011`).** Nas palavras do dono: *"agentes ate o limite da maquina, pode arrocrar, se o pc
      aguentar 50 processos simutaneos, pode rodar. monitore a saude do sistema."* Não há mais teto fixo de agentes:
