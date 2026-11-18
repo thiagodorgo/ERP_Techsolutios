@@ -77,21 +77,22 @@ export async function gerarCenso({ soDinamico = false, ambiente } = {}) {
     const resposta = await amb.bate(rota.method, rota.path, ATOR_ORGANIZACAO);
     const m = MENSAGEM.exec(resposta.message);
     const r2 = resposta.status === 403 && resposta.reason === "platform_permission_required" && m ? m[1] : null;
+    let falhou = false;
     if (!r2) {
       falhas.push(`R2 ${chave}: sem 403 platform_permission_required com permissão legível (${resposta.status}/${resposta.reason})`);
-      continue;
+      falhou = true;
     }
     if (!soDinamico) {
       const r1 = portoesDaRota(rota);
       if (r1.length !== 1) {
         falhas.push(`R1 ${chave}: ${r1.length} portões (uma rota, UM portão)`);
-        continue;
-      }
-      if (r1[0] !== r2) {
+        falhou = true;
+      } else if (r2 && r1[0] !== r2) {
         falhas.push(`R1≠R2 ${chave}: R1=${r1[0]} R2=${r2}`);
-        continue;
+        falhou = true;
       }
     }
+    if (falhou) continue;
     if (Object.hasOwn(mapa, chave)) {
       falhas.push(`duplicada ${chave}`);
       continue;
