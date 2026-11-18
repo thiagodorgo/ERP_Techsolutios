@@ -340,7 +340,12 @@ test("S-W1 — a cadeia da crítica está fechada: a lista de despachos de B nã
     const H = ctx.h(ctx.u.B, "field_technician");
     const lista = await ctx.http("GET", "/api/v1/operations/dispatches", H);
     assert.equal(lista.s, 200, lista.text);
-    const ids = ((lista.j?.data?.items ?? lista.j?.data ?? []) as Array<{ workOrderId: string }>).map((d) => d.workOrderId);
+    // A resposta da lista é `{ items, total, limit, offset }` (sem `data`). Controle contra o verde vazio: o despacho da OS
+    // de B tem de estar lá.
+    const itens = (lista.j?.items ?? lista.j?.data?.items) as Array<{ workOrderId: string }> | undefined;
+    assert.ok(Array.isArray(itens), `S-W1: a lista não tem itens (${lista.text.slice(0, 200)})`);
+    const ids = itens.map((d) => d.workOrderId);
+    assert.ok(ids.includes(ctx.osB), "S-W1: o despacho da OS de B sumiu da lista dele (o teste não provaria nada)");
     assert.deepEqual(ids.filter((id) => id !== ctx.osB), [], "a lista de despachos de B trouxe OS que não é dele");
     for (const [rota, alheia] of [
       ["/api/v1/work-orders/", ctx.s.osX],
