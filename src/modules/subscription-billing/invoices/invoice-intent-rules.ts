@@ -111,7 +111,8 @@ export type InvoiceBacklogInput = {
 };
 
 /** A categoria do backlog (§4.9 do plano), a primeira que casar; `null` = não aparece (intenção em voo, nota autorizada sobre
- * pago, demonstrativo sem valor). Calculada pelo ESTADO, nunca por um registro do movimento. */
+ * pago, demonstrativo sem valor). A nota da época rejeitada OU cancelada (a reconsulta disse cancelada) sobre pago aparece como
+ * `needs_review` (Emenda 7 do 08c2, C2-01): a reemissão é pelo `/invoice`. Calculada pelo ESTADO, nunca por um registro do movimento. */
 export function backlogCategory(input: InvoiceBacklogInput): InvoiceBacklogCategory | null {
   const { statement } = input;
   if (input.live && statement.status !== "paid") return "live_on_unpaid"; // [BACKLOG-ALERT]
@@ -120,7 +121,7 @@ export function backlogCategory(input: InvoiceBacklogInput): InvoiceBacklogCateg
   if (!epochLine && (statement.paidAt === null || statement.paidAt.getTime() < input.cutoff.getTime())) return "before_cutoff";
   if (epochLine?.status === "PENDING" && epochLine.skipReason === "provider_disabled") return "awaiting_provider";
   if (epochLine && (epochLine.status === "NEEDS_REVIEW" || epochLine.status === "FAILED")) return "needs_review";
-  if (epochLine && input.lastInvoice?.seq === epochLine.seq && input.lastInvoice.status === "rejected") return "needs_review";
+  if (epochLine && input.lastInvoice?.seq === epochLine.seq && (input.lastInvoice.status === "rejected" || input.lastInvoice.status === "cancelled")) return "needs_review"; // [BACKLOG-CANCELLED]
   if (!epochLine) return "no_intent";
   return null;
 }

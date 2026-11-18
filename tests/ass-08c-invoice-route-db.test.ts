@@ -396,6 +396,28 @@ if (!connectionString) {
     assert.equal((await statementRow(liveOnUnpaid.statementId)).paid, "40.00");
   });
 
+  test("BL-CANC (Emenda 7, C2-01): pago, nota 1 autorizada e depois CANCELADA (o que a reconsulta faz quando o provedor diz cancelada) → o backlog lista o demonstrativo como needs_review; o /invoice reemite com seq 2", async () => {
+    const f = await seedStatement(await newTenant("blcanc"), "2026-10");
+    await paidWithAuthorizedInvoice(f);
+    const [{ id: invoiceId }] = await q(`SELECT id FROM subscription_statement_invoices WHERE statement_id = $1::uuid AND seq = 1`, f.statementId);
+    // O mesmo repositório real que o `reconcile.service.ts` chama quando a reconsulta diz `cancelled`.
+    await new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(H.role.client).markCancelled(f.tenantId, invoiceId, new Date());
+    assert.deepEqual(await statementRow(f.statementId), { status: "paid", paid: "100.00" }, "pré-condição: o dinheiro segue recebido");
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "cancelled"]], "pré-condição: a nota 1 cancelada");
+    assert.deepEqual((await issueLines(f.statementId)).map((row) => row.status), ["SENT"], "pré-condição: a linha da nota 1 SENT (nada em voo)");
+    const response = await backlog(f.tenantId);
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    assert.deepEqual(
+      response.body.data,
+      [{ statementId: f.statementId, period: "2026-10", status: "paid", category: "needs_review", invoiceStatus: "cancelled", lastLineStatus: "SENT", lastLineError: null, totalAmount: "100.00" }],
+      "o pago sem nota viva aparece no backlog como needs_review",
+    );
+    // A saída é a do contrato: o operador reemite pelo /invoice.
+    const reissued = await requestInvoice(f);
+    assert.equal(reissued.status, 200, JSON.stringify(reissued.body));
+    assert.equal(reissued.body.data.seq, 2);
+  });
+
   test("BL-X: o backlog com o tenantId da A não mostra demonstrativo da B (e o da B mostra o dela)", async () => {
     const a = await newTenant("blx-a");
     const fa = await seedStatement(a, "2026-10", new Date());

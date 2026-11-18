@@ -152,3 +152,13 @@ test("IR-4: backlogCategory, um caso por categoria, e a precedência", () => {
   assert.equal(backlogCategory({ statement: { ...paid, status: "closed" }, live: false, cutoff: CUTOFF }), null, "não pago sem nota viva");
   assert.equal(backlogCategory({ statement: { ...paid, totalCents: 0 }, live: false, cutoff: CUTOFF }), null, "valor zero não tem nota");
 });
+
+test("IR-4b (Emenda 7, C2-01): pago com a nota da época CANCELADA (a reconsulta disse cancelada) → needs_review; rejeitada segue needs_review; autorizada sobre pago segue fora", () => {
+  const paid = { status: "paid" as const, totalCents: 10_000, paidAt: PAID_AT };
+  const epochSent = (seq = 1) => ({ status: "SENT" as OutboxStatus, skipReason: null, occurredAt: AFTER, seq });
+  assert.equal(backlogCategory({ statement: paid, live: false, lastLine: epochSent(1), lastInvoice: { seq: 1, status: "cancelled" }, cutoff: CUTOFF }), "needs_review", "a nota da época cancelada sobre pago aparece");
+  assert.equal(backlogCategory({ statement: paid, live: false, lastLine: epochSent(1), lastInvoice: { seq: 1, status: "rejected" }, cutoff: CUTOFF }), "needs_review", "controle: a rejeitada continua");
+  assert.equal(backlogCategory({ statement: paid, live: true, lastLine: epochSent(1), lastInvoice: { seq: 1, status: "authorized" }, cutoff: CUTOFF }), null, "controle: a autorizada sobre pago não aparece");
+  assert.equal(backlogCategory({ statement: paid, live: false, lastLine: epochSent(2), lastInvoice: { seq: 1, status: "cancelled" }, cutoff: CUTOFF }), null, "a nota cancelada de OUTRA época não é desta");
+  assert.equal(backlogCategory({ statement: { ...paid, status: "closed" }, live: false, lastLine: epochSent(1), lastInvoice: { seq: 1, status: "cancelled" }, cutoff: CUTOFF }), null, "não pago com a nota cancelada segue fora (P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA)");
+});

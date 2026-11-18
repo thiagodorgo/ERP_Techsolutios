@@ -165,6 +165,8 @@ if (!connectionString) {
       assert.deepEqual(requestsFor(focus, seeded.statementId), { posts: 1, gets: 1 }, `rodada ${round}: 1 GET de reconsulta e nenhum POST novo`);
       assert.equal((await line(seeded.lineId)).status, "SENT", `rodada ${round}: a linha SENT`);
       assert.deepEqual((await notes(seeded.statementId)).map((n) => [n.seq, n.status]), [[1, "pending"]], `rodada ${round}: a nota segue pendente (até o webhook ou o poll)`);
+      // Emenda 5 §1 / Emenda 7 §2 (C1-NG1): DEPOIS da reconsulta o id da nota no provedor segue nulo (P-08C2-LOOKUP-SEM-PROVIDER-ID).
+      assert.deepEqual((await notes(seeded.statementId)).map((n) => n.provider_invoice_id), [null], `rodada ${round}: provider_invoice_id segue nulo depois da reconsulta`);
     }
   });
 
