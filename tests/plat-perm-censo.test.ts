@@ -127,30 +127,42 @@ test("(v′) camadas `use` SEM caminho (middleware/handler) sob o prefixo: allow
   assert.deepEqual(sob, ALLOWLIST_USE_SEM_CAMINHO);
 });
 
-test("(vi) e (vi-b) canário por verbo × roteador sob o prefixo: caminho não declarado não é respondido por handler nenhum", async () => {
+function prefixosDoCanario(): Set<string> {
   assert.ok(Array.isArray(percurso.roteadores), "o walk expõe roteadores");
-  const prefixos = new Set<string>(["/api/v1/platform"]);
-  for (const r of percurso.roteadores.filter((r: any) => PLATFORM_PREFIX.test(r.path))) prefixos.add(r.path.toLowerCase());
   assert.ok(
     percurso.roteadores.some((r: any) => r.path.toLowerCase() === "/api/v1/platform"),
     "o roteador da plataforma aparece em `roteadores` (o conjunto é gerado do walk)",
   );
-  const falhasVi: string[] = [];
-  const falhasViB: string[] = [];
-  for (const p of prefixos) {
+  const prefixos = new Set<string>(["/api/v1/platform"]);
+  for (const r of percurso.roteadores.filter((r: any) => PLATFORM_PREFIX.test(r.path))) prefixos.add(r.path.toLowerCase());
+  return prefixos;
+}
+
+test("(vi) canário por verbo × roteador sob o prefixo, sem ator: 404 route_not_found ou 403 platform_actor_required", async () => {
+  const falhas: string[] = [];
+  for (const p of prefixosDoCanario()) {
     for (const verbo of VERBOS) {
       const caminho = `${p}/__plat_perm_nao_existe`;
       const semAtor = await amb.bate(verbo, caminho, {});
-      const okVi =
+      const ok =
         (semAtor.status === 404 && semAtor.reason === "route_not_found") ||
         (semAtor.status === 403 && semAtor.reason === "platform_actor_required");
-      if (!okVi) falhasVi.push(`${verbo} ${caminho} sem ator → ${semAtor.status}/${semAtor.reason ?? "(sem reason)"}`);
+      if (!ok) falhas.push(`${verbo} ${caminho} sem ator → ${semAtor.status}/${semAtor.reason ?? "(sem reason)"}`);
+    }
+  }
+  assert.deepEqual(falhas, []);
+});
+
+test("(vi-b) canário por verbo × roteador sob o prefixo, com super_admin legado: só 404 route_not_found", async () => {
+  const falhas: string[] = [];
+  for (const p of prefixosDoCanario()) {
+    for (const verbo of VERBOS) {
+      const caminho = `${p}/__plat_perm_nao_existe`;
       const superAdmin = await amb.bate(verbo, caminho, SUPER_ADMIN_LEGADO);
       if (!(superAdmin.status === 404 && superAdmin.reason === "route_not_found")) {
-        falhasViB.push(`${verbo} ${caminho} super_admin → ${superAdmin.status}/${superAdmin.reason ?? "(sem reason)"}`);
+        falhas.push(`${verbo} ${caminho} super_admin → ${superAdmin.status}/${superAdmin.reason ?? "(sem reason)"}`);
       }
     }
   }
-  assert.deepEqual(falhasVi, [], "(vi)");
-  assert.deepEqual(falhasViB, [], "(vi-b)");
+  assert.deepEqual(falhas, []);
 });
