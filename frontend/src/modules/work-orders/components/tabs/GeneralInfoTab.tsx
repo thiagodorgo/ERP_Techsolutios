@@ -8,8 +8,9 @@ import { approveOperationalApproval, listPendingApprovals, rejectOperationalAppr
 import { entityTypeLabel } from "../../approval.types";
 import type { OperationalApproval } from "../../approval.types";
 import { getWorkOrderChecklistLinkKey, getWorkOrderChecklistRoleLabel, getWorkOrderChecklistSourceLabel } from "../../work-orders.adapter";
+import { WorkOrderChecklistsPanel, useWorkOrderChecklistsAppearance } from "../WorkOrderChecklistsPanel";
 import { WorkOrderRegistryLinksCard } from "../WorkOrderRegistryLinksCard";
-import type { WorkOrderDetail, WorkOrderEvent, WorkOrderPriority, WorkOrderStatus } from "../../work-orders.types";
+import type { WorkOrderDetail, WorkOrderEvent, WorkOrderPriority, WorkOrderStatus, WorkOrdersApiContext } from "../../work-orders.types";
 
 // Ω3F-1 — aba "Informações gerais" do Hub da OS. Migra INTEGRAL o corpo da página de detalhe viva
 // (status/cliente-endereço/cadastros vinculados/histórico/aprovação operacional) — não os componentes
@@ -116,6 +117,9 @@ export function GeneralInfoTab({
   timelineUnavailable = false,
   context,
   canDecide,
+  permissions,
+  lastUpdatedAt = null,
+  onChecklistsChanged,
 }: {
   workOrder: WorkOrderDetail;
   timeline: WorkOrderEvent[];
@@ -123,15 +127,22 @@ export function GeneralInfoTab({
   timelineUnavailable?: boolean;
   context: Parameters<typeof listPendingApprovals>[0];
   canDecide: boolean;
+  /**
+   * B-GUI-02 — as permissões do ator. Com elas, na aparência A ("Na ficha da OS") o painel "Vistorias desta OS" entra no
+   * lugar da célula "Checklists" (maquete aprovada, `screen-refs/os-vistorias-3opcoes.reference.html`). Sem elas (o corpo
+   * renderizado sozinho), a célula de leitura continua como era.
+   */
+  permissions?: readonly string[];
+  lastUpdatedAt?: string | null;
+  onChecklistsChanged?: () => void;
 }) {
   const navigate = useNavigate();
+  const appearance = useWorkOrderChecklistsAppearance();
+  const showChecklistsPanel = permissions !== undefined && appearance === "A";
   const sm = STATUS_META[workOrder.status];
   const initials = (workOrder.customerName ?? "OS").slice(0, 2).toUpperCase();
 
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
-      {/* left */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+  const infoCard = (
         <div style={{ ...card, overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
             <div style={{ borderRight: "1px solid #F1F5F9", borderBottom: "1px solid #F1F5F9" }}>
@@ -143,10 +154,14 @@ export function GeneralInfoTab({
             <div style={{ borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Prioridade" value={PRIORITY_LABEL[workOrder.priority]} valueColor={PRIORITY_COLOR[workOrder.priority]} /></div>
             <div style={{ borderRight: "1px solid #F1F5F9", borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Técnico" value={workOrder.assignedOperatorId ? "Atribuída" : "A atribuir"} /></div>
             <div style={{ borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Agenda" value={fmtDate(workOrder.scheduledFor)} /></div>
-            <div style={{ borderRight: "1px solid #F1F5F9" }}><InfoCell label="Criada em" value={fmtDate(workOrder.createdAt)} /></div>
-            <div><ChecklistSetCell workOrder={workOrder} /></div>
+            <div style={showChecklistsPanel ? { gridColumn: "1 / -1" } : { borderRight: "1px solid #F1F5F9" }}><InfoCell label="Criada em" value={fmtDate(workOrder.createdAt)} /></div>
+            {showChecklistsPanel ? null : <div><ChecklistSetCell workOrder={workOrder} /></div>}
           </div>
         </div>
+  );
+
+  const restOfLeft = (
+      <>
 
         <div style={{ ...card, padding: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -190,10 +205,43 @@ export function GeneralInfoTab({
             ))
           )}
         </div>
+      </>
+  );
+
+  const approvalPanel = <ApprovalPanel workOrderId={workOrder.id} workOrderCode={workOrder.code} context={context} canDecide={canDecide} />;
+
+  if (showChecklistsPanel) {
+    // B-GUI-02, aparência A — a ordem da referência: a ficha da OS, o painel das vistorias em largura cheia, e o resto.
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{infoCard}</div>
+        {approvalPanel}
+        <div style={{ gridColumn: "1 / -1", minWidth: 0 }}>
+          <WorkOrderChecklistsPanel
+            workOrder={workOrder}
+            timeline={timeline}
+            context={context as WorkOrdersApiContext}
+            permissions={permissions ?? []}
+            appearance="A"
+            lastUpdatedAt={lastUpdatedAt}
+            onChanged={onChecklistsChanged}
+          />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{restOfLeft}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
+      {/* left */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {infoCard}
+        {restOfLeft}
       </div>
 
       {/* right — aprovação operacional (real) */}
-      <ApprovalPanel workOrderId={workOrder.id} workOrderCode={workOrder.code} context={context} canDecide={canDecide} />
+      {approvalPanel}
     </div>
   );
 }

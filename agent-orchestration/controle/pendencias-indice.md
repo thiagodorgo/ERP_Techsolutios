@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1254** |
-| IDs distintos | 1243 |
-| **ABERTAS** | **967** |
+| Cabecalhos `## P-` | **1260** |
+| IDs distintos | 1249 |
+| **ABERTAS** | **973** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **906** |
+| — das quais **ativas nesta rodada** | **912** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 283 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1254 cabecalhos para 1243 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1260 cabecalhos para 1249 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 373
+## ABERTAS · balde A — material — 375
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -447,8 +447,10 @@
 | `P-APP-TROCA-ORG-NAO-TROCA` | 16840 | ALTA | sim | P-APP-TROCA-ORG-NAO-TROCA (2026-11-16) — a troca de organização no app não troca — ALTA |
 | `P-08C2-CLOSE-POOL-PRESO` | 16854 | MÉDIA | sim | P-08C2-CLOSE-POOL-PRESO (2026-11-17) — 10 fechamentos concorrentes de um demonstrativo n |
 | `P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR` | 16861 | ALTA | sim | P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fil |
+| `P-GUI02-DISPATCHER-LER-MODELOS` | 16868 | ALTA | sim | P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da O |
+| `P-GUI02-VISTORIA-ENVIADA-POR-LINHA` | 16875 | MÉDIA | sim | P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistor |
 
-## ABERTAS · balde B — processo/registro — 533
+## ABERTAS · balde B — processo/registro — 537
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -985,6 +987,10 @@
 | `P-OS-REBOQUE-SEM-MODELO-E-COR` | 16775 | BAIXA | sim | P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo |
 | `P-572-GUARDA-PULA-NUL` | 16804 | BAIXA | sim | P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto c |
 | `P-GUI00-ERRO-ESCOLHE-A-DIRETO` | 16847 | BAIXA | sim | P-GUI00-ERRO-ESCOLHE-A-DIRETO (2026-11-17) — no caminho de erro, três telas do app escol |
+| `P-GUI02-QUEM-ESCOLHEU` | 16882 | BAIXA | sim | P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA |
+| `P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO` | 16889 | BAIXA | sim | P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o  |
+| `P-GUI02-ESPELHO-OS-EM-VOO` | 16896 | BAIXA | sim | P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o e |
+| `P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO` | 16903 | BAIXA | sim | P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" nu |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

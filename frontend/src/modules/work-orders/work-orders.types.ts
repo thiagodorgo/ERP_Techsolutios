@@ -82,6 +82,13 @@ export type WorkOrderChecklistLink = {
   readonly orderIndex: number;
 };
 
+// B-GUI-02 — o corpo do `PATCH /work-orders/:id/checklists` (Emenda 1, §2; Emenda 1.1, §2.1): UMA linha por chamada,
+// sempre em camelCase e sempre com a etapa. A lista vazia é omitida. Montado só por `buildChecklistAdjustmentBody`.
+export type WorkOrderChecklistAdjustmentBody = {
+  readonly add?: readonly { readonly checklistId: string; readonly role: "collection" | "delivery" }[];
+  readonly remove?: readonly { readonly checklistId: string; readonly role: WorkOrderChecklistRole; readonly reason: string }[];
+};
+
 // C2 (Detalhe de OS enriquecido): vínculos resolvidos que o backend anexa ao
 // GET /work-orders/:id. Cada campo é null quando a FK está ausente/irresolúvel.
 export type WorkOrderLinkedCustomer = {
