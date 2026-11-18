@@ -16843,3 +16843,45 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** os achados das maquetes da 1ª onda (16/11 20:35, item (2)); a Emenda 1 do `B-GUI-02` (§8) a criou; a revisão r2 do plano `cx1-crit-gui02-e11` (Codex, VOLTA, A1 ALTA: aviso na tela não é controle) levou o conserto ao servidor, por decisão do orquestrador, declarada (17/11 11:3x), e a Emenda 2 (§5) a absorve (`plano-B-GUI-02-emenda1.md`, `plano-B-GUI-02-emenda2.md`, fora do repositório).
 - **N e forma:** 1 caminho do servidor: a vistoria incluída entra ao fim da fila (`order_index`), e o despacho toma a 1ª linha como coleta.
 - **critério de encerramento:** o servidor reconhece a coleta e a entrega pela etapa (`collection` sempre primária), com o T1 e o T7 do `B-GUI-02` verdes nas duas formas, memória e `-db`.
+
+## P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da OS mas não lê os modelos — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (o catálogo de permissões; o `B-GUI-02` não muda o servidor de permissões, Emenda 1 §1) · **dono:** bloco próprio, `B-GUI-02p`, de servidor, com **junta completa** (permissão) e pergunta ao dono antes · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§1 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (conserto da J-596, achado C3-01).
+- **fato:** o `field_dispatcher` tem `field_dispatch:create` (grava o `PATCH /work-orders/:id/checklists`) e não tem `tenant_checklists:read`. Dar a ele essa leitura (só dos publicados, como a maquete recomenda) muda o catálogo, a `RBAC_MATRIX.md` e a `role_permissions` (migração de dados, `RBAC_MATRIX.md:154`). Enquanto não fechar, o despachante só vê o painel de vistorias em leitura, com a frase dele (o W2 do `B-GUI-02`).
+- **critério de encerramento:** o despachante lê os modelos publicados e escolhe a vistoria da OS, com a matriz, o catálogo e a `role_permissions` atualizados e a junta completa verde.
+
+## P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistoria já virou execução — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o DTO do detalhe da OS) · **dono:** `B-GUI-02s` (o DTO ganha um campo por linha; a allowlist §2.8 é revista) · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§4 e §8); registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** a tela só sabe, no nível da OS, se ela foi despachada (`checklistSnapshot` ou o evento `field_dispatch_created`). O selo "enviada" por linha da maquete aprovada fica de fora (`D-GUI02-SEM-SELO-ENVIADA`).
+- **critério de encerramento:** o detalhe traz, por linha, se a vistoria já foi enviada (sem chave de armazenamento nem dado interno, §2.8), e a tela mostra o selo.
+
+## P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** `B-GUI-02s` · **bloqueia:** não.
+- **origem:** Emenda 1 do `B-GUI-02` (§8); registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** a linha do tempo só tem o `actorUserId`, que é opaco; a tela não mostra quem escolheu a vistoria.
+- **critério de encerramento:** o detalhe (ou a linha do tempo) traz o nome de exibição de quem incluiu, e a tela o mostra.
+
+## P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o ajuste que falha no meio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o backend de teste e de desenvolvimento) · **dono:** o `B-GUI-02s` (servidor), ou quem mexer no repositório em memória · **bloqueia:** não.
+- **origem:** Emenda 1.1 do `B-GUI-02` (R1, S1), `plano-B-GUI-02-emenda1.1.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** o `InMemoryWorkOrderRepository.applyChecklists` (`work-order.repository.ts:216-288`, medido na Emenda 1.1) não desfaz o que gravou quando falha no meio. No Prisma, a chamada é transação (R2, leitura de código). Afeta o backend em memória, que é o que o W4 usa.
+- **critério de encerramento:** o ajuste em memória é tudo ou nada, com teste de falha no meio.
+
+## P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o espelho antigo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (as OS em voo pela regra antiga) · **dono:** quem tocar o espelho; ou fica como está se a junta medir que nenhuma OS em produção está nesse estado (hoje não há produção) · **bloqueia:** não.
+- **origem:** Emenda 2 do `B-GUI-02` (§1.3 e §5), `plano-B-GUI-02-emenda2.md`, fora do repositório; registrada no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **fato:** uma OS já congelada com a coleta atrás (Entrega@0 + Coleta@1, congeladas pela regra antiga) mantém o `work_orders.checklist_id` antigo até a próxima escrita do conjunto ou o próximo despacho. A reatribuição já provisiona a coleta certa. Não há backfill, que o dono proibiu.
+- **critério de encerramento:** o espelho se acerta para essas OS, ou a junta mede que não há nenhuma nesse estado.
+
+## P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" numa OS enviada sem coleta, e o servidor recusa — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** a tela de vistorias (fora do conserto da J-596, que só muda o servidor) · **dono:** `B-GUI-02b`, bloco de backlog da tela de vistorias · **bloqueia:** não.
+- **origem:** Emenda 2.2 do `B-GUI-02` (§2), conserto do achado C1-01 da J-596, `plano-B-GUI-02-emenda2.2.md`, fora do repositório.
+- **fato:** com a Emenda 2.2, o servidor recusa a coleta em toda OS já enviada (409 `collection_after_dispatch`, `T10`). A tela continua com `collectionLocked = dispatched && collectionLine !== null` (`WorkOrderChecklistsPanel.tsx`): numa OS enviada sem linha de coleta, "Incluir coleta" aparece, e o operador recebe a frase do 409. O servidor é a autoridade (regra de ouro B.2.4).
+- **critério de encerramento:** a tela esconde "Incluir coleta" na OS enviada sem coleta e mostra a frase da OS enviada, com teste de tela.
