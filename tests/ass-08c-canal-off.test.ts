@@ -577,3 +577,91 @@ test("CA-OFF (08c1c): canal desligado → fechamento (job e manual), baixa que q
     resetVaultRuntimeForTests();
   }
 });
+
+// B-ASS-08c2 (plano §4.17 e §5.4, CA-OFF; só acréscimo): com o canal DESLIGADO e o app real no modo memória, a baixa manual que
+// quita, o estorno manual, o `/invoice` e o backlog da nota, e uma rodada do despacho e dos dois polls, abrem 0 conexões de saída
+// (a única permitida é a do próprio teste ao app). A intenção de nota da baixa e a do `/invoice` nascem `provider_disabled`; a
+// varredura e a perna de nota dos polls NÃO rodam (não há provedor de nota ligado). Asaas e Focus NFe LIGADOS no cofre.
+test("CA-OFF (08c2): canal desligado → baixa manual que quita, estorno manual, /invoice, backlog e uma rodada do despacho e dos polls abrem 0 conexões; a intenção nasce provider_disabled; a varredura não roda", async () => {
+  const previous = { ...mutableEnv };
+  let server: import("node:http").Server | undefined;
+  try {
+    mutableEnv.CORE_SAAS_PERSISTENCE = "memory";
+    mutableEnv.BILLING_PROVIDERS_ENABLED = false;
+    mutableEnv.NODE_ENV = "test";
+    await arrangeEnabledProviders();
+    const [{ createApp }, { MemoryCoreSaasAdapter }, { CoreSaasRegistry }, { InMemoryCoreSaasStore }, statementFactory] = await Promise.all([
+      import("../src/app.js"),
+      import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
+      import("../src/modules/core-saas/services/core-saas.service.js"),
+      import("../src/modules/core-saas/store/core-saas.store.js"),
+      import("../src/modules/subscription-billing/statements/statement.factory.js"),
+    ]);
+    statementFactory.resetStatementRuntimeForTests();
+    const tenantId = randomUUID();
+    const dueDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000));
+    const repo = statementFactory.getMemoryStatementRepositoryForTests();
+    // Um demonstrativo `closed` (a baixa manual o quita) e um `paid` sem intenção (o `/invoice` a pede).
+    const closed = await repo.transaction(tenantId, async (tx) => {
+      const { statement: fresh } = await tx.insertIfAbsentAndLock({ tenantId, period: "2026-10" });
+      return tx.saveStatement({ ...fresh, status: "closed", totalCents: 12_345, dueDate, closedAt: new Date() });
+    });
+    const paidWithout = await repo.transaction(tenantId, async (tx) => {
+      const { statement: fresh } = await tx.insertIfAbsentAndLock({ tenantId, period: "2026-09" });
+      const now = new Date();
+      return tx.saveStatement({ ...fresh, status: "paid", totalCents: 5_000, paidCents: 5_000, dueDate, closedAt: now, paidAt: now });
+    });
+
+    const app = createApp(new MemoryCoreSaasAdapter(new CoreSaasRegistry(new InMemoryCoreSaasStore())));
+    server = app.listen(0, "127.0.0.1");
+    await new Promise<void>((resolve) => server!.once("listening", () => resolve()));
+    const port = (server.address() as import("node:net").AddressInfo).port;
+    const P = `http://127.0.0.1:${port}/api/v1/platform/billing`;
+    const call = async (method: string, route: string, body?: unknown) => {
+      const response = await fetch(P + route, {
+        method,
+        headers: { "content-type": "application/json", "x-user-id": "usr_platform", "x-role": "super_admin" },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+      return { status: response.status, body: (await response.json()) as Record<string, any> };
+    };
+
+    const results: Array<[string, number, unknown]> = [];
+    let dispatched: Awaited<ReturnType<typeof runBillingDispatch>> | undefined;
+    const attempts = await probeOutbound(port, async () => {
+      const paid = await call("POST", `/statements/${closed.id}/payments`, { tenantId, amount: "123.45", method: "pix" });
+      results.push(["payments", paid.status, paid.body.data?.statement?.status ?? paid.body.error?.reason]);
+      const paymentId = paid.body.data?.payment?.id as string;
+      const reversed = await call("POST", `/statements/${closed.id}/payments/${paymentId}/reverse`, { tenantId, reason: "lançado em dobro no caso CA-OFF" });
+      results.push(["reverse", reversed.status, reversed.body.data?.invoice ?? reversed.body.error?.reason]);
+      const invoice = await call("POST", `/statements/${paidWithout.id}/invoice`, { tenantId });
+      results.push(["invoice", invoice.status, invoice.body.data?.providerDisabled ?? invoice.body.error?.reason]);
+      const backlog = await call("GET", `/invoices/backlog?tenantId=${tenantId}`);
+      results.push(["backlog", backlog.status, (backlog.body.data as Array<{ statementId: string; category: string }> | undefined)?.map((row) => `${row.statementId === paidWithout.id ? "paidWithout" : "outro"}:${row.category}`)]);
+      const deps = await createChannelRuntime();
+      assert.deepEqual(Object.keys(deps.invoicePorts ?? {}), [], "nenhuma porta de nota com a flag desligada");
+      dispatched = await runBillingDispatch(deps);
+      await runBillingPollPending(deps);
+      await runBillingPollSettled(deps);
+    });
+    assert.deepEqual(attempts, [], "0 conexões de saída");
+    assert.deepEqual(results, [
+      ["payments", 201, "paid"],
+      ["reverse", 200, "none"],
+      ["invoice", 200, true],
+      ["backlog", 200, ["paidWithout:awaiting_provider"]],
+    ]);
+    const deps = await createChannelRuntime();
+    const issues = async (statementId: string) =>
+      (await deps.outbox.listByStatement(tenantId, statementId)).filter((row) => row.kind === "invoice_issue").map((row) => [row.status, row.skipReason]);
+    assert.deepEqual(await issues(closed.id), [["PENDING", "provider_disabled"]], "a intenção da baixa nasceu provider_disabled");
+    assert.deepEqual(await issues(paidWithout.id), [["PENDING", "provider_disabled"]], "a intenção do /invoice nasceu provider_disabled");
+    assert.equal(dispatched?.invoiceSweep, undefined, "a varredura não rodou (nenhum provedor de nota ligado)");
+    assert.equal(dispatched?.outcomes.sent, 0);
+  } finally {
+    if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
+    Object.assign(mutableEnv, previous);
+    resetVaultRuntimeForTests();
+    resetChannelRuntimeForTests();
+  }
+});

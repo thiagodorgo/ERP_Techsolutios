@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { InMemoryStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.repository.js";
 import { InMemoryStatementInvoiceRepository } from "../src/modules/subscription-billing/invoices/invoices.repository.js";
 import { InMemoryOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
@@ -32,7 +33,7 @@ function makeWithIntents() {
   const service = new StatementService(repo, inputsStub, { record: async () => {} });
   const outbox = new InMemoryOutboxRepository({ readStatement: async (tenantId, statementId) => repo.findStatement(tenantId, statementId) });
   const invoices = new InMemoryStatementInvoiceRepository(repo);
-  repo.attachChannelStores({ outbox, invoices });
+  repo.attachChannelStores({ outbox, invoices, charges: new InMemoryStatementChargeRepository(), refs: new InMemoryStatementRefRepository() });
   const settlement = new StatementSettlementService(repo, service, { issueTarget: { provider: "focusnfe", enabled: true }, enabledInvoiceProviders: ["focusnfe"] });
   /** Nota AUTORIZADA de verdade na loja da nota (o espelho `invoiceStatus` deixou de decidir). */
   const authorizeInvoice = async (statementId: string) => {

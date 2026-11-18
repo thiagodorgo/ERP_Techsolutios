@@ -5306,6 +5306,12 @@ lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`.
 - Onde a Emenda 1 e a crítica r2 escrevem H5, H6 e H7 **do 08c1b**, leia-se H6, H7 e H8. O dev grava a pendência já com a numeração nova.
 - **Estado medido na `origin/main` (`729718fe`, na madrugada de 14/11):** a `P-ASS08C-POSSE-NAO-COBRE-O-POST` ainda não existe na `main` (`git grep -c` = 0). Ela nasce com o conserto do #555, que está aberto (head `78a7c8ab`).
 
+## REGISTRO-SAN3-CONFLITOS — B-ASS-08c2 (2026-11-16) — o conflito da nota retroativa, já resolvido (§A2)
+
+> **`C-08C-Q2-X-530` (aberto em 2026-11-11, RESOLVIDO em 2026-11-11 10:31 SP)** — conflito de recomendação sobre a nota retroativa: o #530 (§12, pergunta 2) recomendava "desde o merge da 08b"; o plano 08c v1 (§9 Q2(a)) recomendava "a partir do dia de ligar". Registrado pela regra §A2. Resolvido pelo dono em `D-DONO-TODAS-RECOMENDACOES-1111` ("vale a recomendação do #530"). No `B-ASS-08c2`: corte = `paid_at >= 2026-11-11T09:43:45.000Z` (o instante do merge de `a0979f51`, #530), constante literal no código; os pagos antes ficam no backlog, sem nota automática; competência = o mês do serviço (`competenceDateOf`).
+
+- **Gravado por:** `dev-08c2-cl` (Claude Opus 5.5, dev do bloco), no 1º commit do ramo, antes de qualquer commit de `src/` (§4.0 do plano de abertura do `B-ASS-08c2`; F0 da Emenda 1).
+
 ## D-DONO-1311-RECOMENDACOES · parte do app (2.1, 2.2 e 2.3) — as 3 respostas que ligam o B-MOBILE-GATE-CHAVE (item 66)
 
 - **Fala literal do dono (13/11, por volta de 23:12 SP):** *"claude, agora eh so vc. faca um plano para vc atacar tudo sozinho, deixe as ias dormindo, vc vai pegar tudo, nas juntas cadeiras em paralelo, quero dar o maior gas agora, minhas decisoes vao todas nas recomendacoes."*; e, autorizando, por volta de 23:20 SP: *"pode comecar"*.

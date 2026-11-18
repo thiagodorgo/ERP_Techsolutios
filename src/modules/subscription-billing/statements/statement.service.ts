@@ -14,9 +14,11 @@ import { enqueueChargeCancelInTx, enqueueChargeCreateInTx } from "../charges/cha
 import { CHARGE_RULES } from "../charges/charge-rules.js";
 import type { OutboxSkipReason } from "../outbox/outbox.types.js";
 import type { PaymentMethod } from "../providers/payment/payment-provider.port.js";
+import { INVOICE_BACKFILL_CUTOFF } from "../invoices/invoice-intent-rules.js";
 import { eagerPlan, refechamentoPlan, reopenLiveCheck } from "./statement-charge-lines.js";
 import type { StatementResolveOptions, StatementVersionPin } from "./statement.inputs.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
+import { describeLiveInvoiceInTx, writeInvoiceCancelIntentInTx, writeInvoiceIssueIntentInTx, type InvoiceIntents } from "./statement-settlement.service.js";
 import {
   StatementError,
   type CreditReason,
@@ -67,8 +69,17 @@ export type ClosingChargeResolver = {
   resolve(tenantId: string): Promise<{ readonly provider: string; readonly method: PaymentMethod } | null>;
 };
 
-/** B-ASS-08c1c (plano §4.0 item 5): o 4º parâmetro do serviço, um OBJETO de opções. O 08c2 acrescenta `invoiceIntents` aqui. */
-export type StatementChannel = { readonly closingCharge?: ClosingChargeResolver };
+/** B-ASS-08c2 (plano de abertura §4.1 item 2): para onde vai a intenção de nota AGORA (o provedor da emissão e os ligados).
+ * Resolvido ANTES da transação, como o `closingCharge` (v2 §10 D3: a leitura do cofre e da configuração é de plataforma e não
+ * entra no `tx` de RLS); nunca faz rede. */
+export type InvoiceIntentsResolver = { resolve(): Promise<InvoiceIntents> };
+
+/** B-ASS-08c1c (plano §4.0 item 5): o 4º parâmetro do serviço, um OBJETO de opções. O 08c2 acrescenta `invoiceIntents`: sem ele
+ * (os testes que constroem o serviço sem canal), nenhuma intenção de nota é gravada pelo serviço. */
+/** B-ASS-08c2 (Emenda 1 §2.2): o que o estorno manual fez com a nota viva (o `data.invoice` da rota). */
+export type ManualReversalInvoice = "cancel_requested" | "cancel_in_progress" | "kept_partial_reversal" | "none";
+
+export type StatementChannel = { readonly closingCharge?: ClosingChargeResolver; readonly invoiceIntents?: InvoiceIntentsResolver };
 
 export type CloseOutcome =
   | { readonly kind: "closed"; readonly statement: SubscriptionStatement; readonly alreadyClosed: false }
@@ -247,10 +258,12 @@ export class StatementService {
   }
 
   /** B-ASS-08c1c (plano §4.3 e §10 item 2): o que a baixa manual faz depois do `saveStatement`, na MESMA transação. A ordem é
-   * trava → pagamento → `saveStatement` → marcação imediata (aqui) → [08c2: a intenção de nota] → trilha. Baixa PARCIAL não
-   * mexe na cobrança aberta (Q4 (a)). */
-  async #afterManualSettle(tx: StatementTx, _before: SubscriptionStatement, statement: SubscriptionStatement, input: { readonly now: Date; readonly actorId: string | null }): Promise<void> {
+   * trava → pagamento → `saveStatement` → marcação imediata (aqui) → a intenção de nota e o índice (B-ASS-08c2, P12) → trilha.
+   * Baixa PARCIAL não mexe na cobrança aberta (Q4 (a)) nem grava nota. A linha da nota nasce com `occurred_at = input.now`, o
+   * MESMO instante do `paid_at` que o `saveStatement` gravou (A9b do v2): é ele que marca a época da intenção. */
+  async #afterManualSettle(tx: StatementTx, before: SubscriptionStatement, statement: SubscriptionStatement, input: { readonly now: Date; readonly actorId: string | null }, intents: InvoiceIntents | undefined): Promise<void> {
     if (statement.status === "paid") await this.#eagerOnMove(tx, statement, "statement_paid", input.now); // [EAGER-01]
+    if (intents && before.status !== "paid" && statement.status === "paid") await writeInvoiceIssueIntentInTx(tx, intents, { statement, now: input.now, mode: "auto" }); // [NOTA-01]
   }
 
   /** Reabrir (regra 5): só sem pagamento, sem cobrança viva e sem nota viva; vira `reopened`. */
@@ -314,6 +327,8 @@ export class StatementService {
     if (!Number.isSafeInteger(input.amountCents) || input.amountCents <= 0) {
       throw new StatementError(400, "invalid_amount", "amount must be a positive amount of cents.");
     }
+    // B-ASS-08c2 (P12): para onde vai a intenção de nota, ANTES da transação (nunca rede nem cofre dentro dela).
+    const intents = await this.channel.invoiceIntents?.resolve();
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
       const current = await this.lockOrNotFound(tx, input.statementId);
       if (current.status !== "closed") {
@@ -341,7 +356,7 @@ export class StatementService {
         status: paidCents >= current.totalCents ? "paid" : "closed",
         paidAt: paidCents >= current.totalCents ? input.now : current.paidAt,
       });
-      await this.#afterManualSettle(tx, current, statement, input);
+      await this.#afterManualSettle(tx, current, statement, input, intents);
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
@@ -354,9 +369,21 @@ export class StatementService {
     return result;
   }
 
-  /** Estorno manual (regra 11): só `source = manual`; motivo obrigatório; `paid` volta a `closed`. */
-  async reverseManualPayment(input: { readonly tenantId: string; readonly paymentId: string; readonly reason: string; readonly actorId: string; readonly now: Date }) {
+  /** Estorno manual (regra 11): só `source = manual`; motivo obrigatório; `paid` volta a `closed`. B-ASS-08c2 (Emenda 1 §2.2,
+   * o §4.7 novo): a nota viva é decidida só pelo que SOBROU pago depois do estorno, sem guard de status do demonstrativo. Devolveu
+   * tudo → a intenção de cancelar a nota no MESMO `tx` (com a confirmação do cuidado 1; sem ela, 422 e o estorno desfaz);
+   * devolveu só uma parte → nenhuma intenção, a nota fica (o backlog a mostra como `live_on_unpaid`). */
+  async reverseManualPayment(input: {
+    readonly tenantId: string;
+    readonly paymentId: string;
+    readonly reason: string;
+    readonly actorId: string;
+    readonly now: Date;
+    readonly confirmInvoiceCancel?: boolean;
+  }): Promise<{ statement: SubscriptionStatement; payment: StatementPayment; invoice: ManualReversalInvoice }> {
     const reason = requireReason(input.reason, "reason");
+    // B-ASS-08c2 (§4.7): para onde vai a intenção de nota, ANTES da transação (nunca rede nem cofre dentro dela).
+    const intents = await this.channel.invoiceIntents?.resolve();
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
       const payment = await tx.lockPayment(input.paymentId);
       if (!payment) throw new StatementError(404, "payment_not_found", "Payment not found.");
@@ -383,14 +410,26 @@ export class StatementService {
         status: statement.status === "paid" && paidCents < statement.totalCents ? "closed" : statement.status,
         paidAt: paidCents >= statement.totalCents ? statement.paidAt : null,
       });
+      // Sem `intents` (o serviço sem canal), nada é lido nem gravado.
+      let invoice: ManualReversalInvoice = "none";
+      if (intents) {
+        const devolveuTudo = savedStatement.paidCents === 0; // [NOTA-PARCIAL]
+        if (devolveuTudo) {
+          const outcome = await writeInvoiceCancelIntentInTx(tx, intents, { statementId: savedStatement.id, tenantId: input.tenantId, now: input.now, confirm: input.confirmInvoiceCancel === true }); // [NOTA-ESTORNO]
+          if (outcome.kind === "confirmation_required") throw new StatementError(422, "invoice_cancel_confirmation_required", "The live invoice will be cancelled; confirm to proceed."); // [NOTA-CONFIRMA]
+          invoice = outcome.kind === "enqueued" ? "cancel_requested" : outcome.kind === "in_progress" ? "cancel_in_progress" : "none";
+        } else {
+          invoice = await describeLiveInvoiceInTx(tx, savedStatement.id);
+        }
+      }
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
         action: "subscription_statement.payment_reversed",
         entityId: savedStatement.id,
-        metadata: { paymentId: savedPayment.id, status: savedStatement.status },
+        metadata: { paymentId: savedPayment.id, status: savedStatement.status, invoice },
       });
-      return { statement: savedStatement, payment: savedPayment };
+      return { statement: savedStatement, payment: savedPayment, invoice };
     });
     return result;
   }
@@ -614,6 +653,60 @@ export class StatementService {
       return writtenOff;
     });
     return saved;
+  }
+
+  /**
+   * B-ASS-08c2 (plano §4.5) — a varredura de recuperação da nota numa organização: os demonstrativos pagos desde o corte do dono
+   * que ficaram sem intenção de nota da época (a baixa manual de antes do 08c2, por exemplo). A consulta ENCONTRA; cada um é
+   * travado PRIMEIRO, numa transação própria, e a regra decide sob a trava (a releitura vê a baixa que commitou no meio). O
+   * INSERT na fila vem depois da trava; a linha nasce com `occurred_at = now`, e a época fica com a sua intenção.
+   */
+  async recoverInvoiceIntents(tenantId: string, now: Date): Promise<{ readonly inserted: number }> {
+    const intents = await this.channel.invoiceIntents?.resolve();
+    if (!intents) return { inserted: 0 };
+    const cutoff = INVOICE_BACKFILL_CUTOFF; // [SWEEP-CUT]
+    let inserted = 0;
+    for (const statementId of await this.repository.listInvoiceIntentCandidates(tenantId, cutoff)) {
+      const outcome = await this.repository.transaction(tenantId, async (tx) => {
+        const statement = await this.lockOrNotFound(tx, statementId); // [SWEEP-LOCK]
+        return writeInvoiceIssueIntentInTx(tx, intents, { statement, now, mode: "auto", cutoff });
+      });
+      if (outcome.kind === "created") inserted += 1;
+    }
+    return { inserted };
+  }
+
+  /**
+   * B-ASS-08c2 (P16, plano §4.9) — o operador pede a nota de um demonstrativo pago: a reemissão depois da rejeição, ou a que a
+   * automática não criou. A intenção é resolvida ANTES da transação; o demonstrativo é travado PRIMEIRO (o id de outra organização
+   * dá 404 pela RLS, e nada é gravado), e a MESMA função da baixa decide sob a trava, no modo `operator` (a linha em conferência
+   * barra; a época, não). O índice nasce por ela, depois da trava e com a organização da linha travada.
+   */
+  async requestInvoiceIssue(input: { readonly tenantId: string; readonly statementId: string; readonly actorId: string; readonly now: Date }): Promise<{ readonly statementId: string; readonly seq: number; readonly providerDisabled: boolean }> {
+    const intents = await this.channel.invoiceIntents?.resolve();
+    if (!intents) throw new Error("invoice_intent_tx_unsupported");
+    const outcome = await this.repository.transaction(input.tenantId, async (tx) => {
+      const statement = await this.lockOrNotFound(tx, input.statementId); // [INVOICE-LOCK]
+      const decided = await writeInvoiceIssueIntentInTx(tx, intents, { statement, now: input.now, mode: "operator" });
+      // A trilha do pedido do operador (§4.9), no MESMO `tx` e só no desfecho `created`; metadata pela allowlist (§3.6).
+      if (decided.kind === "created") await this.trail(tx, { tenantId: input.tenantId, actorId: input.actorId, action: "subscription_statement.invoice_requested", entityId: statement.id, metadata: { seq: decided.seq, period: statement.period, status: statement.status } }); // [INVOICE-TRAIL]
+      return decided;
+    });
+    if (outcome.kind === "created") return { statementId: input.statementId, seq: outcome.seq, providerDisabled: outcome.providerDisabled };
+    switch (outcome.reason) {
+      case "not_paid":
+      case "zero_total":
+        throw new StatementError(422, "statement_not_paid", "Only a paid statement can have its invoice requested.");
+      case "live_invoice":
+        throw new StatementError(422, "invoice_already_live", "The statement already has a live invoice.");
+      case "in_flight":
+      case "in_review":
+        throw new StatementError(422, "invoice_issue_pending", "An invoice request is in flight or awaiting review.");
+      case "epoch_has_intent":
+      case "before_cutoff":
+        // O modo `operator` não pergunta a época nem o corte: chegar aqui é defeito, e falha fechado.
+        throw new Error(`invoice_request_unexpected_${outcome.reason}`);
+    }
   }
 
   private async lockOrNotFound(tx: StatementTx, statementId: string): Promise<SubscriptionStatement> {

@@ -71,6 +71,8 @@ function harness(ports: Record<string, PaymentProviderPort>) {
     resolveCustomer: async () => ({ ok: true, customerId: "cus_1" }),
     settlement: new StatementSettlementService(statements, service),
     statements,
+    listTenantIds: async () => statements.tenantIds(),
+    invoiceRecovery: service,
     now: () => NOW,
   };
   return { deps, statements };

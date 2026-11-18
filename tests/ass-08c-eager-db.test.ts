@@ -211,7 +211,7 @@ async function seedCharge(f: Fixture, externalId: string, status: string, create
 }
 
 async function lines(statementId: string): Promise<Line[]> {
-  return (await q(`SELECT id, kind, status, skip_reason, last_error, payload, external_id, idempotency_key, occurred_at, attempts FROM billing_outbox WHERE statement_id = $1::uuid ORDER BY created_at, idempotency_key`, statementId)) as Line[];
+  return (await q(`SELECT id, kind, status, skip_reason, last_error, payload, external_id, idempotency_key, occurred_at, attempts FROM billing_outbox WHERE statement_id = $1::uuid AND kind LIKE 'charge_%' ORDER BY created_at, idempotency_key`, statementId)) as Line[];
 }
 
 async function chargeRows(statementId: string): Promise<Array<{ external_charge_id: string; status: string }>> {

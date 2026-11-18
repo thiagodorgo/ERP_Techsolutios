@@ -124,8 +124,9 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
       clock: () => clock.now,
     });
   const invoices = new InMemoryStatementInvoiceRepository(statements);
-  statements.attachChannelStores({ outbox, invoices });
   const refs = new InMemoryStatementRefRepository();
+  const charges = new InMemoryStatementChargeRepository();
+  statements.attachChannelStores({ outbox, invoices, charges, refs });
   const events = new InMemoryWebhookEventRepository();
   const resolveIssueContext: InvoiceIssueContextResolver = async ({ statement }) =>
     options.contextReason
@@ -142,7 +143,7 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
     outbox,
     events,
     refs,
-    charges: new InMemoryStatementChargeRepository(),
+    charges,
     ports: options.payment ? { asaas: options.payment } : {},
     resolveCustomer: async () => ({ ok: true, customerId: "cus_1" }),
     invoicePorts: adapter ? { focusnfe: adapter } : {},
@@ -150,6 +151,8 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
     resolveIssueContext,
     settlement,
     statements,
+    listTenantIds: async () => [TENANT],
+    invoiceRecovery: service,
     now: () => clock.now,
   };
   return { deps, statements, settlement, outbox, invoices, refs, events, clock };
