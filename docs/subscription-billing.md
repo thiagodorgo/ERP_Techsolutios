@@ -107,7 +107,7 @@ O `snapshot` guarda as entradas do cálculo. Recalcular a partir dele reproduz o
 
 **Créditos.** Pagamento do provedor acima do saldo abate só o saldo; o resto vira crédito (`overpayment`, `duplicate_payment`, `paid_after_cancel`, `paid_after_manual_settlement`). O crédito se aplica a um demonstrativo `open` ou `reopened` e abate o total do fechamento seguinte. Baixar um crédito exige motivo e entra na trilha.
 
-**Quem faz o quê.**
+**Quem faz o quê.** O portão de cada rota de plataforma (`requirePlatformPermission`) confere a permissão da tabela no catálogo do papel: passa só quem tem papel de plataforma **e** a permissão pedida; senão, 403 `platform_permission_required` (`B-PLAT-PERMISSAO`, item 72).
 
 | Rota | Permissão |
 |---|---|

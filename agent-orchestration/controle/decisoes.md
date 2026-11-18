@@ -5748,3 +5748,23 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Os dois lados:** o `B-SAN3-26` deixou a placa fora da lista de propósito, e o desenho aprovado pede a placa (com o fim escondido) no detalhe.
 - **Estado:** o `B-GUI-D1` leva isso à junta completa.
 - **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
+
+## D-DONO-1711-ITEM-72 (2026-11-17, pelo canal do artefato) — o item 72 entra no portão: a checagem da plataforma confere a permissão
+
+- **Fato (decisão do dono, "sim"):** o defeito achado no L4-01 da pré-revisão `prerev-08c2-l4-cl` do `B-ASS-08c2` vira o item 72 do portão da versão vendável (`P-PLAT-PORTAO-SEM-PERMISSAO`): o portão das rotas de `/api/v1/platform` não conferia a permissão pedida, e qualquer papel de plataforma passava em qualquer uma das 70 rotas.
+- **Nota §A2 (registrada, não consolidada em silêncio), do plano `plano-B-PLAT-PERMISSAO.md` §0:** a premissa levada ao dono, "a migração do B-ASS-04 concede `platform:billing:settle` SÓ ao `super_admin`, e o `platform_admin` executa as rotas `settle` sem a permissão", estava pela metade. O defeito do portão é real; mas o "só super_admin" das migrações é **falta de linha** do `platform_admin` em `roles` (pseudo-papel, fora do seed e do provisionamento), e não regra: o catálogo (`catalog.ts`, `super_admin: PERMISSION_CATALOG` e `platform_admin: PERMISSION_CATALOG`) e o `RBAC_MATRIX.md` (Billing `full` para o `platform_admin`) dão o catálogo inteiro aos dois papéis de plataforma. Por isso a decisão voltou ao dono, revista (abaixo).
+
+## D-DONO-1711-ITEM-72-REVISTO (2026-11-17, canal do artefato, pergunta `d72-rev`) — o item 72 fica no portão
+
+- **Fato (decisão do dono, escolha "manter"):** com a premissa corrigida (não há escalada hoje; o defeito é a checagem que falha aberta e as 5 rotas que pedem chave fora do catálogo), o item 72 **fica no portão**.
+- **Efeito:** a linha 72 do `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1, com o bloco `B-PLAT-PERMISSAO` (bloco próprio, fora do §5; junta completa).
+
+## D-DONO-1711-72-P1 (2026-11-17, canal do artefato, pergunta `d72-p1`) — migração em `prisma/` das 6 chaves da plataforma, só para o `super_admin`
+
+- **Fato (decisão do dono, escolha "sim"):** fica **AUTORIZADA** a migração em `prisma/` que cria as 6 chaves de permissão da plataforma — `platform:tenants:create`, `platform:tenants:update`, `platform:tenants:suspend`, `platform:modules:manage`, `platform:users:create_admin` e `platform:health:read` — concedidas no banco **só ao `super_admin`**.
+- **Efeito:** `prisma/migrations/20260905000000_plat_permissoes_de_organizacao/migration.sql` (aditiva, idempotente, `BEGIN;`/`COMMIT;`, drill por prefixo em `tests/plat-perm-migration-drill-db.test.ts`). Nada além dela em `prisma/`. O `platform_admin` recebe as 6 pelo catálogo em código, como já recebe o resto.
+
+## D-DONO-1711-72-P2 (2026-11-17, canal do artefato, pergunta `d72-p2`) — o `settle` não é segregado
+
+- **Fato (decisão do dono, escolha "nao"):** **não** segregar "liquidar cobrança" (`platform:billing:settle`) do `platform_admin`. O catálogo (`ROLE_PERMISSIONS`) e a matriz seguem como estão; `frontend/**` não muda.
+- **Nota do bloco (B-PLAT-PERMISSAO), declarada:** o plano (`plano-plat-perm-cl`, Opus, topo declarado com o Fable suspenso), a crítica r1 (`crit-plat-perm-cl`, Opus), a Emenda 1 (`plano-plat-perm-e1-fable`, Fable), a crítica r2 (`crit-plat-perm-e1-cl`, Opus), a Emenda 2 (`plano-plat-perm-e2-fable`, Fable) e o dev (`dev-plat-perm-cl`, Opus) saíram **sem cruzamento de casa** (§C7 item 11(2)): o Codex estava sem cota semanal nas 3 contas e o filtro da OpenAI barrou esta classe de tema; o dono mandou cobrir (*"pode cobrir o codex"*, 17/11). Os artefatos ficam fora do repositório, em `erp-pausa-2026-10-03/planos/` e `revisoes/plat-perm/`.

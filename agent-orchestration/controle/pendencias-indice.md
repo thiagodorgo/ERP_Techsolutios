@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1250** |
-| IDs distintos | 1239 |
-| **ABERTAS** | **968** |
+| Cabecalhos `## P-` | **1258** |
+| IDs distintos | 1247 |
+| **ABERTAS** | **976** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **907** |
+| — das quais **ativas nesta rodada** | **915** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 278 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1250 cabecalhos para 1239 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1258 cabecalhos para 1247 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 377
+## ABERTAS · balde A — material — 380
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -451,8 +451,11 @@
 | `P-APP-TROCA-ORG-NAO-TROCA` | 16797 | ALTA | sim | P-APP-TROCA-ORG-NAO-TROCA (2026-11-16) — a troca de organização no app não troca — ALTA |
 | `P-08C2-CLOSE-POOL-PRESO` | 16811 | MÉDIA | sim | P-08C2-CLOSE-POOL-PRESO (2026-11-17) — 10 fechamentos concorrentes de um demonstrativo n |
 | `P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR` | 16818 | ALTA | sim | P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fil |
+| `P-PLAT-PORTAO-SEM-PERMISSAO` | 16825 | ALTA | sim | P-PLAT-PORTAO-SEM-PERMISSAO (2026-11-17) — o portão das rotas da plataforma não confere  |
+| `P-PLAT-PAPEL-SEM-RELEITURA` | 16832 | MÉDIA | sim | P-PLAT-PAPEL-SEM-RELEITURA (2026-11-17) — as rotas da plataforma não releem papel nem pe |
+| `P-NODE-ENV-AUSENTE-E-DEV` | 16860 | MÉDIA | sim | P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente é tratado como `development`  |
 
-## ABERTAS · balde B — processo/registro — 530
+## ABERTAS · balde B — processo/registro — 535
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -986,6 +989,11 @@
 | `P-APP-LISTA-OS-ERRO-COM-200` | 16738 | BAIXA | sim | P-APP-LISTA-OS-ERRO-COM-200 (2026-11-16) — a lista de OS do app mostra "Não foi possível |
 | `P-572-GUARDA-PULA-NUL` | 16761 | BAIXA | sim | P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto c |
 | `P-GUI00-ERRO-ESCOLHE-A-DIRETO` | 16804 | BAIXA | sim | P-GUI00-ERRO-ESCOLHE-A-DIRETO (2026-11-17) — no caminho de erro, três telas do app escol |
+| `P-PLAT-PORTAO-SEM-ORG-PLATAFORMA` | 16839 | BAIXA | sim | P-PLAT-PORTAO-SEM-ORG-PLATAFORMA (2026-11-17) — o portão da plataforma não confere se o  |
+| `P-FRONT-ATALHO-SUPER-ADMIN` | 16846 | BAIXA | sim | P-FRONT-ATALHO-SUPER-ADMIN (2026-11-17) — o front libera toda permissão para "Super Admi |
+| `P-CLOUD-CHARGE-ROUTER-ORFAO` | 16853 | BAIXA | sim | P-CLOUD-CHARGE-ROUTER-ORFAO (2026-11-17) — `cloud-charge.routes.ts` está exportado e não |
+| `P-PARSE-ROLES-SEM-TRIM` | 16867 | BAIXA | sim | P-PARSE-ROLES-SEM-TRIM (2026-11-17) — `parseRoles` devolve o papel sem trim, e `ROLE_PER |
+| `P-VARREDURAS-SEM-USE-SEM-CAMINHO` | 16874 | BAIXA | sim | P-VARREDURAS-SEM-USE-SEM-CAMINHO (2026-11-17) — as 3 varreduras irmãs não enumeram camad |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

@@ -16821,3 +16821,59 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** os achados das maquetes da 1ª onda (16/11 20:35, item (2)); a Emenda 1 do `B-GUI-02` (§8) a criou; a revisão r2 do plano `cx1-crit-gui02-e11` (Codex, VOLTA, A1 ALTA: aviso na tela não é controle) levou o conserto ao servidor, por decisão do orquestrador, declarada (17/11 11:3x), e a Emenda 2 (§5) a absorve (`plano-B-GUI-02-emenda1.md`, `plano-B-GUI-02-emenda2.md`, fora do repositório).
 - **N e forma:** 1 caminho do servidor: a vistoria incluída entra ao fim da fila (`order_index`), e o despacho toma a 1ª linha como coleta.
 - **critério de encerramento:** o servidor reconhece a coleta e a entrega pela etapa (`collection` sempre primária), com o T1 e o T7 do `B-GUI-02` verdes nas duas formas, memória e `-db`.
+
+## P-PLAT-PORTAO-SEM-PERMISSAO (2026-11-17) — o portão das rotas da plataforma não confere a permissão pedida — ALTA
+
+- **status:** ABERTA (fecha no merge do PR do `B-PLAT-PERMISSAO`) · **gravidade:** ALTA (permissão: a permissão declarada em cada uma das 70 rotas de `/api/v1/platform` era decorativa; 5 rotas pediam chave fora do catálogo) · **escopo:** `dentro-do-bloco` do `B-PLAT-PERMISSAO` · **dono:** `B-PLAT-PERMISSAO` (item 72 do portão, `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1; junta completa) · **bloqueia:** o portão da versão vendável (item 72).
+- **origem:** o L4-01 da pré-revisão `prerev-08c2-l4-cl` do `B-ASS-08c2` (a mutação `settle→read` sobrevivia a todos os testes); decisões do dono `D-DONO-1711-ITEM-72`, `D-DONO-1711-ITEM-72-REVISTO`, `D-DONO-1711-72-P1` e `D-DONO-1711-72-P2` (17/11).
+- **N e forma:** medido na `origin/main` `60c0704a`: `platform-permissions.ts` passava com `hasPlatformRole || hasExplicitPermission`; 70 rotas sob o prefixo, 10 de `settle`; 5 rotas com chave fora do catálogo (criar, editar e suspender organização, módulos e admin da organização).
+- **critério de encerramento:** o portão passa só com papel de plataforma E a permissão pedida no catálogo (403 `platform_permission_required` senão); as 6 chaves no catálogo com a migração de concessão ao `super_admin`; `tests/plat-perm-censo.test.ts` e `tests/plat-perm-matriz.test.ts` verdes e as mutações MP-1 a MP-14 vermelhas onde o plano declara.
+
+## P-PLAT-PAPEL-SEM-RELEITURA (2026-11-17) — as rotas da plataforma não releem papel nem permissão do banco a cada requisição — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (uma revogação feita à mão no banco para o `super_admin` não vale nas rotas de plataforma, e um papel retirado só some quando o token expira) · **escopo:** `pre-existente` (`src/app.ts:157` monta `/api/v1/platform` sem `persistent-rbac-context`; anterior ao `B-PLAT-PERMISSAO`) · **dono:** um bloco de plataforma futuro, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não (nem o item 72).
+- **origem:** plano do `B-PLAT-PERMISSAO` §2.2 e §8.2 (`plano-plat-perm-cl`, fora do repositório); confirmado na Emenda 1 §6 (o #588 não relê papel).
+- **N e forma:** 1 ponto de montagem; a checagem da plataforma usa o catálogo em código, e as rotas de organização releem o banco a cada requisição.
+- **critério de encerramento:** as rotas da plataforma conferem papel e permissão com a mesma releitura das rotas de organização, com teste de revogação.
+
+## P-PLAT-PORTAO-SEM-ORG-PLATAFORMA (2026-11-17) — o portão da plataforma não confere se o ator pertence à organização de plataforma — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (em produção não é alcançável: o papel não é atribuível por organização e o bootstrap só liga na plataforma; em dev o seed liga um `super_admin` à organização demo) · **escopo:** `pre-existente` · **dono:** o mesmo bloco de plataforma futuro de `P-PLAT-PAPEL-SEM-RELEITURA` · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** plano do `B-PLAT-PERMISSAO` §8.2 (E20 da evidência do plano).
+- **N e forma:** 1 portão (`requirePlatformPermission`); nenhuma conferência da organização do ator.
+- **critério de encerramento:** o portão recusa ator de plataforma fora da organização de plataforma, com teste.
+
+## P-FRONT-ATALHO-SUPER-ADMIN (2026-11-17) — o front libera toda permissão para "Super Admin" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (só esconde do front a permissão real; o backend segue como autoridade) · **escopo:** `pre-existente` (`frontend/src/providers/PermissionProvider.tsx:32-37`, `isPlatformAdmin` em `navigation/types.ts:105-110`; `frontend/**` é PROIBIDO no `B-PLAT-PERMISSAO`) · **dono:** um bloco de front, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** plano do `B-PLAT-PERMISSAO` §3.1 e §8.2; Emenda 1 §6 (sem a condição da P2, que o dono respondeu "nao").
+- **N e forma:** `can` e `hasAny` passam para `isPlatformAdmin` (papel "Super Admin" OU `platform:tenants:read`); `auth.adapter.ts:391` mapeia `super_admin` e `platform_admin` para o mesmo rótulo.
+- **critério de encerramento:** os guards de plataforma do front valem só a permissão que o login devolve, com teste por tela.
+
+## P-CLOUD-CHARGE-ROUTER-ORFAO (2026-11-17) — `cloud-charge.routes.ts` está exportado e não montado — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (9 portões fora do app; o censo da plataforma não os vê até alguém montar o roteador) · **escopo:** `pre-existente` (superado por `D-COBRANCA-ASSINATURA-FRANQUIA`) · **dono:** a limpeza das chaves órfãs `platform:cloud-charge-rules:*` e `platform:cloud-charges:*` · **gatilho:** essa limpeza · **bloqueia:** não.
+- **origem:** plano do `B-PLAT-PERMISSAO` §1.1 (E8) e §8.2.
+- **N e forma:** 79 chamadas estáticas de `requirePlatformPermission("platform:…")`; 9 em `cloud-charge.routes.ts` (`createCloudChargesPlatformRouter` sem chamador); 70 montadas.
+- **critério de encerramento:** o roteador é apagado (com as chaves órfãs) ou montado, e nesse caso entra no instantâneo `tests/fixtures/plat-perm-rotas.json`.
+
+## P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente é tratado como `development` em 3 lugares — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (segurança: sem `NODE_ENV`, o cabeçalho legado `x-role: super_admin` passa nas rotas; em produção não acontece porque o `Dockerfile:25` fixa `ENV NODE_ENV=production` e o `docker-compose.prod.yml:61` também) · **escopo:** `pre-existente` (`src/modules/platform/platform-permissions.ts:105` (`allowsLegacyPlatformHeaders`); `tenant-context.middleware.ts:105`; `src/config/env.ts:208`) · **dono:** bloco próprio `B-NODE-ENV-FAIL-CLOSED`, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não (nem o item 72).
+- **origem:** o parecer r1 (`crit-plat-perm-cl`) do plano do `B-PLAT-PERMISSAO` (X8), registrada pela Emenda 1 §7 (`plano-plat-perm-e1-fable`, fora do repositório). Fechar só o portão seria meia correção (dois dos 3 lugares estão fora do escopo do bloco).
+- **N e forma:** 3 lugares; o default `development` do `env.ts`.
+- **critério de encerramento:** os 3 lugares falham fechado com `NODE_ENV` ausente, de uma vez, com teste que roda sem a variável; antes, conferir quais suítes dependem do default.
+
+## P-PARSE-ROLES-SEM-TRIM (2026-11-17) — `parseRoles` devolve o papel sem trim, e `ROLE_PERMISSIONS[" super_admin "]` lança 500 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (falha fechada com 500; no portão da plataforma o `B-PLAT-PERMISSAO` normaliza o papel antes, coberto pela matriz (h) e pela MP-11) · **escopo:** `pre-existente` (`src/modules/core-saas/middleware/tenant-context.middleware.ts:84-88`, PROIBIDO no bloco) · **dono:** o mesmo bloco de plataforma futuro de `P-PLAT-PAPEL-SEM-RELEITURA` · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** o parecer r1 (`crit-plat-perm-cl`) do plano (X25), registrada pela Emenda 1 §5.
+- **N e forma:** 1 função; `parseRoles` filtra com `isValidRole` (que faz trim) e devolve o valor sem trim.
+- **critério de encerramento:** `parseRoles` devolve o papel normalizado, com teste de papel com espaços e caixa trocada numa rota de organização.
+
+## P-VARREDURAS-SEM-USE-SEM-CAMINHO (2026-11-17) — as 3 varreduras irmãs não enumeram camadas `use` sem caminho sob os prefixos que vigiam — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a mesma classe do A-E1-1 do `B-PLAT-PERMISSAO`: um `router.use(handler)` sem caminho não vira rota nem camada com caminho) · **escopo:** `pre-existente` (`tests/helpers/route-walk.ts` do B-USERS-ACESSO-SEG, #527) · **dono:** o próximo bloco que tocar essas varreduras · **gatilho:** esse bloco · **bloqueia:** não.
+- **origem:** o parecer r2 (`crit-plat-perm-e1-cl`) do plano (A-E1-1), registrada pela Emenda 2 §9 (`plano-plat-perm-e2-fable`, fora do repositório).
+- **N e forma:** 3 varreduras (`tests/users-acesso-seg-portao-varredura.test.ts`, `tests/users-seg-desativado-varredura[-db].test.ts`, `tests/san3-18-route-module-census.test.ts`) exigem `semCaminho = []` e não leem camada `use` sem caminho. Depois do `B-PLAT-PERMISSAO`, o campo opcional `mwSemCaminho` existe no walk.
+- **critério de encerramento:** as 3 varreduras consomem `mwSemCaminho` sob os prefixos que vigiam, com mutação que planta um `router.use(handler)` sem caminho e fica vermelha.

@@ -1,5 +1,11 @@
 # Status Geral
 
+## Atualização 2026-11-17 (noite) — B-PLAT-PERMISSAO (item 72): a checagem da plataforma confere a permissão; o dev terminou as fatias
+
+- **O bloco:** `requirePlatformPermission` passa só com papel de plataforma E a permissão pedida no catálogo (403 `platform_permission_required` senão); as 6 chaves que as rotas e as telas pediam entram no catálogo, com a migração de concessão só ao `super_admin` (`D-DONO-1711-72-P1`); o `settle` não é segregado (`D-DONO-1711-72-P2`); o item fica no portão (`D-DONO-1711-ITEM-72-REVISTO`). Plano + Emendas 1 e 2 fora do repositório; comando em `agent-orchestration/codex/comandos/B-PLAT-PERMISSAO.md`.
+- **Feito:** as fatias F1 a F4 no ramo `feat/plat-permissao` (PR em rascunho), pelo `dev-plat-perm-cl` (Claude Opus 5.5, sem cruzamento, declarado): a migração com drill por prefixo, o portão, o guard de censo (70 rotas, R1 = R2 = instantâneo) e a matriz papel × rota, as mutações MP-1 a MP-14 e o vermelho-controle na base.
+- **Falta:** a pré-revisão por outra identidade, a junta completa (permissão e dinheiro; inspetor + 3 cadeiras, unanimidade), o merge e o porteiro. Pendências novas: `P-PLAT-PAPEL-SEM-RELEITURA`, `P-PLAT-PORTAO-SEM-ORG-PLATAFORMA`, `P-FRONT-ATALHO-SUPER-ADMIN`, `P-CLOUD-CHARGE-ROUTER-ORFAO`, `P-NODE-ENV-AUSENTE-E-DEV`, `P-PARSE-ROLES-SEM-TRIM` e `P-VARREDURAS-SEM-USE-SEM-CAMINHO`; a `P-PLAT-PORTAO-SEM-PERMISSAO` fecha no merge.
+
 ## Atualização 2026-11-16 (noite) — B-APP-SESSAO-RENOVA (item 68): o dev terminou as fatias no PR #588
 
 - **O bloco:** a sessão do app se renova sozinha, e o servidor é quem revoga (`D-PORTAO-ITEM-68-SESSAO-APP`, `D-DONO-1511-68-NAO-DESLOGAR`). Plano v3 com as emendas 3.1 a 3.5, fora do repositório; comando em `agent-orchestration/codex/comandos/B-APP-SESSAO-RENOVA.md`.
