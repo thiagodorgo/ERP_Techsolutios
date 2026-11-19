@@ -299,9 +299,9 @@ if (!connectionString) {
 
   test("RS3c: os métodos novos, chamados por uma conexão que NÃO passa pelo RLS (superusuário), não acham a linha de outra organização", async () => {
     const { PrismaOutboxRepository } = await import("../src/modules/subscription-billing/outbox/outbox.prisma.js");
-    const owner = new PrismaOutboxRepository(db);
     const mine = await seedStatement("rs3c-a");
     const other = await seedStatement("rs3c-b");
+    const owner = new PrismaOutboxRepository(db, { tenantIds: [mine.tenantId, other.tenantId] });
     const review = await seedOutbox(other, "charge_create", "NEEDS_REVIEW", { lastError: "charge_found_no_candidate" });
     const failed = await seedOutbox(other, "invoice_cancel", "FAILED", { lastError: "provider_unavailable", payload: {} });
     assert.deepEqual(await owner.resolve(mine.tenantId, review, { reason: REASON, actorId: null, now: new Date() }), { kind: "not_found" });
@@ -369,12 +369,12 @@ if (!connectionString) {
     const { PrismaOutboxRepository } = await import("../src/modules/subscription-billing/outbox/outbox.prisma.js");
     const fixture = await seedStatement("rs7b", { paid: "50.00" });
     const id = await seedOutbox(fixture, "charge_create", "FAILED", { lastError: "provider_unavailable", payload: { amountCents: 12345, dueDate: spDayPlus(10), method: "pix" } });
-    await assert.rejects(new PrismaOutboxRepository(role.client).retry(fixture.tenantId, id, new Date()), (error: any) => error?.statusCode === 422 && error?.reason === "statement_partially_paid");
+    await assert.rejects(new PrismaOutboxRepository(role.client, { tenantIds: [fixture.tenantId] }).retry(fixture.tenantId, id, new Date()), (error: any) => error?.statusCode === 422 && error?.reason === "statement_partially_paid");
     assert.equal((await outboxRow(id)).status, "FAILED");
     // Controle: sem pagamento, o mesmo retry reabre.
     const free = await seedStatement("rs7b-livre");
     const freeId = await seedOutbox(free, "charge_create", "FAILED", { lastError: "provider_unavailable", payload: { amountCents: 12345, dueDate: spDayPlus(10), method: "pix" } });
-    assert.equal((await new PrismaOutboxRepository(role.client).retry(free.tenantId, freeId, new Date()))?.status, "PENDING");
+    assert.equal((await new PrismaOutboxRepository(role.client, { tenantIds: [free.tenantId] }).retry(free.tenantId, freeId, new Date()))?.status, "PENDING");
   });
 
   /** O app no modo MEMÓRIA, só durante `fn` (o `env` é lido a cada chamada pelas fábricas); os dublês são zerados antes e depois. */

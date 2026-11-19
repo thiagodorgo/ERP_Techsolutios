@@ -284,6 +284,9 @@ export class InvoiceOutboxHandler {
 
   async #applyLookup(invoice: SubscriptionStatementInvoice, lookup: InvoiceLookup, port: InvoiceProviderPort, now: Date): Promise<void> {
     if (lookup.status === "authorized") {
+      if (lookup.providerInvoiceId && !invoice.providerInvoiceId) {
+        await this.deps.invoices.markIssued(invoice.tenantId, invoice.id, lookup.providerInvoiceId, now);
+      }
       await this.deps.invoices.markAuthorized(
         invoice.tenantId,
         invoice.id,
@@ -306,7 +309,8 @@ export class InvoiceOutboxHandler {
       await this.deps.invoices.markCancelled(invoice.tenantId, invoice.id, now);
       return;
     }
-    // `processing`: a emissão chegou; segue `pending` até o webhook/poll.
-    await this.deps.invoices.markIssued(invoice.tenantId, invoice.id, invoice.providerInvoiceId, now);
+    // processing: a emissão chegou; segue pending até o webhook/poll.
+    // [LOOKUP-ID]
+    await this.deps.invoices.markIssued(invoice.tenantId, invoice.id, lookup.providerInvoiceId ?? invoice.providerInvoiceId, now);
   }
 }

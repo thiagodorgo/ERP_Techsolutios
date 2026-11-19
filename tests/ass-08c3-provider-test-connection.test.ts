@@ -6,6 +6,7 @@ import test from "node:test";
 
 import { BillingHttpClient } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
 import { FocusNfeInvoiceAdapter } from "../src/modules/subscription-billing/providers/invoice/focusnfe/index.js";
+import { lookupFromFocus } from "../src/modules/subscription-billing/providers/invoice/focusnfe/focusnfe.adapter.js";
 import { AsaasPaymentAdapter, type AsaasSecretReader } from "../src/modules/subscription-billing/providers/payment/asaas/index.js";
 import type { FocusNfeSecretReader } from "../src/modules/subscription-billing/providers/invoice/focusnfe/focusnfe.adapter.js";
 import { startAsaasFake } from "./helpers/fake-providers/asaas.js";
@@ -85,4 +86,24 @@ test("TCF1 · Focus testConnection: 404 e 200 → ok; 401/403 → credential_rej
   } finally {
     await server.close();
   }
+});
+
+test("LK1 · lookupFromFocus: id no corpo → providerInvoiceId; sem id ou vazio → undefined (os 5 estados)", () => {
+  const states: ReadonlyArray<{ readonly body: Record<string, unknown>; readonly status: string }> = [
+    { body: { status: "processando_autorizacao" }, status: "processing" },
+    { body: { status: "processando_cancelamento" }, status: "processing" },
+    { body: { status: "autorizado", numero: "NF", codigo_verificacao: "V", url_danfse: "P", url_xml: "X" }, status: "authorized" },
+    { body: { status: "erro_autorizacao", erros: [{ mensagem: "m" }] }, status: "rejected" },
+    { body: { status: "cancelado" }, status: "cancelled" },
+  ];
+  for (const state of states) {
+    assert.equal(lookupFromFocus({ ...state.body, id: "nfse_x" } as never).status, state.status);
+    assert.equal(lookupFromFocus({ ...state.body, id: "nfse_x" } as never).providerInvoiceId, "nfse_x", `${state.status} com id`);
+    assert.equal(lookupFromFocus({ ...state.body } as never).providerInvoiceId, undefined, `${state.status} sem id`);
+    assert.equal(lookupFromFocus({ ...state.body, id: "" } as never).providerInvoiceId, undefined, `${state.status} com id vazio`);
+    assert.equal(lookupFromFocus({ ...state.body, id: "   " } as never).providerInvoiceId, undefined, `${state.status} com id só espaços`);
+  }
+  assert.equal(lookupFromFocus({ status: "situacao_desconhecida", id: "nfse_x" } as never).providerInvoiceId, "nfse_x");
+  assert.equal(lookupFromFocus({ status: "situacao_desconhecida" } as never).providerInvoiceId, undefined);
+  assert.equal(lookupFromFocus({ status: "situacao_desconhecida", id: "" } as never).providerInvoiceId, undefined);
 });
