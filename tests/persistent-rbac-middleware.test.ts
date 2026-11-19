@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
+
+import { startChildServer } from "./helpers/child-server.js";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -441,35 +442,24 @@ try {
 }
 `;
 
-  const child = spawn(
-    process.execPath,
-    ["--import", "tsx", "--input-type=module", "-e", script],
-    {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        CORE_SAAS_PERSISTENCE: "memory",
-        DATABASE_URL: "",
-        JWT_SECRET: "dev-only-change-me",
-        JWT_EXPIRES_IN: "15m",
-        LOG_LEVEL: "silent",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
+  const child = await startChildServer({
+    args: ["--import", "tsx", "--input-type=module", "-e", script],
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      CORE_SAAS_PERSISTENCE: "memory",
+      DATABASE_URL: "",
+      JWT_SECRET: "dev-only-change-me",
+      JWT_EXPIRES_IN: "15m",
+      LOG_LEVEL: "silent",
     },
-  );
-  const stdoutChunks: Buffer[] = [];
-  const stderrChunks: Buffer[] = [];
-
-  child.stdout.on("data", (chunk) => stdoutChunks.push(Buffer.from(chunk)));
-  child.stderr.on("data", (chunk) => stderrChunks.push(Buffer.from(chunk)));
-
-  const exitCode = await new Promise<number | null>((resolve) => {
-    child.once("close", resolve);
+    readyPrefix: "{",
   });
-  const stdout = Buffer.concat(stdoutChunks).toString("utf8").trim();
-  const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
+  const stdout = child.stdout().trim();
+  const stderr = child.stderr().trim();
+  await child.stop();
 
-  assert.equal(exitCode, 0, stderr || stdout);
+  assert.equal(child.child.exitCode, 0, stderr || stdout);
 
   return JSON.parse(stdout.split(/\r?\n/).at(-1) ?? "{}");
 }

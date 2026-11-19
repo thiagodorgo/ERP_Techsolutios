@@ -11,6 +11,7 @@ export type ChildServerOptions = {
   readonly cwd: string;
   readonly env?: NodeJS.ProcessEnv;
   readonly readyPrefix?: string;
+  readonly waitForReady?: boolean;
   readonly startTimeoutMs?: number;
   readonly onSpawn?: (pid: number) => void;
 };
@@ -140,7 +141,7 @@ export async function startChildServer(options: ChildServerOptions): Promise<Chi
   };
 
   try {
-    const readyLine = await waitFor(readyPrefix);
+    const readyLine = options.waitForReady === false ? readyPrefix : await waitFor(readyPrefix);
     return {
       child,
       readyValue: readyLine.slice(readyPrefix.length).trim(),

@@ -25,6 +25,7 @@ import {
   dropEphemeralRoleResilient,
   withRoleCatalogLock,
 } from "./helpers/auth-identity-fixture.js";
+import { startChildServer, type ChildServer } from "./helpers/child-server.js";
 
 // B-SAN3-05 — T5–T9, T8b–T8d, T14a/b e T15 do plano v3.
 // Toda escrita de catálogo fica dentro de `withRoleCatalogLock`; o teardown reutiliza o arnês resiliente.
@@ -523,11 +524,12 @@ async function waitFor(
   });
 }
 
-function startBackend(env: NodeJS.ProcessEnv): ReturnType<typeof spawn> {
-  return spawn(process.execPath, ["--import", "tsx", "src/server.ts"], {
+async function startBackend(env: NodeJS.ProcessEnv): Promise<ChildServer> {
+  return await startChildServer({
+    args: ["--import", "tsx", "src/server.ts"],
     cwd: REPO_ROOT,
     env,
-    stdio: ["ignore", "pipe", "pipe"],
+    waitForReady: false,
   });
 }
 
@@ -544,17 +546,6 @@ async function waitForCloseCode(child: ReturnType<typeof spawn>, timeoutMs: numb
     };
     child.once("close", onClose);
   });
-}
-
-async function stopChild(child: ReturnType<typeof spawn>): Promise<void> {
-  if (child.exitCode !== null) return;
-  child.kill("SIGTERM");
-  try {
-    await waitForCloseCode(child, 3_000);
-  } catch {
-    if (child.exitCode === null) child.kill("SIGKILL");
-    await waitForCloseCode(child, 3_000);
-  }
 }
 
 const PROD_BASE = {
@@ -1451,10 +1442,10 @@ test(
           };
           if (guard === "explicit") env.DATABASE_RUNTIME_ROLE_GUARD = "enforce";
           else delete env.DATABASE_RUNTIME_ROLE_GUARD;
-          const child = startBackend(env);
+          const child = await startBackend(env);
           try {
             const refused = await waitFor(
-              child,
+              child.child,
               (stdout, stderr) => (stdout + stderr).includes("Failed to start ERP Techsolutions API"),
               15_000,
               (stdout, stderr) => (stdout + stderr).includes("ERP Techsolutions API listening"),
@@ -1470,9 +1461,9 @@ test(
               /Redis|job worker/i,
             );
             assertConnectionSecretsAbsent(refusedText, [connectionString]);
-            assert.equal(await waitForCloseCode(child, 60_000), 1, `boot ${guard} precisa sair com código 1`);
+            assert.equal(await waitForCloseCode(child.child, 60_000), 1, `boot ${guard} precisa sair com código 1`);
           } finally {
-            await stopChild(child);
+            await child.stop();
           }
         };
 
@@ -1492,10 +1483,10 @@ test(
           PORTAL_PORT: String(portalPort),
         };
         delete cleanEnv.DATABASE_RUNTIME_ROLE_GUARD;
-        const cleanBoot = startBackend(cleanEnv);
+        const cleanBoot = await startBackend(cleanEnv);
         try {
           const accepted = await waitFor(
-            cleanBoot,
+            cleanBoot.child,
             (stdout, stderr) => (stdout + stderr).includes("runtime database role verified"),
             15_000,
             (stdout, stderr) => (stdout + stderr).includes("Failed to start ERP Techsolutions API"),
@@ -1504,7 +1495,7 @@ test(
           assert.match(acceptedText, /"escapes":0/);
           assertConnectionSecretsAbsent(acceptedText, [cleanUrl]);
         } finally {
-          await stopChild(cleanBoot);
+          await cleanBoot.stop();
           await dropRole(admin, clean);
         }
       },
