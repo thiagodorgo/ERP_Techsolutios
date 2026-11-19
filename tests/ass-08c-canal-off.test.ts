@@ -131,6 +131,32 @@ test("CA-OFF: com o canal desligado, jobs, composição e cliente do canal abrem
   }
 });
 
+test("CA-OFF3 (mão B): P24, trilha e confirm-cancelled permanecem sem conexão com o canal desligado", async () => {
+  const previous = { ...mutableEnv };
+  try {
+    mutableEnv.CORE_SAAS_PERSISTENCE = "memory";
+    mutableEnv.BILLING_PROVIDERS_ENABLED = false;
+    await arrangeEnabledProviders();
+    const attempts = await probeConnections(async () => {
+      const deps = await createChannelRuntime();
+      assert.deepEqual(Object.keys(deps.ports), []);
+      assert.deepEqual(Object.keys(deps.invoicePorts ?? {}), []);
+      assert.equal(typeof deps.onAudit, "function", "a trilha da mão B está composta");
+      await deps.outbox.enqueue({ tenantId: randomUUID(), statementId: randomUUID(), kind: "invoice_issue", provider: "nfeio", seq: 1, payload: { seq: 1 } }, new Date());
+      const result = await runBillingDispatch(deps);
+      assert.equal(result.outcomes.sent, 0, "P24 não despacha sem provedor de nota ligado");
+    });
+    assert.deepEqual(attempts, []);
+    const routes = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../src/modules/subscription-billing/statements/statements.platform.routes.ts", import.meta.url), "utf8"));
+    assert.match(routes, /confirm-cancelled/);
+    assert.doesNotMatch(routes.slice(routes.indexOf("confirm-cancelled"), routes.indexOf("confirm-cancelled") + 1200), /fetch\(|createCharge|cancelCharge/);
+  } finally {
+    Object.assign(mutableEnv, previous);
+    resetVaultRuntimeForTests();
+    resetChannelRuntimeForTests();
+  }
+});
+
 // ----------------------------------------------------------------------------------------------------------------
 // B-ASS-08c1b (F10; abertura §5.1, CA-OFF e CV2) — as 7 rotas novas de plataforma, com o canal DESLIGADO e o app real no
 // modo memória: nenhuma abre conexão de saída (a única permitida é a do próprio teste ao app, no loopback da porta dele);
