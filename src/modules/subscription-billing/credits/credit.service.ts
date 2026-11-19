@@ -47,17 +47,19 @@ export class CreditService {
         const target = await tx.lockById(credit.appliedToStatementId);
         if (target) {
           const creditsApplied = Math.max(0, target.creditsAppliedCents - credit.amountCents);
-          const stillPaid = target.paidCents >= target.totalCents;
           const latest = target.snapshot.latest ? { ...target.snapshot.latest, creditsAppliedCents: creditsApplied } : null;
+          const totalCents = latest ? recompute(latest) : target.totalCents; // [CREDIT-RECOMPUTE]
+          const stillPaid = target.paidCents >= totalCents;
           await tx.saveStatement({
             ...target,
-            totalCents: latest ? recompute(latest) : target.totalCents, // [CREDIT-RECOMPUTE]
+            totalCents,
             creditsAppliedCents: creditsApplied,
             status: target.status === "paid" && !stillPaid ? "closed" : target.status,
+            paidAt: target.status === "paid" && !stillPaid ? null : target.paidAt,
             snapshot: {
               ...target.snapshot,
               latest,
-              history: [...target.snapshot.history, { at: input.now.toISOString(), event: "credit_reversed", by: null, totalCents: latest ? recompute(latest) : target.totalCents }],
+              history: [...target.snapshot.history, { at: input.now.toISOString(), event: "credit_reversed", by: null, totalCents }],
             },
           });
         }
