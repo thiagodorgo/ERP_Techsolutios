@@ -63,11 +63,12 @@ Por decisão do dono em 17/11 (*"o traccar e antivirus ja entram"*), o mínimo j
 **Custo na Virgínia (medido em 19/11).** A troca de São Paulo para a Virgínia (`us-east-1`) muda os preços unitários, e o D-AWS-10 dobra o banco (Multi-AZ). Os números abaixo foram medidos na fonte oficial de preços da AWS (AWS Price List API, pública, acessada em 19/11); tudo o que não está na lista fica **a recalcular** e é acompanhado pela pendência `P-AWS-CUSTO-VIRGINIA`:
 - RDS PostgreSQL `db.t4g.small` em `us-east-1`: single-AZ US$ 0,032/h · Multi-AZ US$ 0,065/h · gp3 US$ 0,115/GB-mês (single) e US$ 0,23/GB-mês (Multi-AZ).
 - ElastiCache Valkey `cache.t4g.micro` em `us-east-1`: US$ 0,0128/h (~US$ 9,3/mês).
-- NLB/ALB em `us-east-1`: US$ 0,0225/h + LCU US$ 0,006.
+- ALB em `us-east-1`: US$ 0,0225/h + LCU US$ 0,008.
+- NLB em `us-east-1`: US$ 0,0225/h + NLCU US$ 0,006.
 - EC2 `t4g.nano` Linux (NAT por instância) em `us-east-1`: US$ 0,0042/h.
 - Fargate em `us-east-1`: vCPU x86 US$ 0,04048/h · memória x86 US$ 0,004445/GB-h · vCPU ARM US$ 0,03238/h · memória ARM US$ 0,00356/GB-h · armazenamento efêmero US$ 0,000111/GB-h.
 - CloudWatch Logs: ingestão US$ 0,50/GB em `us-east-1`.
-Fonte: `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json` e os índices regionais `AmazonRDS`, `AmazonElastiCache`, `AWSELB`, `AmazonEC2`, `AmazonECS` e `AmazonCloudWatch` para `us-east-1`, todos acessados em 19/11. Os totais por fase e o total do §1 são os números do estudo (São Paulo) e ficam **a recalcular — `P-AWS-CUSTO-VIRGINIA`**.
+Fonte: `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json` e os índices regionais `AmazonRDS`, `AmazonElastiCache`, `AWSELB` (`https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSELB/current/us-east-1/index.json`), `AmazonEC2`, `AmazonECS` e `AmazonCloudWatch` para `us-east-1`, todos acessados em 19/11. Os totais por fase e o total do §1 são os números do estudo (São Paulo) e ficam **a recalcular — `P-AWS-CUSTO-VIRGINIA`**.
 
 **A etapa 1 que o dono se comprometeu a fazer até 18/11 é a Fase 0 inteira mais o começo da Fase 1.** Exatamente isto precisa estar feito até lá, para o resto correr por comando:
 
@@ -1542,11 +1543,16 @@ Registre a execução e a conferência na ata de go-live.
 **Objetivo:** gerar o app de campo de produção apontando para a API da AWS e provar o caminho de ponta a ponta num **celular real**, contra a AWS, antes da ata de go-live. Os detalhes do build são os do repositório (`mobile/flutter_app/README.md`): `ERP_AUTH_MODE=remote` e `API_BASE_URL` — não invente flags, meça no repo. **Terminal:** uma máquina com o Flutter do repositório, na versão fixada em `.github/workflows/ci.yml` (o CloudShell não tem Flutter).
 ```bash
 cd mobile/flutter_app
-flutter pub get
-flutter build apk \
-  --dart-define=ERP_AUTH_MODE=remote \
-  --dart-define=ERP_ENV=production \
-  --dart-define=API_BASE_URL=https://api.${DOMINIO}
+DOMINIO="<seu-dominio>"   # troque pelo mesmo domínio do roteiro, sem www (ex.: suaempresa.com.br)
+if [ -z "$DOMINIO" ] || [ "$DOMINIO" = "<seu-dominio>" ]; then
+  printf 'ERRO: defina DOMINIO no passo 6.9 (ex.: suaempresa.com.br) antes do build.\n' >&2
+else
+  flutter pub get
+  flutter build apk \
+    --dart-define=ERP_AUTH_MODE=remote \
+    --dart-define=ERP_ENV=production \
+    --dart-define=API_BASE_URL=https://api.${DOMINIO}
+fi
 ```
 **Conferência:** o `flutter build apk` gera o APK de release; instalado num celular real, o app loga com o usuário criado no 6.2, abre a lista de ordens de serviço e conclui uma sincronização contra `https://api.${DOMINIO}` (as chamadas aparecem no log do ECS e no `cloud-usage/summary`).
 **Desfazer:** não se aplica (o app é um cliente); para voltar atrás, gere um APK com outra `API_BASE_URL` ou desinstale o APK do aparelho. Anote o SHA do commit e a versão do APK na ata de go-live.
