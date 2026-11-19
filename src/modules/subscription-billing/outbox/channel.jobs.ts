@@ -58,6 +58,7 @@ export type ChannelDeps = {
   readonly listTenantIds: () => Promise<readonly string[]>;
   /** B-ASS-08c2 (plano §4.5): as intenções de nota que faltam numa organização, sob a trava de cada demonstrativo. */
   readonly invoiceRecovery: { recoverInvoiceIntents(tenantId: string, now: Date): Promise<{ readonly inserted: number }> };
+  readonly onAudit: DispatcherDeps["onAudit"];
   readonly now?: () => Date;
 };
 
@@ -100,6 +101,7 @@ export async function runBillingDispatch(deps: ChannelDeps): Promise<DispatchRun
     resolveCustomer: deps.resolveCustomer,
     ...(invoices ? { invoices } : {}),
     ...(invoiceSweep ? { invoiceSweep } : {}),
+    onAudit: deps.onAudit, // [TRILHA-01]
     ...(deps.now ? { now: deps.now } : {}),
   });
   // A trilha do despacho ainda não tem destino em produção (`P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO`): o log mostra a falha.
