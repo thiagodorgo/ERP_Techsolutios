@@ -1,5 +1,8 @@
 # Status Geral
 
+## Atualização 2026-11-19 — registro da tarde/noite de 18/11 e manhã de 19/11
+
+Em 19/11, o registro consolidou o trecho a partir do #600: marco de KPI #601 (squash `2f408593`) mantido como último marco na `main`; item 71 FECHADO no #602 (squash `917bc6cd`) com ata `J-602-b-wo-leitura-tecnico` (3/3 APROVA, 0 grave), conserto `c537dc53` conferido e porteiro `dp-porteiro-602` em LIBERADO COM RESSALVA com "ITEM 71: FECHA"; decisões novas do período registram o teto de contenção no recurso do Azure (`D-DONO-1811-AZURE-TETO-180`), a habilitação da conta 4 (`D-DONO-1811-CONTA-4-CODEX`), o teste do Gemini CLI (`D-DONO-1811-TESTE-GEMINI-CLI`) e as ordens da manhã de 19/11 para operar a conta AZC no Sol com apoio do Argon (`D-DONO-1911-MANHA-AZC-SOL-ARGON`).
 ## Atualização 2026-11-17 — item 31, `B-O6R-04b`: o estoque fabricado sai do app e do servidor (PR #582, em rascunho)
 
 - **Autor:** `dev-04b-cl` (F0 a F3, 15/11) e `dev-04b-e1-cl` (F4 e F5, 17/11), Claude Opus 5.5, dev, nível menor declarado, cobrindo o Codex por ordem do dono; sem cruzamento, declarado. Lei: o plano do bloco e as Emendas 1, 1.1, 1.2 e 1.3, fora do repositório. Ramo `fix/mobile-inventory-sync`, com a `main` `00e46347` (#580, o 16) integrada por merge. Registro do próprio bloco; `Kpis/**` congelado.
