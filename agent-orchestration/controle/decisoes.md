@@ -6036,3 +6036,16 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
   - Credencial AWS local no PC com perfil `erp-toolkit`, região `us-east-1`, sessão de 12 h renovável por 90 dias, acessível a agentes com acesso à máquina.
 - **Efeito:** instalação e operação do Agent Toolkit for AWS ficam institucionalizadas; `CLAUDE.md` e `AGENTS.md` passam a carregar, em seção espelhada, as regras oficiais da AWS com precedência subordinada ao contrato canônico, e a execução segue o roteiro `docs/infra/roteiro-aws-cloudshell.md` quando houver divergência de método.
 - **Risco declarado:** ampliar o acesso local à credencial reduz o isolamento operacional, aumenta superfície de uso indevido e exige disciplina estrita de trilha de auditoria, princípio do menor privilégio e controles de atos irreversíveis/com custo (incluindo junta em produção, §C7.1).
+
+## C-08C3-Q1-PADRAO-SEM-RESPOSTA (registro de CONFLITO, §A2, 2026-11-19) — Q1 sem resposta no disparo do B-ASS-08c3
+
+- **Os dois lados:** o plano do `B-ASS-08c3` pergunta ao dono se o estorno parcial do provedor ativa o `[EP-PARCIAL]` no fechamento (`Q1`); no disparo do dev, às 10:35 de 19/11, não havia resposta registrada no `REGISTRO-PENDENTE.md` para `08c3-q`.
+- **Estado:** RESOLVIDO por padrão operacional do próprio plano/base do disparo: **Q1 = (a)** (não ativa o `[EP-PARCIAL]` neste ciclo). O bloco segue com o `EP0` obrigatório e a mutação `M-EP0`.
+- **Rastreio do mesmo disparo:** no mesmo corte de 10:35, valem também os padrões **Q2 = (a)** e **Q3 = (a)** até decisão explícita do dono.
+
+## C-PLAT-TENANT-CORPO (2026-11-19, resolvido por leitura declarada)
+
+- Contexto: no `B-ASS-08c3`, a rota de plataforma `POST /api/v1/platform/billing/outbox/:id/confirm-cancelled` recebe `tenantId` no corpo.
+- Regra adotada: não há conflito com o §2.8. A autorização continua vindo do ator autenticado de plataforma (`requirePlatformPermission`). O `tenantId` do corpo é somente a chave de RLS (`withTenantRls*`) da organização-alvo.
+- Guardas: ator de organização recebe `403 platform_permission_required`; linha fora do tenant informado responde `404 outbox_not_found`; a rota nunca resolve tenant por varredura global de linha.
+- Fonte: emenda 1 do plano `B-ASS-08c3` (`R-PLAT-TENANT-CORPO`) e crítica `A-08C3-TENANT-CORPO-EXCECAO`.

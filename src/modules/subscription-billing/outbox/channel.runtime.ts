@@ -26,6 +26,7 @@ import type { ChannelDeps } from "./channel.jobs.js";
 import { invoiceIntentsNow, invoiceProvidersOn, paymentProviderOn } from "./channel-state.js";
 import { taxProfileFromSettings, type InvoiceIssueContextResolver } from "./invoice.dispatch.js";
 import { InMemoryOutboxRepository, type OutboxRepository } from "./outbox.repository.js";
+import { createPersistedDispatchAuditSink } from "./dispatch-audit.js";
 
 /** As portas dos provedores de PAGAMENTO ligados. Canal desligado ou cofre indisponível → nenhuma. B-ASS-08c1b (P4): o
  * predicado "ligado" é o de `paymentProviderOn` (`channel-state.ts`), o MESMO que a rota `/charge` usa. */
@@ -215,5 +216,8 @@ export async function createChannelRuntime(): Promise<ChannelDeps> {
     // B-ASS-08c2 (plano §4.5): a varredura da nota no despacho e o poll da nota por organização.
     listTenantIds: () => listPlatformTenantIds(statements.repository),
     invoiceRecovery: statements.service,
+    onAudit: env.CORE_SAAS_PERSISTENCE === "prisma"
+      ? createPersistedDispatchAuditSink((await import("../../../database/prisma.js")).prisma)
+      : async () => {},
   };
 }

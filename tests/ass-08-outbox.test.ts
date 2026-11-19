@@ -13,7 +13,7 @@ import { test } from "node:test";
 import { InMemoryOutboxRepository, leaseOf, type StatementClaimReader } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { chargeCreateClaimVerdict, runDispatchOutbox, type DispatchAuditEvent, type DispatcherDeps } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
-import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
+import { OUTBOX_MAX_ATTEMPTS, OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import { InMemoryChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.repository.js";
 import { profileCustomerResolver, requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
 import { InMemoryStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.repository.js";
@@ -205,6 +205,77 @@ test("R-OBX-1 crash + reconsulta vazia → NEEDS_REVIEW (nunca repete às cegas)
   assert.equal(current?.status, "NEEDS_REVIEW");
   assert.equal(audits[0]?.action, "billing_outbox.needs_review");
 });
+
+test("OR1: falha na órfã não aborta a rodada e o pending seguinte é processado", async () => {
+  const start = new Date("2026-12-01T12:00:00Z");
+  const tenantA = "33333333-3333-3333-3333-333333333333";
+  const tenantB = "44444444-4444-4444-4444-444444444444";
+  const statementA = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+  const statementB = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => start });
+  const orphan = await repo.enqueue({ tenantId: tenantA, statementId: statementA, kind: "charge_create", provider: "asaas", seq: 1, payload: { customerId: "cus_1", amountCents: 10000, dueDate: "2026-12-10", method: "pix" } }, start);
+  await repo.claimNext({ enabledProviders: ["asaas"], now: start, claimedBy: "dead-worker", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+  const pending = await repo.enqueue({ tenantId: tenantB, statementId: statementB, kind: "charge_create", provider: "asaas", seq: 1, payload: { customerId: "cus_1", amountCents: 15000, dueDate: "2026-12-10", method: "pix" } }, minutes(start, 1));
+
+  const port = new RecordingPort();
+  port.lookupScript.push("5xx");
+  const audits: DispatchAuditEvent[] = [];
+  const now = afterOrphan(start);
+
+  const run = await runDispatchOutbox({ repo, resolveCustomer: okResolver, ports: { asaas: port }, now: () => now, onAudit: async (event) => void audits.push(event) });
+  assert.equal(run.outcomes.retry, 1);
+  assert.equal(run.outcomes.sent, 1);
+  assert.equal(port.created.length, 1);
+  assert.equal(audits.some((event) => event.action === "billing_outbox.orphan_recheck_failed" && event.code === "provider_unavailable"), true);
+
+  const orphanRow = await repo.findById(tenantA, orphan.row.id);
+  assert.equal(orphanRow?.status, "PROCESSING");
+  assert.equal(orphanRow?.lastError, "provider_unavailable");
+
+  const pendingRow = await repo.findById(tenantB, pending.row.id);
+  assert.equal(pendingRow?.status, "SENT");
+});
+
+test("OR2: falha da órfã usa deferOrphan (permanece PROCESSING e não volta a PENDING)", async () => {
+  const start = new Date("2026-12-01T12:00:00Z");
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => start });
+  const { row } = await enqueueCharge(repo, start);
+  await repo.claimNext({ enabledProviders: ["asaas"], now: start, claimedBy: "dead-worker", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+
+  const port = new RecordingPort();
+  port.lookupScript.push("5xx");
+  const now = afterOrphan(start);
+
+  const run = await runDispatchOutbox({ repo, resolveCustomer: okResolver, ports: { asaas: port }, now: () => now });
+  assert.equal(run.outcomes.retry, 1);
+  const current = await repo.findById(TENANT, row.id);
+  assert.equal(current?.status, "PROCESSING");
+  assert.equal(current?.nextAttemptAt, null);
+  assert.equal(current?.lastError, "provider_unavailable");
+  assert.equal(port.created.length, 0);
+});
+
+test("OR3: no teto da órfã, marca NEEDS_REVIEW com orphan_recovery_failed:<code>", async () => {
+  const start = new Date("2026-12-01T12:00:00Z");
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => start });
+  const { row } = await enqueueCharge(repo, start);
+  const port = new RecordingPort();
+  port.lookupScript.push(...Array(OUTBOX_MAX_ATTEMPTS).fill("5xx"));
+
+  const first = await repo.claimNext({ enabledProviders: ["asaas"], now: start, claimedBy: "dead-worker", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+  assert.equal(first?.kind, "claimed");
+
+  for (let attempt = 1; attempt < OUTBOX_MAX_ATTEMPTS; attempt += 1) {
+    const now = new Date(start.getTime() + attempt * (OUTBOX_ORPHAN_MS + 60_000));
+    await runDispatchOutbox({ repo, resolveCustomer: okResolver, ports: { asaas: port }, now: () => now });
+  }
+
+  await runDispatchOutbox({ repo, resolveCustomer: okResolver, ports: { asaas: port }, now: () => new Date(start.getTime() + OUTBOX_MAX_ATTEMPTS * (OUTBOX_ORPHAN_MS + 60_000)) });
+  const current = await repo.findById(TENANT, row.id);
+  assert.equal(current?.status, "NEEDS_REVIEW");
+  assert.equal(current?.lastError, "orphan_recovery_failed:provider_unavailable");
+});
+
 
 test("R-OBX-2 backoff e FAILED na 8ª falha + trilha (T-OBX-7..8)", async () => {
   let clock = new Date("2026-12-01T12:00:00Z");

@@ -294,6 +294,15 @@ export class StatementSettlementService {
       if (live && (live.status === "pending" || live.status === "authorized")) await intent!.enqueueOutbox({ tenantId: input.tenantId, statementId: input.statementId, kind: "invoice_cancel", provider: cancelTo!.provider, seq: cancelTo!.seq, payload: { reason: "payment_reversed" }, skipReason: cancelSkip }, input.now);
       // `cancel_pending` não gera intenção nova (o cancelamento já está em curso); sem nota viva, nada — e SEM throw: o
       // espelho deixou de decidir, e um estorno (dinheiro) nunca fica preso por ele.
+      if (effect.creditReversed && tx.recordAudit) {
+        await tx.recordAudit({
+          tenantId: input.tenantId,
+          actorId: null,
+          action: "subscription_statement.credit_reversed",
+          entityId: savedStatement.id,
+          metadata: { count: effect.absorbedByCredit },
+        });
+      }
       const shouldCancelInvoice = intents
         ? live !== undefined && (live.status === "pending" || live.status === "authorized")
         : totalReversal && statement.invoiceStatus === "authorized" && input.keepInvoice !== true;

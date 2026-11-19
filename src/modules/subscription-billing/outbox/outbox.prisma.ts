@@ -46,6 +46,8 @@ import {
   type ResolveOutcome,
   type RetryByOperatorInput,
   type RetryByOperatorOutcome,
+  type ConfirmCancelledByOperatorInput,
+  type ConfirmCancelledByOperatorOutcome,
 } from "./outbox.repository.js";
 import {
   idempotencyKeyOf,
@@ -470,6 +472,39 @@ export class PrismaOutboxRepository implements OutboxRepository {
     });
   }
 
+  async deferOrphan(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "PROCESSING", attempt_started_at: now, last_error: lastError, next_attempt_at: null, updated_at: now });
+  }
+
+  async retargetUntriedInvoiceIssues(provider: string, now: Date): Promise<number> {
+    const tenants = await this.#tenantsWithRefs();
+    if (tenants.length === 0) return 0;
+    const counts = await forEachTenantRls<number>(this.client, tenants, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE billing_outbox
+            SET provider = $1, skip_reason = NULL, updated_at = $2
+          WHERE kind = 'invoice_issue' AND status = 'PENDING' AND attempts = 0 AND external_id IS NULL AND claimed_by IS NULL AND provider <> $1
+          RETURNING id`,
+        provider,
+        now,
+      )) as Array<{ id: string }>; // [RETARGET-01]
+      return [rows.length];
+    });
+    return counts.reduce((sum, n) => sum + n, 0);
+  }
+
+  async isChargeKnown(tenantId: string, statementId: string, chargeId: string): Promise<boolean> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT 1 FROM subscription_statement_charges WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND external_charge_id = $3 LIMIT 1`,
+        tenantId,
+        statementId,
+        chargeId,
+      )) as Array<{ '?column?': number }>;
+      return rows.length > 0;
+    });
+  }
+
   async markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
     return this.#mutate(tenantId, id, lease, { status: "FAILED", last_error: lastError, next_attempt_at: null, updated_at: now });
   }
@@ -662,6 +697,72 @@ export class PrismaOutboxRepository implements OutboxRepository {
         const rows = (await tx.$queryRawUnsafe(REOPEN_UPDATE_SQL, id, tenantId, now, dueDate ?? null)) as Row[];
         if (rows.length === 0) return { kind: "not_failed" };
         return { kind: "reopened", row: toDomain(rows[0]!), dueDateRewritten: dueDate !== undefined };
+      });
+    } catch (error) {
+      if (postgresErrorCode(error) === "55P03") throw new StatementError(409, "statement_busy", "The statement is busy; try again.");
+      throw error;
+    }
+  }
+
+  async confirmCancelledByOperator(tenantId: string, id: string, input: ConfirmCancelledByOperatorInput): Promise<ConfirmCancelledByOperatorOutcome> {
+    try {
+      return await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+        const owners = (await tx.$queryRawUnsafe(
+          `SELECT o.id, o.statement_id, o.kind, o.status, o.last_error, o.payload
+             FROM billing_outbox o
+             JOIN subscription_statements s ON s.id = o.statement_id AND s.tenant_id = o.tenant_id
+            WHERE o.id = $1::uuid AND o.tenant_id = $2::uuid
+            FOR NO KEY UPDATE OF s
+            FOR UPDATE OF o`,
+          id,
+          tenantId,
+        )) as Array<{ id: string; statement_id: string; kind: string; status: string; last_error: string | null; payload: Record<string, unknown> | null }>; // [CONFIRM-LOCK]
+        const owner = owners[0];
+        if (!owner) return { kind: "not_found" } satisfies ConfirmCancelledByOperatorOutcome;
+        if (owner.kind !== "charge_cancel" || owner.status !== "NEEDS_REVIEW" || !["charge_not_listed", "charge_state_unknown"].includes(owner.last_error ?? "")) {
+          return { kind: "not_allowed" } satisfies ConfirmCancelledByOperatorOutcome; // [CONFIRM-CODES]
+        }
+        if (String(owner.payload?.chargeId ?? "") !== input.chargeId) return { kind: "mismatch" } satisfies ConfirmCancelledByOperatorOutcome;
+
+        const updated = (await tx.$queryRawUnsafe(
+          `UPDATE billing_outbox
+              SET status = 'SENT', external_id = $3, last_error = NULL, skip_reason = NULL, next_attempt_at = NULL, updated_at = $4
+            WHERE id = $1::uuid AND tenant_id = $2::uuid
+            RETURNING *`,
+          id,
+          tenantId,
+          input.chargeId,
+          input.now,
+        )) as Row[];
+
+        await tx.$executeRawUnsafe(
+          `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4
+             WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND external_charge_id = $3`,
+          tenantId,
+          owner.statement_id,
+          input.chargeId,
+          input.now,
+        );
+
+        const chargeCreateId = typeof owner.payload?.chargeCreateId === "string" ? owner.payload.chargeCreateId : null;
+        if (chargeCreateId) {
+          await tx.$executeRawUnsafe(
+            `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = 'charge_cancelled', updated_at = $3
+               WHERE id = $1::uuid AND tenant_id = $2::uuid AND kind = 'charge_create' AND status = 'SENT'`,
+            chargeCreateId,
+            tenantId,
+            input.now,
+          );
+        }
+
+        await writeOutboxAuditInTx(tx, tenantId, {
+          actorId: input.actorId,
+          action: "billing_outbox.cancel_confirmed_by_operator",
+          entityId: id,
+          metadata: { statementId: owner.statement_id, kind: owner.kind, code: "operator_confirmed", reason: input.reason },
+        });
+
+        return { kind: "confirmed", row: toDomain(updated[0]!) } satisfies ConfirmCancelledByOperatorOutcome;
       });
     } catch (error) {
       if (postgresErrorCode(error) === "55P03") throw new StatementError(409, "statement_busy", "The statement is busy; try again.");
