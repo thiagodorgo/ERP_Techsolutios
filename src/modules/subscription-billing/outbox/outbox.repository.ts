@@ -136,6 +136,8 @@ export interface OutboxRepository {
    * `FAILED` com o `last_error` MANTIDO; a trilha `billing_outbox.resolved` (ids, `kind`, o código anterior e o motivo) vai
    * na MESMA transação. Vale para todos os `kind`. */
   resolve(tenantId: string, id: string, input: ResolveInput): Promise<ResolveOutcome>;
+  /** B-ASS-08c3 (F-B4): confirmação manual de cancelamento. */
+  confirmCancelledByOperator(tenantId: string, id: string, input: ConfirmCancelledByOperatorInput): Promise<ConfirmCancelledByOperatorOutcome>;
   /** B-ASS-08c1b (P10, o marcador OUTBOX-TENANT): a fila de UMA organização, sob o GUC dela e com `tenant_id` no predicado. */
   listForTenant(tenantId: string, filter: OutboxListFilter): Promise<readonly BillingOutboxRow[]>;
   findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined>;
@@ -245,6 +247,7 @@ export type InMemoryOutboxOptions = {
 
 export class InMemoryOutboxRepository implements OutboxRepository {
   readonly #rows = new Map<string, BillingOutboxRow>();
+  readonly #knownCharges = new Set<string>();
   readonly #byKey = new Map<string, string>();
   #claimGate: Promise<unknown> = Promise.resolve();
   private readonly clock: () => Date;
@@ -389,6 +392,21 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return this.#patch(tenantId, id, lease, { status: "PROCESSING", attemptStartedAt: now, lastError, nextAttemptAt: null, updatedAt: now });
   }
 
+  async retargetUntriedInvoiceIssues(provider: string, now: Date): Promise<number> {
+    let moved = 0;
+    for (const row of this.#rows.values()) {
+      if (row.kind !== "invoice_issue" || row.status !== "PENDING" || row.attempts !== 0 || row.externalId !== null || row.claimedBy !== null || row.provider === provider) continue;
+      this.#rows.set(row.id, { ...row, provider, skipReason: null, updatedAt: now });
+      moved += 1;
+    }
+    return moved;
+  }
+
+  async isChargeKnown(tenantId: string, statementId: string, chargeId: string): Promise<boolean> {
+    const key = `${tenantId}:${statementId}:${chargeId}`;
+    return this.#knownCharges.has(key);
+  }
+
   async markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
     return this.#patch(tenantId, id, lease, { status: "FAILED", lastError, nextAttemptAt: null, updatedAt: now });
   }
@@ -418,6 +436,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     // provedor desta cobrança que chegou antes do registro faz a cobrança nascer `confirmed`.
     const statement = await this.readStatement(tenantId, row.statementId);
     let recordedStatus = recordedChargeStatus(outcome.kind, details.status);
+    this.#knownCharges.add(`${tenantId}:${row.statementId}:${chargeId}`);
     if (recordedStatus === "pending" && (statement?.providerPayments ?? []).some((payment) => payment.source === row.provider && payment.externalChargeId === chargeId)) recordedStatus = "confirmed"; // [REG-PAID]
     await this.chargeOutcomeSink?.({
       tenantId,
@@ -522,6 +541,17 @@ export class InMemoryOutboxRepository implements OutboxRepository {
 
   /** A trilha do dublê (o Prisma grava em `audit_logs`): o `/resolve`. */
   readonly audits: Array<{ readonly tenantId: string; readonly action: string; readonly entityId: string; readonly metadata: Readonly<Record<string, string | number | boolean | null>> }> = [];
+
+  async confirmCancelledByOperator(tenantId: string, id: string, input: ConfirmCancelledByOperatorInput): Promise<ConfirmCancelledByOperatorOutcome> {
+    const row = this.#rows.get(id);
+    if (!row || row.tenantId !== tenantId) return { kind: "not_found" };
+    if (row.kind !== "charge_cancel" || row.status !== "NEEDS_REVIEW" || !["charge_not_listed", "charge_state_unknown"].includes(row.lastError ?? "")) return { kind: "not_allowed" }; // [CONFIRM-CODES]
+    if (String(row.payload.chargeId ?? "") !== input.chargeId) return { kind: "mismatch" };
+    const next: BillingOutboxRow = { ...row, status: "SENT", lastError: null, skipReason: null, externalId: input.chargeId, updatedAt: input.now };
+    this.#rows.set(id, next);
+    this.audits.push({ tenantId, action: "billing_outbox.cancel_confirmed_by_operator", entityId: id, metadata: { statementId: row.statementId, kind: row.kind, code: "operator_confirmed", reason: input.reason } });
+    return { kind: "confirmed", row: next };
+  }
 
   async resolve(tenantId: string, id: string, input: ResolveInput): Promise<ResolveOutcome> {
     const row = this.#rows.get(id);
