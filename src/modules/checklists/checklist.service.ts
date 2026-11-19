@@ -40,6 +40,7 @@ import {
 import type { WorkOrderService } from "../work-orders/work-order.service.js";
 import {
   actorMutatesAssignedOnly,
+  actorReadsAssignedOnly,
   isPreviouslyAssignedRefusal,
   WorkOrderError,
   type WorkOrderActorContext,
@@ -395,7 +396,7 @@ export class ChecklistService {
     const run = await this.repository.getRun(actor.tenantId, runId);
 
     if (!run) {
-      throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
+      throw checklistRunNotFoundError();
     }
 
     return run;
@@ -458,6 +459,55 @@ export class ChecklistService {
     }
 
     return visible;
+  }
+
+  /**
+   * B-WO-LEITURA — a lista de vistorias por OS para quem vai LER. O 422 do pedido sem `workOrderId` nasce em
+   * `listRunsForWorkOrder`, ANTES da porta, e vale igual para todo papel (A8). Para o papel de campo, a OS alheia,
+   * inexistente ou malformada responde a MESMA lista vazia (200 `[]`): o app trata 404 como offline (E6 do plano).
+   * As runs alheias são lidas e descartadas aqui, no servidor — nunca saem.
+   */
+  async listRunsForWorkOrderForRead(
+    actor: ActorContext,
+    workOrderIdRaw: unknown,
+    checklistIdRaw?: unknown,
+    options?: { readonly roleAware?: boolean },
+  ): Promise<readonly ChecklistRun[]> {
+    const runs = await this.listRunsForWorkOrder(actor, workOrderIdRaw, checklistIdRaw, options);
+    if (!(await this.canReadWorkOrder(actor, typeof workOrderIdRaw === "string" ? workOrderIdRaw.trim() : ""))) return []; // B-WO-LEITURA:vistoria-lista
+    return runs;
+  }
+
+  /** B-WO-LEITURA — a OS é legível pelo ator? Organização inteira: sim. Campo: `getForRead` sem 404/400; 503 sobe (fail-closed). */
+  private async canReadWorkOrder(actor: ActorContext, workOrderId: string): Promise<boolean> {
+    const woActor = toWorkOrderActor(actor);
+    if (!actorReadsAssignedOnly(woActor)) return true;
+    if (!workOrderId) return false;
+    try {
+      await (await this.resolveWorkOrderService()).getForRead(woActor, workOrderId);
+      return true;
+    } catch (error) {
+      if (error instanceof WorkOrderError && (error.statusCode === 404 || error.statusCode === 400)) return false;
+      throw error;
+    }
+  }
+
+  /**
+   * B-WO-LEITURA — irmã de `assertRunMutationScope`, para LEITURA. O escopo resolve ANTES do `getRun` (S-W3): com o
+   * resolvedor de perfil fora, inexistente e alheia respondem o mesmo 503. Toda recusa (OS alheia, OS sumida, run sem
+   * OS) é o 404 do `getRun` para o inexistente.
+   */
+  async assertRunReadScope(actor: ActorContext, runId: string): Promise<RepositoryRunDetails> {
+    const woActor = toWorkOrderActor(actor);
+    const readScope = await (await this.resolveWorkOrderService()).readScopeFor(woActor); // 503 nasce aqui, antes do getRun
+    const details = await this.getRun(actor, runId);
+    if (!readScope) return details;
+    const workOrderId =
+      details.run.relatedEntityType === "work_order" && typeof details.run.relatedEntityId === "string"
+        ? details.run.relatedEntityId.trim()
+        : "";
+    if (!(await this.canReadWorkOrder(actor, workOrderId))) throw checklistRunNotFoundError(); // B-WO-LEITURA:vistoria-porta
+    return details;
   }
 
   /**
@@ -642,7 +692,7 @@ export class ChecklistService {
     runId: string,
     attachmentId: string,
   ): Promise<ChecklistAttachmentDownload> {
-    const details = await this.getRun(actor, runId);
+    const details = await this.assertRunReadScope(actor, runId); // B-WO-LEITURA:vistoria-anexo-download
     const attachment = details.attachments.find((item) => item.id === attachmentId);
 
     if (!attachment) {
@@ -819,7 +869,7 @@ export class ChecklistService {
   }
 
   async getComparison(actor: ActorContext, runId: string) {
-    const details = await this.getRun(actor, runId);
+    const details = await this.assertRunReadScope(actor, runId); // B-WO-LEITURA:vistoria-comparacao
     const template = await this.repository.getTemplateForRun(actor.tenantId, details.run.templateId);
 
     return {
@@ -1004,6 +1054,12 @@ function assertTemplateStatusUsesDedicatedEndpoint(status: UpdateChecklistTempla
   if (status === "archived") {
     throw new ChecklistError(409, "CHECKLIST_STATUS_REQUIRES_DELETE", "status_requires_delete_endpoint", "Arquive o modelo pela ação Excluir.");
   }
+}
+
+// B-WO-LEITURA — o 404 da vistoria, num lugar só: o `getRun` (id inexistente) e a porta de leitura (`assertRunReadScope`,
+// vistoria cuja OS não é do papel de campo) lançam ESTE erro, e o alheio não tem como divergir do inexistente.
+function checklistRunNotFoundError(): ChecklistError {
+  return new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
 }
 
 function toWorkOrderActor(actor: ActorContext): WorkOrderActorContext {

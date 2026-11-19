@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { setTenantRlsContext, withTenantRls } from "../../database/rls.js";
 import { workOrderAssignRepositoryForTx } from "../work-orders/work-order-scope.js";
+import { isWorkOrderUuid } from "../work-orders/work-order.validators.js";
 import type {
   ChangeFieldDispatchStatusInput,
   CreateFieldDispatchInput,
@@ -129,6 +130,11 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
   }
 
   async list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {
+    // B-WO-LEITURA — o alvo imposto ao papel de campo é o `actor.userId`; fora da forma de UUID ele não chega a consultar
+    // (`operator_user_id` é `@db.Uuid`): página vazia, como `assignedToActorUuidOperatorIds` na lista de OS.
+    if (input.operatorUserId !== undefined && !isWorkOrderUuid(input.operatorUserId)) {
+      return { items: [], total: 0, limit: input.limit, offset: input.offset };
+    }
     const where = buildWhere(input);
     const [items, total] = await Promise.all([
       this.client.fieldDispatch.findMany({
@@ -364,6 +370,11 @@ function buildWhere(input: ListFieldDispatchesInput): Prisma.FieldDispatchWhereI
     ...(input.status ? { status: input.status } : {}),
     ...(input.workOrderId ? { work_order_id: input.workOrderId } : {}),
     ...(input.operatorUserId ? { operator_user_id: input.operatorUserId } : {}),
+    // B-WO-LEITURA — o despacho cuja OS ainda é do ator: a relação `work_order` (já existente, sem migração); `in: []`
+    // não devolve nada.
+    ...(input.workOrderAssignedOperatorIn
+      ? { work_order: { assigned_operator_id: { in: input.workOrderAssignedOperatorIn.filter(isWorkOrderUuid) } } }
+      : {}),
     ...(input.search
       ? {
           OR: [

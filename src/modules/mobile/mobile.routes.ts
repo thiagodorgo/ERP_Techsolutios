@@ -10,7 +10,7 @@ import { createDefaultWorkOrderService } from "../work-orders/work-order.service
 import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
 import { syncMobileEvidenceActions } from "./mobile-evidence-sync.js";
 import { uploadMobileEvidenceFile } from "./mobile-evidence-upload.js";
-import { getMobileInventoryAvailability, syncMobileInventoryActions } from "./mobile-inventory-sync.js";
+import { MOBILE_INVENTORY_SYNC_PERMISSION, syncMobileInventoryActions } from "./mobile-inventory-sync.js";
 import { syncMobileTelemetry } from "./mobile-telemetry-sync.js";
 import { syncMobileWorkOrderActions } from "./mobile-work-order-sync.js";
 
@@ -163,15 +163,6 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     }),
   );
 
-  router.get(
-    "/mobile/inventory/availability",
-    handleAsyncRoute(async (request, response) => {
-      response.json({
-        data: getMobileInventoryAvailability(request.tenantContext, request.query ?? {}),
-      });
-    }),
-  );
-
   router.post(
     "/mobile/sync/inventory-actions",
     handleAsyncRoute(async (request, response) => {
@@ -299,15 +290,13 @@ function buildFeatureFlags(
     },
     inventory_mobile: {
       enabled: hasModule(modules, "inventory") && hasPermission(actor, "inventory.read"),
-      status: hasModule(modules, "inventory") ? "partial" : "unavailable",
-      reason: hasModule(modules, "inventory") ? "availability_and_sync_partial" : "module_disabled",
+      status: hasModule(modules, "inventory") ? "implemented" : "unavailable",
+      ...(hasModule(modules, "inventory") ? {} : { reason: "module_disabled" }),
     },
     inventory_sync: {
-      enabled: hasModule(modules, "inventory") && (
-        hasPermission(actor, "inventory.manage") || hasPermission(actor, "work_orders:update")
-      ),
-      status: hasModule(modules, "inventory") ? "partial" : "unavailable",
-      reason: hasModule(modules, "inventory") ? "in_memory_contract" : "module_disabled",
+      enabled: hasModule(modules, "inventory") && hasPermission(actor, MOBILE_INVENTORY_SYNC_PERMISSION),
+      status: hasModule(modules, "inventory") ? "implemented" : "unavailable",
+      ...(hasModule(modules, "inventory") ? {} : { reason: "module_disabled" }),
     },
     generic_evidence_upload: {
       enabled: (
@@ -340,8 +329,8 @@ function buildMobilePolicy() {
       client_action_id_required: true,
       max_batch_size: 50,
       retry_backoff_seconds: [10, 30, 120],
-      implemented_domains: ["expenses", "work_orders"],
-      partial_domains: ["checklists", "inventory", "evidence"],
+      implemented_domains: ["expenses", "work_orders", "inventory"],
+      partial_domains: ["checklists", "evidence"],
       planned_domains: [],
     },
     evidence: {
@@ -401,8 +390,8 @@ function buildCatalogs(
         endpointCatalogItem("field_location_send", "POST /api/v1/mobile/field-locations", "implemented"),
         endpointCatalogItem("work_order_sync", "POST /api/v1/mobile/sync/work-order-actions", "implemented"),
         endpointCatalogItem("checklist_sync", "POST /api/v1/mobile/sync/checklist-actions", "partial"),
-        endpointCatalogItem("inventory_availability", "GET /api/v1/mobile/inventory/availability", "partial"),
-        endpointCatalogItem("inventory_sync", "POST /api/v1/mobile/sync/inventory-actions", "partial"),
+        endpointCatalogItem("technician_stock", "GET /api/v1/mobile/technician/stock", "implemented"),
+        endpointCatalogItem("inventory_sync", "POST /api/v1/mobile/sync/inventory-actions", "implemented"),
         endpointCatalogItem("evidence_sync", "POST /api/v1/mobile/sync/evidence-actions", "partial"),
         endpointCatalogItem("evidence_upload", "POST /api/v1/mobile/evidence-uploads", "partial"),
       ],

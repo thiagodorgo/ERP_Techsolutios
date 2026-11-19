@@ -41,6 +41,11 @@ const syncUnroutableMissingReasonMessage =
 const syncUnroutableOrphanMessage =
     'A OS deste registro não foi enviada ao servidor. '
     'Descarte o registro e registre de novo na OS.';
+// B-O6R-04b (D8): a entrada e a saída avulsas de estoque saíram do app.
+const syncUnroutableInventoryRetiredMessage =
+    'O aplicativo não registra mais entrada e saída avulsas de estoque. '
+    'Este lançamento não chegou ao servidor. '
+    'Refaça no sistema web e descarte este registro.';
 
 /// A rota de cada constante de `*SyncActionTypes` (`api_contracts.dart`).
 const syncActionRoutes = <String, SyncActionRoute>{
@@ -65,9 +70,10 @@ const syncActionRoutes = <String, SyncActionRoute>{
   ChecklistSyncActionTypes.divergenceCreate: SyncActionRoute.replay,
   ChecklistSyncActionTypes.acknowledgementCreate: SyncActionRoute.replay,
   ChecklistSyncActionTypes.attachmentAttach: SyncActionRoute.replay,
-  // Estoque: o material da OS reenvia (`InventorySyncReplayService`, #551); entrada e saída ainda não.
-  InventorySyncActionTypes.entryCreate: SyncActionRoute.awaitingBlock,
-  InventorySyncActionTypes.exitCreate: SyncActionRoute.awaitingBlock,
+  // Estoque: o material da OS reenvia (`InventorySyncReplayService`, #551). Entrada e saída avulsas saíram do app
+  // (B-O6R-04b, `D-O6R-04B-RETIRADA`): a ação antiga que ficou na fila é "sem envio", com a frase própria.
+  InventorySyncActionTypes.entryCreate: SyncActionRoute.unroutable,
+  InventorySyncActionTypes.exitCreate: SyncActionRoute.unroutable,
   InventorySyncActionTypes.materialAdd: SyncActionRoute.replay,
   InventorySyncActionTypes.materialRemove: SyncActionRoute.replay,
   // Evidências (`EvidenceSyncActionTypes.supported`).
@@ -80,10 +86,7 @@ const syncActionRoutes = <String, SyncActionRoute>{
 };
 
 /// A pendência dona de cada tipo da rota "aguarda": quem fechá-la dá a rota "envio" ao tipo.
-const syncActionAwaitingOwner = <String, String>{
-  InventorySyncActionTypes.entryCreate: 'P-MOBILE-SYNC-ESTOQUE-TIPOS',
-  InventorySyncActionTypes.exitCreate: 'P-MOBILE-SYNC-ESTOQUE-TIPOS',
-};
+const syncActionAwaitingOwner = <String, String>{};
 
 /// Status do app sem equivalente no servidor (o lote os recusa com `invalid_status`, E18 do plano).
 const kStatusSemEquivalenteNoServidor = <String>{
@@ -126,6 +129,10 @@ String syncUnroutableMessageFor(SyncAction action) {
   }
   if (_isStatusWithoutServerEquivalent(action)) {
     return syncUnroutableStatusMessage;
+  }
+  if (action.type == InventorySyncActionTypes.entryCreate ||
+      action.type == InventorySyncActionTypes.exitCreate) {
+    return syncUnroutableInventoryRetiredMessage;
   }
   return syncUnroutableVersionMessage;
 }

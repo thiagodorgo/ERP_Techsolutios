@@ -59,7 +59,9 @@ export class FieldDispatchController {
 
   async get(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const dispatch = await service.get(actor, readRouteParam(request.params.dispatchId));
+    // B-WO-LEITURA — o detalhe pela porta de leitura: o papel de campo lê só o despacho que o tem como alvo e cuja OS
+    // ainda é dele; o resto é o 404 do inexistente.
+    const dispatch = await service.getForRead(actor, readRouteParam(request.params.dispatchId));
     const timeline = await service.timeline(actor, dispatch.id);
 
     return {
@@ -118,7 +120,9 @@ export class FieldDispatchController {
   // Espelha WorkOrderController.timeline; o DTO não vaza tenant_id (field-dispatch.dto.ts).
   async timeline(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const events = await service.timeline(actor, readRouteParam(request.params.dispatchId));
+    // B-WO-LEITURA — a porta de leitura antes da linha do tempo (a mesma do detalhe).
+    const dispatch = await service.getForRead(actor, readRouteParam(request.params.dispatchId));
+    const events = await service.timeline(actor, dispatch.id);
 
     return {
       data: events.map(toFieldDispatchEventDto),

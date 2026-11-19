@@ -1,4 +1,4 @@
-# B-PLAT-PERMISSAO — a checagem da plataforma confere a permissão pedida; 6 chaves só para o super_admin (item 72 do portão)
+# B-PLAT-PERMISSAO — a checagem da plataforma confere a permissão pedida; 6 chaves só para o super_admin (pendência ALTA fora do portão)
 
 > **Plano:** `plano-B-PLAT-PERMISSAO.md` + Emenda 1 + Emenda 2 (a mais nova prevalece), escritos fora do repositório
 > (`erp-pausa-2026-10-03/planos/`): o plano por `plano-plat-perm-cl` (Claude Opus 5.5, topo declarado com o Fable suspenso),
@@ -12,19 +12,21 @@
 
 ## Objetivo
 
-O item 72 (`P-PLAT-PORTAO-SEM-PERMISSAO`): `requirePlatformPermission(P)` passa só quem tem um papel de plataforma
+A pendência `P-PLATAFORMA-PERMISSAO-IGNORADA` (ex-item 72 do portão, agora fora por `D-DONO-1711-72-FORA-DO-PORTAO`): `requirePlatformPermission(P)` passa só quem tem um papel de plataforma
 (`PLATFORM_ROLES`) **E** P no efetivo (o catálogo do papel por `createTenantContextFromRequestActor`; no cabeçalho legado,
 a interseção com `x-permissions`); senão 403 `platform_permission_required` (o mesmo `reason` e a mesma mensagem de
 hoje). `x-permissions` presente, mesmo vazio, é explícito (fail-closed). As 6 chaves que as rotas e as telas pediam e
-não estavam no catálogo entram nele, com a migração de concessão só ao `super_admin`.
+não estavam no catálogo entram nele, com a migração de concessão só ao `super_admin`. **Pré-requisito:** este bloco
+fica pronto antes da Fase 6 da AWS (criação do 1º administrador da plataforma), por `D-AWS-13`.
 
 ## As decisões do dono (17/11, canal do artefato)
 
 | Pergunta | Resposta | ID |
 |---|---|---|
-| `d72-rev` | manter | `D-DONO-1711-ITEM-72-REVISTO` |
+| `d72-rev` | fora-do-portão | `D-DONO-1711-72-FORA-DO-PORTAO` |
 | `d72-p1` | sim | `D-DONO-1711-72-P1` (migração em `prisma/` autorizada, só as 6 chaves, só `super_admin`) |
 | `d72-p2` | nao | `D-DONO-1711-72-P2` (o `settle` não é segregado) |
+| `d72-aws13` | antes-da-fase-6 | `D-AWS-13` |
 
 ## Fatias (um commit cada)
 

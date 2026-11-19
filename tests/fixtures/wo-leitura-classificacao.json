@@ -1,0 +1,709 @@
+{
+  "GET /api/v1/approvals/:approvalId": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:MOTCANX"
+  },
+  "GET /api/v1/approvals/pending": {
+    "classe": "LISTA·FILTRO-SERVIDOR",
+    "marcador": "canario:MOTCANX"
+  },
+  "GET /api/v1/attachments": {
+    "classe": "SEM-DADO-DE-OS",
+    "nota": "permissão no serviço; work_order não registrado em attachment-entity-resolver"
+  },
+  "GET /api/v1/attachments/:attachmentId/download": {
+    "classe": "SEM-DADO-DE-OS",
+    "nota": "permissão no serviço; work_order não registrado em attachment-entity-resolver"
+  },
+  "GET /api/v1/audit-events": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/auth/identity-links": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/authority-credentials": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/billing/subscription": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/branches": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/branches/:branchId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/cheques": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/cheques/:chequeId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/commissions/basis-events": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/commissions/calculations": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/commissions/calculations/mine": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/commissions/policies": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/commissions/statements": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/commissions/statements/my-summary": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/commissions/statements/summary": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/customers": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/customers/:customerId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/cycle-counts": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/cycle-counts/:cycleCountId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/damages": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/damages/:damageId": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/damages/:damageId/attachments": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/damages/:damageId/attachments/:attachmentId/download": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/dashboard/summary": {
+    "classe": "AGREGADO·ESCOPO",
+    "marcador": "canario:TITCANX"
+  },
+  "GET /api/v1/expense-categories": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/expense-policies": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/expense-reports": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/expense-reports/:reportId": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/expense-reports/:reportId/items/:itemId/receipt": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/expense-reports/:reportId/items/:itemId/receipt/file": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/field-locations/history": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/field-locations/latest": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-accounts": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-accounts/:financialAccountId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-accounts/:financialAccountId/balance": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-entries": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-entries/:financialEntryId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-entries/aggregate": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-entries/reconciliation-policy": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-periods": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-periods/:period": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-summary": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-titles": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/financial-titles/:financialTitleId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/fines": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/fines/:fineId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/fines/:id/payable": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/fuel-logs": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/fuel-logs/:fuelLogId": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/fuel-logs/:id/payable": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/health": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/health/ready": {
+    "classe": "SEM-DADO-DE-OS",
+    "nota": "sem permissão por desenho"
+  },
+  "GET /api/v1/health/worker": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/auction": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/auction/settlement": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/charges": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/charges/statement": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/checklist-runs": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/custody-history": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/events": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/inspection": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/notifications": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/online-payment": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/online-payments": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/release": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/impound-processes/:processId/verify": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/insurance-policies": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/insurance-policies/:id/payable": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/insurance-policies/:insurancePolicyId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/inventory-items": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/inventory-items/:itemId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/inventory-items/:itemId/custody-summary": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/jurisdiction-defaults": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/jurisdiction-profiles": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/jurisdiction-profiles/:profileId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/maintenance-orders": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/maintenance-orders/:id/payable": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/maintenance-orders/:maintenanceOrderId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/maintenance-orders/:maintenanceOrderId/items": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/maintenance-orders/odometer-suggestion": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/me": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/me/tenants": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/mobile/bootstrap": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/mobile/checklist-runs": {
+    "classe": "LISTA·FILTRO-SERVIDOR",
+    "marcador": "id:run"
+  },
+  "GET /api/v1/mobile/checklist-runs/:runId/attachments/:attachmentId/download": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "binario:png-semente"
+  },
+  "GET /api/v1/mobile/checklist-runs/:runId/comparison": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:RESPCANX"
+  },
+  "GET /api/v1/mobile/checklists/:checklistId/render": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/mobile/checklists/available": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/mobile/technician/stock": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/navigation/menu": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/notifications": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/notifications/scheduled": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/notifications/scheduled/:scheduledNotificationId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/notifications/scheduled/central": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/notifications/unread-count": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/operations/dispatches": {
+    "classe": "LISTA·FILTRO-SERVIDOR",
+    "marcador": "canario:OBSCANX"
+  },
+  "GET /api/v1/operations/dispatches/:dispatchId": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:OBSCANX"
+  },
+  "GET /api/v1/operations/dispatches/:dispatchId/timeline": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "id:despacho"
+  },
+  "GET /api/v1/operations/field-events/health": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/operations/field-events/stream": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/operations/technician-performance": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/operations/work-orders-timeseries": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-RBAC-TECNICO-LEITURAS-FORA-DE-OS"
+  },
+  "GET /api/v1/operator-profiles": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/operator-profiles/:profileId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/patios/dashboard/summary": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/platform/billing/credits": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/economic-groups": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/economic-groups/:groupId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/economic-groups/:groupId/history": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/fx-rates": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/invoices/backlog": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/outbox": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/overview": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/plans": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/plans/:planId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/plans/:planId/versions": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/plans/summary": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/providers": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/providers/:provider": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/statements": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/statements/:statementId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/statements/:statementId/charges": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/tenants/:tenantId/billing-profile": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/tenants/:tenantId/subscription": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/tenants/:tenantId/subscription/history": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/tenants/:tenantId/usage": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-cost-allocations/runs": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-cost-allocations/runs/:runId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-cost-allocations/runs/:runId/tenant-allocations": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-cost-allocations/summary": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-costs/imports": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-costs/imports/:importId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-costs/line-items": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-costs/summary": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-usage/summary": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-usage/tenants/:tenantId/daily": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/cloud-usage/tenants/:tenantId/summary": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/overview": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/tenants": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/tenants/:tenantId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/tenants/:tenantId/detail": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/tenants/:tenantId/modules": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/pois": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/pois/:poiId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/price-tables": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/price-tables/:priceTableId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/professional-statements": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/professional-statements/:groupId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/roles": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/roles/:role": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/service-catalog": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/service-catalog/:serviceId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/service-quotes": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/service-quotes/:serviceQuoteId": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/service-quotes/:serviceQuoteId/items": {
+    "classe": "SEM-DADO-DE-OS",
+    "pendencia": "P-WO-LEITURA-ID-EM-FROTA"
+  },
+  "GET /api/v1/sessions": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/sessions/access-history": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/stock-movements": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/stock-movements/:movementId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/suppliers": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/suppliers/:supplierId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/tags": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/tags/:tagId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/tariffs": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/tariffs/:tariffId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/teams": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/teams/:teamId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/telemetry/access": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/telemetry/devices": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/telemetry/km": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/telemetry/refusals": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/telemetry/track": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/tenant-settings": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/tenant-settings/:key": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/tenant/checklist-components": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/tenant/checklists": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/tenant/checklists/:checklistId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/tenant/checklists/templates": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/tenants": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/tenants/:tenantId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/users": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/users/:userId": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/vehicle-identities": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/vehicle-identities/:identityId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/vehicles": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/vehicles/:vehicleId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/work-orders": {
+    "classe": "LISTA·FILTRO-SERVIDOR",
+    "marcador": "canario:TITCANX"
+  },
+  "GET /api/v1/work-orders/:workOrderId": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:TITCANX"
+  },
+  "GET /api/v1/work-orders/:workOrderId/attachments": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:ANEXOCANX"
+  },
+  "GET /api/v1/work-orders/:workOrderId/attachments/:attachmentId/download": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "binario:png-semente"
+  },
+  "GET /api/v1/work-orders/:workOrderId/audit-logs": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "igual-ao-gestor"
+  },
+  "GET /api/v1/work-orders/:workOrderId/comments": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:COMCANX"
+  },
+  "GET /api/v1/work-orders/:workOrderId/financial-items": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:ITEMCANX"
+  },
+  "GET /api/v1/work-orders/:workOrderId/map-start-points": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:ENDCANX"
+  },
+  "GET /api/v1/work-orders/:workOrderId/timeline": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:MOTCANX"
+  },
+  "GET /api/v1/yard-areas/:areaId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/yard-areas/:areaId/spots": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/yard-spots/:spotId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/yards": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/yards/:yardId": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/yards/:yardId/areas": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/yards/:yardId/occupancy": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "MIDDLEWARE /api/v1/auth/identity-links · (anônima)": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/billing/subscription · (anônima)": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/billing/subscription · rejectPlatformActor": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/billing/subscription · rejectTenantOverride": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/billing/subscription · tenantContextMiddleware": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/me · (anônima)": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/me · tenantContextMiddleware": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/navigation · (anônima)": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/navigation · tenantContextMiddleware": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/platform · (anônima)": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/sessions · (anônima)": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/sessions · tenantContextMiddleware": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  }
+}

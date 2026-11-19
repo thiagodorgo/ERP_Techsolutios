@@ -138,6 +138,50 @@ export function actorMutatesAssignedOnly(actor: WorkOrderActorContext): boolean 
   return hasFieldRole && !hasTenantWide;
 }
 
+// B-WO-LEITURA — ESCOPO POR OBJETO na LEITURA de OS (OS, lista, vistoria, despacho, aprovação e painel). Mapa PRÓPRIO,
+// separado do de mutação. Três valores:
+//   tenant_wide   → lê a organização inteira, e ALARGA quem também tem papel de campo (gestão e despacho).
+//   assigned_only → o papel de CAMPO: lê só a OS atribuída a si (l.45 execute/update-assigned; l.34 Dashboard scoped).
+//   nao_alarga    → lê a organização inteira quando está SOZINHO (a l.45 dá read · material-view · support-view), mas NÃO
+//                   alarga quem também tem papel de campo: suporte, estoque, financeiro, visualizador e auditor. Decisões
+//                   do dono (18/11, D-DONO-1811-71-MESMA-REGRA e D-DONO-1811-71-VISAO-SO-COM-PERMISSAO): sem a concessão
+//                   de um superior, o técnico que acumula um desses vê só as OS e os despachos dele em TODA leitura; o
+//                   módulo próprio do outro papel (a Auditoria, `GET /audit-events`) não passa por este mapa e segue como é.
+//                   A concessão é o papel `tenant_wide` "Visão da organização" (bloco B-USERS-CONCESSAO-PAINEL).
+// `satisfies Record<Role,…>`: papel novo sem entrada reprova o `npm run check` (o idioma do 07a).
+export const WORK_ORDER_READ_SCOPE = {
+  super_admin: "tenant_wide",
+  platform_admin: "tenant_wide",
+  tenant_admin: "tenant_wide",
+  manager: "tenant_wide",
+  operator: "tenant_wide",
+  field_dispatcher: "tenant_wide",
+  technician: "assigned_only",
+  field_technician: "assigned_only",
+  viewer: "nao_alarga",
+  finance: "nao_alarga",
+  inventory: "nao_alarga",
+  auditor: "nao_alarga",
+  support: "nao_alarga",
+} as const satisfies Record<Role, "tenant_wide" | "assigned_only" | "nao_alarga">;
+
+/**
+ * B-WO-LEITURA — o ator lê só a OS atribuída a ele? Regra de PRESENÇA, a mesma de `actorMutatesAssignedOnly`:
+ * verdadeiro quando o ator tem pelo menos um papel `assigned_only` E nenhum papel `tenant_wide`; `nao_alarga` não conta
+ * para nenhum lado (suporte, estoque, financeiro, visualizador e auditor não escopam sozinhos e não alargam o técnico). Resolução por
+ * UNIÃO, como `resolvePermissionsForRoles`: um papel `tenant_wide` basta para ler a organização inteira. Papel fora
+ * do mapa não conta como `tenant_wide` (fail-closed: `[field_technician, desconhecido]` fica escopado); `roles: []`
+ * (chamador interno) não cai no escopo, pelo mesmo motivo do 07a. Para os 13 papéis do catálogo, isto coincide com
+ * "todos os papéis são assigned_only".
+ */
+export function actorReadsAssignedOnly(actor: WorkOrderActorContext): boolean {
+  const scopes: Record<string, "tenant_wide" | "assigned_only" | "nao_alarga" | undefined> = WORK_ORDER_READ_SCOPE;
+  const roles = actor.roles ?? [];
+  const hasFieldRole = roles.some((role) => scopes[role] === "assigned_only");
+  const hasTenantWide = roles.some((role) => scopes[role] === "tenant_wide");
+  return hasFieldRole && !hasTenantWide; // B-WO-LEITURA:predicado
+}
+
 export type WorkOrder = {
   readonly id: string;
   readonly tenantId: string;
@@ -620,6 +664,12 @@ export function workOrderNotAssignedError(wasPreviouslyAssigned = false): WorkOr
     "Field actors can only change work orders assigned to them.",
     wasPreviouslyAssigned,
   );
+}
+
+// B-WO-LEITURA — o 404 da OS, num lugar só: o `get` (id inexistente) e a porta de leitura (`getForRead`, OS que não é
+// do papel de campo) lançam ESTE erro, e o texto do alheio não tem como divergir do inexistente.
+export function workOrderNotFoundError(): WorkOrderError {
+  return new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
 }
 
 // O tipo de conflito que os lotes do app devolvem ao ex-técnico (`conflicts[]`), e quem decide o que fazer com o

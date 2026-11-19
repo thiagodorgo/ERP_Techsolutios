@@ -162,7 +162,30 @@ export function isLiveChecklistLink(link: WorkOrderChecklistLink): boolean {
 }
 
 /**
- * ORDEM DA FILA — e, no topo dela, a PRIMÁRIA: menor `order_index`, desempate por `created_at` e por `id`.
+ * B-GUI-02 (Emenda 2, §1.2) — o PESO da etapa na escolha da primária. A coleta vem antes de tudo; entre as que não
+ * são coleta (entrega, geral, desconhecida), a ordem continua a da fila. É a MESMA regra nos três lugares que decidem
+ * a primária (este comparador, o espelho da criação e o `sort` do despacho): se um deles divergisse, o formulário
+ * congelado de uma vistoria seria carimbado na linha de outra.
+ */
+export function checklistRoleRank(role: WorkOrderChecklistRole): number {
+  return role === "collection" ? 0 : 1;
+}
+
+/**
+ * B-GUI-02 (Emenda 2, §1.2 S4) — o conjunto já foi CONGELADO por um despacho: o espelho da ordem ou alguma linha viva
+ * carrega formulário congelado.
+ */
+export function isChecklistSetFrozen(
+  workOrder: { readonly checklistSnapshot?: Record<string, unknown> | null },
+  links: readonly WorkOrderChecklistLink[],
+): boolean {
+  return workOrder.checklistSnapshot != null || links.some((link) => isLiveChecklistLink(link) && link.checklistSnapshot != null);
+}
+
+/**
+ * ORDEM DA FILA — e, no topo dela, a PRIMÁRIA: a vistoria de COLETA viva vem primeiro, pela etapa (`checklistRoleRank`,
+ * B-GUI-02); entre as coletas, e entre as que não são coleta, menor `order_index`, desempate por `created_at` e por `id`.
+ * Sem coleta viva, a primária é a de menor `order_index`, como antes.
  * A primária é a linha que o espelho legado (`work_orders.checklist_id` + `checklist_snapshot`) reproduz e a
  * única que o despacho provisiona nesta fatia (§7.3 do plano). Comparador ÚNICO: memória e Prisma o
  * compartilham, senão o conjunto congelado dependeria do modo de persistência.
@@ -171,6 +194,8 @@ export function sortChecklistLinks(
   links: readonly WorkOrderChecklistLink[],
 ): readonly WorkOrderChecklistLink[] {
   return [...links].sort((left, right) => {
+    const byRole = checklistRoleRank(left.role) - checklistRoleRank(right.role);
+    if (byRole !== 0) return byRole;
     if (left.orderIndex !== right.orderIndex) return left.orderIndex - right.orderIndex;
     const leftCreated = left.createdAt.getTime();
     const rightCreated = right.createdAt.getTime();
@@ -333,6 +358,20 @@ export function workOrderChecklistCustomerScopedConfirmationError(): WorkOrderEr
     "WORK_ORDER_CHECKLIST_CUSTOMER_SCOPED",
     "checklist_customer_scoped_confirmation_required",
     "Esta vistoria foi exigida pelo contrato do cliente. Confirme explicitamente a retirada e informe o motivo.",
+  );
+}
+
+/**
+ * B-GUI-02 (Emenda 2, §1.2 S4, BLOQ 3) — com a primária escolhida pela etapa, uma coleta incluída DEPOIS de um envio
+ * que não tinha coleta passaria à frente da primária congelada: a primária viraria uma linha sem congelamento, e o app
+ * poderia abrir um formulário que o despacho nunca viu. Por isso a coleta não entra depois desse envio.
+ */
+export function workOrderChecklistCollectionAfterDispatchError(): WorkOrderError {
+  return new WorkOrderError(
+    409,
+    "WORK_ORDER_CONFLICT",
+    "collection_after_dispatch",
+    "Esta OS já foi enviada sem vistoria de coleta; a coleta não pode entrar depois do envio.",
   );
 }
 

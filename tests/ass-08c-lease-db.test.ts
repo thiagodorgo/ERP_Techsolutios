@@ -22,6 +22,11 @@ import { fileURLToPath } from "node:url";
 import { chargeCreateClaimVerdict, runDispatchOutbox, type DispatchAuditEvent } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
 import { leaseOf } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
+import { InvoiceOutboxHandler, taxProfileFromSettings } from "../src/modules/subscription-billing/outbox/invoice.dispatch.js";
+import { PrismaStatementInvoiceRepository } from "../src/modules/subscription-billing/invoices/invoices.prisma.js";
+import type { StatementInvoiceRepository } from "../src/modules/subscription-billing/invoices/invoices.repository.js";
+import type { InvoiceProviderPort } from "../src/modules/subscription-billing/providers/invoice/invoice-provider.port.js";
+import { PrismaStatementRepository } from "../src/modules/subscription-billing/statements/statement.prisma-runtime.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import type { PaymentProviderPort } from "../src/modules/subscription-billing/providers/payment/payment-provider.port.js";
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
@@ -295,5 +300,121 @@ if (!connectionString) {
     assert.deepEqual(audits.map((event) => event.action), ["billing_outbox.lease_lost"]);
     const after = await stored(seeded.outboxId);
     assert.deepEqual([after.status, after.claimed_by, after.external_id], ["PROCESSING", "dispatch-outbox:ladrao", null]);
+  });
+
+  // B-ASS-08c2 (plano §4.12, §5.5) · L4 — o zumbi da órfã na NOTA (LEASE-03): A reclama a `invoice_issue`, começa a nota
+  // (`beginIssue`) e para ANTES do `port.issue` (portão por Promise, sem relógio); passa o limite de órfã e B reclama a
+  // linha e emite; A retoma → 0 POST de A e `lease_lost` (a posse vem do despacho, como parâmetro). Vermelho-controle: M21
+  // (apagar a linha LEASE-03) → A emite um 2º POST.
+  test("L4: a órfã da nota — A para antes do port.issue, B reclama e emite; A retoma → 0 POST de A, lease_lost (LEASE-03)", async () => {
+    const slug = `ass08c-lease-l4-${randomUUID().slice(0, 8)}`;
+    const tenantId = ((await db.$queryRawUnsafe(`INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id`, "Organização fictícia l4", slug)) as Array<{ id: string }>)[0]!.id;
+    const statementId = ((await db.$queryRawUnsafe(
+      `INSERT INTO subscription_statements
+         (tenant_id, period, status, segments, users_included, users_peak, users_extra,
+          storage_included_gb, storage_peak_gb, storage_extra_gb, tracked_vehicles,
+          days_in_month, days_measured, extra_user_price, extra_gb_price, base_amount,
+          users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount,
+          credits_applied_amount, total_amount, due_date, closed_at, paid_at, snapshot)
+       VALUES ($1::uuid, '2026-10', 'paid', '[]'::jsonb, 0,0,0, 0,0,0, 0, 30,30, 0,0,
+               123.45,0,0,0,0,0,123.45, '2026-11-20', $2, $2, '{"latest":null,"history":[]}'::jsonb)
+       RETURNING id`,
+      tenantId,
+      T0,
+    )) as Array<{ id: string }>)[0]!.id;
+    await db.$executeRawUnsafe(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider, created_at) VALUES ($1::uuid, $2::uuid, NULL, $3)`, statementId, tenantId, T0);
+    const outboxId = ((await db.$queryRawUnsafe(
+      `INSERT INTO billing_outbox
+         (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key,
+          payload, status, attempts, occurred_at, created_at, updated_at)
+       VALUES ($1::uuid, $2::uuid, 'invoice_issue', 'focusnfe', $3, gen_random_uuid(), '{"seq":1}'::jsonb, 'PENDING', 0, $4, $4, $4)
+       RETURNING id`,
+      tenantId,
+      statementId,
+      `invoice_issue:${statementId}:1`,
+      T0,
+    )) as Array<{ id: string }>)[0]!.id;
+
+    const fakeInvoicePort = () => {
+      const state = { posts: 0 };
+      const port = {
+        issue: async () => {
+          state.posts += 1;
+          return { providerInvoiceId: `nf-fake-${state.posts}`, status: "processing" as const };
+        },
+        getInvoice: async () => ({ status: "unknown" as const }),
+      } as unknown as InvoiceProviderPort;
+      return { port, state };
+    };
+    const issueContext = async () => ({
+      environment: "sandbox",
+      serie: 7,
+      emitter: { cnpj: "11222333000181" },
+      borrower: { document: "99888777000166", name: "Organização Tomadora", municipalityCode: "3550308" },
+      taxProfile: taxProfileFromSettings({}),
+      serviceDescription: "Assinatura — competência 2026-10",
+    });
+    const invoicesOfRole = new PrismaStatementInvoiceRepository(role.client);
+    const statementsOfRole = new PrismaStatementRepository(role.client);
+
+    // A: o `beginIssue` termina (a transação dele commita) e A espera no portão, antes do `port.issue`.
+    let reached!: () => void;
+    const reachedP = new Promise<void>((resolve) => (reached = resolve));
+    let release!: () => void;
+    const releaseP = new Promise<void>((resolve) => (release = resolve));
+    const gatedInvoices = new Proxy(invoicesOfRole, {
+      get(target, key, receiver) {
+        if (key === "beginIssue") {
+          return async (...args: Parameters<StatementInvoiceRepository["beginIssue"]>) => {
+            const begun = await target.beginIssue(...args);
+            reached();
+            await releaseP;
+            return begun;
+          };
+        }
+        const value = Reflect.get(target, key, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }) as StatementInvoiceRepository;
+    const a = fakeInvoicePort();
+    const b = fakeInvoicePort();
+    const auditsA: DispatchAuditEvent[] = [];
+    const runA = runDispatchOutbox({
+      repo: new PrismaOutboxRepository(role.client, { tenantIds: [tenantId] }),
+      ports: {},
+      resolveCustomer: async () => {
+        throw new Error("a perna de cobrança não roda no L4");
+      },
+      invoices: new InvoiceOutboxHandler({ ports: { focusnfe: a.port }, invoices: gatedInvoices, statements: statementsOfRole, resolveIssueContext: issueContext }),
+      now: () => T0,
+      claimedBy: "dispatch-outbox:A",
+      onAudit: async (event) => void auditsA.push(event),
+    });
+    await reachedP;
+    assert.deepEqual((await stored(outboxId)).claimed_by, "dispatch-outbox:A", "A tem a posse no portão");
+
+    // B: depois do limite de órfã, reclama a linha de A e emite (a reconsulta não acha nada → POST).
+    const runB = await runDispatchOutbox({
+      repo: new PrismaOutboxRepository(role.client, { tenantIds: [tenantId] }),
+      ports: {},
+      resolveCustomer: async () => {
+        throw new Error("a perna de cobrança não roda no L4");
+      },
+      invoices: new InvoiceOutboxHandler({ ports: { focusnfe: b.port }, invoices: invoicesOfRole, statements: statementsOfRole, resolveIssueContext: issueContext }),
+      now: () => new Date(T0.getTime() + OUTBOX_ORPHAN_MS + 1),
+      claimedBy: "dispatch-outbox:B",
+    });
+    assert.equal(runB.outcomes.sent, 1, JSON.stringify(runB));
+    assert.equal(b.state.posts, 1, "B emitiu 1");
+
+    release();
+    const resultA = await runA;
+    assert.equal(a.state.posts, 0, "0 POST de A com a posse perdida");
+    assert.equal(resultA.outcomes.lease_lost, 1, JSON.stringify(resultA));
+    assert.deepEqual(auditsA.map((event) => `${event.action}:${event.code}`), ["billing_outbox.lease_lost:lease_lost"]);
+    const after = await stored(outboxId);
+    assert.deepEqual([after.status, after.claimed_by], ["SENT", "dispatch-outbox:B"]);
+    const notes = (await db.$queryRawUnsafe(`SELECT seq, status, provider_invoice_id FROM subscription_statement_invoices WHERE statement_id = $1::uuid`, statementId)) as any[];
+    assert.deepEqual(notes.map((row) => [row.seq, row.status, row.provider_invoice_id]), [[1, "pending", "nf-fake-1"]], "1 nota, a de B");
   });
 }

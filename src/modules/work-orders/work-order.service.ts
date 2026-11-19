@@ -57,10 +57,13 @@ import type {
 } from "./work-order.types.js";
 import {
   actorMutatesAssignedOnly,
+  actorReadsAssignedOnly,
   cancelTransientConflictError,
+  matchesAssignedToActor,
   WORK_ORDER_SERVICE_STARTED,
   WorkOrderError,
   workOrderNotAssignedError,
+  workOrderNotFoundError,
 } from "./work-order.types.js";
 import {
   assertNonEmptyString,
@@ -94,9 +97,11 @@ import {
 } from "./work-order.validators.js";
 import {
   effectiveChecklistSet,
+  isChecklistSetFrozen,
   liveChecklistLinks,
   syntheticChecklistSet,
   workOrderChecklistAlreadyDispatchedError,
+  workOrderChecklistCollectionAfterDispatchError,
   workOrderChecklistCustomerScopedConfirmationError,
   workOrderChecklistDuplicateError,
   workOrderChecklistLinkNotFoundError,
@@ -193,6 +198,10 @@ export type WorkOrderReferenceResolvers = {
     actor: WorkOrderActorContext,
     input: { readonly workOrderId: string; readonly checklistId: string; readonly role: WorkOrderChecklistRole },
   ) => Promise<boolean>;
+  // B-GUI-02 (Emenda 2.2, achado C1-01 da J-596) — esta OS já foi ENVIADA (existe despacho dela que não foi cancelado)? É a
+  // irmã da referência acima, mas pela OS, não pela linha: numa OS enviada SEM vistoria nada foi congelado, e só o despacho
+  // sabe que ela foi a campo. A guarda `collection_after_dispatch` a usa. Verdadeiro em erro (fail-closed, ver a raiz).
+  readonly hasDispatchForWorkOrder?: (actor: WorkOrderActorContext, input: { readonly workOrderId: string }) => Promise<boolean>;
   // CHECKLIST P1 PR-04c-A (§10.2.9) — a regra que produziu esta linha nomeia um CLIENTE? Só o booleano
   // atravessa a fronteira: o id do cliente NUNCA entra em auditoria/metadata (§2.8).
   readonly isApplicabilityRuleCustomerScoped?: (
@@ -426,7 +435,7 @@ export class WorkOrderService {
    * (via get()). §2.8: nunca tenant_id/place_id/segredo; coordenada NUNCA logada.
    */
   async listMapStartPoints(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrderMapStartPoints> {
-    const workOrder = await this.get(actor, workOrderId);
+    const workOrder = await this.getForRead(actor, workOrderId); // B-WO-LEITURA:wo-map
 
     const origin = hasValidCoordinate(workOrder.serviceLatitude, workOrder.serviceLongitude)
       ? {
@@ -472,7 +481,8 @@ export class WorkOrderService {
       offset: parseOffset(query.offset),
     };
     // B-SAN3-13 (#32) — a lista do técnico é IMPOSTA aqui: o ator que só alcança OS por papel de campo
-    // (`actorMutatesAssignedOnly`, a mesma régua do guard) recebe só as que pode mutar, peça o que pedir; os demais
+    // (B-WO-LEITURA — `actorReadsAssignedOnly`, a régua de LEITURA — o mesmo predicado da porta `getForRead`; a de
+    // mutação escopava também quem acumula um papel de leitura larga, como `auditor`) recebe só as suas, peça o que pedir; os demais
     // filtros (`assignedUserId`, `status`, `search`, …) INTERSECTAM — `?assignedUserId=<colega>` dá 200 vazio, não
     // a OS do colega. `scope=assigned` oferece o mesmo recorte a qualquer papel (a gestão no app vê só as suas).
     const scope = parseListScope(query.scope);
@@ -499,7 +509,7 @@ export class WorkOrderService {
       );
     }
     const assignedToActor =
-      scope === "assigned" || actorMutatesAssignedOnly(actor) ? await this.resolveListActorScope(actor) : undefined;
+      scope === "assigned" || actorReadsAssignedOnly(actor) ? await this.resolveListActorScope(actor) : undefined; // B-WO-LEITURA:lista-os
 
     return this.repository.list({
       ...input,
@@ -921,7 +931,7 @@ export class WorkOrderService {
     const workOrder = await this.repository.findById(actor.tenantId, parseRequiredUuid(workOrderId, "workOrderId"));
 
     if (!workOrder) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+      throw workOrderNotFoundError();
     }
 
     return workOrder;
@@ -933,7 +943,7 @@ export class WorkOrderService {
    * get() callers (update/status/assign/timeline) stay cheap and unchanged.
    */
   async getWithLinks(actor: WorkOrderActorContext, workOrderId: string) {
-    const workOrder = await this.get(actor, workOrderId);
+    const workOrder = await this.getForRead(actor, workOrderId); // B-WO-LEITURA:wo-detail
     const links = await this.resolveLinks(actor, workOrder);
     // CHECKLIST P1 PR-04c-A — o detalhe passa a carregar o CONJUNTO. A web dizia "Vinculado" para uma ordem com
     // duas vistorias; meia-verdade sobre prova é o mesmo que mentira.
@@ -960,11 +970,11 @@ export class WorkOrderService {
    * Quem cai no guard: o ator que alcança a ordem SÓ por papel de campo (ver `actorMutatesAssignedOnly`).
    * Para ele, a mutação exige que a ordem esteja atribuída ao SEU perfil de operador.
    *
-   * 403, NÃO 404 — deliberado, e é o contrato que muda. 404 continua reservado ao cross-tenant (a ordem
-   * de OUTRA organização não existe para este ator, e é assim que o `findById` tenant-scoped já
-   * responde). Aqui a ordem EXISTE na organização do ator, ele pode LÊ-LA (`work_orders:read` é
-   * tenant-wide, e a lista do app depende disso) — o que ele não pode é MUTÁ-LA. Devolver 404 mentiria
-   * sobre um objeto que a mesma sessão acabou de listar.
+   * 403, NÃO 404, na ESCRITA — deliberado (`D-WO-LEITURA-404-ESCRITA-403`, decisão do dono de 17/11). Na LEITURA,
+   * desde o B-WO-LEITURA, a OS que não é do papel de campo responde o MESMO 404 do id inexistente (`getForRead`); a
+   * escrita segue 403 `not_assigned_to_actor` porque o app depende dele, com a marca de ex-técnico, para virar um
+   * conflito que um superior decide (07c-b1, `isPreviouslyAssignedRefusal`). O oráculo de existência 403×404 da
+   * escrita existe e está registrado (`P-WO-ORACULO-403-404-ESCRITA`, `C-WO-LEITURA-404-ESCRITA-403`).
    *
    * Sem resolver de perfil injetado a recusa é a mesma: para um ator de campo, não conseguir provar a
    * atribuição é não ter a atribuição. Fail-closed por composição incompleta, nunca por omissão.
@@ -1104,13 +1114,30 @@ export class WorkOrderService {
    * B-O6R-07c-a (`P-O6R-SUBRECURSO-OBJECT-SCOPE`) — a OS para quem vai ESCREVER num subrecurso dela: anexo,
    * comentário, tag de comentário, geocode e a km pela fila do app. É `get` (404 do cross-tenant, inalterado)
    * seguido do escopo por objeto do 07a (`assertMutationObjectScope`, corpo intocado): o técnico de campo só
-   * escreve na OS atribuída a ele. Leitura (listar, baixar) segue em `get`.
+   * escreve na OS atribuída a ele. Leitura (listar, baixar) passa pela porta irmã `getForRead` (B-WO-LEITURA).
    *
    * A porta da regra é `assertMutationObjectScope`, não este método: `update` e `changeStatus` a chamam direto.
    */
   async getForMutation(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrder> {
     const workOrder = await this.get(actor, workOrderId);
     await this.assertMutationObjectScope(actor, workOrder);
+    return workOrder;
+  }
+
+  /** B-WO-LEITURA — o escopo de LEITURA do ator: `undefined` = organização inteira; senão, o mesmo escopo da lista (B-SAN3-13). */
+  async readScopeFor(actor: WorkOrderActorContext): Promise<WorkOrderAssignedToActorScope | undefined> {
+    return actorReadsAssignedOnly(actor) ? this.resolveListActorScope(actor) : undefined; // B-WO-LEITURA:escopo
+  }
+
+  /**
+   * B-WO-LEITURA — a OS para quem vai LER. O escopo resolve ANTES do `get` (A8): inexistente e alheia respondem
+   * igual também na janela de falha do resolvedor (503 para as duas). Para o papel de campo, a OS alheia dá o
+   * MESMO 404 do id inexistente.
+   */
+  async getForRead(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrder> {
+    const scope = await this.readScopeFor(actor);
+    const workOrder = await this.get(actor, workOrderId);
+    if (scope && !matchesAssignedToActor(workOrder, scope)) throw workOrderNotFoundError(); // B-WO-LEITURA:porta
     return workOrder;
   }
 
@@ -1355,6 +1382,12 @@ export class WorkOrderService {
       }
     }
     await this.assertChecklistsArePublished(actor, add.map((item) => item.checklistId));
+    // Emenda 2.2 — a coleta não entra depois do envio, com ou sem vistoria congelada: `dispatched` (o despacho) OU o
+    // conjunto congelado. Sem a referência montada, a guarda degrada para só o congelado, como as demais referências.
+    const dispatched = add.some((item) => item.role === "collection") && (await this.references.hasDispatchForWorkOrder?.(actor, { workOrderId: current.id })) === true;
+    if (add.some((item) => item.role === "collection") && (dispatched || isChecklistSetFrozen(current, links)) && !effective.some((line) => line.role === "collection" && !removalKeys.has(checklistPhaseKey(line)))) {
+      throw workOrderChecklistCollectionAfterDispatchError();
+    }
 
     const customerScopedKeys = new Set<string>();
     for (const item of remove) {
@@ -2366,7 +2399,7 @@ export class WorkOrderService {
   }
 
   async timeline(actor: WorkOrderActorContext, workOrderId: string): Promise<readonly WorkOrderEvent[]> {
-    const workOrder = await this.get(actor, workOrderId);
+    const workOrder = await this.getForRead(actor, workOrderId); // B-WO-LEITURA:wo-timeline
 
     return this.repository.listTimeline(actor.tenantId, workOrder.id);
   }
@@ -2676,6 +2709,27 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
         // Falha de leitura NÃO pode virar "pode remover": a trava existe para proteger prova. Sem resposta
         // confiável, o ajuste é recusado (fail-closed) — o oposto do fail-open do provisionamento, porque aqui
         // o erro destrói informação em vez de adiar trabalho.
+        return true;
+      }
+    },
+    // B-GUI-02 (Emenda 2.2) — a OS já foi enviada? Lê os despachos da OS no repositório PADRÃO do despacho (o mesmo que
+    // as rotas usam: em memória, o singleton; no Prisma, o repositório com RLS da organização), na mesma escolha de
+    // repositório de `hasActiveDispatchAtSite` (field-dispatch.service.ts). "Enviada" = algum despacho que não foi
+    // cancelado. DYNAMIC import pelo mesmo motivo do de checklists: field-dispatch importa work-orders. Erro → verdadeiro
+    // (fail-closed, como a irmã acima): aqui o erro deixaria entrar uma primária que o despacho nunca congelou (BLOQ 3).
+    hasDispatchForWorkOrder: async (actor, { workOrderId }) => {
+      try {
+        const repository =
+          env.CORE_SAAS_PERSISTENCE === "prisma"
+            ? await (await import("../field-dispatch/field-dispatch-prisma.repository.js")).createPrismaFieldDispatchRepository()
+            : (await import("../field-dispatch/field-dispatch.service.js")).getMemoryFieldDispatchRepositoryForTests();
+        const limit = 100;
+        for (let offset = 0; ; offset += limit) {
+          const { items, total } = await repository.list({ tenantId: actor.tenantId, workOrderId, limit, offset });
+          if (items.some((dispatch) => dispatch.status !== "cancelled")) return true;
+          if (items.length === 0 || offset + limit >= total) return false;
+        }
+      } catch {
         return true;
       }
     },

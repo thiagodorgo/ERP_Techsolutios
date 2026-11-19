@@ -93,7 +93,23 @@ test("D1 — decidir aprovação exige work_orders:approve: gestão passa, campo
 
 test("D1 — LER a fila não decide: pending/detail seguem em work_orders:read para o campo", async () => {
   await withApprovalApi(async ({ baseUrl, seed, approvalService }) => {
-    const workOrderId = randomUUID();
+    // B-WO-LEITURA-TECNICO (D-WO-LEITURA-APROVACAO-PELA-OS): o papel de campo lê a aprovação da OS
+    // atribuída a ele. Criamos e atribuímos a OS a `campo` (UUID) para medir que `pending` e `detail`
+    // seguem em `work_orders:read` para o campo na OS dele (enquanto decidir exige `work_orders:approve`).
+    const campo: User = { ...seed.decisorA, id: randomUUID() };
+    const woCriada = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { title: "OS atribuida ao campo", priority: "medium" },
+    });
+    assert.equal(woCriada.status, 201);
+    const workOrderId = woCriada.body.data.id as string;
+    const atribuida = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/assign`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { userId: campo.id },
+    });
+    assert.equal(atribuida.status, 200);
     const pendencia = await approvalService.request({
       tenantId: seed.tenantA.id,
       entityType: "work_order",
@@ -106,7 +122,7 @@ test("D1 — LER a fila não decide: pending/detail seguem em work_orders:read p
     // O contraste é o ponto: o MESMO ator que recebe 403 para decidir continua vendo a fila. Se o
     // bloco tivesse fechado a leitura junto, o app de campo perderia a lista de pendências — e o
     // teste acima ficaria verde sem ninguém perceber a regressão.
-    const headers = authHeaders(seed.tenantA, seed.decisorA, "field_technician");
+    const headers = authHeaders(seed.tenantA, campo, "field_technician");
     const lista = await requestJson(baseUrl, `/api/v1/approvals/pending?work_order_id=${workOrderId}`, { headers });
     const detalhe = await requestJson(baseUrl, `/api/v1/approvals/${pendencia.id}`, { headers });
 

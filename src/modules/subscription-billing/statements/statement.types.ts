@@ -134,6 +134,7 @@ export type StatementAuditAction =
   | "subscription_statement.credit_created"
   | "subscription_statement.credit_applied"
   | "subscription_statement.credit_written_off"
+  | "subscription_statement.invoice_requested"
   | "subscription_billing_profile.updated";
 
 /** Trilha de auditoria (§3.6): metadata SEMPRE pela allowlist — só ids, período, status e valores em centavos. */

@@ -491,7 +491,6 @@ void main() {
       final counts = _countSkuLiterals();
       expect(counts, {
         'lib/features/prestador/data/technician_stock_demo.dart': 8,
-        'lib/features/inventory/data/inventory_repository.dart': 8,
         'lib/features/work_orders/data/work_order_repository.dart': 3,
       }, reason: 'censo de literais de peça mudou: $counts');
     });

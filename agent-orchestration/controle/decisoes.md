@@ -5306,6 +5306,12 @@ lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`.
 - Onde a Emenda 1 e a crítica r2 escrevem H5, H6 e H7 **do 08c1b**, leia-se H6, H7 e H8. O dev grava a pendência já com a numeração nova.
 - **Estado medido na `origin/main` (`729718fe`, na madrugada de 14/11):** a `P-ASS08C-POSSE-NAO-COBRE-O-POST` ainda não existe na `main` (`git grep -c` = 0). Ela nasce com o conserto do #555, que está aberto (head `78a7c8ab`).
 
+## REGISTRO-SAN3-CONFLITOS — B-ASS-08c2 (2026-11-16) — o conflito da nota retroativa, já resolvido (§A2)
+
+> **`C-08C-Q2-X-530` (aberto em 2026-11-11, RESOLVIDO em 2026-11-11 10:31 SP)** — conflito de recomendação sobre a nota retroativa: o #530 (§12, pergunta 2) recomendava "desde o merge da 08b"; o plano 08c v1 (§9 Q2(a)) recomendava "a partir do dia de ligar". Registrado pela regra §A2. Resolvido pelo dono em `D-DONO-TODAS-RECOMENDACOES-1111` ("vale a recomendação do #530"). No `B-ASS-08c2`: corte = `paid_at >= 2026-11-11T09:43:45.000Z` (o instante do merge de `a0979f51`, #530), constante literal no código; os pagos antes ficam no backlog, sem nota automática; competência = o mês do serviço (`competenceDateOf`).
+
+- **Gravado por:** `dev-08c2-cl` (Claude Opus 5.5, dev do bloco), no 1º commit do ramo, antes de qualquer commit de `src/` (§4.0 do plano de abertura do `B-ASS-08c2`; F0 da Emenda 1).
+
 ## D-DONO-1311-RECOMENDACOES · parte do app (2.1, 2.2 e 2.3) — as 3 respostas que ligam o B-MOBILE-GATE-CHAVE (item 66)
 
 - **Fala literal do dono (13/11, por volta de 23:12 SP):** *"claude, agora eh so vc. faca um plano para vc atacar tudo sozinho, deixe as ias dormindo, vc vai pegar tudo, nas juntas cadeiras em paralelo, quero dar o maior gas agora, minhas decisoes vao todas nas recomendacoes."*; e, autorizando, por volta de 23:20 SP: *"pode comecar"*.
@@ -5545,11 +5551,35 @@ O dono aprovou as 3 opções da tela de custo e margem da plataforma: *"aprovo a
   - o bloco é o `B-APP-SESSAO-RENOVA`, que também olha a `P-APP-401-FICA-SINCRONIZANDO` e a `P-APP-TELEMETRIA-422`.
 - **Linha do portão:** `docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1, item 68 (registro de 16/11).
 
-## D-O6R-04B-RETIRADA · confirmação do dono (2026-11-14 21:08 SP) — "Nova Entrada", "Nova Saída" e a lista inventada saem do app
+## D-O6R-04B-RETIRADA (2026-11-14, confirmada pelo dono às 21:08 SP; registrada na F0 do B-O6R-04b em 2026-11-15; confirmação do dono registrada em 2026-11-16, #585) — o estoque fabricado sai do app e do servidor (item 31, `Ω6R-QUA-002`); "Nova Entrada", "Nova Saída" e a lista inventada saem do app
+
+**Registro da F0 do `B-O6R-04b` (2026-11-15):**
+
+- **Decisão do dono:** à P1 do plano do `B-O6R-04b`, a resposta (a): "Nova Entrada", "Nova Saída" e a lista inventada saem do app. Em 14/11 às 21:08 SP, depois de ver a página de decisões pendentes, o dono respondeu *"aprovo suas recomendacoes"*. Assim a (a) deixa de valer só pela regra das recomendações e passa a ter a confirmação explícita dele. As P2 (os três tipos em memória e a disponibilidade fabricada saem do servidor), a P3 (a porta "Meu estoque" vai para bloco próprio, com 3 opções de tela) e a P4 (quem só tem `inventory.manage` recebe 403 no lote do app) seguem pela recomendação (a), conforme a `D-DONO-1311-RECOMENDACOES`.
+- **Por quê (fatos do plano):** nenhum cliente usa os três tipos nem a disponibilidade (app 0, web 0), e eles respondem com 3 itens inventados que somem no restart. As telas do app nunca enviaram nada: o replay só envia material. Elas também não estão no protótipo, e a matriz não dá esse movimento ao técnico.
+- **Parte A — três textos do repositório pedem o caminho contrário (§A2, registrado antes do código):**
+  1. a nota de `docs/revisoes/SAN3/PLANO_SAN3.md` (linha do item 31, `B-O6R-04b`): "troca o `Map` pelo Prisma só para `reserve`/`consume`/`shortage_report`";
+  2. o critério da `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA`: "a ação do app tem tipo no servidor, o replay a envia, e o G3 do app aponta para a permissão dela";
+  3. o critério da `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO`: "a tela Estoque tem entrada na navegação do app para quem passa no G2".
+  Os três cedem a esta decisão. O critério da 2 passa a ser: "nenhuma tela do app enfileira ação de estoque sem rota; ação antiga aparece com saída; não há G3". A 3 fecha por remoção, porque a tela deixa de existir.
+- **Parte B — quatro pendências em que o bloco muda o dono ou o critério escritos:**
+  - `P-MOBILE-ESTOQUE-MODULO-SEMENTE`: **fecha por remoção**. O dono passa a ser o `B-O6R-04b`. O critério passa a ser: o módulo não existe, e o T-A8 (ii) roda sem a linha `inventory_repository.dart: 8`. É consequência direta da P1 (a).
+  - `P-O6R-B04-CONSUMIDORES-503`: **não fecha; ganha um APPEND**. A parte do app, no envio de material, está feita. Faltam a web, a contagem e o registro dos dois códigos no contrato. O dono do que falta é designado pelo orquestrador (sugestão: `B-INV-CONTAGEM`); sem designação, o dono fica "a designar (inalterado)".
+  - `P-MOBILE-SYNC-ESTOQUE-TIPOS`: **fecha no `B-O6R-04b`**, se o orquestrador designar o bloco como dono (recomendado pela Emenda 1), com o caso de contrato S6. O conjunto único passa a ser o material (`work_order_material.add` e `.remove`).
+    Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco dono é o B-O6R-04b; fechada por este PR (S6 verde; MS6 e MA3 vermelhas).
+  - `P-MOBILE-CATALOGO-MODULOS-INERTE`: **não fecha; ganha um APPEND**. Depois do 04b, `/inventory` passa a ser a 3ª rota apontada pelo mapa que não existe (`bootstrap_repository.dart`). A parte "Estoque sem porta" vira a `P-MOBILE-MEU-ESTOQUE-SEM-PORTA`. A dependência do `Ω6R-QUA-002` está cumprida.
+- **Parte C — duas pendências que só mudam de contagem** (APPEND na F5): a `P-MOBILE-DISCARDED-FUTURES` (4 das 16 linhas estão nas duas telas que saem) e a `P-ESTOQUE-DEFEITOS-16-10`, item 9 (resolvido pelo D1).
+- **Re-varredura da F0 (R14, 15/11):** os padrões do M05 da Emenda 1, sobre a `origin/main` `80f5b4d9`, dão os mesmos 18 cabeçalhos de pendência. Nenhuma pendência nova cita o que o bloco remove.
+- **Se o dono mudar a P1 para (b)** ("construir as telas de verdade"): a Parte A e as duas primeiras linhas da Parte B deixam de valer, e o bloco é replanejado.
+- **Comando do bloco:** `agent-orchestration/codex/comandos/B-O6R-04b-mobile-inventory-sync.md`. Plano: `plano-B-O6R-04b.md` e as Emendas 1, 1.1 e 1.2, fora do repositório.
+
+**Registro de 2026-11-16 (#585) — confirmação do dono (2026-11-14 21:08 SP):**
 
 - **Fato (decisão do dono):** a mesma fala de 21:08 (*"aprovo suas recomendacoes"*) respondeu a P1 do plano do item 31 (`B-O6R-04b`) com a recomendação (a): "Nova Entrada", "Nova Saída" e a lista inventada saem do app. A resposta deixa de valer só pela `D-DONO-1311-RECOMENDACOES` e passa a ter a confirmação explícita do dono, que viu a recomendação na página.
 - **O que vale:** a retirada (a); as P2, P3 e P4 do plano 31 seguem pela recomendação (a). A Emenda 1 do plano (14/11 13:34) estendeu a retirada à `P-MOBILE-SYNC-ESTOQUE-TIPOS` e à `P-MOBILE-CATALOGO-MODULOS-INERTE`.
 - **Nota do redator:** o ID `D-O6R-04B-RETIRADA` é citado pelo plano 31 e pelas emendas, fora do repositório; na `main` de 16/11 ele não aparecia em `agent-orchestration` nem em `docs` (`git grep` = 0). Esta é a 1ª entrada com ele.
+
+- **Acréscimo de 17/11:** os dois registros convivem; o do bloco detalha a retirada.
 
 ## D-DONO-1311-RECOMENDACOES · complemento: o "4.item60" e o "3.extra" (2026-11-13 ~23:12 SP)
 
@@ -5647,6 +5677,25 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Cruzamento:** o dev é Claude; a pré-revisão é da outra casa quando houver crédito (§C7 11(1)), ou identidade Claude nova, com "sem cruzamento" declarado.
 - **Gravado por:** `dev-16-cl` (Claude Opus 5.5, dev do bloco), em 14/11/2026.
 
+## C-GUI-PLACA-NA-LISTA (registro de CONFLITO, §A2, 2026-11-17) — "nunca a placa inteira" (#534) × o prefixo da placa no desenho aprovado
+
+- **Cabeçalho unificado (decisão do orquestrador, 17/11, depois da união do merge da `main` no ramo do B-GUI-D1):** os dois registros abaixo tinham o mesmo ID; ficam sob um cabeçalho só, em ordem cronológica.
+
+### 2026-11-16 — o registro do plano do app guincho
+
+- **Os dois lados:** o `B-SAN3-26` deixou a placa fora da lista de propósito, e o desenho aprovado pede a placa (com o fim escondido) no detalhe.
+- **Estado:** o `B-GUI-D1` leva isso à junta completa.
+- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
+
+### 2026-11-17 — o registro do B-GUI-D1 (texto do §5 da emenda 1.1)
+
+- **Lados:** o corpo do PR #534 (B-SAN3-26, merge `68a208ad`): "a lista leva só o modo do check-in e os 2 caracteres finais da placa; nunca a placa inteira nem `serviceDetails`"; × o desenho aprovado do detalhe (`os-detalhe.png`), que mostra `ABC-1D**`, levado à lista pelo B-GUI-D1 como `attendedVehicle.plateMasked`.
+- **Fato medido:** com o B-GUI-D1, o item da lista traz o prefixo (`ABC1D**`) e o fim (`checkinPlateTail`), e a placa fica remontável no item. Nenhum campo a traz inteira. O fim nunca chega à tela (D3, D3c, D7).
+- **Leitura do planejador (`plano-guid1-e1-cl`), declarada (§A6):** a minimização do #534 não protegia um segredo (o risco 3 do plano dele diz que o controle prova atenção, não sigilo). Os mesmos atores já leem a placa inteira no detalhe. A conferência é do servidor.
+- **Crítica (`crit-guid1-e1-cl`):** aceita, com as condições "o fim nunca na tela" e este registro. Mandar só `ABC****` não compra segurança, só minimização.
+- **Quem decide:** a junta completa do B-GUI-D1. A saída alternativa custa uma linha no auxiliar (o prefixo só com as 3 letras).
+- **Registrado por:** `dev-guid1-cl`, no PR do B-GUI-D1 (texto do §5 da emenda 1.1, só acrescentado).
+
 ## D-DONO-1611-DEEPSEEK-FAZ-TUDO (2026-11-16 ~13:5x SP) — o DeepSeek faz tudo; só o visual fica com o Claude
 
 - **Fato (decisão do dono):** resposta à pergunta sobre a regra de 13/11 ("DeepSeek fora de dinheiro e permissão"). Fala literal: *"Deepseek faz tudo, só o visual que só confio em ti que ele não faz"* (transcrição no registro fora do repositório, `REGISTRO-PENDENTE.md`, 16/11).
@@ -5743,28 +5792,253 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Estado:** resolvido na Emenda 1 do plano do app guincho — o lugar é desenhado na M-H, e o botão só aparece quando o `B-GUI-15` entrar.
 - **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
 
-## C-GUI-PLACA-NA-LISTA (registro de CONFLITO, §A2, 2026-11-16) — a placa na lista de OS do app
+## D-GUI02-PRIMARIA-POR-ETAPA (registro de CONFLITO, §A2, 2026-11-17) — a primária é a coleta pela etapa, e o comentário da migração diz "a de menor `order_index`"
 
-- **Os dois lados:** o `B-SAN3-26` deixou a placa fora da lista de propósito, e o desenho aprovado pede a placa (com o fim escondido) no detalhe.
-- **Estado:** o `B-GUI-D1` leva isso à junta completa.
-- **Fonte:** Emenda 1 do plano do app guincho (`plano-APP-GUINCHO-emenda1.md`, fora do repositório), §8.
+- **Os dois lados:** o comentário da migração `20260865000000` (l.67-71) diz "a de menor `order_index` é a PRIMÁRIA"; o código do `B-GUI-02` (Emenda 2, §1.2: `checklistRoleRank` no comparador, no espelho da criação e no `sort` do despacho) faz da coleta viva a primária, e o `API_CONTRACTS.md` (l.625) foi corrigido.
+- **Estado:** vale o código novo e o `API_CONTRACTS.md`. A migração aplicada não se edita.
+- **Fonte:** Emenda 2 do `B-GUI-02` (§1.2 e §5), `plano-B-GUI-02-emenda2.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (conserto da J-596, achado C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.
 
-## D-DONO-1711-ITEM-72 (2026-11-17, pelo canal do artefato) — o item 72 entra no portão: a checagem da plataforma confere a permissão
+## D-GUI02-CODIGOS-REAIS (registro de CONFLITO, §A2, 2026-11-17) — os códigos do ajuste de vistorias são os do código, não os do plano
 
-- **Fato (decisão do dono, "sim"):** o defeito achado no L4-01 da pré-revisão `prerev-08c2-l4-cl` do `B-ASS-08c2` vira o item 72 do portão da versão vendável (`P-PLAT-PORTAO-SEM-PERMISSAO`): o portão das rotas de `/api/v1/platform` não conferia a permissão pedida, e qualquer papel de plataforma passava em qualquer uma das 70 rotas.
-- **Nota §A2 (registrada, não consolidada em silêncio), do plano `plano-B-PLAT-PERMISSAO.md` §0:** a premissa levada ao dono, "a migração do B-ASS-04 concede `platform:billing:settle` SÓ ao `super_admin`, e o `platform_admin` executa as rotas `settle` sem a permissão", estava pela metade. O defeito do portão é real; mas o "só super_admin" das migrações é **falta de linha** do `platform_admin` em `roles` (pseudo-papel, fora do seed e do provisionamento), e não regra: o catálogo (`catalog.ts`, `super_admin: PERMISSION_CATALOG` e `platform_admin: PERMISSION_CATALOG`) e o `RBAC_MATRIX.md` (Billing `full` para o `platform_admin`) dão o catálogo inteiro aos dois papéis de plataforma. Por isso a decisão voltou ao dono, revista (abaixo).
+- **Os dois lados:** o §4.2 do plano do app guincho previa 422 para "modelo não publicado" e "OS encerrada"; o código real é 400 `checklist_not_published` e 409 `work_order_terminal`.
+- **Estado:** vale o código. O contrato da tela segue o mapa de recusas da Emenda 1 §2 (o W3 e o W4c do `B-GUI-02` os provam pelo servidor).
+- **Fonte:** Emenda 1 do `B-GUI-02` (§2 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.
 
-## D-DONO-1711-ITEM-72-REVISTO (2026-11-17, canal do artefato, pergunta `d72-rev`) — o item 72 fica no portão
+## D-GUI02-SEM-SELO-ENVIADA (registro de CONFLITO, §A2, 2026-11-17) — o selo "enviada" por vistoria da maquete fica de fora
 
-- **Fato (decisão do dono, escolha "manter"):** com a premissa corrigida (não há escalada hoje; o defeito é a checagem que falha aberta e as 5 rotas que pedem chave fora do catálogo), o item 72 **fica no portão**.
-- **Efeito:** a linha 72 do `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1, com o bloco `B-PLAT-PERMISSAO` (bloco próprio, fora do §5; junta completa).
+- **Os dois lados:** a maquete aprovada desenha o selo "enviada" por vistoria; o servidor não diz qual linha já virou execução.
+- **Estado:** o selo fica de fora até a `P-GUI02-VISTORIA-ENVIADA-POR-LINHA`. A tela mostra só, no nível da OS, a faixa "já foi enviada".
+- **Fonte:** Emenda 1 do `B-GUI-02` (§4 e §8), `plano-B-GUI-02-emenda1.md`, fora do repositório; registrado no PR #596 pela Emenda 2.2 §4 (C3-01).
+- **Gravado por:** `fix-596-cl` (Claude Opus 5.5, dev do conserto), em 17/11/2026.
 
-## D-DONO-1711-72-P1 (2026-11-17, canal do artefato, pergunta `d72-p1`) — migração em `prisma/` das 6 chaves da plataforma, só para o `super_admin`
+## D-DONO-1711-COBRIR-CODEX (2026-11-17 12:4x SP) — o Claude cobre o Codex nas verificações, sem cruzamento de casa
 
-- **Fato (decisão do dono, escolha "sim"):** fica **AUTORIZADA** a migração em `prisma/` que cria as 6 chaves de permissão da plataforma — `platform:tenants:create`, `platform:tenants:update`, `platform:tenants:suspend`, `platform:modules:manage`, `platform:users:create_admin` e `platform:health:read` — concedidas no banco **só ao `super_admin`**.
-- **Efeito:** `prisma/migrations/20260905000000_plat_permissoes_de_organizacao/migration.sql` (aditiva, idempotente, `BEGIN;`/`COMMIT;`, drill por prefixo em `tests/plat-perm-migration-drill-db.test.ts`). Nada além dela em `prisma/`. O `platform_admin` recebe as 6 pelo catálogo em código, como já recebe o resto.
+- **Fato (decisão do dono):** *"pode cobrir o codex"*.
+- **Efeito:** com o Codex 1 sem limite até as 15:23, o Claude assumiu a crítica da Emenda 1 do B-GUI-D1 (`crit-guid1-e1-cl`, corpo `critico-adversarial`) e a pré-revisão da 4ª leva do 08c2 (`prerev-08c2-l4-cl`). Nas duas não há cruzamento de casa, e isso está declarado (§C7 11(2)): sem limite, qualquer modelo verifica.
 
-## D-DONO-1711-72-P2 (2026-11-17, canal do artefato, pergunta `d72-p2`) — o `settle` não é segregado
+## D-DONO-1711-CANAL-ARTEFATO (2026-11-17 15:2x SP) — o canal do artefato responde as perguntas do orquestrador
 
-- **Fato (decisão do dono, escolha "nao"):** **não** segregar "liquidar cobrança" (`platform:billing:settle`) do `platform_admin`. O catálogo (`ROLE_PERMISSIONS`) e a matriz seguem como estão; `frontend/**` não muda.
-- **Nota do bloco (B-PLAT-PERMISSAO), declarada:** o plano (`plano-plat-perm-cl`, Opus, topo declarado com o Fable suspenso), a crítica r1 (`crit-plat-perm-cl`, Opus), a Emenda 1 (`plano-plat-perm-e1-fable`, Fable), a crítica r2 (`crit-plat-perm-e1-cl`, Opus), a Emenda 2 (`plano-plat-perm-e2-fable`, Fable) e o dev (`dev-plat-perm-cl`, Opus) saíram **sem cruzamento de casa** (§C7 item 11(2)): o Codex estava sem cota semanal nas 3 contas e o filtro da OpenAI barrou esta classe de tema; o dono mandou cobrir (*"pode cobrir o codex"*, 17/11). Os artefatos ficam fora do repositório, em `erp-pausa-2026-10-03/planos/` e `revisoes/plat-perm/`.
+- **Fato (decisão do dono):** *"claude, consegue colocar um seletor nas perguntas e receber os comandos por la das respostas minhas?"* e depois *"publicar e documentar esse canal de comunicacao, ja respondido. recebeu?"*
+- **O canal:** o artefato "ERP Estado Previsão" (versão 79) ganha a seção "4b · Responda aqui", com um seletor por decisão (a recomendação vem primeiro, com nota opcional) e um campo de comando livre.
+- **Onde fica:** as respostas ficam no banco do próprio artefato, nas coleções `respostas` (o id do documento é o id da decisão) e `comandos`. Só o dono escreve; quem abre pelo link apenas vê.
+- **Como o orquestrador usa:** lê as duas coleções em todo turno ativo, confirma cada resposta no chat e marca o comando executado como lido.
+- **O que entra no contrato:** é o complemento da `D-DONO-1611-DECISAO-EM-ARTEFATO` (a decisão vai no artefato e a resposta volta por ele). A regra entra em `CLAUDE.md` e `AGENTS.md` pelo próximo PR de registro, com o mesmo texto nos dois.
+
+## D-DONO-1711-ITEM-71 (2026-11-17 15:19 SP) — o técnico que lê OS alheias entra no portão como item 71
+
+- **Fato (decisão do dono, resposta por seletor):** escolha "sim".
+- **Efeito:** o técnico que lê OS alheias entra no portão como **item 71**. O dono do item é o bloco `B-WO-LEITURA-TECNICO`.
+
+## D-DONO-1711-WO-LEITURA-5 (2026-11-17 15:19 SP) — valem as 5 recomendações do plano do B-WO-LEITURA-TECNICO
+
+- **Fato (decisão do dono, resposta por seletor):** escolha "reco".
+- **Efeito:** valem as 5 recomendações do plano: o 403 continua na escrita (o conflito `C-WO-LEITURA-404-ESCRITA-403` fica registrado); o ex-técnico perde a leitura; o despacho conta pelo alvo; a aprovação segue a OS; o painel mostra só as OS dele.
+
+## D-DONO-1711-ITEM-72 (2026-11-17 15:20 SP) — o administrador da plataforma que mexe em dinheiro sem a permissão entra no portão como item 72
+
+- **Fato (decisão do dono, resposta por seletor):** escolha "sim".
+- **Efeito (premissa depois corrigida — ver `D-DONO-1711-ITEM-72-REVISTO`):** o administrador da plataforma que mexe em dinheiro sem a permissão entra no portão como **item 72** (`P-PLATAFORMA-PERMISSAO-IGNORADA`). O portão passa a ter 72 itens.
+
+## D-DONO-1711-AWS-ETAPA1 (2026-11-17 15:20 SP) — a etapa 1 da AWS é ato do dono até 18/11
+
+- **Fato (decisão do dono, resposta por seletor):** escolha "ate18".
+- **Efeito:** o dono faz a etapa 1 da AWS até 18/11.
+
+## D-DONO-1711-RECARGA-DEEPSEEK (2026-11-17 15:20 SP) — sem recarga do DeepSeek agora
+
+- **Fato (decisão do dono, resposta por seletor):** escolha "nao".
+- **Efeito:** sem recarga agora. Se o saldo acabar, o Claude e o Codex cobrem, com a falta de cruzamento declarada.
+
+## D-DONO-1711-ITEM-72-REVISTO (2026-11-17 16:50 SP) — o item 72 fica no portão mesmo com a premissa corrigida
+
+- **Fato (decisão do dono, resposta por seletor):** escolha "manter".
+- **Efeito:** mesmo com a premissa corrigida (não há escalada hoje; o defeito é a checagem que falha aberta e as chaves fora do catálogo), **o 72 fica no portão**. O portão vai a 72 itens. *(Mais tarde, em 22:00, o dono decide tirar o 72 do portão — ver `D-DONO-1711-72-FORA-DO-PORTAO`.)*
+
+## D-DONO-1711-72-P1 (2026-11-17 16:50 SP) — autorizada a migração das 6 chaves de permissão da plataforma
+
+- **Fato (decisão do dono, resposta por seletor):** escolha "sim".
+- **Efeito:** fica **autorizada a migração em `prisma/`** que cria as 6 chaves de permissão da plataforma, só para o `super_admin` (o bloco `B-PLAT-PERMISSAO`).
+
+## D-DONO-1711-72-P2 (2026-11-17 16:50 SP) — o settle não é segregado
+
+- **Fato (decisão do dono, resposta por seletor):** escolha "nao".
+- **Efeito:** o `settle` não é segregado; o catálogo e a matriz seguem como estão.
+
+## D-DONO-1711-FABLE-VOLTA (2026-11-17 18:1x SP) — o topo volta a Fable
+
+- **Fato (decisão do dono):** o dono trocou a sessão para Fable 5.1 e disse *"acelere com fable"*.
+- **Efeito:** o topo (planos, emendas, auditorias de reprovação) volta a Fable (a sessão); o nível menor fica em Opus, com `model: opus` nos disparos, declarado.
+
+## D-DONO-1711-AWS-ROTEIRO-CLOUDSHELL (2026-11-17 18:54 SP) — o roteiro da AWS, por linha de comando CloudShell, com DNS próprio
+
+- **Fato (decisão do dono):** *"ja crie os passos para configuracao da aws, atencao com o dns que pretendo inserir o endereco proprio, ter o meu endereco de ip com o nome do meu site/sistema. elabore detalhado com explicacao e dividido por fase, criar o .md e um artefato"*; *"tudo tem que ser por linha de comando cloudshel e ser validado antes de ser escrito"*; *"se nao tiver aws cli, instale"*.
+- **Feito:** a AWS CLI v1 foi instalada por `pip --user` (o MSI da v2 exige administrador e o UAC foi cancelado); o redator escreve `docs/infra/roteiro-aws-cloudshell.md` em PR próprio (#598), com cada comando validado por `help`, esqueleto e documentação oficial, sem chamada autenticada a conta nenhuma. O artefato é do orquestrador, a partir do `resumo.json`.
+
+## D-DONO-1711-FABLE-SUSPENSO (2026-11-17 20:50 SP) — o uso do Fable fica suspenso
+
+- **Fato (decisão do dono):** *"uso do fable suspenso"* (logo depois de trocar a sessão para Opus 5.5, `/model opus`).
+- **Efeito:** a partir de agora nenhum agente roda em Fable; o topo (planos, emendas, auditorias de reprovação) roda em **Opus, declarado** como fallback do Fable (§C7.6-bis), com `model: "opus"` explícito em toda invocação (inclusive do `planejador-mestre`, cujo frontmatter diz `fable`; a substituição é do invocador e vai declarada no artefato).
+
+## D-DONO-1711-AWS-TRACCAR-CLAMAV-JA (2026-11-17 21:39 SP) — o Traccar e o antivírus já entram
+
+- **Fato (decisão do dono):** *"o traccar e antivirus ja entram"*.
+- **Efeito (leitura do orquestrador, declarada):** no roteiro AWS (#598), o ClamAV (`B-AV-REAL`, código já na `main` pelo #477; item 27 fecha com o serviço respondendo no ambiente) e o Traccar (`B-TRC-01/02` já na `main`; `B-TRC-06` = implantação) deixam de ser "para depois" e entram como **Fase 3b (ClamAV)** e **Fase 3c (Traccar, RDS dedicado, ingestão privada)**. Continua valendo a regra do dono para o Traccar: nenhuma porta pública sem decisão, threat model e junta 5/5 (gate `G-TRC-NLB`). Se o dono quis dizer outra coisa, corrige-se numa linha.
+
+## D-DONO-1711-TRACCAR-BANCO-E-PORTA (2026-11-17 21:44 SP) — banco próprio do Traccar e a porta aberta com os devidos cuidados
+
+- **Fato (decisão do dono):** *"banco proprio traccar e porta aberta com os devidos cuidados"*.
+- **D-AWS-12 = RDS dedicado** para o Traccar. **D-AWS-11 = abrir a porta de protocolo dos rastreadores (GT06/OsmAnd), com os devidos cuidados.**
+- **Efeito (leitura do orquestrador, declarada):** "os devidos cuidados" são a regra do próprio dono para o Traccar e o gate `G-TRC-NLB` — a abertura entra no roteiro como subfase 3d com comandos completos e validados, mas com a trava escrita: só se executa depois do threat model do `G-TRC-NLB` e da junta de 5 (unanimidade), por ser porta pública em produção (§C7 item 1). Cuidados descritos: só as 2 portas de protocolo, nada da 8082 nem da ingestão; quarentena de dispositivo não mapeado; limite onde possível; VPC Flow Logs; alarme de pico; prova por comando de que só essas portas abrem.
+
+## D-DONO-1711-72-FORA-DO-PORTAO (2026-11-17 22:00 SP) — o item 72 sai do portão e vira pendência ALTA
+
+- **Fato (decisão do dono):** o dono colou a recomendação da correção do item 72 e escreveu *"fazer isso"*.
+- **Efeito:** o item 72 sai do portão e vira **pendência ALTA depois dos bloqueantes** (`P-PLATAFORMA-PERMISSAO-IGNORADA`, dono `B-PLAT-PERMISSAO`); o plano + Emendas 1 e 2 ficam prontos, e a migração das 6 chaves continua autorizada para quando o bloco voltar. Substitui a resposta `d72-rev=manter` do canal do artefato. O portão passa de 62/72 para **62/71**.
+
+## D-DONO-1711-PAINEL-COM-PERMISSAO-DO-SUPERIOR (2026-11-17 22:09 SP) — o painel da organização inteira só com a permissão dada por um superior
+
+- **Fato (decisão do dono):** *"pode ate ver, com a permissao dada por algum superior. espero que a tela de usuario de suporte a isso"*.
+- **Efeito (leitura do orquestrador, declarada):** por padrão NÃO (o painel só com as OS dele); a organização inteira só com permissão explícita concedida por um superior, e a tela de usuários tem de permitir conceder/retirar. Substitui a recomendação "por ator" da Emenda 2 §6 só para o painel. Medido às 22:1x: não existe permissão por usuário (só `Permission`/`RolePermission`/`UserRoleAssignment`) → a Emenda 3 decide o mecanismo.
+
+## D-DONO-1711-PAINEL-Q1-Q3 (2026-11-17 22:58 SP) — as respostas Q1 a Q3 do painel por permissão do superior
+
+- **Fato (decisão do dono):** *"1 e2 recomendacao, 3 o administrador da organização, e o gestor(por padrao, nao. mas ele poderar se dar o acesso)"*.
+- **Q1 = papel adicional "Painel da organização"** concedido pela tela de usuários (sem tabela por pessoa). **Q2 = sim:** financeiro + técnico também fica escopado sem a concessão (visualizador e operação de campo seguem largos). **Q3 = o administrador da organização concede; o gestor, por padrão, NÃO — mas pode passar a conceder se lhe for dado esse acesso.**
+- **Leitura do orquestrador, declarada (§A6):** "se dar o acesso" = se o administrador der ao gestor a capacidade de conceder (não o gestor dar a si mesmo); isso pede uma capacidade de "conceder o painel" separada de `users.manage`, do bloco de tela/usuários `B-USERS-CONCESSAO-PAINEL`. Se a leitura estiver errada, corrige-se numa linha.
+
+## D-DONO-1711-GESTOR-CONCEDE (2026-11-17 23:00 SP) — o gestor também concede, inclusive a si
+
+- **Fato (decisão do dono, que corrige a leitura do Q3 acima):** *"o gestor eh o dono, imagino que ele pode conceder ou tirar o acesso a qualquer pessoa da sua organizacao, inclusive a si proprio"*.
+- **Efeito:** o gestor (`manager`) também concede e retira o "Painel da organização" a qualquer pessoa da organização dele, **inclusive a si mesmo**, como o administrador (`tenant_admin`); sempre só dentro da própria organização. Fica para o bloco de tela/usuários `B-USERS-CONCESSAO-PAINEL` (hoje só o `tenant_admin` tem `users.manage`: o bloco mede como dar ao gestor a capacidade de conceder SÓ esse papel, sem dar a gestão inteira de usuários — e se isso pedir chave nova de catálogo/migração, a pergunta vai ao dono). O servidor do 71 não muda por isto. Nota: o gestor já vê o painel inteiro pelo papel dele; conceder a si mesmo é inócuo, mas fica permitido.
+
+## D-DONO-1811-71-MESMA-REGRA (2026-11-18 10:27 SP) — a "mesma regra" vale em todas as leituras, não só no painel
+
+- **Fato (decisão do dono, resposta por seletor à pergunta D-WO-LEITURA-UNIAO-DE-PAPEIS):** **"Mesma regra"** — sem a permissão do superior, o técnico que também tem papel de suporte/estoque/financeiro vê só as OS e despachos dele em TUDO (lista, detalhe, painel).
+- **Efeito:** fecha também o furo dos "Despachos ativos" (A1). Substitui o "por ator" da Emenda 2 para as uniões de papéis com técnico.
+
+## D-DONO-1811-MIGRACAO-CONCEDE-PAINEL (2026-11-18 10:27 SP) — autorizada a migração da permissão nova de conceder o painel
+
+- **Fato (decisão do dono):** o dono **autorizou** a migração de dados (`prisma/migrations`, só inclui a chave; nada apagado) da permissão nova "conceder a visão da organização", dada ao administrador e ao gestor, no bloco `B-USERS-CONCESSAO-PAINEL` (não no 71).
+
+## D-DONO-1811-APP-ORG-Q1-Q4 (2026-11-18 10:29 SP) — as respostas Q1 a Q4 do plano B-APP-ORG (itens 69 e 70)
+
+- **Fato (decisão do dono, respostas por seletor):** Q1 **avisa e deixa trocar** com ações pendentes (ficam na organização certa e saem quando ele volta); Q2 **dados já enviados ficam, separados** por organização e pessoa; Q3 **lista completa** de organizações no login, sem busca; Q4 **"Entrar em outra organização"** para a não vinculada (nada religado sozinho).
+- **Efeito:** todas as recomendações do plano `B-APP-ORG` (itens 69 e 70) foram aceitas. *(A Q3 foi refeita em 18/11 10:46: com mais de 3 organizações, o servidor responde sem lista, de propósito, contra enumeração; a pergunta "Manter a segurança" — até 3 organizações o app mostra a lista e, com mais, pede o código — volta ao dono.)*
+
+## D-DONO-1811-CLAUDE-UMA-TAREFA (2026-11-18 10:29 SP) — o Claude faz a orquestração e uma tarefa de cada vez até sexta
+
+- **Fato (decisão do dono):** *"hoje vc so pode fazer uma tarefa e orquestracao, use o deepseek pro. suas demandas mais pesadas vao para sexta quando o limite eh renovado"*.
+- **Efeito:** hoje (18/11) e até o limite do Claude renovar na sexta (20/11), o Claude faz a orquestração + UMA tarefa de cada vez (fica o `fix-587-r-cl`, o conserto da cobrança, o mais perto do merge); o resto vai para o **DeepSeek Pro** (uma tarefa por vez no braço; o Flash também pode, pela leitura do orquestrador, uma por vez); as demandas pesadas do Claude (Emenda 3.1 do 71, maquetes A/B/C das telas do 69/70, planos do topo, dev do 71) ficam para **sexta**. A PAUSA (P7) foi repassada à Emenda 3.1 (`plano-wo-leitura-e31-op`) e à crítica do 69/70 (`crit-app-org-cl`, que passa ao DeepSeek Pro).
+
+## D-DONO-1811-AGY-LIBERADO (2026-11-18 10:42 SP) — o Antigravity liberado, Argon e Opus; o Gemini CLI disponível
+
+- **Fato (decisão do dono):** *"o antigravity esta liberado, argon e oppus. o gemini cli esta disponivel tbm"*.
+- **Efeito:** capacidade nova hoje: **Opus pelo Antigravity** (cota própria, fora do limite do Claude da sessão), **Argon** (pelo agy e pelo Gemini CLI com a chave paga; nível menor pela `D-GEMINI-ARGON-NIVEL-CODEX`, mas como revisor de PR só 2º revisor — `D-GEMINI-SEGUNDO-REVISOR`). **Leitura do orquestrador, declarada:** o Opus do agy é modelo Claude, então pode fazer o trabalho de topo (planos/emendas) e de dev; a conferência das 3 aparências continua só com o orquestrador.
+
+## D-DONO-1811-PAINEL-OBRIGATORIO-60S (2026-11-18 10:46 SP) — o painel do ERP é obrigatório e a aquisição de limites é a cada 60 s
+
+- **Fato (decisão do dono):** *"o painel do erp eh obrigatorio e aquisicao de limites sera 60 segundos, documente e espalhe a noticia"*.
+- **Efeito:** o painel do ERP (`painel/painel-noite.ps1`) é obrigatório — fica sempre aberto enquanto houver trabalho — e a aquisição dos limites das IAs é a cada 60 s (antes: Codex 5 min, Antigravity 5 min, saldos 5 min, painel 2 min). Feito às 10:4x: `codex-uso-loop.sh`, `agy-uso-loop.ps1`, `saldos-loop.py` e `painel-noite.ps1` com o rodapé "obrigatório"; os 4 religados; `retomada.sh` passa a conferir os 3 medidores e o painel antes de tudo. **Risco declarado:** o `/usage` do Antigravity chama a CLI a cada minuto; se consumir cota do Flash, o orquestrador avisa. **Espalhar:** a memória foi feita; o contrato (`CLAUDE.md`/`AGENTS.md`, §C7 item 7 P8) fica para um PR curto de governança depois deste registro (o mandato deste registro já tinha saído, e ele não muda o contrato).
+
+## Emenda 2.2 do B-GUI-02 (decisão do orquestrador, 2026-11-17 20:15) — a guarda de coleta vale para toda OS já enviada
+
+- **O que decide:** escrita pelo orquestrador (Fable, topo) a partir do C1-01 da J-596 — a guarda `collection_after_dispatch` vale para toda OS já enviada, via a referência opcional nova `hasDispatchForWorkOrder` (irmã de `hasProvisionedChecklistRun`, fail-closed); T10/T10-db/T11, MX-G1, MP2; contrato l.658; a tela não muda. O PR passa a carregar as 8 pendências/decisões que a Emenda 1 §7.2 tirava dele (C3-01). Fonte (fora do repositório): `plano-B-GUI-02-emenda2.2.md`.
+
+## Emenda 1.2 do B-GUI-D1 (decisão do orquestrador, 2026-11-17 20:18) — o D7a/D7b segue o percurso do FID1
+
+- **O que decide:** medida na `main` `60c0704a` depois do conflito de sentido #595 × #597 — D7a com `checkin_confirm_dialog.dart`; D7b pelo percurso do FID1 (`checkin-start-route` → `checkin-arrived` → `plate-masked-hint`), nas 3 aparências; MD6 ancora em `_maskedHint()`; nada em `lib/`. Fonte (fora do repositório): `plano-B-GUI-D1-emenda1.2.md`.
+
+## Emenda 7 do B-ASS-08c2 (decisão do orquestrador, 2026-11-17 22:54) — a triagem da J-587
+
+- **O que decide:** C2-01 conserta agora (`backlogCategory`: nota `cancelled` sobre pago → `needs_review`, a categoria que já existe; a varredura não muda; o `/invoice` manual já reemite); C1-NG1 e o registro agora; C2-02 corrige o texto da pendência; C1-NG2/NM-X → N+1 em `P-08C2-CLOSE-POOL-PRESO` (dona 08c3), sem afrouxar asserção de dinheiro. Fonte (fora do repositório): `plano-B-ASS-08c2-emenda7.md`.
+
+## E-67-CENSO (registro, §A2, 2026-11-17) — a linha a mais no censo de tabelas censuradas
+
+- **O que é:** a `E-67-CENSO` (+1 linha em `src/modules/subscription-billing/metering/censored-tables.ts`) não é emenda do plano em arquivo; só existe no prompt e no diário do dev. Vai ao registro, como manda o porteiro-586 (R3). Fonte (fora do repositório): o prompt do dev do 67 e o diário do dev.
+
+## D-WO-LEITURA-404-ESCRITA-403 (2026-11-17) — a leitura de OS alheia dá 404; a escrita segue 403
+
+- **Fato (decisão do dono):** o plano `B-WO-LEITURA-TECNICO` §3.4 e as Emendas 1 e 2 (`erp-pausa-2026-10-03/planos/`, fora do repositório); a escolha do dono pelo canal do artefato (`D-DONO-1711-WO-LEITURA-5`, "reco", 17/11 15:19–15:20): valem as 5 recomendações.
+- **O que vale:** para o papel de campo, a leitura por objeto de OS, vistoria, despacho ou aprovação que não é dele responde o MESMO status, `code` e `reason` do id inexistente; a escrita continua **403 `not_assigned_to_actor`**, porque o app depende dele, com a marca de ex-técnico, para virar um conflito que um superior decide (07c-b1, `isPreviouslyAssignedRefusal`).
+- **Redação da Emenda 1 §5.1:** o oráculo de existência 403×404 da escrita **existe e foi medido** e não fecha neste bloco; os ids de OS alheia ainda saem por frota, orçamento, despesa, estoque e pela notificação de vistoria concluída. O que o bloco fecha são os canais de CONTEÚDO (18 rotas) e o canal de id da lista de despachos. Conflito: `C-WO-LEITURA-404-ESCRITA-403`; pendências `P-WO-ORACULO-403-404-ESCRITA`, `P-WO-LEITURA-ID-EM-FROTA`, `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO`.
+
+## D-WO-LEITURA-EX-TECNICO (2026-11-17) — o técnico que perdeu a OS perde a leitura dela
+
+- **Fato (decisão do dono):** o plano `B-WO-LEITURA-TECNICO` §3.4 e as Emendas 1 e 2 (`erp-pausa-2026-10-03/planos/`, fora do repositório); a escolha do dono pelo canal do artefato (`D-DONO-1711-WO-LEITURA-5`, "reco", 17/11 15:19–15:20): valem as 5 recomendações.
+- **O que vale:** depois do re-despacho, o ex-técnico recebe o 404 do inexistente na OS, na vistoria, no despacho antigo e na aprovação, e a OS sai das listas e do painel dele. O app trata a OS retida sem ler o servidor; a fila resolve pelo conflito do 07c-b1. **Exceção registrada:** o `PATCH …/status` do despacho antigo segue 200 pela regra do alvo e devolve o despacho inteiro (`P-DESPACHO-EX-TECNICO-MUTACAO`, `API_CONTRACTS.md` §3.6).
+
+## D-WO-LEITURA-DESPACHO-ALVO (2026-11-17) — o despacho "dele" é o que o tem como alvo E cuja OS ainda é dele
+
+- **Fato (decisão do dono):** o plano `B-WO-LEITURA-TECNICO` §3.4 e as Emendas 1 e 2 (`erp-pausa-2026-10-03/planos/`, fora do repositório); a escolha do dono pelo canal do artefato (`D-DONO-1711-WO-LEITURA-5`, "reco", 17/11 15:19–15:20): valem as 5 recomendações. A redação "alvo E OS atual" é da Emenda 1 §3.2.
+- **O que vale:** para o papel de campo, o despacho é legível quando, e só quando, ele é o alvo (`operatorUserId === actor.userId`, a regra do 07c) E a OS do despacho ainda é dele (`getForRead` responde 2xx); senão, o 404 do inexistente (`FIELD_DISPATCH_NOT_FOUND:not_found`). Na lista, o filtro é imposto no servidor pela relação `work_order` (sem migração). A mutação do despacho não muda (`D-07c-DESPACHO-ALVO`).
+
+## D-WO-LEITURA-APROVACAO-PELA-OS (2026-11-17) — a aprovação "dele" é a da OS que ele lê
+
+- **Fato (decisão do dono):** o plano `B-WO-LEITURA-TECNICO` §3.4 e as Emendas 1 e 2 (`erp-pausa-2026-10-03/planos/`, fora do repositório); a escolha do dono pelo canal do artefato (`D-DONO-1711-WO-LEITURA-5`, "reco", 17/11 15:19–15:20): valem as 5 recomendações.
+- **O que vale:** para o papel de campo, a aprovação é legível quando a OS dela passa pela porta de leitura; aprovação sem OS sai. A lista filtra no servidor (não pagina, então filtrar depois de ler não vaza contagem); sem a dependência de escopo na composição, 503 fail-closed.
+
+## D-WO-LEITURA-PAINEL-ESCOPADO (2026-11-17) — o painel do técnico conta só as OS dele
+
+- **Fato (decisão do dono):** o plano `B-WO-LEITURA-TECNICO` §3.4 e as Emendas 1 e 2 (`erp-pausa-2026-10-03/planos/`, fora do repositório); a escolha do dono pelo canal do artefato (`D-DONO-1711-WO-LEITURA-5`, "reco", 17/11 15:19–15:20): valem as 5 recomendações.
+- **O que vale:** para o papel de campo (`RBAC_MATRIX.md:34`, Dashboard "scoped"), as contagens de OS, a lista crítica e os eventos recentes são só das OS dele, em memória e no Prisma; o cadastro (clientes, viaturas, equipes, serviços) fica igual.
+
+## D-WO-LEITURA-UNIAO-DE-PAPEIS (2026-11-17, respondida pelo dono em 17/11 e 18/11) — união de papéis com o técnico de campo
+
+- **Histórico da pergunta (Emendas 1 §8.3 e 2 §6.2):** inicialmente propunha escopo "por ator" para todas as uniões com `viewer`, `finance`, `inventory`, `auditor` e `support`.
+- **Respondida pelo dono em 17/11 (painel, `D-DONO-1711-PAINEL-COM-PERMISSAO-DO-SUPERIOR`, `D-DONO-1711-PAINEL-Q1-Q3`, `D-DONO-1711-GESTOR-CONCEDE`) e em 18/11 ("Mesma regra" em toda leitura, `D-DONO-1811-71-MESMA-REGRA`, e "visão só com permissão", `D-DONO-1811-71-VISAO-SO-COM-PERMISSAO`):** suporte, estoque, financeiro, visualizador e auditor **não alargam** o técnico em nenhuma das 18 leituras (`nao_alarga` no `WORK_ORDER_READ_SCOPE`, Emendas 3.1 e 3.2); os papéis que alargam (`tenant_admin`, `manager`, `operator`, `field_dispatcher` e os de plataforma; amanhã também a "Visão da organização" do `B-USERS-CONCESSAO-PAINEL`) seguem "por ator". O mapa próprio do painel (`D-WO-LEITURA-PAINEL-CONCESSAO` da Emenda 3) foi substituído pela `D-WO-LEITURA-MESMA-REGRA`: ele não nasceu, e o painel segue o mesmo mapa e predicado de leitura de OS.
+
+## D-WO-LEITURA-MESMA-REGRA (2026-11-18) — formalização da "Mesma regra" (Emenda 3.1 §1.2, ampliada pela Emenda 3.2 §1.2)
+
+- **Falares do dono (verbatim):** 17/11 22:09 (`D-DONO-1711-PAINEL-COM-PERMISSAO-DO-SUPERIOR`): *"pode ate ver, com a permissao dada por algum superior. espero que a tela de usuario de suporte a isso"*; 17/11 22:58 (`D-DONO-1711-PAINEL-Q1-Q3`): *"1 e2 recomendacao, 3 o administrador da organização, e o gestor(por padrao, nao. mas ele poderar se dar o acesso)"*; 17/11 23:00 (`D-DONO-1711-GESTOR-CONCEDE`): *"o gestor eh o dono, imagino que ele pode conceder ou tirar o acesso a qualquer pessoa da sua organizacao, inclusive a si proprio"*; 18/11 10:27 (`D-DONO-1811-71-MESMA-REGRA`): **"Mesma regra"**; 18/11 10:27 (`D-DONO-1811-MIGRACAO-CONCEDE-PAINEL`): migração de dados autorizada no `B-USERS-CONCESSAO-PAINEL`.
+- **Regra formalizada (Emenda 3.1 §1.2, itens 1–6):** (1) por padrão, quem tem papel de campo (`field_technician` ou `technician`) e acumula papel `nao_alarga` lê só as OS atribuídas a ele e os despachos dele nas 18 leituras do bloco (R1–R18); a OS alheia responde o mesmo que um id inexistente; (2) a organização inteira só com um papel `tenant_wide` (hoje: `tenant_admin`, `manager`, `operator`, `field_dispatcher`, `super_admin`, `platform_admin`; amanhã: "Visão da organização" do `B-USERS-CONCESSAO-PAINEL`); (3) o superior é o `tenant_admin` e o `manager`, inclusive a si próprio, só na própria organização (a concessão estreita do gestor entra no `B-USERS-CONCESSAO-PAINEL`, com os requisitos da Emenda 3.1 §4 e da Emenda 3.2 §8.4); (4) sozinhos, sem papel de campo, os papéis `nao_alarga` seguem lendo o que leem hoje (`L-SOZINHO`); (5) a escrita não muda (403); (6) fora de R1–R18, 0 vazamento de conteúdo de OS alheia nas chaves medidas; a série por dia (`GET /operations/work-orders-timeseries`) segue pré-existente em `P-RBAC-TECNICO-LEITURAS-FORA-DE-OS`.
+- **Ampliada pela Emenda 3.2:** visualizador (`viewer`) e auditor (`auditor`) somados ao técnico também não alargam (`nao_alarga`); o despachante (`field_dispatcher`) segue `tenant_wide`, porque o módulo dele (Console Dispatcher) lê lista e detalhe de OS (R1, R2), painel (R18) e despachos (R13) da organização; a Auditoria (`GET /audit-events`) não passa pelo mapa e segue com o alcance do papel (`L-MODULO-PROPRIO`, `D-MODULO-PROPRIO`).
+
+## D-DONO-1811-71-VISAO-SO-COM-PERMISSAO (2026-11-18 ~11:50 e 12:49 SP) — visualizador e auditor somados ao técnico deixam de alargar; módulos padrão da função (Emenda 3.2)
+
+- **Fato (decisão do dono, resposta à Q-A da Emenda 3.1, verbatim):** *"continua podendo ver tudo, desde que seja dada a permissao para isso, nao havendo a permissa so ver os modulos padrao para funcao"*.
+- **Fato (decisão do dono, resposta à Q-B da Emenda 3.2 por seletor, 18/11 12:49 SP):** **"Pendência para depois"** — a fronteira da vistoria (R10a–R12) para `field_dispatcher` + técnico vira a pendência `P-WO-LEITURA-DESPACHANTE-VISTORIA` (MÉDIA, dona `B-USERS-CONCESSAO-PAINEL`, logo depois do 71).
+- **Leitura formalizada (Emenda 3.2 §1.2, itens 1–7):** (1) "ver tudo" nas 18 leituras só com a concessão (`tenant_wide`); `viewer` e `auditor` deixam de valer como concessão e passam a `nao_alarga`; (2) sem a concessão, cada papel vê os módulos padrão da função: técnico vê só as OS e despachos dele nas 18; `viewer` não tem módulo próprio nas 18; `auditor` mantém o módulo próprio de Auditoria (`GET /api/v1/audit-events`, `L-MODULO-PROPRIO`); `field_dispatcher` mantém `tenant_wide` porque o Console Dispatcher lê R1, R2, R13 e R18 da organização; (3) desvio declarado da leitura inicial do orquestrador (que restringia o despachante+técnico a R13–R15 e quebraria o Console Dispatcher em R1/R2/R18); (4) sozinhos, `viewer` e `auditor` seguem lendo a organização (`L-SOZINHO`); (5) escrita inalterada; (6) consequência declarada: até o `B-USERS-CONCESSAO-PAINEL`, não há concessão só de leitura (hoje todo papel `tenant_wide` também escreve); (7) leitura alternativa declarada e não adotada (dar o próprio papel `viewer`/`auditor` como se fosse a concessão).
+
+## C-WO-LEITURA-404-ESCRITA-403 (registro de CONFLITO, §A2, 2026-11-17) — leitura 404 × escrita 403
+
+- **Os dois lados:** o comentário do 07a (`work-order.service.ts`, "403, NÃO 404 … ele pode LÊ-LA") justificava o 403 da escrita com a leitura da organização inteira; o `B-WO-LEITURA-TECNICO` tira essa leitura do papel de campo (404 do inexistente). O oráculo de existência 403×404 da escrita existe e foi medido (Emenda 1 §5.1): `PATCH` na alheia = 403, no aleatório = 404.
+- **Estado:** RESOLVIDO pela decisão do dono `D-WO-LEITURA-404-ESCRITA-403` (manter o 403 na escrita); o comentário foi reescrito só no texto; o oráculo fica em `P-WO-ORACULO-403-404-ESCRITA`.
+- **Fonte:** o plano §3.4 e a Emenda 1 §5.1 (fora do repositório).
+
+## D-DONO-1811-AZURE-TETO-180 (2026-11-18 21:20 SP) — braço do Azure com teto de gasto e contenção
+
+- **Fato (decisão do dono, verbatim):** *"Vamos limitar em US$ 180. Pode arrochar."*
+- **Efeito:** o recurso do Azure fica com teto operacional de US$ 180 no dia a dia da orquestração, com trava fail-closed antes de lançar tarefa quando o gasto acumulado + margem atingir o limite; o registro usa só "o recurso do Azure", "a conta 4" e "o crédito da conta" em artefato público.
+
+## D-DONO-1811-CONTA-4-CODEX (2026-11-18 22:50 SP) — habilitar a conta 4 do Codex
+
+- **Fato (decisão do dono, verbatim):** *"vamos habilitar a conta 04 do codex"*.
+- **Efeito:** a conta 4 passa a existir como braço operacional separado (nível Sol), com medição própria no painel de braços e uso desacoplado das contas já saturadas.
+
+## D-DONO-1811-TESTE-GEMINI-CLI (2026-11-18 22:06 SP) — validar o Gemini CLI para uso do dia
+
+- **Fato (decisão do dono, verbatim):** *"teste o gemini cli"*.
+- **Efeito:** o Gemini CLI fica validado para uso operacional do dia (incluindo Argon) e entra como braço auxiliar de revisão/cruzamento conforme as regras já vigentes.
+
+## D-DONO-1911-MANHA-AZC-SOL-ARGON (2026-11-19 07:50 SP) — contenção do dia com AZC no Sol e apoio do Argon
+
+- **Fato (decisão do dono, verbatim):** *"não precisa nem usar o GPT 5.4 mini [...] Use só o GPT 5.3 Codex, no nível Sol"*; *"Você vai usar a conta nova do Codex. Essa conta da Azure vai ficar na orquestração. Vamos na contenção hoje"*; *"não esquecer de usar o argon. Vamos usar a conta do Gemini CLI"*.
+- **Efeito:** a orquestração do dia usa a conta nova AZC com GPT 5.3 Codex no nível Sol; o mini fica fora da rota do dia; Argon via Gemini CLI permanece obrigatório como braço de apoio no cruzamento.
+
+## D-DONO-1911-AWS-AGENT-TOOLKIT (2026-11-19) — regras da AWS no contrato por PR
+
+- **Fala do dono (verbatim):** "Configure o Agent Toolkit for AWS seguindo as instruções".
+- **Escolhas do seletor (registradas):**
+  - "Instalar sem restrição".
+  - "No contrato, por PR".
+  - Credencial AWS local no PC com perfil `erp-toolkit`, região `us-east-1`, sessão de 12 h renovável por 90 dias, acessível a agentes com acesso à máquina.
+- **Efeito:** instalação e operação do Agent Toolkit for AWS ficam institucionalizadas; `CLAUDE.md` e `AGENTS.md` passam a carregar, em seção espelhada, as regras oficiais da AWS com precedência subordinada ao contrato canônico, e a execução segue o roteiro `docs/infra/roteiro-aws-cloudshell.md` quando houver divergência de método.
+- **Risco declarado:** ampliar o acesso local à credencial reduz o isolamento operacional, aumenta superfície de uso indevido e exige disciplina estrita de trilha de auditoria, princípio do menor privilégio e controles de atos irreversíveis/com custo (incluindo junta em produção, §C7.1).
+
+## D-AWS-13 (2026-11-19) — o B-PLAT-PERMISSAO fica pronto antes da Fase 6 da AWS
+
+- **Fato (decisão do dono):** o dono confirmou em 19/11 que "o 72 fica pronto antes da Fase 6 da AWS" (a fase que cria o 1º administrador da plataforma).
+- **Efeito:** o `B-PLAT-PERMISSAO` deixa de ser item do portão (`D-DONO-1711-72-FORA-DO-PORTAO`), segue como pendência ALTA (`P-PLATAFORMA-PERMISSAO-IGNORADA`) e vira **pré-requisito obrigatório** da Fase 6 da AWS.
+- **Trilha afetada:** `PLANO_SAN3.md` permanece com 71 itens; o gate do portão não muda; muda a ordem de execução na trilha AWS (Fase 6 só começa após o fechamento da pendência).

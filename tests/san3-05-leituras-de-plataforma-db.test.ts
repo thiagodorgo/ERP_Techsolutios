@@ -8,6 +8,7 @@ import test from "node:test";
 import type { PrismaClient } from "@prisma/client";
 
 import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
+import { businessDateAtRequest } from "./helpers/business-date.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-SAN3-05 — T10, T11a–d e T12 do plano v3 (item 10 do gate vendável): as leituras e escritas de PLATAFORMA
@@ -105,6 +106,10 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`POST ${P}/billing/statements/:statementId/charge`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_charges", "billing_outbox"], "requestChargeCreate sob withTenantRlsBudget, o demonstrativo travado primeiro; globais: billing_provider_configs (paymentProviderOn) e billing_statement_refs (putRefInTx)")],
   [`POST ${P}/billing/statements/:statementId/charge/cancel`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "subscription_statement_charges", "audit_logs"], "requestChargeCancel sob withTenantRlsBudget, o demonstrativo travado primeiro e a trilha no mesmo tx")],
   [`POST ${P}/billing/statements/:statementId/charge/cancel-unknown`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "subscription_statement_charges", "audit_logs"], "requestUnknownChargeCancel sob withTenantRlsBudget (F7), o demonstrativo travado primeiro e a trilha no mesmo tx")],
+  // B-ASS-08c2 (plano §4.9, §4.17): o /invoice do operador (o demonstrativo travado primeiro; a fila e a nota no mesmo tx) e o
+  // backlog da nota (uma leitura). As GLOBAIS que o /invoice também toca vão nomeadas na nota.
+  [`POST ${P}/billing/statements/:statementId/invoice`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "subscription_statement_invoices"], "requestInvoiceIssue sob withTenantRls, o demonstrativo travado primeiro; globais: billing_provider_configs (invoiceIntentsNow) e billing_statement_refs (putRefInTx)")],
+  [`GET ${P}/billing/invoices/backlog`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "subscription_statement_invoices"], "listInvoiceBacklog sob withTenantRls, uma leitura sem trava")],
   [`GET ${P}/billing/statements/:statementId/charges`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_charges"], "findStatement e listByStatement sob withTenantRls; global: billing_provider_configs (createChannelRuntime)")],
   [`GET ${P}/billing/outbox`, S("FORCE-POR-TENANT", ["billing_outbox"], "listForTenant sob withTenantRls, com o tenant_id no predicado; global: billing_provider_configs (createChannelRuntime)")],
   [`POST ${P}/billing/outbox/:id/resolve`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "audit_logs"], "resolve sob withTenantRlsBudget (FOR UPDATE OF s) e a trilha no mesmo tx; global: billing_provider_configs (createChannelRuntime)")],
@@ -176,7 +181,7 @@ type Cenario = {
   calculationRunIds: string[];
   subscriptionPlanId: string;
   subscriptionPlanCode: string;
-  subscriptionValidFrom: string;
+  subscriptionValidFrom: () => string;
   grupoS: string;
   grupoT: string;
 };
@@ -210,11 +215,9 @@ if (!connectionString) {
       calculationRunIds: [],
       subscriptionPlanId: "",
       subscriptionPlanCode: "",
-      // A data de NEGÓCIO de hoje (America/Sao_Paulo), a mesma régua do serviço de assinatura. Antes era a data UTC
-      // (`toISOString().slice(0, 10)`, desde o #504): das 21:00 às 24:00 em São Paulo ela já é amanhã, e o DELETE logo
-      // abaixo grava `valid_to = agora` < `valid_from` → 400 `tenant_subscriptions_valid_to_check` (medido em 09/11 no
-      // B-ASS-08b). Defeito pré-existente do arnês, consertado aqui porque barrava o cenário do canal nessa janela.
-      subscriptionValidFrom: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date()),
+      // A data de negócio é uma leitura tardia: semear e requisitar consultam o relógio no próprio instante. Se a
+      // preparação cruza a meia-noite em São Paulo, a PUT não reaproveita o dia anterior e não vira retroativa.
+      subscriptionValidFrom: businessDateAtRequest(),
       grupoS: "",
       grupoT: "",
     };
@@ -482,7 +485,7 @@ if (!connectionString) {
         const assigned = await http(
           "PUT",
           `${P}/billing/tenants/${cenario.tenantB}/subscription`,
-          { planCode: cenario.subscriptionPlanCode, validFrom: cenario.subscriptionValidFrom },
+          { planCode: cenario.subscriptionPlanCode, validFrom: cenario.subscriptionValidFrom() },
         );
         assert.equal(assigned.status, 200, JSON.stringify(assigned.body));
         registrarRota(`PUT ${P}/billing/tenants/:tenantId/subscription`, assigned.body.data);
@@ -797,8 +800,25 @@ if (!connectionString) {
           assert.equal(perfilLido.status, 200, JSON.stringify(perfilLido.body));
           registrarRota(`GET ${P}/billing/tenants/:tenantId/billing-profile`, projetarPerfil(perfilLido.body.data as Record<string, unknown>));
 
+          // B-ASS-08c2 (plano §4.9): o demonstrativo de B foi quitado pelo serviço SEM intenção de nota → o /invoice do operador
+          // grava a intenção (a nota não está ligada: `provider_disabled`), e o backlog o mostra esperando o provedor.
+          const notaPedida = await httpDemo("POST", `${P}/billing/statements/${stB}/invoice`, { tenantId: B });
+          assert.equal(notaPedida.status, 200, JSON.stringify(notaPedida.body));
+          const notaPedidaData = notaPedida.body.data as Record<string, unknown>;
+          registrarRota(`POST ${P}/billing/statements/:statementId/invoice`, { seq: notaPedidaData.seq, providerDisabled: notaPedidaData.providerDisabled });
+          const pendenciasNota = await httpDemo("GET", `${P}/billing/invoices/backlog?tenantId=${B}`);
+          assert.equal(pendenciasNota.status, 200, JSON.stringify(pendenciasNota.body));
+          const linhasPendencia = pendenciasNota.body.data as Array<Record<string, unknown>>;
+          assert.ok(linhasPendencia.length > 0, "o backlog da organização B não é vazio");
+          registrarRota(
+            `GET ${P}/billing/invoices/backlog`,
+            linhasPendencia.map((row) => ({ period: row.period, status: row.status, category: row.category, invoiceStatus: row.invoiceStatus, lastLineStatus: row.lastLineStatus, totalAmount: row.totalAmount })),
+          );
+
           // Limpeza do cenário, nesta volta (a próxima volta apaga as assinaturas de B, e a FK do demonstrativo travaria).
           const orgs = [cenario.tenantA, cenario.tenantB];
+          await admin.billingOutbox.deleteMany({ where: { tenant_id: { in: orgs } } }); // B-ASS-08c2: a intenção do /invoice
+          await admin.billingStatementRef.deleteMany({ where: { tenant_id: { in: orgs } } }); // B-ASS-08c2: o índice do /invoice
           await admin.auditLog.deleteMany({ where: { tenant_id: { in: orgs }, action: { startsWith: "subscription_" } } });
           await admin.subscriptionCredit.deleteMany({ where: { tenant_id: { in: orgs } } });
           await admin.subscriptionStatementPayment.deleteMany({ where: { tenant_id: { in: orgs } } });
@@ -903,6 +923,8 @@ if (!connectionString) {
             resolveCustomer: async () => ({ ok: true as const, customerId: "cus_san305" }),
             settlement: new StatementSettlementService(runtimeCanal.repository, runtimeCanal.service),
             statements: runtimeCanal.repository,
+            listTenantIds: async () => orgs,
+            invoiceRecovery: runtimeCanal.service,
             now: () => agoraCanal,
           };
           const projetarDemonstrativos = async () =>
@@ -1566,7 +1588,7 @@ async function semear(admin: PrismaClient, suffix: string, cenario: Cenario): Pr
     data: {
       tenant_id: tenantA.id,
       plan_id: plan.id,
-      valid_from: new Date(cenario.subscriptionValidFrom),
+      valid_from: new Date(cenario.subscriptionValidFrom()),
     },
   });
 

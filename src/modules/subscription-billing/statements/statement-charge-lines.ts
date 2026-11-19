@@ -31,6 +31,66 @@ export const CHARGE_CREATE_LINE_RULES = {
 
 const lineRule = (line: BillingOutboxRow): LineRule => CHARGE_CREATE_LINE_RULES[line.status];
 
+/** B-ASS-08c2 (plano §4.15, `P-579-LINERULE-NAO-EXAUSTIVA`): o ramo final de cada `switch` das ações. Uma ação nova na união
+ * deixa o `tsc` vermelho (o argumento não é `never`); uma ação forjada em tempo de execução lança (falha fechado), em vez de
+ * cair num ramo permissivo. */
+function unreachable(value: never): never {
+  void value;
+  throw new Error("line_rule_action_unhandled");
+}
+
+/** O que o refechamento faz com UMA linha `charge_create`, pela ação da tabela (lida pelo `switch` exaustivo). */
+type RefechaOutcome = "refuse_inflight" | "refuse_review" | "refuse_live" | "skip_pending" | "skip_sent_terminal" | "keep";
+function refechaOutcome(line: BillingOutboxRow, charges: readonly SubscriptionStatementCharge[]): RefechaOutcome {
+  const action = lineRule(line).refecha;
+  switch (action) {
+    case "refuse_inflight":
+      return "refuse_inflight";
+    case "refuse_review":
+      return "refuse_review";
+    case "by_charge":
+      return chargeRule(chargeOf(line, charges)).terminal ? "skip_sent_terminal" : "refuse_live";
+    case "skip":
+      return "skip_pending";
+    case "ignore":
+      return "keep";
+    default:
+      return unreachable(action); // [ACTION-REFECHA]
+  }
+}
+
+/** O que a marcação imediata faz com UMA linha `charge_create`. */
+type EagerOutcome = "skip" | "cancel" | "none";
+function eagerOutcome(line: BillingOutboxRow, charges: readonly SubscriptionStatementCharge[]): EagerOutcome {
+  const action = lineRule(line).eager;
+  switch (action) {
+    case "skip":
+      return "skip";
+    case "by_charge":
+      return chargeRule(chargeOf(line, charges)).cancelTarget ? "cancel" : "none";
+    case "none":
+      return "none";
+    default:
+      return unreachable(action); // [ACTION-EAGER]
+  }
+}
+
+/** O que o reopen lê de UMA linha `charge_create`. */
+type ReopenOutcome = "in_flight" | "live" | "none";
+function reopenOutcome(line: BillingOutboxRow, charges: readonly SubscriptionStatementCharge[]): ReopenOutcome {
+  const action = lineRule(line).reopen;
+  switch (action) {
+    case "in_flight":
+      return "in_flight";
+    case "by_charge":
+      return chargeRule(chargeOf(line, charges)).terminal ? "none" : "live";
+    case "none":
+      return "none";
+    default:
+      return unreachable(action); // [ACTION-REOPEN]
+  }
+}
+
 /** A cobrança da tabela que a linha `charge_create` criou (pelo provedor e pelo `external_id`), se houver. */
 export function chargeOf(line: BillingOutboxRow, charges: readonly SubscriptionStatementCharge[]): SubscriptionStatementCharge | undefined {
   if (line.externalId === null) return undefined;
@@ -63,14 +123,14 @@ export type RefechamentoPlan =
  * → 422 `charge_already_exists`; senão, as PENDING e as SENT com cobrança terminal saem do conjunto vivo.
  */
 export function refechamentoPlan(lines: readonly BillingOutboxRow[], charges: readonly SubscriptionStatementCharge[]): RefechamentoPlan {
-  const creates = lines.filter((line) => line.kind === "charge_create");
-  if (creates.some((line) => lineRule(line).refecha === "refuse_inflight")) return { kind: "refuse", httpStatus: 409, reason: "charge_in_flight" }; // [REFECHA-INFLIGHT]
-  if (creates.some((line) => lineRule(line).refecha === "refuse_review")) return { kind: "refuse", httpStatus: 422, reason: "outbox_needs_review" }; // [REFECHA-REVIEW]
-  if (creates.some((line) => lineRule(line).refecha === "by_charge" && !chargeRule(chargeOf(line, charges)).terminal)) return { kind: "refuse", httpStatus: 422, reason: "charge_already_exists" }; // [REFECHA-LIVE]
+  const outcomes = lines.filter((line) => line.kind === "charge_create").map((line) => ({ line, outcome: refechaOutcome(line, charges) }));
+  if (outcomes.some((item) => item.outcome === "refuse_inflight")) return { kind: "refuse", httpStatus: 409, reason: "charge_in_flight" }; // [REFECHA-INFLIGHT]
+  if (outcomes.some((item) => item.outcome === "refuse_review")) return { kind: "refuse", httpStatus: 422, reason: "outbox_needs_review" }; // [REFECHA-REVIEW]
+  if (outcomes.some((item) => item.outcome === "refuse_live")) return { kind: "refuse", httpStatus: 422, reason: "charge_already_exists" }; // [REFECHA-LIVE]
   return {
     kind: "proceed",
-    skipPending: creates.filter((line) => lineRule(line).refecha === "skip"),
-    skipSentTerminal: creates.filter((line) => lineRule(line).refecha === "by_charge" && chargeRule(chargeOf(line, charges)).terminal),
+    skipPending: outcomes.filter((item) => item.outcome === "skip_pending").map((item) => item.line),
+    skipSentTerminal: outcomes.filter((item) => item.outcome === "skip_sent_terminal").map((item) => item.line),
   };
 }
 
@@ -88,9 +148,9 @@ export type EagerPlan = {
  * operador, e o claim nunca pega NEEDS_REVIEW).
  */
 export function eagerPlan(lines: readonly BillingOutboxRow[], charges: readonly SubscriptionStatementCharge[]): EagerPlan {
-  const creates = lines.filter((line) => line.kind === "charge_create");
-  const skippable = creates.filter((line) => lineRule(line).eager === "skip"); // [EAGER-SKIPPABLE]
-  const cancelTargets = creates.filter((line) => lineRule(line).eager === "by_charge" && chargeRule(chargeOf(line, charges)).cancelTarget); // [EAGER-CANCEL]
+  const outcomes = lines.filter((line) => line.kind === "charge_create").map((line) => ({ line, outcome: eagerOutcome(line, charges) }));
+  const skippable = outcomes.filter((item) => item.outcome === "skip").map((item) => item.line); // [EAGER-SKIPPABLE]
+  const cancelTargets = outcomes.filter((item) => item.outcome === "cancel").map((item) => item.line); // [EAGER-CANCEL]
   return { skippable, cancelTargets };
 }
 
@@ -102,12 +162,12 @@ export function reopenLiveCheck(
   lines: readonly BillingOutboxRow[],
   charges: readonly SubscriptionStatementCharge[],
 ): { readonly inFlight: boolean; readonly liveCharge: boolean } {
-  const creates = lines.filter((line) => line.kind === "charge_create");
+  const outcomes = lines.filter((line) => line.kind === "charge_create").map((line) => reopenOutcome(line, charges));
   return {
-    inFlight: creates.some((line) => lineRule(line).reopen === "in_flight"),
+    inFlight: outcomes.includes("in_flight"),
     liveCharge:
       charges.some((charge) => CHARGE_RULES[charge.status].occupiesSlot) || // [REOPEN-SLOT]
-      creates.some((line) => lineRule(line).reopen === "by_charge" && !chargeRule(chargeOf(line, charges)).terminal) || // [REOPEN-SENT-LIVE]
+      outcomes.includes("live") || // [REOPEN-SENT-LIVE]
       false,
   };
 }

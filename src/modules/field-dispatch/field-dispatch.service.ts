@@ -5,6 +5,7 @@ import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import {
   actorMutatesAssignedOnly,
+  assignedToActorOperatorIds,
   WORK_ORDER_SERVICE_STARTED,
   WorkOrderError,
   type WorkOrder,
@@ -30,7 +31,7 @@ import {
   type FieldDispatchRepository,
 } from "./field-dispatch.repository.js";
 import type { ChecklistRunRole } from "../checklists/checklist.types.js";
-import type { WorkOrderChecklistLink } from "../work-orders/work-order-checklists.types.js";
+import { checklistRoleRank, type WorkOrderChecklistLink } from "../work-orders/work-order-checklists.types.js";
 import type {
   DispatchChecklistLine,
   FieldDispatch,
@@ -253,8 +254,16 @@ export class FieldDispatchService {
       limit: parseLimit(query.limit),
       offset: parseOffset(query.offset),
     };
-
-    return this.repository.list(input);
+    const readScope = await this.workOrderService.readScopeFor(actor); // B-WO-LEITURA:despacho-lista
+    if (!readScope) return this.repository.list(input);
+    // Papel de campo: o alvo é IMPOSTO (pedir outro operador é a interseção vazia, como `?assignedUserId=<colega>` no
+    // B-SAN3-13), e só o despacho cuja OS ainda é dele (D-WO-LEITURA-DESPACHO-ALVO, emenda 1). `actor.userId` fora da
+    // forma de UUID não chega a consultar o banco (`operator_user_id` é `@db.Uuid`): o repositório Prisma devolve a
+    // página vazia, como `assignedToActorUuidOperatorIds` faz na lista de OS (o precedente que o plano cita).
+    if (input.operatorUserId && input.operatorUserId !== actor.userId) {
+      return { items: [], total: 0, limit: input.limit, offset: input.offset };
+    }
+    return this.repository.list({ ...input, operatorUserId: actor.userId, workOrderAssignedOperatorIn: assignedToActorOperatorIds(readScope) });
   }
 
   async create(actor: FieldDispatchActorContext, body: RawRecord): Promise<FieldDispatch> {
@@ -654,10 +663,28 @@ export class FieldDispatchService {
     const dispatch = await this.repository.findById(actor.tenantId, parseRequiredUuid(dispatchId, "dispatchId"));
 
     if (!dispatch) {
-      throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
+      throw dispatchNotFoundError();
     }
 
     return dispatch;
+  }
+
+  /** B-WO-LEITURA — o despacho para quem vai LER: para o papel de campo, só o que o tem como ALVO e cuja OS ainda é dele. */
+  async getForRead(actor: FieldDispatchActorContext, dispatchId: string): Promise<FieldDispatch> {
+    const readScope = await this.workOrderService.readScopeFor(actor);
+    const dispatch = await this.get(actor, dispatchId);
+    if (readScope && !(dispatch.operatorUserId === actor.userId && (await this.workOrderStillAssigned(actor, dispatch.workOrderId)))) throw dispatchNotFoundError(); // B-WO-LEITURA:despacho-porta
+    return dispatch;
+  }
+
+  private async workOrderStillAssigned(actor: FieldDispatchActorContext, workOrderId: string): Promise<boolean> {
+    try {
+      await this.workOrderService.getForRead(actor, workOrderId);
+      return true;
+    } catch (error) {
+      if (error instanceof WorkOrderError && (error.statusCode === 404 || error.statusCode === 400)) return false;
+      throw error;
+    }
   }
 
   // B-O6R-09 — o desfecho da transição condicional: o despacho mudou entre a leitura e a escrita → 409, sem nada gravado;
@@ -1055,7 +1082,7 @@ export class FieldDispatchService {
       // rede secundária e ESTÁVEL: preserva o desempate do porto e só protege contra uma listagem fora de
       // ordem trocar qual vistoria é a primária — que trocaria qual vistoria vai a campo.
       return [...live]
-        .sort((a, b) => a.orderIndex - b.orderIndex)
+        .sort((a, b) => checklistRoleRank(a.role) - checklistRoleRank(b.role) || a.orderIndex - b.orderIndex)
         .map((link) => ({
           checklistId: link.checklistId,
           role: link.role,
@@ -1541,6 +1568,12 @@ export function buildWorkOrderChecklistSetPort(workOrderService: WorkOrderServic
 // `workOrderChecklistSet` continua sendo parâmetro daqui só como PONTO DE SUBSTITUIÇÃO de teste (um dublê que
 // conta chamadas); omitir cai no porto de verdade, sobre a MESMA instância de `WorkOrderService` que o serviço
 // usa — senão a leitura da junção viria de um repositório e a escrita iria para outro.
+// B-WO-LEITURA — o 404 do despacho, num lugar só: o `get` (id inexistente) e a porta de leitura (`getForRead`, despacho
+// que não é do papel de campo) lançam ESTE erro, e o alheio não tem como divergir do inexistente.
+function dispatchNotFoundError(): FieldDispatchError {
+  return new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
+}
+
 export function createMemoryFieldDispatchService(
   coreService: ICoreSaasService,
   workOrderChecklistSet?: WorkOrderChecklistSetPort,

@@ -24,12 +24,30 @@ import type { WorkOrderChecklistLink, WorkOrderDetail } from "../src/modules/wor
 // aba na URL com fallback, §7 acesso não permitido, reuso do corpo vivo em "Informações gerais".
 
 // --- tabs.config ---
-test("WORK_ORDER_TABS: 11 abas na ordem exata da spec §1.3", () => {
-  assert.equal(WORK_ORDER_TABS.length, 11);
+test("WORK_ORDER_TABS: 12 abas — as 11 da spec §1.3 na ordem exata, mais a Vistorias (B-GUI-02) logo depois de Informações gerais", () => {
+  assert.equal(WORK_ORDER_TABS.length, 12);
   assert.deepEqual(
     WORK_ORDER_TABS.map((t) => t.slug),
-    ["informacoes-gerais", "financeiro", "orcamento", "estoque", "comentarios", "arquivos", "mobile", "quilometragem", "base", "mapa", "logs"],
+    ["informacoes-gerais", "vistorias", "financeiro", "orcamento", "estoque", "comentarios", "arquivos", "mobile", "quilometragem", "base", "mapa", "logs"],
   );
+});
+
+// B-GUI-02 (W5b, Emenda 1 §7.3) — a aba "Vistorias" só aparece nas aparências B e C do painel; na A ele vive em Informações
+// gerais, e `?aba=vistorias` cai no padrão (a regra de hoje para aba oculta).
+test("W5b · visibleTabs por aparência: A = as 9 de hoje; B e C = 10, com Vistorias em 2º; na A, vistorias cai em Informações gerais", () => {
+  const nove = ["informacoes-gerais", "financeiro", "orcamento", "comentarios", "arquivos", "mobile", "quilometragem", "mapa", "logs"];
+  assert.deepEqual(visibleTabs().map((t) => t.slug), nove);
+  assert.deepEqual(visibleTabs("A").map((t) => t.slug), nove);
+  for (const appearance of ["B", "C"] as const) {
+    const slugs = visibleTabs(appearance).map((t) => t.slug);
+    assert.equal(slugs.length, 10, `aparência ${appearance}`);
+    assert.equal(slugs[1], "vistorias", `aparência ${appearance}`);
+    assert.deepEqual(slugs.filter((slug) => slug !== "vistorias"), nove);
+    assert.equal(resolveActiveTab("vistorias", appearance), "vistorias");
+  }
+  assert.equal(resolveActiveTab("vistorias", "A"), "informacoes-gerais");
+  assert.equal(resolveActiveTab("vistorias"), "informacoes-gerais");
+  assert.equal(findTab("vistorias").label, "Vistorias");
 });
 
 test("C2: 9 abas visíveis (Ω3F-8b acende Mapa); base/estoque seguem ocultas", () => {
