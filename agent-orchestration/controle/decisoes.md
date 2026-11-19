@@ -6026,3 +6026,9 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 
 - **Fato (decisão do dono, verbatim):** *"não precisa nem usar o GPT 5.4 mini [...] Use só o GPT 5.3 Codex, no nível Sol"*; *"Você vai usar a conta nova do Codex. Essa conta da Azure vai ficar na orquestração. Vamos na contenção hoje"*; *"não esquecer de usar o argon. Vamos usar a conta do Gemini CLI"*.
 - **Efeito:** a orquestração do dia usa a conta nova AZC com GPT 5.3 Codex no nível Sol; o mini fica fora da rota do dia; Argon via Gemini CLI permanece obrigatório como braço de apoio no cruzamento.
+
+## C-08C3-Q1-PADRAO-SEM-RESPOSTA (registro de CONFLITO, §A2, 2026-11-19) — Q1 sem resposta no disparo do B-ASS-08c3
+
+- **Os dois lados:** o plano do `B-ASS-08c3` pergunta ao dono se o estorno parcial do provedor ativa o `[EP-PARCIAL]` no fechamento (`Q1`); no disparo do dev, às 10:35 de 19/11, não havia resposta registrada no `REGISTRO-PENDENTE.md` para `08c3-q`.
+- **Estado:** RESOLVIDO por padrão operacional do próprio plano/base do disparo: **Q1 = (a)** (não ativa o `[EP-PARCIAL]` neste ciclo). O bloco segue com o `EP0` obrigatório e a mutação `M-EP0`.
+- **Rastreio do mesmo disparo:** no mesmo corte de 10:35, valem também os padrões **Q2 = (a)** e **Q3 = (a)** até decisão explícita do dono.
