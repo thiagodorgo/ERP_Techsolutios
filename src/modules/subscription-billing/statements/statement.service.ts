@@ -143,6 +143,10 @@ export class StatementService {
 
     // B-ASS-08c1c (P5): o predicado "provedor ligado" e o método do perfil, ANTES da transação (nunca rede dentro dela).
     const closing = (await this.channel.closingCharge?.resolve(input.tenantId)) ?? null;
+    const pre = (await this.repository.listStatements(input.tenantId)).find((row) => row.period === input.period);
+    const prePin = pre?.status === "reopened" ? pinOf(pre) : null;
+    const resolved = await this.inputs.resolve(input.tenantId, input.period, { pin: prePin }); // [CLOSE-RESOLVE-OUT]
+
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
       const { statement: current } = await tx.insertIfAbsentAndLock({ tenantId: input.tenantId, period: input.period });
       if (current.status === "closed" || current.status === "paid" || current.status === "cancelled") {
@@ -151,12 +155,11 @@ export class StatementService {
       if (current.status === "reopened" && input.source === "job") {
         return { kind: "skipped", reason: "reopened_awaits_manual_close", alreadyClosed: false } as const;
       }
-
-      const resolved = await this.inputs.resolve(input.tenantId, input.period, {
-        pin: current.status === "reopened" ? pinOf(current) : null,
-      });
-      if (resolved.kind === "skip") {
-        return { kind: "skipped", reason: resolved.reason, alreadyClosed: false } as const;
+      if (resolved.kind === "skip") return { kind: "skipped", reason: resolved.reason, alreadyClosed: false } as const;
+      if (current.status === "reopened" && prePin !== null) {
+        const nowPin = pinOf(current);
+        const same = nowPin.planVersionIds.join(",") === prePin.planVersionIds.join(",") && nowPin.addonPlanVersionIds.join(",") === prePin.addonPlanVersionIds.join(",");
+        if (!same) throw new StatementError(409, "statement_busy", "The statement is busy; try again."); // [CLOSE-PIN-CHECK]
       }
 
       const daysInMonth = daysInPeriod(input.period);
