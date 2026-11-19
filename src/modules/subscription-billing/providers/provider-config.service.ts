@@ -8,7 +8,12 @@
 //  - Trocar o ambiente com o provedor ligado → 422 `disable_first` (G14).
 
 import { BillingProfileError, normalizeDocument } from "../billing-profile/billing-profile.js";
+import { env } from "../../../config/env.js";
+import { billingWebhookPublicUrl } from "../webhooks/subscription-billing.webhook.routes.js";
 import type { CredentialKind } from "../vault/vault.repository.js";
+import { ASAAS_WEBHOOK_EVENTS } from "./payment/asaas/index.js";
+import type { PaymentProviderPort } from "./payment/payment-provider.port.js";
+import type { InvoiceProviderPort } from "./invoice/invoice-provider.port.js";
 import { getProviderCatalogEntry, PROVIDER_IDS, type ProviderCatalogEntry, type ProviderId } from "./provider.catalog.js";
 import type { ProviderConfig, ProviderConfigRepository, ProviderEnvironment, ProviderSettings } from "./provider-config.repository.js";
 
@@ -35,6 +40,7 @@ export class ProviderConfigError extends Error {
     readonly statusCode: number,
     readonly reason: string,
     message: string,
+    readonly details?: Readonly<Record<string, unknown>>,
   ) {
     super(message);
     this.name = "ProviderConfigError";
@@ -61,6 +67,40 @@ export type ProviderConfigView = {
   readonly lastTest: { readonly at: string; readonly ok: boolean | null; readonly environment: ProviderEnvironment | null } | null;
 };
 
+export type ProviderConnectionTestOutcome = {
+  readonly provider: string;
+  readonly environment: ProviderEnvironment;
+  readonly ok: boolean;
+  readonly code?: "credential_rejected" | "provider_unavailable" | "rate_limited" | "not_configured";
+  readonly at: string;
+};
+
+export type ProviderWebhookRegistrationOutcome = {
+  readonly provider: string;
+  readonly environment: ProviderEnvironment;
+  readonly registeredAt: string;
+  readonly alreadyRegistered: boolean;
+};
+
+export type ProviderEnableOutcome = {
+  readonly provider: string;
+  readonly environment: ProviderEnvironment;
+  readonly enabledAt: string;
+  readonly enabledBy: string | null;
+};
+
+export type ProviderDisableOutcome = {
+  readonly provider: string;
+  readonly environment: ProviderEnvironment;
+  readonly disabledAt: string;
+  readonly changed: boolean;
+};
+
+/** A fábrica de adaptadores injetada no serviço; só monta Asaas e Focus (B-ASS-08c3). */
+export type ProviderAdapterFactory = {
+  readonly payment: (provider: string, environment: ProviderEnvironment) => PaymentProviderPort | null;
+  readonly invoice: (provider: string, environment: ProviderEnvironment) => InvoiceProviderPort | null;
+};
 const ENVIRONMENTS: readonly ProviderEnvironment[] = ["sandbox", "production"];
 const NFSE_ROUTES = ["nacional", "municipal"] as const;
 // Chaves que NUNCA podem estar em `settings`: o segredo só entra pelo cofre.
@@ -69,8 +109,8 @@ const SETTING_KEY = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 const MAX_SETTINGS = 40;
 const MAX_TEXT = 200;
 
-function fail(status: number, reason: string, message: string): never {
-  throw new ProviderConfigError(status, reason, message);
+function fail(status: number, reason: string, message: string, details?: Readonly<Record<string, unknown>>): never {
+  throw new ProviderConfigError(status, reason, message, details);
 }
 
 function text(value: unknown, field: string): string {
@@ -179,9 +219,9 @@ export type EnablePreconditionState = {
   readonly confirm: string | null;
   readonly now: Date;
   /** B-ASS-08c-wh (P23): `NODE_ENV` do processo. O chamador (que nasce no B-ASS-08c3) passa o do ambiente. */
-  readonly nodeEnv?: string;
+  readonly nodeEnv: string;
   /** B-ASS-08c-wh (P23): `BILLING_WEBHOOK_TRUSTED_PROXY_HOPS`. Ausente conta como 0 (fail-closed em produção). */
-  readonly webhookTrustedProxyHops?: number;
+  readonly webhookTrustedProxyHops: number;
 };
 
 export type EnableDecision =
@@ -205,7 +245,7 @@ export function evaluateEnablePreconditions(state: EnablePreconditionState): Ena
   if (state.otherProviderEnabledForKind) failed.push("another_provider_enabled_for_kind");
   if (state.confirm !== `${state.provider}:${state.environment}`) failed.push("confirm_mismatch");
   // B-ASS-08c-wh (P23): em produção, sem saltos de proxy medidos o IP do webhook seria o do balanceador → recusa ligar.
-  if (state.nodeEnv === "production" && !((state.webhookTrustedProxyHops ?? 0) >= 1)) failed.push("webhook_proxy_hops_unset");
+  if (state.nodeEnv === "production" && state.webhookTrustedProxyHops < 1) failed.push("webhook_proxy_hops_unset");
   return failed.length === 0 ? { ok: true } : { ok: false, reason: "enable_preconditions_failed", failed };
 }
 
@@ -214,6 +254,7 @@ export class ProviderConfigService {
     private readonly repository: ProviderConfigRepository,
     private readonly credentials: ProviderCredentialSummaries,
     private readonly clock: () => Date = () => new Date(),
+    private readonly adapters: ProviderAdapterFactory = { payment: () => null, invoice: () => null },
   ) {}
 
   async list(): Promise<readonly ProviderConfigView[]> {
@@ -239,6 +280,124 @@ export class ProviderConfigService {
     const settings = withDefaults(entry, input.settings === undefined ? (current?.settings ?? {}) : normalizeSettings(input.settings));
     const saved = await this.repository.upsert({ provider: entry.id, kind: entry.kind, environment: environment as ProviderEnvironment, settings }, this.clock());
     return this.#view(entry, saved);
+  }
+
+  async testConnection(provider: string): Promise<ProviderConnectionTestOutcome> {
+    const entry = this.#entry(provider);
+    const environment = (await this.repository.get(entry.id))?.environment ?? "sandbox";
+    const adapter = this.#adapter(entry, environment);
+    if (!adapter) fail(422, "provider_adapter_unavailable", "This provider has no adapter in this package.");
+    if (!env.BILLING_PROVIDERS_ENABLED) fail(422, "channel_disabled", "The billing channel is disabled by environment.");
+    const now = this.clock();
+    const result = await adapter.testConnection();
+    await this.repository.recordTest(entry.id, { ok: result.ok, errorCode: result.ok ? null : result.code, environment }, now);
+    return {
+      provider: entry.id,
+      environment,
+      ok: result.ok,
+      ...(result.ok ? {} : { code: result.code }),
+      at: now.toISOString(),
+    };
+  }
+
+  async registerWebhook(provider: string): Promise<ProviderWebhookRegistrationOutcome> {
+    const entry = this.#entry(provider);
+    const environment = (await this.repository.get(entry.id))?.environment ?? "sandbox";
+    if (entry.webhookRegistrationMode === "manual") fail(422, "webhook_registration_manual", "This provider registers its webhook manually.");
+    const adapter = this.#adapter(entry, environment);
+    if (!adapter) fail(422, "provider_adapter_unavailable", "This provider has no adapter in this package.");
+    if (!env.BILLING_PROVIDERS_ENABLED) fail(422, "channel_disabled", "The billing channel is disabled by environment.");
+    if (!env.BILLING_WEBHOOK_PUBLIC_BASE_URL) fail(422, "webhook_public_url_missing", "BILLING_WEBHOOK_PUBLIC_BASE_URL is not set.");
+    const summaries = await this.credentials.list(entry.id, environment);
+    if (!summaries.some((summary) => summary.kind === "webhook_secret")) fail(422, "webhook_secret_required", "A webhook secret must be saved in the vault first.");
+    const publicUrl = billingWebhookPublicUrl(env.BILLING_WEBHOOK_PUBLIC_BASE_URL, entry.id);
+    const current = await this.repository.get(entry.id);
+    if (current?.webhookRegisteredEnvironment === environment && current.webhookPublicUrl === publicUrl) {
+      return { provider: entry.id, environment, registeredAt: current.webhookRegisteredAt!.toISOString(), alreadyRegistered: true };
+    }
+    const now = this.clock();
+    let externalId: string;
+    if (entry.kind === "payment") {
+      const registered = await (adapter as PaymentProviderPort).registerWebhook({ url: publicUrl, secret: "", events: ASAAS_WEBHOOK_EVENTS });
+      if ("manual" in registered) fail(422, "webhook_registration_manual", "This provider registers its webhook manually.");
+      externalId = registered.externalId;
+    } else {
+      externalId = (await (adapter as InvoiceProviderPort).registerWebhook({ url: publicUrl })).externalId;
+    }
+    await this.repository.recordWebhook(entry.id, { environment, externalId, publicUrl }, now);
+    return { provider: entry.id, environment, registeredAt: now.toISOString(), alreadyRegistered: false };
+  }
+
+  async enable(provider: string, input: { readonly confirm: string | null }, actorId: string | null): Promise<ProviderEnableOutcome> {
+    const entry = this.#entry(provider);
+    const environment = (await this.repository.get(entry.id))?.environment ?? "sandbox";
+    if (!this.#adapter(entry, environment)) fail(422, "provider_adapter_unavailable", "This provider has no adapter in this package.");
+    const now = this.clock();
+    const [summaries, readability] = await Promise.all([
+      this.credentials.list(entry.id, environment),
+      this.credentials.readability ? this.credentials.readability(entry.id, environment) : Promise.resolve(null),
+    ]);
+    const hasApiToken = summaries.some((summary) => summary.kind === "api_token");
+    const apiTokenReadable = hasApiToken && readability?.readable === true;
+    const webhookSecretPresent = summaries.some((summary) => summary.kind === "webhook_secret");
+    let failed: readonly string[] | null = null;
+    try {
+      const result = await this.repository.enableLocked(entry.id, now, (locked, peers) => {
+        const state: EnablePreconditionState = {
+          provider: entry.id,
+          kind: entry.kind,
+          environment: locked?.environment ?? "sandbox",
+          channelEnabledByEnv: env.BILLING_PROVIDERS_ENABLED,
+          apiTokenReadable,
+          lastTestOk: locked?.lastTestOk ?? null,
+          lastTestAt: locked?.lastTestAt ?? null,
+          lastTestEnvironment: locked?.lastTestEnvironment ?? null,
+          webhookRegistrationMode: entry.webhookRegistrationMode,
+          webhookRegisteredEnvironment: locked?.webhookRegisteredEnvironment ?? null,
+          webhookSecretPresent,
+          fiscalComplete: locked ? missingFiscalFields(entry, locked.settings).length === 0 : false,
+          otherProviderEnabledForKind: peers.some((peer) => peer.provider !== entry.id && peer.kind === entry.kind && peer.enabled),
+          confirm: input.confirm,
+          now,
+          nodeEnv: env.NODE_ENV,
+          webhookTrustedProxyHops: env.BILLING_WEBHOOK_TRUSTED_PROXY_HOPS,
+        };
+        // [ENABLE-GATE]
+        const decision = evaluateEnablePreconditions(state);
+        if (!decision.ok) {
+          failed = decision.failed;
+          return null;
+        }
+        return { enabled: true, environment: state.environment, actorId };
+      });
+      if (!result.updated) {
+        if (failed) fail(422, "enable_preconditions_failed", `Enable preconditions failed: ${(failed as readonly string[]).join(", ")}.`, { failed });
+        throw new Error("enable_locked_sem_efeito");
+      }
+      return {
+        provider: entry.id,
+        environment: result.updated.enabledEnvironment ?? "sandbox",
+        enabledAt: result.updated.enabledAt!.toISOString(),
+        enabledBy: result.updated.enabledBy,
+      };
+    } catch (error) {
+      if ((error as { code?: unknown }).code === "P2002") fail(409, "another_provider_enabled_for_kind", "Another provider of this kind is already enabled.");
+      throw error;
+    }
+  }
+
+  async disable(provider: string, actorId: string | null): Promise<ProviderDisableOutcome> {
+    const entry = this.#entry(provider);
+    const current = await this.repository.get(entry.id);
+    const environment = current?.environment ?? "sandbox";
+    const now = this.clock();
+    const changed = current?.enabled === true;
+    await this.repository.setEnabled(entry.id, { enabled: false, environment: null, actorId: null }, now);
+    return { provider: entry.id, environment, disabledAt: now.toISOString(), changed };
+  }
+
+  #adapter(entry: ProviderCatalogEntry, environment: ProviderEnvironment): PaymentProviderPort | InvoiceProviderPort | null {
+    return entry.kind === "payment" ? this.adapters.payment(entry.id, environment) : this.adapters.invoice(entry.id, environment);
   }
 
   #entry(provider: string): ProviderCatalogEntry {
