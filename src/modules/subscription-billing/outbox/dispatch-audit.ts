@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../../database/rls.js";
-import { createLogger } from "../../../utils/logger.js";
+import { createLogger } from "../../../infra/logging/logger.js";
 import type { DispatchAuditEvent } from "./outbox.dispatcher.js";
 
 const HOUR_MS = 60 * 60 * 1000;

@@ -487,6 +487,11 @@ async function dispatchChargeCancel(deps: DispatcherDeps, row: BillingOutboxRow,
   const lease = leaseOf(row);
   const chargeId = typeof row.payload.chargeId === "string" ? row.payload.chargeId : "";
   const unknown = row.payload.unknown === true;
+  if (unknown && (await deps.repo.isChargeKnown(row.tenantId, row.statementId, chargeId))) {
+    if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "unknown_charge_became_known", clock(), lease))) return leaseLost(deps, row); // [UNKNOWN-REREAD]
+    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "unknown_charge_became_known" });
+    return "needs_review";
+  }
   try {
     let verdict = cancelTargetVerdict(await port.listChargesByExternalReference(row.statementId), chargeId, unknown);
     if (verdict.kind === "proceed") {
