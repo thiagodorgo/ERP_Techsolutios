@@ -8,6 +8,7 @@ import test from "node:test";
 import type { PrismaClient } from "@prisma/client";
 
 import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
+import { businessDateAtRequest } from "./helpers/business-date.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-SAN3-05 — T10, T11a–d e T12 do plano v3 (item 10 do gate vendável): as leituras e escritas de PLATAFORMA
@@ -180,7 +181,7 @@ type Cenario = {
   calculationRunIds: string[];
   subscriptionPlanId: string;
   subscriptionPlanCode: string;
-  subscriptionValidFrom: string;
+  subscriptionValidFrom: () => string;
   grupoS: string;
   grupoT: string;
 };
@@ -214,11 +215,9 @@ if (!connectionString) {
       calculationRunIds: [],
       subscriptionPlanId: "",
       subscriptionPlanCode: "",
-      // A data de NEGÓCIO de hoje (America/Sao_Paulo), a mesma régua do serviço de assinatura. Antes era a data UTC
-      // (`toISOString().slice(0, 10)`, desde o #504): das 21:00 às 24:00 em São Paulo ela já é amanhã, e o DELETE logo
-      // abaixo grava `valid_to = agora` < `valid_from` → 400 `tenant_subscriptions_valid_to_check` (medido em 09/11 no
-      // B-ASS-08b). Defeito pré-existente do arnês, consertado aqui porque barrava o cenário do canal nessa janela.
-      subscriptionValidFrom: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date()),
+      // A data de negócio é uma leitura tardia: semear e requisitar consultam o relógio no próprio instante. Se a
+      // preparação cruza a meia-noite em São Paulo, a PUT não reaproveita o dia anterior e não vira retroativa.
+      subscriptionValidFrom: businessDateAtRequest(),
       grupoS: "",
       grupoT: "",
     };
@@ -486,7 +485,7 @@ if (!connectionString) {
         const assigned = await http(
           "PUT",
           `${P}/billing/tenants/${cenario.tenantB}/subscription`,
-          { planCode: cenario.subscriptionPlanCode, validFrom: cenario.subscriptionValidFrom },
+          { planCode: cenario.subscriptionPlanCode, validFrom: cenario.subscriptionValidFrom() },
         );
         assert.equal(assigned.status, 200, JSON.stringify(assigned.body));
         registrarRota(`PUT ${P}/billing/tenants/:tenantId/subscription`, assigned.body.data);
@@ -1589,7 +1588,7 @@ async function semear(admin: PrismaClient, suffix: string, cenario: Cenario): Pr
     data: {
       tenant_id: tenantA.id,
       plan_id: plan.id,
-      valid_from: new Date(cenario.subscriptionValidFrom),
+      valid_from: new Date(cenario.subscriptionValidFrom()),
     },
   });
 

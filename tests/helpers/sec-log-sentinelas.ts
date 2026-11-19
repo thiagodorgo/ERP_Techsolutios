@@ -5,8 +5,9 @@
 // 2. sentinela NUMÉRICO (5439, 6391 e, se houver, a porta do cluster) só conta como NÚMERO INTEIRO, sem dígito encostado
 //    de nenhum lado — a porta sorteada 54390 não é o sentinela 5439 (R2-08);
 // 3. os campos `"time"` e `"pid"` do pino saem antes de contar.
-import { spawn } from "node:child_process";
 import net from "node:net";
+
+import { startChildServer } from "./child-server.js";
 
 export const DATABASE_URL_SENTINELA = "postgresql://usrdb-sentinela:pwddb-sentinela@hstdb-sentinela:5439/bcodb-sentinela";
 export const REDIS_URL_SENTINELA = "redis://usrrd-sentinela:pwdrd-sentinela@hstrd-sentinela:6391/0";
@@ -175,33 +176,30 @@ export async function subirUmaVez(raiz: string, variante: VarianteDeBoot): Promi
   };
   if (process.env.SystemRoot !== undefined) env.SystemRoot = process.env.SystemRoot;
   const inicio = Date.now();
-  const filho = spawn(process.execPath, ["--import", "tsx", "src/server.ts"], {
+  const servidor = await startChildServer({
+    args: ["--import", "tsx", "src/server.ts"],
     cwd: raiz,
     env,
-    stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: true,
+    readyPrefix: '{"level":',
+    startTimeoutMs: TETO_MS,
   });
-  let log = "";
   let esperaMs = 0;
-  await new Promise<void>((resolve) => {
-    let janela: NodeJS.Timeout | undefined;
-    const teto = setTimeout(() => filho.kill(), TETO_MS);
-    const olhar = (pedaco: Buffer) => {
-      log += pedaco.toString("utf8");
-      if (janela === undefined && contarPositivo(log, variante) >= 1) {
+  try {
+    const deadline = inicio + TETO_MS;
+    while (Date.now() < deadline && servidor.child.exitCode === null) {
+      const logAtual = servidor.output();
+      if (contarPositivo(logAtual, variante) >= 1) {
         esperaMs = Date.now() - inicio;
-        janela = setTimeout(() => filho.kill(), JANELA_MS);
+        await new Promise((resolve) => setTimeout(resolve, JANELA_MS));
+        break;
       }
-    };
-    filho.stdout.on("data", olhar);
-    filho.stderr.on("data", olhar);
-    filho.once("close", () => {
-      clearTimeout(teto);
-      if (janela !== undefined) clearTimeout(janela);
-      if (esperaMs === 0) esperaMs = Date.now() - inicio;
-      resolve();
-    });
-  });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  } finally {
+    await servidor.stop();
+  }
+  const log = servidor.output();
+  if (esperaMs === 0) esperaMs = Date.now() - inicio;
   return {
     log,
     positivo: contarPositivo(log, variante),
