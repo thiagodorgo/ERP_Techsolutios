@@ -9,7 +9,7 @@
 //  - débito (R-PAY-7b): `billingType: UNDEFINED` (o pagador escolhe débito na invoiceUrl).
 //  - `POST /webhooks`: `authToken` = segredo nosso, `sendType: SEQUENTIALLY`.
 
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
 import {
   ProviderNotConfiguredError,
@@ -28,6 +28,7 @@ import type {
   CustomerProfile,
   PaymentMethod,
   PaymentProviderPort,
+  ConnectionTestResult,
   ExternalChargeCandidate,
   ProviderDescription,
   RegisterWebhookInput,
@@ -310,6 +311,22 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
       externalReference: typeof payment.externalReference === "string" ? payment.externalReference : undefined,
       kind: typeof body.event === "string" ? body.event : undefined,
     };
+  }
+
+  async testConnection(): Promise<ConnectionTestResult> {
+    const token = await this.readSecret("api_token");
+    if (!token) return { ok: false, code: "not_configured" };
+    const externalReference = randomUUID();
+    const response = await this.client.request({
+      op: "testConnection",
+      method: "GET",
+      path: `/payments?externalReference=${encodeURIComponent(externalReference)}&offset=0&limit=1`,
+      headers: await this.authHeaders(),
+    });
+    if (response.status >= 200 && response.status < 300) return { ok: true };
+    if (response.status === 401 || response.status === 403) return { ok: false, code: "credential_rejected" };
+    if (response.status === 429) return { ok: false, code: "rate_limited" };
+    return { ok: false, code: "provider_unavailable" };
   }
 
   supportedMethods(): readonly PaymentMethod[] {

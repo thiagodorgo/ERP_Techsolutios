@@ -100,6 +100,11 @@ export type ProviderDescription = {
   readonly webhookRegistration: "api" | "manual";
 };
 
+/** O resultado do teste de conexão de um provedor. Nunca carrega corpo nem texto do provedor. */
+export type ConnectionTestResult =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly code: "credential_rejected" | "provider_unavailable" | "rate_limited" | "not_configured" };
+
 export interface PaymentProviderPort {
   ensureCustomer(profile: CustomerProfile): Promise<{ readonly customerId: string }>;
   createCharge(input: CreateChargeInput): Promise<ChargeResult>;
@@ -109,6 +114,7 @@ export interface PaymentProviderPort {
   refund(chargeId: string, amountCents?: number): Promise<{ readonly chargeId: string; readonly status: ChargeStatus }>;
   registerWebhook(input: RegisterWebhookInput): Promise<RegisterWebhookResult>;
   verifyWebhook(input: VerifyWebhookInput): Promise<VerifyWebhookResult>;
+  testConnection(): Promise<ConnectionTestResult>;
   supportedMethods(): readonly PaymentMethod[];
   describe(): ProviderDescription;
 }

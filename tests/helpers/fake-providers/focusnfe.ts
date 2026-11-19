@@ -79,6 +79,18 @@ export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeSer
     if (selected === "validation_422") {
       return sendJson(res, 422, { status: "erro_validacao", mensagem: `credencial rejeitada: ${String(req.headers.authorization ?? "")}` });
     }
+    if (selected === "credential_rejected_401") {
+      return sendJson(res, 401, { mensagem: "credencial inválida" });
+    }
+    if (selected === "credential_rejected_403") {
+      return sendJson(res, 403, { mensagem: "sem permissão para este recurso" });
+    }
+    if (selected === "provider_unavailable_500") {
+      return sendJson(res, 500, { mensagem: "erro interno do provedor" });
+    }
+    if (selected === "not_found_404") {
+      return sendJson(res, 404, { mensagem: "referência inexistente" });
+    }
 
     if (method === "POST" && (url.pathname === "/v2/nfsen" || url.pathname === "/v2/nfse")) {
       const ref = url.searchParams.get("ref") ?? "";

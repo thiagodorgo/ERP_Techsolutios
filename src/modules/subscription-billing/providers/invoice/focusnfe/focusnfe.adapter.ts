@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
 import {
   ProviderNotConfiguredError,
@@ -11,6 +11,7 @@ import { PROVIDER_CATALOG } from "../../provider.catalog.js";
 import { ibsCbsPayloadFor } from "../../tax/ibs-cbs.rules.js";
 import { validateTaxProfileBeforeNetwork } from "../../tax/nfse-route.rules.js";
 import { InvoiceProviderError } from "../invoice-errors.js";
+import type { ConnectionTestResult } from "../../payment/payment-provider.port.js";
 import type {
   InvoiceLookup,
   InvoiceProviderPort,
@@ -226,6 +227,22 @@ export class FocusNfeInvoiceAdapter implements InvoiceProviderPort {
     } catch {
       return { ok: false };
     }
+  }
+
+  async testConnection(): Promise<ConnectionTestResult> {
+    const token = await this.readSecret("api_token");
+    if (!token) return { ok: false, code: "not_configured" };
+    const response = await this.client.request({
+      op: "testConnection",
+      method: "GET",
+      path: `/nfsen/${encodeURIComponent(randomUUID())}`,
+      headers: await this.authHeaders(),
+    });
+    // A credencial passou se o Focus aceitou a consulta; a referência aleatória não existe (404) ou devolve 2xx.
+    if (response.status === 404 || (response.status >= 200 && response.status < 300)) return { ok: true }; // [TEST-CONN]
+    if (response.status === 401 || response.status === 403) return { ok: false, code: "credential_rejected" };
+    if (response.status === 429) return { ok: false, code: "rate_limited" };
+    return { ok: false, code: "provider_unavailable" };
   }
 
   describe() {
