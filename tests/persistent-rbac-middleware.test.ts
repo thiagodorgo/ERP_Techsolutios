@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
+import { execFile, spawn } from "node:child_process";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
-import { startChildServer } from "./helpers/child-server.js";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -442,7 +442,8 @@ try {
 }
 `;
 
-  const child = await startChildServer({
+  const result = await runOneShotCommand({
+    command: process.execPath,
     args: ["--import", "tsx", "--input-type=module", "-e", script],
     cwd: process.cwd(),
     env: {
@@ -453,13 +454,96 @@ try {
       JWT_EXPIRES_IN: "15m",
       LOG_LEVEL: "silent",
     },
-    readyPrefix: "{",
+    timeoutMs: 20_000,
   });
-  const stdout = child.stdout().trim();
-  const stderr = child.stderr().trim();
-  await child.stop();
+  const stdout = result.stdout.trim();
+  const stderr = result.stderr.trim();
 
-  assert.equal(child.child.exitCode, 0, stderr || stdout);
+  assert.equal(result.timedOut, false, stderr || stdout);
+  assert.equal(result.status, 0, stderr || stdout);
 
   return JSON.parse(stdout.split(/\r?\n/).at(-1) ?? "{}");
+}
+
+type OneShotResult = {
+  readonly status: number | null;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly timedOut: boolean;
+};
+
+async function waitForExitCode(child: ReturnType<typeof spawn>, timeoutMs: number): Promise<number | null> {
+  if (child.exitCode !== null) return child.exitCode;
+  return await new Promise<number | null>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.off("close", onClose);
+      reject(new Error(`processo one-shot não encerrou em ${timeoutMs}ms`));
+    }, timeoutMs);
+    const onClose = (status: number | null): void => {
+      clearTimeout(timer);
+      resolve(status);
+    };
+    child.once("close", onClose);
+  });
+}
+
+async function terminateTree(child: ReturnType<typeof spawn>): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  const pid = child.pid;
+
+  if (process.platform === "win32" && pid !== undefined) {
+    await new Promise<void>((resolve) => {
+      execFile("taskkill.exe", ["/PID", String(pid), "/T", "/F"], { windowsHide: true }, () => resolve());
+    });
+    return;
+  }
+
+  if (pid !== undefined) {
+    try {
+      process.kill(-pid, "SIGKILL");
+      return;
+    } catch {
+      child.kill("SIGKILL");
+      return;
+    }
+  }
+
+  child.kill("SIGKILL");
+}
+
+async function runOneShotCommand(options: {
+  readonly command: string;
+  readonly args: readonly string[];
+  readonly cwd: string;
+  readonly env: NodeJS.ProcessEnv;
+  readonly timeoutMs: number;
+}): Promise<OneShotResult> {
+  const child = spawn(options.command, [...options.args], {
+    cwd: options.cwd,
+    env: options.env,
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: process.platform !== "win32",
+    windowsHide: true,
+  });
+  let stdout = "";
+  let stderr = "";
+  let timedOut = false;
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk: string) => (stdout += chunk));
+  child.stderr.on("data", (chunk: string) => (stderr += chunk));
+
+  const timer = setTimeout(() => {
+    timedOut = true;
+    void terminateTree(child);
+  }, options.timeoutMs);
+  timer.unref();
+
+  try {
+    const status = await waitForExitCode(child, options.timeoutMs + 5_000);
+    return { status, stdout, stderr, timedOut };
+  } finally {
+    clearTimeout(timer);
+    if (timedOut) await terminateTree(child);
+  }
 }

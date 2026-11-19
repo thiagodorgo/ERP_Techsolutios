@@ -1331,7 +1331,9 @@ test(
         assert.equal((source.match(/\bspawnCommand\(/g) ?? []).length, 2);
         assert.equal((source.match(/\brunCatalogCommand\(/g) ?? []).length, 4);
         assert.equal((source.match(/\bROLE_SCRIPT\b/g) ?? []).length, 5);
-        assert.equal((source.match(/\bspawn\(/g) ?? []).length, 2);
+        const helperWriters = (source.match(/\bstartChildServer\(/g) ?? []).length;
+        const directWriters = (source.match(/\bspawn\(/g) ?? []).length;
+        assert.equal(helperWriters + directWriters, 2);
         assert.equal((source.match(/\bspawnSync\(/g) ?? []).length, 3);
 
         const heldClient = prismaFor(connectionString);

@@ -13,6 +13,7 @@ const EXPECTED_CREATORS = new Map<string, { readonly count: number; readonly cla
   ["tests/helpers/child-server.ts", { count: 2, classification: "helper gerenciado: spawn do servidor + taskkill da árvore" }],
   ["tests/avreal-privacy.test.ts", { count: 1, classification: "one-shot: cliente do scanner encerra por process.exit(0)" }],
   ["tests/expense-sync-atomic-db.test.ts", { count: 1, classification: "one-shot: comando de reinício com timeout e close" }],
+  ["tests/persistent-rbac-middleware.test.ts", { count: 2, classification: "one-shot com timeout: runtime memory aguarda close natural e só mata a árvore ao estourar" }],
   ["tests/helpers/o6r07c-census.ts", { count: 1, classification: "one-shot: execFile com timeout nativo" }],
   ["tests/helpers/wo-leitura-census.ts", { count: 1, classification: "one-shot: execFile com timeout nativo" }],
   ["tests/san3-05-runtime-role-guard-db.test.ts", { count: 1, classification: "one-shot: executor de comandos de catálogo com timeout" }],
