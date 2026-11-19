@@ -22,6 +22,13 @@ import { startAsaasFake, type AsaasFake } from "./helpers/fake-providers/asaas.j
 import { startFocusNfeFake } from "./helpers/fake-providers/focusnfe.js";
 import type { FakeServer } from "./helpers/fake-providers/shared.js";
 import { PROVIDER_CATALOG } from "../src/modules/subscription-billing/providers/provider.catalog.js";
+import { AsaasPaymentAdapter } from "../src/modules/subscription-billing/providers/payment/asaas/index.js";
+import { BillingHttpClient } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
+import { paymentProviderOn } from "../src/modules/subscription-billing/outbox/channel-state.js";
+import { runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
+import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
+import { createVaultPlatformRouter } from "../src/modules/subscription-billing/vault/vault.platform.routes.js";
+import { assertApplicationNamePropagated, captureSettled, expectRejected, waitForOwnBlockedStatement } from "./helpers/pg-barrier.js";
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -31,6 +38,7 @@ const WEBHOOK_ASAAS = "WEBHOOK-ASAAS-FAKE";
 const TOKEN_FOCUS = "TOKEN-FOCUS-FAKE";
 const WEBHOOK_FOCUS = "WEBHOOK-FOCUS-FAKE";
 const PUBLIC_BASE = "https://public.invalid";
+const APP_NAME = `o6r-08c3-provider-routes-${process.pid}`;
 
 type Json = Record<string, any>;
 
@@ -125,6 +133,95 @@ if (!connectionString) {
     return attempts;
   }
 
+  const q = (sql: string, ...args: unknown[]) => db.$queryRawUnsafe(sql, ...args) as Promise<any[]>;
+
+  async function resetAsaasDisabled(): Promise<void> {
+    await db.$executeRawUnsafe(
+      `UPDATE billing_provider_configs SET enabled = false, enabled_environment = NULL, enabled_at = NULL, enabled_by = NULL WHERE provider = 'asaas'`,
+    );
+  }
+
+  async function arrangeAsaasReady(environment: "sandbox" | "production" = "sandbox"): Promise<void> {
+    await db.$executeRawUnsafe(
+      `UPDATE billing_provider_configs
+          SET enabled = false,
+              enabled_environment = NULL,
+              enabled_at = NULL,
+              enabled_by = NULL,
+              last_test_ok = true,
+              last_test_environment = $1::text,
+              last_test_at = now(),
+              last_test_error = NULL,
+              webhook_registered_at = now(),
+              webhook_registered_environment = $1::text,
+              webhook_external_id = 'wh_ext_fake',
+              webhook_public_url = $2::text
+        WHERE provider = 'asaas'`,
+      environment,
+      `${PUBLIC_BASE}/api/v1/webhooks/billing/asaas`,
+    );
+  }
+
+  async function seedStatementForProvider(tag: string, tenantId?: string, period = "2026-10"): Promise<{ tenantId: string; statementId: string }> {
+    let owner = tenantId;
+    if (!owner) {
+      const slug = `c3a-${tag}-${randomUUID().slice(0, 8)}`;
+      owner = (await q(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, slug))[0].id as string;
+    }
+    const dueDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 20 * 24 * 60 * 60 * 1000));
+    const statementId = (await q(
+      `INSERT INTO subscription_statements
+         (tenant_id, period, status, charge_status, segments, users_included, users_peak, users_extra, storage_included_gb, storage_peak_gb,
+          storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price,
+          base_amount, users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount,
+          credits_applied_amount, total_amount, paid_amount, due_date, closed_at, reopened_at, snapshot)
+       VALUES ($1::uuid, $4::text, 'closed', 'none', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 123.45,0,0,0,0,0,123.45, 0::numeric, $2::date, $3, NULL, '{"latest":null,"history":[]}'::jsonb) RETURNING id`,
+      owner,
+      dueDate,
+      new Date(Date.now() - 60 * 60 * 1000),
+      period,
+    ))[0].id as string;
+    await db.$executeRawUnsafe(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider) VALUES ($1::uuid, $2::uuid, 'asaas')`, statementId, owner);
+    return { tenantId: owner, statementId };
+  }
+
+  async function seedOutboxLine(f: { tenantId: string; statementId: string }, options: { seq?: number; occurredAt?: Date } = {}): Promise<string> {
+    const occurredAt = options.occurredAt ?? new Date();
+    const payload = { amountCents: 12345, dueDate: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)), method: "pix" };
+    const rows = (await q(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at, status, attempts)
+       VALUES ($1::uuid, $2::uuid, 'charge_create', 'asaas', $3, gen_random_uuid(), $4::jsonb, $5, $5, $5, 'PENDING', 0) RETURNING id`,
+      f.tenantId,
+      f.statementId,
+      `charge_create:${f.statementId}:${options.seq ?? 1}`,
+      JSON.stringify(payload),
+      occurredAt,
+    )) as Array<{ id: string }>;
+    return rows[0]!.id;
+  }
+
+  function asaasAdapterOverFake(fake: AsaasFake): AsaasPaymentAdapter {
+    const client = new BillingHttpClient({
+      provider: "asaas",
+      environment: "sandbox",
+      channelEnabled: true,
+      allowLocalHosts: true,
+      nodeEnv: "test",
+      baseUrl: `${fake.baseUrl}/v3`,
+    });
+    return new AsaasPaymentAdapter(client, async (kind) => (kind === "api_token" ? TOKEN_ASAAS : WEBHOOK_ASAAS));
+  }
+
+  async function dispatchRound(tenantId: string, fake: AsaasFake | null, now: Date): Promise<{ processed: number; sent: number; needsReview: number }> {
+    const repo = new PrismaOutboxRepository(role.client, { tenantIds: [tenantId] });
+    const result = await runDispatchOutbox({
+      repo,
+      ports: fake ? { asaas: asaasAdapterOverFake(fake) } : {},
+      resolveCustomer: async () => ({ ok: true as const, customerId: "cus_fake" }),
+      now: () => now,
+    });
+    return { processed: result.processed, sent: result.outcomes.sent ?? 0, needsReview: result.outcomes.needs_review ?? 0 };
+  }
   test("setup: base própria migrada, papel NOSUPERUSER NOBYPASSRLS, cofre e catálogo de teste", async () => {
     const [{ PrismaClient }] = await Promise.all([import("@prisma/client")]);
     admin = new PrismaClient({ adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(connectionString!) });
@@ -133,6 +230,7 @@ if (!connectionString) {
     await admin.$executeRawUnsafe(`CREATE DATABASE "${databaseName}" TEMPLATE template0`);
     const url = new URL(connectionString!);
     url.pathname = `/${databaseName}`;
+    url.searchParams.set("application_name", APP_NAME);
     const targetUrl = url.toString();
     const prismaCli = createRequire(path.join(ROOT, "package.json")).resolve("prisma/build/index.js");
     execFileSync(process.execPath, [prismaCli, "migrate", "deploy"], { cwd: ROOT, env: { ...process.env, DATABASE_URL: targetUrl }, stdio: "pipe" });
@@ -140,6 +238,7 @@ if (!connectionString) {
     role = await createEphemeralRole(db, targetUrl);
     const [posture] = (await db.$queryRawUnsafe(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1`, role.roleName)) as Array<{ rolsuper: boolean; rolbypassrls: boolean }>;
     assert.deepEqual(posture, { rolsuper: false, rolbypassrls: false });
+    await assertApplicationNamePropagated(role.client, APP_NAME);
 
     (globalThis as { prisma?: unknown }).prisma = role.client;
     process.env.DATABASE_URL = targetUrl;
@@ -402,6 +501,280 @@ if (!connectionString) {
       const noActor = await apiRaw("POST", route, {}, {});
       assert.equal(noActor.status, 403, JSON.stringify(noActor.body));
       assert.equal(noActor.body.error?.reason, "platform_actor_required");
+    }
+  });
+
+  test("EN1: sem teste e sem webhook → enable_preconditions_failed com last_test_required e webhook_not_registered_for_environment", async () => {
+    await db.$executeRawUnsafe(
+      `UPDATE billing_provider_configs
+          SET enabled = false, enabled_environment = NULL, enabled_at = NULL, enabled_by = NULL,
+              last_test_ok = NULL, last_test_environment = NULL, last_test_at = NULL, last_test_error = NULL,
+              webhook_registered_at = NULL, webhook_registered_environment = NULL, webhook_external_id = NULL, webhook_public_url = NULL
+        WHERE provider = 'asaas'`,
+    );
+    const response = await api("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:sandbox" });
+    assert.equal(response.status, 422, JSON.stringify(response.body));
+    assert.equal(response.body.error?.reason, "enable_preconditions_failed");
+    assert.ok(response.body.error.details.failed.includes("last_test_required"), JSON.stringify(response.body));
+    assert.ok(response.body.error.details.failed.includes("webhook_not_registered_for_environment"), JSON.stringify(response.body));
+    assert.equal((await configRow("asaas"))!.enabled, false);
+  });
+
+  test("EN2: teste ok + webhook + confirm correto → 200 e enabled no banco", async () => {
+    await arrangeAsaasReady();
+    const actorId = randomUUID();
+    const response = await apiRaw("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:sandbox" }, { "x-user-id": actorId, "x-role": "super_admin" });
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    assert.deepEqual(Object.keys(response.body.data).sort(), ["enabledAt", "enabledBy", "environment", "provider"]);
+    assert.equal(response.body.data.provider, "asaas");
+    assert.equal(response.body.data.environment, "sandbox");
+    assert.equal(response.body.data.enabledBy, actorId);
+
+    const row = await configRow("asaas");
+    assert.equal(row!.enabled, true);
+    assert.equal(row!.enabled_environment, "sandbox");
+    assert.equal(row!.enabled_by, actorId);
+    assert.ok(Math.abs(new Date(row!.enabled_at).getTime() - Date.now()) < 10_000);
+
+    const trail = await auditActions("asaas", "billing_provider.enabled");
+    assert.equal(trail.length, 1, JSON.stringify(trail));
+    assert.deepEqual(Object.keys(trail[0]!.metadata).sort(), ["actor_user_id", "environment", "kind", "provider"]);
+    assert.equal(JSON.stringify(trail).includes(TOKEN_ASAAS), false);
+    assert.equal((await paymentProviderOn(runtime))?.provider, "asaas");
+    await resetAsaasDisabled();
+  });
+
+  test("EN3: outro provedor de pagamento ligado → enable 422 another_provider_enabled_for_kind", async () => {
+    await runtime.providers.updateSettings("mercadopago", { environment: "sandbox", settings: {} });
+    await db.$executeRawUnsafe(`UPDATE billing_provider_configs SET enabled = false, enabled_environment = NULL WHERE provider = 'mercadopago'`);
+    await arrangeAsaasReady();
+    await db.$executeRawUnsafe(`UPDATE billing_provider_configs SET enabled = true, enabled_environment = 'sandbox', enabled_at = now(), enabled_by = NULL WHERE provider = 'mercadopago'`);
+    try {
+      const response = await api("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:sandbox" });
+      assert.equal(response.status, 422, JSON.stringify(response.body));
+      assert.equal(response.body.error?.reason, "enable_preconditions_failed");
+      assert.ok(response.body.error.details.failed.includes("another_provider_enabled_for_kind"), JSON.stringify(response.body));
+      assert.equal((await configRow("asaas"))!.enabled, false);
+    } finally {
+      await db.$executeRawUnsafe(`UPDATE billing_provider_configs SET enabled = false, enabled_environment = NULL WHERE provider = 'mercadopago'`);
+      await resetAsaasDisabled();
+    }
+  });
+
+  test("EN3b: corrida do G14 — dono liga outro provedor sem commitar, enable espera e vira 409", async () => {
+    await runtime.providers.updateSettings("mercadopago", { environment: "sandbox", settings: {} });
+    await db.$executeRawUnsafe(`UPDATE billing_provider_configs SET enabled = false, enabled_environment = NULL WHERE provider = 'mercadopago'`);
+    await arrangeAsaasReady();
+    const trailBefore = (await auditActions("asaas", "billing_provider.enabled")).length;
+
+    let release!: () => void;
+    const ownerGate = new Promise<void>((resolve) => { release = resolve; });
+    const ownerTx = db.$transaction(async (tx: any) => {
+      await tx.$executeRawUnsafe(`UPDATE billing_provider_configs SET enabled = true, enabled_environment = 'sandbox', enabled_at = now(), enabled_by = NULL WHERE provider = 'mercadopago'`);
+      await ownerGate;
+    }, { timeout: 20000 });
+
+    const enablePromise = runtime.providers.enable("asaas", { confirm: "asaas:sandbox" }, null);
+    await waitForOwnBlockedStatement(role.client, { applicationName: APP_NAME, fragment: "billing_provider_configs", label: "EN3b enable do Asaas bloqueado no índice G14", timeoutMs: 15000 });
+
+    release();
+    await ownerTx;
+    const outcome = await captureSettled(enablePromise);
+    const reason = expectRejected(outcome, "EN3b enable do Asaas") as { statusCode: number; reason: string };
+    assert.equal(reason.statusCode, 409);
+    assert.equal(reason.reason, "another_provider_enabled_for_kind");
+
+    const enabled = (await q(`SELECT count(*)::int AS n FROM billing_provider_configs WHERE enabled = true`)) as Array<{ n: number }>;
+    assert.equal(enabled[0]!.n, 1);
+    assert.equal((await configRow("asaas"))!.enabled, false);
+    assert.equal((await auditActions("asaas", "billing_provider.enabled")).length, trailBefore);
+    await db.$executeRawUnsafe(`UPDATE billing_provider_configs SET enabled = false, enabled_environment = NULL WHERE provider = 'mercadopago'`);
+  });
+
+  test("EN4: disable → provider_disabled; religar em 3 dias → 1 POST; 8 dias → stale_on_reenable", async () => {
+    await resetAsaasDisabled();
+    await arrangeAsaasReady();
+    const enabledNow = await api("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:sandbox" });
+    assert.equal(enabledNow.status, 200, JSON.stringify(enabledNow.body));
+
+    const threeDays = await seedStatementForProvider("en4a", undefined, "2026-10");
+    const eightDays = await seedStatementForProvider("en4b", threeDays.tenantId, "2026-09");
+    const now = new Date();
+    const day = 24 * 60 * 60 * 1000;
+    const threeId = await seedOutboxLine(threeDays, { seq: 1, occurredAt: new Date(now.getTime() - 3 * day) });
+    const eightId = await seedOutboxLine(eightDays, { seq: 1, occurredAt: new Date(now.getTime() - 8 * day) });
+
+    const disable = await api("POST", "/api/v1/platform/billing/providers/asaas/disable");
+    assert.equal(disable.status, 200, JSON.stringify(disable.body));
+    assert.equal((await configRow("asaas"))!.enabled, false);
+    assert.equal((await configRow("asaas"))!.enabled_environment, null);
+
+    const offRound = await dispatchRound(threeDays.tenantId, null, now);
+    assert.equal(offRound.processed, 0, JSON.stringify(offRound));
+    const offThree = (await q(`SELECT status, skip_reason FROM billing_outbox WHERE id = $1::uuid`, threeId))[0];
+    const offEight = (await q(`SELECT status, skip_reason FROM billing_outbox WHERE id = $1::uuid`, eightId))[0];
+    assert.deepEqual([offThree.status, offThree.skip_reason], ["PENDING", "provider_disabled"]);
+    assert.deepEqual([offEight.status, offEight.skip_reason], ["PENDING", "provider_disabled"]);
+
+    await arrangeAsaasReady();
+    const reenable = await api("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:sandbox" });
+    assert.equal(reenable.status, 200, JSON.stringify(reenable.body));
+
+    const fake = await startAsaasFake("ok");
+    try {
+      pointCatalog("asaas", `${fake.baseUrl}/v3`);
+      const onRound = await dispatchRound(threeDays.tenantId, fake, now);
+      assert.equal(onRound.sent, 1, JSON.stringify(onRound));
+      assert.equal(onRound.needsReview, 1, JSON.stringify(onRound));
+      const posts = fake.recorded.filter((request) => request.method === "POST" && request.path.split("?")[0] === "/v3/payments");
+      assert.equal(posts.length, 1, JSON.stringify(fake.recorded));
+
+      const three = (await q(`SELECT status, external_id, last_error FROM billing_outbox WHERE id = $1::uuid`, threeId))[0];
+      assert.equal(three.status, "SENT");
+      assert.ok(three.external_id);
+      const eight = (await q(`SELECT status, external_id, last_error FROM billing_outbox WHERE id = $1::uuid`, eightId))[0];
+      assert.equal(eight.status, "NEEDS_REVIEW");
+      assert.equal(eight.last_error, "stale_on_reenable");
+      assert.equal(eight.external_id, null);
+    } finally {
+      await fake.close();
+      await resetAsaasDisabled();
+    }
+  });
+
+  test("EN5: confirm errado → 422 confirm_mismatch", async () => {
+    await arrangeAsaasReady();
+    const response = await api("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:production" });
+    assert.equal(response.status, 422, JSON.stringify(response.body));
+    assert.equal(response.body.error?.reason, "enable_preconditions_failed");
+    assert.ok(response.body.error.details.failed.includes("confirm_mismatch"), JSON.stringify(response.body));
+    assert.equal((await configRow("asaas"))!.enabled, false);
+  });
+
+  test("EN6r: NODE_ENV=production e saltos 0 → 422 webhook_proxy_hops_unset", async () => {
+    const previousNodeEnv = mutableEnv.NODE_ENV;
+    const previousHops = mutableEnv.BILLING_WEBHOOK_TRUSTED_PROXY_HOPS;
+    mutableEnv.NODE_ENV = "production";
+    mutableEnv.BILLING_WEBHOOK_TRUSTED_PROXY_HOPS = 0;
+    try {
+      await arrangeAsaasReady();
+      const response = await api("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:sandbox" });
+      assert.equal(response.status, 422, JSON.stringify(response.body));
+      assert.equal(response.body.error?.reason, "enable_preconditions_failed");
+      assert.ok(response.body.error.details.failed.includes("webhook_proxy_hops_unset"), JSON.stringify(response.body));
+      assert.equal((await configRow("asaas"))!.enabled, false);
+    } finally {
+      mutableEnv.NODE_ENV = previousNodeEnv;
+      mutableEnv.BILLING_WEBHOOK_TRUSTED_PROXY_HOPS = previousHops;
+      await resetAsaasDisabled();
+    }
+  });
+
+  test("EN7: deep scan — nenhuma resposta ou trilha vaza segredo, url, id externo ou tenant alheio", async () => {
+    await resetAsaasDisabled();
+    await arrangeAsaasReady();
+    const foreignTenantId = randomUUID();
+    const fake = await startAsaasFake("ok");
+    const bodies: Json[] = [];
+    try {
+      pointCatalog("asaas", `${fake.baseUrl}/v3`);
+      const record = (response: { status: number; body: Json }) => { bodies.push(response.body); return response; };
+      assert.equal(record(await api("GET", "/api/v1/platform/billing/providers")).status, 200);
+      assert.equal(record(await api("GET", "/api/v1/platform/billing/providers/asaas")).status, 200);
+      assert.equal(record(await api("PUT", "/api/v1/platform/billing/providers/asaas", { environment: "sandbox", settings: {} })).status, 200);
+      assert.equal(record(await api("PUT", "/api/v1/platform/billing/providers/asaas/credentials", { kind: "api_token", secret: TOKEN_ASAAS })).status, 200);
+      assert.equal(record(await api("POST", "/api/v1/platform/billing/providers/asaas/test-connection")).status, 200);
+      assert.equal(record(await api("POST", "/api/v1/platform/billing/providers/asaas/register-webhook")).status, 200);
+      assert.equal(record(await api("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:sandbox" })).status, 200);
+      assert.equal(record(await api("POST", "/api/v1/platform/billing/providers/asaas/disable")).status, 200);
+
+      const audits = (await q(`SELECT action, metadata FROM platform_audit_logs WHERE entity = 'billing_provider'`)) as Array<{ action: string; metadata: Json }>;
+      const forbidden = [TOKEN_ASAAS, WEBHOOK_ASAAS, TOKEN_FOCUS, WEBHOOK_FOCUS, PUBLIC_BASE, "wh_ext_fake", foreignTenantId];
+      for (const body of bodies) {
+        const text = JSON.stringify(body);
+        for (const token of forbidden) assert.equal(text.includes(token), false, `resposta vazou "${token}": ${text.slice(0, 240)}`);
+      }
+      const auditText = JSON.stringify(audits);
+      for (const token of forbidden) assert.equal(auditText.includes(token), false, `trilha vazou "${token}"`);
+      for (const row of audits) {
+        assert.equal("tenant_id" in row.metadata, false, JSON.stringify(row));
+        assert.equal("tenantId" in row.metadata, false, JSON.stringify(row));
+      }
+    } finally {
+      await fake.close();
+      await resetAsaasDisabled();
+    }
+  });
+
+  test("EN8: teste ok em sandbox, PUT muda ambiente para production → 422 last_test_environment_mismatch", async () => {
+    await arrangeAsaasReady("sandbox");
+    const put = await api("PUT", "/api/v1/platform/billing/providers/asaas", { environment: "production", settings: {} });
+    assert.equal(put.status, 200, JSON.stringify(put.body));
+    try {
+      const response = await api("POST", "/api/v1/platform/billing/providers/asaas/enable", { confirm: "asaas:production" });
+      assert.equal(response.status, 422, JSON.stringify(response.body));
+      assert.equal(response.body.error?.reason, "enable_preconditions_failed");
+      assert.ok(response.body.error.details.failed.includes("last_test_environment_mismatch"), JSON.stringify(response.body));
+      assert.equal((await configRow("asaas"))!.enabled, false);
+    } finally {
+      await api("PUT", "/api/v1/platform/billing/providers/asaas", { environment: "sandbox", settings: {} });
+      await resetAsaasDisabled();
+    }
+  });
+
+  test("EW1: censo de rotas do cofre — só enable muda enabled", async () => {
+    await resetAsaasDisabled();
+    const router = createVaultPlatformRouter();
+    const census = (router as unknown as { stack: Array<{ route?: { path: string; methods: Record<string, boolean> } }> }).stack
+      .filter((layer) => layer.route)
+      .map((layer) => ({ method: Object.keys(layer.route!.methods)[0]!.toUpperCase(), path: layer.route!.path }));
+    const expected = [
+      "GET /providers",
+      "GET /providers/:provider",
+      "PUT /providers/:provider",
+      "PUT /providers/:provider/credentials",
+      "POST /providers/:provider/test-connection",
+      "POST /providers/:provider/register-webhook",
+      "POST /providers/:provider/enable",
+      "POST /providers/:provider/disable",
+      "POST /vault/rotate",
+    ];
+    assert.deepEqual(census.map((r) => `${r.method} ${r.path}`).sort(), [...expected].sort());
+
+    const fake = await startAsaasFake("ok");
+    try {
+      pointCatalog("asaas", `${fake.baseUrl}/v3`);
+      const call = async (method: string, path: string, body?: unknown) => api(method, `/api/v1/platform/billing${path.replace(":provider", "asaas")}`, body);
+
+      for (const route of census) {
+        if (route.path === "/providers/:provider/enable" || route.path === "/vault/rotate") continue;
+        const before = await configRow("asaas");
+        if (route.method === "GET") {
+          await call(route.method, route.path);
+        } else if (route.path === "/providers/:provider") {
+          await call(route.method, route.path, { environment: "sandbox", settings: {} });
+        } else if (route.path === "/providers/:provider/credentials") {
+          await call(route.method, route.path, { kind: "api_token", secret: TOKEN_ASAAS });
+        } else {
+          await call(route.method, route.path, {});
+        }
+        const after = await configRow("asaas");
+        assert.equal(after!.enabled, before!.enabled, `${route.method} ${route.path} mudou enabled`);
+        assert.equal(after!.enabled, false, `${route.method} ${route.path} deixou enabled true`);
+      }
+
+      await arrangeAsaasReady();
+      const enable = await call("POST", "/providers/:provider/enable", { confirm: "asaas:sandbox" });
+      assert.equal(enable.status, 200, JSON.stringify(enable.body));
+      assert.equal((await configRow("asaas"))!.enabled, true);
+
+      const beforeRotate = await configRow("asaas");
+      const rotate = await call("POST", "/vault/rotate", {});
+      assert.equal(rotate.status, 200, JSON.stringify(rotate.body));
+      assert.equal((await configRow("asaas"))!.enabled, beforeRotate!.enabled);
+    } finally {
+      await fake.close();
+      await resetAsaasDisabled();
     }
   });
 }

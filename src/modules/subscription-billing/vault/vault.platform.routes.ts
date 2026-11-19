@@ -10,6 +10,7 @@ import { Router, type Request, type Response } from "express";
 
 import { handleAsyncRoute, readRouteParam, sendRouteError } from "../../core-saas/routes/http.js";
 import { requirePlatformPermission } from "../../platform/platform-permissions.js";
+import { resolveRequestActor } from "../../auth/middleware/authenticated-actor.middleware.js";
 import { pickBillingAuditMetadata } from "../platform-audit/audit-metadata.js";
 import { getProviderCatalogEntry } from "../providers/provider.catalog.js";
 import { ProviderConfigError } from "../providers/provider-config.service.js";
@@ -17,7 +18,7 @@ import { createDefaultVaultRuntime } from "./vault.factory.js";
 import { isCredentialKind, VaultServiceError, type CredentialInput } from "./vault.service.js";
 
 function actorId(request: Request): string | null {
-  return request.actor?.userId ?? null;
+  return resolveRequestActor(request)?.userId ?? null;
 }
 
 function body(request: Request): Record<string, unknown> {
