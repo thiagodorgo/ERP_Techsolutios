@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import net from "node:net";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
@@ -19,6 +18,7 @@ import { JobQueue } from "../src/infra/jobs/job.queue.js";
 import { JobRegistry } from "../src/infra/jobs/job.registry.js";
 import { JobWorker } from "../src/infra/jobs/job.worker.js";
 import { getRedisClient } from "../src/infra/redis/redis.client.js";
+import { startChildServer } from "./helpers/child-server.js";
 
 // B-O6R-05 (Ω6R-DIN-006) — o bootstrap do worker de jobs, agora ALCANÇÁVEL por teste.
 //
@@ -334,7 +334,8 @@ function findWorkerWarn(stdout: string): BootLogLine | undefined {
 test("o boot REAL de `src/server.ts` passa pelo bootstrap do worker", async () => {
   const [port, portalPort] = [await reserveFreePort(), await reserveFreePort()];
 
-  const child = spawn(process.execPath, ["--import", "tsx", "src/server.ts"], {
+  const server = await startChildServer({
+    args: ["--import", "tsx", "src/server.ts"],
     cwd: REPO_ROOT,
     env: {
       ...process.env,
@@ -345,40 +346,22 @@ test("o boot REAL de `src/server.ts` passa pelo bootstrap do worker", async () =
       PORT: String(port),
       PORTAL_PORT: String(portalPort),
     },
-    stdio: ["ignore", "pipe", "pipe"],
+    readyPrefix: "{",
   });
+  let warn: BootLogLine | undefined;
+  try {
+    const deadline = Date.now() + BOOT_TIMEOUT_MS;
+    while (warn === undefined && Date.now() < deadline && server.child.exitCode === null) {
+      warn = findWorkerWarn(server.stdout());
+      if (warn === undefined) await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    warn ??= findWorkerWarn(server.stdout());
+  } finally {
+    await server.stop();
+  }
 
-  const closed = new Promise<void>((resolve) => child.once("close", () => resolve()));
-  let stdout = "";
-  let stderr = "";
-
-  child.stdout.setEncoding("utf8");
-  child.stderr.setEncoding("utf8");
-  child.stdout.on("data", (chunk: string) => {
-    stdout += chunk;
-  });
-  child.stderr.on("data", (chunk: string) => {
-    stderr += chunk;
-  });
-
-  const warn = await new Promise<BootLogLine | undefined>((resolve) => {
-    const finish = (value: BootLogLine | undefined): void => {
-      clearInterval(poll);
-      clearTimeout(timer);
-      resolve(value);
-    };
-    const poll = setInterval(() => {
-      const found = findWorkerWarn(stdout);
-      if (found) finish(found);
-    }, 50);
-    const timer = setTimeout(() => finish(undefined), BOOT_TIMEOUT_MS);
-
-    // Se o processo morrer antes (erro de boot), não há o que esperar: decide com o que saiu.
-    child.once("exit", () => setImmediate(() => finish(findWorkerWarn(stdout))));
-  });
-
-  child.kill();
-  await closed;
+  const stdout = server.stdout();
+  const stderr = server.stderr();
 
   assert.ok(
     warn,

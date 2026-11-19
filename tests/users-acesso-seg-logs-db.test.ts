@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { cleanupIdentityFixture, createOrgWithUser } from "./helpers/auth-identity-fixture.js";
+import { startChildServer } from "./helpers/child-server.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-USERS-ACESSO-SEG · S8 (resto) + UEM-01 + UEM-03 — os LOGS. O app real (src/app.ts com o core-saas de
@@ -30,65 +30,23 @@ type Server = {
 };
 
 async function startServer(databaseUrl: string): Promise<Server> {
-  const child: ChildProcessWithoutNullStreams = spawn(
-    process.execPath,
-    ["--import", "tsx", path.join(ROOT, "tests/helpers/users-seg-log-server.ts")],
-    {
-      cwd: ROOT,
-      env: {
-        ...process.env,
-        DATABASE_URL: databaseUrl,
-        CORE_SAAS_PERSISTENCE: "prisma",
-        LOG_LEVEL: "trace",
-        JWT_SECRET: process.env.JWT_SECRET ?? "dev-only-change-me",
-        JWT_EXPIRES_IN: "15m",
-      },
-      stdio: ["pipe", "pipe", "pipe"],
+  const child = await startChildServer({
+    args: ["--import", "tsx", path.join(ROOT, "tests/helpers/users-seg-log-server.ts")],
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      DATABASE_URL: databaseUrl,
+      CORE_SAAS_PERSISTENCE: "prisma",
+      LOG_LEVEL: "trace",
+      JWT_SECRET: process.env.JWT_SECRET ?? "dev-only-change-me",
+      JWT_EXPIRES_IN: "15m",
     },
-  );
-  let stdout = "";
-  let stderr = "";
-
-  child.stdout.setEncoding("utf8").on("data", (chunk: string) => {
-    stdout += chunk;
   });
-  child.stderr.setEncoding("utf8").on("data", (chunk: string) => {
-    stderr += chunk;
-  });
-
-  const deadline = Date.now() + 60_000;
-  let port: string | undefined;
-
-  while (Date.now() < deadline && port === undefined) {
-    port = stdout
-      .split("\n")
-      .find((line) => line.startsWith("PORT "))
-      ?.slice(5)
-      .trim();
-
-    if (child.exitCode !== null) {
-      throw new Error(`o servidor saiu (${child.exitCode}): ${stderr.slice(-2000)}`);
-    }
-
-    if (port === undefined) {
-      await new Promise((resolve) => setTimeout(resolve, 25));
-    }
-  }
-
-  assert.ok(port, `o servidor não subiu em 60 s: ${stderr.slice(-2000)}`);
 
   return {
-    baseUrl: `http://127.0.0.1:${port}`,
-    output: () => `${stdout}\n${stderr}`,
-    async stop() {
-      // Morto por sinal, o processo fica com `exitCode` nulo e `signalCode` preenchido: os dois contam.
-      if (child.exitCode === null && child.signalCode === null) {
-        const exited = new Promise((resolve) => child.once("exit", resolve));
-
-        child.kill();
-        await exited;
-      }
-    },
+    baseUrl: `http://127.0.0.1:${child.readyValue}`,
+    output: () => `${child.stdout()}\n${child.stderr()}`,
+    stop: child.stop,
   };
 }
 
