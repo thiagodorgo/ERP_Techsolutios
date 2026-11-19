@@ -300,7 +300,7 @@ export class ProviderConfigService {
     };
   }
 
-  async registerWebhook(provider: string): Promise<ProviderWebhookRegistrationOutcome> {
+  async registerWebhook(provider: string): Promise<ProviderWebhookRegistrationOutcome> { // [WH-REG]
     const entry = this.#entry(provider);
     const environment = (await this.repository.get(entry.id))?.environment ?? "sandbox";
     if (entry.webhookRegistrationMode === "manual") fail(422, "webhook_registration_manual", "This provider registers its webhook manually.");

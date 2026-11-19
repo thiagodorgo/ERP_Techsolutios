@@ -545,7 +545,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
   async confirmCancelledByOperator(tenantId: string, id: string, input: ConfirmCancelledByOperatorInput): Promise<ConfirmCancelledByOperatorOutcome> {
     const row = this.#rows.get(id);
     if (!row || row.tenantId !== tenantId) return { kind: "not_found" };
-    if (row.kind !== "charge_cancel" || row.status !== "NEEDS_REVIEW" || !["charge_not_listed", "charge_state_unknown"].includes(row.lastError ?? "")) return { kind: "not_allowed" }; // [CONFIRM-CODES]
+    if (row.kind !== "charge_cancel" || row.status !== "NEEDS_REVIEW" || !["charge_not_listed", "charge_state_unknown"].includes(row.lastError ?? "")) return { kind: "not_allowed" }; // mesma allowlist de CONFIRM-CODES no Prisma
     if (String(row.payload.chargeId ?? "") !== input.chargeId) return { kind: "mismatch" };
     const next: BillingOutboxRow = { ...row, status: "SENT", lastError: null, skipReason: null, externalId: input.chargeId, updatedAt: input.now };
     this.#rows.set(id, next);

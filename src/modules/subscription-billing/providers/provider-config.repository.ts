@@ -67,7 +67,7 @@ export interface ProviderConfigRepository {
   recordWebhook(provider: string, input: ProviderWebhookRecord, now: Date): Promise<ProviderConfig | null>;
   /** O ÚNICO escritor de `enabled` em `src` (A5/EW2). */
   setEnabled(provider: string, input: ProviderEnableEffect, now: Date): Promise<ProviderConfig | null>;
-  /** Liga sob trava ([ENABLE-TX]): lê a linha `FOR UPDATE`, chama `decide` com o estado travado e aplica o efeito, no MESMO tx. */
+  /** Liga sob trava (ENABLE-TX): lê a linha `FOR UPDATE`, chama `decide` com o estado travado e aplica o efeito, no MESMO tx. */
   enableLocked(
     provider: string,
     now: Date,

@@ -543,6 +543,33 @@ provedor**; quem emite e cancela a nota é o despacho. Erro = `{ error: { reason
   referência antes de reenviar; a posse da linha é conferida logo antes do envio (`billing_outbox.lease_lost`, sem envio, se
   outro despacho a reclamou). O poll da nota pendente e o da que espera cancelamento leem as notas vivas por organização.
 
+**Fechamento do canal, pronto e desligado — `subscription_billing_channel@2026-11-19.b-ass-08c3`.** Fontes:
+`vault/vault.platform.routes.ts`, `providers/provider-config.service.ts`, `statements/statements.platform.routes.ts` e
+`outbox/**`. O padrão continua desligado: `BILLING_PROVIDERS_ENABLED=false`; nenhuma rota abaixo liga o canal por seed,
+migração ou job. As quatro rotas de provedor atuam em tabelas globais e exigem
+`platform:billing-providers:manage`.
+
+| Método | Caminho | Corpo | Sucesso | Recusas (`reason`) |
+|---|---|---|---|---|
+| POST | `/platform/billing/providers/:provider/test-connection` | — | `200 { data: { provider, environment, ok, code?, at } }` | `404 provider_not_found` · `422 channel_disabled`, `provider_adapter_unavailable` |
+| POST | `/platform/billing/providers/:provider/register-webhook` | — | `200 { data: { provider, environment, registeredAt, alreadyRegistered? } }`; nunca URL, id externo ou segredo | `404 provider_not_found` · `422 channel_disabled`, `provider_adapter_unavailable`, `webhook_public_url_missing`, `webhook_secret_required`, `webhook_registration_manual` |
+| POST | `/platform/billing/providers/:provider/enable` | `{ confirm: "<provider>:<environment>" }` | `200 { data: { provider, environment, enabledAt, enabledBy } }` | `404 provider_not_found` · `409 another_provider_enabled_for_kind` · `422 channel_disabled`, `provider_adapter_unavailable`, `confirm_mismatch`, `enable_preconditions_failed` com `details.failed[]` |
+| POST | `/platform/billing/providers/:provider/disable` | — | `200 { data: { provider, environment, enabled, changed } }`; idempotente | `404 provider_not_found` |
+| POST | `/platform/billing/outbox/:id/confirm-cancelled` | `{ tenantId, chargeId, reason }` | `200 { data: <linha da fila> }`; sem rede, registra a conferência do operador | `400 tenant_id_required`, `invalid_charge_id`, `reason_too_short` · `404 outbox_not_found` · `409 statement_busy` · `422 cancel_confirmation_not_allowed`, `confirm_mismatch` |
+
+**`R-PLAT-TENANT-CORPO`.** Uma rota que lê `tenantId` do corpo só pode fazê-lo depois de
+`requirePlatformPermission(...)` como primeiro middleware. A autorização vem exclusivamente do ator autenticado de
+plataforma; o `tenantId` é apenas a chave do GUC/RLS da organização-alvo e nunca concede acesso. Toda leitura e escrita
+ocorre sob `withTenantRls*`; id de outra organização responde 404, a rota nunca descobre o tenant pela linha, a resposta
+não devolve `tenantId` e a trilha fica na organização-alvo sem repetir o tenant na metadata. Rotas da organização usam as
+claims e recusam override; as quatro rotas globais do provedor não recebem `tenantId`.
+
+**Mudanças sem rota nova.** A falha de uma órfã fica isolada e nunca cria cobrança; a emissão nunca tentada pode ser
+retargeteada ao provedor fiscal ligado; a trilha do despacho passa a ser persistida; o `cancel-unknown` relê a cobrança
+antes do DELETE; o fechamento concorrente devolve um `closed` e os demais `alreadyClosed` sem expirar; e o estorno do
+pagamento que gerou crédito já aplicado recompõe o total do demonstrativo-alvo. O estorno do provedor mantém a regra
+Q1(a): a intenção de cancelamento da nota nasce mesmo havendo pagamento manual restante.
+
 ### 3.4 Navegação
 
 Fonte: `src/modules/navigation/navigation.routes.ts` (montado em `/api/v1/navigation`).

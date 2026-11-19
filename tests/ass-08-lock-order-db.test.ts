@@ -61,8 +61,10 @@ import { PrismaChargeIntentRepository } from "../src/modules/subscription-billin
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
 import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
+import { createPersistedDispatchAuditSink } from "../src/modules/subscription-billing/outbox/dispatch-audit.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import { PrismaStatementInvoiceRepository } from "../src/modules/subscription-billing/invoices/invoices.prisma.js";
+import { PrismaProviderConfigRepository } from "../src/modules/subscription-billing/vault/vault.prisma-runtime.js";
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -91,6 +93,7 @@ const FROZEN: Readonly<Record<string, string>> = {
   // B-ASS-09 (Emenda 2.3 §1): a versão nova do câmbio sob `LOCK TABLE platform_fx_rates` (tabela global, sem RLS); nenhuma tabela do mapa.
   "src/modules/subscription-billing/fx-rates/fx-rates.prisma.ts#PrismaFxRatesRepository.appendVersion#.$transaction": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/invoice-sequence.service.ts#nextDpsNumber#.$transaction": "sem-tabela-do-mapa",
+  "src/modules/subscription-billing/vault/vault.prisma-runtime.ts#PrismaProviderConfigRepository.enableLocked#.$transaction": "cenario:providerConfig.enableLocked",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.beginIssue#withTenantRls": "cenario:invoices.beginIssue",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.findByRef#withTenantRls": "cenario:invoices.findByRef",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.findLive#withTenantRls": "cenario:invoices.findLive",
@@ -106,6 +109,11 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/invoices/invoices.repository.ts#InMemoryStatementInvoiceRepository.#mirror#.transaction": "dublê-em-memória",
   "src/modules/subscription-billing/metering/usage-query-prisma.repository.ts#PrismaTenantUsageDailyQuery.list#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.#mutate#withTenantRlsBudget": "cenario:outbox.#mutate",
+  "src/modules/subscription-billing/outbox/dispatch-audit.ts#createPersistedDispatchAuditSink#withTenantRls": "cenario:dispatchAudit.sweep",
+  "src/modules/subscription-billing/outbox/dispatch-audit.ts#createPersistedDispatchAuditSink#withTenantRls#2": "cenario:dispatchAudit.event",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.retargetUntriedInvoiceIssues#forEachTenantRls": "cenario:outbox.retargetUntriedInvoiceIssues",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.isChargeKnown#withTenantRls": "cenario:outbox.isChargeKnown",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.confirmCancelledByOperator#withTenantRlsBudget": "cenario:outbox.confirmCancelledByOperator",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.adoptionFacts#withTenantRls": "cenario:outbox.adoptionFacts",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.claimNext#withTenantRlsBudget": "cenario:outbox.claimNext",
   // B-ASS-08c1a: a confirmação da posse antes do POST ([LEASE-02]) e o registro transacional ([REG-TX]).
@@ -286,10 +294,18 @@ if (!connectionString) {
     const now = new Date();
     const outbox = new PrismaOutboxRepository(recording.client);
     const charges = new PrismaStatementChargeRepository(recording.client);
+    const configs = new PrismaProviderConfigRepository(recording.client);
     const provider = `asaas-lk2-${randomUUID().slice(0, 8)}`;
     const params = { enabledProviders: [provider], now, claimedBy: "lk2", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict } as const;
 
+    await configs.upsert({ provider: "asaas", kind: "payment", environment: "sandbox", settings: {} }, now);
+    await scenario("providerConfig.enableLocked", () => configs.enableLocked("asaas", now, () => null));
+
     const a = await seedStatement("a");
+    const auditSink = createPersistedDispatchAuditSink(recording.client);
+    await scenario("dispatchAudit.sweep", () => auditSink({ tenantId: a.tenantId, action: "billing_outbox.invoice_sweep_failed", code: "lk2_sweep" }));
+    await scenario("dispatchAudit.event", () => auditSink({ tenantId: a.tenantId, statementId: a.statementId, kind: "invoice_issue", action: "billing_outbox.failed", code: "lk2_event" }));
+    await scenario("outbox.retargetUntriedInvoiceIssues", () => outbox.retargetUntriedInvoiceIssues("focusnfe", now));
     await scenario("outbox.enqueue", () => outbox.enqueue({ tenantId: a.tenantId, statementId: a.statementId, kind: "invoice_issue", provider, seq: 1, payload: {} }, now));
     const b = await seedStatement("b");
     await seedRow(b.tenantId, b.statementId, provider);
@@ -355,6 +371,15 @@ if (!connectionString) {
     const leaseQ = await seedLease(cancelQ, now);
     const rowQ = (await outbox.findById(q.tenantId, cancelQ))!;
     await scenario("outbox.recordChargeCancelOutcome", () => outbox.recordChargeCancelOutcome(q.tenantId, rowQ, leaseQ, chargeQ, now));
+    await scenario("outbox.isChargeKnown", () => outbox.isChargeKnown(q.tenantId, q.statementId, chargeQ));
+    await scenario("outbox.confirmCancelledByOperator", () =>
+      outbox.confirmCancelledByOperator(q.tenantId, randomUUID(), {
+        chargeId: chargeQ,
+        reason: "cenário lk2 de confirmação",
+        actorId: null,
+        now,
+      }),
+    );
 
     const f = await seedStatement("f");
     await scenario("charges.insert", () => charges.insert({ tenantId: f.tenantId, statementId: f.statementId, provider, externalChargeId: `pay_lk2_${randomUUID().slice(0, 8)}`, status: "pending", payUrl: null, dueDate: "2026-11-20" }, now));
