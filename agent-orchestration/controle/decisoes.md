@@ -6006,3 +6006,23 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Os dois lados:** o comentário do 07a (`work-order.service.ts`, "403, NÃO 404 … ele pode LÊ-LA") justificava o 403 da escrita com a leitura da organização inteira; o `B-WO-LEITURA-TECNICO` tira essa leitura do papel de campo (404 do inexistente). O oráculo de existência 403×404 da escrita existe e foi medido (Emenda 1 §5.1): `PATCH` na alheia = 403, no aleatório = 404.
 - **Estado:** RESOLVIDO pela decisão do dono `D-WO-LEITURA-404-ESCRITA-403` (manter o 403 na escrita); o comentário foi reescrito só no texto; o oráculo fica em `P-WO-ORACULO-403-404-ESCRITA`.
 - **Fonte:** o plano §3.4 e a Emenda 1 §5.1 (fora do repositório).
+
+## D-DONO-1811-AZURE-TETO-180 (2026-11-18 21:20 SP) — braço do Azure com teto de gasto e contenção
+
+- **Fato (decisão do dono, verbatim):** *"Vamos limitar em US$ 180. Pode arrochar."*
+- **Efeito:** o recurso do Azure fica com teto operacional de US$ 180 no dia a dia da orquestração, com trava fail-closed antes de lançar tarefa quando o gasto acumulado + margem atingir o limite; o registro usa só "o recurso do Azure", "a conta 4" e "o crédito da conta" em artefato público.
+
+## D-DONO-1811-CONTA-4-CODEX (2026-11-18 22:50 SP) — habilitar a conta 4 do Codex
+
+- **Fato (decisão do dono, verbatim):** *"vamos habilitar a conta 04 do codex"*.
+- **Efeito:** a conta 4 passa a existir como braço operacional separado (nível Sol), com medição própria no painel de braços e uso desacoplado das contas já saturadas.
+
+## D-DONO-1811-TESTE-GEMINI-CLI (2026-11-18 22:06 SP) — validar o Gemini CLI para uso do dia
+
+- **Fato (decisão do dono, verbatim):** *"teste o gemini cli"*.
+- **Efeito:** o Gemini CLI fica validado para uso operacional do dia (incluindo Argon) e entra como braço auxiliar de revisão/cruzamento conforme as regras já vigentes.
+
+## D-DONO-1911-MANHA-AZC-SOL-ARGON (2026-11-19 07:50 SP) — contenção do dia com AZC no Sol e apoio do Argon
+
+- **Fato (decisão do dono, verbatim):** *"não precisa nem usar o GPT 5.4 mini [...] Use só o GPT 5.3 Codex, no nível Sol"*; *"Você vai usar a conta nova do Codex. Essa conta da Azure vai ficar na orquestração. Vamos na contenção hoje"*; *"não esquecer de usar o argon. Vamos usar a conta do Gemini CLI"*.
+- **Efeito:** a orquestração do dia usa a conta nova AZC com GPT 5.3 Codex no nível Sol; o mini fica fora da rota do dia; Argon via Gemini CLI permanece obrigatório como braço de apoio no cruzamento.
