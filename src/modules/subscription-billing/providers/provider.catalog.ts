@@ -29,6 +29,8 @@ export type ProviderCatalogEntry = {
   readonly requiredFiscalFields: readonly string[];
   /** O que só uma credencial real de sandbox provaria (pesquisa, Parte 4): monitorar na 1ª operação real. */
   readonly pendingHomologation: readonly string[];
+  /** Como o webhook é registrado neste pacote: `api` (a plataforma registra) ou `manual` (o segredo é colado). */
+  readonly webhookRegistrationMode: "api" | "manual";
 };
 
 const PAYMENT_CREDENTIALS: readonly CredentialKind[] = ["api_token", "webhook_secret"];
@@ -44,6 +46,7 @@ export const PROVIDER_CATALOG: Readonly<Record<ProviderId, ProviderCatalogEntry>
     credentialKinds: PAYMENT_CREDENTIALS,
     requiredFiscalFields: [],
     pendingHomologation: ["credit_card_without_data_saves_card", "webhook_queue_2xx_vs_200", "real_timeout", "sandbox_ips", "net_value_after_fees", "confirmation_event_delay"],
+    webhookRegistrationMode: "api",
   },
   iugu: {
     id: "iugu",
@@ -54,6 +57,7 @@ export const PROVIDER_CATALOG: Readonly<Record<ProviderId, ProviderCatalogEntry>
     credentialKinds: PAYMENT_CREDENTIALS,
     requiredFiscalFields: [],
     pendingHomologation: ["trigger_authorization_shape", "form_encoded_body", "automatic_retry_count", "only_on_charge_success_name", "rate_limit", "net_value_after_fees", "confirmation_event_delay"],
+    webhookRegistrationMode: "api",
   },
   mercadopago: {
     id: "mercadopago",
@@ -64,6 +68,7 @@ export const PROVIDER_CATALOG: Readonly<Record<ProviderId, ProviderCatalogEntry>
     credentialKinds: PAYMENT_CREDENTIALS,
     requiredFiscalFields: [],
     pendingHomologation: ["error_json_body", "cnpj_identification_pix_boleto", "boleto_digitable_line", "subscription_topic_shape", "cancelled_vs_canceled", "subscription_webhook_in_panel", "net_value_after_fees", "confirmation_event_delay"],
+    webhookRegistrationMode: "manual",
   },
   focusnfe: {
     id: "focusnfe",
@@ -74,6 +79,7 @@ export const PROVIDER_CATALOG: Readonly<Record<ProviderId, ProviderCatalogEntry>
     credentialKinds: INVOICE_CREDENTIALS,
     requiredFiscalFields: [...BASE_FISCAL_FIELDS, "tributacaoIss", "regimeEspecialTributacao", "codigoOpcaoSimplesNacional", "serieDps"],
     pendingHomologation: ["municipality_rejection", "tokens_in_post_empresas", "ref_in_webhook_body", "xml_path_host", "cancel_code_field", "nfsen_ref_hook", "nt009_cutover"],
+    webhookRegistrationMode: "api",
   },
   nfeio: {
     id: "nfeio",
@@ -85,6 +91,7 @@ export const PROVIDER_CATALOG: Readonly<Record<ProviderId, ProviderCatalogEntry>
     credentialKinds: INVOICE_CREDENTIALS,
     requiredFiscalFields: [...BASE_FISCAL_FIELDS, "companyId", "municipalTaxStatus"],
     pendingHomologation: ["municipality_rejection", "hub_signature_hash_and_prefix", "account_id", "repeated_external_id", "force_national_environment", "full_schema", "nt009_cutover"],
+    webhookRegistrationMode: "api",
   },
   plugnotas: {
     id: "plugnotas",
@@ -96,6 +103,7 @@ export const PROVIDER_CATALOG: Readonly<Record<ProviderId, ProviderCatalogEntry>
     credentialKinds: INVOICE_CREDENTIALS,
     requiredFiscalFields: [...BASE_FISCAL_FIELDS, "issAliquota", "issTipoTributacao", "issExigibilidade"],
     pendingHomologation: ["municipality_rejection", "webhook_real_body", "situacao_enum", "company_without_other_blocks", "global_rate_limit", "nt009_cutover"],
+    webhookRegistrationMode: "api",
   },
 };
 

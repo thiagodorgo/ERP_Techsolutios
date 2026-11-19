@@ -42,6 +42,7 @@ if (!connectionString) {
 
   type Recharge = {
     readonly provider: string;
+    readonly tenantId: string;
     readonly statementId: string;
     readonly r0Charge: string;
     readonly r1: { readonly id: string };
@@ -123,7 +124,7 @@ if (!connectionString) {
     const t1 = minutesAfter(t0, 3);
     const r1 = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 15_000, dueDate: DUE_FUTURA, method: "pix" }, now: t1 });
     assert.equal(r1.idempotencyKey, `charge_create:${statementId}:2`, "montagem: R1 é a 2ª intenção do demonstrativo");
-    return { provider, statementId, r0Charge: r0.chargeId, r1, t1, server, adapter };
+    return { provider, tenantId, statementId, r0Charge: r0.chargeId, r1, t1, server, adapter };
   }
 
   const postsToPayments = (server: AsaasFake) => server.recorded.filter((recorded) => recorded.method === "POST" && recorded.path === "/v3/payments").length;
@@ -131,7 +132,7 @@ if (!connectionString) {
   async function dispatch(seed: Recharge): Promise<number> {
     const before = postsToPayments(seed.server);
     await runDispatchOutbox({
-      repo: new PrismaOutboxRepository(role.client),
+      repo: new PrismaOutboxRepository(role.client, { tenantIds: [seed.tenantId] }),
       ports: { [seed.provider]: seed.adapter },
       resolveCustomer: async () => ({ ok: true, customerId: "cus_0001" }),
       now: () => seed.t1,

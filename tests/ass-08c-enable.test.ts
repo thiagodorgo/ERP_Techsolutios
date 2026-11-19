@@ -27,6 +27,8 @@ function readyState(overrides: Partial<EnablePreconditionState> = {}): EnablePre
     otherProviderEnabledForKind: false,
     confirm: "asaas:sandbox",
     now: NOW,
+    nodeEnv: "test",
+    webhookTrustedProxyHops: 1,
     ...overrides,
   };
 }
