@@ -291,7 +291,7 @@ export class StatementSettlementService {
       // [INTX-06c]
       const cancelSkip = live && intents?.enabledInvoiceProviders.includes(live.provider) ? null : "provider_disabled";
       // [INTX-03]
-      if (live && (live.status === "pending" || live.status === "authorized") && savedStatement.paidCents === 0) await intent!.enqueueOutbox({ tenantId: input.tenantId, statementId: input.statementId, kind: "invoice_cancel", provider: cancelTo!.provider, seq: cancelTo!.seq, payload: { reason: "payment_reversed" }, skipReason: cancelSkip }, input.now); // [EP-PARCIAL]
+      if (live && (live.status === "pending" || live.status === "authorized")) await intent!.enqueueOutbox({ tenantId: input.tenantId, statementId: input.statementId, kind: "invoice_cancel", provider: cancelTo!.provider, seq: cancelTo!.seq, payload: { reason: "payment_reversed" }, skipReason: cancelSkip }, input.now);
       // `cancel_pending` não gera intenção nova (o cancelamento já está em curso); sem nota viva, nada — e SEM throw: o
       // espelho deixou de decidir, e um estorno (dinheiro) nunca fica preso por ele.
       if (effect.creditReversed && tx.recordAudit) {
