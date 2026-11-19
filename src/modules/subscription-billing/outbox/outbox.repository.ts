@@ -98,6 +98,8 @@ export interface OutboxRepository {
   /** Volta a PENDING em `nextAttemptAt`. `refundAttempt` (conserto da J-530, C): devolve a tentativa que o claim somou —
    * a espera de uma nota pendente não é falha. */
   reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, lease: OutboxLease, options?: { readonly refundAttempt?: boolean }): Promise<boolean>;
+  /** B-ASS-08c3 (F-B1): falha na reconsulta da órfã. Mantém PROCESSING, renova `attempt_started_at` e guarda o código. */
+  deferOrphan(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean>;
   markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean>;
   markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean>;
   markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date, lease: OutboxLease): Promise<boolean>;
@@ -370,6 +372,10 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     const current = this.#rows.get(id);
     const refunded = options.refundAttempt && current ? { attempts: Math.max(0, current.attempts - 1) } : {};
     return this.#patch(tenantId, id, lease, { status: "PENDING", nextAttemptAt, lastError, claimedAt: null, claimedBy: null, attemptStartedAt: null, updatedAt: now, ...refunded });
+  }
+
+  async deferOrphan(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#patch(tenantId, id, lease, { status: "PROCESSING", attemptStartedAt: now, lastError, nextAttemptAt: null, updatedAt: now });
   }
 
   async markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {

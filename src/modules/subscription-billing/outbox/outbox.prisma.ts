@@ -470,6 +470,10 @@ export class PrismaOutboxRepository implements OutboxRepository {
     });
   }
 
+  async deferOrphan(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "PROCESSING", attempt_started_at: now, last_error: lastError, next_attempt_at: null, updated_at: now });
+  }
+
   async markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
     return this.#mutate(tenantId, id, lease, { status: "FAILED", last_error: lastError, next_attempt_at: null, updated_at: now });
   }
