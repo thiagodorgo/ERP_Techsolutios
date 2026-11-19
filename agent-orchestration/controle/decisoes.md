@@ -6026,3 +6026,13 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 
 - **Fato (decisão do dono, verbatim):** *"não precisa nem usar o GPT 5.4 mini [...] Use só o GPT 5.3 Codex, no nível Sol"*; *"Você vai usar a conta nova do Codex. Essa conta da Azure vai ficar na orquestração. Vamos na contenção hoje"*; *"não esquecer de usar o argon. Vamos usar a conta do Gemini CLI"*.
 - **Efeito:** a orquestração do dia usa a conta nova AZC com GPT 5.3 Codex no nível Sol; o mini fica fora da rota do dia; Argon via Gemini CLI permanece obrigatório como braço de apoio no cruzamento.
+
+## D-DONO-1911-AWS-AGENT-TOOLKIT (2026-11-19) — regras da AWS no contrato por PR
+
+- **Fala do dono (verbatim):** "Configure o Agent Toolkit for AWS seguindo as instruções".
+- **Escolhas do seletor (registradas):**
+  - "Instalar sem restrição".
+  - "No contrato, por PR".
+  - Credencial AWS local no PC com perfil `erp-toolkit`, região `us-east-1`, sessão de 12 h renovável por 90 dias, acessível a agentes com acesso à máquina.
+- **Efeito:** instalação e operação do Agent Toolkit for AWS ficam institucionalizadas; `CLAUDE.md` e `AGENTS.md` passam a carregar, em seção espelhada, as regras oficiais da AWS com precedência subordinada ao contrato canônico, e a execução segue o roteiro `docs/infra/roteiro-aws-cloudshell.md` quando houver divergência de método.
+- **Risco declarado:** ampliar o acesso local à credencial reduz o isolamento operacional, aumenta superfície de uso indevido e exige disciplina estrita de trilha de auditoria, princípio do menor privilégio e controles de atos irreversíveis/com custo (incluindo junta em produção, §C7.1).
