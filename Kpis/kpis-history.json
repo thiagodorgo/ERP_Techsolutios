@@ -4657,5 +4657,19 @@
     "blocks_completed": 262,
     "description": "PR-600 — Registra o período: marca como fechados, no plano da versão vendável, os itens entregues da renovação da sessão do aplicativo, das aprovações gravadas, dos ensaios do roteiro da demonstração e do estoque do aplicativo; acrescenta aos bloqueantes um item novo, o técnico que ainda consegue ler ordens e envios de outros técnicos da mesma organização, e deixa fora deles, por decisão do dono, uma falha de permissão da plataforma, que segue como pendência de prioridade alta. Reúne as decisões do dono, as pendências, o roteiro da nuvem e as atas das revisões, e põe no contrato dos agentes duas regras novas do dono, a da resposta pelo próprio painel de decisões e a do painel de acompanhamento sempre aberto, sem mudar o sistema. NÚMEROS DA CI no merge commit `b0850e42` (push na `main`), workflow `ci`, run 44374058162, tentativa 1: backend `6517 teste(s) · pass 6515 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 262 -> 262.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 600`; números do log da rodada 44374058162. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-18",
+    "version": "PR-602",
+    "pr": 602,
+    "merge_commit": "917bc6cdce2b160caf2307c57c88957efde74c63",
+    "approved_head": "c537dc5377b9a8db8ccea8d2646c62dbb3eb429b",
+    "status": "published_per_pr",
+    "flutter_tests": "1859/2097",
+    "backend_tests": "7197/7199",
+    "frontend_smoke_tests": "2005/2005",
+    "blocks_completed": 263,
+    "description": "PR-602 — O técnico de campo passa a enxergar apenas as ordens atribuídas a ele; quando tenta abrir ordem de outro técnico, o sistema responde como inexistente. A mesma trava passa a valer para anexos, comentários, financeiro, histórico, despachos, aprovações e painel. A exceção de vistorias para quem acumula despacho e técnico fica registrada para decisão separada.. NÚMEROS DA CI no merge commit `917bc6cd` (push na `main`), workflow `ci`, run 44417953563, tentativa 1: backend `7199 teste(s) · pass 7197 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 262 -> 263.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 602`; números do log da rodada 44417953563. Nada fica `null`."
   }
 ]
