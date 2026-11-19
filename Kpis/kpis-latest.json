@@ -6,7 +6,7 @@
   "release": {
     "block": "KPI-MARCO-2026-11-19 (consolidação de KPI por marco, loop diário `D-KPI-LOOP-GEMINI`: a proposta veio de `kpi-1911-prop-df` (DeepSeek Flash), a gravação foi de `kpi-1911-grava-azc` (OpenAI AZC, Sol, redator declarado) e a revisão fica com DeepSeek Pro em identidade nova; cruzamento de casa preservado. O KPI segue CONGELADO para PRs de bloco, `D-GOV-PROPORCIONAL` (5)).",
     "title": "Marco de 19/11: 263 blocos e vendável em 90%",
-    "pr": null,
+    "pr": 604,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
