@@ -5,11 +5,12 @@
 // tratador `entity.parse.failed` do app.ts → T-VLT-23 vermelho.
 
 import assert from "node:assert/strict";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+
+import { startChildServer } from "./helpers/child-server.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SECRET = "SECRET-ABC123-XYZ";
@@ -28,40 +29,20 @@ type Server = {
 };
 
 async function startServer(env: Record<string, string>): Promise<Server> {
-  const child: ChildProcessWithoutNullStreams = spawn(process.execPath, ["--import", "tsx", path.join(ROOT, "tests/helpers/ass-05-vault-server.ts")], {
+  const child = await startChildServer({
+    args: ["--import", "tsx", path.join(ROOT, "tests/helpers/ass-05-vault-server.ts")],
     cwd: ROOT,
     env: { ...process.env, NODE_ENV: "development", LOG_LEVEL: "trace", JWT_SECRET: "dev-only-change-me", CORE_SAAS_PERSISTENCE: "memory", ...env },
-    stdio: ["pipe", "pipe", "pipe"],
   });
-  let stdout = "";
-  let stderr = "";
-  child.stdout.setEncoding("utf8").on("data", (chunk: string) => { stdout += chunk; });
-  child.stderr.setEncoding("utf8").on("data", (chunk: string) => { stderr += chunk; });
-
-  const waitFor = async (prefix: string, after: number): Promise<string> => {
-    const deadline = Date.now() + 30_000;
-    while (Date.now() < deadline) {
-      const line = stdout.slice(after).split("\n").find((candidate) => candidate.startsWith(prefix));
-      if (line !== undefined) return line;
-      if (child.exitCode !== null) throw new Error(`servidor saiu (${child.exitCode}): ${stderr.slice(-2000)}`);
-      await new Promise((resolve) => setTimeout(resolve, 25));
-    }
-    throw new Error(`sem "${prefix}" em 30 s: ${stderr.slice(-2000)}`);
-  };
-
-  const port = (await waitFor("PORT ", 0)).slice(5).trim();
   return {
-    baseUrl: `http://127.0.0.1:${port}`,
-    output: () => stdout + stderr,
+    baseUrl: `http://127.0.0.1:${child.readyValue}`,
+    output: child.output,
     async command(line, prefix) {
-      const mark = stdout.length;
-      child.stdin.write(`${line}\n`);
-      return (await waitFor(prefix, mark)).slice(prefix.length);
+      const mark = child.stdout().length;
+      child.write(line);
+      return (await child.waitFor(prefix, mark)).slice(prefix.length);
     },
-    async stop() {
-      child.kill();
-      await new Promise((resolve) => child.once("exit", resolve));
-    },
+    stop: child.stop,
   };
 }
 
