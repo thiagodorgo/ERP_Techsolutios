@@ -43,4 +43,3 @@
 - **Merge:** squash `917bc6cd` (head aprovado `c537dc53`).
 - **Porteiro:** `dp-porteiro-602` (DeepSeek Pro) emitiu **LIBERADO COM RESSALVA** e registrou **"ITEM 71: FECHA"**.
 - **Encaminhamento:** próximo start liberado para `B-USERS-CONCESSAO-PAINEL`; sem pendência aberta com `bloqueia: sim`.
-
