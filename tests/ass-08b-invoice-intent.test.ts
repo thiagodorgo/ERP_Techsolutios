@@ -98,6 +98,9 @@ const EXPECTED_MARKERS = [
   "[INTX-12f]",
   "[WH-5]",
   "[WH-ERR]",
+  // B-ASS-08c3 (plano `plano-B-ASS-08c3-fechamento.md` §1.3 e §4.2.1, P22b): o registro do webhook pela plataforma, a âncora
+  // nova do bloco em `providers/provider-config.service.ts` (`registerWebhook`). Só acréscimo; exatamente 1, como as outras.
+  "[WH-REG]",
 ].sort();
 
 test("T-MARK (R-MARK, CRIT530-05): cada marcador de mutação existe UMA vez em src/modules/subscription-billing, o conjunto é o do plano e nenhum é prefixo de outro", () => {

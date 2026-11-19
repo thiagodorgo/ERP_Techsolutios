@@ -96,8 +96,28 @@ test("L1b (processos): dois processos do despacho nascem com `claimedBy` padrão
   assert.notEqual(first, second, "dois processos nunca compartilham a mesma posse nominal");
 });
 
+/**
+ * Os escritores Prisma que gravam `attempt_started_at` com o relógio da RODADA, admitidos um a um, com o motivo.
+ * B-ASS-08c3, OR2 (plano `plano-B-ASS-08c3-fechamento.md` §4.5 `[ORFA-DEFER]` e a linha OR2 da tabela de testes): a órfã cuja
+ * reconsulta falha fica `PROCESSING` com `attempt_started_at` = o relógio da rodada — o `now: Date` (JS, milissegundo) que o
+ * despacho passa por `clock()`, o MESMO relógio que dá o `now` do claim. Nunca o relógio do SQL. A admissão vale SÓ dentro do
+ * método nomeado, SÓ com o parâmetro `now: Date` na assinatura dele, e SÓ se o despacho o chama com `clock()`.
+ */
+const ROUND_CLOCK_WRITERS: ReadonlyArray<{ readonly file: string; readonly method: string; readonly rhs: string; readonly why: string }> = [
+  { file: "src/modules/subscription-billing/outbox/outbox.prisma.ts", method: "deferOrphan", rhs: "now", why: "OR2: a órfã adiada, com o relógio da rodada passado pelo despacho" },
+];
+const DISPATCHER = "src/modules/subscription-billing/outbox/outbox.dispatcher.ts";
+
+/** O método de classe (2 espaços de recuo) que contém a posição `index` do texto, e a assinatura dele. */
+function enclosingMethod(text: string, index: number): { readonly name: string; readonly signature: string } | null {
+  let found: { name: string; signature: string } | null = null;
+  for (const match of text.slice(0, index).matchAll(/\n {2}(?:async )?(\w+)\(([^)]*)\)/g)) found = { name: match[1]!, signature: match[2]! };
+  return found;
+}
+
 test("L1c (censo): nenhum escritor de `src/**` grava `attempt_started_at` pelo relógio do SQL", () => {
   const offenders: string[] = [];
+  const admitted: string[] = [];
   let sqlWriters = 0;
   for (const file of sourceFiles(path.join(ROOT, "src"))) {
     const text = readFileSync(file, "utf8");
@@ -107,15 +127,27 @@ test("L1c (censo): nenhum escritor de `src/**` grava `attempt_started_at` pelo r
       sqlWriters += 1;
       if (!/^(\$\d+(::[a-z]+)?|NULL)$/i.test(match[1]!)) offenders.push(`${rel}: attempt_started_at = ${match[1]}`);
     }
-    // Prisma: `attempt_started_at: <rhs>` — só `null` (a soltura) ou a posse apresentada (`lease.attemptStartedAt`).
+    // Prisma: `attempt_started_at: <rhs>` — só `null` (a soltura), a posse apresentada (`lease.attemptStartedAt`) ou um
+    // escritor de ROUND_CLOCK_WRITERS (o relógio da rodada, no método nomeado, com `now: Date` na assinatura).
     for (const match of text.matchAll(/attempt_started_at:\s*([^,}\n]+)/g)) {
       const rhs = match[1]!.trim();
       if (/^[A-Z]\w*(\s*\|\s*null)?;$/.test(rhs)) continue; // anotação de tipo da linha crua (`Date | null;`), não escrita
-      if (rhs !== "null" && rhs !== "lease.attemptStartedAt") offenders.push(`${rel}: attempt_started_at: ${rhs}`);
+      if (rhs === "null" || rhs === "lease.attemptStartedAt") continue;
+      const method = enclosingMethod(text, match.index!);
+      const allowed = ROUND_CLOCK_WRITERS.find((writer) => writer.file === rel && writer.rhs === rhs && writer.method === method?.name);
+      if (allowed && /\bnow: Date\b/.test(method!.signature)) admitted.push(`${rel} :: ${allowed.method} :: ${rhs}`);
+      else offenders.push(`${rel}: attempt_started_at: ${rhs}`);
     }
   }
   assert.ok(sqlWriters >= 1, "o censo alcançou o claim (o escritor que existe)");
   assert.deepEqual(offenders, []);
+  // A admissão não apodrece: cada escritor admitido existe UMA vez, e o despacho o chama com o relógio da rodada.
+  assert.deepEqual(admitted.sort(), ROUND_CLOCK_WRITERS.map((writer) => `${writer.file} :: ${writer.method} :: ${writer.rhs}`).sort(), "escritor do relógio da rodada novo, sumido ou mudado");
+  const dispatcher = readFileSync(path.join(ROOT, DISPATCHER), "utf8");
+  assert.match(dispatcher, /const clock = deps\.now \?\? \(\(\) => new Date\(\)\);/, "o relógio da rodada é o do despacho (JS)");
+  assert.match(dispatcher, /claimNext\(\{ enabledProviders, now: clock\(\),/, "o claim usa o relógio da rodada");
+  assert.equal([...dispatcher.matchAll(/deps\.repo\.deferOrphan\(row\.tenantId, row\.id, code, clock\(\), lease\)/g)].length, 1, "o despacho adia a órfã com o relógio da rodada (`clock()`), uma vez");
+  assert.equal([...dispatcher.matchAll(/\.deferOrphan\(/g)].length, 1, "nenhuma outra chamada ao adiamento da órfã no despacho");
 });
 
 if (!connectionString) {

@@ -47,9 +47,14 @@ import { SUBSCRIPTION_SKIP_REASONS, type SubscriptionAmount } from "../src/modul
 //   M-SUB-7  `BigInt(statement.totalCents + latest.creditsAppliedCents)` → `BigInt(statement.paidCents)`
 //            → T-SUB-1 ("0.00"), T-SUB-4, T-SUB-7, T-SUB-8, T-SUB-9
 //   M-SUB-8  `BigInt(statement.totalCents + latest.creditsAppliedCents)` → `BigInt(statement.totalCents + statement.creditsAppliedCents)`
-//            → T-SUB-8 ("50.00"), T-SUB-9 ("150.00"); controle: T-SUB-1 a T-SUB-7 seguem verdes
+//            → T-SUB-9 ("150.00"); controle: T-SUB-1 a T-SUB-8 seguem verdes
 //   M-SUB-9  `creditsAppliedCents: BigInt(latest.creditsAppliedCents),` → `creditsAppliedCents: BigInt(statement.creditsAppliedCents),`
-//            → T-SUB-8 (creditsApplied "0.00"), T-SUB-9 ("50.00")
+//            → T-SUB-9 ("50.00")
+//   (B-ASS-08c3: desde o `[CREDIT-RECOMPUTE]`, o estorno do T-SUB-8 grava o crédito novo na linha E no retrato, que passam a
+//   concordar; por isso M-SUB-8 e M-SUB-9 deixaram de separar no T-SUB-8, medido, e quem as mata é o T-SUB-9.)
+//   M-CR1    `credits/credit.service.ts`, `latest ? recompute(latest) : target.totalCents` → `target.totalCents`  → T-SUB-8
+//   M-CR-STATUS  `credit.service.ts`, `status: target.status === "paid" && !stillPaid ? "closed" : target.status,` →
+//            `status: target.status,`                                                                         → T-SUB-8
 //   M-SUB-10 apagar `if (latest == null) throw snapshotMissing();` → T-SUB-10 (sai um TypeError, não o SubscriptionAmountError)
 //   M-SUB-11 apagar `if (recompute(latest) !== statement.totalCents) throw snapshotMismatch();` → T-SUB-11 (Missing expected rejection.)
 //   M-SUB-2  `return projectAmount(runtime, tenantId, period);` → `return fromStatement((await runtime.service.close({
@@ -336,7 +341,7 @@ test("T-SUB-7 · dois meses, crédito de sobra: setembro 100.00 e outubro 100.00
   assert.equal(formatCents(sep.statementTotalCents! + oct.statementTotalCents!), "150.00");
 });
 
-test("T-SUB-8 · estorno do pagamento que gerou um crédito já aplicado (caminho real): outubro segue 100.00 / 50.00 / 50.00, como antes do estorno", async () => {
+test("T-SUB-8 · estorno do pagamento que gerou um crédito já aplicado (caminho real): o crédito some e outubro volta a dever 50.00 — closed, 100.00 / 100.00 / 0.00", async () => {
   // Preço por mês; mês sem preço → o fechamento pula a organização e deixa a linha `open` (o caminho real da linha aberta).
   const prices = new Map<string, number>([["2026-09", 10_000]]);
   const { repository, runtime, service, settlement } = setup(async (_tenantId, period) => {
@@ -374,17 +379,35 @@ test("T-SUB-8 · estorno do pagamento que gerou um crédito já aplicado (caminh
   // O estorno total do pagamento de setembro (o que gerou o crédito), pelo serviço de verdade.
   const reversal = await settlement.applyReversal({ tenantId: TENANT, statementId: september.id, externalChargeId: "ch-sep", reversedCents: 15_000, kind: "refund", now: NOW });
   assert.ok("creditReversed" in reversal, "o estorno foi aplicado");
-  // Pré-condições (o estado que o estorno deixa, sem nada montado à mão): crédito da linha 0, total 5000.
+  // O estado que o estorno deixa, sem nada montado à mão. B-ASS-08c3, plano `plano-B-ASS-08c3-fechamento.md` §4.8
+  // (`[CREDIT-RECOMPUTE]`; CR1 a CR4) e a pendência ALTA `P-ASS08-REVERSAO-CREDITO-APLICADO`: o crédito estornado deixa de
+  // abater outubro; o motor recalcula o total com a MESMA entrada do retrato e o crédito novo (0); e outubro, que estava
+  // `paid` com 50.00, volta a `closed` devendo 50.00. Até o 08c3 este caso travava o defeito: outubro seguia `paid` com
+  // total 50.00, e os 50.00 devidos sumiam.
   assert.equal(reversal.creditReversed, true);
   const afterRow = await rowOf(repository, TENANT, "2026-10");
-  assert.deepEqual([afterRow.status, afterRow.totalCents, afterRow.creditsAppliedCents], ["paid", 5_000, 0]);
+  assert.deepEqual(
+    [afterRow.status, afterRow.totalCents, afterRow.paidCents, afterRow.creditsAppliedCents, afterRow.paidAt],
+    ["closed", 10_000, 5_000, 0, null],
+    "outubro volta a `closed`: total 100.00, pago 50.00, sem crédito, sem data de pagamento",
+  );
+  assert.equal(afterRow.totalCents - afterRow.paidCents, 5_000, "a dívida volta: outubro deve 50.00");
+  const afterLatest = afterRow.snapshot.latest;
+  assert.ok(afterLatest, "o retrato do fechamento segue presente");
+  assert.equal(afterLatest.creditsAppliedCents, 0, "o retrato não guarda o crédito que sumiu");
+  assert.equal(recompute(afterLatest), afterRow.totalCents, "o retrato reproduz o total novo (CR2: sem statement_integrity_violation)");
+  assert.deepEqual(afterRow.snapshot.history.at(-1), { at: NOW.toISOString(), event: "credit_reversed", by: null, totalCents: 10_000 }, "o histórico de outubro registra o crédito desfeito");
 
   const oct = shown(await subscriptionAmountOf(runtime, { tenantId: TENANT, period: "2026-10", now: NOW }));
   assert.deepEqual(
     { subscriptionAmount: oct.subscriptionAmount, statementTotal: oct.statementTotal, creditsApplied: oct.creditsApplied },
-    { subscriptionAmount: "100.00", statementTotal: "50.00", creditsApplied: "50.00" },
+    { subscriptionAmount: "100.00", statementTotal: "100.00", creditsApplied: "0.00" },
   );
-  assert.deepEqual([oct.subscriptionAmount, oct.statementTotal, oct.creditsApplied], [before.subscriptionAmount, before.statementTotal, before.creditsApplied]);
+  // A assinatura contratada de outubro não muda com o estorno; muda o que o demonstrativo cobra (50.00 → 100.00) e o crédito
+  // usado (50.00 → 0.00).
+  assert.equal(oct.subscriptionAmount, before.subscriptionAmount);
+  assert.notEqual(oct.statementTotal, before.statementTotal);
+  assert.notEqual(oct.creditsApplied, before.creditsApplied);
   const sep = shown(await subscriptionAmountOf(runtime, { tenantId: TENANT, period: "2026-09", now: NOW }));
   assert.equal(sep.subscriptionAmount, "100.00");
 });
