@@ -305,6 +305,7 @@ export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchR
   const sweepFailed = sweep !== undefined && !sweep.ok;
 
   await deps.repo.markDisabledProvidersVisible(enabledProviders, clock());
+  if (deps.invoices?.providers.length) await deps.repo.retargetUntriedInvoiceIssues(deps.invoices.providers[0]!, clock());
 
   let processed = 0;
   // Teto defensivo: no máximo uma passada por linha elegível desta rodada (evita laço infinito num re-enqueue).

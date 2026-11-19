@@ -100,6 +100,10 @@ export interface OutboxRepository {
   reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, lease: OutboxLease, options?: { readonly refundAttempt?: boolean }): Promise<boolean>;
   /** B-ASS-08c3 (F-B1): falha na reconsulta da órfã. Mantém PROCESSING, renova `attempt_started_at` e guarda o código. */
   deferOrphan(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean>;
+  /** B-ASS-08c3 (F-B3): troca o provedor de `invoice_issue` PENDING nunca tentada para o alvo ligado. */
+  retargetUntriedInvoiceIssues(provider: string, now: Date): Promise<number>;
+  /** B-ASS-08c3 (F-B5): releitura do `cancel-unknown` antes do DELETE. */
+  isChargeKnown(tenantId: string, statementId: string, chargeId: string): Promise<boolean>;
   markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean>;
   markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean>;
   markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date, lease: OutboxLease): Promise<boolean>;
@@ -185,6 +189,13 @@ export type RetryByOperatorOutcome =
   | { readonly kind: "not_found" }
   | { readonly kind: "not_failed" }
   | { readonly kind: "reopened"; readonly row: BillingOutboxRow; readonly dueDateRewritten: boolean };
+
+export type ConfirmCancelledByOperatorInput = { readonly chargeId: string; readonly reason: string; readonly actorId: string | null; readonly now: Date };
+export type ConfirmCancelledByOperatorOutcome =
+  | { readonly kind: "not_found" }
+  | { readonly kind: "not_allowed" }
+  | { readonly kind: "mismatch" }
+  | { readonly kind: "confirmed"; readonly row: BillingOutboxRow };
 
 /** Os estados de uma linha da fila VIVA (o conjunto do D1). */
 const LIVE_STATUSES: ReadonlySet<OutboxStatus> = new Set(["PENDING", "PROCESSING", "SENT", "NEEDS_REVIEW"]);

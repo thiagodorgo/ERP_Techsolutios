@@ -474,6 +474,35 @@ export class PrismaOutboxRepository implements OutboxRepository {
     return this.#mutate(tenantId, id, lease, { status: "PROCESSING", attempt_started_at: now, last_error: lastError, next_attempt_at: null, updated_at: now });
   }
 
+  async retargetUntriedInvoiceIssues(provider: string, now: Date): Promise<number> {
+    const tenants = await this.#tenantsWithRefs();
+    if (tenants.length === 0) return 0;
+    const counts = await forEachTenantRls<number>(this.client, tenants, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE billing_outbox
+            SET provider = $1, skip_reason = NULL, updated_at = $2
+          WHERE kind = 'invoice_issue' AND status = 'PENDING' AND attempts = 0 AND external_id IS NULL AND claimed_by IS NULL AND provider <> $1
+          RETURNING id`,
+        provider,
+        now,
+      )) as Array<{ id: string }>; // [RETARGET-01]
+      return [rows.length];
+    });
+    return counts.reduce((sum, n) => sum + n, 0);
+  }
+
+  async isChargeKnown(tenantId: string, statementId: string, chargeId: string): Promise<boolean> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT 1 FROM subscription_statement_charges WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND external_charge_id = $3 LIMIT 1`,
+        tenantId,
+        statementId,
+        chargeId,
+      )) as Array<{ '?column?': number }>;
+      return rows.length > 0;
+    });
+  }
+
   async markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
     return this.#mutate(tenantId, id, lease, { status: "FAILED", last_error: lastError, next_attempt_at: null, updated_at: now });
   }
