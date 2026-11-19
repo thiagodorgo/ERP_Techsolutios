@@ -9,6 +9,7 @@
 // Opera DENTRO da transação da organização (usa só as primitivas de `StatementTx`). Não toca a rede.
 
 import type { StatementTx } from "../statements/statement.repository.js";
+import { recompute } from "../statements/statement.engine.js";
 import type { SubscriptionCredit } from "../statements/statement.types.js";
 
 export type CreditReversalEffect = {
@@ -47,10 +48,17 @@ export class CreditService {
         if (target) {
           const creditsApplied = Math.max(0, target.creditsAppliedCents - credit.amountCents);
           const stillPaid = target.paidCents >= target.totalCents;
+          const latest = target.snapshot.latest ? { ...target.snapshot.latest, creditsAppliedCents: creditsApplied } : null;
           await tx.saveStatement({
             ...target,
+            totalCents: latest ? recompute(latest) : target.totalCents, // [CREDIT-RECOMPUTE]
             creditsAppliedCents: creditsApplied,
             status: target.status === "paid" && !stillPaid ? "closed" : target.status,
+            snapshot: {
+              ...target.snapshot,
+              latest,
+              history: [...target.snapshot.history, { at: input.now.toISOString(), event: "credit_reversed", by: null, totalCents: latest ? recompute(latest) : target.totalCents }],
+            },
           });
         }
         await tx.saveCredit({ ...credit, status: "written_off", resolutionNote: "credit_reversed" });

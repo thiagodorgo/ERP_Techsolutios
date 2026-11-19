@@ -39,7 +39,7 @@ export type CreditStatus = (typeof CREDIT_STATUSES)[number];
 
 export type StatementHistoryEntry = {
   readonly at: string;
-  readonly event: "closed" | "reopened" | "adjusted" | "cancelled" | "credit_applied";
+  readonly event: "closed" | "reopened" | "adjusted" | "cancelled" | "credit_applied" | "credit_reversed";
   readonly by: string | null;
   readonly totalCents: number;
   readonly note?: string;
@@ -134,6 +134,7 @@ export type StatementAuditAction =
   | "subscription_statement.credit_created"
   | "subscription_statement.credit_applied"
   | "subscription_statement.credit_written_off"
+  | "subscription_statement.credit_reversed"
   | "subscription_statement.invoice_requested"
   | "subscription_billing_profile.updated";
 
