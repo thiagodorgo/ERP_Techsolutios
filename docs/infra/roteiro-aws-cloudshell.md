@@ -16,7 +16,9 @@
 | **CloudShell** (o ícone `>_` no alto do console) | Terminal na nuvem, já autenticado como você, com a AWS CLI v2, `git`, `node`, `npm`, `jq`, `psql` e `openssl` instalados. Tem 1 GB de disco que persiste e sai para a internet. | Tudo que fala com a API da AWS (criar VPC, banco, serviço, DNS). |
 | **CloudShell em VPC** (o mesmo CloudShell, mas "dentro" da sua rede privada) | O terminal nasce numa subnet privada da sua VPC e enxerga o banco e o Valkey, que não têm endereço público. **Não guarda arquivo entre sessões**, expira com 20–30 min sem uso, e só tem internet porque a subnet privada sai pelo NAT. | O que precisa tocar o banco: migrações, papel de runtime, provisionamento de RBAC, 1º administrador, drill de restore. |
 
-Confirmado na documentação oficial: o CloudShell existe em `sa-east-1` (São Paulo) e o ambiente em VPC está disponível em todas as regiões; o limite é de 2 ambientes em VPC por usuário.
+Confirmado na documentação oficial: o CloudShell existe em `us-east-1` (Norte da Virgínia) e o ambiente em VPC está disponível em todas as regiões; o limite é de 2 ambientes em VPC por usuário.
+
+**LGPD (transferência internacional).** Com a região na Virgínia (`us-east-1`), os dados pessoais ficam **fora do Brasil** — transferência internacional, LGPD art. 33. A base legal precisa existir **antes do 1º cliente real**, e a verificação jurídica é do dono: pendência `P-AWS-LGPD-TRANSFERENCIA`.
 
 **O que cada passo traz:** o objetivo em língua de dono · o comando (as variáveis `${…}` são definidas uma vez no começo da fase, sem valor real) · **a conferência** (um comando de leitura e a saída que prova que deu certo) · o que custa por mês (do estudo, em US$) · como desfazer.
 
@@ -30,8 +32,8 @@ Confirmado na documentação oficial: o CloudShell existe em `sa-east-1` (São P
 ```bash
 # Em toda sessão, antes de tudo:
 export AWS_PAGER=""                 # sem paginador (CLI v2: conferido na doc)
-export AWS_DEFAULT_REGION=sa-east-1
-export REGIAO=sa-east-1
+export AWS_DEFAULT_REGION=us-east-1
+export REGIAO=us-east-1
 export CONTA="$(aws sts get-caller-identity --query Account --output text)"
 export DOMINIO="<DOMINIO>"          # ex.: suaempresa.com.br
 export GH_DONO="<GH_DONO>"
@@ -42,7 +44,7 @@ export GH_REPO="<GH_REPO>"
 
 ## 1. Mapa das fases, o portão e a etapa 1 (até 18/11)
 
-| Fase | O que entrega | Itens do portão (`PLANO_SAN3.md`) | Custo/mês aproximado |
+| Fase | O que entrega | Itens do portão (`PLANO_SAN3.md`) | Custo/mês (estudo, a recalcular) |
 |---|---|---|---|
 | 0 · Pré-requisitos | conta, MFA, administrador, região, CloudShell, domínio em mãos, orçamento com alerta | — | 0 |
 | 1 · Fundação | VPC (2 AZ), NAT, grupos de segurança, ECR, segredos, OIDC do GitHub, logs | destrava tudo | ~12–15 |
@@ -58,11 +60,21 @@ export GH_REPO="<GH_REPO>"
 
 Por decisão do dono em 17/11 (*"o traccar e antivirus ja entram"*), o mínimo já inclui o antivírus (3b) e o Traccar (3c): **~US$ 270–285/mês**, contra os US$ 255 do estudo com instância NAT. A diferença: o IPv4 público agora é cobrado (US$ 0,005/h por endereço), e a API e o ClamAV começam em x86 (3.6 e 3b: as imagens publicadas hoje são só `amd64`; o estudo contava ARM). Com a porta dos rastreadores aberta (3d, depois da trava), **~US$ 305–320/mês**: ainda abaixo do teto de US$ 350 do orçamento (D-AWS-02), mas perto; ao abrir a 3d, reveja o teto.
 
+**Custo na Virgínia (medido em 19/11).** A troca de São Paulo para a Virgínia (`us-east-1`) muda os preços unitários, e o D-AWS-10 dobra o banco (Multi-AZ). Os números abaixo foram medidos na fonte oficial de preços da AWS (AWS Price List API, pública, acessada em 19/11); tudo o que não está na lista fica **a recalcular** e é acompanhado pela pendência `P-AWS-CUSTO-VIRGINIA`:
+- RDS PostgreSQL `db.t4g.small` em `us-east-1`: single-AZ US$ 0,032/h · Multi-AZ US$ 0,065/h · gp3 US$ 0,115/GB-mês (single) e US$ 0,23/GB-mês (Multi-AZ).
+- ElastiCache Valkey `cache.t4g.micro` em `us-east-1`: US$ 0,0128/h (~US$ 9,3/mês).
+- ALB em `us-east-1`: US$ 0,0225/h + LCU US$ 0,008.
+- NLB em `us-east-1`: US$ 0,0225/h + NLCU US$ 0,006.
+- EC2 `t4g.nano` Linux (NAT por instância) em `us-east-1`: US$ 0,0042/h.
+- Fargate em `us-east-1`: vCPU x86 US$ 0,04048/h · memória x86 US$ 0,004445/GB-h · vCPU ARM US$ 0,03238/h · memória ARM US$ 0,00356/GB-h · armazenamento efêmero US$ 0,000111/GB-h.
+- CloudWatch Logs: ingestão US$ 0,50/GB em `us-east-1`.
+Fonte: `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json` e os índices regionais `AmazonRDS`, `AmazonElastiCache`, `AWSELB` (`https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSELB/current/us-east-1/index.json`), `AmazonEC2`, `AmazonECS` e `AmazonCloudWatch` para `us-east-1`, todos acessados em 19/11. Os totais por fase e o total do §1 são os números do estudo (São Paulo) e ficam **a recalcular — `P-AWS-CUSTO-VIRGINIA`**.
+
 **A etapa 1 que o dono se comprometeu a fazer até 18/11 é a Fase 0 inteira mais o começo da Fase 1.** Exatamente isto precisa estar feito até lá, para o resto correr por comando:
 
 1. Conta AWS aberta, cartão cadastrado, **MFA na conta raiz** ligada (Fase 0, passos 0.1–0.3).
 2. Usuário administrador criado **com MFA**, e você logado com ele (nunca com a raiz) (0.4).
-3. Região `sa-east-1` escolhida e o **CloudShell aberto** uma vez, com `aws sts get-caller-identity` respondendo (0.5).
+3. Região `us-east-1` (Norte da Virgínia) escolhida e o **CloudShell aberto** uma vez, com `aws sts get-caller-identity` respondendo (0.5).
 4. Alias da conta e **AWS Budgets com alerta por e-mail** criados (0.6–0.7).
 5. O **domínio** registrado onde quer que esteja, com o login do painel do registrador em mãos (0.8).
 6. Um **token do GitHub** (`read:packages`) gerado, para o ECR puxar a imagem do GHCR (0.9).
@@ -70,28 +82,30 @@ Por decisão do dono em 17/11 (*"o traccar e antivirus ja entram"*), o mínimo j
 
 ---
 
-## 2. Decisões que ficam com o dono (e o padrão se ninguém responder)
+## 2. Decisões do dono (respondidas em 19/11)
 
-| ID | Pergunta | Recomendação | Padrão sem resposta |
+| ID | Pergunta | Recomendação | Decisão do dono (19/11) |
 |---|---|---|---|
-| D-AWS-01 | NAT: instância `t4g.nano` ou NAT gateway? (decisão 2 do estudo) | instância (−US$ 60/mês; um ponto a monitorar) | instância |
-| D-AWS-02 | Teto mensal do orçamento (decisão 4 do estudo) | US$ 350 só produção; US$ 450 se houver staging | US$ 350 |
-| D-AWS-03 | **IP fixo** para a API? (ver 5.9) | alias no ALB agora; IP fixo só se um parceiro ou cliente exigir lista de permissão | sem IP fixo |
-| D-AWS-04 | O domínio "nu" (`<DOMINIO>` sem `api.`/`app.`) aponta para algum lugar? | redirecionar para `https://app.<DOMINIO>` depois, num bloco de frontend | só `api.` e `app.` |
-| D-AWS-05 | Valkey com criptografia em trânsito (`rediss://`)? | ligar quando o suporte do app a `rediss://` for medido (pendência P-AWS-VALKEY-TLS) | sem TLS, só rede privada e grupo de segurança |
-| D-AWS-06 | `PORTAL_TENANT_ID` antes do 1º tenant existir | valor provisório `pendente-runbook-b`; trocar na fase 6 | provisório |
-| D-AWS-07 | Ativar o login sem organização (`B-O6R-01`, `GRANT EXECUTE` em `auth_login_candidates`)? | decisão em ata, como manda o runbook | não ativar |
-| D-AWS-08 | API em x86 até o CI publicar imagem `arm64` (pendência P-AWS-IMAGEM-ARM64) | x86 agora (+US$ 6/mês); trocar para ARM no PR do CI | x86 |
-| D-AWS-09 | Transferir o domínio para o Route 53 Domains? | `.com.br` **não pode** (a AWS encerrou registro e transferência de `.com.br`); outros TLDs: não precisa, a zona funciona com qualquer registrador | manter no registrador atual |
-| D-AWS-10 | RDS Multi-AZ? | não no começo (dobra o custo do banco) | single-AZ, PITR ligado |
-| D-AWS-11 | Abrir a porta de protocolo dos rastreadores (GT06 e OsmAnd)? | **decidido pelo dono em 17/11:** *"porta aberta com os devidos cuidados"* → fase 3d, só depois do modelo de ameaças do gate `G-TRC-NLB` e da junta de 5 unânime | (decidido) |
-| D-AWS-12 | Banco do Traccar: RDS dedicado ou um banco dentro do RDS do ERP? | **decidido pelo dono em 17/11:** *"banco proprio traccar"* → RDS `db.t4g.micro` dedicado (3c.2), como manda o plano do Traccar | (decidido) |
+| D-AWS-01 | NAT: instância `t4g.nano` ou NAT gateway? (decisão 2 do estudo) | instância (−US$ 60/mês; um ponto a monitorar) | **DECIDIDA:** NAT por instância `t4g.nano` |
+| D-AWS-02 | Teto mensal do orçamento (decisão 4 do estudo) | US$ 350 só produção; US$ 450 se houver staging | **DECIDIDA:** US$ 350 |
+| D-AWS-03 | **IP fixo** para a API? (ver 5.9) | alias no ALB agora; IP fixo só se um parceiro ou cliente exigir lista de permissão | **DECIDIDA:** sem IP fixo |
+| D-AWS-04 | O domínio "nu" (`<DOMINIO>` sem `api.`/`app.`) aponta para algum lugar? | redirecionar para `https://app.<DOMINIO>` depois, num bloco de frontend | **DECIDIDA:** o domínio nu fica com o site do dono; o sistema mora em `api.` e `app.` (passo 6.10) |
+| D-AWS-05 | Valkey com criptografia em trânsito (`rediss://`)? | ligar quando o suporte do app a `rediss://` for medido (pendência P-AWS-VALKEY-TLS) | **DECIDIDA:** sem TLS agora, só rede privada e grupo de segurança |
+| D-AWS-06 | `PORTAL_TENANT_ID` antes do 1º tenant existir | valor provisório `pendente-runbook-b`; trocar na fase 6 | **DECIDIDA:** provisório |
+| D-AWS-07 | Ativar o login sem organização (`B-O6R-01`, `GRANT EXECUTE` em `auth_login_candidates`)? | decisão em ata, como manda o runbook | **DECIDIDA:** ativar no go-live (passo 6.8) |
+| D-AWS-08 | API em x86 até o CI publicar imagem `arm64` (pendência P-AWS-IMAGEM-ARM64) | x86 agora (+US$ 6/mês); trocar para ARM no PR do CI | **DECIDIDA:** x86 agora |
+| D-AWS-09 | Transferir o domínio para o Route 53 Domains? | `.com.br` **não pode** (a AWS encerrou registro e transferência de `.com.br`); outros TLDs: não precisa, a zona funciona com qualquer registrador | **DECIDIDA:** manter no registrador atual |
+| D-AWS-10 | RDS Multi-AZ? | não no começo (dobra o custo do banco) | **DECIDIDA:** Multi-AZ desde o início (passo 2.3) — o custo do banco dobra |
+| D-AWS-11 | Abrir a porta de protocolo dos rastreadores (GT06 e OsmAnd)? | **decidido pelo dono em 17/11:** *"porta aberta com os devidos cuidados"* → fase 3d, só depois do modelo de ameaças do gate `G-TRC-NLB` e da junta de 5 unânime | **DECIDIDA:** porta aberta com os devidos cuidados, depois do modelo de ameaças e da junta de 5 (fase 3d) |
+| D-AWS-12 | Banco do Traccar: RDS dedicado ou um banco dentro do RDS do ERP? | **decidido pelo dono em 17/11:** *"banco proprio traccar"* → RDS `db.t4g.micro` dedicado (3c.2), como manda o plano do Traccar | **DECIDIDA:** banco próprio do Traccar (RDS `db.t4g.micro` dedicado) |
+| D-AWS-13 | O `B-PLAT-PERMISSAO` (a checagem de permissão de plataforma que hoje falha aberta) | — | **DECIDIDA:** entra **antes da Fase 6** — pré-requisito escrito da Fase 6 |
+| D-AWS-14 | Gerar o aplicativo de campo de produção apontando para `https://api.<DOMINIO>` e ensaiar num celular de verdade | — | **DECIDIDA:** passo 6.9, antes da ata de go-live |
 
 ---
 
 ## 3. Fase 0 · Pré-requisitos (atos do dono)
 
-**Pré-requisitos:** nenhum. **Custo:** US$ 0 (Budgets é grátis para os dois primeiros orçamentos; o Cost Explorer cobra US$ 0,01 por chamada à API, passo 0.10).
+**Pré-requisitos:** nenhum. **Custo:** US$ 0 (Budgets é grátis para os dois primeiros orçamentos; o Cost Explorer cobra US$ 0,01 por chamada à API, passo 0.11).
 
 ### 0.1 Abrir a conta — só no console (ato do dono)
 `https://portal.aws.amazon.com/billing/signup` → e-mail da raiz, nome da conta, cartão, verificação por telefone, plano de suporte **Basic** (grátis). A conta nasce com a identidade **raiz**, que só se usa para isto e para o MFA.
@@ -110,15 +124,15 @@ IAM → **Users** → **Create user** → nome (ex.: `admin-erp`) → marque **P
 **Desfazer:** só no console: IAM → **Users** → o usuário → **Delete**, e só depois de existir outro administrador (senão a conta fica só com a raiz).
 
 ### 0.5 Região e CloudShell
-Canto superior direito → região **South America (São Paulo) `sa-east-1`**. Clique no ícone `>_` (CloudShell). Na primeira abertura demora ~1 min. Aí, no terminal:
+Canto superior direito → região **US East (N. Virginia) `us-east-1`**. Clique no ícone `>_` (CloudShell). Na primeira abertura demora ~1 min. Aí, no terminal:
 
 ```bash
-aws configure set region sa-east-1
+aws configure set region us-east-1
 export AWS_PAGER=""
 ```
 **Conferência**
 ```bash
-aws configure get region                                   # sa-east-1
+aws configure get region                                   # us-east-1
 aws sts get-caller-identity --query Arn --output text      # arn:aws:iam::<CONTA>:user/admin-erp  (NÃO pode terminar em ":root")
 aws iam get-account-summary --query 'SummaryMap.AccountMFAEnabled' --output text   # 1  (MFA da raiz ligada)
 aws iam list-mfa-devices --user-name admin-erp --query 'MFADevices[].SerialNumber' --output text   # 1 linha (MFA do admin)
@@ -169,7 +183,30 @@ Tenha em mãos o login do painel onde o domínio está registrado (registro.br, 
 A imagem da API é publicada pelo CI em `ghcr.io/<GH_DONO>/erp-backend:<sha>` (job `docker` do `ci.yml`). O ECR vai puxá-la direto do GHCR (pull-through cache, passo 1.7), e o GHCR exige credencial: GitHub → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)** → **Generate new token** → só o escopo **`read:packages`** → validade 90 dias. Guarde-o; ele entra no Secrets Manager no passo 1.7 e nunca no repositório.
 **Desfazer:** no GitHub, o mesmo caminho → o token → **Delete** (o pull-through do 1.6 para de importar imagem nova; as já importadas ficam no ECR).
 
-### 0.10 Leitura de custo pela linha de comando (opcional, US$ 0,01 por chamada)
+### 0.10 Cotas iniciais da conta (vCPU do Fargate, Elastic IPs, RDS e NLB)
+**Objetivo:** conferir, antes de criar qualquer recurso, que a conta nova tem cota para o mínimo das Fases 1–3: vCPU sob demanda do Fargate (API, antivírus e Traccar), Elastic IPs (NAT e a porta dos rastreadores), instâncias e armazenamento do RDS, e NLB. As linhas abaixo imprimem o `QuotaCode` e o valor atual **da própria conta**, sem código de cota cravado — se um filtro por nome voltar vazio, liste todas as cotas do serviço (último comando) e ache o nome exato.
+```bash
+aws service-quotas list-service-quotas --service-code fargate --query "Quotas[?QuotaName=='Fargate On-Demand vCPU resource count'].[QuotaCode,Value]" --output text
+aws service-quotas list-service-quotas --service-code ec2 --query "Quotas[?QuotaName=='Elastic IP addresses per Region'].[QuotaCode,Value]" --output text
+aws service-quotas list-service-quotas --service-code rds --query "Quotas[?QuotaName=='DB instances'].[QuotaCode,Value]" --output text
+aws service-quotas list-service-quotas --service-code rds --query "Quotas[?QuotaName=='Total storage for all DB instances'].[QuotaCode,Value]" --output text
+aws service-quotas list-service-quotas --service-code elasticloadbalancing --query "Quotas[?QuotaName=='Network Load Balancers per Region'].[QuotaCode,Value]" --output text
+```
+**Conferência:** cada linha imprime `QuotaCode Value` — o código e o valor atual da cota. Confira o `Value` contra o que as fases vão usar (Fase 1: 1 Elastic IP para o NAT; Fase 2: RDS Multi-AZ e o RDS do Traccar; Fases 3/3b/3c: ~1,5 vCPU de Fargate, mais margem; Fase 3d: 2 Elastic IPs e 1 NLB). Para ver uma cota só, use o código que a linha acima imprimiu:
+```bash
+aws service-quotas get-service-quota --service-code fargate --quota-code "<quota-code>" --query 'Quota.[Value,Adjustable]' --output text
+```
+**Pedir aumento** (a aprovação da AWS leva de minutos a dias e pode pedir justificativa):
+```bash
+aws service-quotas request-service-quota-increase --service-code fargate --quota-code "<quota-code>" --desired-value <valor>
+```
+**Listar todas as cotas de um serviço** (se o nome do filtro acima não bater):
+```bash
+aws service-quotas list-service-quotas --service-code fargate --query 'Quotas[].[QuotaName,QuotaCode,Value]' --output table
+```
+**Custo:** 0. **Desfazer:** não se aplica (só leitura; um aumento pedido não se desfaz por comando — a redução é via suporte).
+
+### 0.11 Leitura de custo pela linha de comando (opcional, US$ 0,01 por chamada)
 ```bash
 aws ce get-cost-and-usage --time-period Start=$(date -u -d '-7 days' +%F),End=$(date -u +%F) --granularity DAILY --metrics UnblendedCost --query 'ResultsByTime[].Total.UnblendedCost.Amount' --output text
 ```
@@ -380,7 +417,7 @@ aws iam create-role --role-name erp-github-deploy --assume-role-policy-document 
 aws logs create-log-group --log-group-name /ecs/erp-api --tags app=erp
 aws logs put-retention-policy --log-group-name /ecs/erp-api --retention-in-days 30
 ```
-**Conferência:** `aws logs describe-log-groups --log-group-name-prefix /ecs/erp-api --query 'logGroups[0].[logGroupName,retentionInDays]' --output text` → `/ecs/erp-api 30`. **Custo:** ~US$ 1/mês (ingestão US$ 0,50/GB em sa-east-1 + 30 dias). **Desfazer:** `aws logs delete-log-group --log-group-name /ecs/erp-api`.
+**Conferência:** `aws logs describe-log-groups --log-group-name-prefix /ecs/erp-api --query 'logGroups[0].[logGroupName,retentionInDays]' --output text` → `/ecs/erp-api 30`. **Custo:** ~US$ 1/mês (ingestão US$ 0,50/GB em us-east-1 + 30 dias). **Desfazer:** `aws logs delete-log-group --log-group-name /ecs/erp-api`.
 
 **Conferência da fase inteira:** `cat ~/erp-ids.env` tem VPC, 4 subnets, IGW, 2 tabelas de rota, 7 grupos de segurança, NAT, 2 segredos. **O que pode dar errado:** `batch-get-image` falhar com `UpstreamAccessDenied` (token do GitHub sem `read:packages`, ou pacote GHCR privado para outra conta); o perfil IAM da instância NAT ainda não propagado no `run-instances` (espere 15 s e repita); o `user-data` não rodar (a instância sobe mas não repassa: a conferência do passo 2.1 falha — veja o log em Session Manager, `/var/log/cloud-init-output.log`).
 
@@ -388,7 +425,7 @@ aws logs put-retention-policy --log-group-name /ecs/erp-api --retention-in-days 
 
 ## 5. Fase 2 · Dados
 
-**Pré-requisitos:** Fase 1. **Terminais:** CloudShell normal para a API da AWS; **CloudShell em VPC** para o `psql`, o `prisma` e os scripts. **Custo:** RDS `db.t4g.small` + 20 GB gp3 ~US$ 54 · Valkey `cache.t4g.micro` US$ 17,5 · segredo da senha mestra US$ 0,40 · drill de restore: horas de um `db.t4g.small` enquanto durar (~US$ 0,07/h).
+**Pré-requisitos:** Fase 1. **Terminais:** CloudShell normal para a API da AWS; **CloudShell em VPC** para o `psql`, o `prisma` e os scripts. **Custo:** RDS `db.t4g.small` **Multi-AZ** + 20 GB gp3 ~US$ 52 (medido em `us-east-1`, 19/11) · Valkey `cache.t4g.micro` US$ 9,3 (medido em `us-east-1`) · segredo da senha mestra US$ 0,40 · drill de restore: horas de um `db.t4g.small` enquanto durar (a recalcular — `P-AWS-CUSTO-VIRGINIA`).
 
 ```bash
 # Variáveis da fase (além do bloco do §0 e do ~/erp-ids.env):
@@ -418,8 +455,8 @@ aws rds modify-db-parameter-group --db-parameter-group-name erp-pg16 --parameter
 **Conferência:** `aws rds describe-db-parameters --db-parameter-group-name erp-pg16 --query "Parameters[?ParameterName=='timezone'||ParameterName=='rds.force_ssl'].[ParameterName,ParameterValue]" --output text` → `rds.force_ssl 1` e `timezone UTC`.
 **Custo:** 0. **Desfazer** (só depois de apagar o banco, 2.3, porque os dois estão em uso por ele): `aws rds delete-db-parameter-group --db-parameter-group-name erp-pg16` e `aws rds delete-db-subnet-group --db-subnet-group-name erp-db-subnets`.
 
-### 2.3 O banco (RDS PostgreSQL 16, `db.t4g.small`, PITR)
-**Objetivo:** PostgreSQL 16 gerenciado, 20 GB gp3, backup automático de 7 dias (que é o PITR), criptografado, sem acesso público, com proteção contra exclusão. A senha mestra **nasce no Secrets Manager** (`--manage-master-user-password`): ninguém a digita.
+### 2.3 O banco (RDS PostgreSQL 16, `db.t4g.small`, Multi-AZ, PITR)
+**Objetivo:** PostgreSQL 16 gerenciado **em 2 zonas (Multi-AZ)**, 20 GB gp3, backup automático de 7 dias (que é o PITR), criptografado, sem acesso público, com proteção contra exclusão. (D-AWS-10: Multi-AZ desde o início — o custo do banco dobra em relação ao single-AZ.) A senha mestra **nasce no Secrets Manager** (`--manage-master-user-password`): ninguém a digita.
 ```bash
 PG_VERSAO=$(aws rds describe-db-engine-versions --engine postgres --engine-version 16 --query 'DBEngineVersions[-1].EngineVersion' --output text)
 aws rds create-db-instance --db-instance-identifier "$DB_ID" --db-instance-class db.t4g.small --engine postgres --engine-version "$PG_VERSAO" \
@@ -427,7 +464,7 @@ aws rds create-db-instance --db-instance-identifier "$DB_ID" --db-instance-class
   --allocated-storage 20 --storage-type gp3 --storage-encrypted \
   --db-subnet-group-name erp-db-subnets --vpc-security-group-ids "$SG_RDS" --db-parameter-group-name erp-pg16 \
   --backup-retention-period 7 --preferred-backup-window 05:00-06:00 --copy-tags-to-snapshot \
-  --no-publicly-accessible --no-multi-az --deletion-protection --auto-minor-version-upgrade \
+  --no-publicly-accessible --multi-az --deletion-protection --auto-minor-version-upgrade \
   --enable-cloudwatch-logs-exports postgresql --ca-certificate-identifier rds-ca-rsa2048-g1 \
   --tags Key=app,Value=erp --query 'DBInstance.DBInstanceStatus' --output text
 aws rds wait db-instance-available --db-instance-identifier "$DB_ID"      # 10–15 min
@@ -435,8 +472,8 @@ RDS_HOST=$(aws rds describe-db-instances --db-instance-identifier "$DB_ID" --que
 RDS_SECRET_ARN=$(aws rds describe-db-instances --db-instance-identifier "$DB_ID" --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text)
 printf 'RDS_HOST=%s\nRDS_SECRET_ARN=%s\n' "$RDS_HOST" "$RDS_SECRET_ARN" >> ~/erp-ids.env
 ```
-**Conferência:** `aws rds describe-db-instances --db-instance-identifier "$DB_ID" --query 'DBInstances[0].[DBInstanceStatus,EngineVersion,PubliclyAccessible,DeletionProtection,BackupRetentionPeriod,StorageEncrypted]' --output text` → `available 16.x False True 7 True`.
-**Custo:** ~US$ 54/mês. **Desfazer:** `aws rds modify-db-instance --db-instance-identifier "$DB_ID" --no-deletion-protection --apply-immediately` e depois `aws rds delete-db-instance --db-instance-identifier "$DB_ID" --skip-final-snapshot --delete-automated-backups` (**apaga tudo**; em produção, nunca sem snapshot manual, passo 6.4).
+**Conferência:** `aws rds describe-db-instances --db-instance-identifier "$DB_ID" --query 'DBInstances[0].[DBInstanceStatus,EngineVersion,PubliclyAccessible,DeletionProtection,BackupRetentionPeriod,StorageEncrypted,MultiAZ]' --output text` → `available 16.x False True 7 True True`.
+**Custo:** ~US$ 52/mês (Multi-AZ em `us-east-1`, medido em 19/11: instância US$ 0,065/h + 20 GB gp3 US$ 0,23/GB-mês). **Desfazer:** `aws rds modify-db-instance --db-instance-identifier "$DB_ID" --no-deletion-protection --apply-immediately` e depois `aws rds delete-db-instance --db-instance-identifier "$DB_ID" --skip-final-snapshot --delete-automated-backups` (**apaga tudo**; em produção, nunca sem snapshot manual, passo 6.4).
 
 ### 2.4 Conectar como administrador (CloudShell em VPC)
 **Objetivo:** provar que o banco responde e que a sessão está em UTC, antes de qualquer migração. A senha mestra vem do Secrets Manager para uma variável, nunca para o histórico.
@@ -570,7 +607,7 @@ printf 'EXEC_ROLE_ARN=%s\nTASK_ROLE_ARN=%s\n' "$EXEC_ROLE_ARN" "$TASK_ROLE_ARN" 
 **Conferência:** `aws iam list-attached-role-policies --role-name erp-ecs-execucao --query 'AttachedPolicies[].PolicyName' --output text` → `AmazonECSTaskExecutionRolePolicy`.
 **Custo:** 0. **Desfazer** (só depois de apagar o serviço, 3.8): `aws iam delete-role-policy --role-name erp-ecs-execucao --policy-name erp-segredos-e-cache`, `aws iam detach-role-policy --role-name erp-ecs-execucao --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy` e `aws iam delete-role --role-name erp-ecs-execucao`; para o papel da tarefa, `aws iam delete-role-policy --role-name erp-api-tarefa --policy-name erp-anexos-s3` (se o 6.1 já rodou) e `aws iam delete-role --role-name erp-api-tarefa`.
 
-### 3.3 Certificado da API (ACM em `sa-east-1`) e a zona DNS, antecipada
+### 3.3 Certificado da API (ACM em `us-east-1`) e a zona DNS, antecipada
 **Objetivo:** HTTPS no ALB exige um certificado **validado**, e a validação é um registro CNAME na sua zona. Então a zona do Route 53 nasce **aqui** (é o passo 5.1 antecipado) e os NS vão para o registrador agora (5.2). A explicação completa do DNS está na fase 5.
 ```bash
 CERT_API_ARN=$(aws acm request-certificate --domain-name "api.${DOMINIO}" --validation-method DNS --key-algorithm RSA_2048 --tags Key=app,Value=erp --query CertificateArn --output text)
@@ -730,7 +767,7 @@ Reler segredos trocados sem imagem nova: `aws ecs update-service --cluster erp-p
 
 **Pré-requisitos:** Fases 1–3 (VPC, NAT, `erp-sg-clamav`, cluster, papel de execução, a API no ar). A ativação no ambiente de produção é contratação de serviço pago: junta de 5 unânime registrada (como toda a conta, §6.7 item 3). **Terminais:** CloudShell normal para a API da AWS; CloudShell em VPC para a conferência do 3b.6. **Custo:** Fargate **x86** 0,5 vCPU / 3 GB ≈ **US$ 42/mês** (0,5 × 0,0696 + 3 × 0,0076 US$/h × 730 h); o estudo previa ARM (US$ 33,7), mas a imagem fixada no `B-AV-REAL` (`clamav/clamav:1.4.6@sha256:982e28f9…`) só tem `amd64` (o índice da imagem lido no registro: `amd64` e um item de atestação), por isso x86 (pendência P-AWS-CLAMAV-ARM64). Mais ~US$ 0,50/mês da zona privada do Cloud Map e ~US$ 1 de logs.
 
-**Como a API acha o antivírus:** pela **descoberta de serviço do ECS** (AWS Cloud Map, um nome DNS privado `clamav.erp.local` que aponta sempre para o IP da tarefa do momento). A documentação do ECS a sustenta em `sa-east-1`, no Fargate, com registro `A` para tarefas `awsvpc`, saúde do registro dada pela própria checagem de saúde do contêiner, e sem custo além da zona privada e das consultas. **Declarado:** a PD do antivírus citava o *Service Connect* (o mesmo Cloud Map, mais um proxy dentro de cada tarefa); aqui fica a descoberta por DNS, sem proxy, porque o cliente da API já tem o próprio tempo-limite de conexão e de varredura (`CLAMAV_CONNECT_TIMEOUT_MS`, `CLAMAV_SCAN_TIMEOUT_MS`) e o proxy só somaria uma peça. Um NLB interno também serviria, mas custa ~US$ 25/mês a mais sem ganho para uma tarefa só.
+**Como a API acha o antivírus:** pela **descoberta de serviço do ECS** (AWS Cloud Map, um nome DNS privado `clamav.erp.local` que aponta sempre para o IP da tarefa do momento). A documentação do ECS a sustenta em `us-east-1`, no Fargate, com registro `A` para tarefas `awsvpc`, saúde do registro dada pela própria checagem de saúde do contêiner, e sem custo além da zona privada e das consultas. **Declarado:** a PD do antivírus citava o *Service Connect* (o mesmo Cloud Map, mais um proxy dentro de cada tarefa); aqui fica a descoberta por DNS, sem proxy, porque o cliente da API já tem o próprio tempo-limite de conexão e de varredura (`CLAMAV_CONNECT_TIMEOUT_MS`, `CLAMAV_SCAN_TIMEOUT_MS`) e o proxy só somaria uma peça. Um NLB interno também serviria, mas custa ~US$ 25/mês a mais sem ganho para uma tarefa só.
 
 ```bash
 set -a; . ~/erp-ids.env; set +a
@@ -994,7 +1031,7 @@ psql -Atc "select reason, delivery_count, last_seen_at from traccar_quarantine_i
 
 **Objetivo:** os rastreadores reais (na rua, com chip de dados) precisam de um endereço público para mandar posição. Abre-se **só** o que a `PD-TRC-616` aprovou: **GT06 na 5023** e **OsmAnd na 5055**, num **Network Load Balancer (NLB)** público com **2 IPs fixos** (Elastic IP, um por zona: o endereço que você configura em cada rastreador), passando ao Traccar privado. Nada da 8082 (tela e REST do Traccar), nada da 3200 (ingestão da API), nada do banco.
 
-**Pré-requisitos:** a trava acima; a Fase 3c no ar; **os rastreadores reais já cadastrados no Traccar e mapeados a viaturas no ERP** (`B-TRC-03`), porque esta fase desliga o cadastro automático de dispositivo desconhecido. **Terminal:** CloudShell normal (e um computador fora da AWS, ou o próprio CloudShell normal, para a prova de fora). **Custo:** NLB US$ 0,034/h ≈ US$ 24,8 + NLCU (centavos com poucos rastreadores) + 2 IPv4 fixos US$ 7,3 ≈ **US$ 33/mês** (o preço de hora do estudo para `sa-east-1`; a emenda que trouxe esta fase citava US$ 18–20, que é o preço de outra região) + logs de fluxo ~US$ 1–3/mês.
+**Pré-requisitos:** a trava acima; a Fase 3c no ar; **os rastreadores reais já cadastrados no Traccar e mapeados a viaturas no ERP** (`B-TRC-03`), porque esta fase desliga o cadastro automático de dispositivo desconhecido. **Terminal:** CloudShell normal (e um computador fora da AWS, ou o próprio CloudShell normal, para a prova de fora). **Custo:** NLB US$ 0,0225/h ≈ US$ 16,4 + NLCU (centavos com poucos rastreadores) + 2 IPv4 fixos US$ 7,3 ≈ **US$ 24/mês** (preço de hora medido em `us-east-1` em 19/11, na fonte oficial de preços da AWS; a emenda que trouxe esta fase citava US$ 18–20, que é o preço de outra região) + logs de fluxo ~US$ 1–3/mês.
 
 **Os cuidados, e quem cuida de cada um:**
 
@@ -1104,6 +1141,7 @@ export BUCKET_APP="erp-app-${CONTA}"      # nome global único; o número da con
 ```
 
 ### 4.1 Certificado do app — em `us-east-1`, porque o CloudFront exige
+Com a região do roteiro agora em `us-east-1`, este passo fica igual à região padrão do roteiro — nada muda, e a conferência continua a mesma.
 ```bash
 CERT_APP_ARN=$(aws acm request-certificate --region us-east-1 --domain-name "app.${DOMINIO}" --validation-method DNS --key-algorithm RSA_2048 --tags Key=app,Value=erp --query CertificateArn --output text)
 sleep 20
@@ -1260,7 +1298,7 @@ aws iam put-role-policy --role-name erp-github-deploy --policy-name erp-deploy -
 1. **O domínio** (`<DOMINIO>`) é seu no **registrador** (registro.br, GoDaddy…). O registrador só guarda uma coisa que importa aqui: **quais servidores DNS respondem pelo seu nome**.
 2. **A zona hospedada** no Route 53 é "o caderno" onde ficam os registros do seu domínio. Ela nasce com **4 servidores de nome** (NS). Você cadastra esses 4 no registrador (passo 5.2) e, a partir daí, quem perguntar "onde fica `api.<DOMINIO>`?" é respondido pela AWS.
 3. **Os registros**: `api.<DOMINIO>` → o balanceador (ALB) e `app.<DOMINIO>` → o CloudFront. Não são IPs: são **alias** — um registro que diz "a resposta é o que o ALB responder agora". É assim que o seu nome acompanha a AWS mesmo quando os IPs dela mudam.
-4. **O certificado** (HTTPS) é validado por um CNAME na zona (feito nos passos 3.3 e 4.1). O da API vive em `sa-east-1`; o do app em `us-east-1`, porque o CloudFront só aceita certificado de lá.
+4. **O certificado** (HTTPS) é validado por um CNAME na zona (feito nos passos 3.3 e 4.1). O da API vive em `us-east-1`; o do app também em `us-east-1`, porque o CloudFront só aceita certificado de lá — com a região agora na Virgínia, os dois certificados ficam na mesma região, e o passo 4.1 (que já era `us-east-1`) não muda.
 5. **HTTPS obrigatório:** quem bater na porta 80 recebe `301` para a 443 (3.4); o CloudFront redireciona também (4.6). É o `force_https` que a Fly fazia.
 
 **Por que o ALB não tem IP fixo.** O ALB é um conjunto de máquinas da AWS que cresce e troca de lugar; os IPs públicos dele **mudam** com o tempo. Apontar `api.<DOMINIO>` para um IP seria quebrar em semanas. O **alias** resolve: o nome aponta para o ALB, e o ALB responde com os IPs do momento. Para o usuário final e para o app, nada muda.
@@ -1274,7 +1312,7 @@ aws iam put-role-policy --role-name erp-github-deploy --policy-name erp-deploy -
 | **NLB com Elastic IP** na frente do ALB | um Network Load Balancer com 1 IP fixo por zona (2 IPs), passando o tráfego ao ALB atual | NLB US$ 0,034/h ≈ 24,8 + 2 IPv4 (7,3) + LCU ≈ **US$ 32–35** | IPs seus para sempre; mantém o ALB (301, regras, health check HTTP) | mais uma peça; o estudo não o previu |
 | **Global Accelerator** | 2 IPs anycast (o mesmo IP anunciado em vários pontos do mundo, e o usuário entra pelo mais próximo) globais fixos apontando para o ALB | US$ 0,025/h ≈ **US$ 18,25** + taxa por GB (DT-Premium, a taxa extra por GB que passa pela rede da AWS em vez da internet comum) | 2 IPs fixos, entrada pela borda mais próxima do usuário | taxa por tráfego; o ALB continua existindo (não é substituto) |
 
-**Recomendação:** começar com o **alias no ALB** (custo zero a mais) e só decidir o IP fixo quando um cliente ou parceiro pedir por escrito. **Pergunta ao dono (D-AWS-03):** *"Algum cliente ou parceiro exige IP fixo de entrada para a API? Se sim, NLB+EIP (~US$ 33) ou Global Accelerator (~US$ 18 + tráfego)?"* Padrão sem resposta: sem IP fixo.
+**Recomendação:** começar com o **alias no ALB** (custo zero a mais) e só decidir o IP fixo quando um cliente ou parceiro pedir por escrito. **Pergunta ao dono (D-AWS-03):** *"Algum cliente ou parceiro exige IP fixo de entrada para a API? Se sim, NLB+EIP (~US$ 33) ou Global Accelerator (~US$ 18 + tráfego)?"* **Decidido (19/11): sem IP fixo** (D-AWS-03).
 
 Os comandos das duas opções, validados, para quando a decisão vier:
 ```bash
@@ -1362,7 +1400,7 @@ openssl s_client -connect "app.${DOMINIO}:443" -servername "app.${DOMINIO}" </de
 
 ## 9. Fase 6 · Go-live
 
-**Pré-requisitos:** Fases 0–5. **Custo:** S3 de anexos ~US$ 1–2 · SNS/alarmes ~0 (10 alarmes grátis) · snapshot manual US$ 0,095/GB-mês.
+**Pré-requisitos:** Fases 0–5 **e o `B-PLAT-PERMISSAO` mergeado e no ar** (D-AWS-13): a checagem de permissão de plataforma que hoje falha aberta entra **antes** de criar o 1º administrador. **Custo:** S3 de anexos ~US$ 1–2 · SNS/alarmes ~0 (10 alarmes grátis) · snapshot manual US$ 0,095/GB-mês.
 
 ```bash
 set -a; . ~/erp-ids.env; set +a
@@ -1391,7 +1429,7 @@ aws iam put-role-policy --role-name erp-api-tarefa --policy-name erp-anexos-s3 -
 echo "BUCKET_ANEXOS=$BUCKET_ANEXOS" >> ~/erp-ids.env
 ```
 Agora no `taskdef.json` (3.6) troque `CHECKLIST_STORAGE_PROVIDER` para `s3` e acrescente em `environment`:
-`CHECKLIST_STORAGE_S3_BUCKET=<BUCKET_ANEXOS>`, `CHECKLIST_STORAGE_S3_REGION=sa-east-1`, `CHECKLIST_STORAGE_S3_ENDPOINT=https://s3.sa-east-1.amazonaws.com` (explícito, como o portão do comprovante exige), `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE=false`, `CHECKLIST_STORAGE_S3_PREFIX=checklist-attachments`. Registre a revisão e atualize o serviço (3.10).
+`CHECKLIST_STORAGE_S3_BUCKET=<BUCKET_ANEXOS>`, `CHECKLIST_STORAGE_S3_REGION=us-east-1`, `CHECKLIST_STORAGE_S3_ENDPOINT=https://s3.us-east-1.amazonaws.com` (explícito, como o portão do comprovante exige), `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE=false`, `CHECKLIST_STORAGE_S3_PREFIX=checklist-attachments`. Registre a revisão e atualize o serviço (3.10).
 **Conferência:** `aws s3api get-bucket-versioning --bucket "$BUCKET_ANEXOS"` → `Enabled`; `aws s3api get-bucket-encryption --bucket "$BUCKET_ANEXOS"` → `AES256`; `aws s3api get-bucket-policy --bucket "$BUCKET_ANEXOS" --query Policy --output text | jq .Statement[0].Sid` → `"SoTLS"`. Com o antivírus da Fase 3b no ar (`EVIDENCE_SCANNER=clamav`), o upload grava aqui; sem ele (`unavailable`), todo upload responde 503 e nada é gravado.
 **Desfazer:** em produção, **nunca** com anexo dentro (o bucket guarda evidência e comprovante). Antes do 1º anexo real, com o bucket vazio: voltar `CHECKLIST_STORAGE_PROVIDER=local` no `taskdef.json` e atualizar o serviço (3.10), `aws iam delete-role-policy --role-name erp-api-tarefa --policy-name erp-anexos-s3` e `aws s3api delete-bucket --bucket "$BUCKET_ANEXOS"` (com versionamento ligado, ele só apaga se não houver versão nenhuma guardada; se recusar, o bucket não está vazio e o caso vai ao dono).
 
@@ -1405,7 +1443,7 @@ printf '%s\n' "$SENHA" | NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1 PLATFORM_ADM
 printf '%s\n' "$SENHA" | NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1 PLATFORM_ADMIN_EMAIL='<e-mail do admin>' npx tsx scripts/bootstrap-platform-admin.ts --password-stdin
 unset SENHA
 ```
-**Saída esperada:** `CONVERGIDO — 1 organização de sistema, 1 administrador de plataforma.` (exit 0). `--reset-password` se perder a senha. **O login pela web sem organização** exige o runbook `B-O6R-01` (`GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime`, decisão em ata — D-AWS-07); sem ele, a tela responde 401 e o login é com `tenantId`.
+**Saída esperada:** `CONVERGIDO — 1 organização de sistema, 1 administrador de plataforma.` (exit 0). `--reset-password` se perder a senha. **O login pela web sem organização** exige o runbook `B-O6R-01` (`GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime`), que agora é um passo do go-live — **passo 6.8** (D-AWS-07); sem ele, a tela responde 401 e o login é com `tenantId`.
 **O 1º tenant real** (a sua empresa) é criado por esse administrador na console da plataforma (Organizações). Com o ID da organização em mãos, troque o `PORTAL_TENANT_ID` provisório (D-AWS-06):
 ```bash
 umask 077; TMP=$(mktemp -d)
@@ -1475,7 +1513,7 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 
 ### 6.7 O checklist de go-live (`docs/go-live-readiness.md` §3), reescrito para a AWS
 1. Chave Google Maps exposta: **revogada/rotacionada** no Google Cloud Console e a nova restrita por referer (item 0 do go-live-readiness; continua pendente até o dono confirmar).
-2. R1 ratificado: dado no Brasil → `sa-east-1` (feito pela `D-INFRA-PROVIDER-AWS`).
+2. R1 ratificado: dado em `us-east-1` (Norte da Virgínia), fora do Brasil — transferência internacional de dados pessoais (LGPD, art. 33): a base legal precisa estar resolvida antes do 1º cliente real, e a verificação jurídica é do dono (pendência `P-AWS-LGPD-TRANSFERENCIA`).
 3. Conta AWS + cartão + MFA + administrador (Fase 0) — contratação de serviço pago: **junta de 5 unânime + PD** registradas antes da primeira cobrança (`D-SAN-AUTONOMIA`, etapa 1 do estudo).
 4. Fundação, banco (PITR 7 dias, UTC, TLS), papel de runtime sem bypass, Valkey (Fases 1–2).
 4b. Antivírus no ar e o upload sem 503 (Fase 3b, item 27); Traccar privado com a ponte para a ingestão provada pela quarentena do teste (Fase 3c). A porta dos rastreadores (Fase 3d) só com o modelo de ameaças do `G-TRC-NLB` e a junta de 5 unânime.
@@ -1484,11 +1522,47 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 7. S3 de anexos privado + SSE + versionamento + TLS-only (6.1); **backup `pg_dump` → S3** do `backup-database.yml`: o runner do GitHub não alcança o RDS privado — até o `B-INFRA-AWS-03` dar o caminho (pendência P-AWS-BACKUP-PGDUMP), a cópia é o PITR + snapshot manual (6.4) e o RPO ≤ 5 min do RDS.
 8. Staging: não existe neste roteiro (decisão do estudo: depois); a trava (b) do CD continua vácua até existir.
 9. R2: drill de restore cronometrado **com dado real** (repetir 2.11 antes de abrir ao público) — RTO/RPO na ata.
-10. Ata de go-live `J-SAN-PROD-GOLIVE-<sha>.md` na `main` → o deploy (3.10) do SHA aprovado.
-11. Follow-up: `VALIDATE CONSTRAINT work_orders_cancelled_decision_check` quando houver zero `cancelled+NULL`.
-12. `vars.PROD_HEALTH_URL`/`PROD_WORKER_HEALTH_URL` → o `uptime-check` acorda.
+10. Login sem organização ativado (`B-O6R-01`, passo 6.8), conferido e com a execução registrada na ata.
+11. App de campo de produção apontando para `https://api.<DOMINIO>` e o ensaio de ponta a ponta no celular real concluído (passo 6.9).
+12. Redirecionamento do site do dono trocado para `https://app.<DOMINIO>` e o app antigo desligado **depois** de conferir o novo no ar (passo 6.10).
+13. Ata de go-live `J-SAN-PROD-GOLIVE-<sha>.md` na `main` → o deploy (3.10) do SHA aprovado.
+14. Follow-up: `VALIDATE CONSTRAINT work_orders_cancelled_decision_check` quando houver zero `cancelled+NULL`.
+15. `vars.PROD_HEALTH_URL`/`PROD_WORKER_HEALTH_URL` → o `uptime-check` acorda.
 
-### 6.8 O que fica para depois (e já tem lugar reservado)
+### 6.8 Login sem organização (Runbook `B-O6R-01`) — D-AWS-07
+**Terminal:** CloudShell em VPC, no `~/erp` com `npm ci` (2.5), com as variáveis `PG*` do 2.4 e `PGPASSWORD` do administrador do banco.
+**Objetivo:** ativar o login pela web **sem** `tenantId` — o `GRANT EXECUTE` em `auth_login_candidates` para o papel de runtime, como manda o runbook `B-O6R-01`. Decidido pelo dono em 19/11: deixa de ser decisão em ata e vira passo do go-live.
+```bash
+psql -Atc "GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime"
+```
+**Conferência:** `psql -Atc "select has_function_privilege('erp_runtime', 'public.auth_login_candidates(text)', 'EXECUTE')"` → `t`; e o login do 6.3 **sem** `tenantId` (só e-mail e senha) responde `200` com `accessToken`.
+**Desfazer:** `psql -Atc "REVOKE EXECUTE ON FUNCTION public.auth_login_candidates(text) FROM erp_runtime"` — o login sem organização volta a responder 401.
+Registre a execução e a conferência na ata de go-live.
+
+### 6.9 Aplicativo de campo de produção apontando para `https://api.<DOMINIO>` e ensaio num celular de verdade — D-AWS-14
+**Objetivo:** gerar o app de campo de produção apontando para a API da AWS e provar o caminho de ponta a ponta num **celular real**, contra a AWS, antes da ata de go-live. Os detalhes do build são os do repositório (`mobile/flutter_app/README.md`): `ERP_AUTH_MODE=remote` e `API_BASE_URL` — não invente flags, meça no repo. **Terminal:** uma máquina com o Flutter do repositório, na versão fixada em `.github/workflows/ci.yml` (o CloudShell não tem Flutter).
+```bash
+cd mobile/flutter_app
+DOMINIO="<seu-dominio>"   # troque pelo mesmo domínio do roteiro, sem www (ex.: suaempresa.com.br)
+if [ -z "$DOMINIO" ] || [ "$DOMINIO" = "<seu-dominio>" ]; then
+  printf 'ERRO: defina DOMINIO no passo 6.9 (ex.: suaempresa.com.br) antes do build.\n' >&2
+else
+  flutter pub get
+  flutter build apk \
+    --dart-define=ERP_AUTH_MODE=remote \
+    --dart-define=ERP_ENV=production \
+    --dart-define=API_BASE_URL=https://api.${DOMINIO}
+fi
+```
+**Conferência:** o `flutter build apk` gera o APK de release; instalado num celular real, o app loga com o usuário criado no 6.2, abre a lista de ordens de serviço e conclui uma sincronização contra `https://api.${DOMINIO}` (as chamadas aparecem no log do ECS e no `cloud-usage/summary`).
+**Desfazer:** não se aplica (o app é um cliente); para voltar atrás, gere um APK com outra `API_BASE_URL` ou desinstale o APK do aparelho. Anote o SHA do commit e a versão do APK na ata de go-live.
+
+### 6.10 Redirecionamento do site do dono para o app novo — D-AWS-04
+**Objetivo:** o domínio "nu" (`<DOMINIO>`, sem `api.`/`app.`) fica com o site atual do dono, que hoje redireciona para o app antigo. No go-live, troque esse redirecionamento para `https://app.<DOMINIO>` e **só desligue o app antigo depois** de conferir o novo no ar. A AWS não mexe no site do dono; este passo é no painel/hospedagem do site dele.
+**Conferência:** `curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' "https://${DOMINIO}/"` → `301 https://app.<DOMINIO>/` (ou o equivalente do site do dono); `curl -sS -o /dev/null -w '%{http_code}\n' "https://app.${DOMINIO}/"` → `200`; login e tela inicial do app novo funcionando pelo domínio.
+**Desfazer:** no painel do site do dono, volte o redirecionamento para o endereço antigo; **não** religue o app antigo antes disso.
+
+### 6.11 O que fica para depois (e já tem lugar reservado)
 - **Traccar e ClamAV saíram desta lista** (decisão do dono, 17/11): são as Fases 3b e 3c. A porta pública dos rastreadores é a Fase 3d, que **fica fechada até o gate `G-TRC-NLB`** (modelo de ameaças + junta de 5 unânime).
 - **Rastreadores por rede privada da operadora (APN/VPN):** a saída preferida pelo plano do Traccar quando a operadora oferecer; elimina a porta pública da 3d.
 - **Imagens ARM do ClamAV e do Traccar** (P-AWS-CLAMAV-ARM64, P-AWS-TRACCAR-ARM64) e a imagem do ClamAV com o `clamd.conf` embutido (P-AWS-CLAMAV-IMAGEM), em vez da configuração por variável do 3b.3.
@@ -1499,7 +1573,7 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 
 **O que pode dar errado:**
 - O bootstrap do 6.2 recusar em produção: falta `ALLOW_PROD_BOOTSTRAP=1` ou `PLATFORM_ADMIN_EMAIL`, ou o `super_admin` de plataforma não existe (rode o 2.7 de novo e confira o `count = 1`). O `--dry-run` mostra o que faria sem gravar: rode-o sempre antes.
-- O login do 6.3 devolver 401: senha, e-mail ou `tenantId` errado (o `tenantId` é o da organização de sistema que o bootstrap criou). Sem o runbook `B-O6R-01` (D-AWS-07), o login sem organização não existe: é com `tenantId`.
+- O login do 6.3 devolver 401: senha, e-mail ou `tenantId` errado (o `tenantId` é o da organização de sistema que o bootstrap criou). Sem o passo 6.8 (`B-O6R-01`, D-AWS-07), o login sem organização não existe: é com `tenantId`.
 - O `cloud-usage/summary` voltar zerado com organizações criadas: é o sinal de que a leitura da plataforma não passa sob o papel sem bypass; o item 10 **não** fecha, e o caso vai ao dono com a resposta guardada.
 - Depois de trocar o `PORTAL_TENANT_ID` (6.2) ou o `taskdef` (6.1), o serviço não estabilizar: veja os eventos (`describe-services`, 3.8) e o log; `Failed to start` nomeando uma variável é portão do `env.ts`.
 - O rollback do 6.4 cruzar a restrição do 03a (`docs/deployment.md`): rollback só com um escritor por vez; para uma imagem anterior ao 03a, só correção para frente. As migrações não voltam.
@@ -1525,13 +1599,15 @@ aws ce get-cost-and-usage --time-period Start=$(date -u +%Y-%m-01),End=$(date -u
 | P-AWS-TRACCAR-ARM64 | a imagem `traccar/traccar:6.16.0` tem `arm64`; o estudo fixou x86; trocar economiza ~US$ 7/mês, depois de medir em staging | `B-TRC-06` |
 | P-TRC02-STATUS-TIMEOUT-PROD | o estado online/sem sinal (`EVENT_STATUS_ENABLE`, `STATUS_TIMEOUT`) ficou fora da receita de produção do 3c.6 | `B-TRC-06` |
 | G-TRC-NLB | o modelo de ameaças e a junta de 5 unânime que destravam a Fase 3d (porta dos rastreadores) | dono + junta |
+| P-AWS-CUSTO-VIRGINIA | recalcular os totais de custo para `us-east-1` (a tabela de preços unitários já foi medida em 19/11); fechar os números por fase e o total do §1 | `B-INFRA-AWS-03` |
+| P-AWS-LGPD-TRANSFERENCIA | base legal da transferência internacional (LGPD art. 33) dos dados pessoais para `us-east-1`, antes do 1º cliente real; verificação jurídica do dono | dono |
 
 ---
 
 ## 11. Fontes conferidas (todas em 2026-11-17)
 - Repositório (`origin/main` `89cf79fe`): `docs/infra/estudo-aws-migracao.md`, `docs/deployment.md`, `Dockerfile`, `.github/workflows/deploy-production.yml`, `.github/workflows/ci.yml` (job `docker`), `.env.example`, `docs/go-live-readiness.md`, `scripts/db-runtime-role.sh`, `scripts/bootstrap-platform-admin.ts`, `prisma.config.ts`, `frontend/Dockerfile`, `frontend/src/config/env.ts`, `src/config/env.ts`, `docs/revisoes/SAN3/PLANO_SAN3.md` (itens 9, 10, 27, 43).
 - AWS CLI v2 (CloudShell): `logs tail`, `ecr get-login-password`, `configure set`, paginação (`AWS_PAGER`, `--no-cli-pager`) — referência oficial da CLI.
-- CloudShell: especificações e software pré-instalado (1 vCPU, 2 GiB, 1 GB persistente; `psql`, `node`, `jq`, `docker` por região), limites (VPC: 2 por usuário, sem persistência, 20–30 min), ambientes em VPC (internet só por subnet privada com NAT; disponível em todas as regiões), endpoints por região (`sa-east-1` presente).
+- CloudShell: especificações e software pré-instalado (1 vCPU, 2 GiB, 1 GB persistente; `psql`, `node`, `jq`, `docker` por região), limites (VPC: 2 por usuário, sem persistência, 20–30 min), ambientes em VPC (internet só por subnet privada com NAT; disponível em todas as regiões), endpoints por região (`us-east-1` presente).
 - Route 53: valores de alias (`Z2FDTNDATAQYW2` para CloudFront; `CanonicalHostedZoneId` do ALB), lista de TLDs do Route 53 Domains e a página `.com.br` ("não é mais possível registrar nem transferir").
 - VPC: instâncias NAT (comandos de `iptables`/`sysctl` para AL2023), preços (IPv4 público US$ 0,005/h).
 - AL2023: parâmetros SSM `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-{arm64,x86_64}`.
