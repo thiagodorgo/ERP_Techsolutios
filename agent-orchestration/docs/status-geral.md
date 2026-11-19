@@ -1,5 +1,9 @@
 # Status Geral
 
+## Atualização 2026-11-19 (noite) — registro da tarde/noite de 19/11
+
+Em 19/11 (tarde/noite), ficaram consolidados na `main` os PRs #603 (`3e2349ca`), #604 (`ff572fcf`), #606 (`f15b38d6`), #605 (`a4768db2`) e #607 (`7b39c01a`), com as travas da rodada em verde; o 08c3 entrou em integração com PR #608 (`feat/billing-channel-enable`, ainda em rascunho) e a trilha da AWS permaneceu em verificação da conta nova (CloudShell bloqueado até concluir a validação da conta).
+
 ## Atualização 2026-11-19 — registro da tarde/noite de 18/11 e manhã de 19/11
 
 Em 19/11, o registro consolidou o trecho a partir do #600: marco de KPI #601 (squash `2f408593`) mantido como último marco na `main`; item 71 FECHADO no #602 (squash `917bc6cd`) com ata `J-602-b-wo-leitura-tecnico` (3/3 APROVA, 0 grave), conserto `c537dc53` conferido e porteiro `dp-porteiro-602` em LIBERADO COM RESSALVA com "ITEM 71: FECHA"; decisões novas do período registram o teto de contenção no recurso do Azure (`D-DONO-1811-AZURE-TETO-180`), a habilitação da conta 4 (`D-DONO-1811-CONTA-4-CODEX`), o teste do Gemini CLI (`D-DONO-1811-TESTE-GEMINI-CLI`) e as ordens da manhã de 19/11 para operar a conta AZC no Sol com apoio do Argon (`D-DONO-1911-MANHA-AZC-SOL-ARGON`).

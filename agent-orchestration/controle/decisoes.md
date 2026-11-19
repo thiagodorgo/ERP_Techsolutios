@@ -6036,3 +6036,29 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
   - Credencial AWS local no PC com perfil `erp-toolkit`, região `us-east-1`, sessão de 12 h renovável por 90 dias, acessível a agentes com acesso à máquina.
 - **Efeito:** instalação e operação do Agent Toolkit for AWS ficam institucionalizadas; `CLAUDE.md` e `AGENTS.md` passam a carregar, em seção espelhada, as regras oficiais da AWS com precedência subordinada ao contrato canônico, e a execução segue o roteiro `docs/infra/roteiro-aws-cloudshell.md` quando houver divergência de método.
 - **Risco declarado:** ampliar o acesso local à credencial reduz o isolamento operacional, aumenta superfície de uso indevido e exige disciplina estrita de trilha de auditoria, princípio do menor privilégio e controles de atos irreversíveis/com custo (incluindo junta em produção, §C7.1).
+
+## D-DONO-1911-AWS-VIRGINIA (2026-11-19 08:30 SP) — AWS na Virgínia (`us-east-1`)
+
+- **Fato (decisão do dono, verbatim):** *"a conta AWS aberta, cartão cadastrado e MFA ligada na conta raiz. Isso aí eu já tenho. Usuário por conta de administrador. A região de São Paulo não vai ser usada. A gente vai usar Virgínia."*
+- **Efeito:** a operação da AWS fica ancorada em `us-east-1`; o roteiro troca `sa-east-1` por `us-east-1`, o custo da rodada passa a ser recalculado para a Virgínia e a trilha jurídica de transferência internacional (LGPD) fica obrigatória antes do 1º cliente real.
+
+## D-DONO-1911-AWS-PERGUNTAS-PARA-COLEGA (2026-11-19 08:30 SP) — as perguntas da AWS viram artefato para encaminhamento
+
+- **Fato (decisão do dono, verbatim parcial):** *"As perguntas que você está me fazendo [...] faça essas perguntas como se eu estivesse fazendo, para ele"*.
+- **Efeito:** o artefato "ERP na AWS" v4 passa a carregar uma seção de perguntas prontas para encaminhamento a um colega, com 12 perguntas e sugestão de resposta por item; o registro público mantém só o fato, sem nome de pessoa.
+
+## D-DONO-1911-AWS-RESPOSTAS-14 (2026-11-19) — as 14 respostas do seletor "ERP na AWS"
+
+- **Fato:** as 14 respostas do seletor foram registradas de uma vez (12:06–12:13Z), com complemento da resposta 04 no chat.
+- **Resposta do dono (14 itens):** 01 NAT por instância; 02 teto US$ 350; 03 sem IP fixo; 04 domínio nu fica com o site atual e o sistema em `app.`/`api.`; 05 Valkey sem TLS agora; 06 `PORTAL_TENANT_ID` provisório; 07 login sem organização ativado no go-live; 08 x86 agora; 09 domínio no registrador atual; 10 banco em 2 zonas (Multi-AZ) desde o início; 11 porta de rastreadores só com os devidos cuidados e gate; 12 banco próprio do Traccar; 13 `B-PLAT-PERMISSAO` antes da Fase 6; 14 Fase 6.9 com app de campo em celular real.
+- **Efeito:** o roteiro da AWS consolida `us-east-1`, RDS Multi-AZ desde a fase de banco, passo de redirecionamento do site para o app novo no go-live, ativação do runbook de login sem organização, pré-requisito do `B-PLAT-PERMISSAO` antes da Fase 6 e ensaio obrigatório com aparelho real; a resposta 10 fica registrada como escolha diferente da recomendação original.
+
+## D-DONO-1911-COBRANCA-POS-PORTAO (2026-11-19 11:15 SP) — cobrança real com prioridade após o portão
+
+- **Fato (decisão do dono, verbatim):** *"isoso vem apos o portao, com prioridade, junto com o 72 se nao me engano, correto?"* e depois *"junto com o 72. a tarde vou configurar a aws"*.
+- **Efeito:** o pacote prioritário pós-portão fica ordenado como: (1) `B-PLAT-PERMISSAO` (72) primeiro; (2) tela de operação da cobrança (restante do `B-ASS-10b`); (3) teste em sandbox dos provedores (`P-ASS-SANDBOX-REAL`), antes do ato de ligar no ambiente real.
+
+## D-DONO-1911-08C3-ACELERACAO (2026-11-19 10:35 SP) — acelerar o 08c3 com split de dev e teto diário ajustado
+
+- **Fato (decisão do dono, verbatim):** *"coloquei mais creditos no deepseek, quero que ele seja o dev do 08c3 [...] quero acelerar os trabalhos, na medida do possivel.. sua analise+minha autorizacao antes de seguir"*.
+- **Efeito:** o 08c3 acelera com split de execução (DeepSeek Pro como dev da mão A, Azure na mão B), o teto do dia no Azure sobe para US$ 40 e a revisão principal do PR #605 fica com DeepSeek Flash (Argon como segundo revisor).
