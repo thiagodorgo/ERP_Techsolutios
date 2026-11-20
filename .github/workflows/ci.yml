@@ -394,6 +394,11 @@ jobs:
           # concedidas só ao `super_admin`, medido na receita v3 em 19/11 no head integrado: 3× com
           # denominador constante (# tests 16, # pass 16, # fail 0, # skipped 0).
           SUITES="$SUITES tests/plat-perm-migration-drill-db.test.ts"
+          # B-USERS-CONCESSAO-PAINEL (item 71; a concessão estreita da "Visão da organização") — a -db da rota PUT/DELETE
+          # /users/:userId/organization-view (papel efêmero NOSUPERUSER NOBYPASSRLS) e o drill da migração da chave
+          # `users:grant_organization_view`, medidos 3× com denominador constante no banco migrado e semeado.
+          SUITES="$SUITES tests/users-concessao-visao-db.test.ts"
+          SUITES="$SUITES tests/users-concessao-migration-drill-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
