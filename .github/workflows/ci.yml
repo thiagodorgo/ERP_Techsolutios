@@ -390,6 +390,10 @@ jobs:
           # support+ft, finance+tec, viewer+tec e auditor+ft, D-CONCEDE (i)-(v), D-MODULO-PROPRIO, D-XT, D-POS-USERID, D-PAINEL e D-EX).
           # Medida 3× antes de entrar: 176/176, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/wo-leitura-scope-db.test.ts"
+          # B-PLAT-PERMISSAO (pendência ALTA fora do portão; D-AWS-13) — drill da migração das 6 chaves da plataforma
+          # concedidas só ao `super_admin`, medido na receita v3 em 19/11 no head integrado: 3× com
+          # denominador constante (# tests 16, # pass 16, # fail 0, # skipped 0).
+          SUITES="$SUITES tests/plat-perm-migration-drill-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

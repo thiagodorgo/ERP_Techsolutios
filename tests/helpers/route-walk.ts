@@ -7,12 +7,18 @@
 // Um processo por passada: a interceptação é global ao processo (como no censo).
 import { createRequire } from "node:module";
 
-export type RotaEnumerada = { readonly method: string; readonly path: string };
-export type CamadaComCaminho = { readonly key: string; readonly path: string };
+// B-PLAT-PERMISSAO (Emendas 1 §3 e 2 §1a) — quatro campos OPCIONAIS e aditivos, para o censo da plataforma
+// (tests/plat-perm-censo.test.ts): `handles` (os handlers da rota), `handle` (o da camada), `mwSemCaminho` (camada `use`
+// sem caminho próprio que não é roteador, antes descartada em silêncio) e `roteadores` (roteador com caminho próprio).
+// Nenhum campo existente muda; nenhum consumidor muda.
+export type RotaEnumerada = { readonly method: string; readonly path: string; readonly handles?: readonly unknown[] };
+export type CamadaComCaminho = { readonly key: string; readonly path: string; readonly handle?: unknown };
 export type PercursoDoApp = {
   readonly rotas: readonly RotaEnumerada[];
   readonly mwComCaminho: readonly CamadaComCaminho[];
   readonly semCaminho: readonly string[];
+  readonly mwSemCaminho?: readonly CamadaComCaminho[];
+  readonly roteadores?: readonly CamadaComCaminho[];
 };
 
 const VERBOS = ["get", "post", "put", "patch", "delete"];
@@ -88,6 +94,8 @@ export function percorrerApp(app: unknown): PercursoDoApp {
   const rotas: RotaEnumerada[] = [];
   const mwComCaminho: CamadaComCaminho[] = [];
   const semCaminho: string[] = [];
+  const mwSemCaminho: CamadaComCaminho[] = [];
+  const roteadores: CamadaComCaminho[] = [];
 
   (function walk(stack: any[], prefix: string) {
     for (const l of stack) {
@@ -102,7 +110,9 @@ export function percorrerApp(app: unknown): PercursoDoApp {
         const full = join(prefix, p);
         const ms = new Set(Object.keys(l.route.methods).flatMap((m) => (m === "_all" ? VERBOS : [m])));
 
-        for (const m of ms) rotas.push({ method: m.toUpperCase(), path: full });
+        const handles = (l.route.stack ?? []).map((s: any) => s.handle);
+
+        for (const m of ms) rotas.push({ method: m.toUpperCase(), path: full, handles });
 
         continue;
       }
@@ -122,17 +132,19 @@ export function percorrerApp(app: unknown): PercursoDoApp {
       }
 
       if (l.handle && l.handle.stack) {
+        if (mp !== "/") roteadores.push({ key: "ROTEADOR " + pre, path: pre });
         walk(l.handle.stack, pre);
         continue;
       }
 
       const chave = "MIDDLEWARE " + pre + " · " + ((l.handle && l.handle.name) || "(anônima)");
 
-      if (mp !== "/") mwComCaminho.push({ key: chave, path: pre });
+      if (mp !== "/") mwComCaminho.push({ key: chave, path: pre, handle: l.handle });
+      else mwSemCaminho.push({ key: chave, path: pre, handle: l.handle });
     }
   })((app as any).router.stack, "");
 
-  return { rotas, mwComCaminho, semCaminho };
+  return { rotas, mwComCaminho, semCaminho, mwSemCaminho, roteadores };
 }
 
 const PARAM = /:([A-Za-z0-9_]+)/g;

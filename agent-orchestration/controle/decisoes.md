@@ -5840,6 +5840,7 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 
 - **Fato (decisão do dono, resposta por seletor):** escolha "sim".
 - **Efeito (premissa depois corrigida — ver `D-DONO-1711-ITEM-72-REVISTO`):** o administrador da plataforma que mexe em dinheiro sem a permissão entra no portão como **item 72** (`P-PLATAFORMA-PERMISSAO-IGNORADA`). O portão passa a ter 72 itens.
+- **Nota §A2 (registrada, não consolidada em silêncio), do plano `plano-B-PLAT-PERMISSAO.md` §0:** a premissa levada ao dono, "a migração do B-ASS-04 concede `platform:billing:settle` SÓ ao `super_admin`, e o `platform_admin` executa as rotas `settle` sem a permissão", estava pela metade. O defeito do portão é real; mas o "só super_admin" das migrações é **falta de linha** do `platform_admin` em `roles` (pseudo-papel, fora do seed e do provisionamento), e não regra: o catálogo (`catalog.ts`, `super_admin: PERMISSION_CATALOG` e `platform_admin: PERMISSION_CATALOG`) e o `RBAC_MATRIX.md` (Billing `full` para o `platform_admin`) dão o catálogo inteiro aos dois papéis de plataforma. Por isso a decisão voltou ao dono, revista (abaixo).
 
 ## D-DONO-1711-AWS-ETAPA1 (2026-11-17 15:20 SP) — a etapa 1 da AWS é ato do dono até 18/11
 
@@ -5855,16 +5856,20 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 
 - **Fato (decisão do dono, resposta por seletor):** escolha "manter".
 - **Efeito:** mesmo com a premissa corrigida (não há escalada hoje; o defeito é a checagem que falha aberta e as chaves fora do catálogo), **o 72 fica no portão**. O portão vai a 72 itens. *(Mais tarde, em 22:00, o dono decide tirar o 72 do portão — ver `D-DONO-1711-72-FORA-DO-PORTAO`.)*
+- **Identificador no canal do artefato:** `d72-rev` (resposta "manter"), o nome da pergunta que o dono respondeu no seletor; é o nome que o comando do bloco cita (fonte: a Emenda 2 §0 do plano do `B-PLAT-PERMISSAO`, fora do repositório).
 
 ## D-DONO-1711-72-P1 (2026-11-17 16:50 SP) — autorizada a migração das 6 chaves de permissão da plataforma
 
 - **Fato (decisão do dono, resposta por seletor):** escolha "sim".
 - **Efeito:** fica **autorizada a migração em `prisma/`** que cria as 6 chaves de permissão da plataforma, só para o `super_admin` (o bloco `B-PLAT-PERMISSAO`).
+- **Identificador no canal do artefato:** `d72-p1` (resposta "sim"), o nome da pergunta que o dono respondeu no seletor; é o nome que o comando do bloco cita (fonte: a Emenda 2 §0 do plano do `B-PLAT-PERMISSAO`, fora do repositório).
 
 ## D-DONO-1711-72-P2 (2026-11-17 16:50 SP) — o settle não é segregado
 
 - **Fato (decisão do dono, resposta por seletor):** escolha "nao".
 - **Efeito:** o `settle` não é segregado; o catálogo e a matriz seguem como estão.
+- **Identificador no canal do artefato:** `d72-p2` (resposta "nao"), o nome da pergunta que o dono respondeu no seletor; é o nome que o comando do bloco cita (fonte: a Emenda 2 §0 do plano do `B-PLAT-PERMISSAO`, fora do repositório).
+- **Nota do registro (cruzamento; fonte: a Emenda 1 §11 e a Emenda 2 §9 do plano do `B-PLAT-PERMISSAO`, fora do repositório):** a crítica r1 do plano (`crit-plat-perm-cl`, Claude Opus) e a Emenda 1 (Claude Fable) saíram **sem cruzamento de casa**, porque o Codex estava sem limite e o dono mandou cobrir (*"pode cobrir o codex"*, 17/11), §C7 item 11(2). A crítica r2 (`crit-plat-perm-e1-cl`, Claude Opus) e a Emenda 2 (`plano-plat-perm-e2-fable`, Claude Fable, que voltou em 17/11 às 18h) também saíram **sem cruzamento**: o Codex estava sem cota nas 3 contas, e o filtro da OpenAI barrou essa classe de tema.
 
 ## D-DONO-1711-FABLE-VOLTA (2026-11-17 18:1x SP) — o topo volta a Fable
 
@@ -6062,3 +6067,9 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 
 - **Fato (decisão do dono, verbatim):** *"coloquei mais creditos no deepseek, quero que ele seja o dev do 08c3 [...] quero acelerar os trabalhos, na medida do possivel.. sua analise+minha autorizacao antes de seguir"*.
 - **Efeito:** o 08c3 acelera com split de execução (DeepSeek Pro como dev da mão A, Azure na mão B), o teto do dia no Azure sobe para US$ 40 e a revisão principal do PR #605 fica com DeepSeek Flash (Argon como segundo revisor).
+
+## D-AWS-13 (2026-11-19) — o B-PLAT-PERMISSAO fica pronto antes da Fase 6 da AWS
+
+- **Fato (decisão do dono):** o dono confirmou em 19/11 que "o 72 fica pronto antes da Fase 6 da AWS" (a fase que cria o 1º administrador da plataforma).
+- **Efeito:** o `B-PLAT-PERMISSAO` deixa de ser item do portão (`D-DONO-1711-72-FORA-DO-PORTAO`), segue como pendência ALTA (`P-PLATAFORMA-PERMISSAO-IGNORADA`) e vira **pré-requisito obrigatório** da Fase 6 da AWS.
+- **Trilha afetada:** `PLANO_SAN3.md` permanece com 71 itens; o gate do portão não muda; muda a ordem de execução na trilha AWS (Fase 6 só começa após o fechamento da pendência).

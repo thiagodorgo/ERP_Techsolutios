@@ -18,6 +18,16 @@ export const PERMISSION_CATALOG = [
   "platform:billing:settle",
   // B-ASS-05 — cofre de credenciais e configuração dos provedores de pagamento e nota (plano §3.7).
   "platform:billing-providers:manage",
+  // B-PLAT-PERMISSAO (item 72 do portão) — as 6 chaves que as rotas e as telas da plataforma já pediam e que não estavam
+  // no catálogo: o portão passa a conferir a permissão pedida no catálogo, e sem elas o super_admin perderia criar, editar e
+  // suspender organização, ligar módulos e criar o administrador. Autorizadas pelo dono em 17/11 (`d72-p1` = "sim",
+  // D-DONO-1711-72-P1), com a migração 20260905000000_plat_permissoes_de_organizacao (só super_admin no banco).
+  "platform:tenants:create",
+  "platform:tenants:update",
+  "platform:tenants:suspend",
+  "platform:modules:manage",
+  "platform:users:create_admin",
+  "platform:health:read",
   "tenant.manage",
   "users.manage",
   "users.read",
