@@ -105,6 +105,13 @@ const MUTATIONS: Record<string, { readonly code: string; readonly rule: RegExp }
     code: `export function SomaJson({ model }: { model: Model }) { const total = model.lines.reduce((s, line) => s + JSON.parse(line.allocatedCost ?? "0"), 0); return <b>{formatBRL(asMoney(\`\${total}\`))}</b>; }`,
     rule: /R3 conversão/,
   },
+  // B-ASS-10c-OPERACAO — regra 1 da `P-567-TRAVA-DINHEIRO-TEMPLATE` (J567-C1-01): a desmarcação por template, que a
+  // R3 não via (o `Number` recebe `string` sem marca), e a mesma forma escondida numa variável intermediária
+  "N-DIN-5 desmarcação por template": { code: `export const solto = (model: Model) => Number(\`\${model.global.margin}\`) + 1;`, rule: /R13 desmarcação por template/ },
+  "N-DIN-6 template guardado e convertido depois": {
+    code: `export const solto2 = (model: Model) => { const texto = \`\${model.totals.allocatedCost ?? "0"}\`; return parseFloat(texto) * 2; };`,
+    rule: /R13 desmarcação por template/,
+  },
   // Emenda 1, A8-r2 — M-UI-ESC (parte da trava): a view escreve um R$ calculado e o marca como escala
   "M-UI-ESC data-escala numa view": { code: `export function Eixo({ model }: { model: Model }) { return <text data-escala="">{formatBRL(model.totals.allocatedCost)}</text>; }`, rule: /R12 data-escala/ },
 };

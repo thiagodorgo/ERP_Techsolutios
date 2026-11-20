@@ -176,6 +176,8 @@ test("T-LIG-2 a recusa de precondições vira o checklist do que falta, e NADA l
     await click(confirmButton(view.container));
     const list = text(field(view.container, (el) => el.hasAttribute("data-checklist"))!);
     assert.match(list, /O servidor não ligou/);
+    assert.match(list, /Pela leitura do canal que a tela tem/, "a janela diz que a lista é a leitura do canal, não a da recusa");
+    assert.match(list, /não a lista da recusa do servidor/);
     assert.match(list, /só a configuração do servidor liga/);
     assert.match(list, /Falta testar a conexão/);
     assert.match(list, /aviso automático não está registrado/);

@@ -9,6 +9,8 @@
 //  R7 percentual  — nenhum "%" colado a um valor interpolado (o percentual vem pronto de `formatPct`);
 //  R8 marca       — ninguém forja nem retira a marca com `as` fora do arquivo de dinheiro;
 //  R10/R11        — a geometria não perde a marca por parâmetro `number` de função do módulo nem por anotação de tipo;
+//  R13 template   — valor marcado (dinheiro, percentual, taxa) não entra cru num template (`${money}`): vira texto sem
+//                   marca (B-ASS-10c-OPERACAO, regra 1 da `P-567-TRAVA-DINHEIRO-TEMPLATE`);
 //  R12 escala     — a marca `data-escala` (o texto de escala dos eixos, A8-r2) só existe nos componentes da biblioteca
 //                   (`frontend/src/components/**`), nunca num arquivo do módulo.
 // LIMITES DECLARADOS (A4-r2 formas 2 e 4): geometria dentro de lista/contêiner perdendo a marca (`const xs: number[] =
@@ -21,6 +23,7 @@
 // R1. O objeto não usa a via (sonda da cadeira: 0 template, 0 JSX cru, 0 método de string, 0 anotação). Com a conta no
 // texto visível, o T-DIN-1 e o T-UI-1 (b) pegam; no texto acessível de um gráfico, nenhum teste pega. Endurecer a trava
 // nos 2 caminhos é a pendência `P-567-TRAVA-DINHEIRO-TEMPLATE` (dono: o próximo bloco de tela de dinheiro).
+// B-ASS-10c-OPERACAO: a regra 1 (template) virou a R13; a regra 2 (parâmetro `string` de função do módulo) segue aberta.
 import path from "node:path";
 import ts from "typescript";
 
@@ -95,6 +98,11 @@ export function moneyViolations(files: readonly string[], options: ts.CompilerOp
       if (ts.isTemplateExpression(node)) {
         for (const span of node.templateSpans) {
           if (brandOf(span.expression) === "geometry") flag(span, "R5 geometria vira texto");
+          // B-ASS-10c-OPERACAO (`P-567-TRAVA-DINHEIRO-TEMPLATE`, regra 1): dinheiro, percentual ou taxa dentro de um
+          // template vira `string` SEM a marca — o caminho para `Number`/`parseFloat` sem passar pela R3. Formatar é só pela
+          // função do arquivo de dinheiro (`formatBRL(x)` devolve texto comum, que pode entrar no template).
+          const spanBrand = brandOf(span.expression);
+          if (spanBrand && spanBrand !== "geometry") flag(span, "R13 desmarcação por template");
           if (PERCENT_AFTER.test(span.literal.text)) flag(span, "R7 percentual montado na tela");
         }
       }

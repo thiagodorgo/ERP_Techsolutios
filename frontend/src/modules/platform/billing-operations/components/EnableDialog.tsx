@@ -26,7 +26,7 @@ const THIRTY_MINUTES = 30 * 60 * 1000;
 
 /**
  * As condições que a TELA consegue conferir no que já leu do canal, para o caso de a recusa não trazer a lista do servidor
- * (o cliente de API de hoje não repassa `details.failed[]`; pedido de emenda registrado no diário do bloco). O servidor
+ * (o cliente de API de hoje não repassa `details.failed[]`: pendência `P-API-CLIENT-DETAILS-DESCARTADO`, decisão do orquestrador de 20/11 de não mexer no cliente). O servidor
  * continua sendo quem decide; esta lista só explica a recusa.
  */
 export function derivedEnableFailures(provider: Provider, serverOff: boolean | null, now: Date): string[] {
@@ -80,13 +80,17 @@ export function EnableDialog({ provider, actions, serverOff, now, onClose, onDon
             <div className="ui-alert ui-alert--danger cb-notice" role="alert" data-checklist="">
               <XCircle size={16} aria-hidden="true" />
               <div>
-                <b>O servidor não ligou. Falta:</b>
+                <b>{fromServer ? "O servidor não ligou. Falta:" : "O servidor não ligou. Pela leitura do canal que a tela tem, falta:"}</b>
                 <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
                   {enableChecklist(failures).map((item, index) => (
                     <li key={`${index}-${item}`}>{item}</li>
                   ))}
                 </ul>
-                {!fromServer ? <small style={{ display: "block", marginTop: 6 }}>Conferido no que a tela já leu do canal; o servidor confere também a configuração dele.</small> : null}
+                {!fromServer ? (
+                  <small style={{ display: "block", marginTop: 6 }}>
+                    Esta lista é a leitura do canal que a tela já tem, não a lista da recusa do servidor; o servidor confere também a configuração dele.
+                  </small>
+                ) : null}
               </div>
             </div>
           ) : null}

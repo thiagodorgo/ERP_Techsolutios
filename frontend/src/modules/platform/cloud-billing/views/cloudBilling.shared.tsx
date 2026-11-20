@@ -46,6 +46,7 @@ export type CloudBillingAction =
   | { readonly kind: "group-delete"; readonly groupId: string }
   | { readonly kind: "move"; readonly tenantId: string }
   | { readonly kind: "open-org"; readonly tenantId: string }
+  | { readonly kind: "open-statement"; readonly tenantId: string; readonly month: string }
   | { readonly kind: "retry" };
 
 export type CloudBillingViewProps = {
@@ -694,6 +695,12 @@ export function TenantDetail({ model, line, access, onAction }: { readonly model
           <Building2 size={14} aria-hidden="true" />
           Abrir organização
         </button>
+        {line.subscriptionAmount !== null ? (
+          <button type="button" className="pat-btn" onClick={() => onAction({ kind: "open-statement", tenantId: line.tenantId, month: model.month })}>
+            <Receipt size={14} aria-hidden="true" />
+            Ver demonstrativo de {monthName(model.month)}
+          </button>
+        ) : null}
         {access.manageBilling ? (
           <button type="button" className="pat-btn" onClick={() => onAction({ kind: "move", tenantId: line.tenantId })}>
             <Users size={14} aria-hidden="true" />
