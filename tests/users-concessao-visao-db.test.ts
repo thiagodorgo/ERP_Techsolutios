@@ -27,8 +27,9 @@ import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 //   D-AUDITA         — 1 linha em audit_logs por ato (`user.updated`, `metadata->>'change'`); o no-op não grava; e, numa base
 //                      PRÓPRIA E DESCARTÁVEL, com a auditoria forçada a falhar, nenhum vínculo novo (a mesma transação);
 //   D-ULTIMO-PAPEL   — alvo só com a visão: DELETE → 422 user_role_required e o vínculo fica (a MS3p no caminho Prisma);
-//   D-SESSAO         — Q1 sem resposta → a regra de hoje da troca de papéis: a sessão viva do alvo é recusada na próxima
-//                      requisição (401 session_inactive) e a linha fica revogada; o no-op não revoga;
+//   D-SESSAO         — Q1 = (a) do dono (20/11, `D-DONO-2011-RESPOSTAS`): dar ou tirar a visão NÃO encerra a sessão. A
+//                      MESMA sessão viva do alvo segue aceita depois do PUT e do DELETE, a linha `auth_sessions` fica sem
+//                      `revoked_at`, e no próximo pedido ela já vê (PUT) e já não vê (DELETE) a organização;
 //   D-PAPEL-AUSENTE  — numa base PRÓPRIA E DESCARTÁVEL (migrada pelo `prisma migrate deploy`, sem a linha `organization_view`
 //                      em `roles`) → 503 role_not_provisioned e nada gravado.
 // As duas bases descartáveis existem porque o papel global `organization_view` e um gatilho em `audit_logs` são estado
@@ -303,42 +304,62 @@ if (!connectionString) {
         assert.equal((await eventos(u.SO)).length, 0, "D-ULTIMO-PAPEL: nenhuma auditoria");
       });
 
-      await t.test("D-SESSAO · a sessão viva do alvo é recusada na próxima requisição depois do PUT; o no-op não revoga", async () => {
-        const novaSessao = async () => {
-          const [{ id }] = await sql<{ id: string }>(
-            "INSERT INTO auth_sessions (tenant_id, user_id, refresh_token_hash, expires_at) VALUES ($1::uuid, $2::uuid, $3, now() + interval '1 hour') RETURNING id::text AS id",
-            A,
-            u.SS,
-            `users-ov-db-${randomUUID()}`,
-          );
-          const token = await signAccessToken({
-            user_id: u.SS,
-            tenant_id: A,
-            email: emails.get(u.SS)!,
-            roles: papeisDo.get(u.SS)! as never,
-            session_id: id,
-          });
-          return { id, headers: { authorization: `Bearer ${token}` } };
-        };
-        const sessao = await novaSessao();
-        const vivo = await http("GET", "/api/v1/dashboard/summary", sessao.headers);
-        assert.equal(vivo.s, 200, `controle: a sessão viva passa antes do PUT (${vivo.k})`);
+      await t.test("D-SESSAO · Q1 (a): a MESMA sessão viva do alvo segue aceita depois do PUT e do DELETE, e já vê / já não vê a organização no próximo pedido", async () => {
+        const [{ id: sessaoId }] = await sql<{ id: string }>(
+          "INSERT INTO auth_sessions (tenant_id, user_id, refresh_token_hash, expires_at) VALUES ($1::uuid, $2::uuid, $3, now() + interval '1 hour') RETURNING id::text AS id",
+          A,
+          u.SS,
+          `users-ov-db-${randomUUID()}`,
+        );
+        const token = await signAccessToken({
+          user_id: u.SS,
+          tenant_id: A,
+          email: emails.get(u.SS)!,
+          roles: papeisDo.get(u.SS)! as never,
+          session_id: sessaoId,
+        });
+        const sessao = { authorization: `Bearer ${token}` };
+        const revogada = async () =>
+          (
+            await sql<{ revogada: boolean }>(
+              "SELECT revoked_at IS NOT NULL AS revogada FROM auth_sessions WHERE tenant_id = $1::uuid AND id = $2::uuid",
+              A,
+              sessaoId,
+            )
+          )[0].revogada;
+
+        // Controle: a sessão viva passa e, sem a visão, o alvo support+ft só vê o que é dele (painel 0, OS-X = inexistente).
+        const antes = await http("GET", "/api/v1/dashboard/summary", sessao);
+        assert.equal(antes.s, 200, `controle: a sessão viva passa antes do PUT (${antes.k})`);
+        assert.equal(antes.j?.data?.workOrders?.total, 0, "controle: sem a visão, o painel é 0");
+
         const put = await http("PUT", caminho(u.SS), M);
         assert.equal(put.s, 200, put.text);
-        const recusado = await http("GET", "/api/v1/dashboard/summary", sessao.headers);
-        assert.equal(recusado.k, "401:INVALID_TOKEN:session_inactive", `D-SESSAO: ${recusado.text}`);
-        const [{ revogada }] = await sql<{ revogada: boolean }>(
-          "SELECT revoked_at IS NOT NULL AS revogada FROM auth_sessions WHERE tenant_id = $1::uuid AND id = $2::uuid",
+        const depoisDoPut = await http("GET", "/api/v1/dashboard/summary", sessao);
+        assert.equal(depoisDoPut.s, 200, `D-SESSAO: o PUT encerrou a sessão (${depoisDoPut.k})`);
+        assert.equal(depoisDoPut.j?.data?.workOrders?.total, totalDaOrg, "D-SESSAO: no próximo pedido, a MESMA sessão já vê a organização");
+        const detPut = await http("GET", `/api/v1/work-orders/${osXId}`, sessao);
+        assert.equal(detPut.s, 200, `D-SESSAO: a MESMA sessão lê a OS-X (${detPut.k})`);
+        assert.ok(detPut.text.includes("TITCANX"), "D-SESSAO: faltou TITCANX");
+        assert.equal(await revogada(), false, "D-SESSAO: o PUT não pode revogar a linha da sessão");
+
+        const del = await http("DELETE", caminho(u.SS), M);
+        assert.equal(del.s, 200, del.text);
+        const depoisDoDelete = await http("GET", "/api/v1/dashboard/summary", sessao);
+        assert.equal(depoisDoDelete.s, 200, `D-SESSAO: o DELETE encerrou a sessão (${depoisDoDelete.k})`);
+        assert.equal(depoisDoDelete.j?.data?.workOrders?.total, 0, "D-SESSAO: no próximo pedido, a MESMA sessão já não vê a organização");
+        const detDel = await http("GET", `/api/v1/work-orders/${osXId}`, sessao);
+        assert.equal(detDel.k, rInex.k, `D-SESSAO: depois do DELETE a OS-X volta ao inexistente (${detDel.k})`);
+        assert.equal(await revogada(), false, "D-SESSAO: o DELETE não pode revogar a linha da sessão");
+
+        // A auditoria do ato não fala de sessão (nenhuma foi encerrada).
+        const linhas = await sql<{ metadata: Record<string, unknown> }>(
+          "SELECT metadata FROM audit_logs WHERE tenant_id = $1::uuid AND action = 'user.updated' AND entity_id = $2 AND metadata ? 'change' ORDER BY created_at, id",
           A,
-          sessao.id,
+          u.SS,
         );
-        assert.equal(revogada, true, "D-SESSAO: a linha da sessão ficou revogada");
-        // O no-op (já tem a visão) não é ato: a sessão nova segue viva.
-        const segunda = await novaSessao();
-        const noop = await http("PUT", caminho(u.SS), M);
-        assert.equal(noop.s, 200, noop.text);
-        const segue = await http("GET", "/api/v1/dashboard/summary", segunda.headers);
-        assert.equal(segue.s, 200, `D-SESSAO: o no-op revogou a sessão (${segue.k})`);
+        assert.deepEqual(linhas.map((l) => l.metadata.change), ["organization_view.granted", "organization_view.revoked"]);
+        for (const l of linhas) assert.equal("revoked_sessions" in l.metadata, false, "D-SESSAO: metadata sem revoked_sessions");
       });
 
       // As bases PRÓPRIAS E DESCARTÁVEIS (D-PAPEL-AUSENTE e a metade "falha da auditoria" do D-AUDITA).

@@ -408,11 +408,9 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         }
       }
 
-      // Passo 8 (Q1 sem resposta → a regra de hoje da troca do conjunto de papéis, P2 do B-USERS-SEG-DESATIVADO): as
-      // sessões ativas do par são revogadas na mesma transação; a pessoa entra de novo.
-      const revokedSessions = (
-        await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(input.userId, input.tenantId)
-      ).count; // B-USERS-CONCESSAO:sessoes
+      // Passo 8 — Q1 respondida pelo dono (20/11, `D-DONO-2011-RESPOSTAS`, Q1 = (a)): dar ou tirar a visão NÃO encerra as
+      // sessões. O middleware persistente relê os papéis do banco a cada pedido, então o efeito vale no próximo pedido e a
+      // pessoa segue logada (o técnico no campo não cai). Nenhuma sessão é tocada aqui. // B-USERS-CONCESSAO:sessoes
 
       const actorId = isUuid(input.actorUserId ?? "")
         ? (
@@ -432,7 +430,7 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       const updatedUser = mapUserFromPrisma(savedUser);
 
       // Passo 9: auditoria na MESMA transação — se ela falhar, a concessão se desfaz. Só a lista permitida (nome, status,
-      // papéis), o `change` e a contagem de sessões; nada de e-mail, tenant_id nem token.
+      // papéis) e o `change`; nada de e-mail, tenant_id nem token.
       await new EnterpriseAuditLogService(txAudit).record({
         tenantId: input.tenantId,
         actorId,
@@ -446,7 +444,6 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
           before: toUserAuditSnapshot({ name: current.name, status: current.status, roles: currentRoles }),
           after: toUserAuditSnapshot(updatedUser),
           change: input.granted ? "organization_view.granted" : "organization_view.revoked",
-          revoked_sessions: revokedSessions,
         },
       });
 
