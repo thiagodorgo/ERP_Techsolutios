@@ -863,11 +863,9 @@ void main() {
     await app.troca(_orgB);
     await app.esperaAte(() => app.lotesDeOsCom(_orgB).isNotEmpty);
     await app.passadaDaTroca();
-    expect(
-      app.lotesDeOsCom(_orgB),
-      ['o-b1'],
-      reason: 'em B sai só a de B, com tok-b; nada de A com tok-b',
-    );
+    expect(app.lotesDeOsCom(_orgB), [
+      'o-b1',
+    ], reason: 'em B sai só a de B, com tok-b; nada de A com tok-b');
     expect(
       app.lotesDeOsCom(_orgA),
       isEmpty,
