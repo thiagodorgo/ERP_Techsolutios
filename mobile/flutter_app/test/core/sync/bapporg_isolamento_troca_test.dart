@@ -1,8 +1,9 @@
 // B-APP-ORG (item 70), fatia B2 — isolamento e perda na troca de organização,
 // com Drift real (`NativeDatabase.memory`) e o app de verdade por baixo.
 //
-// Plano B-APP-ORG-69-70 §5.3 (T11, T12, T13); Emenda 1 §A3.3 (T11b), §A3.4
-// (T15b), §A5 (T17); Emenda 1.1 E1.1-3 (M34a/b/d, uma por provider).
+// Plano B-APP-ORG-69-70 §5.3 (T11, T12, T13-dados); Emenda 1 §A3.3 (T11b),
+// §A3.4 (T15b), §A5 (T17); Emenda 1.1 E1.1-3 (M34a/b/d, uma por provider);
+// Emenda 1.4 (G-EXP e M34c′; T13-dados; o conjunto da M13).
 //
 // O terreno: um servidor HTTP local (127.0.0.1) atrás de TODOS os clientes do
 // app — o de autenticação, o da troca, o do bootstrap e os de dados. Ele
@@ -11,7 +12,7 @@
 // repositório, da fila, da telemetria e o coordenador de sincronização são os
 // reais. Os dados são fictícios e só existem neste arquivo.
 //
-// Mutações que este arquivo pega: M13 (T11 e os T11b-OS), M34a (T11b-OS e T11b-OS-demo),
+// Mutações que este arquivo pega: M13 (T11 e os T11b-OS), M34c′ (G-EXP), M34a (T11b-OS e T11b-OS-demo),
 // M34b (T11b-checklist), M34d (T11b-prestador), M36 (T15b).
 import 'dart:async';
 import 'dart:convert';
@@ -786,61 +787,111 @@ void main() {
 
   // ── T13: nada vaza na tela ─────────────────────────────────────────────────
 
-  test('[T13] em B, o que a lista de OS, a rota da OS, Finanças, Sincronização '
-      'e Início leem é só de B', () async {
-    // Medido na camada que cada tela lê (o mesmo provider e o mesmo filtro):
-    // lista e Início → `workOrderRepositoryProvider.workOrders`
-    // (`home_screen.dart:143`); rota `/work-orders/<id>` → `findById`
-    // (`work_order_detail_screen.dart:179`); Finanças →
-    // `expenseRepositoryProvider.reports` (`expense_list_screen.dart:85`);
-    // Sincronização → `actionsForTenant(<organização do bootstrap>)` +
-    // `partitionByUser` (`sync_screen.dart:197-200`); a contagem da troca →
-    // `pendingCountForActiveSessionProvider`.
-    final app = await _abre();
-    final c = app.c;
-    await DriftWorkOrderLocalStore(
-      app.db,
-    ).saveWorkOrder(_os('wo-a1', 'srv-org-a-1'));
-    final relA = await c
-        .read(expenseRepositoryProvider)
-        .createReport(title: 'Viagem A', advanceAmount: 0);
-    await c
-        .read(syncQueueRepositoryProvider)
-        .enqueue(_acao('o-a1', _orgA, {'local_id': 'wo-a1', 'title': 'OS a1'}));
+  test(
+    '[T13-dados] em B, o que a lista de OS, a rota da OS, Finanças, Sincronização '
+    'e Início leem é só de B',
+    () async {
+      // Medido na camada que cada tela lê (o mesmo provider e o mesmo filtro):
+      // lista e Início → `workOrderRepositoryProvider.workOrders`
+      // (`home_screen.dart:143`); rota `/work-orders/<id>` → `findById`
+      // (`work_order_detail_screen.dart:179`); Finanças →
+      // `expenseRepositoryProvider.reports` (`expense_list_screen.dart:85`);
+      // Sincronização → `actionsForTenant(<organização do bootstrap>)` +
+      // `partitionByUser` (`sync_screen.dart:197-200`); a contagem da troca →
+      // `pendingCountForActiveSessionProvider`.
+      final app = await _abre();
+      final c = app.c;
+      await DriftWorkOrderLocalStore(
+        app.db,
+      ).saveWorkOrder(_os('wo-a1', 'srv-org-a-1'));
+      final relA = await c
+          .read(expenseRepositoryProvider)
+          .createReport(title: 'Viagem A', advanceAmount: 0);
+      await c
+          .read(syncQueueRepositoryProvider)
+          .enqueue(
+            _acao('o-a1', _orgA, {'local_id': 'wo-a1', 'title': 'OS a1'}),
+          );
 
-    await app.troca(_orgB);
-    await app.bootEm(_orgB);
-    final boot = await c.read(bootstrapSessionProvider.future);
-    final repo = c.read(workOrderRepositoryProvider);
-    await repo.load();
-    final fim = DateTime.now().add(const Duration(seconds: 5));
-    while (repo.isPulling && DateTime.now().isBefore(fim)) {
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
-    expect(repo.lastPullError, isNull);
+      await app.troca(_orgB);
+      await app.bootEm(_orgB);
+      final boot = await c.read(bootstrapSessionProvider.future);
+      final repo = c.read(workOrderRepositoryProvider);
+      await repo.load();
+      final fim = DateTime.now().add(const Duration(seconds: 5));
+      while (repo.isPulling && DateTime.now().isBefore(fim)) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      expect(repo.lastPullError, isNull);
 
-    // Lista de OS e Início.
-    expect(repo.workOrders, isNotEmpty);
-    expect(repo.workOrders.map((o) => o.tenantId).toSet(), {_orgB});
-    expect(repo.workOrders.map((o) => o.localId), isNot(contains('wo-a1')));
-    // A rota direta da OS de A.
-    expect(repo.findById('wo-a1'), isNull);
-    // Finanças.
-    final despesas = c.read(expenseRepositoryProvider);
-    await despesas.load();
-    expect(
-      despesas.reports.map((r) => r.localId),
-      isNot(contains(relA.report.localId)),
+      // Lista de OS e Início.
+      expect(repo.workOrders, isNotEmpty);
+      expect(repo.workOrders.map((o) => o.tenantId).toSet(), {_orgB});
+      expect(repo.workOrders.map((o) => o.localId), isNot(contains('wo-a1')));
+      // A rota direta da OS de A.
+      expect(repo.findById('wo-a1'), isNull);
+      // Finanças.
+      final despesas = c.read(expenseRepositoryProvider);
+      await despesas.load();
+      expect(
+        despesas.reports.map((r) => r.localId),
+        isNot(contains(relA.report.localId)),
+      );
+      expect(despesas.reports.where((r) => r.tenantId != _orgB), isEmpty);
+      // Sincronização (e o Início, que conta pela mesma fila).
+      final daTela = await c
+          .read(syncQueueRepositoryProvider)
+          .actionsForTenant(boot.activeTenant.tenantId);
+      expect(daTela.where((a) => a.tenantId == _orgA), isEmpty);
+      expect(daTela.map((a) => a.clientActionId), isNot(contains('o-a1')));
+      // A contagem da tela de troca, em B.
+      expect(await c.read(pendingCountForActiveSessionProvider.future), 0);
+    },
+  );
+
+  // ── G-EXP: o provider de despesas não ganha API remota sem a checagem ─────
+
+  test('[G-EXP] o provider de despesas só recebe cliente ou API remota com a '
+      'checagem do bootstrap da sessão viva', () {
+    // Emenda 1.4 (E1.4-1): o `expenseRepositoryProvider` não tem API remota
+    // hoje. Se ganhar uma, ela passa pela mesma checagem dos outros 3.
+    final remoto = RegExp(
+      r'RemoteApi|remoteApi|sessionHttpClient|createAuthenticatedHttpClient|'
+      r'authenticatedApiConfigProvider|\bDio\b|HttpClient',
     );
-    expect(despesas.reports.where((r) => r.tenantId != _orgB), isEmpty);
-    // Sincronização (e o Início, que conta pela mesma fila).
-    final daTela = await c
-        .read(syncQueueRepositoryProvider)
-        .actionsForTenant(boot.activeTenant.tenantId);
-    expect(daTela.where((a) => a.tenantId == _orgA), isEmpty);
-    expect(daTela.map((a) => a.clientActionId), isNot(contains('o-a1')));
-    // A contagem da tela de troca, em B.
-    expect(await c.read(pendingCountForActiveSessionProvider.future), 0);
+    String corpo(String arquivo, String inicio) {
+      final src = File(arquivo).readAsStringSync();
+      expect(
+        inicio.allMatches(src),
+        hasLength(1),
+        reason: 'âncora em $arquivo',
+      );
+      final i = src.indexOf(inicio);
+      final fim = src.indexOf('\n});', i);
+      expect(fim, greaterThan(i), reason: 'fim do provider em $arquivo');
+      return src.substring(i, fim);
+    }
+
+    bool protegido(String c) =>
+        !remoto.hasMatch(c) || c.contains('bootstrapMatchesLiveSession(');
+
+    // Controle: o detector acha a API remota e a checagem no provider de OS.
+    final os = corpo(
+      'lib/features/work_orders/data/work_order_repository.dart',
+      'final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {',
+    );
+    expect(remoto.hasMatch(os), isTrue, reason: 'o detector vê a API de OS');
+    expect(protegido(os), isTrue);
+
+    final despesas = corpo(
+      'lib/features/expenses/data/expense_repository.dart',
+      'final expenseRepositoryProvider = Provider<LocalExpenseRepository>((ref) {',
+    );
+    expect(
+      protegido(despesas),
+      isTrue,
+      reason: 'cliente ou API remota no provider de despesas sem a checagem',
+    );
   });
 
   // ── T15b: a contagem da tela de troca ──────────────────────────────────────
