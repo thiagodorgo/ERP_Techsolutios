@@ -89,6 +89,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     return current.session?.tokens.accessToken;
   }
 
+  /// B-APP-ORG (T-b): a chave da sessão autenticada de agora (`sessionKeyOf`),
+  /// ou `null` sem sessão autenticada. O cliente HTTP guarda a do nascimento.
+  String? get liveSessionKey => _sessionKey(state.asData?.value);
+
   @override
   Future<AuthState> build() async {
     // dart format off
