@@ -76,7 +76,7 @@ if (!connectionString) {
       claimedBy,
     )) as Array<{ id: string }>;
     const outboxId = rows[0]!.id;
-    const repo = new PrismaOutboxRepository(role.client);
+    const repo = new PrismaOutboxRepository(role.client, { tenantIds: [tenantId] });
     const row = await repo.findById(tenantId, outboxId);
     assert.ok(row);
     return { tenantId, statementId, outboxId, row, lease: { claimedBy, attemptStartedAt: NOW } };

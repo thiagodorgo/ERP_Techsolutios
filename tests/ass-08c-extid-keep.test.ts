@@ -40,6 +40,12 @@ const FROZEN_WRITERS: ReadonlyArray<Writer & { readonly why: string }> = [
   { file: DUBLE, form: "duble", value: "null", why: "o NASCIMENTO da linha (enqueue): ainda não há id do provedor" },
   { file: DUBLE, form: "duble", value: "externalId", why: "markSent do dublê" },
   { file: DUBLE, form: "duble", value: "chargeId", why: "recordChargeCancelOutcome do dublê" },
+  // B-ASS-08c3, F-B4 (F-B4a na Emenda 1; plano §4.7 item 5): a confirmação do cancelamento pelo operador aplica o MESMO efeito
+  // do `[CANCEL-TX]` — a linha `charge_cancel` vai a `SENT` com `external_id` = a cobrança cancelada, que o `[CONFIRM-CODES]`
+  // já conferiu igual ao `payload.chargeId` da linha (senão `confirm_mismatch`, sem escrita). Nunca nulo; a `charge_create`
+  // alvo mantém o `external_id` (o UPDATE dela não toca a coluna).
+  { file: "src/modules/subscription-billing/outbox/outbox.prisma.ts", form: "sql", value: "$3", why: "confirmCancelledByOperator: a cobrança cancelada conferida pelo operador (F-B4, Emenda 1)" },
+  { file: DUBLE, form: "duble", value: "input.chargeId", why: "confirmCancelledByOperator do dublê (F-B4, Emenda 1)" },
 ];
 
 function sources(dir: string): string[] {

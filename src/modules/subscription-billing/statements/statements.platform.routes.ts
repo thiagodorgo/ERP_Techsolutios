@@ -5,6 +5,7 @@
 // um demonstrativo exige o GUC da organização. Por isso toda rota recebe o `tenantId` explícito (query nas leituras,
 // corpo nas escritas) — sem uma tabela global de referência (a `billing_statement_refs` é do B-ASS-08), não há como
 // resolver a organização só pelo id.
+// Regra R-PLAT-TENANT-CORPO (API_CONTRACTS.md): autorização vem do ator de plataforma; tenantId no corpo só escolhe o GUC alvo.
 
 import { Router, type Request } from "express";
 
@@ -405,6 +406,23 @@ export function createStatementsPlatformRouter(): Router {
         { tenantId, statementId: readRouteParam(request.params.statementId), chargeId, reason, actorId: actorId(request), now: new Date() },
       );
       response.status(200).json({ data: { result: outcome.result, outbox: toOutboxDto(outcome.row) } });
+    }),
+  );
+
+  router.post(
+    "/outbox/:id/confirm-cancelled",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const chargeId = requireProviderChargeId(input.chargeId);
+      const reason = requireOperatorReason(input.reason);
+      const outbox = (await createChannelRuntime()).outbox;
+      const result = await outbox.confirmCancelledByOperator(tenantId, requireOutboxId(readRouteParam(request.params.id)), { chargeId, reason, actorId: actorId(request), now: new Date() });
+      if (result.kind === "not_found") throw new StatementError(404, "outbox_not_found", "Queue line not found.");
+      if (result.kind === "not_allowed") throw new StatementError(422, "cancel_confirmation_not_allowed", "Outbox line cannot be confirmed.");
+      if (result.kind === "mismatch") throw new StatementError(422, "confirm_mismatch", "chargeId does not match the queue line.");
+      response.status(200).json({ data: toOutboxDto(result.row) });
     }),
   );
 

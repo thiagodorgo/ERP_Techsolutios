@@ -4,11 +4,11 @@
 
 import { randomUUID } from "node:crypto";
 
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { PrismaPlatformAuditWriter } from "../platform-audit/platform-audit.prisma.js";
 import type { ProviderKind } from "../providers/provider.catalog.js";
-import type { ProviderConfig, ProviderConfigRepository, ProviderConfigUpsert, ProviderSettings } from "../providers/provider-config.repository.js";
+import type { ProviderConfig, ProviderConfigRepository, ProviderConfigUpsert, ProviderEnableEffect, ProviderSettings, ProviderTestRecord, ProviderWebhookRecord } from "../providers/provider-config.repository.js";
 import type { VaultKeyProvider } from "./vault-keys.js";
 import { buildVaultRuntime, type VaultRuntime } from "./vault.factory.js";
 import type { CredentialKind, CredentialRepository, NewCredential, ProviderEnvironment, StoredCredential } from "./vault.repository.js";
@@ -79,6 +79,10 @@ function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "P2002";
 }
 
+function isNotFound(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "P2025";
+}
+
 export class PrismaCredentialRepository implements CredentialRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -140,10 +144,17 @@ type ConfigRecord = {
   environment: string;
   enabled: boolean;
   enabled_environment: string | null;
+  enabled_at: Date | null;
+  enabled_by: string | null;
   settings: unknown;
   last_test_at: Date | null;
   last_test_ok: boolean | null;
   last_test_environment: string | null;
+  last_test_error: string | null;
+  webhook_registered_at: Date | null;
+  webhook_registered_environment: string | null;
+  webhook_external_id: string | null;
+  webhook_public_url: string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -155,10 +166,17 @@ function mapConfig(record: ConfigRecord): ProviderConfig {
     environment: record.environment as ProviderEnvironment,
     enabled: record.enabled,
     enabledEnvironment: record.enabled_environment as ProviderEnvironment | null,
+    enabledAt: record.enabled_at,
+    enabledBy: record.enabled_by,
     settings: (record.settings && typeof record.settings === "object" ? record.settings : {}) as ProviderSettings,
     lastTestAt: record.last_test_at,
     lastTestOk: record.last_test_ok,
     lastTestEnvironment: record.last_test_environment as ProviderEnvironment | null,
+    lastTestError: record.last_test_error,
+    webhookRegisteredAt: record.webhook_registered_at,
+    webhookRegisteredEnvironment: record.webhook_registered_environment as ProviderEnvironment | null,
+    webhookExternalId: record.webhook_external_id,
+    webhookPublicUrl: record.webhook_public_url,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
@@ -185,6 +203,92 @@ export class PrismaProviderConfigRepository implements ProviderConfigRepository 
       update: { environment: input.environment, settings, updated_at: now },
     });
     return mapConfig(row as ConfigRecord);
+  }
+
+  async recordTest(provider: string, input: ProviderTestRecord, now: Date): Promise<ProviderConfig | null> {
+    try {
+      const row = await this.prisma.billingProviderConfig.update({
+        where: { provider },
+        data: {
+          last_test_at: now,
+          last_test_ok: input.ok,
+          last_test_environment: input.environment,
+          last_test_error: input.ok ? null : input.errorCode,
+          updated_at: now,
+        },
+      });
+      return mapConfig(row as ConfigRecord);
+    } catch (error) {
+      if (isNotFound(error)) return null;
+      throw error;
+    }
+  }
+
+  async recordWebhook(provider: string, input: ProviderWebhookRecord, now: Date): Promise<ProviderConfig | null> {
+    try {
+      const row = await this.prisma.billingProviderConfig.update({
+        where: { provider },
+        data: {
+          webhook_registered_at: now,
+          webhook_registered_environment: input.environment,
+          webhook_external_id: input.externalId,
+          webhook_public_url: input.publicUrl,
+          updated_at: now,
+        },
+      });
+      return mapConfig(row as ConfigRecord);
+    } catch (error) {
+      if (isNotFound(error)) return null;
+      throw error;
+    }
+  }
+
+  async setEnabled(
+    provider: string,
+    input: ProviderEnableEffect,
+    now: Date,
+    tx: Prisma.TransactionClient | PrismaClient = this.prisma,
+  ): Promise<ProviderConfig | null> {
+    try {
+      const row = await tx.billingProviderConfig.update({
+        where: { provider },
+        data: {
+          enabled: input.enabled,
+          enabled_environment: input.enabled ? input.environment : null,
+          enabled_at: input.enabled ? now : null,
+          enabled_by: input.enabled ? uuidOrNull(input.actorId) : null,
+          updated_at: now,
+        },
+      });
+      return mapConfig(row as ConfigRecord);
+    } catch (error) {
+      if (isNotFound(error)) return null;
+      throw error;
+    }
+  }
+
+  async enableLocked(
+    provider: string,
+    now: Date,
+    decide: (locked: ProviderConfig | null, peers: readonly ProviderConfig[]) => ProviderEnableEffect | null | Promise<ProviderEnableEffect | null>,
+  ): Promise<{ readonly locked: ProviderConfig | null; readonly updated: ProviderConfig | null }> {
+    return this.prisma.$transaction(async (tx) => {
+      // [ENABLE-TX] trava a linha do provedor antes de avaliar as precondições e gravar `enabled` no mesmo tx.
+      const rows = await tx.$queryRaw<ConfigRecord[]>`
+        SELECT provider, kind, environment, enabled, enabled_environment, enabled_at, enabled_by,
+               last_test_at, last_test_ok, last_test_environment, last_test_error,
+               webhook_registered_at, webhook_registered_environment, webhook_external_id, webhook_public_url,
+               settings, created_at, updated_at
+          FROM billing_provider_configs
+         WHERE provider = ${provider}
+         FOR UPDATE`;
+      const locked = rows.length > 0 ? mapConfig(rows[0]!) : null;
+      const peers = (await tx.billingProviderConfig.findMany({ orderBy: { provider: "asc" } })).map((row) => mapConfig(row as ConfigRecord));
+      const effect = await decide(locked, peers);
+      if (!effect) return { locked, updated: null };
+      const updated = await this.setEnabled(provider, effect, now, tx);
+      return { locked, updated };
+    });
   }
 }
 

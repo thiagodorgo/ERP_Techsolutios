@@ -327,6 +327,8 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       const updated = await tx.subscriptionCredit.updateMany({
         where: { id: credit.id, tenant_id: tenantId },
         data: {
+          // B2-1: o estorno parcial de um crédito aplicado reduz o valor que continua aplicado (o resto vira outra linha).
+          amount: centsToDecimal(credit.amountCents),
           status: credit.status,
           applied_to_statement_id: credit.appliedToStatementId,
           resolved_by: actorColumn(credit.resolvedBy),

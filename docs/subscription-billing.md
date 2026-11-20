@@ -116,7 +116,7 @@ O `snapshot` guarda as entradas do cálculo. Recalcular a partir dele reproduz o
 | `POST …/:id/payments` · `POST …/payments/:paymentId/reverse` · `POST …/:id/cancel` · `POST …/credits/:id/apply` · `POST …/credits/:id/write-off` | `platform:billing:settle` |
 | `GET /billing/subscription` (a própria organização) | `billing:read` |
 
-As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demonstrativo só se lê sob o GUC da organização. A rota do cliente tira a organização da sessão e recusa `?tenantId` com 400. Ator de plataforma, ou a organização de sistema, recebe 403 `platform_actor_not_a_customer`. A resposta do cliente NÃO tem nenhum valor em dinheiro: só o plano, o uso contra a franquia, a situação e, com demonstrativo em aberto, o bloco "como pagar" (os meios de pagamento chegam com o canal do provedor, no B-ASS-08).
+As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demonstrativo só se lê sob o GUC da organização. Pela `R-PLAT-TENANT-CORPO` (`API_CONTRACTS.md`), `requirePlatformPermission` é o primeiro middleware: a autorização vem do ator autenticado de plataforma, e o `tenantId` do corpo apenas seleciona a organização-alvo sob RLS; linha fora dela responde 404. A rota do cliente tira a organização da sessão e recusa `?tenantId` com 400. Ator de plataforma, ou a organização de sistema, recebe 403 `platform_actor_not_a_customer`. A resposta do cliente NÃO tem nenhum valor em dinheiro: só o plano, o uso contra a franquia, a situação e, com demonstrativo em aberto, o bloco "como pagar" (os meios de pagamento chegam com o canal do provedor, no B-ASS-08).
 
 **Perfil de cobrança.** `PUT` incompleto é aceito como rascunho e devolve `complete` e `missing[]`. O documento é validado pelos dígitos verificadores: CPF, CNPJ numérico e CNPJ alfanumérico. Documento, e-mail e endereço nunca entram na trilha.
 
@@ -330,12 +330,30 @@ com o `B-TRC-04`, por cadastro de módulos na versão do adicional.
   `POST …/statements/:statementId/invoice`), e pago sem pedido. **Na emissão:** o erro de validação do provedor deixa a nota
   `rejected` pelo código e a linha em conferência; a retentativa de uma nota já começada reconsulta antes de reenviar; a posse da
   linha é conferida logo antes do envio. A falha de banco de um movimento do demonstrativo sai como `409 statement_busy`, repetível.
-- **Ainda não (pendências com dono):** ligar/desligar/testar/registrar webhook persistidos pela tela (F9 do B-ASS-08; hoje
-  nenhum caminho grava `enabled = true`); `invoicePdfAvailable` das notas na visão do cliente; `refund` na outbox; a reconsulta da cobrança em estado desconhecido (`P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA`: hoje nenhum
-  escritor grava esse estado; desde o conserto da J-579, se ele aparecer, a baixa que quita, o `cancel()` e o `charge/cancel` pedem o
-  cancelamento, e o despacho lista primeiro).
+- **Fechamento do B-ASS-08c3:** a plataforma pode testar a conexão, registrar o webhook, ligar e desligar cada provedor sob
+  `platform:billing-providers:manage`. A órfã falha isoladamente e nunca cria; a emissão nunca tentada acompanha o provedor
+  fiscal ligado; as transições do despacho têm destino durável na trilha; `charge_not_listed`/`charge_state_unknown` ganham
+  confirmação manual sem rede; e o estorno de crédito já aplicado recompõe a dívida do demonstrativo-alvo. O canal segue
+  desligado por padrão e ligar continua ato explícito do dono.
+- **Ainda não (pendências com dono):** `invoicePdfAvailable` das notas na visão do cliente; `refund` na outbox; a tela do
+  cliente com os meios de pagamento; e a homologação real dos provedores.
 - **Rollback:** `BILLING_PROVIDERS_ENABLED=false` para o canal (a outbox fica visível); reverter o PR não apaga linhas. As
   migrações M5 e `20260901000000` são aditivas, com drill de rollback nos testes `-db`.
+
+### Como ligar o canal (ato do dono)
+
+1. Manter `BILLING_PROVIDERS_ENABLED=false` enquanto configura as contas e credenciais de sandbox do Asaas e do Focus NFe.
+2. Preencher configuração fiscal e segredos no cofre; nunca versionar nem colar segredo em log ou resposta.
+3. Definir a URL pública HTTPS do webhook e os saltos confiáveis do proxy na AWS; conferir que o endpoint externo chega ao
+   mount `/api/v1/webhooks/billing/<provedor>`.
+4. No sandbox, executar `test-connection` e `register-webhook` para os dois provedores e conferir a trilha e o ambiente.
+5. Homologar cobrança, webhook, estorno, emissão, reconsulta e cancelamento contra os sandboxes reais; confirmar que o Focus
+   aceita 404 como prova de credencial válida e que os eventos cadastrados no Asaas cobrem o fluxo.
+6. Entregar antes a visão do cliente com meios de pagamento (`B-ASS-11c`) e resolver as pendências de sandbox/competência.
+7. Só depois de junta de 5 unânime e decisão explícita do dono, habilitar o env e chamar `enable` com a confirmação exata de
+   provedor e ambiente. Ligar o Asaas e o Focus continua sendo ato do dono; este PR não o faz.
+8. Para trocar URL do webhook, registrar a nova e remover manualmente a antiga no painel do provedor. Para rollback, chamar
+   `disable` e voltar `BILLING_PROVIDERS_ENABLED=false`; a fila permanece visível para conferência.
 
 ## Visão da plataforma: custo × assinatura (B-ASS-09)
 

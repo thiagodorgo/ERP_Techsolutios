@@ -1,6 +1,8 @@
 // B-ASS-07 · porta comum de nota fiscal. O outbox do B-ASS-08 conhece apenas este contrato.
 // Emissão é sempre assíncrona: um 2xx inicial só pode resultar em `processing`.
 
+import type { ConnectionTestResult } from "../payment/payment-provider.port.js";
+
 export type NfseRoute = "nacional" | "municipal";
 export type InvoiceStatus = "processing" | "authorized" | "rejected" | "cancelled" | "unknown";
 export type InvoiceCancelStatus = "processing" | "cancelled" | "error";
@@ -66,6 +68,8 @@ export type InvoiceLookup = {
   readonly pdfUrl?: string;
   readonly xmlUrl?: string;
   readonly errors?: readonly string[];
+  /** O id da nota no provedor, quando o GET o devolve (B-ASS-08c3). */
+  readonly providerInvoiceId?: string;
 };
 
 export type RegisterInvoiceWebhookInput = {
@@ -98,5 +102,6 @@ export interface InvoiceProviderPort {
   registerWebhook(input: RegisterInvoiceWebhookInput): Promise<{ readonly externalId: string }>;
   getInvoicePdf(ref: string): Promise<{ readonly source: "public_url"; readonly url: string } | { readonly source: "provider_fetch"; readonly bytes: Uint8Array }>;
   verifyWebhook(input: VerifyInvoiceWebhookInput): Promise<VerifyInvoiceWebhookResult>;
+  testConnection(): Promise<ConnectionTestResult>;
   describe(): InvoiceProviderDescription;
 }

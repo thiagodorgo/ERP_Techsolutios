@@ -39,7 +39,7 @@ export type CreditStatus = (typeof CREDIT_STATUSES)[number];
 
 export type StatementHistoryEntry = {
   readonly at: string;
-  readonly event: "closed" | "reopened" | "adjusted" | "cancelled" | "credit_applied";
+  readonly event: "closed" | "reopened" | "adjusted" | "cancelled" | "credit_applied" | "credit_reversed";
   readonly by: string | null;
   readonly totalCents: number;
   readonly note?: string;
@@ -134,7 +134,10 @@ export type StatementAuditAction =
   | "subscription_statement.credit_created"
   | "subscription_statement.credit_applied"
   | "subscription_statement.credit_written_off"
+  | "subscription_statement.credit_reversed"
   | "subscription_statement.invoice_requested"
+  // B-ASS-08c3, Emenda 2 e 2.1 (Q1 = (b) do dono): a nota fiscal FICOU porque ainda sobra dinheiro pago no demonstrativo.
+  | "subscription_statement.invoice_kept_partial_reversal"
   | "subscription_billing_profile.updated";
 
 /** Trilha de auditoria (§3.6): metadata SEMPRE pela allowlist — só ids, período, status e valores em centavos. */
@@ -145,6 +148,21 @@ export type StatementAuditEvent = {
   readonly entityId: string;
   readonly metadata: Readonly<Record<string, string | number | boolean | null>>;
 };
+
+/** Emenda 2.2 (E2.2-3, que prevalece sobre a E2.1-2): a allowlist FECHADA dos metadados da trilha
+ * `invoice_kept_partial_reversal` é a positiva da §4.6 do plano — só `statementId`, `kind` (`"invoice_kept"`), `code`
+ * (`"partial_reversal"` na criação da intenção; `"paid_after_cancel_intent"` no handler do despacho), `count` (o `paidCents`
+ * restante, em centavos) e `reason` (`"q1_b_dono"`). Nunca id do provedor, token, `tenant_id` externo nem valor fiscal. */
+export const INVOICE_KEPT_METADATA_KEYS = ["statementId", "kind", "code", "count", "reason"] as const;
+export type InvoiceKeptMetadata = {
+  readonly statementId: string;
+  readonly code: "partial_reversal" | "paid_after_cancel_intent";
+  /** O `paidCents` que continua pago, em centavos. */
+  readonly count: number;
+};
+export function invoiceKeptMetadata(input: InvoiceKeptMetadata): Readonly<Record<(typeof INVOICE_KEPT_METADATA_KEYS)[number], string | number>> {
+  return { statementId: input.statementId, kind: "invoice_kept", code: input.code, count: input.count, reason: "q1_b_dono" };
+}
 
 export class StatementError extends Error {
   /** Código do envelope de erro da casa (`{ error: { code, reason, message } }`). */

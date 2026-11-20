@@ -45,7 +45,7 @@ export type ChannelDeps = {
    * (`profileCustomerResolver`), nunca do payload; em produção, envolto em `persistingCustomerResolver` (G12). */
   readonly resolveCustomer: DispatcherDeps["resolveCustomer"];
   readonly settlement: StatementSettlementService;
-  readonly statements: Pick<StatementRepository, "findStatement">;
+  readonly statements: Pick<StatementRepository, "findStatement" | "transaction">;
   /** A perna da NOTA (c2): SÓ as portas dos provedores de nota LIGADOS, o repositório da nota e o contexto fiscal. Ausentes =
    * sem perna de nota (os `invoice_*` da outbox ficam visíveis como `provider_disabled`). */
   readonly invoicePorts?: Readonly<Record<string, InvoiceProviderPort>>;
@@ -58,6 +58,7 @@ export type ChannelDeps = {
   readonly listTenantIds: () => Promise<readonly string[]>;
   /** B-ASS-08c2 (plano §4.5): as intenções de nota que faltam numa organização, sob a trava de cada demonstrativo. */
   readonly invoiceRecovery: { recoverInvoiceIntents(tenantId: string, now: Date): Promise<{ readonly inserted: number }> };
+  readonly onAudit: DispatcherDeps["onAudit"];
   readonly now?: () => Date;
 };
 
@@ -100,9 +101,11 @@ export async function runBillingDispatch(deps: ChannelDeps): Promise<DispatchRun
     resolveCustomer: deps.resolveCustomer,
     ...(invoices ? { invoices } : {}),
     ...(invoiceSweep ? { invoiceSweep } : {}),
+    onAudit: deps.onAudit, // [TRILHA-01]
     ...(deps.now ? { now: deps.now } : {}),
   });
-  // A trilha do despacho ainda não tem destino em produção (`P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO`): o log mostra a falha.
+  // A falha da varredura também vai à trilha persistida pelo `onAudit` (o repasse acima, `dispatch-audit.ts`; a
+  // `P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO` fechou no B-ASS-08c3); o log continua mostrando a falha na hora.
   for (const failure of result.invoiceSweep?.failures ?? []) logger.warn({ tenantId: failure.tenantId, code: failure.code }, "billing.dispatch-outbox: a varredura da nota falhou; as emissões da rodada ficam adiadas");
   return result;
 }
