@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1310** |
-| IDs distintos | 1295 |
-| **ABERTAS** | **1005** |
+| Cabecalhos `## P-` | **1316** |
+| IDs distintos | 1301 |
+| **ABERTAS** | **1011** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **944** |
+| — das quais **ativas nesta rodada** | **950** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 301 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1310 cabecalhos para 1295 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1316 cabecalhos para 1301 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 386
+## ABERTAS · balde A — material — 387
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -446,22 +446,23 @@
 | `P-DESPACHO-EX-TECNICO-MUTACAO` | 17000 | MÉDIA | sim | P-DESPACHO-EX-TECNICO-MUTACAO (2026-11-17) — o ex-técnico ainda transiciona o despacho a |
 | `P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR` | 17015 | MÉDIA | sim | P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR (2026-11-17) — com o app aberto, a volta da rede |
 | `P-OS-CONCLUSAO-EVENTO-DUPLO` | 17050 | MÉDIA | sim | P-OS-CONCLUSAO-EVENTO-DUPLO (2026-11-17) — duas conclusões simultâneas da mesma OS grava |
-| `P-NODE-ENV-AUSENTE-E-DEV` | 17093 | CRÍTICA | sim | P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 |
-| `P-PLATAFORMA-PERMISSAO-IGNORADA` | 17122 | ALTA | sim | P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma fal |
-| `P-AWS-MIGRADOR` | 17157 | ALTA | sim | P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS —  |
-| `P-AWS-BACKUP-PGDUMP` | 17164 | MÉDIA | sim | P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS |
-| `P-FRONT-API-BASE-URL` | 17178 | MÉDIA | sim | P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em ve |
-| `P-AWS-SSE-TIMEOUT` | 17185 | MÉDIA | sim | P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou p |
-| `P-AWS-PORTAL-TENANT` | 17192 | MÉDIA | sim | P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant |
-| `P-AWS-IP-FIXO` | 17199 | MÉDIA | sim | P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco  |
-| `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO` | 17234 | MÉDIA | sim | P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai  |
-| `P-USERS-TELA-SEM-PAPEIS-DE-CAMPO` | 17255 | MÉDIA | sim | P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_te |
-| `P-WO-LEITURA-DESPACHANTE-VISTORIA` | 17269 | MÉDIA | sim | P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias |
-| `P-AWS-CUSTO-VIRGINIA` | 17276 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
-| `P-AWS-LGPD-TRANSFERENCIA` | 17283 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
-| `P-ASS-OPERACAO-COBRANCA-TELA` | 17290 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
+| `P-PLAT-PAPEL-SEM-RELEITURA` | 17093 | MÉDIA | sim | P-PLAT-PAPEL-SEM-RELEITURA (2026-11-17) — as rotas da plataforma não releem papel nem pe |
+| `P-NODE-ENV-AUSENTE-E-DEV` | 17121 | CRÍTICA | sim | P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 |
+| `P-PLATAFORMA-PERMISSAO-IGNORADA` | 17164 | ALTA | sim | P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma fal |
+| `P-AWS-MIGRADOR` | 17199 | ALTA | sim | P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS —  |
+| `P-AWS-BACKUP-PGDUMP` | 17206 | MÉDIA | sim | P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS |
+| `P-FRONT-API-BASE-URL` | 17220 | MÉDIA | sim | P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em ve |
+| `P-AWS-SSE-TIMEOUT` | 17227 | MÉDIA | sim | P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou p |
+| `P-AWS-PORTAL-TENANT` | 17234 | MÉDIA | sim | P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant |
+| `P-AWS-IP-FIXO` | 17241 | MÉDIA | sim | P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco  |
+| `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO` | 17276 | MÉDIA | sim | P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai  |
+| `P-USERS-TELA-SEM-PAPEIS-DE-CAMPO` | 17297 | MÉDIA | sim | P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_te |
+| `P-WO-LEITURA-DESPACHANTE-VISTORIA` | 17311 | MÉDIA | sim | P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias |
+| `P-AWS-CUSTO-VIRGINIA` | 17318 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
+| `P-AWS-LGPD-TRANSFERENCIA` | 17325 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
+| `P-ASS-OPERACAO-COBRANCA-TELA` | 17332 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
 
-## ABERTAS · balde B — processo/registro — 558
+## ABERTAS · balde B — processo/registro — 563
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1010,19 +1011,24 @@
 | `P-08C2-GSISO-ANTIGOS` | 17064 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-17) — seis suítes antigas ainda criam o outbox sem `tenant |
 | `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 17071 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — o `provider_invoice_id` continua nulo depoi |
 | `P-SAN305-T15-PORTA-SUBSTRING` | 17078 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 compara a porta com `includes` no log  |
-| `P-ENV-EXAMPLE-RUNTIME-GUARD` | 17100 | BAIXA | sim | P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.e |
-| `P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE` | 17107 | BAIXA | sim | P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchFo |
-| `P-MOBILE-INVENTORY-MANAGE-SEM-USO` | 17129 | BAIXA | sim | P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-s |
-| `P-AWS-IMAGEM-ARM64` | 17136 | BAIXA | sim | P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AW |
-| `P-AWS-VALKEY-TLS` | 17171 | BAIXA | sim | P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — |
-| `P-AWS-CLAMAV-ARM64` | 17206 | BAIXA | sim | P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA |
-| `P-AWS-CLAMAV-IMAGEM` | 17213 | BAIXA | sim | P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no iníc |
-| `P-AWS-TRACCAR-ARM64` | 17220 | BAIXA | sim | P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA |
-| `P-WO-ORACULO-403-404-ESCRITA` | 17227 | BAIXA | sim | P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexisten |
-| `P-ATTACHMENTS-WORK-ORDER-SEM-PORTA` | 17241 | BAIXA | sim | P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` r |
-| `P-PAINEL-SUPORTE-SCOPED` | 17248 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
-| `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17262 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
-| `P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT` | 17297 | BAIXA | sim | P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração o |
+| `P-PLAT-PORTAO-SEM-ORG-PLATAFORMA` | 17100 | BAIXA | sim | P-PLAT-PORTAO-SEM-ORG-PLATAFORMA (2026-11-17) — o portão da plataforma não confere se o  |
+| `P-FRONT-ATALHO-SUPER-ADMIN` | 17107 | BAIXA | sim | P-FRONT-ATALHO-SUPER-ADMIN (2026-11-17) — o front libera toda permissão para "Super Admi |
+| `P-CLOUD-CHARGE-ROUTER-ORFAO` | 17114 | BAIXA | sim | P-CLOUD-CHARGE-ROUTER-ORFAO (2026-11-17) — `cloud-charge.routes.ts` está exportado e não |
+| `P-PARSE-ROLES-SEM-TRIM` | 17128 | BAIXA | sim | P-PARSE-ROLES-SEM-TRIM (2026-11-17) — `parseRoles` devolve o papel sem trim, e `ROLE_PER |
+| `P-VARREDURAS-SEM-USE-SEM-CAMINHO` | 17135 | BAIXA | sim | P-VARREDURAS-SEM-USE-SEM-CAMINHO (2026-11-17) — as 3 varreduras irmãs não enumeram camad |
+| `P-ENV-EXAMPLE-RUNTIME-GUARD` | 17142 | BAIXA | sim | P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.e |
+| `P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE` | 17149 | BAIXA | sim | P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchFo |
+| `P-MOBILE-INVENTORY-MANAGE-SEM-USO` | 17171 | BAIXA | sim | P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-s |
+| `P-AWS-IMAGEM-ARM64` | 17178 | BAIXA | sim | P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AW |
+| `P-AWS-VALKEY-TLS` | 17213 | BAIXA | sim | P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — |
+| `P-AWS-CLAMAV-ARM64` | 17248 | BAIXA | sim | P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA |
+| `P-AWS-CLAMAV-IMAGEM` | 17255 | BAIXA | sim | P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no iníc |
+| `P-AWS-TRACCAR-ARM64` | 17262 | BAIXA | sim | P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA |
+| `P-WO-ORACULO-403-404-ESCRITA` | 17269 | BAIXA | sim | P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexisten |
+| `P-ATTACHMENTS-WORK-ORDER-SEM-PORTA` | 17283 | BAIXA | sim | P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` r |
+| `P-PAINEL-SUPORTE-SCOPED` | 17290 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
+| `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17304 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
+| `P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT` | 17339 | BAIXA | sim | P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração o |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -1394,4 +1400,4 @@
 | `P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA` | 16825 | MÉDIA | sim | P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor c |
 | `P-KPI-APPEND-FLUTTER-OUTRAS` | 16864 | BAIXA | sim | P-KPI-APPEND-FLUTTER-OUTRAS (2026-11-17) — o anexador de histórico de KPI não lê o fim d |
 | `P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS` | 17085 | MÉDIA | sim | P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS (2026-11-17) — o `npm test` local trava sem fim no |
-| `P-SAN305-T10-VIRADA-DA-MEIA-NOITE` | 17114 | BAIXA | sim | P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia- |
+| `P-SAN305-T10-VIRADA-DA-MEIA-NOITE` | 17156 | BAIXA | sim | P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia- |
