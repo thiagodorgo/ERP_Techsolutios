@@ -111,6 +111,7 @@ export const WORK_ORDER_MUTATION_SCOPE = {
   inventory: "no_mutation",
   auditor: "no_mutation",
   support: "no_mutation",
+  organization_view: "no_mutation", // B-USERS-CONCESSAO:mutacao
 } as const satisfies Record<Role, "tenant_wide" | "assigned_only" | "no_mutation">;
 
 export type WorkOrderMutationScope = (typeof WORK_ORDER_MUTATION_SCOPE)[Role];
@@ -147,7 +148,7 @@ export function actorMutatesAssignedOnly(actor: WorkOrderActorContext): boolean 
 //                   do dono (18/11, D-DONO-1811-71-MESMA-REGRA e D-DONO-1811-71-VISAO-SO-COM-PERMISSAO): sem a concessão
 //                   de um superior, o técnico que acumula um desses vê só as OS e os despachos dele em TODA leitura; o
 //                   módulo próprio do outro papel (a Auditoria, `GET /audit-events`) não passa por este mapa e segue como é.
-//                   A concessão é o papel `tenant_wide` "Visão da organização" (bloco B-USERS-CONCESSAO-PAINEL).
+//                   A concessao e o papel `organization_view` ("Visao da organizacao"), dado por quem tem `users:grant_organization_view`.
 // `satisfies Record<Role,…>`: papel novo sem entrada reprova o `npm run check` (o idioma do 07a).
 export const WORK_ORDER_READ_SCOPE = {
   super_admin: "tenant_wide",
@@ -163,6 +164,7 @@ export const WORK_ORDER_READ_SCOPE = {
   inventory: "nao_alarga",
   auditor: "nao_alarga",
   support: "nao_alarga",
+  organization_view: "tenant_wide", // B-USERS-CONCESSAO:leitura
 } as const satisfies Record<Role, "tenant_wide" | "assigned_only" | "nao_alarga">;
 
 // B-USERS-CONCESSAO-PAINEL (P-WO-LEITURA-DESPACHANTE-VISTORIA) — a leitura tem eixo de MÓDULO só onde a função difere: o
@@ -188,7 +190,7 @@ function readScopeForRole(role: string, modulo: WorkOrderReadModule): "tenant_wi
  * para nenhum lado (suporte, estoque, financeiro, visualizador e auditor não escopam sozinhos e não alargam o técnico). Resolução por
  * UNIÃO, como `resolvePermissionsForRoles`: um papel `tenant_wide` basta para ler a organização inteira. Papel fora
  * do mapa não conta como `tenant_wide` (fail-closed: `[field_technician, desconhecido]` fica escopado); `roles: []`
- * (chamador interno) não cai no escopo, pelo mesmo motivo do 07a. Para os 13 papéis do catálogo, isto coincide com
+ * (chamador interno) não cai no escopo, pelo mesmo motivo do 07a. Para os 14 papéis do catálogo, isto coincide com
  * "todos os papéis são assigned_only".
  */
 export function actorReadsAssignedOnly(actor: WorkOrderActorContext, modulo: WorkOrderReadModule = "os"): boolean {

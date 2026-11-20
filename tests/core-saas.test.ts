@@ -41,6 +41,7 @@ const expectedPermissionCatalog = [
   "users.manage",
   "users.read",
   "users:read",
+  "users:grant_organization_view",
   "roles.manage",
   "audit.read",
   "audit:read",
@@ -284,7 +285,11 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   const permissionCatalog = new Set(PERMISSION_CATALOG);
 
   for (const role of DEFAULT_ROLES) {
-    assert.ok(ROLE_PERMISSIONS[role].length > 0);
+    if (role === "organization_view") {
+      assert.deepEqual(ROLE_PERMISSIONS[role], []);
+    } else {
+      assert.ok(ROLE_PERMISSIONS[role].length > 0);
+    }
 
     for (const permission of ROLE_PERMISSIONS[role]) {
       assert.ok(permissionCatalog.has(permission));
