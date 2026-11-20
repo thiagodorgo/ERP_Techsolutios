@@ -71,4 +71,3 @@ test("M-CR1 e M-CR-AUD: as âncoras são únicas", () => {
   assert.equal(source("src/modules/subscription-billing/credits/credit.service.ts").split("[CREDIT-RECOMPUTE]").length - 1, 1);
   assert.match(source("src/modules/subscription-billing/statements/statement-settlement.service.ts"), /effect\.creditReversed && tx\.recordAudit/);
 });
-

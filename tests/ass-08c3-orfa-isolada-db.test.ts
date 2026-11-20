@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { OUTBOX_MAX_ATTEMPTS, OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
+import { ProviderListIncompleteError } from "../src/modules/subscription-billing/providers/payment/payment-errors.js";
 import { NOW, TENANT_A, enqueue, memoryOutbox, paymentPort, source } from "./helpers/ass-08c3-test-kit.js";
 
 async function orphan(repo: ReturnType<typeof memoryOutbox>, attempts = 1) {
@@ -95,4 +96,45 @@ test("OR-A4 (A-4): falha de banco dentro da adoção de UMA órfã não derruba 
   assert.equal(result.outcomes.retry, 1, "a órfã foi adiada pelo catch dela");
   const current = await repo.findById(TENANT_A, row.id);
   assert.equal(current?.status, "PROCESSING", "a órfã nunca volta a PENDING");
+});
+
+// Conserto da junta do #608 (fix-608c-cl), o OR1 na letra do plano §6 (o critério da `P-ASS08C-ORFA-RECONSULTA-ABORTA-RODADA`):
+// 10 órfãs de `charge_create` em 10 organizações, cuja lista falha (5 com 500 e 5 com a lista incompleta), e 1 `charge_create`
+// PENDING de uma 11ª organização → a 1ª rodada resolve (não rejeita) e faz 1 POST, o da 11ª.
+test("OR1-10: 10 órfãs falhando em 10 organizações não seguram a 11ª — a 1ª rodada resolve e faz 1 POST", async () => {
+  const repo = memoryOutbox();
+  const orphans: { tenantId: string; statementId: string; id: string; failure: "provider_unavailable" | "provider_list_incomplete" }[] = [];
+  for (let i = 0; i < 10; i += 1) {
+    const n = String(i + 1).padStart(2, "0");
+    const tenantId = `00000000-0000-4000-8000-0000000001${n}`;
+    const statementId = `30000000-0000-4000-8000-0000000001${n}`;
+    const row = await enqueue(repo, { tenantId, statementId });
+    orphans.push({ tenantId, statementId, id: row.id, failure: i < 5 ? "provider_unavailable" : "provider_list_incomplete" });
+  }
+  for (let i = 0; i < 10; i += 1) {
+    const claimed = await repo.claimNext({ enabledProviders: ["asaas"], now: NOW, claimedBy: "crash", orphanMs: OUTBOX_ORPHAN_MS, verdict: () => ({ kind: "eligible" }) });
+    assert.equal(claimed?.kind, "claimed");
+  }
+  const eleventh = await enqueue(repo, { tenantId: "00000000-0000-4000-8000-000000000111", statementId: "30000000-0000-4000-8000-000000000111" });
+  const byStatement = new Map(orphans.map((o) => [o.statementId, o.failure]));
+  const { port, calls } = paymentPort({
+    listChargesByExternalReference: async (statementId: string) => {
+      calls.list += 1;
+      const failure = byStatement.get(statementId);
+      if (failure === "provider_unavailable") throw Object.assign(new Error("500"), { code: "provider_unavailable" });
+      if (failure === "provider_list_incomplete") throw new ProviderListIncompleteError();
+      return [];
+    },
+  });
+  const result = await runDispatchOutbox({ repo, ports: { asaas: port }, resolveCustomer: async () => ({ ok: true, customerId: "cus" }), now: () => new Date(NOW.getTime() + OUTBOX_ORPHAN_MS) });
+  assert.equal(calls.create, 1, "1 POST, o da 11ª organização");
+  assert.equal(result.outcomes.sent, 1);
+  assert.equal(result.outcomes.retry, 10, "as 10 órfãs foram adiadas, cada uma no catch dela");
+  assert.equal((await repo.findById("00000000-0000-4000-8000-000000000111", eleventh.id))?.status, "SENT");
+  for (const orphan of orphans) {
+    const current = await repo.findById(orphan.tenantId, orphan.id);
+    assert.equal(current?.status, "PROCESSING", "a órfã nunca volta a PENDING");
+    assert.equal(current?.lastError, orphan.failure);
+    assert.equal(current?.externalId ?? null, null, "a órfã nunca cria");
+  }
 });

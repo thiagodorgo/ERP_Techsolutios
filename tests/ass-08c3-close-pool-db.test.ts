@@ -82,6 +82,10 @@ if (!connectionString) {
     kit = await openPrismaKit(connectionString, "c08c3_cp");
     M = {
       runtime: await import("../src/modules/subscription-billing/statements/statement.prisma-runtime.js"),
+      inputs: await import("../src/modules/subscription-billing/statements/statement.inputs-provider.js"),
+      plans: await import("../src/modules/subscription-billing/plans/plans-prisma.repository.js"),
+      subscriptions: await import("../src/modules/subscription-billing/plans/subscriptions-prisma.repository.js"),
+      tenants: await import("../src/modules/subscription-billing/plans/tenant-lookup.prisma.js"),
     };
   });
 
@@ -137,5 +141,45 @@ if (!connectionString) {
     assert.ok(pins[1] && (pins[1] as { planVersionIds: string[] }).planVersionIds.includes("plan-v1"), "o refechamento usa o pin do original");
     const final = await kit.one(`SELECT status, total_amount::text AS total FROM subscription_statements WHERE id = $1::uuid`, statementId);
     assert.deepEqual({ status: final.status, total: Number(final.total) }, { status: "closed", total: 100 });
+  });
+
+  // Conserto da junta do #608 (fix-608c-cl): o CP1 no Prisma, o critério da `P-08C2-CLOSE-POOL-PRESO` (o CP1 acima roda no dublê,
+  // sem pool, e não fica vermelho com a M-CP1). O provedor de entradas é o REAL (`RepositoryStatementInputsProvider` sobre o
+  // cliente do papel efêmero), para que o `inputs.resolve` peça conexões ao MESMO pool das 10 transações. 3 rodadas, cada uma com
+  // um demonstrativo NOVO: 1 `closed`, 9 `already_closed`, 0 erro (nem 409 por expiração, nem 500).
+  test("CP1-db (P-08C2-CLOSE-POOL-PRESO): dez fechamentos concorrentes no Prisma, 3 rodadas → 1 closed e 9 already_closed, 0 erro", async () => {
+    const client = kit.role.client;
+    const repository = new M.runtime.PrismaStatementRepository(client);
+    const audit = new M.runtime.PrismaStatementAuditSink(client);
+    const inputs = new M.inputs.RepositoryStatementInputsProvider(
+      new M.subscriptions.PrismaSubscriptionsRepository(client),
+      new M.plans.PrismaPlansRepository(client),
+      new M.tenants.PrismaTenantLookup(client),
+      new M.runtime.PrismaUsageSource(client),
+      new M.runtime.PrismaBindingsSource(client),
+    );
+    const service = new StatementService(repository, inputs, audit);
+    const OCT_1 = new Date("2026-10-01T00:00:00-03:00");
+    for (let round = 1; round <= 3; round += 1) {
+      const slug = `c08c3-cp1db-${round}-${randomUUID().slice(0, 8)}`;
+      const tenantId = (await kit.one(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, slug)).id as string;
+      const planId = (await kit.one(`INSERT INTO subscription_plans (code, kind, name) VALUES ($1, 'base', $1) RETURNING id`, `cp1db_${randomUUID().replaceAll("-", "").slice(0, 10)}`)).id as string;
+      await kit.owner.$executeRawUnsafe(
+        `INSERT INTO subscription_plan_versions (plan_id, version, valid_from, monthly_price, included_users, included_storage_gb, extra_user_price, extra_gb_price, per_vehicle_price, pricing_unit, modules)
+         VALUES ($1::uuid, 1, $2::timestamptz, 100.00, 10, 10.000, 5.00, 2.00, NULL, 'flat', ARRAY['dashboard']::text[])`,
+        planId,
+        OCT_1,
+      );
+      await kit.owner.$executeRawUnsafe(`INSERT INTO tenant_subscriptions (tenant_id, plan_id, valid_from) VALUES ($1::uuid, $2::uuid, $3::timestamptz)`, tenantId, planId, OCT_1);
+      const results = await Promise.allSettled(Array.from({ length: 10 }, () => service.close({ tenantId, period: "2026-10", now: WHEN, actorId: null, source: "job" })));
+      const tally: Record<string, number> = {};
+      for (const result of results) {
+        const key = result.status === "fulfilled" ? result.value.kind : `erro ${(result.reason as { statusCode?: number })?.statusCode ?? "?"} ${(result.reason as { reason?: string })?.reason ?? (result.reason as Error)?.message ?? ""}`;
+        tally[key] = (tally[key] ?? 0) + 1;
+      }
+      assert.deepEqual(tally, { closed: 1, already_closed: 9 }, `rodada ${round}: ${JSON.stringify(tally)}`);
+      const statements = await kit.rows(`SELECT status, total_amount::text AS total FROM subscription_statements WHERE tenant_id = $1::uuid AND period = '2026-10'`, tenantId);
+      assert.deepEqual(statements.map((row) => ({ status: row.status, total: Number(row.total) })), [{ status: "closed", total: 100 }], `rodada ${round}`);
+    }
   });
 }
