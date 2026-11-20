@@ -38,6 +38,7 @@ export function getUserStatusTone(status: UserStatus) {
 //    "Operador Logistico" segue intocado no auth.adapter — é contrato de navegação);
 //  · operator/technician → "Operador Logístico" (acento correto só na exibição).
 const ROLE_DISPLAY_OVERRIDES: Record<string, string> = {
+  organization_view: "Visão da organização",
   inventory: "Estoque",
   field_technician: "Técnico de Campo",
   operator: "Operador Logístico",
@@ -59,12 +60,20 @@ const ASSIGNABLE_ROLE_KEYS = [
   "auditor",
   "support",
   "field_dispatcher",
+  "field_technician",
+  "inventory",
 ] as const;
 
 export const USER_ROLE_OPTIONS: readonly { value: string; label: string }[] = ASSIGNABLE_ROLE_KEYS.map((value) => ({
   value,
   label: roleLabel(value),
 }));
+
+export function preserveOrganizationViewRole(selectedRoles: readonly string[], originalRoles: readonly string[]): string[] {
+  const roles = [...selectedRoles];
+  if (originalRoles.includes("organization_view") && !roles.includes("organization_view")) roles.push("organization_view");
+  return roles;
+}
 
 // Junta os papéis do usuário em rótulos PT-BR (dedup preservando ordem), "—" quando vazio.
 export function formatUserRoles(roles: readonly string[] | undefined): string {

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 
 import type { User } from "../src/modules/users/users.types";
@@ -71,9 +72,40 @@ test("users adapter: papéis → rótulos PT-BR (mapa reutilizado do auth.adapte
   assert.equal(formatUserRoles([]), "—");
 
   // Opções do multi-select: papéis atribuíveis por organização, rótulos distintos.
-  assert.equal(USER_ROLE_OPTIONS.length, 7);
+  assert.equal(USER_ROLE_OPTIONS.length, 9);
   assert.ok(USER_ROLE_OPTIONS.some((option) => option.value === "tenant_admin" && option.label === "Administrador"));
   assert.ok(USER_ROLE_OPTIONS.every((option) => option.label.trim().length > 0));
+});
+
+test("F-ROTULO — a chave técnica nunca vaza para a interface", async () => {
+  const { roleLabel } = await import("../src/modules/users/users.adapter");
+  assert.equal(roleLabel("organization_view"), "Visão da organização");
+});
+
+test("F-PAPEIS-CAMPO — o formulário oferece Técnico de Campo e Estoque", async () => {
+  const { USER_ROLE_OPTIONS } = await import("../src/modules/users/users.adapter");
+  assert.ok(USER_ROLE_OPTIONS.some((option) => option.value === "field_technician" && option.label === "Técnico de Campo"));
+  assert.ok(USER_ROLE_OPTIONS.some((option) => option.value === "inventory" && option.label === "Estoque"));
+  assert.equal(USER_ROLE_OPTIONS.some((option) => option.value === "organization_view"), false, "a concessão não aparece como perfil comum");
+});
+
+test("F-FORM-PRESERVA — editar dados comuns não remove a Visão da organização", async () => {
+  const { preserveOrganizationViewRole } = await import("../src/modules/users/users.adapter");
+  assert.deepEqual(
+    preserveOrganizationViewRole(["field_technician"], ["field_technician", "organization_view"]),
+    ["field_technician", "organization_view"],
+  );
+  assert.deepEqual(preserveOrganizationViewRole(["field_technician"], ["field_technician"]), ["field_technician"]);
+
+  const modal = fs.readFileSync(new URL("../src/modules/users/components/UserFormModal.tsx", import.meta.url), "utf8");
+  assert.match(modal, /roles: preserveOrganizationViewRole\(draft\.roles, user\.roles\)/, "o PATCH deve usar a preservação explícita");
+});
+
+test("F-SERVICO-CONCESSAO — cliente usa PUT para conceder e DELETE para retirar, sem corpo", () => {
+  const source = fs.readFileSync(new URL("../src/modules/users/users.service.ts", import.meta.url), "utf8");
+  assert.match(source, /`\/users\/\$\{id\}\/organization-view`/);
+  assert.match(source, /method: granted \? "PUT" : "DELETE"/);
+  assert.doesNotMatch(source.match(/export async function setOrganizationView[\s\S]*?\n}\n/)?.[0] ?? "", /body:/);
 });
 
 test("users adapter: rótulo/tom do Chip de situação (Ativo/Inativo/Convite pendente)", async () => {
