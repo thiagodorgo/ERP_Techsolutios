@@ -10,6 +10,7 @@
 // fictícios e só existem neste arquivo.
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -490,4 +491,91 @@ void main() {
     expect(h.server.requests, hasLength(3));
     expect(h.storage.saves, 1);
   });
+
+  // Ressalva da verificação da F1 (Azure, MÉDIA): os parâmetros da T-b são
+  // opcionais no interceptador e no `createAuthenticatedHttpClient`. Esta
+  // guarda varre `lib/` e falha se alguma CONSTRUÇÃO de
+  // `AuthRefreshInterceptor(` ou CHAMADA de `createAuthenticatedHttpClient(`
+  // (fora das declarações) não passar `boundSessionKey:` e `currentSessionKey:`.
+  // É guarda de fiação: avisa; quem prova o comportamento é o
+  // `bapporg_travas_test.dart` (T10b e T10b-fiação).
+  group('G-TB — todo cliente autenticado de lib/ passa as duas chaves da T-b', () {
+    final sites = _tbSites();
+
+    test('as construções e chamadas encontradas (o censo)', () {
+      // O censo de hoje: 1 construção do interceptador e 1 chamada do cliente.
+      // Um sítio novo entra aqui e precisa passar as duas chaves (abaixo).
+      expect(sites.map((s) => s.label).toList(), [
+        'createAuthenticatedHttpClient( em lib/core/auth/session_http_client.dart',
+        'AuthRefreshInterceptor( em lib/core/network/http_client.dart',
+      ]);
+    });
+
+    test('cada uma passa boundSessionKey: e currentSessionKey:', () {
+      final faltando = [
+        for (final site in sites)
+          for (final param in const ['boundSessionKey:', 'currentSessionKey:'])
+            if (!site.args.contains(param)) '${site.label} sem $param',
+      ];
+      expect(faltando, isEmpty);
+    });
+  });
+}
+
+class _TbSite {
+  const _TbSite(this.label, this.args);
+  final String label;
+  final String args;
+}
+
+/// Os sítios de `lib/` que montam um cliente autenticado: cada
+/// `AuthRefreshInterceptor(` que não é a declaração do construtor (`({`) e cada
+/// `createAuthenticatedHttpClient(` que não é a declaração da função
+/// (`Dio createAuthenticatedHttpClient(`). `args` é o texto entre os parênteses
+/// balanceados da chamada.
+List<_TbSite> _tbSites() {
+  final sites = <_TbSite>[];
+  final files =
+      Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
+  for (final file in files) {
+    final rel = file.path.replaceAll(r'\', '/');
+    final text = file.readAsStringSync();
+    for (final name in const [
+      'AuthRefreshInterceptor(',
+      'createAuthenticatedHttpClient(',
+    ]) {
+      var from = 0;
+      while (true) {
+        final at = text.indexOf(name, from);
+        if (at < 0) break;
+        from = at + name.length;
+        final open = at + name.length - 1;
+        final args = _balanced(text, open);
+        final declaration =
+            args.trimLeft().startsWith('{') ||
+            text.substring(0, at).trimRight().endsWith('Dio');
+        if (declaration) continue;
+        sites.add(_TbSite('$name em $rel', args));
+      }
+    }
+  }
+  return sites;
+}
+
+String _balanced(String text, int open) {
+  var depth = 0;
+  for (var i = open; i < text.length; i++) {
+    final c = text[i];
+    if (c == '(') depth++;
+    if (c == ')') {
+      depth--;
+      if (depth == 0) return text.substring(open + 1, i);
+    }
+  }
+  return text.substring(open + 1);
 }
