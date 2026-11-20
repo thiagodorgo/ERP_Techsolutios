@@ -1,8 +1,26 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
 import test from "node:test";
 
 import type { User } from "../src/modules/users/users.types";
+import { elements, installMiniDom, propsOf, serialize, text, type MiniDomElement } from "./helpers/mini-dom";
+
+// B-USERS-CONCESSAO-PAINEL (A3) — F-FORM-PRESERVA e F-SERVICO-CONCESSAO provam pelo ENVIO real: o modal real e o
+// serviço real chamam um `fetch` dublê, e o teste lê método, caminho e corpo do pedido. O DOM mínimo entra ANTES de
+// qualquer import de `react-dom/client` (que é dinâmico, dentro do teste).
+process.env.VITE_USE_MOCKS = "false";
+installMiniDom();
+
+type SentRequest = { readonly method: string; readonly url: string; readonly body: unknown };
+
+/** `fetch` dublê: guarda cada pedido (método, caminho, corpo cru) e responde 200 com `responseBody`. */
+function captureFetch(responseBody: unknown): SentRequest[] {
+  const sent: SentRequest[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    sent.push({ method: init?.method ?? "GET", url: String(input), body: init?.body });
+    return new Response(JSON.stringify(responseBody), { status: 200, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  return sent;
+}
 
 function makeUser(partial: Partial<User> & Pick<User, "id">): User {
   return {
@@ -89,23 +107,90 @@ test("F-PAPEIS-CAMPO — o formulário oferece Técnico de Campo e Estoque", asy
   assert.equal(USER_ROLE_OPTIONS.some((option) => option.value === "organization_view"), false, "a concessão não aparece como perfil comum");
 });
 
-test("F-FORM-PRESERVA — editar dados comuns não remove a Visão da organização", async () => {
-  const { preserveOrganizationViewRole } = await import("../src/modules/users/users.adapter");
+test("F-FORM-PRESERVA — o administrador edita só o nome de quem tem a visão → o PATCH leva roles com organization_view", async () => {
+  const React = await import("react");
+  const { createRoot } = await import("react-dom/client");
+  const { adaptUserResponse, preserveOrganizationViewRole } = await import("../src/modules/users/users.adapter");
+  const { UserFormModal } = await import("../src/modules/users/components/UserFormModal");
+  type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
+  const act = (React as unknown as { act: ActFn }).act;
+  const settle = async () => {
+    for (let i = 0; i < 4; i++) await act(async () => void (await new Promise((resolve) => setTimeout(resolve, 0))));
+  };
+
+  // Com a visão no original ela vai no PATCH; sem ela, nada é inventado.
+  const cases = [
+    { roles: ["field_technician", "organization_view"], expected: ["field_technician", "organization_view"] },
+    { roles: ["inventory"], expected: ["inventory"] },
+  ];
+  for (const { roles, expected } of cases) {
+    const apiUser = { data: { id: "u1", name: "Ana", email: "ana@techsolutions.example", roles, status: "active" } };
+    const user = adaptUserResponse(apiUser);
+    assert.ok(user, "o usuário da API foi lido");
+    assert.deepEqual(user.roles, roles, "o adaptador não perde o papel ao ler");
+
+    const sent = captureFetch(apiUser);
+    const saved: unknown[] = [];
+    const container = document.body.appendChild(document.createElement("div"));
+    const root = createRoot(container as unknown as Element);
+    await act(async () => {
+      root.render(
+        React.createElement(UserFormModal, { user, context: { tenantId: "org-1" }, onClose: () => {}, onSaved: (value?: User) => void saved.push(value) }),
+      );
+    });
+    try {
+      const host = container as unknown as MiniDomElement;
+      const optionLabels = elements(host, (el) => el.localName === "label" && elements(el, (child) => child.localName === "input" && propsOf(child).type === "checkbox").length > 0).map((el) => text(el).trim());
+      assert.ok(optionLabels.length > 0, "o modal real renderizou as opções de perfil: " + serialize(host).slice(0, 600));
+      assert.equal(optionLabels.some((label) => /organization_view|Visão da organização/.test(label)), false, `a concessão não aparece como perfil no formulário: ${optionLabels.join(" | ")}`);
+
+      const nameInput = elements(host, (el) => el.localName === "input" && el.getAttribute("id") === "user-field-name")[0];
+      assert.ok(nameInput, "campo Nome");
+      await act(async () => {
+        (propsOf(nameInput).onChange as (event: unknown) => void)({ target: { value: "Ana Beatriz" } });
+      });
+      const form = elements(host, (el) => el.localName === "form")[0];
+      assert.ok(form, "formulário");
+      await act(async () => {
+        await (propsOf(form).onSubmit as (event: unknown) => Promise<void>)({ preventDefault() {} });
+      });
+      await settle();
+
+      assert.equal(sent.length, 1, `um pedido só: ${JSON.stringify(sent.map((r) => `${r.method} ${r.url}`))}`);
+      assert.equal(sent[0].method, "PATCH");
+      assert.match(sent[0].url, /\/users\/u1$/);
+      const body = JSON.parse(String(sent[0].body)) as { name: string; roles: string[]; status: string };
+      assert.equal(body.name, "Ana Beatriz");
+      assert.deepEqual([...body.roles].sort(), [...expected].sort());
+      assert.equal(saved.length, 1, "o modal avisou que salvou");
+    } finally {
+      await act(async () => root.unmount());
+      document.body.removeChild(container as unknown as Node);
+    }
+  }
+
+  // A função pura que o modal usa, nos dois sentidos.
   assert.deepEqual(
     preserveOrganizationViewRole(["field_technician"], ["field_technician", "organization_view"]),
     ["field_technician", "organization_view"],
   );
   assert.deepEqual(preserveOrganizationViewRole(["field_technician"], ["field_technician"]), ["field_technician"]);
-
-  const modal = fs.readFileSync(new URL("../src/modules/users/components/UserFormModal.tsx", import.meta.url), "utf8");
-  assert.match(modal, /roles: preserveOrganizationViewRole\(draft\.roles, user\.roles\)/, "o PATCH deve usar a preservação explícita");
 });
 
-test("F-SERVICO-CONCESSAO — cliente usa PUT para conceder e DELETE para retirar, sem corpo", () => {
-  const source = fs.readFileSync(new URL("../src/modules/users/users.service.ts", import.meta.url), "utf8");
-  assert.match(source, /`\/users\/\$\{id\}\/organization-view`/);
-  assert.match(source, /method: granted \? "PUT" : "DELETE"/);
-  assert.doesNotMatch(source.match(/export async function setOrganizationView[\s\S]*?\n}\n/)?.[0] ?? "", /body:/);
+test("F-SERVICO-CONCESSAO — cliente usa PUT para conceder e DELETE para retirar, sem corpo", async () => {
+  const { setOrganizationView } = await import("../src/modules/users/users.service");
+  for (const [granted, method] of [
+    [true, "PUT"],
+    [false, "DELETE"],
+  ] as const) {
+    const sent = captureFetch({ data: { id: "u1", name: "Ana", roles: ["field_technician"], status: "active" } });
+    const user = await setOrganizationView({ tenantId: "org-1" }, "u1", granted);
+    assert.equal(sent.length, 1, `um pedido só (${method})`);
+    assert.equal(sent[0].method, method);
+    assert.match(sent[0].url, /\/users\/u1\/organization-view$/);
+    assert.equal(sent[0].body, undefined, `o ${method} vai sem corpo`);
+    assert.equal(user?.id, "u1", "a resposta é lida como usuário");
+  }
 });
 
 test("users adapter: rótulo/tom do Chip de situação (Ativo/Inativo/Convite pendente)", async () => {

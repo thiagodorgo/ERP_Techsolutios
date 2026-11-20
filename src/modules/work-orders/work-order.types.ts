@@ -77,8 +77,6 @@ export type WorkOrderActorContext = {
   readonly permissions: readonly Permission[];
 };
 
-export type WorkOrderReadModule = "os" | "vistoria";
-
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 // B-O6R-07a (Ω6R-SEC-002, §3.3) — ESCOPO POR OBJETO na mutação de OS.
 //
@@ -167,26 +165,21 @@ export const WORK_ORDER_READ_SCOPE = {
   support: "nao_alarga",
 } as const satisfies Record<Role, "tenant_wide" | "assigned_only" | "nao_alarga">;
 
-export const WORK_ORDER_READ_SCOPE_EXCEPTIONS: Record<
-  WorkOrderReadModule,
-  Partial<Record<Role, "tenant_wide" | "assigned_only" | "nao_alarga">>
-> = {
+// B-USERS-CONCESSAO-PAINEL (P-WO-LEITURA-DESPACHANTE-VISTORIA) — a leitura tem eixo de MÓDULO só onde a função difere: o
+// despachante lê a OS da organização (o console dele, Emenda 3.2 §1.2), mas NÃO a vistoria (sozinho não tem
+// `checklist_runs:read`). Somado ao técnico, ele não alarga a vistoria. Todos os outros módulos usam "os".
+// O tipo só admite "nao_alarga": uma exceção só pode ESTREITAR; alargar (`"tenant_wide"`) não compila.
+export type WorkOrderReadModule = "os" | "vistoria";
+const WORK_ORDER_READ_SCOPE_EXCEPTIONS: Readonly<Record<WorkOrderReadModule, Partial<Record<Role, "nao_alarga">>>> = {
   os: {},
-  vistoria: {
-    field_dispatcher: "nao_alarga",
-  },
+  vistoria: { field_dispatcher: "nao_alarga" }, // B-USERS-CONCESSAO:vistoria-excecao
 };
 
-function readScopeForRole(
-  role: string,
-  module: WorkOrderReadModule,
-): "tenant_wide" | "assigned_only" | "nao_alarga" | undefined {
-  const base = (WORK_ORDER_READ_SCOPE as Record<string, "tenant_wide" | "assigned_only" | "nao_alarga" | undefined>)[role];
-  const override =
-    (WORK_ORDER_READ_SCOPE_EXCEPTIONS[module] as Record<string, "tenant_wide" | "assigned_only" | "nao_alarga" | undefined> | undefined)?.[
-      role
-    ];
-  return override ?? base;
+/** O escopo de leitura do papel no módulo: a exceção do módulo, se houver, senão o mapa base. Papel fora do mapa → `undefined`. */
+function readScopeForRole(role: string, modulo: WorkOrderReadModule): "tenant_wide" | "assigned_only" | "nao_alarga" | undefined {
+  const exceptions: Partial<Record<string, "nao_alarga">> = WORK_ORDER_READ_SCOPE_EXCEPTIONS[modulo];
+  const base: Record<string, "tenant_wide" | "assigned_only" | "nao_alarga" | undefined> = WORK_ORDER_READ_SCOPE;
+  return exceptions[role] ?? base[role];
 }
 
 /**
@@ -198,10 +191,10 @@ function readScopeForRole(
  * (chamador interno) não cai no escopo, pelo mesmo motivo do 07a. Para os 13 papéis do catálogo, isto coincide com
  * "todos os papéis são assigned_only".
  */
-export function actorReadsAssignedOnly(actor: WorkOrderActorContext, module: WorkOrderReadModule = "os"): boolean {
+export function actorReadsAssignedOnly(actor: WorkOrderActorContext, modulo: WorkOrderReadModule = "os"): boolean {
   const roles = actor.roles ?? [];
-  const hasFieldRole = roles.some((role) => readScopeForRole(role, module) === "assigned_only");
-  const hasTenantWide = roles.some((role) => readScopeForRole(role, module) === "tenant_wide");
+  const hasFieldRole = roles.some((role) => readScopeForRole(role, modulo) === "assigned_only");
+  const hasTenantWide = roles.some((role) => readScopeForRole(role, modulo) === "tenant_wide");
   return hasFieldRole && !hasTenantWide; // B-WO-LEITURA:predicado
 }
 

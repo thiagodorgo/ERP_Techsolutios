@@ -1126,8 +1126,8 @@ export class WorkOrderService {
   }
 
   /** B-WO-LEITURA — o escopo de LEITURA do ator: `undefined` = organização inteira; senão, o mesmo escopo da lista (B-SAN3-13). */
-  async readScopeFor(actor: WorkOrderActorContext, module: WorkOrderReadModule = "os"): Promise<WorkOrderAssignedToActorScope | undefined> {
-    return actorReadsAssignedOnly(actor, module) ? this.resolveListActorScope(actor) : undefined; // B-WO-LEITURA:escopo
+  async readScopeFor(actor: WorkOrderActorContext, modulo: WorkOrderReadModule = "os"): Promise<WorkOrderAssignedToActorScope | undefined> {
+    return actorReadsAssignedOnly(actor, modulo) ? this.resolveListActorScope(actor) : undefined; // B-WO-LEITURA:escopo
   }
 
   /**
@@ -1135,8 +1135,8 @@ export class WorkOrderService {
    * igual também na janela de falha do resolvedor (503 para as duas). Para o papel de campo, a OS alheia dá o
    * MESMO 404 do id inexistente.
    */
-  async getForRead(actor: WorkOrderActorContext, workOrderId: string, module: WorkOrderReadModule = "os"): Promise<WorkOrder> {
-    const scope = await this.readScopeFor(actor, module);
+  async getForRead(actor: WorkOrderActorContext, workOrderId: string, modulo: WorkOrderReadModule = "os"): Promise<WorkOrder> {
+    const scope = await this.readScopeFor(actor, modulo);
     const workOrder = await this.get(actor, workOrderId);
     if (scope && !matchesAssignedToActor(workOrder, scope)) throw workOrderNotFoundError(); // B-WO-LEITURA:porta
     return workOrder;
