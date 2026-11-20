@@ -277,6 +277,8 @@ Legenda: V = visualizar, C = criar, E = editar, A = aprovar, X = excluir/cancela
 | Auditoria/logs | V/R | V | V parcial | V próprio | V parcial | V parcial | V | V/R |
 | Integrações | V/C/E/X | V | - | - | - | - | V parcial | V |
 
+> **Nota (B-USERS-CONCESSAO-PAINEL, 2026-11-20).** Na linha "Usuários/permissões", o Gestor Op. segue com `V`, com UMA exceção decidida pelo dono (fonte 1, acima deste documento — §A1): ele pode dar ou tirar a **"Visão da organização"** de qualquer pessoa da própria organização, inclusive de si (`D-DONO-1711-GESTOR-CONCEDE`, 17/11), como o Admin. A visão só deixa quem é de campo **ver** as ordens de serviço, as vistorias, os despachos, as aprovações e o painel de toda a organização, dentro das permissões que a pessoa já tem; não dá permissão nova nem escrita, e dar ou tirar não obriga a entrar de novo (`D-DONO-2011-RESPOSTAS`, Q1 = (a)). Criar, editar e desativar usuários seguem só com o Admin. Detalhe em `RBAC_MATRIX.md` (papel `organization_view`) e `API_CONTRACTS.md` (`PUT`/`DELETE /users/:userId/organization-view`).
+
 ## 5. Regras de autorização
 
 | Código | Regra |
