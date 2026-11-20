@@ -17139,6 +17139,20 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **fato:** o job `docker` do `ci.yml` publica só `amd64`; acrescentar `platforms: linux/amd64,linux/arm64` e trocar `cpuArchitecture` para `ARM64` economiza ~US$ 6/mês.
 - **critério de encerramento:** a imagem sai em `linux/amd64,linux/arm64`, a task definition usa `ARM64` e o custo medido cai.
 
+- **Apenso 2026-11-19 (registro do dia, 09:15 — pergunta do dono, "documente isso"):** complemento medido na
+  `main`. A causa é que o passo `docker/build-push-action@v6` do job `docker` (`.github/workflows/ci.yml:719`)
+  não declara `platforms:`; sem isso, o buildx monta só para a arquitetura do runner do GitHub (x86/amd64).
+  Nunca fez falta porque o runtime de então rodava em x86; a diferença só apareceu no planejamento da AWS, onde o
+  ARM (Graviton) é mais barato. Nada no produto impede o ARM: a base `node:20-bookworm-slim` (Dockerfile l.5 e
+  l.23) existe para arm64. **O conserto:** `platforms: linux/amd64,linux/arm64` no passo (com QEMU, ou com
+  runner ARM nativo do GitHub, gratuito em repositório público) e `cpuArchitecture: ARM64` na definição da
+  tarefa. **O custo:** o CI fica mais lento com emulação (vários minutos por rodada), ou o job cresce com o runner
+  ARM. **Autorização:** mexer na montagem da imagem em `.github/**` exige autorização do dono, porque o contrato
+  só libera acrescentar suítes no `SUITES=`. O antivírus é outro caso: a imagem do ClamAV vem de fora, e a versão
+  aprovada só existe em amd64 (`P-AWS-CLAMAV-ARM64`); isso não depende do nosso CI. **Recomendação do
+  orquestrador, não decidida pelo dono:** subir em x86 agora (`D-AWS-08`) e fazer o ARM num bloco pequeno depois
+  do go-live (dono `B-INFRA-AWS-03`), com a autorização de `.github/**` pedida nesse bloco.
+
 ## P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS — ALTA
 
 - **status:** ABERTA · **gravidade:** ALTA (bloqueia o CD de produção) · **escopo:** `pre-existente` (a imagem de runtime e o CD) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** o CD de produção (o `prisma migrate deploy` e o `db:provision-rbac`).
@@ -17278,3 +17292,10 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** decisão `D-DONO-1911-COBRANCA-POS-PORTAO` (19/11, manhã).
 - **fato:** o backend da cobrança já avançou até 08c2/08c3, mas ainda falta a tela operacional da plataforma para demonstrativo, emissão/cancelamento, baixa manual, fila de revisão, notas e configuração de provedor/canal.
 - **critério de encerramento:** a tela de operação da cobrança é entregue no padrão de 3 opções aprovado e conectada ao backend do canal.
+
+## P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração one-shot de `b-o6r-09` ficou fora da classe que o #605 consertou — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o arnês de teste) · **dono:** o próximo bloco que tocar o arnês de teste · **bloqueia:** não.
+- **origem:** revisão `rev-605-df` do PR #605, achado A-605-04; registro de 19/11, 11:00.
+- **fato:** em `tests/b-o6r-09-dispatch-same-tx-db.test.ts`, a migração one-shot chama `promisify(execFile)` com `timeout` (o `prisma migrate deploy` do banco novo). O #605 fechou a classe dos processos-filho em `tests/child-process-property.test.ts` (`EXPECTED_CREATORS` + a garantia de que o filho sempre morre), mas este arquivo ficou de fora: o `A_605_04` daquele teste só o fixa por 3 `assert.match` (a chamada `promisify(execFile)`, o `migrate deploy` e o `timeout: 840_000`), sem a garantia da classe.
+- **critério de encerramento:** o `promisify(execFile)` da migração one-shot em `tests/b-o6r-09-dispatch-same-tx-db.test.ts` entra na classe que o #605 consertou (ou o motivo de ficar fora está escrito no `A_605_04`), com a prova de que o processo-filho não fica vivo depois do teste.

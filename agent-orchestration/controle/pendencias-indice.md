@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1309** |
-| IDs distintos | 1294 |
-| **ABERTAS** | **1005** |
+| Cabecalhos `## P-` | **1310** |
+| IDs distintos | 1295 |
+| **ABERTAS** | **1006** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **944** |
+| — das quais **ativas nesta rodada** | **945** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 300 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1309 cabecalhos para 1294 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1310 cabecalhos para 1295 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -449,20 +449,20 @@
 | `P-OS-CONCLUSAO-EVENTO-DUPLO` | 17049 | MÉDIA | sim | P-OS-CONCLUSAO-EVENTO-DUPLO (2026-11-17) — duas conclusões simultâneas da mesma OS grava |
 | `P-NODE-ENV-AUSENTE-E-DEV` | 17092 | CRÍTICA | sim | P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 |
 | `P-PLATAFORMA-PERMISSAO-IGNORADA` | 17121 | ALTA | sim | P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma fal |
-| `P-AWS-MIGRADOR` | 17142 | ALTA | sim | P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS —  |
-| `P-AWS-BACKUP-PGDUMP` | 17149 | MÉDIA | sim | P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS |
-| `P-FRONT-API-BASE-URL` | 17163 | MÉDIA | sim | P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em ve |
-| `P-AWS-SSE-TIMEOUT` | 17170 | MÉDIA | sim | P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou p |
-| `P-AWS-PORTAL-TENANT` | 17177 | MÉDIA | sim | P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant |
-| `P-AWS-IP-FIXO` | 17184 | MÉDIA | sim | P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco  |
-| `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO` | 17219 | MÉDIA | sim | P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai  |
-| `P-USERS-TELA-SEM-PAPEIS-DE-CAMPO` | 17240 | MÉDIA | sim | P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_te |
-| `P-WO-LEITURA-DESPACHANTE-VISTORIA` | 17254 | MÉDIA | sim | P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias |
-| `P-AWS-CUSTO-VIRGINIA` | 17261 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
-| `P-AWS-LGPD-TRANSFERENCIA` | 17268 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
-| `P-ASS-OPERACAO-COBRANCA-TELA` | 17275 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
+| `P-AWS-MIGRADOR` | 17156 | ALTA | sim | P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS —  |
+| `P-AWS-BACKUP-PGDUMP` | 17163 | MÉDIA | sim | P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS |
+| `P-FRONT-API-BASE-URL` | 17177 | MÉDIA | sim | P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em ve |
+| `P-AWS-SSE-TIMEOUT` | 17184 | MÉDIA | sim | P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou p |
+| `P-AWS-PORTAL-TENANT` | 17191 | MÉDIA | sim | P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant |
+| `P-AWS-IP-FIXO` | 17198 | MÉDIA | sim | P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco  |
+| `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO` | 17233 | MÉDIA | sim | P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai  |
+| `P-USERS-TELA-SEM-PAPEIS-DE-CAMPO` | 17254 | MÉDIA | sim | P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_te |
+| `P-WO-LEITURA-DESPACHANTE-VISTORIA` | 17268 | MÉDIA | sim | P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias |
+| `P-AWS-CUSTO-VIRGINIA` | 17275 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
+| `P-AWS-LGPD-TRANSFERENCIA` | 17282 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
+| `P-ASS-OPERACAO-COBRANCA-TELA` | 17289 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
 
-## ABERTAS · balde B — processo/registro — 557
+## ABERTAS · balde B — processo/registro — 558
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1015,14 +1015,15 @@
 | `P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE` | 17106 | BAIXA | sim | P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchFo |
 | `P-MOBILE-INVENTORY-MANAGE-SEM-USO` | 17128 | BAIXA | sim | P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-s |
 | `P-AWS-IMAGEM-ARM64` | 17135 | BAIXA | sim | P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AW |
-| `P-AWS-VALKEY-TLS` | 17156 | BAIXA | sim | P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — |
-| `P-AWS-CLAMAV-ARM64` | 17191 | BAIXA | sim | P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA |
-| `P-AWS-CLAMAV-IMAGEM` | 17198 | BAIXA | sim | P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no iníc |
-| `P-AWS-TRACCAR-ARM64` | 17205 | BAIXA | sim | P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA |
-| `P-WO-ORACULO-403-404-ESCRITA` | 17212 | BAIXA | sim | P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexisten |
-| `P-ATTACHMENTS-WORK-ORDER-SEM-PORTA` | 17226 | BAIXA | sim | P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` r |
-| `P-PAINEL-SUPORTE-SCOPED` | 17233 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
-| `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17247 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
+| `P-AWS-VALKEY-TLS` | 17170 | BAIXA | sim | P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — |
+| `P-AWS-CLAMAV-ARM64` | 17205 | BAIXA | sim | P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA |
+| `P-AWS-CLAMAV-IMAGEM` | 17212 | BAIXA | sim | P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no iníc |
+| `P-AWS-TRACCAR-ARM64` | 17219 | BAIXA | sim | P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA |
+| `P-WO-ORACULO-403-404-ESCRITA` | 17226 | BAIXA | sim | P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexisten |
+| `P-ATTACHMENTS-WORK-ORDER-SEM-PORTA` | 17240 | BAIXA | sim | P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` r |
+| `P-PAINEL-SUPORTE-SCOPED` | 17247 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
+| `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17261 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
+| `P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT` | 17296 | BAIXA | sim | P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração o |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
