@@ -12,7 +12,7 @@ import type { Router } from "express";
 // B-ASS-09 · F8 — R-API-1 do plano v2 (A-06, D-10): o `API_CONTRACTS.md` diz o que o router faz.
 //   (1) o §3.3 lista EXATAMENTE as 10 rotas da visão, do câmbio e dos grupos, cada uma com a permissão — e as duas coisas
 //       saem do RUNTIME: o caminho, da pilha do `express.Router` dos 3 routers; a permissão, de uma sonda HTTP por rota (o
-//       ator sem papel de plataforma passa da guarda só com a permissão certa em `x-permissions`, a via de cabeçalho de dev);
+//       papel de plataforma passa da guarda só com a permissão certa em `x-permissions`, a via de cabeçalho de dev);
 //   (2) a seção `platform_billing_overview@2026-11.b-ass-09` existe, com a base da assinatura e a lista dos campos que podem
 //       ser `null` (P13);
 //   (3) as 3 linhas das rotas de markup que o B-ASS-01 tirou ficam, marcadas como retiradas.
@@ -99,7 +99,7 @@ test("T-API-1 · o §3.3 do API_CONTRACTS.md lista as 10 rotas do B-ASS-09, com 
             "content-type": "application/json",
             "x-tenant-id": "ten_api09",
             "x-user-id": "usr_api09",
-            "x-role": "tenant_admin",
+            "x-role": "super_admin",
             "x-permissions": permission,
           },
           ...(method === "GET" || method === "DELETE" ? {} : { body: "{}" }),
