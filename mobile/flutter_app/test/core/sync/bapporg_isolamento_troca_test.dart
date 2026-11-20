@@ -14,7 +14,8 @@
 //
 // Mutações que este arquivo pega: M13 (T11 e os T11b-OS), M34c′ (G-EXP), M34a (T11b-OS e T11b-OS-demo),
 // M34b (T11b-checklist), M34d (T11b-prestador), M36 (T15b), M-F70-1 (F70-1: sem o disparo da passada
-// na troca concluída, a volta para A não envia nada).
+// na troca concluída, a volta para A não envia nada), M-F70-OWN-2b (F70-1-sem-sessao: sem a guarda de
+// `authenticated`, a troca concluída com a senha provisória dispara a passada).
 //
 // Conserto F70-1/F70-2 (achados do ensaio no emulador, F7): a troca concluída dispara UMA passada da
 // sessão viva; a contagem da tela de troca acompanha a fila.
@@ -93,7 +94,7 @@ AuthSession _sessaoA() => AuthSession(
 );
 
 /// O 200 do `/auth/active-tenant` no formato do servidor (`auth.routes.ts`).
-Map<String, Object?> _trocou(String org) => {
+Map<String, Object?> _trocou(String org, {bool senhaProvisoria = false}) => {
   'data': {
     'access_token': 'tok-$org',
     'accessToken': 'tok-$org',
@@ -108,7 +109,7 @@ Map<String, Object?> _trocou(String org) => {
     'sessionId': 'sess-$org',
     'tenant': {'id': org, 'name': 'Guincho $org'},
     'user': {'id': _userOf(org), 'name': 'João Prado', 'email': _email},
-    'must_change_password': false,
+    'must_change_password': senhaProvisoria,
     'roles': const ['field_technician'],
     'permissions': const ['work_orders:read', 'expense_sync:write'],
   },
@@ -150,6 +151,10 @@ class _Servidor {
 
   /// F70-1: com um código, o `/auth/active-tenant` recusa a troca.
   int? recusaTroca;
+
+  /// F70-ACH-2: a troca conclui com a senha provisória
+  /// (`must_change_password`): a sessão de destino fica restrita.
+  bool trocaComSenhaProvisoria = false;
 
   String get base => 'http://127.0.0.1:${_server.port}';
 
@@ -195,7 +200,10 @@ class _Servidor {
     Object resposta = {'data': <String, Object?>{}};
     switch (r.path) {
       case '/api/v1/auth/active-tenant':
-        resposta = _trocou((body as Map)['tenantId'] as String);
+        resposta = _trocou(
+          (body as Map)['tenantId'] as String,
+          senhaProvisoria: trocaComSenhaProvisoria,
+        );
       case '/api/v1/auth/logout':
         resposta = {'data': 'ok'};
       case '/api/v1/mobile/bootstrap':
@@ -902,6 +910,50 @@ void main() {
       app.srv.reqs.where((r) => r.path.startsWith('/api/v1/mobile/sync/')),
       isEmpty,
       reason: 'a troca recusada não dispara passada',
+    );
+    expect(
+      (await fila.actionsForTenant(_orgA)).single.status,
+      SyncStatus.pending,
+    );
+  });
+
+  test('[F70-1-sem-sessao] a troca concluída para B com a sessão viva não '
+      'autenticada (senha provisória) não dispara passada nenhuma: 0 pedido '
+      'de sync e as pendências seguem na fila', () async {
+    final app = await _abre();
+    final fila = app.c.read(syncQueueRepositoryProvider);
+    await fila.enqueue(
+      _acao('o-b1', _orgB, {'local_id': 'wo-b1', 'title': 'OS b1'}),
+    );
+    await fila.enqueue(
+      _acao('o-a1', _orgA, {'local_id': 'wo-a1', 'title': 'OS a1'}),
+    );
+    app.srv.trocaComSenhaProvisoria = true;
+
+    await app.troca(_orgB);
+    final viva = app.c.read(authStateProvider).asData!.value;
+    expect(viva.status, AuthStatus.passwordChangeRequired);
+    expect(viva.session!.user.tenantId, _orgB);
+    // Sem a guarda de `authenticated`, a passada sai e fica esperando o
+    // bootstrap da sessão restrita, que falha (sem chave de sessão): o futuro
+    // não termina. Com a guarda, nenhuma passada é disparada.
+    await app.passadaDaTroca().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => fail(
+        'a troca disparou uma passada para a sessão viva não autenticada '
+        '(ela ficou esperando o bootstrap da sessão restrita)',
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+
+    expect(
+      app.srv.reqs.where((r) => r.path.startsWith('/api/v1/mobile/sync/')),
+      isEmpty,
+      reason: 'a sessão viva não está autenticada: a troca não dispara passada',
+    );
+    expect(
+      (await fila.actionsForTenant(_orgB)).single.status,
+      SyncStatus.pending,
     );
     expect(
       (await fila.actionsForTenant(_orgA)).single.status,
