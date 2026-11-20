@@ -13,7 +13,11 @@
 // reais. Os dados são fictícios e só existem neste arquivo.
 //
 // Mutações que este arquivo pega: M13 (T11 e os T11b-OS), M34c′ (G-EXP), M34a (T11b-OS e T11b-OS-demo),
-// M34b (T11b-checklist), M34d (T11b-prestador), M36 (T15b).
+// M34b (T11b-checklist), M34d (T11b-prestador), M36 (T15b), M-F70-1 (F70-1: sem o disparo da passada
+// na troca concluída, a volta para A não envia nada).
+//
+// Conserto F70-1/F70-2 (achados do ensaio no emulador, F7): a troca concluída dispara UMA passada da
+// sessão viva; a contagem da tela de troca acompanha a fila.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -144,6 +148,9 @@ class _Servidor {
   /// Segura o bootstrap de B (a janela da troca).
   Completer<void>? portaoBootB;
 
+  /// F70-1: com um código, o `/auth/active-tenant` recusa a troca.
+  int? recusaTroca;
+
   String get base => 'http://127.0.0.1:${_server.port}';
 
   Future<void> abre() async {
@@ -172,6 +179,19 @@ class _Servidor {
     );
     reqs.add(r);
     final org = r.org ?? _orgA;
+    final recusa = recusaTroca;
+    if (recusa != null && r.path == '/api/v1/auth/active-tenant') {
+      req.response
+        ..statusCode = recusa
+        ..headers.contentType = ContentType.json
+        ..write(
+          jsonEncode({
+            'error': {'code': 'TENANT_ACCESS_DENIED'},
+          }),
+        );
+      await req.response.close();
+      return;
+    }
     Object resposta = {'data': <String, Object?>{}};
     switch (r.path) {
       case '/api/v1/auth/active-tenant':
@@ -312,9 +332,38 @@ class _App {
     }
   }
 
-  /// Uma passada do coordenador REAL, na organização do bootstrap.
+  /// Uma passada do coordenador REAL, na organização do bootstrap. Antes, a
+  /// passada que a troca concluída disparou (F70-1) termina; sem isso, o
+  /// `triggerManual` voltaria na hora, com ela ainda em curso.
   Future<void> passada() async {
-    await c.read(autoSyncCoordinatorProvider.notifier).triggerManual();
+    final coord = c.read(autoSyncCoordinatorProvider.notifier);
+    await passadaDaTroca();
+    await coord.triggerManual();
+  }
+
+  /// F70-1: a passada que a última troca concluída disparou termina.
+  Future<void> passadaDaTroca() =>
+      c.read(autoSyncCoordinatorProvider.notifier).passAfterSessionChange;
+
+  /// Os `client_action_id` que o servidor recebeu em lotes de OS com o token
+  /// da organização [org].
+  List<String> lotesDeOsCom(String org) => [
+    for (final r
+        in srv
+            .para('/api/v1/mobile/sync/work-order-actions')
+            .where((r) => r.org == org))
+      ..._acoes(r.body),
+  ];
+
+  /// Espera, até [prazo], que [cond] seja verdade (sem chamar a passada).
+  Future<void> esperaAte(
+    bool Function() cond, {
+    Duration prazo = const Duration(seconds: 5),
+  }) async {
+    final fim = DateTime.now().add(prazo);
+    while (!cond() && DateTime.now().isBefore(fim)) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
   }
 }
 
@@ -783,6 +832,119 @@ void main() {
     expect(comB, ['o-b1'], reason: 'a de B subiu em B, com tok-b');
     final a = (await fila.actionsForTenant(_orgA)).single;
     expect(a.status, SyncStatus.synced, reason: 'a ação de A saiu da fila');
+  });
+
+  // ── F70-1: a volta envia sozinha ───────────────────────────────────────────
+
+  test('[F70-1] troca A→B com pendências de A, volta para A: a passada '
+      'dispara sozinha na volta e leva só as de A, com tok-a; em B, nada de A '
+      'sai com tok-b', () async {
+    final app = await _abre();
+    final fila = app.c.read(syncQueueRepositoryProvider);
+    await fila.enqueue(
+      _acao('o-a1', _orgA, {'local_id': 'wo-a1', 'title': 'OS a1'}),
+    );
+    await fila.enqueue(
+      _acao('o-a2', _orgA, {'local_id': 'wo-a2', 'title': 'OS a2'}),
+    );
+    await fila.enqueue(
+      _acao('o-b1', _orgB, {'local_id': 'wo-b1', 'title': 'OS b1'}),
+    );
+
+    // Ida: a troca concluída dispara a passada de B (sem "Sincronizar agora").
+    await app.troca(_orgB);
+    await app.esperaAte(() => app.lotesDeOsCom(_orgB).isNotEmpty);
+    await app.passadaDaTroca();
+    expect(
+      app.lotesDeOsCom(_orgB),
+      ['o-b1'],
+      reason: 'em B sai só a de B, com tok-b; nada de A com tok-b',
+    );
+    expect(
+      app.lotesDeOsCom(_orgA),
+      isEmpty,
+      reason: 'com a sessão em B, nenhuma ação de A sai',
+    );
+
+    // Volta: a troca concluída para A dispara a passada de A.
+    await app.troca(_orgA);
+    await app.esperaAte(() => app.lotesDeOsCom(_orgA).length >= 2);
+    await app.passadaDaTroca();
+    expect(
+      app.lotesDeOsCom(_orgA),
+      unorderedEquals(['o-a1', 'o-a2']),
+      reason: 'na volta, as de A sobem sozinhas, com tok-a, e só elas',
+    );
+    expect(app.lotesDeOsCom(_orgB), [
+      'o-b1',
+    ], reason: 'a de B não sai de novo, nem com tok-a');
+    final deA = await fila.actionsForTenant(_orgA);
+    expect(deA.map((a) => a.status).toSet(), {SyncStatus.synced});
+    final deB = await fila.actionsForTenant(_orgB);
+    expect(deB.single.status, SyncStatus.synced);
+  });
+
+  test('[F70-1-recusa] a troca recusada (403) não dispara passada nenhuma: '
+      'a sessão fica em A e a pendência de A continua na fila', () async {
+    final app = await _abre();
+    final fila = app.c.read(syncQueueRepositoryProvider);
+    await fila.enqueue(
+      _acao('o-a1', _orgA, {'local_id': 'wo-a1', 'title': 'OS a1'}),
+    );
+    app.srv.recusaTroca = 403;
+
+    await expectLater(app.troca(_orgB), throwsA(isA<Exception>()));
+    await app.passadaDaTroca();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+
+    expect(app.sessao.user.tenantId, _orgA);
+    expect(
+      app.srv.reqs.where((r) => r.path.startsWith('/api/v1/mobile/sync/')),
+      isEmpty,
+      reason: 'a troca recusada não dispara passada',
+    );
+    expect(
+      (await fila.actionsForTenant(_orgA)).single.status,
+      SyncStatus.pending,
+    );
+  });
+
+  // ── F70-2: a contagem acompanha a fila ─────────────────────────────────────
+
+  test('[F70-2] a contagem da tela de troca acompanha a fila da sessão viva '
+      '(enfileirar e enviar mudam o número, sem reabrir o app)', () async {
+    final app = await _abre();
+    final c = app.c;
+    // A tela fica olhando a contagem (como a Seleção).
+    final vistos = <int>[];
+    c.listen<AsyncValue<int>>(pendingCountForActiveSessionProvider, (_, n) {
+      final v = n.asData?.value;
+      if (v != null) vistos.add(v);
+    }, fireImmediately: true);
+    expect(await c.read(pendingCountForActiveSessionProvider.future), 0);
+
+    final fila = c.read(syncQueueRepositoryProvider);
+    await fila.enqueue(
+      _acao('o-a1', _orgA, {'local_id': 'wo-a1', 'title': 'OS a1'}),
+    );
+    expect(await c.read(pendingCountForActiveSessionProvider.future), 1);
+    await fila.enqueue(
+      _acao('o-a2', _orgA, {'local_id': 'wo-a2', 'title': 'OS a2'}),
+    );
+    expect(await c.read(pendingCountForActiveSessionProvider.future), 2);
+    // Outra organização não conta.
+    await fila.enqueue(
+      _acao('o-b1', _orgB, {'local_id': 'wo-b1', 'title': 'OS b1'}),
+    );
+    expect(await c.read(pendingCountForActiveSessionProvider.future), 2);
+    // Uma sai da fila: 1.
+    final a1 = (await fila.actionsForTenant(
+      _orgA,
+    )).firstWhere((a) => a.clientActionId == 'o-a1');
+    await fila.update(a1.copyWith(status: SyncStatus.synced));
+    expect(await c.read(pendingCountForActiveSessionProvider.future), 1);
+    await Future<void>.delayed(Duration.zero);
+    expect(vistos.last, 1, reason: 'quem olha a contagem vê o número novo');
   });
 
   // ── T13: nada vaza na tela ─────────────────────────────────────────────────

@@ -40,7 +40,9 @@ class TenantSwitchOrchestrator {
   ///    prazo estourado, lança [TenantSwitchBusyError] e não troca);
   /// 2. o `AuthNotifier` troca a sessão (o pedido, a trava, a época, a
   ///    revogação da anterior e a telemetria);
-  /// 3. reabre a porta, em qualquer desfecho.
+  /// 3. reabre a porta, em qualquer desfecho; com a troca concluída, o
+  ///    coordenador dispara uma passada da sessão viva (F70-1), que só envia o
+  ///    que é da organização de destino e da pessoa dela.
   /// Para a organização atual, não faz nada. Qualquer falha sobe para quem
   /// pediu, e a sessão atual fica como está.
   Future<void> run(String tenantId) async {
@@ -50,12 +52,14 @@ class TenantSwitchOrchestrator {
     // dart format off
     final drained = await port.holdForSessionChange(); // T-a: a porta fecha e a passada em curso esvazia; false = o prazo estourou
     // dart format on
+    var switched = false;
     try {
       if (!drained) throw const TenantSwitchBusyError();
       await _ref.read(authStateProvider.notifier).switchTenant(tenantId);
+      switched = true; // F70-1: a troca concluiu sem erro
     } finally {
       // dart format off
-      port.releaseAfterSessionChange(); // T-a: a porta reabre em qualquer desfecho
+      port.releaseAfterSessionChange(switchedTo: switched ? tenantId : null); // T-a: a porta reabre em qualquer desfecho; F70-1: troca concluída dispara a passada da sessão viva
       // dart format on
     }
   }

@@ -183,8 +183,15 @@ class _Porta extends AutoSyncCoordinator {
     return drains;
   }
 
+  /// F70-1: a organização de destino que a troca entregou ao reabrir a porta
+  /// (`null` = troca recusada ou que falhou).
+  final List<String?> switchedTo = [];
+
   @override
-  void releaseAfterSessionChange() => releases++;
+  void releaseAfterSessionChange({String? switchedTo}) {
+    releases++;
+    this.switchedTo.add(switchedTo);
+  }
 }
 
 class _Telemetria implements TelemetryCaptureService {
@@ -736,9 +743,9 @@ class _PortaEspia extends AutoSyncCoordinator {
   }
 
   @override
-  void releaseAfterSessionChange() {
+  void releaseAfterSessionChange({String? switchedTo}) {
     releases++;
-    super.releaseAfterSessionChange();
+    super.releaseAfterSessionChange(switchedTo: switchedTo);
   }
 }
 

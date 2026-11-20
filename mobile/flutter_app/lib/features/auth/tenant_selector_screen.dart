@@ -42,6 +42,10 @@ const kTenantSwitchRefusedDetail =
 
 const kTenantSwitchRetryDetail = 'Tente de novo em instantes.';
 
+/// F70-3: "1 envio pendente" / "N envios pendentes" (singular e plural).
+String pendingSendsLabel(int count) =>
+    count == 1 ? '1 envio pendente' : '$count envios pendentes';
+
 /// Quantas OS abertas e agendadas para hoje a organização ATUAL tem no
 /// aparelho (a mesma regra do "OS hoje" do Início). `null` quando não dá para
 /// saber: nada de número inventado. Antes de contar, o mesmo `load()` que o
@@ -236,7 +240,9 @@ class _TenantSelectorScreenState extends ConsumerState<TenantSelectorScreen> {
               child: MobileStatTile(
                 key: const Key('troca-bloco-pendentes'),
                 value: pending == null ? '—' : '$pending',
-                label: 'Envios pendentes na atual',
+                label: pending == 1
+                    ? 'Envio pendente na atual'
+                    : 'Envios pendentes na atual',
                 color: (pending ?? 0) > 0
                     ? ErpMobileTheme.warningInk
                     : ErpMobileTheme.ink,
@@ -366,11 +372,18 @@ class _TenantSelectorScreenState extends ConsumerState<TenantSelectorScreen> {
           Icons.cloud_upload_outlined,
           color: ErpMobileTheme.warningInk,
         ),
-        title: Text('Envios pendentes em ${active.displayName}'),
+        title: Text(
+          '${pending == 1 ? 'Envio pendente' : 'Envios pendentes'} em '
+          '${active.displayName}',
+        ),
         content: Text(
-          'Você tem $pending envios pendentes em ${active.displayName}. Eles '
-          'ficam guardados neste aparelho e são enviados quando você voltar '
-          'para ${active.displayName}.',
+          pending == 1
+              ? 'Você tem ${pendingSendsLabel(pending)} em ${active.displayName}. '
+                    'Ele fica guardado neste aparelho e é enviado quando você '
+                    'voltar para ${active.displayName}.'
+              : 'Você tem ${pendingSendsLabel(pending)} em ${active.displayName}. '
+                    'Eles ficam guardados neste aparelho e são enviados quando '
+                    'você voltar para ${active.displayName}.',
         ),
         actionsOverflowDirection: VerticalDirection.down,
         actionsOverflowButtonSpacing: 8,
@@ -442,9 +455,12 @@ class _TenantSelectorScreenState extends ConsumerState<TenantSelectorScreen> {
   /// ao Entrar com o e-mail preenchido.
   Future<void> _confirmOther(TenantContext active, int? pending) async {
     final nothingLost = (pending ?? 0) > 0
-        ? 'Nada se apaga: os $pending envios pendentes de '
-              '${active.displayName} ficam guardados e saem quando você '
-              'voltar a ela.'
+        ? pending == 1
+              ? 'Nada se apaga: o envio pendente de ${active.displayName} '
+                    'fica guardado e sai quando você voltar a ela.'
+              : 'Nada se apaga: os ${pendingSendsLabel(pending!)} de '
+                    '${active.displayName} ficam guardados e saem quando você '
+                    'voltar a ela.'
         : 'Nada se apaga: o que é de ${active.displayName} fica guardado '
               'neste aparelho.';
     final go = await showDialog<bool>(
@@ -586,7 +602,7 @@ class _OrgRow extends StatelessWidget {
                     const SizedBox(width: 6),
                     MobilePill(
                       key: const Key('troca-pill-pendentes'),
-                      label: '$pending pendentes',
+                      label: pending == 1 ? '1 pendente' : '$pending pendentes',
                       tone: PillTone.warning,
                     ),
                   ],
@@ -629,8 +645,11 @@ class _OrgDetail extends StatelessWidget {
     final Widget action;
     if (isActive) {
       text = pending > 0
-          ? 'Você está nesta organização. $pending envios ainda não saíram '
-                'deste aparelho.'
+          ? pending == 1
+                ? 'Você está nesta organização. 1 envio ainda não saiu deste '
+                      'aparelho.'
+                : 'Você está nesta organização. $pending envios ainda não '
+                      'saíram deste aparelho.'
           : 'Você está nesta organização. Tudo o que você fez aqui já foi '
                 'enviado.';
       action = pending > 0
@@ -638,7 +657,11 @@ class _OrgDetail extends StatelessWidget {
               key: const Key('troca-enviar-pendentes'),
               onPressed: offline ? null : onSendNow,
               icon: const Icon(Icons.cloud_upload_outlined, size: 18),
-              label: Text('Enviar $pending pendentes agora'),
+              label: Text(
+                pending == 1
+                    ? 'Enviar 1 pendente agora'
+                    : 'Enviar $pending pendentes agora',
+              ),
             )
           : OutlinedButton(
               onPressed: onOpenSync,
@@ -646,8 +669,10 @@ class _OrgDetail extends StatelessWidget {
             );
     } else {
       final kept = pending > 0
-          ? ' Os $pending envios pendentes de $activeName ficam guardados '
-                'aqui.'
+          ? pending == 1
+                ? ' O envio pendente de $activeName fica guardado aqui.'
+                : ' Os ${pendingSendsLabel(pending)} de $activeName ficam '
+                      'guardados aqui.'
           : '';
       text = offline
           ? 'Trocar de organização precisa de internet. Seus dados continuam '

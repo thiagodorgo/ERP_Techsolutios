@@ -15,6 +15,10 @@
 // fictícios e só existem neste arquivo.
 //
 // Mutações que este arquivo pega: M14 (T15), M15 (T14), M16 (T13-texto).
+//
+// Conserto F70-2/F70-3 (achados do ensaio no emulador, F7): a contagem da
+// Seleção e do aviso acompanha a fila (F70-2); singular e plural certos em
+// todos os textos da Seleção e do aviso (F70-3).
 
 import 'dart:async';
 import 'dart:convert';
@@ -173,7 +177,7 @@ class _Porta extends AutoSyncCoordinator {
   }) async => true;
 
   @override
-  void releaseAfterSessionChange() {}
+  void releaseAfterSessionChange({String? switchedTo}) {}
 
   @override
   Future<void> triggerManual() async {
@@ -629,6 +633,152 @@ void main() {
     expect(h.server.to(_activeTenant), isEmpty);
     expect(h.sessao!.user.tenantId, _orgA);
     expect(h.path, '/tenant-select');
+  });
+
+  // ── F70-2 e F70-3: a contagem certa, no singular e no plural ──────────────
+
+  testWidgets(
+    'F70-2 — com a Seleção aberta, a fila muda (2 → 1) e o bloco e o aviso '
+    'dizem 1, sem reabrir o app',
+    (tester) async {
+      final h = await _abre(tester, pendentesDeA: 2);
+      final bloco = find.byKey(const Key('troca-bloco-pendentes'));
+      expect(
+        find.descendant(of: bloco, matching: find.text('2')),
+        findsOneWidget,
+      );
+
+      // Uma das 2 de A sai da fila (como numa passada) com a tela aberta.
+      final fila = h.container.read(syncQueueRepositoryProvider);
+      final a0 = (await fila.actionsForTenant(
+        _orgA,
+      )).firstWhere((a) => a.clientActionId == 'a-0');
+      await fila.update(a0.copyWith(status: SyncStatus.synced));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: bloco, matching: find.text('1')),
+        findsOneWidget,
+        reason: 'o bloco acompanha a fila',
+      );
+      await tester.tap(await _abreDetalhe(tester, _orgB));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('troca-pendencias')), findsOneWidget);
+      expect(
+        find.textContaining('Você tem 1 envio pendente em Guincho Norte.'),
+        findsOneWidget,
+        reason: 'o aviso diz o número da fila de agora',
+      );
+      expect(find.textContaining('2 envios'), findsNothing);
+    },
+  );
+
+  testWidgets('F70-3 — com 1 pendência, todo texto da Seleção e do aviso no '
+      'singular', (tester) async {
+    await _abre(tester, pendentesDeA: 1);
+    final bloco = find.byKey(const Key('troca-bloco-pendentes'));
+    expect(
+      find.descendant(
+        of: bloco,
+        matching: find.text('Envio pendente na atual'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('1 pendente'), findsOneWidget);
+
+    // O detalhe de A (a atual).
+    await tester.tap(
+      find.descendant(of: _linha(_orgA), matching: find.text(_nomes[_orgA]!)),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Você está nesta organização. 1 envio ainda não saiu deste aparelho.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Enviar 1 pendente agora'), findsOneWidget);
+
+    // O detalhe de B e o aviso.
+    final entrar = await _abreDetalhe(tester, _orgB);
+    expect(
+      find.textContaining(
+        'O envio pendente de Guincho Norte fica guardado aqui.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(entrar);
+    await tester.pumpAndSettle();
+    expect(find.text('Envio pendente em Guincho Norte'), findsOneWidget);
+    expect(
+      find.text(
+        'Você tem 1 envio pendente em Guincho Norte. Ele fica guardado neste '
+        'aparelho e é enviado quando você voltar para Guincho Norte.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    // "Entrar em outra organização".
+    final outra = find.byKey(const Key('troca-entrar-em-outra'));
+    await tester.ensureVisible(outra);
+    await tester.tap(outra);
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining(
+        'Nada se apaga: o envio pendente de Guincho Norte fica guardado e sai '
+        'quando você voltar a ela.',
+      ),
+      findsOneWidget,
+    );
+
+    // Nenhum plural fixo com 1.
+    expect(find.textContaining('1 envios'), findsNothing);
+    expect(find.textContaining('1 pendentes'), findsNothing);
+  });
+
+  testWidgets('F70-3 — com 2 pendências, todo texto da Seleção e do aviso no '
+      'plural', (tester) async {
+    await _abre(tester, pendentesDeA: 2);
+    final bloco = find.byKey(const Key('troca-bloco-pendentes'));
+    expect(
+      find.descendant(
+        of: bloco,
+        matching: find.text('Envios pendentes na atual'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('2 pendentes'), findsOneWidget);
+    await tester.tap(
+      find.descendant(of: _linha(_orgA), matching: find.text(_nomes[_orgA]!)),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Você está nesta organização. 2 envios ainda não saíram deste '
+        'aparelho.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Enviar 2 pendentes agora'), findsOneWidget);
+    final entrar = await _abreDetalhe(tester, _orgB);
+    expect(
+      find.textContaining(
+        'Os 2 envios pendentes de Guincho Norte ficam guardados aqui.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(entrar);
+    await tester.pumpAndSettle();
+    expect(find.text('Envios pendentes em Guincho Norte'), findsOneWidget);
+    expect(
+      find.text(
+        'Você tem 2 envios pendentes em Guincho Norte. Eles ficam guardados '
+        'neste aparelho e são enviados quando você voltar para Guincho Norte.',
+      ),
+      findsOneWidget,
+    );
   });
 
   // ── Os estados ─────────────────────────────────────────────────────────────
