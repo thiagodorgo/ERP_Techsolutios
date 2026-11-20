@@ -11,7 +11,7 @@ import test, { after } from "node:test";
 //   (a) cada papel de plataforma, cabeçalho legado SEM `x-permissions`: passa (é o catálogo);
 //   (b) cada papel de plataforma, `x-permissions` = todas as PLATFORM_PERMISSIONS menos P: 403 platform_permission_required;
 //   (c) cada papel de plataforma, `x-permissions` = só P: passa;
-//   (d) cada um dos 11 papéis de organização, sem e com `x-permissions: P`: 403 platform_permission_required;
+//   (d) cada papel de organização (derivado do catálogo), sem e com `x-permissions: P`: 403 platform_permission_required;
 //   (e) JWT real: o super_admin passa numa rota de cada permissão viva; tenant_admin e finance recebem 403;
 //   (f) 200 exato nas 16 GET que respondem 200 em memória, para super_admin e platform_admin;
 //   (g′) super_admin com `x-permissions: platform:billing:read` → POST …/statements/:id/payments → 403 (a classe da L4-01);
@@ -52,7 +52,7 @@ const GET_200 = [
 ];
 
 const censo: any = await import("../scripts/plat-perm-censo.mjs");
-const { PLATFORM_ROLES, ROLE_PERMISSIONS } = await import("../src/modules/core-saas/permissions/catalog.js");
+const { PLATFORM_ROLES, ROLE_PERMISSIONS, TENANT_ASSIGNABLE_ROLES } = await import("../src/modules/core-saas/permissions/catalog.js");
 const { PLATFORM_PERMISSIONS } = await import("../src/modules/platform/platform-permissions.js");
 const { signAccessToken } = await import("../src/modules/auth/index.js");
 const amb = await censo.subirApp();
@@ -65,6 +65,9 @@ const rotas = amb.percurso.rotas
 const papeisPlataforma = [...PLATFORM_ROLES] as string[];
 const plataforma = new Set<string>(papeisPlataforma);
 const papeisOrganizacao = Object.keys(ROLE_PERMISSIONS).filter((role) => !plataforma.has(role));
+// B-USERS-CONCESSAO-PAINEL (Emenda 2, E2-2) — o número de papéis de organização é DERIVADO do catálogo (os papéis com
+// autoridade `tenant` em ROLE_AUTHORITY), não um literal: papel de organização novo entra no laço do (d) sem editar o teste.
+const papeisAutoridadeOrganizacao = [...(TENANT_ASSIGNABLE_ROLES as readonly string[])];
 
 function permissaoDe(k: string): string {
   const p = instantaneo[k];
@@ -93,10 +96,14 @@ function rotaDe(k: string) {
   return r!;
 }
 
-test("o universo: as rotas do app sob o prefixo são as do instantâneo; 2 papéis de plataforma e 11 de organização", () => {
+test("o universo: as rotas do app sob o prefixo são as do instantâneo; 2 papéis de plataforma e os de organização derivados do catálogo", () => {
   assert.deepEqual(rotas.map((r: any) => r.k).sort(), Object.keys(instantaneo).sort());
   assert.deepEqual(papeisPlataforma.sort(), ["platform_admin", "super_admin"]);
-  assert.equal(papeisOrganizacao.length, 11);
+  // Todo papel do catálogo que não é de plataforma tem autoridade de organização, e vice-versa (partição sem resto).
+  assert.deepEqual([...papeisOrganizacao].sort(), [...papeisAutoridadeOrganizacao].sort());
+  assert.equal(papeisOrganizacao.length, papeisAutoridadeOrganizacao.length);
+  // O papel adicional "Visão da organização" é de organização: entra no laço do (d) e recebe 403 como os demais.
+  assert.ok(papeisOrganizacao.includes("organization_view"), "organization_view é papel de organização");
 });
 
 test("(a) papel de plataforma sem `x-permissions` passa em toda rota (o catálogo do papel)", async () => {
@@ -135,7 +142,7 @@ test("(c) papel de plataforma com `x-permissions` = só P passa", async () => {
   assert.deepEqual(falhas, []);
 });
 
-test("(d) os 11 papéis de organização, sem e com `x-permissions: P` → 403 platform_permission_required", async () => {
+test("(d) os papéis de organização (derivados do catálogo), sem e com `x-permissions: P` → 403 platform_permission_required", async () => {
   const falhas: string[] = [];
   for (const role of papeisOrganizacao) {
     for (const r of rotas) {
