@@ -7,9 +7,16 @@ import 'package:uuid/uuid.dart';
 
 import '../network/api_error.dart';
 import '../network/http_client.dart';
+import '../bootstrap/bootstrap_session.dart';
 import 'auth_token_storage.dart';
 import 'session_renewal.dart';
 import '../../features/auth/auth_models.dart';
+
+/// B-APP-ORG (70): a rota da troca de organização (decide pelo vínculo).
+const kActiveTenantPath = '/api/v1/auth/active-tenant';
+
+/// B-APP-ORG (70, plano §3.4): a troca sem rede.
+const kTenantSwitchOfflineMessage = 'Sem conexão. A troca precisa de internet.';
 
 /// B-APP-SESSAO-RENOVA (D11): o desfecho de um "Sair" no servidor.
 /// - `revoked`: 2xx; o servidor garante que o token não renova mais (S1);
@@ -33,6 +40,22 @@ abstract class AuthRepository {
 
   /// Guarda a sessão renovada. Só o notifier chama, dentro da trava.
   Future<void> commitRefreshed(AuthSession session);
+
+  /// B-APP-ORG (70): pede a troca para [tenantId] (`POST
+  /// /api/v1/auth/active-tenant`) pelo [client] de sessão (com a porta da
+  /// renovação) e DEVOLVE a sessão nova, sem gravar nada. O 403 vira
+  /// [TenantSwitchRefusedError]; sem rede, [ApiNetworkError] com
+  /// [kTenantSwitchOfflineMessage]; um 200 ilegível, [TenantSwitchMismatchError].
+  Future<AuthSession> switchTenant({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  });
+
+  /// B-APP-ORG (70): guarda a sessão da troca. Só o notifier chama, dentro da
+  /// trava. A sessão restrita (senha provisória) fica só em memória, como no
+  /// login.
+  Future<void> commitSwitched(AuthSession session);
 
   /// O único `POST /auth/logout` do app: entrega ao servidor o token de
   /// renovação que deve morrer (o servidor revoga a sessão inteira). Nunca
@@ -213,6 +236,27 @@ class LocalDevAuthRepository implements AuthRepository {
 
   @override
   Future<void> commitRefreshed(AuthSession session) async {
+    _current = session;
+    await _storage.saveSession(session);
+  }
+
+  /// B-APP-ORG (70): no modo de desenvolvimento, a troca só vale para as
+  /// organizações da lista de desenvolvimento; fora dela, é recusada.
+  @override
+  Future<AuthSession> switchTenant({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  }) async {
+    final known = devBootstrapSession.availableTenants.any(
+      (t) => t.tenantId == tenantId,
+    );
+    if (!known) throw const TenantSwitchRefusedError();
+    return _buildDevSession(email: current.user.email, tenantId: tenantId);
+  }
+
+  @override
+  Future<void> commitSwitched(AuthSession session) async {
     _current = session;
     await _storage.saveSession(session);
   }
@@ -567,6 +611,91 @@ class DioAuthRepository implements AuthRepository {
   Future<void> commitRefreshed(AuthSession session) async {
     _current = session;
     await _storage.saveSession(session);
+  }
+
+  @override
+  Future<AuthSession> switchTenant({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  }) async {
+    final Response<dynamic> response;
+    try {
+      response = await client.post(
+        kActiveTenantPath,
+        data: {'tenantId': tenantId},
+      );
+    } on DioException catch (e) {
+      throw _switchFailure(e);
+    }
+    try {
+      return _sessionFromActiveTenantJson(response.data, current);
+    } catch (_) {
+      // dart format off
+      throw const TenantSwitchMismatchError(); // 200 ilegível: fica na organização atual
+      // dart format on
+    }
+  }
+
+  @override
+  Future<void> commitSwitched(AuthSession session) async {
+    _current = session;
+    if (session.mustChangePassword) {
+      // Como no login: a sessão restrita nunca vai para o armazenamento.
+      await _storage.clearSession();
+      return;
+    }
+    await _storage.saveSession(session);
+  }
+
+  /// O 403 é a recusa do vínculo; sem rede, a mensagem da troca; o resto, como
+  /// em qualquer pedido (inclusive o [ApiSessionChangedError] da T-b).
+  ApiError _switchFailure(DioException e) {
+    if (e.response?.statusCode == 403) return const TenantSwitchRefusedError();
+    final mapped = mapDioError(e);
+    if (mapped is ApiNetworkError || mapped is ApiTimeoutError) {
+      return const ApiNetworkError(kTenantSwitchOfflineMessage);
+    }
+    return mapped;
+  }
+
+  /// O corpo do 200 do `/auth/active-tenant` (`auth.routes.ts`): `tenant`,
+  /// `user` (sem `tenant_id`), `roles` em texto, `permissions`, os tokens e
+  /// `must_change_password`. Cada troca é uma sessão nova (`sessionNonce`).
+  AuthSession _sessionFromActiveTenantJson(Object? data, AuthSession current) {
+    final json = data as Map<String, dynamic>;
+    final envelopeData = json['data'];
+    final body = envelopeData is Map<String, dynamic> ? envelopeData : json;
+    final tenantJson = body['tenant'] as Map<String, dynamic>;
+    final userJson = body['user'] as Map<String, dynamic>;
+    final roles = (body['roles'] as List<dynamic>? ?? const [])
+        .whereType<String>()
+        .where((r) => r.isNotEmpty)
+        .toList();
+    final expiresIn =
+        body['expiresIn'] as int? ?? body['expires_in'] as int? ?? 900;
+    return AuthSession(
+      tokens: AuthTokens(
+        accessToken: (body['accessToken'] ?? body['access_token']) as String,
+        refreshToken: (body['refreshToken'] ?? body['refresh_token']) as String,
+        expiresAt: DateTime.now().toUtc().add(Duration(seconds: expiresIn)),
+      ),
+      user: AuthUser(
+        sub: userJson['id'] as String,
+        email: userJson['email'] as String? ?? current.user.email,
+        tenantId: tenantJson['id'] as String,
+        tenantRole: roles.isNotEmpty ? roles.first : 'tenant_member',
+        tenantRoles: roles,
+        permissions: (body['permissions'] as List<dynamic>? ?? const [])
+            .whereType<String>()
+            .toList(),
+        scope: 'tenant',
+      ),
+      mustChangePassword: body['must_change_password'] == true,
+      // dart format off
+      sessionNonce: const Uuid().v4(), // cada troca é uma sessão nova
+      // dart format on
+    );
   }
 
   @override

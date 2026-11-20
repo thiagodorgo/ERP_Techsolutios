@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -8,13 +9,30 @@ import '../../features/auth/auth_models.dart';
 import '../config/app_config.dart';
 import '../network/api_error.dart';
 import '../network/http_client.dart';
+import '../sync/auto_sync_coordinator.dart';
 import '../telemetry/telemetry_capture_service.dart';
 import '../telemetry/telemetry_event.dart';
 import '../telemetry/telemetry_providers.dart';
 import 'auth_repository.dart';
 import 'auth_token_storage.dart';
 import 'pending_revocations.dart';
+import 'session_http_client.dart';
 import 'session_renewal.dart';
+
+/// B-APP-ORG (70, T-a): o envio da organização atual não terminou no prazo; a
+/// troca não acontece. Não é [ApiError] (a classe é selada em `api_error.dart`,
+/// fora desta fatia): a tela lê o [safeMessage].
+const kTenantSwitchBusyMessage =
+    'O envio ainda está em andamento. Tente de novo em instantes.';
+
+final class TenantSwitchBusyError implements Exception {
+  const TenantSwitchBusyError();
+
+  String get safeMessage => kTenantSwitchBusyMessage;
+
+  @override
+  String toString() => 'TenantSwitchBusyError()';
+}
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 
@@ -31,6 +49,13 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
     );
   }
   return LocalDevAuthRepository(storage: storage);
+});
+
+/// B-APP-ORG (70, Emenda 1 §A4): o cliente da troca nasce NA HORA da troca,
+/// pela porta de sessão, com a chave guardada igual à viva (a T-b não o
+/// recusa) e a porta da renovação. Os testes trocam o adaptador por aqui.
+final tenantSwitchClientProvider = Provider<Dio Function()>((ref) {
+  return () => sessionHttpClient(ref, ref.read(authenticatedApiConfigProvider));
 });
 
 final authStateProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
@@ -222,6 +247,80 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     } finally {
       release();
+    }
+  }
+
+  /// B-APP-ORG (70, plano §4.2): troca a SESSÃO inteira para a organização
+  /// [tenantId] pelo `/auth/active-tenant`. Em qualquer falha, lança e a
+  /// sessão atual fica como está (nada gravado, época igual).
+  Future<void> switchTenant(String tenantId) async {
+    final current = state.asData?.value;
+    final session = current?.session;
+    if (current == null || !current.isAuthenticated || session == null) {
+      throw const ApiSessionExpiredError();
+    }
+    // dart format off
+    if (session.user.tenantId == tenantId) return; // já está nela: nada a trocar
+    // 1. T-a: a passada da organização atual esvazia antes; no prazo estourado, não troca
+    if (!await ref.read(autoSyncCoordinatorProvider.notifier).holdForSessionChange()) throw const TenantSwitchBusyError();
+    // dart format on
+    try {
+      // 2. A época do pedido, e o pedido fora da trava (a renovação usa a trava).
+      final requestEpoch = _epoch;
+      final previousTenantId = session.user.tenantId;
+      final repo = ref.read(authRepositoryProvider);
+      final client = ref.read(tenantSwitchClientProvider)();
+      final switched = await repo.switchTenant(
+        current: session,
+        tenantId: tenantId,
+        client: client,
+      );
+      final release = await _enterSessionLock();
+      try {
+        // dart format off
+        if (_epoch != requestEpoch) return; // 3. outro ciclo começou: o resultado é descartado
+        // dart format on
+        // dart format off
+        if (switched.user.tenantId != tenantId) throw const TenantSwitchMismatchError(); // 4. outra organização na resposta: fica na atual
+        // dart format on
+        // 5. O token de renovação de A, a sessão B gravada e a época nova.
+        final previousRefreshToken =
+            await _readStoredRefreshToken() ?? session.tokens.refreshToken;
+        await repo.commitSwitched(switched);
+        _bumpEpoch(); // ciclo: troca de organização
+        state = AsyncValue.data(
+          AuthState(
+            status: switched.mustChangePassword
+                ? AuthStatus.passwordChangeRequired
+                : AuthStatus.authenticated,
+            session: switched,
+          ),
+        );
+        // 6.
+        if (previousRefreshToken != null) {
+          // dart format off
+          await _revocations.revokeOrQueue(previousRefreshToken); // troca: a sessão anterior sai
+          // dart format on
+        }
+        // 7. Telemetria, sem bloquear: o DISCONNECT fica na fila de A (Emenda 1 §A5).
+        if (!switched.mustChangePassword) {
+          _recordTelemetry(
+            (service) =>
+                service.recordAppDisconnect(tenantId: previousTenantId),
+          );
+          _recordTelemetry(
+            (service) =>
+                service.recordAppConnect(tenantId: switched.user.tenantId),
+          );
+        }
+      } finally {
+        release();
+      }
+    } finally {
+      // 8.
+      ref
+          .read(autoSyncCoordinatorProvider.notifier)
+          .releaseAfterSessionChange();
     }
   }
 

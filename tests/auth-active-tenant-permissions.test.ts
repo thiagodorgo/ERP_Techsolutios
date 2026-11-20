@@ -40,6 +40,7 @@ type ActiveTenantHarness = {
   readonly tenantAId: string;
   readonly tenantBId: string;
   readonly tokenFor: (role: RoleUnderTest) => Promise<string>;
+  readonly userIdFor: (role: RoleUnderTest) => string;
   readonly close: () => Promise<void>;
 };
 
@@ -81,6 +82,34 @@ test("active-tenant cross-tenant falha fechado e não fabrica permissão", async
     assert.equal(response.status, 403);
     assert.equal((response.body.error as { code?: string } | undefined)?.code, "FORBIDDEN");
     assert.equal(response.body.data, undefined);
+  } finally {
+    await harness.close();
+  }
+});
+
+// B-APP-ORG (S1, plano §4.1): o app de campo passa a ler estes campos do 200 do active-tenant
+// (`_sessionFromActiveTenantJson`). Este caso trava o formato: `tenant.id`, `user.id` do par de
+// destino, os tokens, `must_change_password` e `roles` em texto. Mutação: M17.
+test("active-tenant devolve os campos que o app de campo lê (S1)", async () => {
+  const harness = await buildActiveTenantHarness();
+
+  try {
+    const response = await postActiveTenant(harness.baseUrl, await harness.tokenFor("finance"), {
+      tenantId: harness.tenantAId,
+    });
+
+    assert.equal(response.status, 200);
+    const data = response.body.data as Record<string, unknown>;
+    const tenant = data.tenant as { id?: unknown } | undefined;
+    const user = data.user as { id?: unknown; email?: unknown } | undefined;
+    assert.equal(tenant?.id, harness.tenantAId);
+    assert.equal(user?.id, harness.userIdFor("finance"));
+    assert.equal(user?.email, "finance@org-a.example.com");
+    assert.equal(typeof data.refresh_token, "string");
+    assert.equal(typeof data.access_token, "string");
+    assert.equal(typeof data.expires_in, "number");
+    assert.equal(data.must_change_password, false);
+    assert.ok(Array.isArray(data.roles) && data.roles.every((r) => typeof r === "string"));
   } finally {
     await harness.close();
   }
@@ -159,6 +188,7 @@ async function buildActiveTenantHarness(): Promise<ActiveTenantHarness> {
         email: users[role].email,
         roles: [role],
       }),
+    userIdFor: (role: RoleUnderTest) => users[role].id,
     close: () =>
       new Promise<void>((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));
