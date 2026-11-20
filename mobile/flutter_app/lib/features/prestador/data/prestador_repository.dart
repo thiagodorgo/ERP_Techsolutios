@@ -8,6 +8,7 @@ import '../../../core/auth/auth_notifier.dart';
 import '../../../core/auth/session_http_client.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
+import '../../../core/bootstrap/bootstrap_session_match.dart';
 import '../../../core/local_db/database_provider.dart';
 import '../../../core/local_db/drift_prestador_local_store.dart';
 import '../../../core/local_db/drift_service_notes_store.dart';
@@ -425,7 +426,14 @@ final prestadorRepositoryProvider = Provider<PrestadorRepository>((ref) {
     syncQueue: ref.watch(syncQueueRepositoryProvider),
     actionFactory: ref.watch(syncActionFactoryProvider),
     localStore: ref.watch(prestadorLocalStoreProvider),
-    stockRemoteApi: ref.watch(technicianStockRemoteApiProvider),
+    // troca: sem API com bootstrap de outra sessão
+    stockRemoteApi:
+        bootstrapMatchesLiveSession(
+          session,
+          ref.read(authStateProvider).asData?.value,
+        )
+        ? ref.watch(technicianStockRemoteApiProvider)
+        : null,
     stockCache: ref.watch(technicianStockCacheProvider),
     serviceNotesStore: ref.watch(serviceNotesStoreProvider),
     allowDemoStock: !ref.watch(remoteAuthModeProvider),

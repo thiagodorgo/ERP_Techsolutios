@@ -9,6 +9,7 @@ import '../../../core/auth/auth_notifier.dart';
 import '../../../core/auth/session_http_client.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
+import '../../../core/bootstrap/bootstrap_session_match.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/evidence/evidence_blob_store.dart';
 import '../../../core/local_db/drift_work_order_local_store.dart';
@@ -1086,7 +1087,14 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
     syncQueue: ref.watch(syncQueueRepositoryProvider),
     actionFactory: ref.watch(syncActionFactoryProvider),
     localStore: ref.watch(workOrderLocalStoreProvider),
-    remoteApi: ref.watch(workOrderRemoteApiProvider),
+    // troca: sem API com bootstrap de outra sessão
+    remoteApi:
+        bootstrapMatchesLiveSession(
+          session,
+          ref.read(authStateProvider).asData?.value,
+        )
+        ? ref.watch(workOrderRemoteApiProvider)
+        : null,
     evidenceBlobStore: ref.watch(evidenceBlobStoreProvider),
     // B-SAN3-13 (Q5) — sementes só no app de demonstração local.
     allowSeedOrders: !ref.watch(remoteAuthModeProvider),
