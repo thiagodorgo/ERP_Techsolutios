@@ -42,15 +42,7 @@ class HomeScreen extends ConsumerWidget {
 
     final asyncSession = ref.watch(bootstrapNotifierProvider);
     return asyncSession.when(
-      data: (value) {
-        final notifier = ref.read(bootstrapNotifierProvider.notifier);
-        if (notifier.pendingTenantSelection) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) context.go('/tenant-select');
-          });
-        }
-        return _HomeContent(session: value, modoDev: modoDev);
-      },
+      data: (value) => _HomeContent(session: value, modoDev: modoDev),
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => _BootstrapErrorView(

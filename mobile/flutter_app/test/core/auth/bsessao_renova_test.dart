@@ -94,6 +94,9 @@ class Terreno {
   List<String> permissoesBootstrap = const ['work_orders:read'];
   int bootstraps = 0;
 
+  /// B-APP-ORG (70): os `POST /auth/active-tenant` recebidos.
+  int trocasOrganizacao = 0;
+
   /// F4: o bootstrap recusa (401) o token de acesso que não é o de agora.
   bool bootstrapExigeToken = false;
 
@@ -113,6 +116,7 @@ class Terreno {
     if (path == '/api/v1/auth/logout') return _logout(r, raw);
     if (path == '/api/v1/auth/login') return _login(r, raw);
     if (path == '/api/v1/mobile/bootstrap') return _bootstrap(r);
+    if (path == '/api/v1/auth/active-tenant') return _activeTenant(r, raw);
     if (path == '/api/v1/auth/password') {
       trocasSenha++;
       return _json(r, 200, {'data': <String, dynamic>{}});
@@ -270,6 +274,31 @@ class Terreno {
     });
   }
 
+  /// B-APP-ORG (70): o `POST /auth/active-tenant` no formato do servidor
+  /// (`auth.routes.ts`): pede o token vigente, como os pedidos comuns.
+  Future<void> _activeTenant(HttpRequest r, String raw) {
+    trocasOrganizacao++;
+    final bearer = r.headers.value('authorization');
+    if (revogada || bearer != 'Bearer $acesso') {
+      return _json(r, 401, {
+        'error': {'code': 'INVALID_TOKEN'},
+      });
+    }
+    final tenant = _corpo(raw)['tenantId'] as String? ?? '';
+    return _json(r, 200, {
+      'data': {
+        'accessToken': 'troca-$tenant',
+        'refreshToken': 'r-troca-$tenant',
+        'expiresIn': 900,
+        'tenant': {'id': tenant, 'name': 'Organização $tenant'},
+        'user': {'id': 'u1', 'name': 'Pessoa', 'email': 'u1@$tenant.test'},
+        'must_change_password': false,
+        'roles': ['field_technician'],
+        'permissions': permissoesBootstrap,
+      },
+    });
+  }
+
   Future<void> _bootstrap(HttpRequest r) {
     bootstraps++;
     final bearer = r.headers.value('authorization') ?? '';
@@ -280,7 +309,9 @@ class Terreno {
       });
     }
     final (sub, tenantDoLogin) = contas[token] ?? ('u1', 't1');
-    final tenant = r.uri.queryParameters['tenantId'] ?? tenantDoLogin;
+    // B-APP-ORG (§5.4): como o real, o bootstrap é o da organização do
+    // token e ignora `?tenantId`.
+    final tenant = tenantDoLogin;
     return _json(r, 200, {
       'user': {
         'sub': sub,
@@ -673,11 +704,23 @@ void main() {
         await bootstrapPelaPorta(a, t).fetch(s);
         expect(t.bootstraps, 2);
       });
+      // B-APP-ORG (§5.4): a troca de organização é o `POST /auth/active-tenant`
+      // pela porta da renovação (o cliente de sessão).
       await umSitio('troca de organização', (a, t) async {
         final s = a.estado!.session!;
-        final b = await bootstrapPelaPorta(a, t).fetchForTenant(s, 't2');
-        expect(b.activeTenant.tenantId, 't2');
-        expect(t.bootstraps, 2);
+        final client = a.container.read(
+          Provider(
+            (ref) => sessionHttpClient(
+              ref,
+              ApiConfig(baseUrl: t.base, accessToken: s.tokens.accessToken),
+            ),
+          ),
+        );
+        final b = await a.container
+            .read(authRepositoryProvider)
+            .switchTenant(current: s, tenantId: 't2', client: client);
+        expect(b.user.tenantId, 't2');
+        expect(t.trocasOrganizacao, 2);
       });
     },
     timeout: const Timeout(Duration(seconds: 30)),

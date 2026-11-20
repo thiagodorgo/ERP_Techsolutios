@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_notifier.dart';
-import '../core/bootstrap/bootstrap_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/permissions/mobile_gates.dart';
 import '../core/diagnostics/diagnostics_screen.dart';
@@ -68,25 +67,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final isSplash = loc == '/splash';
       final isLoginRoute = loc == '/login';
-      final isTenantSelect = loc == '/tenant-select';
 
       // Splash controls its own navigation via timer
       if (isSplash) return null;
 
       if (!authState.isAuthenticated && !isLoginRoute) return '/login';
 
-      if (authState.isAuthenticated && isLoginRoute) {
-        // After login: check if tenant selection is pending (remote + multi-tenant)
-        final notifier = ref.read(bootstrapNotifierProvider.notifier);
-        if (notifier.pendingTenantSelection) return '/tenant-select';
-        return '/';
-      }
-
-      // Authenticated and not on login — check ongoing tenant-select need
-      if (authState.isAuthenticated && !isLoginRoute && !isTenantSelect) {
-        final notifier = ref.read(bootstrapNotifierProvider.notifier);
-        if (notifier.pendingTenantSelection) return '/tenant-select';
-      }
+      // B-APP-ORG (69): a organização já foi escolhida no login (a senha decidiu,
+      // ou a pessoa escolheu no 409). Trocar é um ato voluntário, pelo Perfil.
+      if (authState.isAuthenticated && isLoginRoute) return '/';
 
       return null;
     },

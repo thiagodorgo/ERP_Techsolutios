@@ -11,6 +11,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -20,6 +21,7 @@ import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
 import 'package:erp_techsolutions_mobile/core/auth/pending_revocations.dart';
 import 'package:erp_techsolutions_mobile/core/auth/session_http_client.dart';
 import 'package:erp_techsolutions_mobile/core/auth/session_renewal.dart';
+import 'package:erp_techsolutions_mobile/core/auth/tenant_switch_orchestrator.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/sync/auto_sync_coordinator.dart';
@@ -28,6 +30,7 @@ import 'package:erp_techsolutions_mobile/core/telemetry/telemetry_event.dart';
 import 'package:erp_techsolutions_mobile/core/telemetry/telemetry_providers.dart';
 import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 // ── Dados fictícios ──────────────────────────────────────────────────────────
@@ -214,6 +217,10 @@ class _H {
   final _Telemetria telemetria;
 
   AuthNotifier get auth => container.read(authStateProvider.notifier);
+
+  /// A troca pelo ponto único (Emenda 1.3.1).
+  Future<void> troca(String tenantId) =>
+      container.read(tenantSwitchOrchestratorProvider).run(tenantId);
   AuthState get value => container.read(authStateProvider).asData!.value;
   String? get key => auth.liveSessionKey;
 }
@@ -283,7 +290,7 @@ void main() {
     final h = await _abre();
     h.server.on(_activeTenant, (_) => (200, _trocou()));
 
-    await h.auth.switchTenant(_orgB);
+    await h.troca(_orgB);
 
     final trocas = h.server.to(_activeTenant);
     expect(trocas, hasLength(1));
@@ -314,7 +321,7 @@ void main() {
     final bootA = await h.container.read(bootstrapSessionProvider.future);
     expect(bootA.activeTenant.tenantId, _orgA);
 
-    await h.auth.switchTenant(_orgB);
+    await h.troca(_orgB);
 
     final s = h.value.session!;
     expect(h.value.status, AuthStatus.authenticated);
@@ -342,7 +349,7 @@ void main() {
     final h = await _abre();
     h.server.on(_activeTenant, (_) => (200, _trocou()));
 
-    await h.auth.switchTenant(_orgB);
+    await h.troca(_orgB);
 
     final saidas = h.server.to(_logout);
     expect(saidas, hasLength(1));
@@ -352,7 +359,7 @@ void main() {
     final h2 = await _abre();
     h2.server.routes[_logout] = [_semRede];
     h2.server.on(_activeTenant, (_) => (200, _trocou()));
-    await h2.auth.switchTenant(_orgB);
+    await h2.troca(_orgB);
     final fila = await h2.container.read(pendingRevocationsProvider).pending();
     expect(fila.map((e) => e.token), ['ref-a']);
     expect(
@@ -379,8 +386,8 @@ void main() {
     final key = h.key!;
     final epoch = h.auth.epoch;
 
-    final erro = await h.auth
-        .switchTenant(_orgB)
+    final erro = await h
+        .troca(_orgB)
         .then<Object?>((_) => null, onError: (Object e) => e);
 
     expect(erro, isA<TenantSwitchRefusedError>());
@@ -400,8 +407,8 @@ void main() {
       final key = h.key!;
       final epoch = h.auth.epoch;
 
-      final erro = await h.auth
-          .switchTenant(_orgB)
+      final erro = await h
+          .troca(_orgB)
           .then<Object?>((_) => null, onError: (Object e) => e);
 
       expect(erro, isA<TenantSwitchMismatchError>());
@@ -415,8 +422,8 @@ void main() {
     final key = h.key!;
     final epoch = h.auth.epoch;
 
-    final erro = await h.auth
-        .switchTenant(_orgB)
+    final erro = await h
+        .troca(_orgB)
         .then<Object?>((_) => null, onError: (Object e) => e);
 
     expect(erro, isA<ApiNetworkError>());
@@ -432,7 +439,7 @@ void main() {
     final h = await _abre();
     h.server.on(_activeTenant, (_) => (200, _trocou(mustChange: true)));
 
-    await h.auth.switchTenant(_orgB);
+    await h.troca(_orgB);
 
     expect(h.value.status, AuthStatus.passwordChangeRequired);
     expect(h.value.isPasswordChangeRequired, isTrue);
@@ -450,7 +457,7 @@ void main() {
       final h = await _abre();
       h.server.on(_activeTenant, (_) => (200, _trocou()));
 
-      await h.auth.switchTenant(_orgB);
+      await h.troca(_orgB);
 
       final s = h.value.session!;
       expect(s.user.sub, 'u-b');
@@ -486,7 +493,7 @@ void main() {
         ),
       );
 
-    await h.auth.switchTenant(_orgB);
+    await h.troca(_orgB);
     final nonce = h.value.session!.sessionNonce;
     expect(nonce, isNotNull);
     expect(nonce, isNot('n-a'));
@@ -507,7 +514,7 @@ void main() {
       return (200, _trocou());
     });
 
-    final troca = h.auth.switchTenant(_orgB);
+    final troca = h.troca(_orgB);
     await pumpEventQueue();
     expect(h.server.to(_activeTenant), hasLength(1));
     await h.auth.logout();
@@ -528,8 +535,8 @@ void main() {
     final key = h.key!;
     final epoch = h.auth.epoch;
 
-    final erro = await h.auth
-        .switchTenant(_orgB)
+    final erro = await h
+        .troca(_orgB)
         .then<Object?>((_) => null, onError: (Object e) => e);
 
     expect(erro, isA<TenantSwitchBusyError>());
@@ -569,7 +576,7 @@ void main() {
         ),
       );
 
-    await h.auth.switchTenant(_orgB);
+    await h.troca(_orgB);
 
     final trocas = h.server.to(_activeTenant);
     expect(trocas.map((t) => t.auth), ['Bearer tok-a', 'Bearer tok-a2']);
@@ -584,7 +591,7 @@ void main() {
     final key = h.key!;
     final epoch = h.auth.epoch;
 
-    await h.auth.switchTenant(_orgA);
+    await h.troca(_orgA);
 
     expect(h.server.to(_activeTenant), isEmpty);
     expect(h.porta.holds, 0);
@@ -616,4 +623,156 @@ void main() {
       );
     },
   );
+
+  // ── Emenda 1.3 (D-A2-3): a troca com o coordenador REAL ──────────────────
+  //
+  // Sem dublê do coordenador: o `build` dele ouve o `authStateProvider`. Se o
+  // `AuthNotifier` lesse o coordenador, o Riverpod 3 lançaria
+  // `CircularDependencyError` em modo debug (o defeito do `2e174dde`).
+
+  Future<ProviderContainer> abreReal({List<Override> extra = const []}) async {
+    final c = ProviderContainer(
+      overrides: [
+        authTokenStorageProvider.overrideWithValue(InMemoryAuthTokenStorage()),
+        ...extra,
+      ],
+    );
+    addTearDown(c.dispose);
+    await c.read(authStateProvider.future);
+    await c
+        .read(authStateProvider.notifier)
+        .login(email: _email, password: 'x', tenantId: 'tenant-demo');
+    expect(c.read(authStateProvider).asData!.value.isAuthenticated, isTrue);
+    return c;
+  }
+
+  test('T-REAL — a troca com o coordenador real termina sem ciclo, a porta '
+      'fecha e reabre, e a sessão é a de B', () async {
+    final espia = _PortaEspia();
+    final c = await abreReal(
+      extra: [autoSyncCoordinatorProvider.overrideWith(() => espia)],
+    );
+
+    await c.read(tenantSwitchOrchestratorProvider).run('tenant-field');
+
+    final s = c.read(authStateProvider).asData!.value.session!;
+    expect(s.user.tenantId, 'tenant-field');
+    expect(espia.holds, 1);
+    expect(espia.releases, 1);
+    expect(c.read(autoSyncCoordinatorProvider).isRunning, isFalse);
+  });
+
+  test('T-REAL (sem nenhuma substituição) — a troca termina sem ciclo e a '
+      'sessão é a de B', () async {
+    final c = await abreReal();
+    expect(c.read(autoSyncCoordinatorProvider.notifier), isNotNull);
+
+    await c.read(tenantSwitchOrchestratorProvider).run('tenant-field');
+
+    final s = c.read(authStateProvider).asData!.value.session!;
+    expect(s.user.tenantId, 'tenant-field');
+  });
+
+  test('T-REAL-FALHA — a troca recusada reabre a porta (o finally) e fica '
+      'na organização atual', () async {
+    final espia = _PortaEspia();
+    final c = await abreReal(
+      extra: [autoSyncCoordinatorProvider.overrideWith(() => espia)],
+    );
+
+    await expectLater(
+      c.read(tenantSwitchOrchestratorProvider).run('org-estranha'),
+      throwsA(isA<TenantSwitchRefusedError>()),
+    );
+
+    expect(espia.holds, 1);
+    expect(espia.releases, 1);
+    final s = c.read(authStateProvider).asData!.value.session!;
+    expect(s.user.tenantId, 'tenant-demo');
+  });
+
+  // ── Emenda 1.3.1 (E1.3.1-1): a guarda G-ORQ ──────────────────────────────
+  //
+  // Toda troca passa pelo orquestrador. Em `lib/`, `switchTenant(` só pode
+  // aparecer no repositório (as definições), no `AuthNotifier` (a definição e
+  // a chamada ao repositório) e no arquivo do orquestrador.
+  group('G-ORQ — nenhuma troca fora do orquestrador', () {
+    final sites = _switchSites();
+
+    test('as ocorrências de switchTenant( em lib/ (o censo)', () {
+      expect(sites.map((s) => s.label).toList(), [
+        'lib/core/auth/auth_notifier.dart: Future<void> switchTenant(String tenantId) async {',
+        'lib/core/auth/auth_notifier.dart: final switched = await repo.switchTenant(',
+        'lib/core/auth/auth_repository.dart: Future<AuthSession> switchTenant({',
+        'lib/core/auth/auth_repository.dart: Future<AuthSession> switchTenant({',
+        'lib/core/auth/auth_repository.dart: Future<AuthSession> switchTenant({',
+        'lib/core/auth/tenant_switch_orchestrator.dart: // Nenhum código de `lib/` fora deste arquivo chama `switchTenant(` do',
+        'lib/core/auth/tenant_switch_orchestrator.dart: await _ref.read(authStateProvider.notifier).switchTenant(tenantId);',
+      ]);
+    });
+
+    test('nenhuma está fora dos lugares permitidos', () {
+      final fora = [
+        for (final s in sites)
+          if (!_switchSiteAllowed(s)) s.label,
+      ];
+      expect(fora, isEmpty);
+    });
+  });
+}
+
+/// O coordenador REAL (o `build` dele é o do app, que ouve a sessão), com a
+/// contagem de quantas vezes a porta fechou e reabriu.
+class _PortaEspia extends AutoSyncCoordinator {
+  int holds = 0;
+  int releases = 0;
+
+  @override
+  Future<bool> holdForSessionChange({
+    Duration timeout = kSessionChangeHoldTimeout,
+  }) {
+    holds++;
+    return super.holdForSessionChange(timeout: timeout);
+  }
+
+  @override
+  void releaseAfterSessionChange() {
+    releases++;
+    super.releaseAfterSessionChange();
+  }
+}
+
+class _SwitchSite {
+  const _SwitchSite(this.file, this.line);
+  final String file;
+  final String line;
+  String get label => '$file: $line';
+}
+
+List<_SwitchSite> _switchSites() {
+  final files =
+      Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
+  return [
+    for (final f in files)
+      for (final line in f.readAsLinesSync())
+        if (line.contains('switchTenant('))
+          _SwitchSite(f.path.replaceAll(r'\', '/'), line.trim()),
+  ];
+}
+
+bool _switchSiteAllowed(_SwitchSite s) {
+  if (s.file == 'lib/core/auth/tenant_switch_orchestrator.dart') return true;
+  if (s.file == 'lib/core/auth/auth_repository.dart') {
+    return s.line.startsWith('Future<AuthSession> switchTenant(');
+  }
+  if (s.file == 'lib/core/auth/auth_notifier.dart') {
+    return s.line == 'Future<void> switchTenant(String tenantId) async {' ||
+        s.line.contains('await repo.switchTenant(');
+  }
+  return false;
 }
