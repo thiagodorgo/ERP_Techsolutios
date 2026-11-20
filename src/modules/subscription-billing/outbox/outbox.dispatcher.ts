@@ -378,7 +378,8 @@ async function dispatchOne(
     try {
       const listed = await port.listChargesByExternalReference(row.statementId);
       const { verdict, facts } = await decideFromList(deps, row, listed, true);
-      if (verdict.kind === "adopt") return settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, true, clock);
+      // A-4: `return await` — a rejeição de dentro da adoção (inclusive falha de banco) cai no `catch` abaixo, nunca na rodada.
+      if (verdict.kind === "adopt") return await settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, true, clock);
       const code = verdict.kind === "review" ? verdict.code : "orphan_recovery_not_found";
       if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, code, clock(), lease))) return leaseLost(deps, row);
       await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code });

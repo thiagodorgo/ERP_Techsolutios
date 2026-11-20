@@ -12,6 +12,7 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
 import {
+  BillingChannelDisabledError,
   ProviderNotConfiguredError,
   ProviderRateLimitedError,
   ProviderUnavailableError,
@@ -317,12 +318,21 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
     const token = await this.readSecret("api_token");
     if (!token) return { ok: false, code: "not_configured" };
     const externalReference = randomUUID();
-    const response = await this.client.request({
-      op: "testConnection",
-      method: "GET",
-      path: `/payments?externalReference=${encodeURIComponent(externalReference)}&offset=0&limit=1`,
-      headers: await this.authHeaders(),
-    });
+    // Plano §4.2 (A-01): o teste de conexão NUNCA lança. A falha de transporte (DNS, conexão recusada, tempo esgotado, redirect)
+    // vira `provider_unavailable`, que o serviço grava em `last_test_*` e na trilha; o canal desligado continua lançando antes
+    // da rede (a rota já recusa antes) — ele não é transporte.
+    let response: Awaited<ReturnType<BillingHttpClient["request"]>>;
+    try {
+      response = await this.client.request({
+        op: "testConnection",
+        method: "GET",
+        path: `/payments?externalReference=${encodeURIComponent(externalReference)}&offset=0&limit=1`,
+        headers: await this.authHeaders(),
+      });
+    } catch (error) {
+      if (error instanceof BillingChannelDisabledError) throw error;
+      return { ok: false, code: error instanceof ProviderRateLimitedError ? "rate_limited" : "provider_unavailable" };
+    }
     if (response.status >= 200 && response.status < 300) return { ok: true };
     if (response.status === 401 || response.status === 403) return { ok: false, code: "credential_rejected" };
     if (response.status === 429) return { ok: false, code: "rate_limited" };

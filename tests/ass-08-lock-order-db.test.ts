@@ -64,6 +64,7 @@ import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outb
 import { createPersistedDispatchAuditSink } from "../src/modules/subscription-billing/outbox/dispatch-audit.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import { PrismaStatementInvoiceRepository } from "../src/modules/subscription-billing/invoices/invoices.prisma.js";
+import { InvoiceOutboxHandler } from "../src/modules/subscription-billing/outbox/invoice.dispatch.js";
 import { PrismaProviderConfigRepository } from "../src/modules/subscription-billing/vault/vault.prisma-runtime.js";
 
 const connectionString = process.env.DATABASE_URL;
@@ -113,6 +114,9 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/outbox/dispatch-audit.ts#createPersistedDispatchAuditSink#withTenantRls#2": "cenario:dispatchAudit.event",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.retargetUntriedInvoiceIssues#forEachTenantRls": "cenario:outbox.retargetUntriedInvoiceIssues",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.isChargeKnown#withTenantRls": "cenario:outbox.isChargeKnown",
+  // B-ASS-08c3, Emendas 2.1 e 2.2 (E2.2-1): a releitura do demonstrativo SOB A TRAVA no topo do cancelamento da nota (o
+  // demonstrativo primeiro, e só ele; a trilha `invoice_kept_partial_reversal` no MESMO tx). Só acréscimo.
+  "src/modules/subscription-billing/outbox/invoice.dispatch.ts#InvoiceOutboxHandler.#keepInvoiceForPaidMoney#.transaction": "cenario:invoiceHandler.keepInvoiceForPaidMoney",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.confirmCancelledByOperator#withTenantRlsBudget": "cenario:outbox.confirmCancelledByOperator",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.adoptionFacts#withTenantRls": "cenario:outbox.adoptionFacts",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.claimNext#withTenantRlsBudget": "cenario:outbox.claimNext",
@@ -555,6 +559,19 @@ if (!connectionString) {
       [s4a, s4b, s4c],
     )) as Array<{ kind: string; n: number }>;
     assert.deepEqual(intents, [{ kind: "invoice_cancel", n: 1 }, { kind: "invoice_issue", n: 3 }], "os 3 cenários gravaram as intenções DENTRO das transações gravadas");
+    // B-ASS-08c3, Emendas 2.1 e 2.2: um pagamento manual DEPOIS da intenção; o cancelamento da nota relê o demonstrativo sob a
+    // trava (a única transação dele) e a nota fica — o cenário grava essa transação.
+    await rt.service.recordManualPayment({ tenantId: t4c, statementId: s4c, amountCents: 1_000, method: "pix", note: null, actorId: ACTOR, now: NOW });
+    const cancelRow = (await new PrismaOutboxRepository(recording.client).listByStatement(t4c, s4c)).find((row) => row.kind === "invoice_cancel")!;
+    const keepHandler = new InvoiceOutboxHandler({
+      ports: { focusnfe: { cancel: async () => ({ status: "cancelled" }) } as never },
+      invoices: new PrismaStatementInvoiceRepository(recording.client),
+      statements: rt.repository,
+      resolveIssueContext: async () => ({ reason: "not_used" }),
+    });
+    await scenario("invoiceHandler.keepInvoiceForPaidMoney", async () => {
+      assert.deepEqual(await keepHandler.cancel(cancelRow, NOW), { kind: "skipped", reason: "statement_paid" });
+    });
     // o runtime: leituras, perfil e a trilha direta
     await scenario("runtime.listStatements", () => rt.repository.listStatements(t1));
     await scenario("runtime.findStatement", () => rt.repository.findStatement(t1, s1));

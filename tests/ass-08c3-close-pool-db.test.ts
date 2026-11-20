@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { randomUUID } from "node:crypto";
+import test, { after } from "node:test";
+
+import { openPrismaKit, type PrismaKit } from "./helpers/ass-08c3-prisma-kit.js";
 
 import { daysInPeriod } from "../src/modules/subscription-billing/statements/statement.engine.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
@@ -51,3 +54,88 @@ test("M-CP1/M-CP2: as duas âncoras são únicas", () => {
   assert.equal(text.split("[CLOSE-PIN-CHECK]").length - 1, 1);
 });
 
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// Conserto único do #608 (fix-608b-cl), A-2 (grave): o `[CLOSE-PIN-CHECK]` roda SEMPRE sob a trava. A cena da sonda
+// `sonda-close-pin`, agora no PRISMA (papel NOSUPERUSER NOBYPASSRLS): o 2º operador lê `closed` sem trava (pin nulo); ENTRE a
+// leitura e a trava, o 1º reabre o demonstrativo e COMMITA (a barreira é o estado do banco: a reabertura roda e termina dentro do
+// `inputs.resolve`, que fica entre as duas). Plano §4.9 passo 2: status relido sob a trava ≠ o do passo 1 → 409 `statement_busy`,
+// nada gravado; o `close` seguinte usa o pin do fechamento original.
+// ---------------------------------------------------------------------------------------------------------------------------
+const connectionString = process.env.DATABASE_URL;
+function readyAt(planVersionId: string, price: number): StatementInputs {
+  const base = ready();
+  if (base.kind !== "ready") throw new Error("ready");
+  // Sem FK: `subscriptionId`/`planVersionId` nulos na linha; o pin vem do plano de cada segmento do retrato (`pinOf`).
+  return { ...base, subscriptionId: null, planVersionId: null, computation: { ...base.computation, segments: [{ ...base.computation.segments[0]!, planVersionId, monthlyPriceCents: price }] } } as StatementInputs;
+}
+if (!connectionString) {
+  test("CP2b-db exige DATABASE_URL", { skip: "Defina DATABASE_URL para os testes -db." });
+} else {
+  let kit: PrismaKit;
+  let M: any = {};
+  after(async () => {
+    await kit?.close();
+  });
+
+  test("setup -db: base própria, papel NOSUPERUSER NOBYPASSRLS", async () => {
+    kit = await openPrismaKit(connectionString, "c08c3_cp");
+    M = {
+      runtime: await import("../src/modules/subscription-billing/statements/statement.prisma-runtime.js"),
+    };
+  });
+
+  test("CP2b-db (A-2): a reabertura entre a leitura sem trava e a trava dá 409 statement_busy; nada gravado; o close seguinte usa o pin", async () => {
+    const slug = `c08c3-cp2b-${randomUUID().slice(0, 8)}`;
+    const tenantId = (await kit.one(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, slug)).id as string;
+    const actor = (await kit.one(`INSERT INTO users (tenant_id, name, email) VALUES ($1::uuid, 'op', $2) RETURNING id`, tenantId, `${slug}@teste.invalid`)).id as string;
+    const repository = new M.runtime.PrismaStatementRepository(kit.role.client);
+    const audit = new M.runtime.PrismaStatementAuditSink(kit.role.client);
+    // O fechamento original: plan-v1, 100,00.
+    const first = new StatementService(repository, { async resolve() { return readyAt("plan-v1", 10_000); } }, audit);
+    const closed = await first.close({ tenantId, period: "2026-10", now: WHEN, actorId: actor, source: "manual" });
+    assert.equal(closed.kind, "closed");
+    const statementId = (await kit.one(`SELECT id FROM subscription_statements WHERE tenant_id = $1::uuid AND period = '2026-10'`, tenantId)).id as string;
+    // Desde o original, o preço de HOJE é plan-v2 (150,00); o pin do original é plan-v1.
+    const pins: unknown[] = [];
+    let interleave: (() => Promise<void>) | null = async () => {
+      await first.reopen({ tenantId, statementId, reason: "ajuste do operador A", actorId: actor, now: WHEN });
+    };
+    const second = new StatementService(
+      repository,
+      {
+        async resolve(_t, _p, options) {
+          pins.push(options.pin);
+          if (interleave) {
+            const run = interleave;
+            interleave = null;
+            await run();
+          }
+          return options.pin ? readyAt("plan-v1", 10_000) : readyAt("plan-v2", 15_000);
+        },
+      },
+      audit,
+    );
+    let error: any;
+    try {
+      await second.close({ tenantId, period: "2026-10", now: WHEN, actorId: actor, source: "manual" });
+    } catch (caught) {
+      error = caught;
+    }
+    // A barreira aconteceu pelo banco: a reabertura do operador A está gravada.
+    assert.equal(pins.length, 1);
+    assert.equal(pins[0], null, "o passo 1 leu `closed` sem trava: pin nulo");
+    assert.equal(error?.statusCode, 409, `esperado 409, veio ${error?.statusCode ?? "sucesso"}`);
+    assert.equal(error?.reason, "statement_busy");
+    const afterBusy = await kit.one(`SELECT status, total_amount::text AS total, snapshot FROM subscription_statements WHERE id = $1::uuid`, statementId);
+    assert.equal(afterBusy.status, "reopened", "nada gravado pelo close recusado");
+    assert.equal(Number(afterBusy.total), 100);
+    assert.equal(afterBusy.snapshot.history.filter((entry: { event: string }) => entry.event === "closed").length, 1);
+    // O close seguinte (o operador repete): lê `reopened` com o pin do original e refecha a 100,00.
+    const again = await second.close({ tenantId, period: "2026-10", now: WHEN, actorId: actor, source: "manual" });
+    assert.equal(again.kind, "closed");
+    assert.ok(pins[1] && (pins[1] as { planVersionIds: string[] }).planVersionIds.includes("plan-v1"), "o refechamento usa o pin do original");
+    const final = await kit.one(`SELECT status, total_amount::text AS total FROM subscription_statements WHERE id = $1::uuid`, statementId);
+    assert.deepEqual({ status: final.status, total: Number(final.total) }, { status: "closed", total: 100 });
+  });
+}

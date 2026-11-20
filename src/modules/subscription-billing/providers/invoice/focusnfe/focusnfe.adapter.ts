@@ -1,6 +1,7 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
 import {
+  BillingChannelDisabledError,
   ProviderNotConfiguredError,
   ProviderRateLimitedError,
   ProviderUnavailableError,
@@ -234,12 +235,20 @@ export class FocusNfeInvoiceAdapter implements InvoiceProviderPort {
   async testConnection(): Promise<ConnectionTestResult> {
     const token = await this.readSecret("api_token");
     if (!token) return { ok: false, code: "not_configured" };
-    const response = await this.client.request({
-      op: "testConnection",
-      method: "GET",
-      path: `/nfsen/${encodeURIComponent(randomUUID())}`,
-      headers: await this.authHeaders(),
-    });
+    // Plano §4.2 (A-01): o teste de conexão NUNCA lança; a falha de transporte vira `provider_unavailable` (o canal desligado,
+    // que não é transporte, continua lançando antes da rede).
+    let response: Awaited<ReturnType<BillingHttpClient["request"]>>;
+    try {
+      response = await this.client.request({
+        op: "testConnection",
+        method: "GET",
+        path: `/nfsen/${encodeURIComponent(randomUUID())}`,
+        headers: await this.authHeaders(),
+      });
+    } catch (error) {
+      if (error instanceof BillingChannelDisabledError) throw error;
+      return { ok: false, code: error instanceof ProviderRateLimitedError ? "rate_limited" : "provider_unavailable" };
+    }
     // A credencial passou se o Focus aceitou a consulta; a referência aleatória não existe (404) ou devolve 2xx.
     if (response.status === 404 || (response.status >= 200 && response.status < 300)) return { ok: true }; // [TEST-CONN]
     if (response.status === 401 || response.status === 403) return { ok: false, code: "credential_rejected" };

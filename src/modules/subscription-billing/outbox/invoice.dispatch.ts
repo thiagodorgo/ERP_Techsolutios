@@ -18,7 +18,7 @@ import { ProviderValidationError } from "../providers/http/billing-errors.js";
 import { StatementNotPaidError, type StatementInvoiceRepository } from "../invoices/invoices.repository.js";
 import { invoiceExternalRef, sanitizeInvoiceError, type SubscriptionStatementInvoice } from "../invoices/invoices.types.js";
 import type { StatementRepository } from "../statements/statement.repository.js";
-import type { SubscriptionStatement } from "../statements/statement.types.js";
+import { invoiceKeptMetadata, type SubscriptionStatement } from "../statements/statement.types.js";
 import type { BillingOutboxRow, OutboxSkipReason } from "./outbox.types.js";
 
 /** Código de cancelamento registrado na nossa linha quando o provedor não tem lista própria: 9 = "outros" (R-D). */
@@ -100,7 +100,8 @@ export type InvoiceOutboxDeps = {
   /** SÓ as portas dos provedores de NOTA ligados (R-OBX-4). */
   readonly ports: Readonly<Record<string, InvoiceProviderPort>>;
   readonly invoices: StatementInvoiceRepository;
-  readonly statements: Pick<StatementRepository, "findStatement">;
+  /** `transaction` (Emenda 2.1, E2.1-1): o cancelamento da nota relê o demonstrativo SOB A TRAVA antes de ir ao provedor fiscal. */
+  readonly statements: Pick<StatementRepository, "findStatement" | "transaction">;
   readonly resolveIssueContext: InvoiceIssueContextResolver;
 };
 
@@ -228,6 +229,8 @@ export class InvoiceOutboxHandler {
   async cancel(row: BillingOutboxRow, now: Date): Promise<InvoiceDispatchResult> {
     const port = this.deps.ports[row.provider];
     if (!port) return { kind: "skipped", reason: "provider_disabled" };
+    // E2.2-1/E2.2-2: SKIPPED `statement_paid` (o status e o motivo que o CHECK do banco já aceita) quando sobra dinheiro pago.
+    if (await this.#keepInvoiceForPaidMoney(row)) return { kind: "skipped", reason: "statement_paid" };
     const live = await this.deps.invoices.findLive(row.tenantId, row.statementId);
     if (!live) {
       const last = (await this.deps.invoices.listByStatement(row.tenantId, row.statementId)).at(-1);
@@ -261,6 +264,30 @@ export class InvoiceOutboxHandler {
     if (!refreshed) return { kind: "sent", externalId: live.providerInvoiceId ?? live.externalRef };
     if (refreshed.status === "pending") return { kind: "needs_review", code: "invoice_stuck_processing" };
     return this.#cancelLive(row, refreshed, port, now);
+  }
+
+  /** Emenda 2.1 (E2.1-1) e 2.2 (E2.2-1, Q1 = (b) do dono): a regra vale NO MOMENTO do cancelamento. O demonstrativo é relido
+   * SOB A TRAVA (`lockById`, `SELECT … FOR UPDATE`; a ordem de travas do plano: o demonstrativo primeiro), na transação da
+   * organização da LINHA, no TOPO de `cancel()` — antes de `#cancelLive` (o único `port.cancel`) e de `#decideOverduePending`.
+   * Se ainda há dinheiro pago (`paidCents > 0`, por exemplo um pagamento manual registrado depois da intenção), a nota FICA: a
+   * trilha `invoice_kept_partial_reversal` (`code: "paid_after_cancel_intent"`) vai no MESMO `tx`, e a linha encerra SKIPPED
+   * `statement_paid` (E2.2-2). A rede fica fora do `tx`. Janela residual declarada: entre o commit desta releitura e o
+   * `port.cancel` (a mesma classe da janela LEASE-02). */
+  async #keepInvoiceForPaidMoney(row: BillingOutboxRow): Promise<boolean> {
+    return this.deps.statements.transaction(row.tenantId, async (tx) => {
+      const locked = await tx.lockById(row.statementId);
+      if (!locked || locked.paidCents === 0) return false;
+      if (tx.recordAudit) {
+        await tx.recordAudit({
+          tenantId: row.tenantId,
+          actorId: null,
+          action: "subscription_statement.invoice_kept_partial_reversal",
+          entityId: locked.id,
+          metadata: invoiceKeptMetadata({ statementId: locked.id, code: "paid_after_cancel_intent", count: locked.paidCents }),
+        });
+      }
+      return true;
+    });
   }
 
   /** O cancelamento de uma nota viva já decidida (`authorized`, ou `cancel_pending` sendo repetido). */

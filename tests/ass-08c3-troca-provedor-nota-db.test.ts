@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { after } from "node:test";
+
+import { openPrismaKit, type PrismaKit } from "./helpers/ass-08c3-prisma-kit.js";
 
 import { runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { NOW, TENANT_A, enqueue, memoryOutbox, source } from "./helpers/ass-08c3-test-kit.js";
@@ -52,3 +54,38 @@ test("M26/M26b/M26c: SQL e chamada preservam os predicados literais", () => {
   assert.match(dispatcher, /retargetUntriedInvoiceIssues\(deps\.invoices\.providers\[0\]!/);
 });
 
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// Conserto único do #608 (fix-608b-cl), A-7: o SQL do `[RETARGET-01]` filtra `tenant_id` além da RLS. Prova: um cliente que
+// IGNORA a RLS (o dono da base, superusuário) com escopo só da organização C não muda a linha da organização D.
+// ---------------------------------------------------------------------------------------------------------------------------
+const connectionString = process.env.DATABASE_URL;
+const PNOW = new Date("2026-11-20T12:00:00.000Z");
+if (!connectionString) {
+  test("TP-A7 exige DATABASE_URL", { skip: "Defina DATABASE_URL para os testes -db." });
+} else {
+  let kit: PrismaKit;
+  let Repo: any;
+  after(async () => {
+    await kit?.close();
+  });
+
+  test("setup -db: base própria, papel NOSUPERUSER NOBYPASSRLS", async () => {
+    kit = await openPrismaKit(connectionString, "c08c3_tp");
+    Repo = (await import("../src/modules/subscription-billing/outbox/outbox.prisma.js")).PrismaOutboxRepository;
+  });
+
+  test("TP-A7 (A-7): com um cliente que ignora a RLS e escopo só de C, a linha de D não muda de provedor", async () => {
+    const c = await kit.seedTenant("tpa7c");
+    const d = await kit.seedTenant("tpa7d");
+    const rowC = await kit.seedRow(c, { kind: "invoice_issue", status: "PENDING", provider: "nfeio" });
+    const rowD = await kit.seedRow(d, { kind: "invoice_issue", status: "PENDING", provider: "nfeio" });
+    const bypass = await kit.one(`SELECT rolsuper OR rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user`);
+    assert.equal(bypass.bypass, true, "o cliente do dono ignora a RLS (é a prova de que a defesa não é só a RLS)");
+    const moved = await new Repo(kit.owner, { tenantIds: [c.tenantId] }).retargetUntriedInvoiceIssues("focusnfe", PNOW);
+    const provider = async (id: string) => (await kit.one(`SELECT provider FROM billing_outbox WHERE id = $1::uuid`, id)).provider;
+    assert.equal(await provider(rowD), "nfeio", "a linha da organização fora do escopo não muda");
+    assert.equal(await provider(rowC), "focusnfe");
+    assert.equal(moved, 1);
+  });
+}

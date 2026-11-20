@@ -479,14 +479,16 @@ export class PrismaOutboxRepository implements OutboxRepository {
   async retargetUntriedInvoiceIssues(provider: string, now: Date): Promise<number> {
     const tenants = await this.#tenantsWithRefs();
     if (tenants.length === 0) return 0;
-    const counts = await forEachTenantRls<number>(this.client, tenants, async (tx) => {
+    // A-7: a organização no predicado ALÉM da RLS (o molde das escritas por organização); a RLS deixa de ser a única defesa.
+    const counts = await forEachTenantRls<number>(this.client, tenants, async (tx, tenantId) => {
       const rows = (await tx.$queryRawUnsafe(
         `UPDATE billing_outbox
             SET provider = $1, skip_reason = NULL, updated_at = $2
-          WHERE kind = 'invoice_issue' AND status = 'PENDING' AND attempts = 0 AND external_id IS NULL AND claimed_by IS NULL AND provider <> $1
+          WHERE kind = 'invoice_issue' AND status = 'PENDING' AND attempts = 0 AND external_id IS NULL AND claimed_by IS NULL AND provider <> $1 AND tenant_id = $3::uuid
           RETURNING id`,
         provider,
         now,
+        tenantId,
       )) as Array<{ id: string }>; // [RETARGET-01]
       return [rows.length];
     });
@@ -495,8 +497,14 @@ export class PrismaOutboxRepository implements OutboxRepository {
 
   async isChargeKnown(tenantId: string, statementId: string, chargeId: string): Promise<boolean> {
     return withTenantRls(this.client, tenantId, async (tx) => {
+      // Plano §4.7.2 (A-5): a MESMA regra da regra 1 do `cancel-unknown` (`charge-request.service.ts`): a cobrança é conhecida
+      // pela tabela de cobranças do demonstrativo OU pelo `external_id` de uma linha do demonstrativo na fila. (`$3 = external_id`,
+      // com o parâmetro à esquerda: é LEITURA, e o censo textual de escritores do EK1 lê `external_id = <valor>` como escrita.)
       const rows = (await tx.$queryRawUnsafe(
-        `SELECT 1 FROM subscription_statement_charges WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND external_charge_id = $3 LIMIT 1`,
+        `SELECT 1 FROM subscription_statement_charges WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND external_charge_id = $3
+         UNION ALL
+         SELECT 1 FROM billing_outbox WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND $3 = external_id
+         LIMIT 1`,
         tenantId,
         statementId,
         chargeId,
@@ -708,7 +716,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
     try {
       return await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
         const owners = (await tx.$queryRawUnsafe(
-          `SELECT o.id, o.statement_id, o.kind, o.status, o.last_error, o.payload
+          `SELECT o.id, o.statement_id, o.kind, o.provider, o.status, o.last_error, o.payload
              FROM billing_outbox o
              JOIN subscription_statements s ON s.id = o.statement_id AND s.tenant_id = o.tenant_id
             WHERE o.id = $1::uuid AND o.tenant_id = $2::uuid
@@ -716,7 +724,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
             FOR UPDATE OF o`,
           id,
           tenantId,
-        )) as Array<{ id: string; statement_id: string; kind: string; status: string; last_error: string | null; payload: Record<string, unknown> | null }>; // [CONFIRM-LOCK]
+        )) as Array<{ id: string; statement_id: string; kind: string; provider: string; status: string; last_error: string | null; payload: Record<string, unknown> | null }>; // [CONFIRM-LOCK]
         const owner = owners[0];
         if (!owner) return { kind: "not_found" } satisfies ConfirmCancelledByOperatorOutcome;
         if (owner.kind !== "charge_cancel" || owner.status !== "NEEDS_REVIEW" || !["charge_not_listed", "charge_state_unknown"].includes(owner.last_error ?? "")) {
@@ -735,11 +743,14 @@ export class PrismaOutboxRepository implements OutboxRepository {
           input.now,
         )) as Row[];
 
-        await tx.$executeRawUnsafe(
+        // Plano §4.7 item 5 ("o MESMO efeito" do registro do cancelamento pelo provedor): a MESMA instrução do CANCEL-TX-CHG, byte a byte (o teste
+        // CF-A1 compara os dois textos): só cobrança alvo de cancelamento (`cancelTarget`) vira `cancelled`. A cobrança já paga,
+        // estornada ou contestada na tabela fica como está: o dinheiro que entrou não vira "cancelada" pela mão do operador.
+        await tx.$executeRawUnsafe( // [CONFIRM-CHG]
           `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4
-             WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND external_charge_id = $3`,
+          WHERE tenant_id = $1::uuid AND provider = $2 AND external_charge_id = $3 AND status IN (${sqlStatusList("cancelTarget")})`,
           tenantId,
-          owner.statement_id,
+          owner.provider,
           input.chargeId,
           input.now,
         );
@@ -759,7 +770,8 @@ export class PrismaOutboxRepository implements OutboxRepository {
           actorId: input.actorId,
           action: "billing_outbox.cancel_confirmed_by_operator",
           entityId: id,
-          metadata: { statementId: owner.statement_id, kind: owner.kind, code: "operator_confirmed", reason: input.reason },
+          // Plano §4.7 item 6: `code` = o `last_error` de ANTES (`charge_not_listed` ou `charge_state_unknown`), já conferido pela allowlist CONFIRM-CODES.
+          metadata: { statementId: owner.statement_id, kind: owner.kind, code: owner.last_error, reason: input.reason },
         });
 
         return { kind: "confirmed", row: toDomain(updated[0]!) } satisfies ConfirmCancelledByOperatorOutcome;

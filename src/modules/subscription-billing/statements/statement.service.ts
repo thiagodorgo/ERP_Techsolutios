@@ -155,12 +155,15 @@ export class StatementService {
       if (current.status === "reopened" && input.source === "job") {
         return { kind: "skipped", reason: "reopened_awaits_manual_close", alreadyClosed: false } as const;
       }
+      // Plano §4.9 passo 2: o status e o pin RELIDOS SOB A TRAVA têm de ser os que decidiram a leitura das entradas fora dela
+      // (passo 1). Reaberto agora e não antes (ou o contrário), ou outro pin → 409 `statement_busy`, nada gravado: o refechamento
+      // nunca usa entradas lidas sem o pin do fechamento original (G5 §3.4). Roda SEMPRE, inclusive quando o passo 1 viu `closed`.
+      const lockedPin = current.status === "reopened" ? pinOf(current) : null;
+      const same =
+        (lockedPin === null) === (prePin === null) &&
+        (lockedPin === null || prePin === null || (lockedPin.planVersionIds.join(",") === prePin.planVersionIds.join(",") && lockedPin.addonPlanVersionIds.join(",") === prePin.addonPlanVersionIds.join(",")));
+      if (!same) throw new StatementError(409, "statement_busy", "The statement is busy; try again."); // [CLOSE-PIN-CHECK]
       if (resolved.kind === "skip") return { kind: "skipped", reason: resolved.reason, alreadyClosed: false } as const;
-      if (current.status === "reopened" && prePin !== null) {
-        const nowPin = pinOf(current);
-        const same = nowPin.planVersionIds.join(",") === prePin.planVersionIds.join(",") && nowPin.addonPlanVersionIds.join(",") === prePin.addonPlanVersionIds.join(",");
-        if (!same) throw new StatementError(409, "statement_busy", "The statement is busy; try again."); // [CLOSE-PIN-CHECK]
-      }
 
       const daysInMonth = daysInPeriod(input.period);
       const computationInput: StatementComputationInput = {

@@ -101,12 +101,15 @@ const EXPECTED_MARKERS = [
   // B-ASS-08c3 (plano `plano-B-ASS-08c3-fechamento.md` §1.3 e §4.2.1, P22b): o registro do webhook pela plataforma, a âncora
   // nova do bloco em `providers/provider-config.service.ts` (`registerWebhook`). Só acréscimo; exatamente 1, como as outras.
   "[WH-REG]",
+  // B-ASS-08c3, Emenda 2 §2 item 4 (Q1 = (b) do dono): a nota só é cancelada no estorno do provedor quando não sobra dinheiro
+  // pago (`statements/statement-settlement.service.ts`). Só acréscimo; exatamente 1, como as outras.
+  "[EP-PARCIAL]",
 ].sort();
 
 test("T-MARK (R-MARK, CRIT530-05): cada marcador de mutação existe UMA vez em src/modules/subscription-billing, o conjunto é o do plano e nenhum é prefixo de outro", () => {
   const counts = new Map<string, number>();
   for (const file of filesUnder(BILLING)) {
-    for (const match of readFileSync(file, "utf8").matchAll(/\/\/ (\[(?:INTX|WH)-[0-9A-Za-z-]+\])/g)) {
+    for (const match of readFileSync(file, "utf8").matchAll(/\/\/ (\[(?:INTX|WH|EP)-[0-9A-Za-z-]+\])/g)) {
       counts.set(match[1]!, (counts.get(match[1]!) ?? 0) + 1);
     }
   }

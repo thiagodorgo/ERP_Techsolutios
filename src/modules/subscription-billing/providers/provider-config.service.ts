@@ -333,20 +333,23 @@ export class ProviderConfigService {
     const environment = (await this.repository.get(entry.id))?.environment ?? "sandbox";
     if (!this.#adapter(entry, environment)) fail(422, "provider_adapter_unavailable", "This provider has no adapter in this package.");
     const now = this.clock();
-    const [summaries, readability] = await Promise.all([
-      this.credentials.list(entry.id, environment),
-      this.credentials.readability ? this.credentials.readability(entry.id, environment) : Promise.resolve(null),
-    ]);
-    const hasApiToken = summaries.some((summary) => summary.kind === "api_token");
-    const apiTokenReadable = hasApiToken && readability?.readable === true;
-    const webhookSecretPresent = summaries.some((summary) => summary.kind === "webhook_secret");
     let failed: readonly string[] | null = null;
     try {
-      const result = await this.repository.enableLocked(entry.id, now, (locked, peers) => {
+      const result = await this.repository.enableLocked(entry.id, now, async (locked, peers) => {
+        // Plano §4.3 (A-02): o estado vem do que foi lido SOB A TRAVA, campo a campo — inclusive o cofre, lido para o AMBIENTE da
+        // linha travada (nunca o de uma leitura anterior à trava). Ambiente sem credencial legível → a precondição recusa.
+        const lockedEnvironment = locked?.environment ?? "sandbox";
+        const [summaries, readability] = await Promise.all([
+          this.credentials.list(entry.id, lockedEnvironment),
+          this.credentials.readability ? this.credentials.readability(entry.id, lockedEnvironment) : Promise.resolve(null),
+        ]);
+        const hasApiToken = summaries.some((summary) => summary.kind === "api_token");
+        const apiTokenReadable = hasApiToken && readability?.readable === true;
+        const webhookSecretPresent = summaries.some((summary) => summary.kind === "webhook_secret");
         const state: EnablePreconditionState = {
           provider: entry.id,
           kind: entry.kind,
-          environment: locked?.environment ?? "sandbox",
+          environment: lockedEnvironment,
           channelEnabledByEnv: env.BILLING_PROVIDERS_ENABLED,
           apiTokenReadable,
           lastTestOk: locked?.lastTestOk ?? null,

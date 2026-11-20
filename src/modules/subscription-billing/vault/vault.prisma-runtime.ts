@@ -270,7 +270,7 @@ export class PrismaProviderConfigRepository implements ProviderConfigRepository 
   async enableLocked(
     provider: string,
     now: Date,
-    decide: (locked: ProviderConfig | null, peers: readonly ProviderConfig[]) => ProviderEnableEffect | null,
+    decide: (locked: ProviderConfig | null, peers: readonly ProviderConfig[]) => ProviderEnableEffect | null | Promise<ProviderEnableEffect | null>,
   ): Promise<{ readonly locked: ProviderConfig | null; readonly updated: ProviderConfig | null }> {
     return this.prisma.$transaction(async (tx) => {
       // [ENABLE-TX] trava a linha do provedor antes de avaliar as precondições e gravar `enabled` no mesmo tx.
@@ -284,7 +284,7 @@ export class PrismaProviderConfigRepository implements ProviderConfigRepository 
          FOR UPDATE`;
       const locked = rows.length > 0 ? mapConfig(rows[0]!) : null;
       const peers = (await tx.billingProviderConfig.findMany({ orderBy: { provider: "asc" } })).map((row) => mapConfig(row as ConfigRecord));
-      const effect = decide(locked, peers);
+      const effect = await decide(locked, peers);
       if (!effect) return { locked, updated: null };
       const updated = await this.setEnabled(provider, effect, now, tx);
       return { locked, updated };

@@ -45,7 +45,7 @@ export type ChannelDeps = {
    * (`profileCustomerResolver`), nunca do payload; em produção, envolto em `persistingCustomerResolver` (G12). */
   readonly resolveCustomer: DispatcherDeps["resolveCustomer"];
   readonly settlement: StatementSettlementService;
-  readonly statements: Pick<StatementRepository, "findStatement">;
+  readonly statements: Pick<StatementRepository, "findStatement" | "transaction">;
   /** A perna da NOTA (c2): SÓ as portas dos provedores de nota LIGADOS, o repositório da nota e o contexto fiscal. Ausentes =
    * sem perna de nota (os `invoice_*` da outbox ficam visíveis como `provider_disabled`). */
   readonly invoicePorts?: Readonly<Record<string, InvoiceProviderPort>>;

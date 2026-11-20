@@ -107,3 +107,24 @@ test("LK1 · lookupFromFocus: id no corpo → providerInvoiceId; sem id ou vazio
   assert.equal(lookupFromFocus({ status: "situacao_desconhecida" } as never).providerInvoiceId, undefined);
   assert.equal(lookupFromFocus({ status: "situacao_desconhecida", id: "" } as never).providerInvoiceId, undefined);
 });
+
+// Conserto único do #608 (fix-608b-cl), A-01 (plano §4.2, "nunca lança"): a falha de transporte dos DOIS adaptadores
+// (conexão recusada numa porta sem servidor) vira `{ ok: false, code: "provider_unavailable" }`, sem lançar e sem texto do erro.
+test("TC-TRANSP (A-01) · Asaas e Focus: conexão recusada → provider_unavailable, sem lançar", async () => {
+  const asaas = new AsaasPaymentAdapter(
+    new BillingHttpClient({ provider: "asaas", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: "http://127.0.0.1:1/v3" }),
+    asaasSecrets(API_TOKEN),
+  );
+  assert.deepEqual(await asaas.testConnection(), { ok: false, code: "provider_unavailable" });
+  const focus = new FocusNfeInvoiceAdapter(
+    new BillingHttpClient({ provider: "focusnfe", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: "http://127.0.0.1:1/v2" }),
+    focusSecrets(API_TOKEN),
+  );
+  assert.deepEqual(await focus.testConnection(), { ok: false, code: "provider_unavailable" });
+  // O canal desligado NÃO é transporte: continua lançando antes da rede (a rota já recusa antes, com 422 channel_disabled).
+  const off = new AsaasPaymentAdapter(
+    new BillingHttpClient({ provider: "asaas", environment: "sandbox", channelEnabled: false, allowLocalHosts: true, nodeEnv: "test", baseUrl: "http://127.0.0.1:1/v3" }),
+    asaasSecrets(API_TOKEN),
+  );
+  await assert.rejects(() => off.testConnection(), (error: Error) => error.name === "BillingChannelDisabledError" || /channel/i.test(error.message));
+});

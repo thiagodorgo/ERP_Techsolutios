@@ -335,6 +335,24 @@ if (!connectionString) {
     }
   });
 
+  // Conserto único do #608 (fix-608b-cl), A-01 (plano §4.2, "nunca lança"): a falha de TRANSPORTE (aqui, conexão recusada numa
+  // porta sem servidor) vira `provider_unavailable`, gravada em `last_test_*` e na trilha, pela rota real.
+  test("TC-TRANSP (A-01): conexão recusada → 200 { ok: false, code: provider_unavailable }, gravado em last_test_* e na trilha", async () => {
+    pointCatalog("asaas", "http://127.0.0.1:1/v3");
+    const before = (await auditActions("asaas", "billing_provider.connection_tested")).length;
+    const response = await api("POST", "/api/v1/platform/billing/providers/asaas/test-connection");
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    assert.equal(response.body.data.ok, false);
+    assert.equal(response.body.data.code, "provider_unavailable");
+    const row = await configRow("asaas");
+    assert.equal(row!.last_test_ok, false);
+    assert.equal(row!.last_test_error, "provider_unavailable");
+    const trail = await auditActions("asaas", "billing_provider.connection_tested");
+    assert.equal(trail.length, before + 1, JSON.stringify(trail));
+    assert.deepEqual(trail.at(-1)!.metadata.codes, ["provider_unavailable"]);
+    assert.ok(!JSON.stringify(response.body).includes("fetch failed"), "o texto do erro de transporte não sai na resposta");
+  });
+
   test("TC3: Focus 404 → ok, 401 → credential_rejected, 503 → provider_unavailable", async () => {
     const cases: Array<{ scenario: string; ok: boolean; code?: string }> = [
       { scenario: "not_found_404", ok: true },

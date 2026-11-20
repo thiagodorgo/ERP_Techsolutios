@@ -549,7 +549,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     if (String(row.payload.chargeId ?? "") !== input.chargeId) return { kind: "mismatch" };
     const next: BillingOutboxRow = { ...row, status: "SENT", lastError: null, skipReason: null, externalId: input.chargeId, updatedAt: input.now };
     this.#rows.set(id, next);
-    this.audits.push({ tenantId, action: "billing_outbox.cancel_confirmed_by_operator", entityId: id, metadata: { statementId: row.statementId, kind: row.kind, code: "operator_confirmed", reason: input.reason } });
+    this.audits.push({ tenantId, action: "billing_outbox.cancel_confirmed_by_operator", entityId: id, metadata: { statementId: row.statementId, kind: row.kind, code: row.lastError, reason: input.reason } });
     return { kind: "confirmed", row: next };
   }
 

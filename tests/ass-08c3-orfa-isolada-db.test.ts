@@ -74,3 +74,25 @@ test("mutações M-OR1/M-OR2/M-OR3 têm uma única âncora literal", () => {
   for (const marker of ["[ORFA-TRY]", "[ORFA-DEFER]", "[ORFA-CAP]"]) assert.equal(text.split(marker).length - 1, 1, marker);
 });
 
+
+// Conserto único do #608 (fix-608b-cl), A-4: `return await settleFoundCharge(...)` no `[ORFA-TRY]`. A falha de BANCO dentro da
+// adoção (o `markNeedsReview` da órfã achada estornada lança P1001) cai no `catch` da órfã — adiada, nunca criada — e a rodada
+// segue: a `charge_create` da outra organização é atendida (1 POST). Antes do conserto, a rejeição escapava e derrubava a rodada.
+test("OR-A4 (A-4): falha de banco dentro da adoção de UMA órfã não derruba a rodada; a outra organização é atendida", async () => {
+  const repo = memoryOutbox();
+  const row = await orphan(repo);
+  await enqueue(repo, { tenantId: "00000000-0000-4000-8000-0000000000b2", statementId: "20000000-0000-4000-8000-000000000002", seq: 2 });
+  repo.markNeedsReview = async () => {
+    throw Object.assign(new Error("db fora"), { code: "P1001" });
+  };
+  const { port, calls } = paymentPort({
+    // Só a órfã (o demonstrativo dela) tem cobrança no provedor; a linha nova da outra organização não tem nenhuma.
+    listChargesByExternalReference: async (statementId: string) => (statementId === row.statementId ? [{ chargeId: "pay_existing", status: "pending", amountCents: 10_000, createdAt: NOW.toISOString() }] : []),
+    getCharge: async () => ({ status: "refunded", amountCents: 10_000 }),
+  });
+  const result = await runDispatchOutbox({ repo, ports: { asaas: port }, resolveCustomer: async () => ({ ok: true, customerId: "cus" }), now: () => new Date(NOW.getTime() + OUTBOX_ORPHAN_MS) });
+  assert.equal(calls.create, 1, "a charge_create da outra organização foi atendida");
+  assert.equal(result.outcomes.retry, 1, "a órfã foi adiada pelo catch dela");
+  const current = await repo.findById(TENANT_A, row.id);
+  assert.equal(current?.status, "PROCESSING", "a órfã nunca volta a PENDING");
+});

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { after } from "node:test";
+
+import { openPrismaKit, type PrismaKit } from "./helpers/ass-08c3-prisma-kit.js";
 
 import { runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { NOW, TENANT_A, enqueue, memoryOutbox, paymentPort, source } from "./helpers/ass-08c3-test-kit.js";
@@ -45,3 +47,36 @@ test("M-TD1/M-TD3/M-TD4: repasse, throttle e catch têm âncoras verificáveis",
   assert.match(source("src/modules/subscription-billing/outbox/dispatch-audit.ts"), /catch \{/);
 });
 
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// Conserto único do #608 (fix-608b-cl), A-8 (plano §4.6, "1 linha por (organização, código) por hora, por processo"): o estado
+// do `[TRILHA-THROTTLE]` sobrevive ao sink novo que cada rodada do job monta (`createChannelRuntime` a cada tick). No PRISMA.
+// ---------------------------------------------------------------------------------------------------------------------------
+const connectionString = process.env.DATABASE_URL;
+const PNOW = new Date("2026-11-20T12:00:00.000Z");
+if (!connectionString) {
+  test("TD-A8 exige DATABASE_URL", { skip: "Defina DATABASE_URL para os testes -db." });
+} else {
+  let kit: PrismaKit;
+  let Repo: any;
+  after(async () => {
+    await kit?.close();
+  });
+
+  test("setup -db: base própria, papel NOSUPERUSER NOBYPASSRLS", async () => {
+    kit = await openPrismaKit(connectionString, "c08c3_td");
+    Repo = (await import("../src/modules/subscription-billing/outbox/outbox.prisma.js")).PrismaOutboxRepository;
+  });
+
+  test("TD-A8 (A-8): dois sinks (dois ticks) com a mesma falha da varredura gravam 1 linha por (organização, código)", async () => {
+    const { createPersistedDispatchAuditSink } = await import("../src/modules/subscription-billing/outbox/dispatch-audit.js");
+    const f = await kit.seedTenant("tda8");
+    const code = `sweep_${f.tenantId.slice(0, 8)}`;
+    for (let tick = 0; tick < 2; tick += 1) {
+      const sink = createPersistedDispatchAuditSink(kit.role.client as never);
+      for (let i = 0; i < 3; i += 1) await sink({ tenantId: f.tenantId, action: "billing_outbox.invoice_sweep_failed", code } as never);
+    }
+    const n = await kit.one(`SELECT count(*)::int AS n FROM audit_logs WHERE tenant_id = $1::uuid AND action = 'billing_outbox.invoice_sweep_failed'`, f.tenantId);
+    assert.equal(n.n, 1, "o throttle não zera a cada rodada");
+  });
+}

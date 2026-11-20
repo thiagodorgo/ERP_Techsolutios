@@ -7,9 +7,16 @@ import type { DispatchAuditEvent } from "./outbox.dispatcher.js";
 const HOUR_MS = 60 * 60 * 1000;
 type Key = `${string}:${string}`;
 
-export function createPersistedDispatchAuditSink(prisma: PrismaClient): (event: DispatchAuditEvent) => Promise<void> {
+/** A-8 (plano §4.6, "por processo"): o estado do anti-avalanche vive no MÓDULO, não no sink. O job monta um runtime (e um sink)
+ * novo a cada rodada; com o mapa dentro do sink, o throttle zerava a cada tick e não segurava nada em produção. */
+const PROCESS_THROTTLE = new Map<Key, number>();
+
+export function createPersistedDispatchAuditSink(
+  prisma: PrismaClient,
+  options: { readonly throttle?: Map<Key, number> } = {},
+): (event: DispatchAuditEvent) => Promise<void> {
   const logger = createLogger();
-  const throttled = new Map<Key, number>();
+  const throttled = options.throttle ?? PROCESS_THROTTLE;
 
   return async (event) => {
     try {

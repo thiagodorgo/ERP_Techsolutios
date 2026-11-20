@@ -71,7 +71,7 @@ export interface ProviderConfigRepository {
   enableLocked(
     provider: string,
     now: Date,
-    decide: (locked: ProviderConfig | null, peers: readonly ProviderConfig[]) => ProviderEnableEffect | null,
+    decide: (locked: ProviderConfig | null, peers: readonly ProviderConfig[]) => ProviderEnableEffect | null | Promise<ProviderEnableEffect | null>,
   ): Promise<{ readonly locked: ProviderConfig | null; readonly updated: ProviderConfig | null }>;
 }
 
@@ -155,11 +155,11 @@ export class InMemoryProviderConfigRepository implements ProviderConfigRepositor
   async enableLocked(
     provider: string,
     now: Date,
-    decide: (locked: ProviderConfig | null, peers: readonly ProviderConfig[]) => ProviderEnableEffect | null,
+    decide: (locked: ProviderConfig | null, peers: readonly ProviderConfig[]) => ProviderEnableEffect | null | Promise<ProviderEnableEffect | null>,
   ): Promise<{ readonly locked: ProviderConfig | null; readonly updated: ProviderConfig | null }> {
     const locked = this.#rows.get(provider) ?? null;
     const peers = [...this.#rows.values()];
-    const effect = decide(locked, peers);
+    const effect = await decide(locked, peers);
     if (!effect) return { locked, updated: null };
     const updated = await this.setEnabled(provider, effect, now);
     return { locked, updated };
