@@ -243,7 +243,8 @@ export function MonthsChart({ model, onMonth, height = 150 }: Pick<BillingOpsVie
         : `${capitalize(monthLabel(bar.month))}: ${bar.total} demonstrativos (${BUCKETS.filter((bucket) => bar.counts![bucket] > 0)
             .map((bucket) => `${BUCKET_LABEL[bucket].toLocaleLowerCase("pt-BR")} ${bar.counts![bucket]}`)
             .join(", ")}). Abrir este mês`,
-    bars: BUCKETS.map((bucket) => ({ tone: BUCKET_TONE[bucket], value: bar.counts === null ? null : bar.counts[bucket] })),
+    // A faixa sem demonstrativo não desenha toco (zero não é barra); o número do mês fica acima da coluna.
+    bars: BUCKETS.map((bucket) => ({ tone: BUCKET_TONE[bucket], value: bar.counts === null || bar.counts[bucket] === 0 ? null : bar.counts[bucket] })),
   }));
   return <ColumnBars items={items} ariaLabel="Demonstrativos por mês e situação" pressedKey={model.month} onSelect={onMonth} height={height} barHeight={height - 44} />;
 }
@@ -465,13 +466,16 @@ function DetailItem({ tone = "neutral", children }: { readonly tone?: "neutral" 
   );
 }
 
+/** Nota dentro de uma coluna do detalhe (a `.pat-ab-detail-note` cresce como item de linha; aqui ela não pode crescer). */
+const NOTE = { margin: 0, fontSize: 12, color: "#64748b" } as const;
+
 function CompositionLine({ label, value, strong = false }: { readonly label: string; readonly value: Money | null; readonly strong?: boolean }) {
   return (
-    <div className="pat-ab-detail-field">
-      <span className="pat-ab-detail-label" style={strong ? { fontWeight: 800, color: "#0f172a" } : undefined}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, color: strong ? "#0f172a" : "#334155", fontWeight: strong ? 800 : 500 }}>
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>
         {label}
       </span>
-      <span className="pat-ab-detail-val pat-mono" style={strong ? { fontWeight: 800 } : undefined}>
+      <span className="pat-mono" style={{ fontWeight: strong ? 800 : 700, whiteSpace: "nowrap" }}>
         {formatBRL(value)}
       </span>
     </div>
@@ -535,7 +539,7 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
         <div className="pat-ab-detail-col">
           <h4>Composição · {monthLabel(s.period)}</h4>
           {s.totalAmount === null ? (
-            <p className="pat-ab-detail-note">Sem composição até o fechamento.</p>
+            <p style={NOTE}>Sem composição até o fechamento.</p>
           ) : (
             <>
               <CompositionLine label="Plano" value={s.baseAmount} />
@@ -548,9 +552,11 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
                 <CompositionLine label="Total" value={s.totalAmount} strong />
                 <CompositionLine label="Pago" value={s.paidAmount} />
                 <CompositionLine label="Saldo" value={s.balance} strong />
-                <div className="pat-ab-detail-field">
-                  <span className="pat-ab-detail-label">Vencimento</span>
-                  <span className="pat-ab-detail-val pat-mono">{formatDay(s.dueDate)}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, color: "#334155" }}>
+                  <span>Vencimento</span>
+                  <span className="pat-mono" style={{ fontWeight: 700 }}>
+                    {formatDay(s.dueDate)}
+                  </span>
                 </div>
               </div>
             </>
@@ -559,7 +565,7 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
         <div className="pat-ab-detail-col">
           <h4>Cobrança</h4>
           {reading?.state === "loading" || !reading ? (
-            <p className="pat-ab-detail-note" aria-busy="true">
+            <p style={NOTE} aria-busy="true">
               Carregando…
             </p>
           ) : charges && charges.charges.length ? (
@@ -576,7 +582,7 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
               </DetailItem>
             ))
           ) : (
-            <p className="pat-ab-detail-note">Nenhuma cobrança{s.status === "closed" ? " emitida" : ""}.</p>
+            <p style={NOTE}>Nenhuma cobrança{s.status === "closed" ? " emitida" : ""}.</p>
           )}
           <h4 style={{ marginTop: 8 }}>Pagamentos</h4>
           {detail && detail.payments.length ? (
@@ -603,7 +609,7 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
               </DetailItem>
             ))
           ) : reading?.state === "ok" ? (
-            <p className="pat-ab-detail-note">Nenhum pagamento.</p>
+            <p style={NOTE}>Nenhum pagamento.</p>
           ) : null}
           {detail && detail.credits.length ? (
             <>
@@ -620,7 +626,7 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
           ) : null}
           <h4 style={{ marginTop: 8 }}>Perfil de cobrança</h4>
           {row.profile === null ? (
-            <p className="pat-ab-detail-note">Sem leitura do perfil.</p>
+            <p style={NOTE}>Sem leitura do perfil.</p>
           ) : row.profile.complete ? (
             <DetailItem>
               <Pill tone={{ label: "Completo", bg: "#ECFDF5", fg: "#047857" }} />
@@ -661,7 +667,7 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
               </DetailItem>
             ))
           ) : (
-            <p className="pat-ab-detail-note">Nada pendente na fila de envio.</p>
+            <p style={NOTE}>Nada pendente na fila de envio.</p>
           )}
           <h4 style={{ marginTop: 8 }}>Histórico</h4>
           {s.history.length ? (
@@ -677,7 +683,7 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
               </DetailItem>
             ))
           ) : (
-            <p className="pat-ab-detail-note">Sem histórico.</p>
+            <p style={NOTE}>Sem histórico.</p>
           )}
         </div>
       </div>
