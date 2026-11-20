@@ -7,6 +7,7 @@ import '../network/http_client.dart';
 import '../sync/sync_models.dart';
 import '../sync/sync_queue_repository.dart';
 import '../sync/sync_replay_service.dart';
+import '../sync/sync_session_changed.dart';
 import '../sync/sync_session_expired.dart';
 
 const evidenceMaxFileSizeBytes = 10 * 1024 * 1024;
@@ -318,6 +319,13 @@ class EvidenceSyncReplayService {
       // dart format on
       for (final action in syncing) {
         await _queue.update(backToPendingSessionExpired(action));
+      }
+      return const SyncReplayResult(synced: [], failed: [], conflicts: []);
+      // dart format off
+    } on ApiSessionChangedError { // sessão trocou: lote de evidência
+      // dart format on
+      for (final action in syncing) {
+        await _queue.update(backToPendingSessionChanged(action));
       }
       return const SyncReplayResult(synced: [], failed: [], conflicts: []);
     } catch (_) {

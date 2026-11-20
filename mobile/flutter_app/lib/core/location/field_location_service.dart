@@ -148,6 +148,9 @@ class FieldLocationSyncService {
         );
         synced.add(updated);
       } catch (error) {
+        // dart format off
+        if (error is ApiSessionChangedError) break; // sessão trocou: posição
+        // dart format on
         if (consent != null && _refusedForConsent(error)) {
           // P8: a organização recusou por falta de consentimento. O local
           // volta a "não decidiu", o não enviado com GPS é apagado e nada é

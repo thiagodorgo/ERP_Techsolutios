@@ -55,6 +55,9 @@ class TelemetrySyncService {
     try {
       results = await _api.sendBatch(pending);
     } catch (error) {
+      // dart format off
+      if (error is ApiSessionChangedError) return const TelemetryFlushSummary(); // sessão trocou: telemetria
+      // dart format on
       final mapped = _mapError(error);
       for (final event in pending) {
         await _markFailed(event, mapped.code, mapped.safeMessage);
