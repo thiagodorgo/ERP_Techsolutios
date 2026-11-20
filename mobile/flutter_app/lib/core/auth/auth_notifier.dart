@@ -93,6 +93,21 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// ou `null` sem sessão autenticada. O cliente HTTP guarda a do nascimento.
   String? get liveSessionKey => _sessionKey(state.asData?.value);
 
+  /// B-APP-ORG (69): as organizações que o 409 do último login ofereceu, ou
+  /// vazio. A lista vive só no erro do login ([TenantSelectionRequiredError]):
+  /// nada é gravado, e a senha fica só no formulário. Some quando outro login
+  /// começa (o estado vira carregando) ou termina.
+  List<TenantChoice> get loginTenantChoices => loginTenantChoicesOf(state);
+
+  /// B-APP-ORG (69): o "Voltar" da escolha. Sai dela sem pedido nenhum e sem
+  /// tocar no armazenamento; fora da escolha, não faz nada.
+  void dismissTenantChoice() {
+    if (loginTenantChoicesOf(state).isEmpty) return;
+    state = const AsyncValue.data(
+      AuthState(status: AuthStatus.unauthenticated),
+    );
+  }
+
   @override
   Future<AuthState> build() async {
     // dart format off
@@ -459,6 +474,21 @@ String? _sessionKey(AuthState? state) {
   if (state == null || !state.isAuthenticated || session == null) return null;
   return sessionKeyOf(session);
 }
+
+/// B-APP-ORG (69): a lista da escolha de organização no login, lida do estado.
+/// Só um [TenantSelectionRequiredError] do login a traz; qualquer outro estado
+/// (carregando, outro erro, entrou) dá vazio.
+List<TenantChoice> loginTenantChoicesOf(AsyncValue<AuthState> state) {
+  // dart format off
+  if (state case AsyncError(error: final TenantSelectionRequiredError e)) return e.tenants; // a lista vem só do 409
+  // dart format on
+  return const <TenantChoice>[];
+}
+
+/// B-APP-ORG (69): o estado do login com a lista, para a tela de entrada.
+final loginTenantChoicesProvider = Provider<List<TenantChoice>>((ref) {
+  return loginTenantChoicesOf(ref.watch(authStateProvider));
+});
 
 /// Para quem precisa esperar a sessão (os dois `build` do bootstrap): a chave
 /// da sessão autenticada, pelo `selectAsync`.

@@ -183,7 +183,7 @@ class LocalDevAuthRepository implements AuthRepository {
     String? tenantId,
   }) async {
     if (email.trim().isEmpty || password.isEmpty) {
-      throw const ApiNetworkError('Email e senha sao obrigatorios.');
+      throw const ApiNetworkError('E-mail e senha são obrigatórios.');
     }
 
     final session = _buildDevSession(
@@ -301,29 +301,44 @@ class LocalDevAuthRepository implements AuthRepository {
 
 // ── Dio / remote implementation ───────────────────────────────────────────────
 
+// B-APP-ORG (69): o 409 que não trouxe uma lista legível. Não inventa lista e
+// não promete escolha: a pessoa tenta de novo.
+const kTenantListMissingMessage =
+    'Sua senha vale em mais de uma organização, mas a lista de organizações '
+    'não chegou. Tente entrar de novo.';
+
+// B-APP-ORG (69), Emenda 1 §A2.2: o 400 (e-mail em mais organizações do que o
+// servidor lista). Sem lista, sem campo, sem "Selecione" e sem dizer quantas.
+const kTenantIdRequiredMessage =
+    'Este e-mail está ligado a muitas organizações, e o app ainda não consegue '
+    'listá-las aqui. Fale com o administrador da organização em que você quer '
+    'entrar.';
+
 // B-O6R-01 — mapeamento MÍNIMO dos códigos novos do login sem organização (§6.2 do plano):
 // 409 TENANT_SELECTION_REQUIRED (a senha vale em mais de uma organização — escolher uma),
-// 400 TENANT_ID_REQUIRED (e-mail em muitas organizações — informar a organização) e
+// 400 TENANT_ID_REQUIRED (e-mail em muitas organizações) e
 // 429 RATE_LIMITED (balde por e-mail estourou). Qualquer outro caso cai no mapDioError
 // existente, byte-idêntico. Cópia SEM termo técnico ("organização", nunca "tenant").
+// B-APP-ORG (69): o 409 passa a levar a lista que o servidor mandou
+// (`error.tenants`), e só ela.
 ApiError mapLoginError(DioException e) {
   final status = e.response?.statusCode;
   final data = e.response?.data;
-  final errorCode = data is Map<String, dynamic>
-      ? ((data['error'] as Map<String, dynamic>?)?['code'] as String?)
-      : null;
+  final error = data is Map ? data['error'] : null;
+  final errorCode = error is Map ? error['code'] : null;
 
   if (status == 409 && errorCode == 'TENANT_SELECTION_REQUIRED') {
-    return const ApiConflictError(
-      'Sua senha vale em mais de uma organizacao. Selecione a organizacao para entrar.',
-    );
+    final tenants = _tenantChoicesFrom(error);
+    // dart format off
+    if (tenants.isEmpty) return const ApiConflictError(kTenantListMissingMessage); // 409 sem lista legível: nenhuma lista inventada
+    // dart format on
+    return TenantSelectionRequiredError(tenants);
   }
 
   if (status == 400 && errorCode == 'TENANT_ID_REQUIRED') {
     return const ApiServerError(
       statusCode: 400,
-      safeMessage:
-          'Este e-mail existe em mais de uma organizacao. Selecione a organizacao para entrar.',
+      safeMessage: kTenantIdRequiredMessage,
     );
   }
 
@@ -340,6 +355,26 @@ ApiError mapLoginError(DioException e) {
   // dart format on
 
   return mapDioError(e);
+}
+
+/// B-APP-ORG (69): as organizações de `error.tenants` do 409, na ordem do
+/// servidor. Só `id` e `name` em texto não vazio. Qualquer item fora disso, ou
+/// um `id` repetido, torna a lista inteira ilegível (vazia): nunca uma lista
+/// pela metade, nunca uma organização que o servidor não mandou.
+List<TenantChoice> _tenantChoicesFrom(Object? error) {
+  final raw = error is Map ? error['tenants'] : null;
+  if (raw is! List) return const <TenantChoice>[];
+  final choices = <TenantChoice>[];
+  final seen = <String>{};
+  for (final item in raw) {
+    final id = item is Map ? item['id'] : null;
+    final name = item is Map ? item['name'] : null;
+    if (id is! String || id.trim().isEmpty) return const <TenantChoice>[];
+    if (name is! String || name.trim().isEmpty) return const <TenantChoice>[];
+    if (!seen.add(id)) return const <TenantChoice>[];
+    choices.add(TenantChoice(id, name));
+  }
+  return List.unmodifiable(choices);
 }
 
 // ── B-APP-SESSAO-RENOVA (D1b, D1c): o reenvio do mesmo token e a prova de posse ──
