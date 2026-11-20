@@ -567,8 +567,20 @@ claims e recusam override; as quatro rotas globais do provedor não recebem `ten
 **Mudanças sem rota nova.** A falha de uma órfã fica isolada e nunca cria cobrança; a emissão nunca tentada pode ser
 retargeteada ao provedor fiscal ligado; a trilha do despacho passa a ser persistida; o `cancel-unknown` relê a cobrança
 antes do DELETE; o fechamento concorrente devolve um `closed` e os demais `alreadyClosed` sem expirar; e o estorno do
-pagamento que gerou crédito já aplicado recompõe o total do demonstrativo-alvo. O estorno do provedor mantém a regra
-Q1(a): a intenção de cancelamento da nota nasce mesmo havendo pagamento manual restante.
+pagamento que gerou crédito já aplicado recompõe o total do demonstrativo-alvo.
+
+**Estorno do provedor e a nota: Q1 (b), decisão do dono.** O estorno do provedor segue a regra do estorno manual: *"a
+nota fica, com aviso para o contador, até todo o dinheiro ser devolvido"* (resposta do dono de 19/11, registrada em
+`C-08C3-Q1-PADRAO-SEM-RESPOSTA`, `controle/decisoes.md`). O texto anterior desta seção dizia Q1(a), a regra do disparo,
+que a resposta do dono substituiu. Na prática:
+
+- a intenção `invoice_cancel` só nasce quando o estorno zera o pago do demonstrativo (`paidCents === 0`, `[EP-PARCIAL]`);
+- enquanto sobra dinheiro pago (um pagamento manual, por exemplo), a nota fica como está e a trilha
+  `subscription_statement.invoice_kept_partial_reversal` avisa o contador. A metadata é fechada: `statementId`,
+  `kind` = `invoice_kept`, `code` (`partial_reversal` no estorno; `paid_after_cancel_intent` no cancelamento já na fila),
+  `count` = o pago restante, em centavos, e `reason` = `q1_b_dono`;
+- o cancelamento que já está na fila relê o demonstrativo sob a trava antes de chamar o provedor fiscal. Se ainda há
+  dinheiro pago, a linha encerra `SKIPPED` `statement_paid`, sem chamada fiscal.
 
 ### 3.4 Navegação
 

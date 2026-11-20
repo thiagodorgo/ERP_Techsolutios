@@ -17342,3 +17342,45 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** revisão `rev-605-df` do PR #605, achado A-605-04; registro de 19/11, 11:00.
 - **fato:** em `tests/b-o6r-09-dispatch-same-tx-db.test.ts`, a migração one-shot chama `promisify(execFile)` com `timeout` (o `prisma migrate deploy` do banco novo). O #605 fechou a classe dos processos-filho em `tests/child-process-property.test.ts` (`EXPECTED_CREATORS` + a garantia de que o filho sempre morre), mas este arquivo ficou de fora: o `A_605_04` daquele teste só o fixa por 3 `assert.match` (a chamada `promisify(execFile)`, o `migrate deploy` e o `timeout: 840_000`), sem a garantia da classe.
 - **critério de encerramento:** o `promisify(execFile)` da migração one-shot em `tests/b-o6r-09-dispatch-same-tx-db.test.ts` entra na classe que o #605 consertou (ou o motivo de ficar fora está escrito no `A_605_04`), com a prova de que o processo-filho não fica vivo depois do teste.
+
+## P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda roda no dublê de memória ou lê o fonte por regex — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (caminhos Prisma de dinheiro sem teste de execução; o CI fica verde sem tocar o Postgres nesses casos) · **escopo:** `dentro-do-bloco`, triado como não grave na pré-revisão do #608 (A-3) · **dono:** o orquestrador abre o bloco de testes `-db` da cobrança depois do merge do #608; até lá, todo bloco que tocar `outbox/**`, `credits/**` ou `statements/**` traz o `-db` real do caminho que mexer · **bloqueia:** não.
+- **origem:** pré-revisão B do #608, achado A-3, e a triagem do orquestrador de 20/11 11:12. O conserto único do #608 converteu parte (CR-PARCIAL, CR-TRILHA, EP1–EP3, CF9-db, CP2b-db, UR-A5, TP-A7, TD-A8, OR-A4); o resto fica aqui.
+- **N e forma (medido no head `1d12a32b`):** `tests/ass-08c3-orfa-isolada-db.test.ts` tem 0 `DATABASE_URL`, e os 6 testes rodam no dublê (`memoryOutbox`). Os outros 7 arquivos `tests/ass-08c3-*-db.test.ts` misturam casos no Prisma, sob papel efêmero NOSUPERUSER NOBYPASSRLS, com casos antigos ainda no dublê ou em regex sobre o fonte. O plano §6 manda que todo `-db` rode sob o papel efêmero.
+- **critério de encerramento:** todo caso de arquivo `-db` da cobrança executa no Postgres sob o papel efêmero (ou o arquivo perde o sufixo `-db`), e as mutações do plano §6.4 ficam vermelhas no teste que o plano nomeia, inclusive nos caminhos Prisma de `deferOrphan`, `isChargeKnown`, `retargetUntriedInvoiceIssues` e `confirmCancelledByOperator`.
+
+## P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em método de repositório classificado como `INJETADO` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (guarda de segurança com ponto cego; o papel de runtime sem BYPASSRLS continua valendo) · **escopo:** `pre-existente` (`git diff --exit-code edd579f4..3d3797b2 -- scripts/san3-05-acessos-de-plataforma.mjs` = 0: o #608 só acrescentou 5 entradas em `NOVAS`) · **dono:** o próximo bloco que tocar `scripts/san3-05-acessos-de-plataforma.mjs` ou o T13 · **bloqueia:** não.
+- **origem:** pré-revisão C do #608, achado A-1, e a triagem do orquestrador de 20/11 11:12.
+- **N e forma:** um método novo em `PrismaOutboxRepository` que chama `this.client.$executeRawUnsafe` com um `UPDATE billing_outbox` aparece como `INJETADO` no `--all` do gerador, mas o `SUSPEITO_L1` exclui toda linha `INJETADO` que tenha instanciação conhecida. Resultado: o inventário continua com 166 chaves e o mesmo sha1, e o T13 passa 35/35, porque ele congela só o inventário já filtrado.
+- **critério de encerramento:** escritor cru novo em repositório `INJETADO` vira chave `NOVAS`, e o T13 fica vermelho com a mutação acima; ou a exclusão do `SUSPEITO_L1` fica escrita no gerador, com o alcance medido.
+
+## P-08C3-40P01-CRU (2026-11-20) — o deadlock no estorno cruzado sobe como erro cru (`P2010`), não como `statement_busy` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o reprocesso fecha os totais certos; o efeito é um erro cru em vez do 409 da casa) · **escopo:** `dentro-do-bloco`, triado como não grave na pré-revisão B2 do #608 · **dono:** o próximo bloco que tocar a transação de `statements/statement.prisma-runtime.ts` · **bloqueia:** não.
+- **origem:** pré-revisão B2 do #608 (crédito no Prisma), CR4 cruzado, e a triagem do orquestrador de 20/11 11:12.
+- **N e forma:** dois estornos se cruzam sobre as mesmas 2 linhas de crédito. Um cai em `40P01 deadlock detected`, que sai como `P2010` cru (o tratador de erro da transação em `statement.prisma-runtime.ts`), e não como `statement_busy`. O webhook que o chama não marca o evento (`reconcile.service.ts`), então o evento volta pela reconsulta e termina com os totais certos (outubro `closed` 11 200/0, novembro `closed` 10 000/0), sem trava presa.
+- **critério de encerramento:** o `40P01` da transação do demonstrativo vira `409 statement_busy` (ou nova tentativa dentro da transação), com teste `-db` do estorno cruzado que fica vermelho sem o mapeamento.
+
+## P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO (2026-11-20) — o crédito desfeito muda o total de um mês que já tem nota, e nenhum ato fiscal acompanha — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (fiscal; a trilha avisa o contador) · **escopo:** `dentro-do-bloco`, aberta pelo plano do `B-ASS-08c3` §14 · **dono:** o `B-ASS-10c`, para o alerta na tela; o contador, para a regra · **bloqueia:** não.
+- **origem:** plano do `B-ASS-08c3` §4.8 e §14 (fora do repositório). Nasce porque a Q3 ficou em (a), resposta do dono de 19/11 15:19 SP (registrada em `C-08C3-Q1-PADRAO-SEM-RESPOSTA`, `controle/decisoes.md`).
+- **N e forma:** um pagamento que gerou crédito é estornado depois que o crédito já pagou parte do mês seguinte, e esse mês já tem nota. O bloco devolve à dívida do mês seguinte o valor do crédito (CR-PARCIAL), mas a nota desse mês continua com o valor antigo. Pela Q3 = (a), não há ato fiscal automático: a nota não é cancelada nem reemitida.
+- **critério de encerramento:** a tela de operação da cobrança (`B-ASS-10c`) mostra o alerta da nota que diverge do total, e o contador define a regra fiscal, registrada como decisão do dono.
+
+## P-08C3-FOCUS-404-NO-SANDBOX (2026-11-20) — confirmar no sandbox que o Focus responde 404 à referência inexistente com credencial válida, e se devolve `id` no GET — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (hipótese de integração; o canal fica desligado) · **escopo:** `dentro-do-bloco`, aberta pelo plano do `B-ASS-08c3` §14 · **dono:** `P-ASS-SANDBOX-REAL` · **bloqueia:** ligar o canal fiscal em produção.
+- **origem:** plano do `B-ASS-08c3` §4.2, §4.10 e §14 (fora do repositório).
+- **N e forma:** o `testConnection` do Focus faz `GET /nfsen/<referência aleatória>` e trata 404 ou 2xx como "a credencial passou" (TC3, TCF1). Que o Focus responde 404 à referência inexistente com credencial válida é [HIPÓTESE]. O `id` no GET (§4.10) também ainda não foi visto no sandbox.
+- **critério de encerramento:** a homologação no sandbox (`P-ASS-SANDBOX-REAL`) registra a resposta do Focus à referência inexistente com credencial válida e se o GET devolve `id`. Se divergir, o adaptador é corrigido, com teste.
+
+## P-08C3-EVENTOS-ASAAS-NO-SANDBOX (2026-11-20) — conferir no sandbox a lista `ASAAS_WEBHOOK_EVENTS` que o registro do webhook assina — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (um evento a mais não muda o efeito, porque o reconcile reconsulta o provedor; um a menos é coberto pela reconsulta periódica) · **escopo:** `dentro-do-bloco`, aberta pelo plano do `B-ASS-08c3` §14 · **dono:** `P-ASS-SANDBOX-REAL` · **bloqueia:** ligar o canal de pagamento em produção.
+- **origem:** plano do `B-ASS-08c3` §4.2.1 e §14 (fora do repositório).
+- **N e forma:** os nomes de evento de `ASAAS_WEBHOOK_EVENTS` (`src/modules/subscription-billing/providers/payment/asaas/index.ts`) vêm da documentação do Asaas. Que o sandbox aceita a lista como está é [HIPÓTESE].
+- **critério de encerramento:** a homologação no sandbox (`P-ASS-SANDBOX-REAL`) registra o `register-webhook` aceito com a lista e cada evento recebido. Se divergir, a lista é corrigida, com teste.

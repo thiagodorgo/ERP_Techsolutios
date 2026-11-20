@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1316** |
-| IDs distintos | 1301 |
-| **ABERTAS** | **1011** |
+| Cabecalhos `## P-` | **1322** |
+| IDs distintos | 1307 |
+| **ABERTAS** | **1017** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **950** |
+| — das quais **ativas nesta rodada** | **956** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 301 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1316 cabecalhos para 1301 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1322 cabecalhos para 1307 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 387
+## ABERTAS · balde A — material — 389
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -461,8 +461,10 @@
 | `P-AWS-CUSTO-VIRGINIA` | 17318 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
 | `P-AWS-LGPD-TRANSFERENCIA` | 17325 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
 | `P-ASS-OPERACAO-COBRANCA-TELA` | 17332 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
+| `P-08C3-TESTES-DB-DE-VERDADE` | 17346 | MÉDIA | sim | P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda  |
+| `P-T13-INJETADO-PONTO-CEGO` | 17353 | MÉDIA | sim | P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em mé |
 
-## ABERTAS · balde B — processo/registro — 563
+## ABERTAS · balde B — processo/registro — 567
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1029,6 +1031,10 @@
 | `P-PAINEL-SUPORTE-SCOPED` | 17290 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
 | `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17304 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
 | `P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT` | 17339 | BAIXA | sim | P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração o |
+| `P-08C3-40P01-CRU` | 17360 | BAIXA | sim | P-08C3-40P01-CRU (2026-11-20) — o deadlock no estorno cruzado sobe como erro cru (`P2010 |
+| `P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO` | 17367 | BAIXA | sim | P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO (2026-11-20) — o crédito desfeito muda o total |
+| `P-08C3-FOCUS-404-NO-SANDBOX` | 17374 | BAIXA | sim | P-08C3-FOCUS-404-NO-SANDBOX (2026-11-20) — confirmar no sandbox que o Focus responde 404 |
+| `P-08C3-EVENTOS-ASAAS-NO-SANDBOX` | 17381 | BAIXA | sim | P-08C3-EVENTOS-ASAAS-NO-SANDBOX (2026-11-20) — conferir no sandbox a lista `ASAAS_WEBHOO |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
