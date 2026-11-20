@@ -14512,10 +14512,11 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-AMBIENTE-VAULT-ROUTES-SOB-CARGA (2026-11-11) — `npm test` local trava em `ass-05-vault-routes` sob carga paralela no Windows — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente Windows) · **dono:** `B-SAN3-CI-AMBIENTE` (nomeado pela CONF545B-01, ressalva do porteiro-545b) · **PR-alvo:** a planejar · **bloqueia:** não.
+- **status:** FECHADA (2026-11-19, PR #605, porteiro `porteiro-605-ar` LIBERADO) · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente Windows) · **dono:** `B-SAN3-CI-AMBIENTE` (nomeado pela CONF545B-01, ressalva do porteiro-545b) · **PR-alvo:** #605 (`B-TESTE-FILHOS`) · **bloqueia:** não.
 - **origem:** C3-ENV-01 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c3-voto.json`).
 - **fato:** `npm test` local (Windows, `CORE_SAAS_PERSISTENCE=memory`, sem `DATABASE_URL`) trava em `tests/ass-05-vault-routes.test.ts`: o `T-VLT-5` chama `startServer` que espera `"PORT "` por 30 s (linhas 49–52) e, sob carga paralela, o subprocesso não imprime a tempo (`sem "PORT " em 30 s`) e vaza, deixando o arquivo sem drenar o event loop. Isolado, o arquivo passa (`# tests 5 # pass 5`). Não é bug do bloco.
 - **critério de encerramento:** o `npm test` local roda inteiro no Windows sob carga paralela, com o arnês do `T-VLT-5` drenando o subprocesso e sem timeout falso.
+- **fechamento:** o `B-TESTE-FILHOS` entrega helper único com timeout de startup ampliado, encerramento forçado de árvore no Windows e prova de drenagem sem órfãos (`tests/helpers/child-server.ts`, `tests/child-server.test.ts`), com validação do porteiro em `revisoes/teste-filhos/porteiro-605-ar-parecer.md` (LIBERADO).
 
 ## P-AMBIENTE-DART-LOCAL-DIVERGE (2026-11-11) — `dart format` local diverge só no `bsan313` (Dart 3.11.4 local × Flutter 3.47.5 da CI) — BAIXA
 
@@ -15429,11 +15430,12 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servidor-filho no tempo esgotado, e o `npm test` não termina — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`tests/ass-05-vault-routes.test.ts`, `015234d0`, 08/11/2026, B-ASS-05, #510; fora do diff do `B-MOBILE-GATE-CHAVE`) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-19, PR #605, porteiro `porteiro-605-ar` LIBERADO) · **gravidade:** BAIXA · **escopo:** `pre-existente` (`tests/ass-05-vault-routes.test.ts`, `015234d0`, 08/11/2026, B-ASS-05, #510; fora do diff do `B-MOBILE-GATE-CHAVE`) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
 - **origem:** achado C2A-01 da cadeira C2a da J-561, triado como pendência pela ata da J-561.
 - **N e forma (medido pela C2a, com a máquina carregada):** em `startServer` (`tests/ass-05-vault-routes.test.ts:30-66`), se o filho não escreve `PORT ` em 30 s, o `waitFor` lança e o filho não é morto. Ficaram 4 filhos `tests/helpers/ass-05-vault-server.ts` vivos, e o TAP do `npm test` ficou parado em 185 testes por 13 minutos, até eles serem mortos. Isolado, o arquivo passa (5/5), e a CI do objeto também.
 - **causa:** o caminho de erro do `startServer` não encerra o processo-filho.
 - **critério de encerramento:** o `startServer` mata o filho em todo caminho de erro (tempo esgotado incluído), com um caso que prova que nenhum filho sobra.
+- **fechamento:** o `startServer` dos dois pontos citados foi substituído pelo helper único com limpeza obrigatória (`startChildServer` + `terminateChildTree`), e a propriedade censitária garante que todo servidor-filho de `tests/**` passa por esse helper (`tests/child-process-property.test.ts`); evidência no parecer `revisoes/teste-filhos/porteiro-605-ar-parecer.md` (LIBERADO).
 - **nova ocorrência, o mesmo molde em outro arquivo (2026-11-14, `B-SAN3-17`, PR #568):** no `npm test` na forma do job `backend`, rodado no Windows sem o `ass-05-vault-routes`, o TAP parou por ~14 min com `tests/users-acesso-seg-logs-db.test.ts` (do #527) e o filho `tests/helpers/users-seg-log-server.ts` vivos; o `startServer` desse arquivo (`:31-92`) também não mata o filho no caminho de erro. Parado só o filho, a suíte fechou; sozinho, o arquivo passa (1/1). O critério de encerramento vale para os dois arquivos.
 
 ## P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda com o JWT local sem `tenant_role` — BAIXA
@@ -16589,9 +16591,10 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-TESTE-VAULT-ROUTES-SERVIDOR-PRESO (2026-11-15) — sob carga, os servidores filhos do `ass-05-vault-routes` ficam vivos e seguram a suíte — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (terreno) · **escopo:** `pre-existente` · **dono:** o próximo bloco que tocar `tests/ass-05-vault-routes*` (leitura do redator; a fonte dizia "a definir no registro") · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **status:** FECHADA (2026-11-19, PR #605, porteiro `porteiro-605-ar` LIBERADO) · **gravidade:** BAIXA (terreno) · **escopo:** `pre-existente` · **dono:** `B-TESTE-FILHOS` · **PR-alvo:** #605 · **bloqueia:** não.
 - **origem:** diário, 15/11 16:28 (4 servidores filhos presos, sem PORT em 30 s; o mesmo vermelho de terreno que a crítica `crit-17-e111-cl` mediu); o `conf-579-cl` também matou essas árvores nos próprios worktrees.
 - **critério de encerramento:** o teste encerra os filhos no `finally`, com o caso forçado a falhar.
+- **fechamento:** o cenário foi absorvido pelo helper de servidor-filho com `finally` obrigatório e teste dedicado de timeout sem órfão, conforme conferência do porteiro em `revisoes/teste-filhos/porteiro-605-ar-parecer.md` (LIBERADO).
 
 ## P-BILLING-P2028-COMO-400 (2026-11-15) — 10 fechamentos concorrentes expiram (P2028) e a rota responde `400 invalid_request` — BAIXA
 
@@ -17080,10 +17083,11 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS (2026-11-17) — o `npm test` local trava sem fim no `ass-05-vault-routes` — MÉDIA (ambiente)
 
-- **status:** ABERTA · **gravidade:** MÉDIA (ambiente) · **escopo:** o arnês de teste no Windows · **dono:** bloco de ferramenta (põe tempo-limite no servidor-filho) · **bloqueia:** não.
+- **status:** FECHADA (2026-11-19, PR #605, porteiro `porteiro-605-ar` LIBERADO) · **gravidade:** MÉDIA (ambiente) · **escopo:** o arnês de teste no Windows · **dono:** `B-TESTE-FILHOS` · **bloqueia:** não.
 - **origem:** 17/11 17:5x, no dev do item 31 (`dev-04b-e1-cl`).
 - **fato:** o `npm test` local trava sem fim no `ass-05-vault-routes` (o servidor-filho nunca sai). Custou 7,5 h de um dev no dia.
 - **critério de encerramento:** o servidor-filho do teste tem tempo-limite e o `npm test` termina sozinho, com teste.
+- **fechamento:** o tempo-limite passou a ser centralizado e testado pelo helper compartilhado (`tests/helpers/child-server.ts`), e o porteiro reexecutou a suíte de prova sem filhos vivos no fim (`revisoes/teste-filhos/porteiro-605-ar-parecer.md`, LIBERADO).
 
 ## P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 — MÉDIA
 
@@ -17108,10 +17112,11 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia-noite e a requisição corre depois — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o cenário do teste) · **dono:** bloco de ferramentas de teste · **bloqueia:** não.
+- **status:** FECHADA (2026-11-19, PR #605, porteiro `porteiro-605-ar` LIBERADO) · **gravidade:** BAIXA · **escopo:** `pre-existente` (o cenário do teste) · **dono:** `B-TESTE-FILHOS` · **bloqueia:** não.
 - **origem:** 18/11 00:10, no job backend do #598 (só docs), que falhou na virada de dia.
 - **fato:** o cenário calcula `subscriptionValidFrom` (data de SP) antes da meia-noite e a requisição corre depois dela → 422 `subscription_retroactive` ("antes de hoje"). Flaky de virada de dia, não do PR.
 - **critério de encerramento:** a data é calculada no momento da requisição (ou o relógio é fixado), com teste.
+- **fechamento:** a data de negócio passou a ser calculada no momento da requisição (`tests/helpers/business-date.ts`) com prova de virada em teste dedicado; conferido no parecer `revisoes/teste-filhos/porteiro-605-ar-parecer.md` (LIBERADO).
 
 ## P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma falha aberta, e 5 rotas pedem chaves fora do catálogo — ALTA
 
@@ -17133,6 +17138,20 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** `docs/infra/roteiro-aws-cloudshell.md` §10 (roteiro do PR #598), 17/11.
 - **fato:** o job `docker` do `ci.yml` publica só `amd64`; acrescentar `platforms: linux/amd64,linux/arm64` e trocar `cpuArchitecture` para `ARM64` economiza ~US$ 6/mês.
 - **critério de encerramento:** a imagem sai em `linux/amd64,linux/arm64`, a task definition usa `ARM64` e o custo medido cai.
+
+- **Apenso 2026-11-19 (registro do dia, 09:15 — pergunta do dono, "documente isso"):** complemento medido na
+  `main`. A causa é que o passo `docker/build-push-action@v6` do job `docker` (`.github/workflows/ci.yml:719`)
+  não declara `platforms:`; sem isso, o buildx monta só para a arquitetura do runner do GitHub (x86/amd64).
+  Nunca fez falta porque o runtime de então rodava em x86; a diferença só apareceu no planejamento da AWS, onde o
+  ARM (Graviton) é mais barato. Nada no produto impede o ARM: a base `node:20-bookworm-slim` (Dockerfile l.5 e
+  l.23) existe para arm64. **O conserto:** `platforms: linux/amd64,linux/arm64` no passo (com QEMU, ou com
+  runner ARM nativo do GitHub, gratuito em repositório público) e `cpuArchitecture: ARM64` na definição da
+  tarefa. **O custo:** o CI fica mais lento com emulação (vários minutos por rodada), ou o job cresce com o runner
+  ARM. **Autorização:** mexer na montagem da imagem em `.github/**` exige autorização do dono, porque o contrato
+  só libera acrescentar suítes no `SUITES=`. O antivírus é outro caso: a imagem do ClamAV vem de fora, e a versão
+  aprovada só existe em amd64 (`P-AWS-CLAMAV-ARM64`); isso não depende do nosso CI. **Recomendação do
+  orquestrador, não decidida pelo dono:** subir em x86 agora (`D-AWS-08`) e fazer o ARM num bloco pequeno depois
+  do go-live (dono `B-INFRA-AWS-03`), com a autorização de `.github/**` pedida nesse bloco.
 
 ## P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS — ALTA
 
@@ -17252,3 +17271,31 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** o plano `B-WO-LEITURA-TECNICO` e as Emendas 1, 2, 3, 3.1 e 3.2 (`erp-pausa-2026-10-03/planos/`, fora do repositório), 17–18/11; registrado no PR do bloco.
 - **N e forma:** o `field_dispatcher` sozinho não tem `checklist_runs:read`; somado ao `field_technician` ou `technician`, ganha a permissão pelo técnico e, como `field_dispatcher` é `tenant_wide` no `WORK_ORDER_READ_SCOPE` (o Console Dispatcher lê R1, R2, R13 e R18 da organização), lê também R10a, R10b, R11 e R12 da organização inteira (8 pares no `L-UNIAO`). Fechar pede o predicado por módulo (§4 da Emenda 3.2: `work-order.types.ts`, `work-order.service.ts`, `checklist.service.ts`; +3 h). **Q-B respondida pelo dono em 18/11 12:49 SP (seletor): "Pendência para depois"** — fica para o `B-USERS-CONCESSAO-PAINEL`, logo depois do 71. Exceção declarada em `API_CONTRACTS.md` §3.5.
 - **critério de encerramento:** predicado de leitura por módulo (`field_dispatcher` não alarga `vistoria`) entregue no `B-USERS-CONCESSAO-PAINEL`, com L-MODULO, mutações e retirada da exceção do `API_CONTRACTS.md`.
+
+## P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fechados por fase — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (planejamento financeiro) · **escopo:** `pre-existente` (roteiro AWS atualizado para Virgínia) · **dono:** `B-INFRA-AWS-03` · **bloqueia:** não.
+- **origem:** registro de 19/11 (manhã/tarde), após `D-DONO-1911-AWS-VIRGINIA` e respostas D-AWS no seletor.
+- **fato:** os preços unitários foram medidos para `us-east-1`, mas os totais consolidados por fase e total do §1 ainda precisam de fechamento final da rodada Virgínia + Multi-AZ.
+- **critério de encerramento:** os totais por fase e o total geral estão recalculados, publicados no roteiro e conferidos no PR de docs.
+
+## P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para `us-east-1` pendente antes do 1º cliente real — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (conformidade jurídica) · **escopo:** decisão de operação da AWS fora do país · **dono:** o dono · **bloqueia:** go-live com cliente real.
+- **origem:** registro de 19/11, junto da decisão `D-DONO-1911-AWS-VIRGINIA`.
+- **fato:** com dados pessoais em `us-east-1`, existe transferência internacional (LGPD art. 33) e a base legal precisa estar definida antes da operação com cliente real.
+- **critério de encerramento:** a base legal de transferência internacional está definida e registrada pelo dono antes da ativação com cliente real.
+
+## P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plataforma no pacote pós-portão — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (restante funcional do `B-ASS-10b`) · **dono:** o resto do `B-ASS-10b` · **bloqueia:** ligar operação de cobrança no fluxo completo.
+- **origem:** decisão `D-DONO-1911-COBRANCA-POS-PORTAO` (19/11, manhã).
+- **fato:** o backend da cobrança já avançou até 08c2/08c3, mas ainda falta a tela operacional da plataforma para demonstrativo, emissão/cancelamento, baixa manual, fila de revisão, notas e configuração de provedor/canal.
+- **critério de encerramento:** a tela de operação da cobrança é entregue no padrão de 3 opções aprovado e conectada ao backend do canal.
+
+## P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração one-shot de `b-o6r-09` ficou fora da classe que o #605 consertou — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o arnês de teste) · **dono:** o próximo bloco que tocar o arnês de teste · **bloqueia:** não.
+- **origem:** revisão `rev-605-df` do PR #605, achado A-605-04; registro de 19/11, 11:00.
+- **fato:** em `tests/b-o6r-09-dispatch-same-tx-db.test.ts`, a migração one-shot chama `promisify(execFile)` com `timeout` (o `prisma migrate deploy` do banco novo). O #605 fechou a classe dos processos-filho em `tests/child-process-property.test.ts` (`EXPECTED_CREATORS` + a garantia de que o filho sempre morre), mas este arquivo ficou de fora: o `A_605_04` daquele teste só o fixa por 3 `assert.match` (a chamada `promisify(execFile)`, o `migrate deploy` e o `timeout: 840_000`), sem a garantia da classe.
+- **critério de encerramento:** o `promisify(execFile)` da migração one-shot em `tests/b-o6r-09-dispatch-same-tx-db.test.ts` entra na classe que o #605 consertou (ou o motivo de ficar fora está escrito no `A_605_04`), com a prova de que o processo-filho não fica vivo depois do teste.
