@@ -275,3 +275,5 @@ export { RequirementChecklist } from "./RequirementChecklist";
 export type { RequirementItem, RequirementStatus } from "./RequirementChecklist";
 export { StepList } from "./StepList";
 export type { StepItem, StepState } from "./StepList";
+export { Switch } from "./Switch";
+export type { SwitchProps } from "./Switch";

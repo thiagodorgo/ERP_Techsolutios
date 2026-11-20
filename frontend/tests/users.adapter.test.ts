@@ -8,7 +8,7 @@ import { elements, installMiniDom, propsOf, serialize, text, type MiniDomElement
 // serviço real chamam um `fetch` dublê, e o teste lê método, caminho e corpo do pedido. O DOM mínimo entra ANTES de
 // qualquer import de `react-dom/client` (que é dinâmico, dentro do teste).
 process.env.VITE_USE_MOCKS = "false";
-installMiniDom();
+const dom = installMiniDom();
 
 type SentRequest = { readonly method: string; readonly url: string; readonly body: unknown };
 
@@ -299,4 +299,304 @@ test("users adapter: filtro por situação lógica e busca (nome/e-mail/papel)",
   assert.deepEqual(filterUsers(items, { search: "carla", isActive: "all" }).map((u) => u.id), ["3"]);
   // Busca pelo rótulo PT-BR do papel.
   assert.deepEqual(filterUsers(items, { search: "financeiro", isActive: "all" }).map((u) => u.id), ["2"]);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// B-USERS-CONCESSAO-PAINEL (F5b) — a tela REAL de Usuários (providers e hooks reais, `fetch` dublê) com o controle
+// "Visão da organização" da opção A aprovada (`telas-3opcoes/users-concede-3opcoes.reference.html`): F-GESTOR-VE-CONTROLE,
+// F-SEM-CHAVE, F-LIGA-DESLIGA e F-SELO do §7.4 do plano, mais o texto da Emenda 1 (técnico) e da Q1 = (a) (não precisa
+// entrar de novo). O clique é o handler real (`__reactProps$`), como nos outros testes "live" do repositório.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+type ApiUser = { id: string; name: string; email: string; roles: string[]; status: "active" | "inactive"; created_at: string };
+type PageCall = { readonly method: string; readonly url: string; readonly body: unknown };
+type ViewReply = (call: PageCall, user: ApiUser) => Response | Promise<Response>;
+type PageActFn = (callback: () => Promise<void> | void) => Promise<void>;
+
+const ORG = "org-usuarios";
+const jsonResponse = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+const apiUser = (id: string, name: string, roles: string[]): ApiUser => ({
+  id,
+  name,
+  email: `${id}@techsolutions.example`,
+  roles,
+  status: "active",
+  created_at: "2026-06-01T10:00:00.000Z",
+});
+
+/** A rede da tela: GET /users devolve `people`; PUT/DELETE da visão acrescentam/retiram o papel, ou o `reply` decide. */
+function installUsersFetch(people: ApiUser[], reply?: ViewReply): PageCall[] {
+  const calls: PageCall[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const call: PageCall = { method: init?.method ?? "GET", url: String(input), body: init?.body };
+    calls.push(call);
+    if (call.method === "GET" && /\/api\/v1\/users(\?|$)/.test(call.url)) {
+      return jsonResponse(200, { data: { items: people, pagination: { limit: 200, offset: 0, total: people.length } } });
+    }
+    const match = /\/api\/v1\/users\/([^/]+)\/organization-view$/.exec(call.url);
+    if (match && (call.method === "PUT" || call.method === "DELETE")) {
+      const person = people.find((candidate) => candidate.id === match[1]);
+      if (!person) return jsonResponse(404, { error: { code: "NOT_FOUND", reason: "user_not_found", message: "x" } });
+      if (reply) return reply(call, person);
+      person.roles =
+        call.method === "PUT"
+          ? [...person.roles.filter((role) => role !== "organization_view"), "organization_view"]
+          : person.roles.filter((role) => role !== "organization_view");
+      return jsonResponse(200, { data: person });
+    }
+    return jsonResponse(404, { error: { code: "NOT_FOUND", reason: "not_found", message: "não previsto no teste" } });
+  }) as typeof fetch;
+  return calls;
+}
+
+async function pageAct(): Promise<PageActFn> {
+  const React = await import("react");
+  return (React as unknown as { act: PageActFn }).act;
+}
+
+async function mountUsersPage(permissions: readonly string[], people: ApiUser[], reply?: ViewReply) {
+  const React = await import("react");
+  const { createRoot } = await import("react-dom/client");
+  const { MemoryRouter } = await import("react-router-dom");
+  const { AuthProvider } = await import("../src/providers/AuthProvider");
+  const { TenantProvider } = await import("../src/providers/TenantProvider");
+  const { PermissionProvider } = await import("../src/providers/PermissionProvider");
+  const { UsersPage } = await import("../src/modules/users/pages/UsersPage");
+  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { mockSession } = await import("../src/mocks/auth/context");
+  const act = await pageAct();
+  const settle = async () => {
+    for (let i = 0; i < 6; i++) await act(async () => void (await new Promise((resolve) => setTimeout(resolve, 0))));
+  };
+
+  dom.storage.clear();
+  setStoredAuthSession({
+    ...mockSession,
+    tenant: { id: ORG, name: "Guincho Exemplo" },
+    user: { ...mockSession.user, roles: ["Gestor" as never], permissions: [...permissions] },
+  });
+  dom.storage.set(
+    "erp-techsolutions.active-context",
+    JSON.stringify({
+      tenantId: ORG,
+      tenantName: "Guincho Exemplo",
+      tenantStatus: "active",
+      branchId: "fil-1",
+      branchName: "Matriz",
+      role: "Gestor",
+      permissions,
+      enabledModules: ["dashboard"],
+      scope: "tenant",
+    }),
+  );
+  const calls = installUsersFetch(people, reply);
+  const container = document.body.appendChild(document.createElement("div"));
+  const root = createRoot(container as unknown as Element);
+  const h = React.createElement;
+  await act(async () => {
+    root.render(
+      h(MemoryRouter, { initialEntries: ["/users"] }, h(AuthProvider, null, h(TenantProvider, null, h(PermissionProvider, null, h(UsersPage))))),
+    );
+  });
+  await settle();
+  const host = container as unknown as MiniDomElement;
+  const press = async (el: MiniDomElement | undefined, label: string) => {
+    assert.ok(el, `não achei: ${label} — ${serialize(host).slice(0, 400)}`);
+    const onClick = propsOf(el).onClick as ((ev: unknown) => void) | undefined;
+    assert.equal(typeof onClick, "function", `onClick ausente em ${label}`);
+    await act(async () => {
+      onClick!({ preventDefault() {}, stopPropagation() {}, target: el, currentTarget: el });
+    });
+    await settle();
+  };
+  return {
+    host,
+    calls,
+    selfId: mockSession.user.id,
+    press,
+    settle,
+    unmount: async () => {
+      await act(async () => root.unmount());
+      document.body.removeChild(container as unknown as Node);
+    },
+  };
+}
+
+const byLabel = (host: MiniDomElement, label: string) => elements(host, (el) => el.getAttribute("aria-label") === label)[0];
+const theSwitch = (host: MiniDomElement) => elements(host, (el) => el.getAttribute("role") === "switch")[0];
+const dialogOf = (host: MiniDomElement) => elements(host, (el) => el.getAttribute("role") === "dialog")[0];
+const squash = (el: MiniDomElement | undefined) => (el ? text(el).replace(/\s+/g, " ") : "");
+const badges = (host: MiniDomElement) => elements(host, (el) => el.getAttribute("data-selo") === "visao-da-organizacao");
+const GESTOR = ["users.read", "users:grant_organization_view"];
+
+test("F-GESTOR-VE-CONTROLE — users.read + a chave de conceder, sem users.manage: o controle aparece, o formulário não", async () => {
+  const page = await mountUsersPage(GESTOR, [apiUser("u-lucas", "Lucas Ferreira", ["field_technician"])]);
+  try {
+    assert.equal(byLabel(page.host, "Editar Lucas Ferreira"), undefined, "sem users.manage não há Editar");
+    assert.equal(byLabel(page.host, "Desativar Lucas Ferreira"), undefined, "sem users.manage não há Desativar");
+    assert.doesNotMatch(squash(page.host), /Novo usuário/, "sem users.manage não há Novo usuário");
+    await page.press(byLabel(page.host, "Visão da organização de Lucas Ferreira"), "botão da visão");
+    const modal = dialogOf(page.host);
+    assert.ok(modal, "a janela da visão abriu");
+    assert.equal(modal.getAttribute("aria-label"), "Visão da organização");
+    const control = theSwitch(modal);
+    assert.ok(control, "o interruptor está na janela");
+    assert.equal(control.getAttribute("aria-checked"), "false");
+    const describedBy = control.getAttribute("aria-describedby");
+    assert.ok(describedBy, "o interruptor tem descrição ligada");
+    const description = elements(modal, (el) => el.getAttribute("id") === describedBy)[0];
+    assert.match(
+      squash(description),
+      /Vê as ordens de serviço, as vistorias, os despachos, as aprovações e o painel de toda a organização, não só os dele\. Não muda o que a pessoa pode alterar\./,
+    );
+    assert.match(squash(modal), /Hoje vê só as ordens de serviço em que está escalado\./);
+    assert.match(squash(modal), /Vale a partir do próximo clique; a pessoa não precisa entrar de novo\./, "Q1 = (a)");
+    assert.equal(elements(page.host, (el) => el.getAttribute("id") === "user-field-name").length, 0, "o formulário de edição não aparece");
+    assert.equal(page.calls.filter((call) => call.method !== "GET").length, 0, "abrir a janela não grava nada");
+  } finally {
+    await page.unmount();
+  }
+});
+
+test("F-SEM-CHAVE — só users.read: nem o controle da visão nem o formulário", async () => {
+  const page = await mountUsersPage(["users.read"], [apiUser("u-lucas", "Lucas Ferreira", ["field_technician", "organization_view"])]);
+  try {
+    assert.match(squash(page.host), /Lucas Ferreira/, "a linha carregou");
+    assert.equal(byLabel(page.host, "Visão da organização de Lucas Ferreira"), undefined, "sem a chave não há botão da visão");
+    assert.equal(theSwitch(page.host), undefined, "sem a chave não há interruptor");
+    assert.equal(byLabel(page.host, "Editar Lucas Ferreira"), undefined, "sem users.manage não há Editar");
+    // Quem só lê vê o estado (o selo), sem poder mudar.
+    assert.equal(badges(page.host).length, 1, "o selo continua visível");
+  } finally {
+    await page.unmount();
+  }
+});
+
+test("F-LIGA-DESLIGA — ligar chama PUT, desligar chama DELETE (sem corpo); 'Salvando…' enquanto salva; a linha atualiza", async () => {
+  const gate: { hold: boolean; release: (() => void) | null } = { hold: false, release: null };
+  const people = [apiUser("u-lucas", "Lucas Ferreira", ["field_technician"])];
+  const page = await mountUsersPage(GESTOR, people, async (call, person) => {
+    if (gate.hold) await new Promise<void>((resolve) => (gate.release = resolve));
+    person.roles = call.method === "PUT" ? [...person.roles, "organization_view"] : person.roles.filter((role) => role !== "organization_view");
+    return jsonResponse(200, { data: person });
+  });
+  const act = await pageAct();
+  try {
+    await page.press(byLabel(page.host, "Visão da organização de Lucas Ferreira"), "botão da visão");
+    // Enquanto o PUT não volta: desabilitado, aria-busy e "Salvando…".
+    gate.hold = true;
+    const onClick = propsOf(theSwitch(page.host)).onClick as () => void;
+    await act(async () => onClick());
+    await act(async () => void (await new Promise((resolve) => setTimeout(resolve, 0))));
+    const busy = theSwitch(page.host);
+    assert.equal(propsOf(busy).disabled, true, "desabilitado enquanto salva");
+    assert.equal(busy.getAttribute("aria-busy"), "true");
+    assert.match(squash(busy), /Salvando…/);
+    gate.hold = false;
+    assert.ok(gate.release, "o PUT ficou pendente");
+    await act(async () => gate.release!());
+    await page.settle();
+
+    const writes = page.calls.filter((call) => call.method !== "GET");
+    assert.equal(writes.length, 1, "um pedido só");
+    assert.equal(writes[0].method, "PUT");
+    assert.match(writes[0].url, /\/api\/v1\/users\/u-lucas\/organization-view$/);
+    assert.equal(writes[0].body, undefined, "o PUT vai sem corpo");
+    assert.equal(theSwitch(page.host).getAttribute("aria-checked"), "true", "ligado depois da resposta");
+    assert.match(squash(theSwitch(page.host)), /Ligada/);
+    assert.match(squash(page.host), /Visão da organização dada a Lucas Ferreira\. Vale a partir do próximo clique\./);
+    assert.equal(badges(page.host).length, 1, "a linha ganhou o selo");
+
+    await page.press(theSwitch(page.host), "interruptor (desligar)");
+    const second = page.calls.filter((call) => call.method !== "GET");
+    assert.equal(second.length, 2);
+    assert.equal(second[1].method, "DELETE");
+    assert.match(second[1].url, /\/api\/v1\/users\/u-lucas\/organization-view$/);
+    assert.equal(second[1].body, undefined, "o DELETE vai sem corpo");
+    assert.equal(theSwitch(page.host).getAttribute("aria-checked"), "false");
+    assert.match(squash(page.host), /Visão da organização retirada de Lucas Ferreira\./);
+    assert.equal(badges(page.host).length, 0, "a linha perdeu o selo");
+  } finally {
+    await page.unmount();
+  }
+});
+
+test("F-LIGA-DESLIGA (erros) — 422, 404, 403 e 503 viram frase PT-BR sem código; 503 oferece 'Tentar de novo', que repete", async () => {
+  const cases: Array<[number, string, string, boolean]> = [
+    [422, "user_role_required", "A pessoa ficaria sem nenhum perfil.", false],
+    [404, "user_not_found", "Usuário não encontrado.", false],
+    [403, "permission_required", "Seu perfil não pode dar nem tirar a visão da organização.", false],
+    [503, "role_not_provisioned", "Não foi possível salvar agora.", true],
+  ];
+  for (const [status, reason, message, retryable] of cases) {
+    const page = await mountUsersPage(GESTOR, [apiUser("u-so", "Sofia Visão", ["organization_view"])], () =>
+      jsonResponse(status, { error: { code: "X", reason, message: "técnico" } }),
+    );
+    try {
+      await page.press(byLabel(page.host, "Visão da organização de Sofia Visão"), "botão da visão");
+      await page.press(theSwitch(page.host), `interruptor (${status})`);
+      const alert = elements(dialogOf(page.host), (el) => el.getAttribute("role") === "alert")[0];
+      assert.ok(alert, `${status}: há alerta`);
+      assert.equal(squash(alert).replace("Tentar de novo", "").trim(), message, `${status}: a frase`);
+      assert.doesNotMatch(squash(alert), new RegExp(`${status}|${reason}|técnico`), `${status}: sem código técnico`);
+      assert.equal(theSwitch(page.host).getAttribute("aria-checked"), "true", `${status}: o estado volta ao do servidor`);
+      const retry = elements(alert, (el) => el.localName === "button" && /Tentar de novo/.test(text(el)))[0];
+      assert.equal(Boolean(retry), retryable, `${status}: 'Tentar de novo' só no que pode passar depois`);
+      if (retry) {
+        await page.press(retry, "Tentar de novo");
+        const writes = page.calls.filter((call) => call.method !== "GET");
+        assert.deepEqual(
+          writes.map((call) => call.method),
+          ["DELETE", "DELETE"],
+          "repetiu o mesmo pedido",
+        );
+      }
+    } finally {
+      await page.unmount();
+    }
+  }
+});
+
+test("F-SELO — com o papel: o selo 'Visão da organização' na linha, nunca um chip de perfil nem uma opção do filtro", async () => {
+  const page = await mountUsersPage(GESTOR, [
+    apiUser("u-lucas", "Lucas Ferreira", ["field_technician", "organization_view"]),
+    apiUser("u-ana", "Ana Gestora", ["manager"]),
+  ]);
+  try {
+    const found = badges(page.host);
+    assert.equal(found.length, 1, "só quem tem a visão leva o selo");
+    assert.equal(squash(found[0]).trim(), "Visão da organização");
+    const chips = elements(page.host, (el) => (el.getAttribute("class") ?? "").split(/\s+/).includes("pat-role-chip")).map((el) => squash(el).trim());
+    assert.ok(chips.includes("Técnico de Campo"), `chips: ${chips.join(" | ")}`);
+    assert.equal(chips.some((chip) => /Visão da organização|organization_view/i.test(chip)), false, `a visão não é chip: ${chips.join(" | ")}`);
+    const options = elements(page.host, (el) => el.localName === "option").map((el) => squash(el).trim());
+    assert.equal(options.some((option) => /Visão da organização|organization_view/i.test(option)), false, `a visão não é perfil do filtro: ${options.join(" | ")}`);
+    assert.doesNotMatch(squash(page.host), /organization_view/, "nenhuma chave técnica na tela");
+  } finally {
+    await page.unmount();
+  }
+});
+
+test("F-TEXTOS — o efeito por perfil (Emenda 1: o técnico vê OS, vistorias e painel, não despachos) e a Q1 para si mesmo", async () => {
+  const { organizationViewEffect, organizationViewSessionNote } = await import("../src/modules/users/users.adapter");
+  assert.equal(
+    organizationViewEffect(["technician"], true),
+    "Vê as ordens de serviço, as vistorias e o painel da organização; os despachos, só com a Operação de Campo.",
+  );
+  assert.match(organizationViewEffect(["technician"], false), /as vistorias e o painel da organização; os despachos, só com a Operação de Campo\./);
+  assert.equal(organizationViewEffect(["manager"], false), "Para este perfil nada muda: ele já vê a organização.");
+  assert.equal(organizationViewEffect(["support"], true), "Para este perfil nada muda: ele já vê a organização.");
+  assert.equal(organizationViewEffect(["tenant_admin", "field_technician"], true), "Para este perfil nada muda: ele já vê a organização.");
+  assert.match(organizationViewEffect(["field_dispatcher", "field_technician"], false), /vistorias de toda a organização/);
+  assert.equal(organizationViewSessionNote(true), "Vale a partir do próximo clique; você não precisa entrar de novo.");
+
+  const { mockSession } = await import("../src/mocks/auth/context");
+  const mine = await mountUsersPage(GESTOR, [apiUser(mockSession.user.id, "Eu Mesmo", ["manager"])]);
+  try {
+    await mine.press(byLabel(mine.host, "Visão da organização de Eu Mesmo"), "botão da visão (si)");
+    assert.match(squash(dialogOf(mine.host)), /Vale a partir do próximo clique; você não precisa entrar de novo\./);
+    assert.match(squash(dialogOf(mine.host)), /Para este perfil nada muda: ele já vê a organização\./);
+  } finally {
+    await mine.unmount();
+  }
 });

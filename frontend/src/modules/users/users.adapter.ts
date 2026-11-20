@@ -75,6 +75,71 @@ export function preserveOrganizationViewRole(selectedRoles: readonly string[], o
   return roles;
 }
 
+// ── Visão da organização (B-USERS-CONCESSAO-PAINEL, F5b; opção A da maquete aprovada) ──────────────────────────────
+// O papel `organization_view` é uma CONCESSÃO, não um perfil: nunca vira chip de perfil nem opção do filtro; aparece como
+// selo próprio e tem o controle próprio. Os textos são os do §5 do plano com a Emenda 1 (o técnico com a visão vê OS,
+// vistorias e painel, mas não despachos) e a Q1 = (a) do dono (não precisa entrar de novo).
+export const ORGANIZATION_VIEW_ROLE = "organization_view";
+
+export const ORGANIZATION_VIEW_DESCRIPTION =
+  "Vê as ordens de serviço, as vistorias, os despachos, as aprovações e o painel de toda a organização, não só os dele. Não muda o que a pessoa pode alterar.";
+
+export function hasOrganizationView(roles: readonly string[]): boolean {
+  return roles.includes(ORGANIZATION_VIEW_ROLE);
+}
+
+/** Os perfis de verdade (sem a concessão), para os chips e o filtro de perfil. */
+export function profileRoles(roles: readonly string[]): string[] {
+  return roles.filter((role) => role !== ORGANIZATION_VIEW_ROLE);
+}
+
+// Perfis que já leem as ordens de serviço da organização inteira (o mapa de leitura do servidor, `tenant_wide`).
+const READS_WHOLE_ORGANIZATION = new Set(["super_admin", "platform_admin", "tenant_admin", "manager", "operator"]);
+const FIELD_ROLES = new Set(["field_technician", "technician"]);
+
+/** O que a visão muda para esta pessoa, com a visão ligada (`granted`) ou desligada. Só texto; quem decide é o servidor. */
+export function organizationViewEffect(roles: readonly string[], granted: boolean): string {
+  const profiles = profileRoles(roles);
+  const isField = profiles.some((role) => FIELD_ROLES.has(role));
+  if (!isField || profiles.some((role) => READS_WHOLE_ORGANIZATION.has(role))) {
+    return "Para este perfil nada muda: ele já vê a organização.";
+  }
+  if (profiles.includes("field_dispatcher")) {
+    return granted
+      ? "Vê toda a organização, inclusive as vistorias; continua alterando só as ordens de serviço em que está escalado."
+      : "Já vê as ordens de serviço da organização, mas as vistorias só das suas. Com a visão, passa a ver também as vistorias de toda a organização, sem poder alterá-las.";
+  }
+  if (profiles.includes("technician") && !profiles.includes("field_technician")) {
+    return granted
+      ? "Vê as ordens de serviço, as vistorias e o painel da organização; os despachos, só com a Operação de Campo."
+      : "Hoje vê só as ordens de serviço em que está escalado. Com a visão, passa a ver as ordens de serviço, as vistorias e o painel da organização; os despachos, só com a Operação de Campo.";
+  }
+  return granted
+    ? "Vê toda a organização; continua alterando só as ordens de serviço em que está escalado."
+    : "Hoje vê só as ordens de serviço em que está escalado. Com a visão, passa a ver as de toda a organização, sem poder alterá-las.";
+}
+
+/** Q1 = (a) do dono (20/11): dar ou tirar a visão não encerra a sessão. */
+export function organizationViewSessionNote(isSelf: boolean): string {
+  return `Vale a partir do próximo clique; ${isSelf ? "você não precisa" : "a pessoa não precisa"} entrar de novo.`;
+}
+
+export type OrganizationViewFeedback = { readonly message: string; readonly retryable: boolean };
+
+const ORGANIZATION_VIEW_ERRORS: Record<number, OrganizationViewFeedback> = {
+  403: { message: "Seu perfil não pode dar nem tirar a visão da organização.", retryable: false },
+  404: { message: "Usuário não encontrado.", retryable: false },
+  422: { message: "A pessoa ficaria sem nenhum perfil.", retryable: false },
+  503: { message: "Não foi possível salvar agora.", retryable: true },
+};
+
+/** Erro do PUT/DELETE da visão em frase PT-BR, sem código técnico; o que não se reconhece vira "tentar de novo". */
+export function interpretOrganizationViewError(error: unknown): OrganizationViewFeedback {
+  const status = readErrorStatus(error);
+  if (status !== undefined && ORGANIZATION_VIEW_ERRORS[status]) return ORGANIZATION_VIEW_ERRORS[status];
+  return { message: "Não foi possível salvar agora.", retryable: true };
+}
+
 // Junta os papéis do usuário em rótulos PT-BR (dedup preservando ordem), "—" quando vazio.
 export function formatUserRoles(roles: readonly string[] | undefined): string {
   if (!roles || roles.length === 0) return "—";
