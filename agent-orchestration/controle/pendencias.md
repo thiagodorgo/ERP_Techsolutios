@@ -17089,12 +17089,54 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **critério de encerramento:** o servidor-filho do teste tem tempo-limite e o `npm test` termina sozinho, com teste.
 - **fechamento:** o tempo-limite passou a ser centralizado e testado pelo helper compartilhado (`tests/helpers/child-server.ts`), e o porteiro reexecutou a suíte de prova sem filhos vivos no fim (`revisoes/teste-filhos/porteiro-605-ar-parecer.md`, LIBERADO).
 
+## P-PLAT-PAPEL-SEM-RELEITURA (2026-11-17) — as rotas da plataforma não releem papel nem permissão do banco a cada requisição — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (uma revogação feita à mão no banco para o `super_admin` não vale nas rotas de plataforma, e um papel retirado só some quando o token expira) · **escopo:** `pre-existente` (`src/app.ts:157` monta `/api/v1/platform` sem `persistent-rbac-context`; anterior ao `B-PLAT-PERMISSAO`) · **dono:** um bloco de plataforma futuro, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não (nem o item 72).
+- **origem:** plano do `B-PLAT-PERMISSAO` §2.2 e §8.2 (`plano-plat-perm-cl`, fora do repositório); confirmado na Emenda 1 §6 (o #588 não relê papel).
+- **N e forma:** 1 ponto de montagem; a checagem da plataforma usa o catálogo em código, e as rotas de organização releem o banco a cada requisição.
+- **critério de encerramento:** as rotas da plataforma conferem papel e permissão com a mesma releitura das rotas de organização, com teste de revogação.
+
+## P-PLAT-PORTAO-SEM-ORG-PLATAFORMA (2026-11-17) — o portão da plataforma não confere se o ator pertence à organização de plataforma — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (em produção não é alcançável: o papel não é atribuível por organização e o bootstrap só liga na plataforma; em dev o seed liga um `super_admin` à organização demo) · **escopo:** `pre-existente` · **dono:** o mesmo bloco de plataforma futuro de `P-PLAT-PAPEL-SEM-RELEITURA` · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** plano do `B-PLAT-PERMISSAO` §8.2 (E20 da evidência do plano).
+- **N e forma:** 1 portão (`requirePlatformPermission`); nenhuma conferência da organização do ator.
+- **critério de encerramento:** o portão recusa ator de plataforma fora da organização de plataforma, com teste.
+
+## P-FRONT-ATALHO-SUPER-ADMIN (2026-11-17) — o front libera toda permissão para "Super Admin" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (só esconde do front a permissão real; o backend segue como autoridade) · **escopo:** `pre-existente` (`frontend/src/providers/PermissionProvider.tsx:32-37`, `isPlatformAdmin` em `navigation/types.ts:105-110`; `frontend/**` é PROIBIDO no `B-PLAT-PERMISSAO`) · **dono:** um bloco de front, a abrir · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** plano do `B-PLAT-PERMISSAO` §3.1 e §8.2; Emenda 1 §6 (sem a condição da P2, que o dono respondeu "nao").
+- **N e forma:** `can` e `hasAny` passam para `isPlatformAdmin` (papel "Super Admin" OU `platform:tenants:read`); `auth.adapter.ts:391` mapeia `super_admin` e `platform_admin` para o mesmo rótulo.
+- **critério de encerramento:** os guards de plataforma do front valem só a permissão que o login devolve, com teste por tela.
+
+## P-CLOUD-CHARGE-ROUTER-ORFAO (2026-11-17) — `cloud-charge.routes.ts` está exportado e não montado — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (9 portões fora do app; o censo da plataforma não os vê até alguém montar o roteador) · **escopo:** `pre-existente` (superado por `D-COBRANCA-ASSINATURA-FRANQUIA`) · **dono:** a limpeza das chaves órfãs `platform:cloud-charge-rules:*` e `platform:cloud-charges:*` · **gatilho:** essa limpeza · **bloqueia:** não.
+- **origem:** plano do `B-PLAT-PERMISSAO` §1.1 (E8) e §8.2.
+- **N e forma:** 79 chamadas estáticas de `requirePlatformPermission("platform:…")`; 9 em `cloud-charge.routes.ts` (`createCloudChargesPlatformRouter` sem chamador); 70 montadas.
+- **critério de encerramento:** o roteador é apagado (com as chaves órfãs) ou montado, e nesse caso entra no instantâneo `tests/fixtures/plat-perm-rotas.json`.
+
 ## P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 — MÉDIA
 
 - **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a leitura de ambiente da porta de plataforma) · **dono:** `B-NODE-ENV-FAIL-CLOSED` · **bloqueia:** não.
 - **origem:** crítica do plano do 72 (`crit-plat-perm-cl`, A7) e Emenda 1 do 72, 17/11.
 - **fato:** com `NODE_ENV` ausente, a porta de plataforma conta como dev (fail-open), quando deveria falhar fechado em produção.
 - **critério de encerramento:** `NODE_ENV` ausente falha fechado, com teste.
+
+## P-PARSE-ROLES-SEM-TRIM (2026-11-17) — `parseRoles` devolve o papel sem trim, e `ROLE_PERMISSIONS[" super_admin "]` lança 500 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (falha fechada com 500; no portão da plataforma o `B-PLAT-PERMISSAO` normaliza o papel antes, coberto pela matriz (h) e pela MP-11) · **escopo:** `pre-existente` (`src/modules/core-saas/middleware/tenant-context.middleware.ts:84-88`, PROIBIDO no bloco) · **dono:** o mesmo bloco de plataforma futuro de `P-PLAT-PAPEL-SEM-RELEITURA` · **gatilho:** a abertura desse bloco · **bloqueia:** não.
+- **origem:** o parecer r1 (`crit-plat-perm-cl`) do plano (X25), registrada pela Emenda 1 §5.
+- **N e forma:** 1 função; `parseRoles` filtra com `isValidRole` (que faz trim) e devolve o valor sem trim.
+- **critério de encerramento:** `parseRoles` devolve o papel normalizado, com teste de papel com espaços e caixa trocada numa rota de organização.
+
+## P-VARREDURAS-SEM-USE-SEM-CAMINHO (2026-11-17) — as 3 varreduras irmãs não enumeram camadas `use` sem caminho sob os prefixos que vigiam — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a mesma classe do A-E1-1 do `B-PLAT-PERMISSAO`: um `router.use(handler)` sem caminho não vira rota nem camada com caminho) · **escopo:** `pre-existente` (`tests/helpers/route-walk.ts` do B-USERS-ACESSO-SEG, #527) · **dono:** o próximo bloco que tocar essas varreduras · **gatilho:** esse bloco · **bloqueia:** não.
+- **origem:** o parecer r2 (`crit-plat-perm-e1-cl`) do plano (A-E1-1), registrada pela Emenda 2 §9 (`plano-plat-perm-e2-fable`, fora do repositório).
+- **N e forma:** 3 varreduras (`tests/users-acesso-seg-portao-varredura.test.ts`, `tests/users-seg-desativado-varredura[-db].test.ts`, `tests/san3-18-route-module-census.test.ts`) exigem `semCaminho = []` e não leem camada `use` sem caminho. Depois do `B-PLAT-PERMISSAO`, o campo opcional `mwSemCaminho` existe no walk.
+- **critério de encerramento:** as 3 varreduras consomem `mwSemCaminho` sob os prefixos que vigiam, com mutação que planta um `router.use(handler)` sem caminho e fica vermelha.
 
 ## P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.env.example` — BAIXA
 
