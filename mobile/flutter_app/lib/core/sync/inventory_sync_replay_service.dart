@@ -7,6 +7,7 @@ import '../network/http_client.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 import 'sync_replay_service.dart';
+import 'sync_session_changed.dart';
 import 'sync_session_expired.dart';
 
 /// 503 do lote: a ação volta a `pending` sem custo, mas pode ter baixado (outra ação do mesmo
@@ -269,6 +270,17 @@ class InventorySyncReplayService {
       // dart format on
       for (final action in syncing) {
         await _queue.update(backToPendingSessionExpired(action));
+      }
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
+      );
+      // dart format off
+    } on ApiSessionChangedError { // sessão trocou: lote de estoque
+      // dart format on
+      for (final action in syncing) {
+        await _queue.update(backToPendingSessionChanged(action));
       }
       return SyncReplayResult(
         synced: synced,
