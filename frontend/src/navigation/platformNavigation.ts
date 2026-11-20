@@ -42,6 +42,17 @@ export const platformNavigation: NavigationItem[] = [
     allowedRoles: ["Super Admin"],
     icon: "platform-cloud-billing",
   },
+  // B-ASS-10c-OPERACAO — a cobrança das organizações (o ícone de recibo é o do mapa de ícones de hoje, o mesmo do Cloud Billing).
+  {
+    id: "platform-billing",
+    label: "Cobrança",
+    path: "/platform/billing",
+    scope: "platform",
+    mode: "platform",
+    requiredPermissions: ["platform:billing:read"],
+    allowedRoles: ["Super Admin"],
+    icon: "platform-cloud-billing",
+  },
   {
     id: "platform-audit",
     label: "Auditoria Global",

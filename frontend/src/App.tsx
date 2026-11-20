@@ -119,6 +119,13 @@ const PlatformCloudBillingPage = lazy(() =>
   })),
 );
 
+// B-ASS-10c-OPERACAO — a tela de operação da cobrança das organizações (`/platform/billing`).
+const PlatformBillingOpsPage = lazy(() =>
+  import("./modules/platform/billing-operations/pages/PlatformBillingOpsPage").then((m) => ({
+    default: m.PlatformBillingOpsPage,
+  })),
+);
+
 const PlatformTenantDetailPage = lazy(() =>
   import("./modules/platform/pages/PlatformTenantDetailPage").then((m) => ({
     default: m.PlatformTenantDetailPage,
@@ -261,6 +268,15 @@ export function App() {
                   <PermissionGuard permissions={["platform:billing:read"]}>
                     <PlatformCloudBillingPage />
                   </PermissionGuard>
+                </PermissionGuard>
+              }
+            />
+            {/* B-ASS-10c-OPERACAO — a cobrança das organizações: a leitura exige `platform:billing:read` (o servidor confere de novo). */}
+            <Route
+              path="/platform/billing"
+              element={
+                <PermissionGuard permissions={["platform:billing:read"]}>
+                  <PlatformBillingOpsPage />
                 </PermissionGuard>
               }
             />

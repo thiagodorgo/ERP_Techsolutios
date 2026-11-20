@@ -119,6 +119,18 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Fechamento e grupos" },
     ],
   },
+  // B-ASS-10c-OPERACAO — Cobrança, no console da plataforma (maquete `cob-op-3opcoes.reference.html`, aprovada pelo dono em
+  // 20/11: "3 completo"); padrão A, sem entrada em SCREEN_DEFAULT_APPEARANCE.
+  {
+    key: "platform-billing",
+    label: "Cobrança",
+    scope: "platform",
+    options: [
+      { value: "A", label: "Fiel ao console" },
+      { value: "B", label: "Mesa de revisão" },
+      { value: "C", label: "Por organização" },
+    ],
+  },
   // B-ASS-11 — Minha assinatura, a tela do cliente (referência `screen-refs/minha-assinatura-3opcoes.reference.html`,
   // aprovada pelo dono em 14/11 sem ajuste, D-ASS11-MAQUETE-APROVADA). Padrão A, sem entrada em SCREEN_DEFAULT_APPEARANCE.
   {
