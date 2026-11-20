@@ -11,7 +11,7 @@
 // repositório, da fila, da telemetria e o coordenador de sincronização são os
 // reais. Os dados são fictícios e só existem neste arquivo.
 //
-// Mutações que este arquivo pega: M13 (T11, T12), M34a (T11b-OS),
+// Mutações que este arquivo pega: M13 (T11 e os T11b-OS), M34a (T11b-OS e T11b-OS-demo),
 // M34b (T11b-checklist), M34d (T11b-prestador), M36 (T15b).
 import 'dart:async';
 import 'dart:convert';
@@ -782,6 +782,65 @@ void main() {
     expect(comB, ['o-b1'], reason: 'a de B subiu em B, com tok-b');
     final a = (await fila.actionsForTenant(_orgA)).single;
     expect(a.status, SyncStatus.synced, reason: 'a ação de A saiu da fila');
+  });
+
+  // ── T13: nada vaza na tela ─────────────────────────────────────────────────
+
+  test('[T13] em B, o que a lista de OS, a rota da OS, Finanças, Sincronização '
+      'e Início leem é só de B', () async {
+    // Medido na camada que cada tela lê (o mesmo provider e o mesmo filtro):
+    // lista e Início → `workOrderRepositoryProvider.workOrders`
+    // (`home_screen.dart:143`); rota `/work-orders/<id>` → `findById`
+    // (`work_order_detail_screen.dart:179`); Finanças →
+    // `expenseRepositoryProvider.reports` (`expense_list_screen.dart:85`);
+    // Sincronização → `actionsForTenant(<organização do bootstrap>)` +
+    // `partitionByUser` (`sync_screen.dart:197-200`); a contagem da troca →
+    // `pendingCountForActiveSessionProvider`.
+    final app = await _abre();
+    final c = app.c;
+    await DriftWorkOrderLocalStore(
+      app.db,
+    ).saveWorkOrder(_os('wo-a1', 'srv-org-a-1'));
+    final relA = await c
+        .read(expenseRepositoryProvider)
+        .createReport(title: 'Viagem A', advanceAmount: 0);
+    await c
+        .read(syncQueueRepositoryProvider)
+        .enqueue(_acao('o-a1', _orgA, {'local_id': 'wo-a1', 'title': 'OS a1'}));
+
+    await app.troca(_orgB);
+    await app.bootEm(_orgB);
+    final boot = await c.read(bootstrapSessionProvider.future);
+    final repo = c.read(workOrderRepositoryProvider);
+    await repo.load();
+    final fim = DateTime.now().add(const Duration(seconds: 5));
+    while (repo.isPulling && DateTime.now().isBefore(fim)) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(repo.lastPullError, isNull);
+
+    // Lista de OS e Início.
+    expect(repo.workOrders, isNotEmpty);
+    expect(repo.workOrders.map((o) => o.tenantId).toSet(), {_orgB});
+    expect(repo.workOrders.map((o) => o.localId), isNot(contains('wo-a1')));
+    // A rota direta da OS de A.
+    expect(repo.findById('wo-a1'), isNull);
+    // Finanças.
+    final despesas = c.read(expenseRepositoryProvider);
+    await despesas.load();
+    expect(
+      despesas.reports.map((r) => r.localId),
+      isNot(contains(relA.report.localId)),
+    );
+    expect(despesas.reports.where((r) => r.tenantId != _orgB), isEmpty);
+    // Sincronização (e o Início, que conta pela mesma fila).
+    final daTela = await c
+        .read(syncQueueRepositoryProvider)
+        .actionsForTenant(boot.activeTenant.tenantId);
+    expect(daTela.where((a) => a.tenantId == _orgA), isEmpty);
+    expect(daTela.map((a) => a.clientActionId), isNot(contains('o-a1')));
+    // A contagem da tela de troca, em B.
+    expect(await c.read(pendingCountForActiveSessionProvider.future), 0);
   });
 
   // ── T15b: a contagem da tela de troca ──────────────────────────────────────
