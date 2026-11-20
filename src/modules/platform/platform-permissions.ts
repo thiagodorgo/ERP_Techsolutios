@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { resolveRequestActor } from "../auth/middleware/authenticated-actor.middleware.js";
-import { PLATFORM_ROLES } from "../core-saas/permissions/catalog.js";
+import { normalizeRole, PLATFORM_ROLES, type Permission } from "../core-saas/permissions/catalog.js";
+import { createTenantContextFromRequestActor } from "../core-saas/middleware/tenant-context.middleware.js";
 
 export const PLATFORM_PERMISSIONS = [
   // SUPERADA por D-COBRANCA-ASSINATURA-FRANQUIA; órfãs até limpeza, sem apagar a tabela permissions.
@@ -27,7 +28,7 @@ export const PLATFORM_PERMISSIONS = [
   "platform:billing:manage",
   "platform:billing:settle",
   "platform:billing-providers:manage",
-] as const;
+] as const satisfies readonly Permission[];
 
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];
 
@@ -37,8 +38,17 @@ const platformPermissionSet = new Set<string>(PLATFORM_PERMISSIONS);
 // foi apagado; o guard 10a (tests/core-saas-role-authority.test.ts) reprova se ele voltar.
 const platformRoles = new Set<string>(PLATFORM_ROLES);
 
-export function requirePlatformPermission(permission: PlatformPermission) {
-  return (request: Request, response: Response, next: NextFunction): void => {
+// B-PLAT-PERMISSAO (item 72 do portão) — o portão expõe a permissão que confere numa propriedade só leitura do handler,
+// para que o censo (scripts/plat-perm-censo.mjs, tests/plat-perm-censo.test.ts) a leia sem depender do comportamento.
+export type PlatformGate = ((request: Request, response: Response, next: NextFunction) => void) & {
+  readonly platformPermission: PlatformPermission;
+};
+
+// B-PLAT-PERMISSAO (item 72 do portão) — a regra: passa só quem tem um papel de plataforma E a permissão pedida no
+// efetivo (o catálogo do papel, ou a interseção com `x-permissions` no cabeçalho legado). Falta qualquer um → 403
+// `platform_permission_required`, falha fechada. Antes, qualquer papel de plataforma passava em qualquer rota.
+export function requirePlatformPermission(permission: PlatformPermission): PlatformGate {
+  const handler = (request: Request, response: Response, next: NextFunction): void => {
     const actor = resolveRequestActor(request);
 
     if (!actor) {
@@ -55,18 +65,23 @@ export function requirePlatformPermission(permission: PlatformPermission) {
       return;
     }
 
-    const normalizedRoles = actor.roles.map((role) => role.trim().toLowerCase());
+    const normalizedRoles = actor.roles.map(normalizeRole);
     const hasPlatformRole = normalizedRoles.some((role) => platformRoles.has(role));
-    const explicitPermissions = actor.authType === "legacy_headers" ? actor.permissions : [];
-    const hasExplicitPermission = explicitPermissions.some((item) => item === permission);
+    // A mesma função de interseção do tenantContextMiddleware; a LEITURA do cabeçalho é mais estrita aqui: `x-permissions`
+    // presente = explícito, mesmo vazio ou só espaços (vazio = sem permissão → 403; Emenda 2 §3, fail-closed).
+    const explicitPermissions = actor.authType === "legacy_headers" && request.header("x-permissions") !== undefined;
+    const context = createTenantContextFromRequestActor({ ...actor, roles: normalizedRoles }, explicitPermissions);
+    const hasPermission = context.permissions.includes(permission);
 
-    if (!hasPlatformRole && !hasExplicitPermission) {
+    if (!hasPlatformRole || !hasPermission) {
       sendForbidden(response, "platform_permission_required", `Permission ${permission} is required.`);
       return;
     }
 
     next();
   };
+  Object.defineProperty(handler, "platformPermission", { value: permission, enumerable: true, writable: false, configurable: false });
+  return handler as PlatformGate;
 }
 
 export function requirePlatformAdmin() {
