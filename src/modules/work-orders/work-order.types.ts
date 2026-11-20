@@ -77,6 +77,8 @@ export type WorkOrderActorContext = {
   readonly permissions: readonly Permission[];
 };
 
+export type WorkOrderReadModule = "os" | "vistoria";
+
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 // B-O6R-07a (Ω6R-SEC-002, §3.3) — ESCOPO POR OBJETO na mutação de OS.
 //
@@ -165,6 +167,28 @@ export const WORK_ORDER_READ_SCOPE = {
   support: "nao_alarga",
 } as const satisfies Record<Role, "tenant_wide" | "assigned_only" | "nao_alarga">;
 
+export const WORK_ORDER_READ_SCOPE_EXCEPTIONS: Record<
+  WorkOrderReadModule,
+  Partial<Record<Role, "tenant_wide" | "assigned_only" | "nao_alarga">>
+> = {
+  os: {},
+  vistoria: {
+    field_dispatcher: "nao_alarga",
+  },
+};
+
+function readScopeForRole(
+  role: string,
+  module: WorkOrderReadModule,
+): "tenant_wide" | "assigned_only" | "nao_alarga" | undefined {
+  const base = (WORK_ORDER_READ_SCOPE as Record<string, "tenant_wide" | "assigned_only" | "nao_alarga" | undefined>)[role];
+  const override =
+    (WORK_ORDER_READ_SCOPE_EXCEPTIONS[module] as Record<string, "tenant_wide" | "assigned_only" | "nao_alarga" | undefined> | undefined)?.[
+      role
+    ];
+  return override ?? base;
+}
+
 /**
  * B-WO-LEITURA — o ator lê só a OS atribuída a ele? Regra de PRESENÇA, a mesma de `actorMutatesAssignedOnly`:
  * verdadeiro quando o ator tem pelo menos um papel `assigned_only` E nenhum papel `tenant_wide`; `nao_alarga` não conta
@@ -174,11 +198,10 @@ export const WORK_ORDER_READ_SCOPE = {
  * (chamador interno) não cai no escopo, pelo mesmo motivo do 07a. Para os 13 papéis do catálogo, isto coincide com
  * "todos os papéis são assigned_only".
  */
-export function actorReadsAssignedOnly(actor: WorkOrderActorContext): boolean {
-  const scopes: Record<string, "tenant_wide" | "assigned_only" | "nao_alarga" | undefined> = WORK_ORDER_READ_SCOPE;
+export function actorReadsAssignedOnly(actor: WorkOrderActorContext, module: WorkOrderReadModule = "os"): boolean {
   const roles = actor.roles ?? [];
-  const hasFieldRole = roles.some((role) => scopes[role] === "assigned_only");
-  const hasTenantWide = roles.some((role) => scopes[role] === "tenant_wide");
+  const hasFieldRole = roles.some((role) => readScopeForRole(role, module) === "assigned_only");
+  const hasTenantWide = roles.some((role) => readScopeForRole(role, module) === "tenant_wide");
   return hasFieldRole && !hasTenantWide; // B-WO-LEITURA:predicado
 }
 

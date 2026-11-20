@@ -61,6 +61,7 @@ const ENTRADAS: Entrada[] = R_ROTAS.filter((x) => CLASSES_DO_BLOCO.includes(INST
   marcador: INSTANTANEO[x.chave].marcador ?? "",
 }));
 const DESPACHO = new Set(["R13", "R14", "R15"]);
+const VISTORIA = new Set(["R10a", "R10b", "R11", "R12"]);
 
 type Papel = { readonly nome: string; readonly roles: string };
 const FT: Papel = { nome: "ft", roles: "field_technician" };
@@ -262,8 +263,32 @@ test("L-WIDE — o manager (organização inteira) lê a OS-X em toda rota do bl
 test("L-UNIAO — quem acumula um papel que ALARGA (tenant_wide) com o de campo lê a OS-X (regra de presença)", async (t) => {
   await withApi(async (ctx) => {
     for (const p of UNIOES) for (const e of ENTRADAS) {
-      if (!alcanca(p, e)) continue;
+      if (!alcanca(p, e) || (p.nome.startsWith("field_dispatcher+") && VISTORIA.has(e.r))) continue;
       await t.test(`L-UNIAO · ${p.nome} · ${e.r}`, () => assertLe(ctx, e, ctx.h(ctx.u.B, p.roles), `L-UNIAO ${p.nome} ${e.r}`));
+    }
+  });
+});
+
+test("L-MODULO — Operação de Campo não alarga as vistorias do papel de campo", async (t) => {
+  await withApi(async (ctx) => {
+    for (const p of UNIOES.filter((papel) => papel.nome.startsWith("field_dispatcher+"))) {
+      for (const e of ENTRADAS.filter((entrada) => VISTORIA.has(entrada.r))) {
+        await t.test(`L-MODULO · ${p.nome} · ${e.r}`, () =>
+          assertNegado(ctx, e, ctx.h(ctx.u.B, p.roles), 1, `L-MODULO ${p.nome} ${e.r}`),
+        );
+      }
+    }
+  });
+});
+
+test("L-MODULO-OS — Operação de Campo continua alargando o console operacional", async (t) => {
+  await withApi(async (ctx) => {
+    for (const p of UNIOES.filter((papel) => papel.nome.startsWith("field_dispatcher+"))) {
+      for (const e of ENTRADAS.filter((entrada) => ["R1", "R2", "R13", "R18"].includes(entrada.r))) {
+        await t.test(`L-MODULO-OS · ${p.nome} · ${e.r}`, () =>
+          assertLe(ctx, e, ctx.h(ctx.u.B, p.roles), `L-MODULO-OS ${p.nome} ${e.r}`),
+        );
+      }
     }
   });
 });

@@ -290,7 +290,13 @@ if (!connectionString) {
       // D-NEG · technician — o technician sozinho (sem field_dispatch:read, como finance+tec) é escopado: sem OS atribuída,
       // recebe o inexistente, a lista sem a OS-X e o painel com total = 0.
       for (const e of ENTRADAS.filter((x) => !DESPACHO.has(x.r))) await t.test(`D-NEG · technician · ${e.r}`, () => negado(e, h(u.TEC), 0, `D-NEG technician ${e.r}`));
-      for (const e of ENTRADAS) await t.test(`D-UNIAO · field_dispatcher+ft · ${e.r}`, () => le(e, h(u.U), `D-UNIAO ${e.r}`));
+      const VISTORIA = new Set(["R10a", "R10b", "R11", "R12"]);
+      for (const e of ENTRADAS.filter((entrada) => !VISTORIA.has(entrada.r))) {
+        await t.test(`D-UNIAO · field_dispatcher+ft · ${e.r}`, () => le(e, h(u.U), `D-UNIAO ${e.r}`));
+      }
+      for (const e of ENTRADAS.filter((entrada) => entrada.r === "R10a" || entrada.r === "R10b")) {
+        await t.test(`D-MODULO · field_dispatcher+ft · ${e.r}`, () => negado(e, h(u.U), 0, `D-MODULO ${e.r}`));
+      }
 
       // D-MESMA-REGRA (Emenda 3.1 §3.3 + Emenda 3.2 §3.2): S (support+ft, 19), F (finance+tec, 16 sem R13-R15),
       // V (viewer+tec, 19) e AU (auditor+ft, 19), sem OS atribuída (total = 0).
