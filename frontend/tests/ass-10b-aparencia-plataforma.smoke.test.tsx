@@ -47,7 +47,8 @@ const act: ActFn = (callback) => {
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = resolve(HERE, "../src");
-const PLATFORM_LABELS = ["A · Fiel à referência", "B · Analítica", "C · Fechamento e grupos"];
+// B-ASS-10c-OPERACAO: a tela "Cobrança" entra no menu do console, com as 3 aparências aprovadas em 20/11.
+const PLATFORM_LABELS = ["A · Fiel à referência", "B · Analítica", "C · Fechamento e grupos", "A · Fiel ao console", "B · Mesa de revisão", "C · Por organização"];
 const USER_ID = mockSession.user.id;
 
 function providers(child: unknown, path = "/platform/overview") {
@@ -106,10 +107,11 @@ test("T-APAR-1 (b) o PlatformLayout, montado e aberto pelo gatilho, lista só as
       (propsOf(triggers[0]).onClick as () => void)();
     });
     const options = radios(container).map((el) => text(el).replace(/padrão$/, "").trim());
-    assert.deepEqual(options, PLATFORM_LABELS, "só as 3 opções de Cloud Billing");
+    assert.deepEqual(options, PLATFORM_LABELS, "só as opções das telas de plataforma (Cloud Billing e Cobrança)");
     assert.match(text(radios(container)[0]), /padrão$/, "a A é o padrão da tela");
+    assert.match(text(radios(container)[3]), /padrão$/, "a A é o padrão da Cobrança");
     const groups = elements(container, (el) => (el.getAttribute("id") ?? "").startsWith("aparencia-")).map((el) => text(el).trim());
-    assert.deepEqual(groups, ["Cloud Billing"], "um grupo só, o da tela de plataforma");
+    assert.deepEqual(groups, ["Cloud Billing", "Cobrança"], "um grupo por tela de plataforma");
     assert.match(text(container), /no console da plataforma/);
   } finally {
     await unmount();
