@@ -705,7 +705,9 @@ void main() {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+      // B-APP-ORG (F5): as 2 linhas de organização mais a linha "Entrar em
+      // outra organização" (Q4), cada uma com a sua seta.
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
     });
 
     testWidgets('5.4 exibe instrucao para o usuario selecionar empresa', (
@@ -714,7 +716,11 @@ void main() {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
-      expect(find.textContaining('não se misturam'), findsOneWidget);
+      // B-APP-ORG (F5): o texto da opção A aprovada (plano §8.1).
+      expect(
+        find.textContaining('Os dados de cada uma ficam separados'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('5.5 exibe as iniciais da organização no avatar', (t) async {
