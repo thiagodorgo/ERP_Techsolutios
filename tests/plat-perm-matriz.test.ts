@@ -52,11 +52,11 @@ const GET_200 = [
 ];
 
 const censo: any = await import("../scripts/plat-perm-censo.mjs");
-const amb = await censo.subirApp();
-after(() => amb.fechar());
 const { PLATFORM_ROLES, ROLE_PERMISSIONS } = await import("../src/modules/core-saas/permissions/catalog.js");
 const { PLATFORM_PERMISSIONS } = await import("../src/modules/platform/platform-permissions.js");
 const { signAccessToken } = await import("../src/modules/auth/index.js");
+const amb = await censo.subirApp();
+after(() => amb.fechar());
 
 const instantaneo = JSON.parse(readFileSync(censo.INSTANTANEO, "utf8")) as Record<string, string>;
 const rotas = amb.percurso.rotas

@@ -129,8 +129,8 @@ if (!connectionString) {
   });
 
   test("plat-perm (a): deploy real numa base própria → as 6 chaves existem; o corpo as concede SÓ ao super_admin", async () => {
-    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString! }) });
+    const { createPrismaClient } = await import("../src/database/pg-connection.js");
+    admin = createPrismaClient(connectionString!);
     const source = new URL(connectionString!);
     const baseName = decodeURIComponent(source.pathname.replace(/^\//, "")) || "postgres";
     const name = `${baseName}_drill_${randomUUID().replace(/-/g, "").slice(0, 10)}`.slice(0, 63);
@@ -141,7 +141,7 @@ if (!connectionString) {
     target.pathname = `/${name}`;
     url = target.toString();
     execFileSync(process.execPath, [prismaCli(), "migrate", "deploy"], { cwd: ROOT, env: { ...process.env, DATABASE_URL: url }, stdio: "pipe" });
-    db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
+    db = createPrismaClient(url);
     const applied = (await db.$queryRawUnsafe(`SELECT count(*)::int AS n FROM _prisma_migrations WHERE migration_name = $1 AND finished_at IS NOT NULL`, MIGRATION_NAME)) as Array<{ n: number }>;
     assert.equal(applied[0]?.n, 1, "a migração foi aplicada pelo deploy");
     assert.equal(await keyCount(), 6, "as seis permissões existem depois do deploy");
