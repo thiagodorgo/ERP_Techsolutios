@@ -8,6 +8,7 @@ import type {
   LoginCandidate,
   Tenant,
   TenantMembership,
+  SetOrganizationViewInput,
   UpdateUserInput,
   User,
 } from "../types/core-saas.types.js";
@@ -36,6 +37,10 @@ export class MemoryCoreSaasAdapter implements ICoreSaasService {
 
   async updateUser(input: UpdateUserInput, actor?: AuthenticatedActor): Promise<User> {
     return this.registry.updateUser(input, actor);
+  }
+
+  async setOrganizationView(input: SetOrganizationViewInput, actor?: AuthenticatedActor): Promise<User> {
+    return this.registry.setOrganizationView(input, actor);
   }
 
   async listUsersForTenant(tenantId: string): Promise<User[]> {

@@ -1,5 +1,6 @@
 import {
   DEFAULT_ROLES,
+  ORGANIZATION_VIEW_ROLE,
   assertAssignableRole,
   getRolePermissions,
   isValidRole,
@@ -17,6 +18,7 @@ import {
   type CreateUserInput,
   type ListTenantOptions,
   type LoginCandidate,
+  type SetOrganizationViewInput,
   type Tenant,
   type TenantMembership,
   type UpdateUserInput,
@@ -366,6 +368,49 @@ export class CoreSaasRegistry {
     return savedUser;
   }
 
+  // B-USERS-CONCESSAO-PAINEL (§2.3, passos 3 a 7 e 9) — a concessão estreita no registro em memória: a MESMA regra do
+  // caminho Prisma, síncrona (nada se intercala, por isso não há trava). Um papel só, constante do servidor; o resto dos
+  // papéis, o nome e o status nunca mudam aqui. `updateUser` não é chamado.
+  setOrganizationView(input: SetOrganizationViewInput, actor?: AuthenticatedActor): User {
+    assertTenantId(input.tenantId);
+
+    const user = this.store.findUserById(input.userId);
+
+    if (!user || user.tenantId !== input.tenantId) { // B-USERS-CONCESSAO:xt
+      throw notFound("user_not_found", `User not found: ${input.userId}`);
+    }
+
+    const has = user.roles.includes(ORGANIZATION_VIEW_ROLE);
+
+    if (has === input.granted) return user; // B-USERS-CONCESSAO:idempotente
+
+    if (!input.granted && user.roles.length === 1) {
+      throw organizationViewLastRoleError(); // B-USERS-CONCESSAO:ultimo-papel
+    }
+
+    assertAssignableRole(ORGANIZATION_VIEW_ROLE);
+
+    const roles = input.granted
+      ? [...user.roles, ORGANIZATION_VIEW_ROLE]
+      : user.roles.filter((role) => role !== ORGANIZATION_VIEW_ROLE);
+    const savedUser = this.store.saveUser({ ...user, roles });
+
+    // Antes/depois pela mesma lista permitida do `user.updated` (nome, status, papéis), mais o `change`.
+    this.recordAudit({ // B-USERS-CONCESSAO:audita
+      action: "user.updated",
+      actor_user_id: actor?.userId ?? "system",
+      tenant_id: savedUser.tenantId,
+      metadata: {
+        userId: savedUser.id,
+        before: toUserAuditSnapshot(user),
+        after: toUserAuditSnapshot(savedUser),
+        change: input.granted ? "organization_view.granted" : "organization_view.revoked",
+      },
+    });
+
+    return savedUser;
+  }
+
   listUsersByTenant(tenantId: string): User[] {
     assertTenantId(tenantId);
 
@@ -627,6 +672,12 @@ function accessDeniedAcrossTenants(): CoreSaasError {
 
 function notFound(reason: string, message: string): CoreSaasError {
   return new CoreSaasError(404, "NOT_FOUND", reason, message);
+}
+
+// B-USERS-CONCESSAO-PAINEL (§4.1) — retirar a visão de quem só tem ela deixaria o usuário sem papel. O `reason` é o
+// mesmo do conjunto vazio no PATCH; o status é o 422 do contrato da rota estreita.
+function organizationViewLastRoleError(): CoreSaasError {
+  return new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "user_role_required", "User must have at least one role.");
 }
 
 function uniqueStrings(values: readonly string[]): string[] {

@@ -167,6 +167,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA DELETE /api/v1/users/:userId/organization-view": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA DELETE /api/v1/work-orders/:workOrderId/attachments/:attachmentId": {
   "classe": "OS·07c-a",
   "n": 1
@@ -1936,6 +1940,10 @@
   "n": 1
  },
  "ROTA PUT /api/v1/tenant-settings/:key": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PUT /api/v1/users/:userId/organization-view": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },

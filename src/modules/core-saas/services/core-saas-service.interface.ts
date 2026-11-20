@@ -9,6 +9,7 @@ import type {
   LoginCandidate,
   Tenant,
   TenantMembership,
+  SetOrganizationViewInput,
   UpdateUserInput,
   User,
 } from "../types/core-saas.types.js";
@@ -26,6 +27,8 @@ export type ICoreSaasService = {
   // (`temporaryPassword`); nenhuma leitura a devolve.
   createUser(input: CreateUserInput, actor?: AuthenticatedActor): Promise<CreatedUser>;
   updateUser(input: UpdateUserInput, actor?: AuthenticatedActor): Promise<User>;
+  // B-USERS-CONCESSAO-PAINEL (§2.3) — concede ou retira SÓ a "Visão da organização" (um vínculo), idempotente e auditado.
+  setOrganizationView(input: SetOrganizationViewInput, actor?: AuthenticatedActor): Promise<User>;
   listUsersForTenant(tenantId: string): Promise<User[]>;
   getUserForTenant(userId: string, tenantId: string): Promise<User>;
 

@@ -19,6 +19,7 @@ import {
   type CreatedUser,
   type ListTenantOptions,
   type LoginCandidate,
+  type SetOrganizationViewInput,
   type Tenant,
   type TenantMembership,
   type UpdateUserInput,
@@ -282,6 +283,14 @@ export class PrismaCoreSaasService {
       status,
       actorUserId: actor?.userId,
     });
+  }
+
+  // B-USERS-CONCESSAO-PAINEL (§2.3) — a concessão estreita: o tenant vem do claim (a rota o põe), o papel é constante
+  // do servidor; toda a regra (trava, 404, idempotência, 422, 503, uma linha, auditoria) vive no store, numa transação.
+  async setOrganizationView(input: SetOrganizationViewInput, actor?: AuthenticatedActor): Promise<User> {
+    assertTenantId(input.tenantId);
+
+    return this.store.setOrganizationView({ ...input, actorUserId: actor?.userId });
   }
 
   async listUsersForTenant(tenantId: string): Promise<User[]> {
