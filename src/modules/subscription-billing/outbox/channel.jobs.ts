@@ -104,7 +104,8 @@ export async function runBillingDispatch(deps: ChannelDeps): Promise<DispatchRun
     onAudit: deps.onAudit, // [TRILHA-01]
     ...(deps.now ? { now: deps.now } : {}),
   });
-  // A trilha do despacho ainda não tem destino em produção (`P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO`): o log mostra a falha.
+  // A falha da varredura também vai à trilha persistida pelo `onAudit` (o repasse acima, `dispatch-audit.ts`; a
+  // `P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO` fechou no B-ASS-08c3); o log continua mostrando a falha na hora.
   for (const failure of result.invoiceSweep?.failures ?? []) logger.warn({ tenantId: failure.tenantId, code: failure.code }, "billing.dispatch-outbox: a varredura da nota falhou; as emissões da rodada ficam adiadas");
   return result;
 }

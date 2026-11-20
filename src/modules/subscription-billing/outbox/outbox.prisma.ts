@@ -446,8 +446,10 @@ export class PrismaOutboxRepository implements OutboxRepository {
   async #mutate(tenantId: string, id: string, lease: OutboxLease, data: Prisma.BillingOutboxUpdateInput): Promise<boolean> {
     return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
       // [LEASE-01] A posse faz parte do predicado de TODA escrita do despacho. Zero linhas = lease perdida, sem exceção.
+      // [MUTATE-TENANT] Conserto da junta do #608 (C2-N2): a organização também entra no predicado, além da RLS (defesa em
+      // profundidade, a mesma classe do A-7): com um cliente que ignora a RLS, o id de outra organização não muda nada.
       const result = await tx.billingOutbox.updateMany({
-        where: { id, status: "PROCESSING", claimed_by: lease.claimedBy, attempt_started_at: lease.attemptStartedAt },
+        where: { id, tenant_id: tenantId, status: "PROCESSING", claimed_by: lease.claimedBy, attempt_started_at: lease.attemptStartedAt },
         data,
       });
       return result.count === 1;

@@ -25,7 +25,8 @@ export function createPersistedDispatchAuditSink(
         const now = Date.now();
         const last = throttled.get(key) ?? 0;
         if (last > 0 && now - last < HOUR_MS) return; // [TRILHA-THROTTLE]
-        throttled.set(key, now);
+        // Conserto da junta do #608 (C2-N8): a chave só é marcada DEPOIS da gravação com sucesso. Marcada antes, uma gravação
+        // que falha (o `catch` abaixo só registra no log) silenciava a mesma (organização, código) por 1 h. [THROTTLE-APOS-GRAVAR]
 
         if (event.tenantId === null) {
           await prisma.platformAuditLog.create({
@@ -38,6 +39,7 @@ export function createPersistedDispatchAuditSink(
               metadata: { kind: "invoice_sweep", code: event.code, count: 1 },
             },
           });
+          throttled.set(key, now);
           return;
         }
 
@@ -54,6 +56,7 @@ export function createPersistedDispatchAuditSink(
             },
           });
         });
+        throttled.set(key, now);
         return;
       }
 

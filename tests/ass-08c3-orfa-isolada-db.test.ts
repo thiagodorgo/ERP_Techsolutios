@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { after } from "node:test";
 
 import { runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { OUTBOX_MAX_ATTEMPTS, OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import { ProviderListIncompleteError } from "../src/modules/subscription-billing/providers/payment/payment-errors.js";
 import { NOW, TENANT_A, enqueue, memoryOutbox, paymentPort, source } from "./helpers/ass-08c3-test-kit.js";
+import { openPrismaKit, type PrismaKit } from "./helpers/ass-08c3-prisma-kit.js";
 
 async function orphan(repo: ReturnType<typeof memoryOutbox>, attempts = 1) {
   const row = await enqueue(repo);
@@ -138,3 +139,46 @@ test("OR1-10: 10 órfãs falhando em 10 organizações não seguram a 11ª — a
     assert.equal(current?.externalId ?? null, null, "a órfã nunca cria");
   }
 });
+
+// Conserto da junta do #608 (fix-608c-cl, C2-N2): o `deferOrphan` (e toda escrita do despacho pelo `#mutate`) filtra a
+// organização no predicado, além da RLS. Prova no Prisma com o cliente do DONO (ignora a RLS) e escopo só de C: a linha de D,
+// com a posse dela, não muda; a de C muda. Sem o `[MUTATE-TENANT]`, a de D muda (vermelho).
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  test("OR-TENANT-db exige DATABASE_URL", { skip: "Defina DATABASE_URL para os testes -db." });
+} else {
+  let kit: PrismaKit;
+  let Repo: any;
+  after(async () => {
+    await kit?.close();
+  });
+
+  test("setup -db: base própria, papel NOSUPERUSER NOBYPASSRLS", async () => {
+    kit = await openPrismaKit(connectionString, "c08c3_or");
+    Repo = (await import("../src/modules/subscription-billing/outbox/outbox.prisma.js")).PrismaOutboxRepository;
+  });
+
+  test("OR-TENANT-db (C2-N2): com um cliente que ignora a RLS e escopo só de C, o deferOrphan não move a órfã de D", async () => {
+    const started = new Date("2026-11-20T11:00:00.000Z");
+    const later = new Date("2026-11-20T12:00:00.000Z");
+    const c = await kit.seedTenant("ortc");
+    const d = await kit.seedTenant("ortd");
+    const lease = { claimedBy: "crash", attemptStartedAt: started };
+    const rowC = await kit.seedRow(c, { kind: "charge_create", status: "PROCESSING", attempts: 1, claimedBy: lease.claimedBy, attemptStartedAt: started });
+    const rowD = await kit.seedRow(d, { kind: "charge_create", status: "PROCESSING", attempts: 1, claimedBy: lease.claimedBy, attemptStartedAt: started });
+    const bypass = await kit.one(`SELECT rolsuper OR rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user`);
+    assert.equal(bypass.bypass, true, "o cliente do dono ignora a RLS (é a prova de que a defesa não é só a RLS)");
+    const repo = new Repo(kit.owner, { tenantIds: [c.tenantId] });
+    const read = async (id: string) => kit.one(`SELECT status, last_error, attempt_started_at FROM billing_outbox WHERE id = $1::uuid`, id);
+
+    assert.equal(await repo.deferOrphan(c.tenantId, rowD, "provider_unavailable", later, lease), false, "a órfã de D não é de C");
+    const afterD = await read(rowD);
+    assert.equal(afterD.last_error, null, "a linha de D não muda");
+    assert.equal(new Date(afterD.attempt_started_at).getTime(), started.getTime());
+
+    assert.equal(await repo.deferOrphan(c.tenantId, rowC, "provider_unavailable", later, lease), true);
+    const afterC = await read(rowC);
+    assert.deepEqual({ status: afterC.status, lastError: afterC.last_error }, { status: "PROCESSING", lastError: "provider_unavailable" });
+    assert.equal(new Date(afterC.attempt_started_at).getTime(), later.getTime());
+  });
+}

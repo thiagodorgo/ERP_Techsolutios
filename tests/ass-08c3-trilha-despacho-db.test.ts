@@ -48,6 +48,33 @@ test("M-TD1/M-TD3/M-TD4: repasse, throttle e catch têm âncoras verificáveis",
 });
 
 
+// Conserto da junta do #608 (fix-608c-cl, C2-N8): o throttle marca a chave SÓ depois de gravar. Uma gravação que falha não
+// silencia a mesma (organização, código) por 1 h: a 2ª ocorrência, logo depois, grava. E depois de gravar, a 3ª fica retida.
+test("TD3-FALHA (C2-N8): gravação que falha não marca o throttle; a seguinte grava, e só então a chave fica retida", async () => {
+  const { createPersistedDispatchAuditSink } = await import("../src/modules/subscription-billing/outbox/dispatch-audit.js");
+  let attempts = 0;
+  const written: unknown[] = [];
+  const prisma = {
+    platformAuditLog: {
+      async create(input: unknown) {
+        attempts += 1;
+        if (attempts === 1) throw new Error("banco fora");
+        written.push(input);
+        return input;
+      },
+    },
+  };
+  const sink = createPersistedDispatchAuditSink(prisma as never, { throttle: new Map() });
+  const event = { tenantId: null, action: "billing_outbox.invoice_sweep_failed", code: "sweep_failed" } as never;
+  await sink(event);
+  assert.equal(written.length, 0, "a 1ª gravação falhou (só log)");
+  await sink(event);
+  assert.equal(written.length, 1, "a falha não silenciou a chave: a 2ª grava");
+  await sink(event);
+  assert.equal(written.length, 1, "depois de gravar, a chave fica retida por 1 h");
+  assert.equal(attempts, 2);
+});
+
 // ---------------------------------------------------------------------------------------------------------------------------
 // Conserto único do #608 (fix-608b-cl), A-8 (plano §4.6, "1 linha por (organização, código) por hora, por processo"): o estado
 // do `[TRILHA-THROTTLE]` sobrevive ao sink novo que cada rodada do job monta (`createChannelRuntime` a cada tick). No PRISMA.
