@@ -1,4 +1,5 @@
 import { resolveFrontendRoles } from "../auth/auth.adapter";
+import { ORGANIZATION_VIEW_MODULE_KEY, ORGANIZATION_VIEW_READ_KEYS, type OrganizationViewModule } from "./organization-view.reach";
 import type {
   User,
   UserField,
@@ -81,8 +82,11 @@ export function preserveOrganizationViewRole(selectedRoles: readonly string[], o
 // vistorias e painel, mas não despachos) e a Q1 = (a) do dono (não precisa entrar de novo).
 export const ORGANIZATION_VIEW_ROLE = "organization_view";
 
+// O papel não tem chave nenhuma (medido no catálogo): ele leva à organização inteira só o que o perfil já mostra. Por isso a
+// descrição não lista módulos; a lista exata, por perfil, vem de `organizationViewEffect` (tabela medida em
+// `organization-view.reach.ts`). Conferência visual de 20/11: a frase antiga prometia despachos a quem não os vê.
 export const ORGANIZATION_VIEW_DESCRIPTION =
-  "Vê as ordens de serviço, as vistorias, os despachos, as aprovações e o painel de toda a organização, não só os dele. Não muda o que a pessoa pode alterar.";
+  "Mostra da organização inteira o que o perfil da pessoa já mostra só das ordens de serviço dela. Não dá permissão nova e não muda o que ela pode alterar.";
 
 export function hasOrganizationView(roles: readonly string[]): boolean {
   return roles.includes(ORGANIZATION_VIEW_ROLE);
@@ -97,6 +101,30 @@ export function profileRoles(roles: readonly string[]): string[] {
 const READS_WHOLE_ORGANIZATION = new Set(["super_admin", "platform_admin", "tenant_admin", "manager", "operator"]);
 const FIELD_ROLES = new Set(["field_technician", "technician"]);
 
+const MODULE_ORDER: readonly OrganizationViewModule[] = ["ordens", "aprovacoes", "vistorias", "despachos", "painel"];
+const MODULE_LABEL: Readonly<Record<OrganizationViewModule, string>> = {
+  ordens: "as ordens de serviço",
+  aprovacoes: "as aprovações",
+  vistorias: "as vistorias",
+  despachos: "os despachos",
+  painel: "o painel",
+};
+
+function joinPt(items: readonly string[]): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} e ${items[items.length - 1]}`;
+}
+
+/**
+ * O que a visão abre para estes perfis, pelo catálogo MEDIDO (`organization-view.reach.ts`): os módulos cuja chave de
+ * leitura algum perfil já tem (`abre`) e os que nenhum tem (`fica`). Papel desconhecido não soma nada (diz menos, nunca mais).
+ */
+export function organizationViewReach(roles: readonly string[]): { readonly abre: OrganizationViewModule[]; readonly fica: OrganizationViewModule[] } {
+  const keys = new Set(profileRoles(roles).flatMap((role) => ORGANIZATION_VIEW_READ_KEYS[role] ?? []));
+  const abre = MODULE_ORDER.filter((module) => keys.has(ORGANIZATION_VIEW_MODULE_KEY[module]));
+  return { abre, fica: MODULE_ORDER.filter((module) => !abre.includes(module)) };
+}
+
 /** O que a visão muda para esta pessoa, com a visão ligada (`granted`) ou desligada. Só texto; quem decide é o servidor. */
 export function organizationViewEffect(roles: readonly string[], granted: boolean): string {
   const profiles = profileRoles(roles);
@@ -106,17 +134,19 @@ export function organizationViewEffect(roles: readonly string[], granted: boolea
   }
   if (profiles.includes("field_dispatcher")) {
     return granted
-      ? "Vê toda a organização, inclusive as vistorias; continua alterando só as ordens de serviço em que está escalado."
-      : "Já vê as ordens de serviço da organização, mas as vistorias só das suas. Com a visão, passa a ver também as vistorias de toda a organização, sem poder alterá-las.";
+      ? "Vê também as vistorias da organização inteira; continua alterando só as ordens de serviço em que está escalado."
+      : "Já vê as ordens de serviço da organização, mas as vistorias só das suas. Com a visão, passa a ver também as vistorias da organização inteira, sem poder alterá-las.";
   }
-  if (profiles.includes("technician") && !profiles.includes("field_technician")) {
-    return granted
-      ? "Vê as ordens de serviço, as vistorias e o painel da organização; os despachos, só com a Operação de Campo."
-      : "Hoje vê só as ordens de serviço em que está escalado. Com a visão, passa a ver as ordens de serviço, as vistorias e o painel da organização; os despachos, só com a Operação de Campo.";
-  }
+  const { abre, fica } = organizationViewReach(profiles);
+  const lista = joinPt(abre.map((module) => MODULE_LABEL[module]));
+  const semEstes = fica.length > 0 ? ` ${capitalize(joinPt(fica.map((module) => MODULE_LABEL[module])))}, não: o perfil não os mostra.` : "";
   return granted
-    ? "Vê toda a organização; continua alterando só as ordens de serviço em que está escalado."
-    : "Hoje vê só as ordens de serviço em que está escalado. Com a visão, passa a ver as de toda a organização, sem poder alterá-las.";
+    ? `Vê da organização inteira ${lista}.${semEstes} Continua alterando só as ordens de serviço em que está escalado.`
+    : `Hoje vê só as ordens de serviço em que está escalado. Com a visão, passa a ver da organização inteira ${lista}, sem poder alterá-las.${semEstes}`;
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** Q1 = (a) do dono (20/11): dar ou tirar a visão não encerra a sessão. */

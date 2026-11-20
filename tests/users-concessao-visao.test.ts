@@ -362,3 +362,20 @@ async function closeServer(server: Server): Promise<void> {
     server.close((error) => (error ? reject(error) : resolve()));
   });
 }
+
+// B-USERS-CONCESSAO-PAINEL (F5b, conferência visual de 20/11) — F-ALCANCE-CATALOGO: a tela diz o que a "Visão da
+// organização" abre a partir de uma tabela de chaves de leitura por papel (`frontend/src/modules/users/organization-view.reach.ts`).
+// Ela tem de ser IGUAL ao catálogo do servidor, papel a papel, nas 4 chaves das 18 leituras de OS; senão a tela promete
+// despacho a quem não o vê (o defeito que a conferência achou). Papel novo no catálogo sem linha na tabela também falha.
+test("F-ALCANCE-CATALOGO — a tabela da tela (o que a visão abre por perfil) é igual ao catálogo do servidor", async () => {
+  const { ROLE_PERMISSIONS, resolvePermissionsForRoles } = await import("../src/modules/core-saas/permissions/catalog.js");
+  const { ORGANIZATION_VIEW_READ_KEYS, ORGANIZATION_VIEW_MODULE_KEY } = await import("../frontend/src/modules/users/organization-view.reach.js");
+  const chaves = [...new Set(Object.values(ORGANIZATION_VIEW_MODULE_KEY))].sort();
+  assert.deepEqual(chaves, ["checklist_runs:read", "dashboard:read", "field_dispatch:read", "work_orders:read"], "as 4 chaves das 18 leituras");
+  assert.deepEqual(Object.keys(ORGANIZATION_VIEW_READ_KEYS).sort(), Object.keys(ROLE_PERMISSIONS).sort(), "uma linha por papel do catálogo");
+  for (const role of Object.keys(ROLE_PERMISSIONS)) {
+    const doCatalogo = new Set(resolvePermissionsForRoles([role] as never) as string[]);
+    assert.deepEqual([...ORGANIZATION_VIEW_READ_KEYS[role]].sort(), chaves.filter((k) => doCatalogo.has(k)), `papel ${role}`);
+  }
+  assert.deepEqual(ORGANIZATION_VIEW_READ_KEYS.organization_view, [], "a visão não tem chave");
+});

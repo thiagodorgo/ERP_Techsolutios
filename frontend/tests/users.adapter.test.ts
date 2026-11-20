@@ -445,11 +445,16 @@ test("F-GESTOR-VE-CONTROLE — users.read + a chave de conceder, sem users.manag
     const describedBy = control.getAttribute("aria-describedby");
     assert.ok(describedBy, "o interruptor tem descrição ligada");
     const description = elements(modal, (el) => el.getAttribute("id") === describedBy)[0];
-    assert.match(
-      squash(description),
-      /Vê as ordens de serviço, as vistorias, os despachos, as aprovações e o painel de toda a organização, não só os dele\. Não muda o que a pessoa pode alterar\./,
+    assert.equal(
+      squash(description).trim(),
+      "Mostra da organização inteira o que o perfil da pessoa já mostra só das ordens de serviço dela. Não dá permissão nova e não muda o que ela pode alterar.",
     );
-    assert.match(squash(modal), /Hoje vê só as ordens de serviço em que está escalado\./);
+    // A descrição não promete módulo nenhum (o papel não tem chave): a lista exata vem do efeito por perfil.
+    assert.doesNotMatch(squash(description), /despachos|aprovações|vistorias|painel/);
+    assert.match(
+      squash(modal),
+      /Hoje vê só as ordens de serviço em que está escalado\. Com a visão, passa a ver da organização inteira as ordens de serviço, as aprovações, as vistorias, os despachos e o painel, sem poder alterá-las\./,
+    );
     assert.match(squash(modal), /Vale a partir do próximo clique; a pessoa não precisa entrar de novo\./, "Q1 = (a)");
     assert.equal(elements(page.host, (el) => el.getAttribute("id") === "user-field-name").length, 0, "o formulário de edição não aparece");
     assert.equal(page.calls.filter((call) => call.method !== "GET").length, 0, "abrir a janela não grava nada");
@@ -579,15 +584,24 @@ test("F-SELO — com o papel: o selo 'Visão da organização' na linha, nunca u
 
 test("F-TEXTOS — o efeito por perfil (Emenda 1: o técnico vê OS, vistorias e painel, não despachos) e a Q1 para si mesmo", async () => {
   const { organizationViewEffect, organizationViewSessionNote } = await import("../src/modules/users/users.adapter");
+  // Medido no catálogo (Emenda 1 + conferência de 20/11): o technician tem work_orders:read (OS e aprovações),
+  // checklist_runs:read e dashboard:read, e NÃO tem field_dispatch:read.
   assert.equal(
     organizationViewEffect(["technician"], true),
-    "Vê as ordens de serviço, as vistorias e o painel da organização; os despachos, só com a Operação de Campo.",
+    "Vê da organização inteira as ordens de serviço, as aprovações, as vistorias e o painel. Os despachos, não: o perfil não os mostra. Continua alterando só as ordens de serviço em que está escalado.",
   );
-  assert.match(organizationViewEffect(["technician"], false), /as vistorias e o painel da organização; os despachos, só com a Operação de Campo\./);
+  assert.equal(
+    organizationViewEffect(["technician"], false),
+    "Hoje vê só as ordens de serviço em que está escalado. Com a visão, passa a ver da organização inteira as ordens de serviço, as aprovações, as vistorias e o painel, sem poder alterá-las. Os despachos, não: o perfil não os mostra.",
+  );
+  assert.equal(
+    organizationViewEffect(["field_technician"], true),
+    "Vê da organização inteira as ordens de serviço, as aprovações, as vistorias, os despachos e o painel. Continua alterando só as ordens de serviço em que está escalado.",
+  );
   assert.equal(organizationViewEffect(["manager"], false), "Para este perfil nada muda: ele já vê a organização.");
   assert.equal(organizationViewEffect(["support"], true), "Para este perfil nada muda: ele já vê a organização.");
   assert.equal(organizationViewEffect(["tenant_admin", "field_technician"], true), "Para este perfil nada muda: ele já vê a organização.");
-  assert.match(organizationViewEffect(["field_dispatcher", "field_technician"], false), /vistorias de toda a organização/);
+  assert.match(organizationViewEffect(["field_dispatcher", "field_technician"], false), /as vistorias só das suas. Com a visão, passa a ver também as vistorias da organização inteira/);
   assert.equal(organizationViewSessionNote(true), "Vale a partir do próximo clique; você não precisa entrar de novo.");
 
   const { mockSession } = await import("../src/mocks/auth/context");
