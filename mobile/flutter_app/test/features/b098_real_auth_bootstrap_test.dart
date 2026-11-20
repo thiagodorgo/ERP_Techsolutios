@@ -12,6 +12,7 @@ import 'package:dio/dio.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_repository.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
+import 'package:erp_techsolutions_mobile/core/auth/tenant_switch_orchestrator.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_codec.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
@@ -460,31 +461,59 @@ void main() {
       },
     );
 
+    // B-APP-ORG (§5.4): o `fetchForTenant` saiu. A troca local de
+    // desenvolvimento passa pelo orquestrador e pelo `AuthNotifier.switchTenant`,
+    // e o bootstrap vem da sessão nova.
+    ProviderContainer devContainer(InMemoryAuthTokenStorage st) =>
+        ProviderContainer(
+          overrides: [
+            authTokenStorageProvider.overrideWithValue(st),
+            authRepositoryProvider.overrideWithValue(
+              LocalDevAuthRepository(storage: st),
+            ),
+          ],
+        );
+
     test(
-      '3.3 fetchForTenant seleciona tenant correto dentre os disponiveis',
+      '3.3 a troca local de desenvolvimento passa pelo orquestrador e pelo AuthNotifier.switchTenant',
       () async {
-        final repo = LocalDevBootstrapRepository(storage);
-        final session = fakeSession();
+        await storage.saveSession(fakeSession());
+        final container = devContainer(storage);
+        addTearDown(container.dispose);
+        await container.read(authStateProvider.future);
 
         // devBootstrapSession.availableTenants contains 'tenant-field'
-        final bs = await repo.fetchForTenant(session, 'tenant-field');
+        await container
+            .read(tenantSwitchOrchestratorProvider)
+            .run('tenant-field');
 
+        final auth = container.read(authStateProvider).asData!.value;
+        expect(auth.session!.user.tenantId, 'tenant-field');
+        final bs = await container.read(bootstrapSessionProvider.future);
         expect(bs.activeTenant.tenantId, 'tenant-field');
         expect(bs.activeTenant.displayName, 'Organização Serviços de Campo');
       },
     );
 
     test(
-      '3.4 fetchForTenant com tenantId inexistente mantem activeTenant original',
+      '3.4 a troca local para uma organização fora da lista é recusada e fica na atual',
       () async {
-        final repo = LocalDevBootstrapRepository(storage);
-        final session = fakeSession();
+        await storage.saveSession(fakeSession());
+        final container = devContainer(storage);
+        addTearDown(container.dispose);
+        await container.read(authStateProvider.future);
 
-        final bs = await repo.fetchForTenant(session, 'ten-inexistente');
+        await expectLater(
+          container
+              .read(tenantSwitchOrchestratorProvider)
+              .run('ten-inexistente'),
+          throwsA(isA<TenantSwitchRefusedError>()),
+        );
 
-        // Falls back to activeTenant returned by fetch()
-        expect(bs.activeTenant.tenantId, isNotEmpty);
-        expect(bs.availableTenants, isNotEmpty);
+        final auth = container.read(authStateProvider).asData!.value;
+        expect(auth.session!.user.tenantId, 'ten-test');
+        final bs = await container.read(bootstrapSessionProvider.future);
+        expect(bs.activeTenant.tenantId, 'ten-test');
       },
     );
 
@@ -564,7 +593,7 @@ void main() {
     });
 
     test(
-      '4.4 switchTenant() atualiza activeTenant no estado do notifier',
+      '4.4 a troca (pelo orquestrador) muda a sessão, e o bootstrap segue a sessão (fonte única)',
       () async {
         final st = InMemoryAuthTokenStorage();
         await st.saveSession(fakeSession());
@@ -575,65 +604,56 @@ void main() {
         await container.read(bootstrapNotifierProvider.future);
 
         await container
-            .read(bootstrapNotifierProvider.notifier)
-            .switchTenant(
-              const TenantContext(
-                tenantId: 'tenant-field',
-                displayName: 'Tenant Field Services',
-              ),
-            );
+            .read(tenantSwitchOrchestratorProvider)
+            .run('tenant-field');
 
-        final updated = container.read(bootstrapNotifierProvider).asData?.value;
-        expect(updated?.activeTenant.tenantId, 'tenant-field');
+        final auth = container.read(authStateProvider).asData!.value;
+        expect(auth.session!.user.tenantId, 'tenant-field');
+        final updated = await container.read(bootstrapNotifierProvider.future);
+        expect(updated.activeTenant.tenantId, 'tenant-field');
+        expect((await st.loadSession())!.user.tenantId, 'tenant-field');
       },
     );
 
     test(
-      '4.5 pendingTenantSelection e false em modo local (kIsRemoteAuth=false)',
+      '4.5 o bootstrap não tem troca própria: a organização dele é a da sessão',
       () async {
         final st = InMemoryAuthTokenStorage();
-        await st.saveSession(fakeSession());
+        await st.saveSession(fakeSession(tenantId: 'tenant-demo'));
+        final container = makeContainer(storage: st);
+        addTearDown(container.dispose);
+
+        final auth = await container.read(authStateProvider.future);
+        final bs = await container.read(bootstrapNotifierProvider.future);
+
+        expect(bs.activeTenant.tenantId, auth.session!.user.tenantId);
+      },
+    );
+
+    test(
+      '4.6 a troca (pelo orquestrador): sessão, bootstrap e armazenamento na mesma organização, e a época sobe',
+      () async {
+        final st = InMemoryAuthTokenStorage();
+        await st.saveSession(fakeSession(tenantId: 'tenant-field'));
         final container = makeContainer(storage: st);
         addTearDown(container.dispose);
 
         await container.read(authStateProvider.future);
         await container.read(bootstrapNotifierProvider.future);
-
-        // kIsRemoteAuth is always false in test builds
-        expect(
-          container
-              .read(bootstrapNotifierProvider.notifier)
-              .pendingTenantSelection,
-          isFalse,
-        );
-      },
-    );
-
-    test(
-      '4.6 switchTenant() seta pendingTenantSelection=false apos selecao',
-      () async {
-        final st = InMemoryAuthTokenStorage();
-        await st.saveSession(fakeSession());
-        final container = makeContainer(storage: st);
-        addTearDown(container.dispose);
-
-        await container.read(authStateProvider.future);
-        await container.read(bootstrapNotifierProvider.future);
+        final epoch = container.read(authStateProvider.notifier).epoch;
 
         await container
-            .read(bootstrapNotifierProvider.notifier)
-            .switchTenant(
-              const TenantContext(
-                tenantId: 'tenant-demo',
-                displayName: 'Tenant Demo',
-              ),
-            );
+            .read(tenantSwitchOrchestratorProvider)
+            .run('tenant-demo');
 
+        final auth = container.read(authStateProvider).asData!.value;
+        final bs = await container.read(bootstrapNotifierProvider.future);
+        expect(auth.session!.user.tenantId, 'tenant-demo');
+        expect(bs.activeTenant.tenantId, 'tenant-demo');
+        expect((await st.loadSession())!.user.tenantId, 'tenant-demo');
         expect(
-          container
-              .read(bootstrapNotifierProvider.notifier)
-              .pendingTenantSelection,
-          isFalse,
+          container.read(authStateProvider.notifier).epoch,
+          greaterThan(epoch),
         );
       },
     );
@@ -786,9 +806,6 @@ class _FakeBootstrapNotifier extends BootstrapNotifier {
 
   @override
   Future<void> retry() async {}
-
-  @override
-  Future<void> switchTenant(TenantContext tenant) async {}
 }
 
 class _ErrorBootstrapNotifier extends BootstrapNotifier {
@@ -802,7 +819,4 @@ class _ErrorBootstrapNotifier extends BootstrapNotifier {
 
   @override
   Future<void> retry() async {}
-
-  @override
-  Future<void> switchTenant(TenantContext tenant) async {}
 }

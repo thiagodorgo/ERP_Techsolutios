@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/role_labels.dart';
+import '../../core/auth/tenant_switch_orchestrator.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
 import '../../core/network/api_error.dart';
@@ -34,9 +35,10 @@ class TenantSelectorScreen extends ConsumerWidget {
               data: (session) => _TenantList(
                 session: session,
                 onSelect: (tenant) async {
+                  // B-APP-ORG (70): a troca passa pelo ponto único (Emenda 1.3.1).
                   await ref
-                      .read(bootstrapNotifierProvider.notifier)
-                      .switchTenant(tenant);
+                      .read(tenantSwitchOrchestratorProvider)
+                      .run(tenant.tenantId);
                   if (context.mounted) context.go('/');
                 },
               ),
