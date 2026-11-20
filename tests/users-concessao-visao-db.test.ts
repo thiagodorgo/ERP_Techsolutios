@@ -26,6 +26,7 @@ import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 //   D-NAO-REGRAVA    — os `id` dos OUTROS vínculos do alvo são os mesmos antes e depois do PUT e do DELETE;
 //   D-AUDITA         — 1 linha em audit_logs por ato (`user.updated`, `metadata->>'change'`); o no-op não grava; e, numa base
 //                      PRÓPRIA E DESCARTÁVEL, com a auditoria forçada a falhar, nenhum vínculo novo (a mesma transação);
+//   D-ULTIMO-PAPEL   — alvo só com a visão: DELETE → 422 user_role_required e o vínculo fica (a MS3p no caminho Prisma);
 //   D-SESSAO         — Q1 sem resposta → a regra de hoje da troca de papéis: a sessão viva do alvo é recusada na próxima
 //                      requisição (401 session_inactive) e a linha fica revogada; o no-op não revoga;
 //   D-PAPEL-AUSENTE  — numa base PRÓPRIA E DESCARTÁVEL (migrada pelo `prisma migrate deploy`, sem a linha `organization_view`
@@ -142,6 +143,7 @@ if (!connectionString) {
         manager: await novoUsuario(A, "manager", ["manager"]),
         S: await novoUsuario(A, "suporte-campo", ["support", "field_technician"]),
         SS: await novoUsuario(A, "suporte-campo-sessao", ["support", "field_technician"]),
+        SO: await novoUsuario(A, "so-visao", [ORG_VIEW]),
         XT: await novoUsuario(B, "tec-b", ["field_technician"]),
       };
 
@@ -290,6 +292,15 @@ if (!connectionString) {
           u.XT,
         );
         assert.equal(n, 0, "D-XT: nenhuma auditoria na organização B");
+      });
+
+      await t.test("D-ULTIMO-PAPEL · alvo só com organization_view: DELETE → 422 user_role_required, o vínculo fica e nada se audita", async () => {
+        const antes = await vinculos(A, u.SO);
+        assert.deepEqual(antes.map((v) => v.key), [ORG_VIEW]);
+        const del = await http("DELETE", caminho(u.SO), M);
+        assert.equal(del.k, "422:UNPROCESSABLE_ENTITY:user_role_required", `D-ULTIMO-PAPEL: ${del.text}`);
+        assert.deepEqual(await vinculos(A, u.SO), antes, "D-ULTIMO-PAPEL: o vínculo é o mesmo");
+        assert.equal((await eventos(u.SO)).length, 0, "D-ULTIMO-PAPEL: nenhuma auditoria");
       });
 
       await t.test("D-SESSAO · a sessão viva do alvo é recusada na próxima requisição depois do PUT; o no-op não revoga", async () => {
