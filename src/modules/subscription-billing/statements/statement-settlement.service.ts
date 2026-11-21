@@ -15,6 +15,7 @@ import { invoiceIntentDecision, type InvoiceIntentMode, type InvoiceIntentNoneRe
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
 import type { StatementService } from "./statement.service.js";
 import type { ChargeStatus, PaymentSource, StatementPayment, SubscriptionCredit, SubscriptionStatement } from "./statement.types.js";
+import { invoiceKeptMetadata } from "./statement.types.js";
 
 export type ProviderSource = Exclude<PaymentSource, "manual">;
 
@@ -291,11 +292,37 @@ export class StatementSettlementService {
       // [INTX-06c]
       const cancelSkip = live && intents?.enabledInvoiceProviders.includes(live.provider) ? null : "provider_disabled";
       // [INTX-03]
-      if (live && (live.status === "pending" || live.status === "authorized")) await intent!.enqueueOutbox({ tenantId: input.tenantId, statementId: input.statementId, kind: "invoice_cancel", provider: cancelTo!.provider, seq: cancelTo!.seq, payload: { reason: "payment_reversed" }, skipReason: cancelSkip }, input.now);
+      // Q1 = (b) do dono (Emenda 2 e 2.1): a nota só é cancelada quando NÃO sobra dinheiro pago no demonstrativo (a regra do
+      // estorno manual, D-5 da Emenda 1 do 08c2). Sobrou pago à mão → a nota fica, e a trilha avisa o contador.
+      let invoiceCancelQueued = false;
+      if (live && (live.status === "pending" || live.status === "authorized") && savedStatement.paidCents === 0) { // [EP-PARCIAL]
+        await intent!.enqueueOutbox({ tenantId: input.tenantId, statementId: input.statementId, kind: "invoice_cancel", provider: cancelTo!.provider, seq: cancelTo!.seq, payload: { reason: "payment_reversed" }, skipReason: cancelSkip }, input.now);
+        invoiceCancelQueued = true;
+      } else if (live && (live.status === "pending" || live.status === "authorized") && tx.recordAudit) {
+        await tx.recordAudit({
+          tenantId: input.tenantId,
+          actorId: null,
+          action: "subscription_statement.invoice_kept_partial_reversal",
+          entityId: savedStatement.id,
+          metadata: invoiceKeptMetadata({ statementId: savedStatement.id, code: "partial_reversal", count: savedStatement.paidCents }),
+        });
+      }
       // `cancel_pending` não gera intenção nova (o cancelamento já está em curso); sem nota viva, nada — e SEM throw: o
       // espelho deixou de decidir, e um estorno (dinheiro) nunca fica preso por ele.
+      if (effect.creditReversed && tx.recordAudit) {
+        // Plano §4.8 (B2-2): a trilha é do mês que VOLTOU A DEVER (o alvo do crédito), com o `statementId` dele, o `code` do
+        // estorno e o `count` = os centavos que voltaram à dívida. Sem alvo (o crédito já não existia), fica no mês do pagamento.
+        const target = effect.reversedTarget;
+        await tx.recordAudit({
+          tenantId: input.tenantId,
+          actorId: null,
+          action: "subscription_statement.credit_reversed",
+          entityId: target?.statementId ?? savedStatement.id,
+          metadata: { statementId: target?.statementId ?? savedStatement.id, code: input.kind, count: target?.returnedToDebtCents ?? 0 },
+        });
+      }
       const shouldCancelInvoice = intents
-        ? live !== undefined && (live.status === "pending" || live.status === "authorized")
+        ? invoiceCancelQueued
         : totalReversal && statement.invoiceStatus === "authorized" && input.keepInvoice !== true;
       return {
         statement: savedStatement,

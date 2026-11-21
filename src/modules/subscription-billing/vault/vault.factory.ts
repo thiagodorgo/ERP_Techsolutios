@@ -3,8 +3,11 @@
 
 import { env } from "../../../config/env.js";
 import { RecordingPlatformAuditWriter, type PlatformAuditWriter } from "../plans/platform-audit.js";
+import { billingHttpClientFromEnv } from "../providers/http/billing-http.client.js";
+import { createFocusNfeAdapter } from "../providers/invoice/focusnfe/index.js";
+import { createAsaasAdapter } from "../providers/payment/asaas/index.js";
 import { InMemoryProviderConfigRepository, type ProviderConfigRepository } from "../providers/provider-config.repository.js";
-import { ProviderConfigService } from "../providers/provider-config.service.js";
+import { ProviderConfigService, type ProviderAdapterFactory } from "../providers/provider-config.service.js";
 import { EnvVaultKeyProvider, type VaultKeyProvider } from "./vault-keys.js";
 import { InMemoryCredentialRepository, type CredentialRepository } from "./vault.repository.js";
 import { VaultService } from "./vault.service.js";
@@ -35,7 +38,11 @@ export function buildVaultRuntime(parts: {
   readonly clock?: () => Date;
 }): VaultRuntime {
   const vault = new VaultService(parts.credentials, parts.keys, parts.audit, parts.clock);
-  return { ...parts, vault, providers: new ProviderConfigService(parts.configs, vault, parts.clock) };
+  const adapters: ProviderAdapterFactory = {
+    payment: (provider, environment) => (provider === "asaas" ? createAsaasAdapter(billingHttpClientFromEnv(provider, environment), vault) : null),
+    invoice: (provider, environment) => (provider === "focusnfe" ? createFocusNfeAdapter(billingHttpClientFromEnv(provider, environment), vault) : null),
+  };
+  return { ...parts, vault, providers: new ProviderConfigService(parts.configs, vault, parts.clock, adapters) };
 }
 
 let memoryCredentials = new InMemoryCredentialRepository();

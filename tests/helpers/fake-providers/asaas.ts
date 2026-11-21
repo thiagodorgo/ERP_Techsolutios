@@ -147,6 +147,15 @@ export async function startAsaasFake(
     if (scenario === "validation_400") {
       return sendJson(res, 400, { errors: [{ code: "invalid_value", description: `O access_token ${String(req.headers["access_token"] ?? "")} é inválido` }] });
     }
+    if (scenario === "credential_rejected_401") {
+      return sendJson(res, 401, { errors: [{ code: "invalid_token", description: "access token inválido" }] });
+    }
+    if (scenario === "credential_rejected_403") {
+      return sendJson(res, 403, { errors: [{ code: "forbidden", description: "sem permissão para este recurso" }] });
+    }
+    if (scenario === "provider_unavailable_500") {
+      return sendJson(res, 500, { errors: [{ code: "internal_error", description: "erro interno do provedor" }] });
+    }
 
     // GET /v3/customers?cpfCnpj=…
     if (method === "GET" && pathname === "/v3/customers") {

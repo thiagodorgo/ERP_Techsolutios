@@ -57,7 +57,12 @@ export type DispatchAuditEvent =
       readonly tenantId: string;
       readonly statementId: string;
       readonly kind: OutboxKind;
-      readonly action: "billing_outbox.failed" | "billing_outbox.needs_review" | "billing_outbox.lease_lost" | "billing_outbox.record_failed";
+      readonly action:
+        | "billing_outbox.failed"
+        | "billing_outbox.needs_review"
+        | "billing_outbox.lease_lost"
+        | "billing_outbox.record_failed"
+        | "billing_outbox.orphan_recheck_failed";
       readonly code: string;
     }
   /** B-ASS-08c2 (plano §4.5): a varredura de recuperação da nota falhou numa organização (`null` = na enumeração). Só o código. */
@@ -300,6 +305,7 @@ export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchR
   const sweepFailed = sweep !== undefined && !sweep.ok;
 
   await deps.repo.markDisabledProvidersVisible(enabledProviders, clock());
+  if (deps.invoices?.providers.length) await deps.repo.retargetUntriedInvoiceIssues(deps.invoices.providers[0]!, clock());
 
   let processed = 0;
   // Teto defensivo: no máximo uma passada por linha elegível desta rodada (evita laço infinito num re-enqueue).
@@ -368,13 +374,26 @@ async function dispatchOne(
   // achada só é adotada pela régua U ∧ V (E7′): a fantasma de um fechamento desfeito vai a revisão.
   if (wasOrphan) {
     // A órfã NUNCA cria (D-1′): lista vazia, ou só com canceladas, → `orphan_recovery_not_found`.
-    const listed = await port.listChargesByExternalReference(row.statementId);
-    const { verdict, facts } = await decideFromList(deps, row, listed, true);
-    if (verdict.kind === "adopt") return settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, true, clock);
-    const code = verdict.kind === "review" ? verdict.code : "orphan_recovery_not_found";
-    if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, code, clock(), lease))) return leaseLost(deps, row);
-    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code });
-    return "needs_review";
+    // [ORFA-TRY]
+    try {
+      const listed = await port.listChargesByExternalReference(row.statementId);
+      const { verdict, facts } = await decideFromList(deps, row, listed, true);
+      // A-4: `return await` — a rejeição de dentro da adoção (inclusive falha de banco) cai no `catch` abaixo, nunca na rodada.
+      if (verdict.kind === "adopt") return await settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, true, clock);
+      const code = verdict.kind === "review" ? verdict.code : "orphan_recovery_not_found";
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, code, clock(), lease))) return leaseLost(deps, row);
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code });
+      return "needs_review";
+    } catch (error) {
+      const code = errorCode(error);
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.orphan_recheck_failed", code });
+      if (row.attempts >= OUTBOX_MAX_ATTEMPTS) { // [ORFA-CAP]
+        if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, `orphan_recovery_failed:${code}`, clock(), lease))) return leaseLost(deps, row);
+        return "needs_review";
+      }
+      if (!(await deps.repo.deferOrphan(row.tenantId, row.id, code, clock(), lease))) return leaseLost(deps, row); // [ORFA-DEFER]
+      return "retry";
+    }
   }
 
   try {
@@ -469,6 +488,11 @@ async function dispatchChargeCancel(deps: DispatcherDeps, row: BillingOutboxRow,
   const lease = leaseOf(row);
   const chargeId = typeof row.payload.chargeId === "string" ? row.payload.chargeId : "";
   const unknown = row.payload.unknown === true;
+  if (unknown && (await deps.repo.isChargeKnown(row.tenantId, row.statementId, chargeId))) {
+    if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "unknown_charge_became_known", clock(), lease))) return leaseLost(deps, row); // [UNKNOWN-REREAD]
+    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "unknown_charge_became_known" });
+    return "needs_review";
+  }
   try {
     let verdict = cancelTargetVerdict(await port.listChargesByExternalReference(row.statementId), chargeId, unknown);
     if (verdict.kind === "proceed") {

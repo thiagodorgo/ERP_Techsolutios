@@ -6068,6 +6068,20 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Fato (decisão do dono, verbatim):** *"coloquei mais creditos no deepseek, quero que ele seja o dev do 08c3 [...] quero acelerar os trabalhos, na medida do possivel.. sua analise+minha autorizacao antes de seguir"*.
 - **Efeito:** o 08c3 acelera com split de execução (DeepSeek Pro como dev da mão A, Azure na mão B), o teto do dia no Azure sobe para US$ 40 e a revisão principal do PR #605 fica com DeepSeek Flash (Argon como segundo revisor).
 
+## C-08C3-Q1-PADRAO-SEM-RESPOSTA (registro de CONFLITO, §A2, 2026-11-19) — Q1 sem resposta no disparo do B-ASS-08c3
+
+- **Os dois lados:** o plano do `B-ASS-08c3` pergunta ao dono se o estorno parcial do provedor ativa o `[EP-PARCIAL]` no fechamento (`Q1`); no disparo do dev, às 10:35 de 19/11, não havia resposta registrada no `REGISTRO-PENDENTE.md` para `08c3-q`.
+- **Estado:** RESOLVIDO por padrão operacional do próprio plano/base do disparo: **Q1 = (a)** (não ativa o `[EP-PARCIAL]` neste ciclo). O bloco segue com o `EP0` obrigatório e a mutação `M-EP0`.
+- **Rastreio do mesmo disparo:** no mesmo corte de 10:35, valem também os padrões **Q2 = (a)** e **Q3 = (a)** até decisão explícita do dono.
+- **Atualização (2026-11-20, `fix-608b-cl`, conserto único do #608): RESOLVIDO (b) pelo dono.** A resposta já existia quando o dev do ramo B começou: artefato "ERP Estado Previsão", coleção `respostas`, documento `d08c3-q1`, `escolha: "b"`, gravado em 2026-11-19 15:18 SP — *"Seguir a regra do estorno manual: a nota fica, com aviso para o contador, até todo o dinheiro ser devolvido (recomendado)"*. Ela não chegou ao mandato do dev B (falha de orquestração, declarada na Emenda 2 do plano). Vale a (b), pelas Emendas 2, 2.1 e 2.2 do plano: a condição do `[INTX-03]` exige também `savedStatement.paidCents === 0` (`[EP-PARCIAL]`); enquanto sobra dinheiro pago, a nota fica e a trilha `subscription_statement.invoice_kept_partial_reversal` avisa o contador (allowlist fechada da §4.6, E2.2-3: `statementId`, `kind` = `invoice_kept`, `code`, `count` = o pago restante, `reason` = `q1_b_dono`); e o `InvoiceOutboxHandler.cancel` relê o demonstrativo sob a trava, no topo, antes de ir ao provedor fiscal, e encerra SKIPPED `statement_paid` (E2.1-1, E2.2-1, E2.2-2). O `EP0` e a `M-EP0` saem; entram EP1, EP2 e EP3 (`tests/ass-08c3-estorno-provedor-parcial-db.test.ts`, `-db` real) e M-EP1 a M-EP5. Q2 sem resposta: segue (a). Q3: respondida (a) em 19/11 15:19 SP; o código já a segue. O texto de "Estado" acima é o registro do disparo de 19/11 e fica como histórico.
+
+## C-PLAT-TENANT-CORPO (2026-11-19, resolvido por leitura declarada)
+
+- Contexto: no `B-ASS-08c3`, a rota de plataforma `POST /api/v1/platform/billing/outbox/:id/confirm-cancelled` recebe `tenantId` no corpo.
+- Regra adotada: não há conflito com o §2.8. A autorização continua vindo do ator autenticado de plataforma (`requirePlatformPermission`). O `tenantId` do corpo é somente a chave de RLS (`withTenantRls*`) da organização-alvo.
+- Guardas: ator de organização recebe `403 platform_permission_required`; linha fora do tenant informado responde `404 outbox_not_found`; a rota nunca resolve tenant por varredura global de linha.
+- Fonte: emenda 1 do plano `B-ASS-08c3` (`R-PLAT-TENANT-CORPO`) e crítica `A-08C3-TENANT-CORPO-EXCECAO`.
+
 ## D-AWS-13 (2026-11-19) — o B-PLAT-PERMISSAO fica pronto antes da Fase 6 da AWS
 
 - **Fato (decisão do dono):** o dono confirmou em 19/11 que "o 72 fica pronto antes da Fase 6 da AWS" (a fase que cria o 1º administrador da plataforma).

@@ -143,6 +143,10 @@ export class StatementService {
 
     // B-ASS-08c1c (P5): o predicado "provedor ligado" e o método do perfil, ANTES da transação (nunca rede dentro dela).
     const closing = (await this.channel.closingCharge?.resolve(input.tenantId)) ?? null;
+    const pre = (await this.repository.listStatements(input.tenantId)).find((row) => row.period === input.period);
+    const prePin = pre?.status === "reopened" ? pinOf(pre) : null;
+    const resolved = await this.inputs.resolve(input.tenantId, input.period, { pin: prePin }); // [CLOSE-RESOLVE-OUT]
+
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
       const { statement: current } = await tx.insertIfAbsentAndLock({ tenantId: input.tenantId, period: input.period });
       if (current.status === "closed" || current.status === "paid" || current.status === "cancelled") {
@@ -151,13 +155,15 @@ export class StatementService {
       if (current.status === "reopened" && input.source === "job") {
         return { kind: "skipped", reason: "reopened_awaits_manual_close", alreadyClosed: false } as const;
       }
-
-      const resolved = await this.inputs.resolve(input.tenantId, input.period, {
-        pin: current.status === "reopened" ? pinOf(current) : null,
-      });
-      if (resolved.kind === "skip") {
-        return { kind: "skipped", reason: resolved.reason, alreadyClosed: false } as const;
-      }
+      // Plano §4.9 passo 2: o status e o pin RELIDOS SOB A TRAVA têm de ser os que decidiram a leitura das entradas fora dela
+      // (passo 1). Reaberto agora e não antes (ou o contrário), ou outro pin → 409 `statement_busy`, nada gravado: o refechamento
+      // nunca usa entradas lidas sem o pin do fechamento original (G5 §3.4). Roda SEMPRE, inclusive quando o passo 1 viu `closed`.
+      const lockedPin = current.status === "reopened" ? pinOf(current) : null;
+      const same =
+        (lockedPin === null) === (prePin === null) &&
+        (lockedPin === null || prePin === null || (lockedPin.planVersionIds.join(",") === prePin.planVersionIds.join(",") && lockedPin.addonPlanVersionIds.join(",") === prePin.addonPlanVersionIds.join(",")));
+      if (!same) throw new StatementError(409, "statement_busy", "The statement is busy; try again."); // [CLOSE-PIN-CHECK]
+      if (resolved.kind === "skip") return { kind: "skipped", reason: resolved.reason, alreadyClosed: false } as const;
 
       const daysInMonth = daysInPeriod(input.period);
       const computationInput: StatementComputationInput = {
