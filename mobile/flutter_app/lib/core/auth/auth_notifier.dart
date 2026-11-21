@@ -43,8 +43,10 @@ final listenSessionsProvider = Provider<ListenSessions>((ref) {
     journal: ListenTokenJournal(ref.watch(authTokenStorageProvider)),
     revocations: ref.watch(pendingRevocationsProvider),
     config: ref.watch(authenticatedApiConfigProvider),
-    liveClient: () =>
-        sessionHttpClient(ref, ref.read(authenticatedApiConfigProvider)),
+    liveClient: sessionHttpClient(
+      ref,
+      ref.read(authenticatedApiConfigProvider),
+    ),
   );
 });
 

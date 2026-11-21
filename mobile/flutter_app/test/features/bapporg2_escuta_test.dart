@@ -232,7 +232,7 @@ class _Fixture {
     journal: journal,
     revocations: revocations,
     config: const ApiConfig(baseUrl: 'https://example.invalid'),
-    liveClient: () => liveClient,
+    liveClient: liveClient,
   );
 }
 

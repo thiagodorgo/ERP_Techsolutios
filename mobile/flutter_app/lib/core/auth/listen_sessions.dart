@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'package:dio/dio.dart';
 
 import '../../features/auth/auth_models.dart';
@@ -13,7 +15,7 @@ class ListenSessions {
     required ListenTokenJournal journal,
     required PendingRevocations revocations,
     required ApiConfig config,
-    required Dio Function() liveClient,
+    required Dio liveClient,
   }) : _repository = repository,
        _journal = journal,
        _revocations = revocations,
@@ -24,7 +26,7 @@ class ListenSessions {
   final ListenTokenJournal _journal;
   final PendingRevocations _revocations;
   final ApiConfig _config;
-  final Dio Function() _liveClient;
+  final Dio _liveClient;
   final Map<String, AuthSession> _sessions = {};
   final Map<String, Dio> _clients = {};
 
@@ -40,27 +42,22 @@ class ListenSessions {
     final existing = _sessions[tenantId];
     if (existing != null) return existing;
     final previous = await _journal.tokenFor(tenantId);
-    if (previous != null && !await _revoked(tenantId, previous)) {
-      return null;
-    } // sem resposta definitiva: não pede outra
+    if (previous != null && !await _revoked(tenantId, previous))
+      return null; // sem resposta definitiva: não pede outra
     final session = await _repository.acquireListenSession(
       current: current,
       tenantId: tenantId,
-      client: _liveClient(),
+      client: _liveClient,
     );
-    await _journal.put(
-      tenantId,
-      session.refreshToken,
-    ); // grava antes de usar: o próximo início revoga
-    final client = createListenHttpClient(
-      _config,
-      accessToken: session.accessToken,
-    );
+    // dart format off
+    await _journal.put(tenantId, session.refreshToken); // grava antes de usar: o próximo início revoga
+    final client = createListenHttpClient(_config, accessToken: session.accessToken);
+    // dart format on
     client.interceptors.add(
       InterceptorsWrapper(
         onError: (error, handler) async {
           final status = error.response?.statusCode;
-          if (status == 401) await drop(tenantId);
+          await _handleStatus(status, tenantId);
           handler.next(error);
         },
       ),
@@ -70,7 +67,13 @@ class ListenSessions {
     return session;
   }
 
-  Future<void> drop(String tenantId) async {
+  Future<void> drop(String tenantId) => _drop(tenantId);
+
+  Future<void> _handleStatus(int? status, String tenantId) async {
+    if (status == 401) return _drop(tenantId);
+  }
+
+  Future<void> _drop(String tenantId) async {
     _sessions.remove(tenantId);
     _clients.remove(tenantId);
   }

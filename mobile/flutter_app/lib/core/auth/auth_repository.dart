@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'dart:convert';
 import 'dart:math';
 
@@ -82,6 +84,14 @@ abstract class AuthRepository {
     required String currentPassword,
     required String newPassword,
   });
+}
+
+class _ListenSessionResult {
+  const _ListenSessionResult(this.session);
+
+  final AuthSession session;
+  String get tenantId => session.user.tenantId;
+  String get refreshToken => session.tokens.refreshToken ?? '';
 }
 
 // ── B-USERS-ACESSO-SEG (T2): textos e mapa fixo da troca de senha ──────────────
@@ -740,11 +750,11 @@ class DioAuthRepository implements AuthRepository {
     String tenantId,
     AuthSession current,
   ) {
-    final parsed = _sessionFromActiveTenantJson(data, current);
-    if (parsed.user.tenantId != tenantId) {
-      throw ListenTenantMismatchError(parsed.tokens.refreshToken ?? '');
-    }
-    return parsed;
+    final session = _sessionFromActiveTenantJson(data, current);
+    final parsed = _ListenSessionResult(session);
+    if (parsed.tenantId != tenantId)
+      throw ListenTenantMismatchError(parsed.refreshToken);
+    return parsed.session;
   }
 
   @override

@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'package:dio/dio.dart';
 
 import 'http_client.dart';
@@ -24,12 +26,9 @@ Dio createListenHttpClient(
   client.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {
-        if (options.method != 'GET') {
+        if (options.method != 'GET') return handler.reject(_refused(options));
+        if (!kListenPaths.contains(options.path))
           return handler.reject(_refused(options));
-        }
-        if (!kListenPaths.contains(options.path)) {
-          return handler.reject(_refused(options));
-        }
         handler.next(options);
       },
       onError: (error, handler) async {
