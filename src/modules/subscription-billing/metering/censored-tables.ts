@@ -107,6 +107,7 @@ export const CENSORED_TENANT_TABLES = [
   "third_party_vehicle_identities",
   "third_party_vehicle_identity_merge_events",
   "traccar_ingress_receipts",
+  "user_creation_log",
   "user_role_assignments",
   "users",
   "vehicle_telemetry_events",
