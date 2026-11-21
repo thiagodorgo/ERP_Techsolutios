@@ -308,9 +308,15 @@ void main() {
             CommissionPatio(id: 'patio-x', name: 'Pátio X'),
             CommissionPatio(id: 'patio-y', name: 'Pátio Y'),
             CommissionPatio(id: 'patio-z', name: 'Pátio Z'),
-          ]);
+          ])
+          .then<List<CommissionPatioBlock>?>(
+            (value) => value,
+            onError: (_) => null,
+          );
 
-      expect(blocks.map((block) => block.status), [
+      expect(blocks, isNotNull, reason: 'a falha de Y não derruba X e Z');
+
+      expect(blocks!.map((block) => block.status), [
         CommissionPatioBlockStatus.loaded,
         CommissionPatioBlockStatus.failed,
         CommissionPatioBlockStatus.loaded,
