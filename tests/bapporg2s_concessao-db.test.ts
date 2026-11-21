@@ -265,7 +265,7 @@ if (!connectionString || !adminConnectionString) {
         await technician(LX, legacyEmail);
         await technician(LY, legacyEmail);
         const ambiguous = await login(legacyEmail, PASSWORD);
-        assert.equal(ambiguous.status, 409, JSON.stringify(ambiguous.body));
+        assert.equal(ambiguous.status, 409, JSON.stringify(ambiguous.body.error ?? "sem erro: entrou"));
         assert.equal(errorOf(ambiguous).code, "TENANT_SELECTION_REQUIRED");
       });
 
@@ -277,7 +277,7 @@ if (!connectionString || !adminConnectionString) {
         await technician(NX, email, { identityId: null });
         await technician(NY, email, { identityId: null });
         const response = await login(email, PASSWORD);
-        assert.equal(response.status, 409, JSON.stringify(response.body));
+        assert.equal(response.status, 409, JSON.stringify(response.body.error ?? "sem erro: entrou"));
         assert.equal(errorOf(response).code, "TENANT_SELECTION_REQUIRED");
       });
 
