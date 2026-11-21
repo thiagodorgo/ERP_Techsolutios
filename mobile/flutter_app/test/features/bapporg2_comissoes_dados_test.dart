@@ -3,16 +3,16 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:erp_techsolutions_mobile/features/commissions/data/commission_patio_clients.dart';
 import 'package:erp_techsolutions_mobile/features/commissions/data/commissions_by_patio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-final class _Tokens implements PatioTokenSource {
+final class _Tokens {
   _Tokens(this.values);
 
   final Map<String, String?> values;
   final List<String> requestedPatios = [];
 
-  @override
   Future<String?> tokenForPatio(String patioId) async {
     requestedPatios.add(patioId);
     return values[patioId];
@@ -96,22 +96,33 @@ Map<String, Object?> _summary({Object? totalCents = '1008'}) => {
 };
 
 CommissionByPatioRepository _repository({
-  required PatioTokenSource tokens,
+  required _Tokens tokens,
   required _Server server,
 }) {
   return CommissionByPatioRepository(
-    tokenSource: tokens,
-    clientFactory: (token) {
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: 'https://api.invalid/api/v1',
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
-      dio.httpClientAdapter = server;
-      return dio;
-    },
+    patioClients: _Clients(tokens: tokens, server: server),
   );
+}
+
+final class _Clients implements CommissionPatioClients {
+  _Clients({required this.tokens, required this.server});
+
+  final _Tokens tokens;
+  final _Server server;
+
+  @override
+  Future<Dio?> clientFor(String patioId) async {
+    final token = await tokens.tokenForPatio(patioId);
+    if (token == null || token.isEmpty) return null;
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: 'https://api.invalid/api/v1',
+        headers: {'Authorization': 'Bearer $token'},
+      ),
+    );
+    dio.httpClientAdapter = server;
+    return dio;
+  }
 }
 
 String _token(RequestOptions options) =>

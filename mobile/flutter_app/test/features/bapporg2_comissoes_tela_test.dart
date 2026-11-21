@@ -8,6 +8,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:erp_techsolutions_mobile/core/network/connectivity_repository.dart';
+import 'package:erp_techsolutions_mobile/features/commissions/data/commission_patio_clients.dart';
 import 'package:erp_techsolutions_mobile/features/commissions/data/commissions_by_patio.dart'
     as commission;
 import 'package:erp_techsolutions_mobile/features/commissions/state/commissions_controller.dart';
@@ -23,9 +24,29 @@ import 'package:go_router/go_router.dart';
 // Dublês: o token de cada pátio e o servidor
 // ---------------------------------------------------------------------------
 
-final class _Tokens implements commission.PatioTokenSource {
-  @override
+final class _Tokens {
   Future<String?> tokenForPatio(String patioId) async => 'tok-$patioId';
+}
+
+final class _Clients implements CommissionPatioClients {
+  _Clients({required this.tokens, required this.server});
+
+  final _Tokens tokens;
+  final _Server server;
+
+  @override
+  Future<Dio?> clientFor(String patioId) async {
+    final token = await tokens.tokenForPatio(patioId);
+    if (token == null || token.isEmpty) return null;
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: 'https://api.invalid',
+        headers: {'Authorization': 'Bearer $token'},
+      ),
+    );
+    dio.httpClientAdapter = server;
+    return dio;
+  }
 }
 
 /// Um mês do servidor de teste: o total em centavos (texto) e a contagem.
@@ -177,17 +198,7 @@ Future<ProviderContainer> _pump(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final repository = commission.CommissionByPatioRepository(
-    tokenSource: _Tokens(),
-    clientFactory: (token) {
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: 'https://api.invalid',
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
-      dio.httpClientAdapter = server;
-      return dio;
-    },
+    patioClients: _Clients(tokens: _Tokens(), server: server),
   );
   final container = ProviderContainer(
     overrides: [

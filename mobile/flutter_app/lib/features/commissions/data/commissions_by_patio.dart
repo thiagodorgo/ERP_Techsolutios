@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/network/api_error.dart';
 import '../../../core/network/http_client.dart';
+import 'commission_patio_clients.dart';
 import '../../work_orders/domain/work_order_conclusion.dart';
 
 const commissionCalculationsMinePath = '/api/v1/commissions/calculations/mine';
@@ -13,14 +14,6 @@ const commissionReadPaths = <String>{
   commissionCalculationsMinePath,
   commissionStatementsMySummaryPath,
 };
-
-/// Porta que a fatia A1 implementará com a sessão viva e as sessões de escuta.
-/// A3 não guarda nem renova tokens.
-abstract interface class PatioTokenSource {
-  Future<String?> tokenForPatio(String patioId);
-}
-
-typedef CommissionClientFactory = Dio Function(String accessToken);
 
 final class CommissionPatio {
   const CommissionPatio({required this.id, required this.name});
@@ -162,17 +155,13 @@ final class CommissionPatioBlock {
 }
 
 final class CommissionByPatioRepository {
-  /// [clientFactory] é obrigatório: a ligação à A1 entrega o cliente da
-  /// sessão daquele pátio, com renovação (guarda G1 do B-APP-SESSAO-RENOVA).
+  /// [patioClients] é obrigatório: a ligação à A1 entrega o cliente da sessão
+  /// daquele pátio, com renovação (guarda G1 do B-APP-SESSAO-RENOVA).
   /// Esta camada não monta cliente sem renovação.
-  CommissionByPatioRepository({
-    required PatioTokenSource tokenSource,
-    required CommissionClientFactory clientFactory,
-  }) : _tokenSource = tokenSource,
-       _clientFactory = clientFactory;
+  CommissionByPatioRepository({required CommissionPatioClients patioClients})
+    : _patioClients = patioClients;
 
-  final PatioTokenSource _tokenSource;
-  final CommissionClientFactory _clientFactory;
+  final CommissionPatioClients _patioClients;
 
   /// Sem [months], o resumo e a lista de todo o período (2 pedidos por pátio).
   /// Com [months] (a aba Comissões), a lista na janela desses meses e o resumo
@@ -193,11 +182,8 @@ final class CommissionByPatioRepository {
     List<CommissionMonth> months,
   ) async {
     try {
-      final token = await _tokenSource.tokenForPatio(patio.id);
-      if (token == null || token.isEmpty) {
-        return CommissionPatioBlock.failed(patio);
-      }
-      final client = _clientFactory(token);
+      final client = await _patioClients.clientFor(patio.id);
+      if (client == null) return CommissionPatioBlock.failed(patio);
       if (months.isNotEmpty) {
         return CommissionPatioBlock.loaded(
           patio,
