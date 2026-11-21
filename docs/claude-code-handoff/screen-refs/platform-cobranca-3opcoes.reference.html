@@ -1034,7 +1034,7 @@ function btnAcao(acao, rot, ico, tipo, bloqueio){
 function detalhe(v, s){
   const o = ORG[s.org], podeS = pode.settle();
   let avisos = '';
-  if (s.nota.cat === 'live_on_unpaid') avisos += '<div class="det-it det-it--perigo">'+ic('alert', 14)+'<span><b>Nota emitida sem pagamento.</b> A nota deste mês saiu antes do pagamento total. Se o restante não entrar, ela precisa ser cancelada.</span></div>';
+  if (s.nota.cat === 'live_on_unpaid') avisos += '<div class="det-it det-it--perigo">'+ic('alert', 14)+'<span><b>Nota emitida sem pagamento.</b> O mês tem nota, mas não está quitado. Enquanto houver valor pago no mês, a nota fica como está e o contador é avisado; ela só é cancelada quando todo o dinheiro for devolvido.</span></div>';
   if (F.atraso(s)) avisos += '<div class="det-it det-it--alerta">'+ic('clock', 14)+'<span><b>Em atraso:</b> venceu em '+dBR(s.venc)+' com saldo de '+din(s.saldo)+'.</span></div>';
   if (s.sit === 'open') avisos += '<div class="det-it">'+ic('clock', 14)+'<span>Mês em aberto: o demonstrativo fecha no fechamento de 01/12. Até lá não há total, cobrança nem baixa.</span></div>';
   const comp = s.comp.length ? '<div class="comp">'+s.comp.map(([r, x]) => '<div><span title="'+esc(r)+'">'+esc(r)+'</span><b>'+din(x)+'</b></div>').join('')

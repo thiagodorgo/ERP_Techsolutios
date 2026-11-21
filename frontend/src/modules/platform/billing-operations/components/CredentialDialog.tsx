@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { PasswordInput } from "../../../../components/ui";
-import { errorText } from "../billing-ops.errors";
+import { errorText, GENERIC_ERROR } from "../billing-ops.errors";
 import { environmentLabel, providerKindLabel } from "../billing-ops.labels";
 import type { CredentialKind, Provider } from "../billing-ops.types";
 import type { BillingOpsActions } from "../useBillingOpsActions";
@@ -10,9 +10,12 @@ import { DialogFrame, NoticeBox, type Notice } from "./dialog.shared";
 // B-ASS-10c-OPERACAO · R-SEGREDO — trocar a credencial do provedor. O segredo:
 //  - é digitado num `PasswordInput` (campo de senha), com `autoComplete="off"`;
 //  - vive SÓ no estado desta janela: nunca em armazenamento do navegador, URL, estado global nem log;
-//  - é LIMPO do estado depois do sucesso (a janela continua aberta, para colar o próximo, com o campo vazio) e some com a
-//    janela ao fechar; a tela mostra depois só o final que o servidor devolver na releitura;
-//  - o certificado é lido do arquivo SÓ no envio (o arquivo não fica guardado; a senha vai no mesmo envio).
+//  - é LIMPO do estado e do campo logo depois de QUALQUER resposta — sucesso, recusa do servidor ou erro de rede (J-612,
+//    C1-02) — e ao fechar a janela. Vale para os 3 ramos: chave de acesso, segredo do aviso e certificado com a senha. A
+//    janela continua aberta, com o campo vazio; depois de uma recusa, o segredo é digitado de novo. A tela mostra depois
+//    só o final que o servidor devolver na releitura;
+//  - o certificado é lido do arquivo SÓ no envio (o arquivo não fica guardado; a senha vai no mesmo envio). O campo do
+//    arquivo é recriado ao limpar (`fileKey`), para não guardar a seleção.
 
 type Props = {
   readonly provider: Provider;
@@ -37,32 +40,47 @@ export function CredentialDialog({ provider, webhook, actions, onClose, onDone }
   const [kind, setKind] = useState<CredentialKind>(webhook ? "webhook_secret" : "api_token");
   const [secret, setSecret] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [fileKey, setFileKey] = useState(0);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const valid = kind === "certificate" ? file !== null && secret.length >= 1 : secret.length >= 8;
+
+  /** Tira o segredo (e o arquivo do certificado) do estado e do campo. */
+  const clearSecret = () => {
+    setSecret("");
+    setFile(null);
+    setFileKey((value) => value + 1);
+  };
 
   const submit = async () => {
     if (!valid || sending) return;
     setSending(true);
     setNotice(null);
-    const result =
-      kind === "certificate" && file
-        ? await actions.saveCredential(provider.provider, { kind: "certificate", pfxBase64: await fileToBase64(file), password: secret })
-        : await actions.saveCredential(provider.provider, kind === "webhook_secret" ? { kind: "webhook_secret", secret } : { kind: "api_token", secret });
-    setSending(false);
-    if (result.ok) {
-      setSecret("");
-      setFile(null);
+    let result: Awaited<ReturnType<BillingOpsActions["saveCredential"]>> | null = null;
+    try {
+      result =
+        kind === "certificate" && file
+          ? await actions.saveCredential(provider.provider, { kind: "certificate", pfxBase64: await fileToBase64(file), password: secret })
+          : await actions.saveCredential(provider.provider, kind === "webhook_secret" ? { kind: "webhook_secret", secret } : { kind: "api_token", secret });
+    } catch {
+      result = null;
+    } finally {
+      // Qualquer desfecho limpa: sucesso, recusa, erro de rede ou falha ao ler o arquivo.
+      clearSecret();
+      setSending(false);
+    }
+    if (result?.ok) {
       setNotice({ tone: "ok", title: "Credencial salva.", detail: "O campo foi limpo e o segredo não volta a aparecer: a tela mostra só o final." });
       onDone();
+    } else if (result) {
+      setNotice({ tone: "danger", title: "O servidor recusou. Nada foi salvo.", detail: `${errorText(result.reason)} O campo foi limpo: digite o segredo de novo.` });
     } else {
-      setNotice({ tone: "danger", title: "O servidor recusou. Nada foi salvo.", detail: errorText(result.reason) });
+      setNotice({ tone: "danger", title: "Nada foi salvo.", detail: `${GENERIC_ERROR} O campo foi limpo: digite o segredo de novo.` });
     }
   };
 
   const close = () => {
-    setSecret("");
-    setFile(null);
+    clearSecret();
     onClose();
   };
 
@@ -98,7 +116,7 @@ export function CredentialDialog({ provider, webhook, actions, onClose, onDone }
       {kind === "certificate" ? (
         <label className="ui-field">
           <span>Arquivo do certificado</span>
-          <input className="ui-input" type="file" accept=".pfx,.p12" onChange={(event) => setFile(event.currentTarget.files?.[0] ?? null)} />
+          <input key={fileKey} className="ui-input" type="file" accept=".pfx,.p12" onChange={(event) => setFile(event.currentTarget.files?.[0] ?? null)} />
           <small>O arquivo é lido só no envio e não fica guardado na tela.</small>
         </label>
       ) : null}

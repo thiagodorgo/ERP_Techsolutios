@@ -165,6 +165,7 @@ function BillingOpsContent() {
       setUi((current) => ({ ...current, aberta: null }));
     },
     onRefresh: () => void reading.reload(),
+    onRetryOrg: (orgId) => void reading.rereadOrganization(orgId),
     onRetryDetail: (row) => void loadDetail(row.org.id, row.statement.id),
     onDialog: setDialog,
     onOpenOrg: (orgId) => navigate(`/platform/tenants/${encodeURIComponent(orgId)}`),

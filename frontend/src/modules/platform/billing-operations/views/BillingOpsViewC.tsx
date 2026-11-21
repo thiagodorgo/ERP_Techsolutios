@@ -173,7 +173,7 @@ export function BillingOpsViewC(props: BillingOpsViewProps) {
           </span>
         </div>
         <FilterChip model={model} onClearTarget={props.onClearTarget} />
-        <NotLoadedRows model={model} onRefresh={onRefresh} />
+        <NotLoadedRows model={model} onRetryOrg={props.onRetryOrg} />
         {model.rows.length ? (
           <DenseTable
             columns={orgColumns()}

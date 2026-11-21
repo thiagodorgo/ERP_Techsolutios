@@ -73,6 +73,8 @@ export type BillingOpsViewProps = {
   readonly onSearch: (text: string) => void;
   readonly onMonth: (month: string) => void;
   readonly onRefresh: () => void;
+  /** Relê UMA organização: o "Tentar de novo" da linha "não carregou" (J-612, C2-01). */
+  readonly onRetryOrg: (orgId: string) => void;
   readonly onRetryDetail: (row: Row) => void;
   readonly onDialog: (dialog: DialogAction) => void;
   readonly onOpenOrg: (orgId: string) => void;
@@ -695,7 +697,8 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
 }
 
 // ---- a lista ---------------------------------------------------------------------------------------------------------------------
-export function NotLoadedRows({ model, onRefresh }: Pick<BillingOpsViewProps, "model" | "onRefresh">) {
+/** Cada organização que não carregou tem o seu "Tentar de novo", que relê SÓ ela (as outras não são relidas). */
+export function NotLoadedRows({ model, onRetryOrg }: Pick<BillingOpsViewProps, "model" | "onRetryOrg">) {
   if (!model.orgFailed.length) return null;
   return (
     <div style={{ padding: "8px 16px 0", display: "grid", gap: 6 }}>
@@ -705,7 +708,7 @@ export function NotLoadedRows({ model, onRefresh }: Pick<BillingOpsViewProps, "m
           <span>
             <b>{org.name}</b> não carregou. Os números dela ficam fora até carregar.
           </span>
-          <button type="button" className="pat-btn" onClick={onRefresh}>
+          <button type="button" className="pat-btn" onClick={() => onRetryOrg(org.id)}>
             <RefreshCw size={13} aria-hidden="true" />
             Tentar de novo
           </button>
@@ -750,7 +753,7 @@ export function TotalsNote({ children }: { readonly children: ReactNode }) {
 }
 
 export function StatementList(props: BillingOpsViewProps & { readonly wide: boolean }) {
-  const { model, access, details, onToggleRow, onRefresh, onDialog, onOpenOrg, onRetryDetail, wide } = props;
+  const { model, access, details, onToggleRow, onRetryOrg, onDialog, onOpenOrg, onRetryDetail, wide } = props;
   return (
     <section className="cb-panel" aria-label={`Demonstrativos de ${monthLabel(model.month)}`} data-lista="">
       <div className="cb-panel__toolbar">
@@ -761,7 +764,7 @@ export function StatementList(props: BillingOpsViewProps & { readonly wide: bool
         </span>
       </div>
       <FilterChip model={model} onClearTarget={props.onClearTarget} />
-      <NotLoadedRows model={model} onRefresh={onRefresh} />
+      <NotLoadedRows model={model} onRetryOrg={onRetryOrg} />
       {model.rows.length ? (
         <DenseTable
           columns={statementColumns(wide)}

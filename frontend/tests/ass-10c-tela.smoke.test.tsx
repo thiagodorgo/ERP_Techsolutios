@@ -30,7 +30,7 @@ function render(options: { readonly appearance?: string; readonly ui?: BillingOp
     appearance: options.appearance ?? "A",
     details: options.details ?? {},
     channelPanel: React.createElement("section", { "data-painel-canal": "" }, "painel do canal"),
-    handlers: { onTarget: noop, onToggleRow: noop, onClearTarget: noop, onSearch: noop, onMonth: noop, onRefresh: noop, onRetryDetail: noop, onDialog: noop, onOpenOrg: noop },
+    handlers: { onTarget: noop, onToggleRow: noop, onClearTarget: noop, onSearch: noop, onMonth: noop, onRefresh: noop, onRetryOrg: noop, onRetryDetail: noop, onDialog: noop, onOpenOrg: noop },
   };
   return renderToString(React.createElement(MemoryRouter, null, React.createElement(PlatformBillingOpsScreen, props)));
 }
