@@ -14,6 +14,7 @@ import {
   LoginAmbiguousInGroupError,
   LoginNotFoundInGroupError,
 } from "./group-peer-probe.js";
+import { grantEndedByGroupExit, grantEndedOutsideGroup } from "./grant-group-guard.js";
 import type { AsyncCoreSaasStore } from "../store/async-core-saas.store.js";
 import {
   CoreSaasError,
@@ -326,6 +327,8 @@ export class PrismaCoreSaasService {
       status = input.status;
     }
 
+    if (input.status === "active" && (await this.store.isGrantOutsideGroup(input.tenantId, input.userId))) throw accessOutsideGroup();
+
     return this.store.updateUser({
       userId: input.userId,
       tenantId: input.tenantId,
@@ -419,9 +422,18 @@ export class PrismaCoreSaasService {
     ]);
     const rows = await listLoginCandidatesViaFunction(prisma, email);
 
-    return rows.map((row) => ({ tenantId: row.tenant_id, userId: row.user_id }));
+    const candidates: LoginCandidate[] = [];
+    for (const row of rows) {
+      if (await this.grantEnded(prisma, row.tenant_id, row.user_id)) continue;
+      candidates.push({ tenantId: row.tenant_id, userId: row.user_id });
+    }
+    return candidates;
   }
 
+  // B-APP-ORG-2S-c (SC) — o candidato do Entrar: filtra o par `concessao` cuja origem saiu do grupo.
+  private async grantEnded(prisma: PrismaClient, tenantId: string, userId: string): Promise<boolean> {
+    return grantEndedOutsideGroup(prisma, tenantId, userId);
+  }
   async listTenantsForIdentity(actor: AuthJwtActor): Promise<TenantMembership[]> {
     const [{ prisma }, { setIdentityRlsContext, setTenantRlsContext }, { normalizePairIdentity }] =
       await Promise.all([
@@ -555,6 +567,8 @@ export class PrismaCoreSaasService {
         return null;
       }
 
+      if (await grantEndedByGroupExit(tx, { tenantId: requestedTenantId, userId: user.id })) return null;
+
       const tenant = await tx.tenant.findFirst({ where: { id: link.tenant_id } });
 
       if (!tenant || tenant.status !== "active") {
@@ -665,6 +679,15 @@ export function loginAmbiguousInGroup(): CoreSaasError {
   );
 }
 
+// B-APP-ORG-2S-c (SC, X6) — reativar um par `concessao` cuja origem saiu do grupo: 409 fixo.
+export function accessOutsideGroup(): CoreSaasError {
+  return new CoreSaasError(
+    409,
+    "CONFLICT",
+    "access_outside_group",
+    "Este acesso pertence a um pátio que saiu do grupo.",
+  );
+}
 // B-APP-ORG-2S (S1, K14) — a criacao que esperou alem do prazo da transacao: 503 fixo, nada criado.
 export function creationUnavailable(): CoreSaasError {
   return new CoreSaasError(

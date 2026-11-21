@@ -13,6 +13,7 @@ import {
   verifyRefreshToken,
 } from "./jwt.service.js";
 import { resolveAccessTokenScope } from "./access-token-scope.js";
+import { grantEndedByGroupExit } from "../../core-saas/services/grant-group-guard.js";
 
 type PrismaTenantContextRunner = <T>(
   tenantId: string,
@@ -129,6 +130,7 @@ export class AuthSessionService {
     return this.runWithTenantContext(payload.tenant_id, async (tx) => {
       const repository = new AuthSessionRepository(tx);
       const session = await repository.findByIdForTenant(payload.session_id, payload.tenant_id);
+      if (session && (await grantEndedByGroupExit(tx, { tenantId: payload.tenant_id, userId: session.user_id }))) return { ok: false, reason: "revoked" };
       const refreshTokenHash = hashRefreshToken(refreshToken);
 
       // S6 — os candidatos de reenvio, cada um com a sua janela. O domínio (`commit:`/`proof:`) diz QUAL envio fez a
