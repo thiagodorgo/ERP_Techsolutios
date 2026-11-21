@@ -125,6 +125,7 @@ model Tenant {
   checklist_applicability_rules ChecklistApplicabilityRule[]
   work_order_checklists         WorkOrderChecklist[]
   auth_identity_links           AuthIdentityLink[]
+  user_creation_logs            UserCreationLog[]
   // B-ASS-02 — relacoes reversas exigidas pelo Prisma para as tabelas de assinatura (sem coluna em tenants).
   tenant_subscriptions          TenantSubscription[]
   tenant_subscription_addons    TenantSubscriptionAddon[]
@@ -306,6 +307,25 @@ model LocalAuthCredential {
   @@index([tenant_id, user_id])
   @@index([tenant_id, email])
   @@map("local_auth_credentials")
+}
+
+// B-APP-ORG-2S (S1) — registro de criacoes de usuario. seq = identidade (sequencia do banco),
+// unico e em ordem; quem chega depois na criacao do mesmo e-mail fica 'cancelado' com numero maior.
+// Sem group_id: o grupo e lido na hora pela volta (group-peer-probe.ts). RLS forcada por organizacao.
+model UserCreationLog {
+  seq              BigInt   @id @default(autoincrement())
+  tenant_id        String   @db.Uuid
+  email_key        String
+  user_id          String?  @db.Uuid
+  actor_user_id    String?  @db.Uuid
+  origin_tenant_id String?  @db.Uuid
+  state            String
+  reason           String?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  tenant           Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id, seq])
+  @@map("user_creation_log")
 }
 
 model AuthSession {
