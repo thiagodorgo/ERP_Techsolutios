@@ -103,21 +103,14 @@ final class CommissionPatioBlock {
 }
 
 final class CommissionByPatioRepository {
+  /// [clientFactory] é obrigatório: a ligação à A1 entrega o cliente da
+  /// sessão daquele pátio, com renovação (guarda G1 do B-APP-SESSAO-RENOVA).
+  /// Esta camada não monta cliente sem renovação.
   CommissionByPatioRepository({
     required PatioTokenSource tokenSource,
-    required ApiConfig apiConfig,
-    CommissionClientFactory? clientFactory,
+    required CommissionClientFactory clientFactory,
   }) : _tokenSource = tokenSource,
-       _clientFactory =
-           clientFactory ??
-           ((accessToken) => createExpenseHttpClient(
-             ApiConfig(
-               baseUrl: apiConfig.baseUrl,
-               accessToken: accessToken,
-               connectTimeoutMs: apiConfig.connectTimeoutMs,
-               receiveTimeoutMs: apiConfig.receiveTimeoutMs,
-             ),
-           ));
+       _clientFactory = clientFactory;
 
   final PatioTokenSource _tokenSource;
   final CommissionClientFactory _clientFactory;

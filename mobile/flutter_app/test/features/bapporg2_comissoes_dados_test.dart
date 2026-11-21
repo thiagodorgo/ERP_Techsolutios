@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/features/commissions/data/commissions_by_patio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -102,7 +101,6 @@ CommissionByPatioRepository _repository({
 }) {
   return CommissionByPatioRepository(
     tokenSource: tokens,
-    apiConfig: const ApiConfig(baseUrl: 'https://api.invalid/api/v1'),
     clientFactory: (token) {
       final dio = Dio(
         BaseOptions(
