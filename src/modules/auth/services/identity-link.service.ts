@@ -112,14 +112,19 @@ export type ResetPair = {
   readonly userId: string;
 };
 
+function sameResetPair(a: ResetPair, b: ResetPair): boolean {
+  return a.tenantId === b.tenantId && a.userId === b.userId;
+}
+
+function byResetPair(a: ResetPair, b: ResetPair): number {
+  return a.tenantId === b.tenantId ? 0 : a.tenantId < b.tenantId ? -1 : 1;
+}
+
 // Relógio do dia de negócio de São Paulo que decide o grupo vigente na redefinição (GR4 o fixa). Na
 // integração com o S1, vira o `groupProbeClock` da volta (leitura declarada do dev, diário dev-s2p-cl).
 export const resetGroupClock = {
   now: (): Date => new Date(),
 };
-
-// Semente da trava consultiva da fila de redefinição por identidade (distinta das travas de catálogo dos testes).
-const RESET_QUEUE_LOCK_SEED = 2026112102;
 
 type ResetLinkRow = {
   readonly tenantId: string;
@@ -712,7 +717,8 @@ export class IdentityLinkService {
           // o PostgreSQL derrubava uma por impasse (medido: `deadlock detected`, 503). A trava consultiva é da
           // transação e respeita o `lock_timeout` do orçamento. Se a religação mover a identidade no meio, a
           // conferência logo abaixo sai 503 e nada muda.
-          const queuedIdentityId = await this.queueResetOfIdentity(tx, actor.tenantId, target.id);
+          const hintedIdentityId = await this.identityOfPair(tx, actor.tenantId, target.id);
+          if (hintedIdentityId !== null) await this.lockEarlierLinksOfIdentity(tx, actor.tenantId, hintedIdentityId, deadline);
           let pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
 
           if (!pairLink) {
@@ -725,7 +731,7 @@ export class IdentityLinkService {
             throw resetUnavailableError();
           }
 
-          if (queuedIdentityId !== null && pairLink.identity_id !== queuedIdentityId) {
+          if (hintedIdentityId !== null && pairLink.identity_id !== hintedIdentityId) {
             throw resetUnavailableError();
           }
 
@@ -736,10 +742,18 @@ export class IdentityLinkService {
           const actorTenant = await tx.tenant.findUnique({ where: { id: actor.tenantId }, select: { name: true } });
           const actorTenantName = actorTenant?.name ?? "";
 
-          await this.writeTemporaryPassword(tx, { tenantId: actor.tenantId, userId: target.id }, target.email, password);
-          const family = await this.resolveResetFamily(tx, actor.tenantId, pairLink, deadline);
+          const ownPair: ResetPair = { tenantId: actor.tenantId, userId: target.id };
+          const written: ResetPair[] = [];
+          let pending: ResetPair[];
 
-          for (const pair of family) await this.writeTemporaryPassword(tx, pair, target.email, password);
+          do {
+            const found = await this.resolveResetFamily(tx, actor.tenantId, pairLink, deadline);
+            pending = [ownPair, ...found].filter((pair) => !written.some((done) => sameResetPair(done, pair))).sort(byResetPair);
+            for (const pair of pending) await this.writeTemporaryPassword(tx, pair, target.email, password);
+            written.push(...pending);
+          } while (pending.length > 0);
+
+          const family = written.filter((pair) => pair !== ownPair);
 
           let revokedSessions = 0;
 
@@ -1071,7 +1085,7 @@ export class IdentityLinkService {
     const others = await tx.tenant.findMany({
       where: { id: { not: activeTenantId } },
       select: { id: true },
-      orderBy: [{ created_at: "asc" }, { id: "asc" }],
+      orderBy: { id: "asc" },
     });
 
     for (const other of others) {
@@ -1122,7 +1136,7 @@ export class IdentityLinkService {
 
   // B-APP-ORG-2S (GR5) — a fila das redefinições de uma identidade: lê a identidade do par (sem trava) e toma
   // a trava consultiva da transação por ela. Par sem vínculo ainda não tem família: sem fila.
-  private async queueResetOfIdentity(
+  private async identityOfPair(
     tx: Prisma.TransactionClient,
     tenantId: string,
     userId: string,
@@ -1133,11 +1147,33 @@ export class IdentityLinkService {
     `;
     const identityId = rows[0]?.identityId ?? null;
 
-    if (identityId !== null) {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${identityId}, ${RESET_QUEUE_LOCK_SEED}::bigint))`;
-    }
-
     return identityId;
+  }
+
+  private async lockEarlierLinksOfIdentity(
+    tx: Prisma.TransactionClient,
+    activeTenantId: string,
+    identityId: string,
+    deadline: number,
+  ): Promise<void> {
+    const earlier = await tx.tenant.findMany({ where: { id: { lt: activeTenantId } }, select: { id: true }, orderBy: { id: "asc" } });
+
+    try {
+      for (const other of earlier) {
+        await setTenantRlsContext(tx, other.id);
+
+        const rows = await tx.$queryRaw<Array<{ tenantId: string }>>`
+          SELECT tenant_id::text AS "tenantId" FROM auth_identity_links
+          WHERE tenant_id = ${other.id}::uuid AND identity_id = ${identityId}::uuid
+          FOR SHARE
+        `;
+
+        assertDeadline(deadline);
+        assertRowsBelongToTenant(rows, other.id, "auth_identity_links");
+      }
+    } finally {
+      await setTenantRlsContext(tx, activeTenantId);
+    }
   }
 
   // B-APP-ORG-2S (1.8.3 §2.3) — o grupo vigente de UM pátio no dia de São Paulo, lido sob o GUC dele (o
