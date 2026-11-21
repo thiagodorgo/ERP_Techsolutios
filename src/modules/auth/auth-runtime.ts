@@ -37,6 +37,7 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
     { LocalAuthCredentialRepository },
     { AuditLogRepository, TenantRepository, UserRepository, UserRoleRepository },
     { LocalAuthLoginService },
+    { resolveIdentityIdForPair },
     { readLoginPasswordPairs },
     { AuthSessionRepository },
   ] = await Promise.all([
@@ -45,6 +46,7 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
     import("./repositories/local-auth-credential.repository.js"),
     import("../core-saas/repositories/index.js"),
     import("./services/local-auth-login.service.js"),
+    import("./services/identity-resolver.js"),
     import("./services/password-family.js"),
     import("./repositories/auth-session.repository.js"),
   ]);
@@ -58,7 +60,8 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
       new UserRepository(tx),
       new UserRoleRepository(tx),
       new AuditLogRepository(tx),
-      undefined,
+      async (_tenantId, work) => work(),
+      (tenantId, userId) => resolveIdentityIdForPair(tx, tenantId, userId),
       {
         pairsOf: (tenantId, credentialId, email) => readLoginPasswordPairs(tx, tenantId, credentialId, email),
         registerFailureAcrossPairs: (pairs) => service.registerAnonymousFailureAcrossPairs(pairs),

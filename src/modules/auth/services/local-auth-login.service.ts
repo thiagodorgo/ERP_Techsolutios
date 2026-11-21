@@ -73,6 +73,7 @@ type UserRoleRepositoryLike = {
 };
 
 type TenantContextRunner = <T>(tenantId: string, work: () => Promise<T>) => Promise<T>;
+type PairIdentityResolver = (tenantId: string, userId: string) => Promise<string | null>;
 
 // B-APP-ORG-2S (1.8.3 §2.2 e 1.8.3.2 §1; P3 e P2 do dono) — a porta da senha COMPARTILHADA: com uma senha só
 // em todos os pátios, cada tentativa errada soma 1 em todos os pares ativos que guardam aquela senha e o
@@ -92,6 +93,7 @@ export type AnonymousCandidateResult =
   | {
       readonly ok: true;
       readonly credential_id: string;
+      readonly identityId?: string | null;
       readonly user: LocalAuthLoginUser;
       readonly tenant: { readonly id: string; readonly name: string };
       readonly roles: readonly LocalAuthLoginRole[];
@@ -122,6 +124,7 @@ export class LocalAuthLoginService {
     private readonly userRoles: UserRoleRepositoryLike,
     private readonly auditLogs: AuditLogWriter,
     private readonly runWithTenantContext: TenantContextRunner = async (_tenantId, work) => work(),
+    private readonly resolvePairIdentity: PairIdentityResolver = async () => null,
     private readonly sharedPassword?: SharedPasswordPort,
   ) {}
 
@@ -305,6 +308,7 @@ export class LocalAuthLoginService {
     return {
       ok: true,
       credential_id: credential.id,
+      identityId: await this.resolvePairIdentity(tenantId, user.id),
       user: {
         id: user.id,
         tenant_id: user.tenant_id,

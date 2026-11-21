@@ -69,6 +69,21 @@ export type CreateUserInput = {
   readonly actorUserId?: string;
 };
 
+export type GrantUserAccessInput = {
+  readonly tenantId: string;
+  readonly name: string;
+  readonly email: string;
+  readonly actorUserId?: string;
+};
+
+// B-APP-ORG-2S (S2a) — `identityId` e `originTenantId` sao de uso interno do processo: a rota
+// devolve so `user` (allowlist, G1/MS9).
+export type GrantedUserAccess = {
+  readonly user: User;
+  readonly identityId: string;
+  readonly originTenantId: string;
+};
+
 export type UpdateUserInput = {
   readonly userId: string;
   readonly tenantId: string;

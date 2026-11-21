@@ -4,6 +4,8 @@ import type {
   AuthenticatedActor,
   CreateTenantInput,
   CreateUserInput,
+  GrantedUserAccess,
+  GrantUserAccessInput,
   ListTenantOptions,
   LoginCandidate,
   Tenant,
@@ -32,6 +34,13 @@ export class MemoryCoreSaasAdapter implements ICoreSaasService {
 
   async createUser(input: CreateUserInput, actor?: AuthenticatedActor): Promise<User> {
     return this.registry.createUser(input, actor);
+  }
+
+  async grantUserAccess(
+    input: GrantUserAccessInput,
+    actor: AuthenticatedActor,
+  ): Promise<GrantedUserAccess> {
+    return this.registry.grantUserAccess(input, actor);
   }
 
   async updateUser(input: UpdateUserInput, actor?: AuthenticatedActor): Promise<User> {

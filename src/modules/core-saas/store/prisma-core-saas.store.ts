@@ -1,9 +1,15 @@
 ﻿import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../../../database/prisma.js";
-import { setTenantRlsContext, withTenantRls } from "../../../database/rls.js";
+import { setTenantRlsContext, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
 import { AuthSessionRepository } from "../../auth/repositories/auth-session.repository.js";
-import { LocalAuthCredentialRepository } from "../../auth/repositories/local-auth-credential.repository.js";
+import { IdentityLinkEventRepository } from "../../auth/repositories/identity-link-event.repository.js";
+import { IdentityLinkRepository } from "../../auth/repositories/identity-link.repository.js";
+import {
+  LocalAuthCredentialRepository,
+  type ShareableLocalAuthCredential,
+} from "../../auth/repositories/local-auth-credential.repository.js";
+import { normalizePairIdentity } from "../../auth/services/identity-resolver.js";
 import { EnterpriseAuditLogService } from "../audit/audit-log.service.js";
 import {
   AuditLogRepository,
@@ -21,10 +27,24 @@ import {
 } from "../services/tenant-admin-guard.js";
 import { toUserAuditSnapshot } from "../services/user-audit-snapshot.js";
 import {
+  confirmAccessGrant,
+  confirmCreation,
+  insertCancelledCreation,
+  openCreationLog,
+} from "../services/user-creation-log.js";
+import {
+  EmailInGroupError,
+  LoginAmbiguousInGroupError,
+  LoginNotFoundInGroupError,
+  probeGroupPeers,
+} from "../services/group-peer-probe.js";
+import {
   CoreSaasError,
   type AuditEvent,
   type CreateTenantInput,
   type CreateUserInput,
+  type GrantedUserAccess,
+  type GrantUserAccessInput,
   type InitialCredentialInput,
   type ListTenantOptions,
   type Tenant,
@@ -41,6 +61,16 @@ import type {
 type PrismaTenant = Awaited<ReturnType<TenantRepository["create"]>>;
 type PrismaUser = NonNullable<Awaited<ReturnType<UserRepository["findByIdForTenant"]>>>;
 type PrismaAuditLog = Awaited<ReturnType<AuditLogRepository["create"]>>;
+
+// B-APP-ORG-2S (S1) — orcamento da transacao da criacao: espera por conexao, duracao da transacao
+// e timeouts locais de trava/statement. Estourar o lock (a outra criacao do mesmo e-mail segurando
+// a linha 'em_curso') vira 503 `creation_unavailable` (K14) e nada muda.
+export const USER_CREATION_BUDGET = {
+  maxWait: 5_000,
+  timeout: 15_000,
+  lockTimeoutMs: 2_000,
+  statementTimeoutMs: 5_000,
+} as const;
 
 export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
   constructor(
@@ -110,11 +140,18 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
   }
 
   async createUser(input: CreateUserInput, credential?: InitialCredentialInput): Promise<User> {
-    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+    return withTenantRlsBudget(this.prismaClient, input.tenantId, USER_CREATION_BUDGET, async (tx) => {
       const txUsers = new UserRepository(tx);
       const txRoles = new RoleRepository(tx);
       const txUserRoles = new UserRoleRepository(tx);
       const txAudit = new AuditLogRepository(tx);
+
+      // B-APP-ORG-2S (S1) — a trava do e-mail unico no grupo: primeira gravacao e a linha 'em_curso'
+      // (o indice unico parcial segura a outra criacao do mesmo e-mail), depois a volta patio a patio.
+      const creationSeq = await openCreationLog(tx, input);
+      const peers = await probeGroupPeers(tx, input);
+
+      if (peers.users > 0) throw new EmailInGroupError();
 
       // Step 1: create user record
       const user = await txUsers.createWithRoleAssignments({
@@ -124,6 +161,7 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         email: input.email,
         status: input.status ?? "active",
       });
+      await confirmCreation(tx, input, creationSeq, user.id);
 
       // Step 2: assign roles — if any fail, the whole transaction rolls back (no orphaned user)
       for (const role of input.roles.map((value) => validateRole(value))) {
@@ -145,9 +183,6 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       // MESMA transação da criação do usuário. O create() do vínculo é seguro aqui porque o
       // store roda dentro de withTenantRls (GUC de tenant posto quando o RETURNING é avaliado);
       // os INSERTs de identidade e de evento vão pelo caminho SEM RETURNING (§3.1).
-      const { normalizePairIdentity } = await import(
-        "../../auth/services/identity-resolver.js"
-      );
       await normalizePairIdentity(tx, input.tenantId, user.id);
 
       // Step 2c (B-USERS-ACESSO-SEG, S2 — Achado 1): a credencial local do usuário novo, na MESMA transação
@@ -196,6 +231,138 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       const savedUser = await txUsers.findByIdForTenant(user.id, input.tenantId);
 
       return mapUserFromPrisma(savedUser ?? user);
+    });
+  }
+
+  async grantAccess(input: GrantUserAccessInput): Promise<GrantedUserAccess> {
+    return withTenantRlsBudget(this.prismaClient, input.tenantId, USER_CREATION_BUDGET, async (tx) => {
+      const txUsers = new UserRepository(tx);
+      const txRoles = new RoleRepository(tx);
+      const txUserRoles = new UserRoleRepository(tx);
+      const credentials = new LocalAuthCredentialRepository(tx);
+      // B-APP-ORG-2S (S2a) — a concessao passa pela MESMA linha 'em_curso' e pela MESMA volta da criacao
+      // (1.8.1 §3): quem chega depois espera, e a volta le a vigencia do grupo na hora.
+      const creationSeq = await openCreationLog(tx, input);
+      const peers = await probeGroupPeers(tx, input);
+
+      // 0 identidade no grupo vigente: o 404 uniforme (G3, G4, G6). Mais de uma (legado): 409, nada criado (G5).
+      if (peers.identityIds.length === 0) throw new LoginNotFoundInGroupError();
+      if (peers.identityIds.length > 1) throw new LoginAmbiguousInGroupError();
+
+      const user = await txUsers.createWithRoleAssignments({
+        tenant_id: input.tenantId,
+        branch_id: null,
+        name: input.name,
+        email: input.email,
+        status: "active",
+      });
+      // A identidade do login que ja existe no grupo, nunca uma identidade nova para o par de Y (MS3).
+      const identityId = peers.identityIds[0];
+
+      // A credencial do par de origem, lida com FOR SHARE no contexto de RLS do patio de origem (papel sem
+      // bypass): a troca de senha em voo termina antes, e a copia sai com o hash que ficou (MD2).
+      let origin: ShareableLocalAuthCredential | null = null;
+      let originTenantId: string | null = null;
+
+      try {
+        for (const peer of peers.origins) {
+          if (peer.identityId !== identityId) continue;
+          await setTenantRlsContext(tx, peer.tenantId);
+          origin = await credentials.findForShareByEmailForTenant(input.email, peer.tenantId);
+          if (origin) {
+            originTenantId = peer.tenantId;
+            break;
+          }
+        }
+      } finally {
+        await setTenantRlsContext(tx, input.tenantId);
+      }
+
+      if (!origin || !originTenantId) throw new LoginNotFoundInGroupError();
+
+      const role = await txRoles.findByKeyForTenant("field_technician", input.tenantId);
+      if (!role) throw new Error("Role is not assignable to tenant: field_technician");
+      await txUserRoles.assignRole({
+        tenant_id: input.tenantId,
+        user_id: user.id,
+        role_id: role.id,
+        branch_id: null,
+      });
+
+      const actorId = isUuid(input.actorUserId ?? "")
+        ? (
+            await tx.user.findFirst({
+              where: { id: input.actorUserId!, tenant_id: input.tenantId },
+              select: { id: true },
+            })
+          )?.id ?? null
+        : null;
+
+      const link = await new IdentityLinkRepository(tx).createForPair({
+        identity_id: identityId,
+        tenant_id: input.tenantId,
+        user_id: user.id,
+        attached_via: "concessao",
+      });
+      await new IdentityLinkEventRepository(tx).append({
+        link_id: link.id,
+        from_identity_id: null,
+        to_identity_id: identityId,
+        event: "concessao",
+        tenant_id: input.tenantId,
+        user_id: user.id,
+        actor_tenant_id: input.tenantId,
+        actor_user_id: actorId,
+      });
+      await credentials.insertCopy(input.tenantId, user.id, origin);
+      await confirmAccessGrant(tx, input, creationSeq, user.id, originTenantId);
+
+      await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+        tenantId: input.tenantId,
+        actorId,
+        actorType: actorId ? "user" : "system",
+        action: "user.access_granted",
+        resourceType: "user",
+        resourceId: user.id,
+        outcome: "success",
+        severity: "info",
+        metadata: { email: user.email, role: "field_technician" },
+      });
+
+      const savedUser = await txUsers.findByIdForTenant(user.id, input.tenantId);
+
+      // Uso interno do processo: a identidade e o patio de origem nunca saem pela rota (G1, MS9).
+      return { user: mapUserFromPrisma(savedUser ?? user), identityId, originTenantId };
+    });
+  }
+
+
+  // B-APP-ORG-2S (S1) — o registro do perdedor, em transacao curta propria: linha 'cancelado' com
+  // numero maior que o do vencedor e a auditoria do patio que tentou. Nunca guarda o patio vencedor.
+  async recordCancelledCreation(tenantId: string, email: string, actorUserId?: string): Promise<void> {
+    return withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      await insertCancelledCreation(tx, { tenantId, email, actorUserId }, "email_in_group");
+
+      const actorId = isUuid(actorUserId ?? "")
+        ? (
+            await tx.user.findFirst({
+              where: { id: actorUserId!, tenant_id: tenantId },
+              select: { id: true },
+            })
+          )?.id ?? null
+        : null;
+
+      await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+        tenantId,
+        actorId,
+        actorType: actorId ? "user" : "system",
+        action: "user.created",
+        resourceType: "user",
+        resourceId: null,
+        outcome: "denied",
+        severity: "warning",
+        metadata: { email },
+      });
     });
   }
 

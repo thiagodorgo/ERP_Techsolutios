@@ -9,6 +9,11 @@ import {
   validateRole,
 } from "../permissions/catalog.js";
 import { PrismaCoreSaasStore, mapTenantFromPrisma, mapUserFromPrisma } from "../store/prisma-core-saas.store.js";
+import {
+  EmailInGroupError,
+  LoginAmbiguousInGroupError,
+  LoginNotFoundInGroupError,
+} from "./group-peer-probe.js";
 import type { AsyncCoreSaasStore } from "../store/async-core-saas.store.js";
 import {
   CoreSaasError,
@@ -17,6 +22,8 @@ import {
   type CreateTenantInput,
   type CreateUserInput,
   type CreatedUser,
+  type GrantedUserAccess,
+  type GrantUserAccessInput,
   type ListTenantOptions,
   type LoginCandidate,
   type Tenant,
@@ -189,10 +196,55 @@ export class PrismaCoreSaasService {
 
       return { ...user, temporaryPassword };
     } catch (error) {
+      if (error instanceof EmailInGroupError) {
+        await this.store.recordCancelledCreation(input.tenantId, email, actor?.userId);
+        throw emailInGroup();
+      }
+
       if (isUserEmailUniqueViolation(error)) {
         throw userEmailConflict();
       }
 
+      if (isCreationBudgetExhausted(error)) {
+        throw creationUnavailable();
+      }
+
+      throw error;
+    }
+  }
+
+  async grantUserAccess(
+    input: GrantUserAccessInput,
+    actor: AuthenticatedActor,
+  ): Promise<GrantedUserAccess> {
+    if (input.tenantId !== actor.tenantId) throw accessDeniedAcrossTenants();
+    const tenant = await this.store.findTenantById(input.tenantId);
+    if (!tenant) throw notFound("tenant_not_found", `Tenant not found: ${input.tenantId}`);
+    if (tenant.status !== "active") {
+      throw new CoreSaasError(400, "BAD_REQUEST", "inactive_tenant", "Cannot grant access in an inactive tenant.");
+    }
+
+    const name = input.name.trim();
+    if (!name) {
+      throw new CoreSaasError(400, "BAD_REQUEST", "user_name_required", "User name is required.");
+    }
+    const email = input.email.trim().toLowerCase();
+    if (!isEmail(email)) {
+      throw new CoreSaasError(400, "BAD_REQUEST", "invalid_user_email", "User email is invalid.");
+    }
+
+    try {
+      return await this.store.grantAccess({
+        tenantId: input.tenantId,
+        name,
+        email,
+        actorUserId: actor.userId,
+      });
+    } catch (error) {
+      if (error instanceof LoginNotFoundInGroupError) throw loginNotFoundInGroup();
+      if (error instanceof LoginAmbiguousInGroupError) throw loginAmbiguousInGroup();
+      if (isUserEmailUniqueViolation(error)) throw userEmailConflict();
+      if (isCreationBudgetExhausted(error)) throw creationUnavailable();
       throw error;
     }
   }
@@ -583,6 +635,69 @@ export function passwordChangeRequired(): CoreSaasError {
     "password_change_required",
     "Password change is required before this action.",
   );
+}
+
+// B-APP-ORG-2S (S1) — a trava do e-mail unico no grupo: recusa fixa, sem revelar o outro patio.
+export function emailInGroup(): CoreSaasError {
+  return new CoreSaasError(
+    409,
+    "CONFLICT",
+    "email_in_group",
+    "Este e-mail já tem acesso no grupo.",
+  );
+}
+
+export function loginNotFoundInGroup(): CoreSaasError {
+  return new CoreSaasError(
+    404,
+    "NOT_FOUND",
+    "login_not_found_in_group",
+    "Não há login com este e-mail no grupo.",
+  );
+}
+
+export function loginAmbiguousInGroup(): CoreSaasError {
+  return new CoreSaasError(
+    409,
+    "CONFLICT",
+    "login_ambiguous_in_group",
+    "Há mais de um login com este e-mail no grupo. Fale com o gestor do grupo.",
+  );
+}
+
+// B-APP-ORG-2S (S1, K14) — a criacao que esperou alem do prazo da transacao: 503 fixo, nada criado.
+export function creationUnavailable(): CoreSaasError {
+  return new CoreSaasError(
+    503,
+    "SERVICE_UNAVAILABLE",
+    "creation_unavailable",
+    "A criação não pôde ser concluída. Nada foi criado; tente de novo.",
+  );
+}
+
+// O orcamento da criacao estourou (lock/statement timeout locais, transacao ou conexao): o driver
+// entrega o cancelamento como erro bruto; a rota responde 503 fixo, sem mensagem crua.
+function isCreationBudgetExhausted(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const candidate = error as {
+    readonly code?: unknown;
+    readonly meta?: { readonly code?: unknown; readonly message?: unknown };
+    readonly message?: unknown;
+  };
+
+  if (candidate.code === "P2028") {
+    return true;
+  }
+
+  const metaCode = candidate.meta?.code;
+  if (metaCode === "55P03" || metaCode === "57014") {
+    return true;
+  }
+
+  return typeof candidate.message === "string" && /lock timeout|statement timeout|canceling statement/i.test(candidate.message);
 }
 
 // B-USERS-ACESSO-SEG (S6) — o mesmo código e o mesmo motivo do caminho de memória.
