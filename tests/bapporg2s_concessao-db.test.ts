@@ -402,8 +402,8 @@ if (!connectionString || !adminConnectionString) {
         assert.ok(granted);
         const copy = await credentialOf(B.tenantId, granted.id);
         assert.ok(copy);
-        assert.equal(waited, true, "a concessão esperou a troca em voo (FOR SHARE)");
         assert.equal(copy.password_hash, fresh.password_hash, "a cópia sai com o hash que ficou");
+        assert.equal(waited, true, "a concessão esperou a troca em voo (FOR SHARE)");
       });
 
       await t.test("G10: duas concessões simultâneas do mesmo e-mail em Y, 20 rodadas: 1 usuário e um 409", async () => {
