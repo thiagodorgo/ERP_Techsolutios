@@ -3,6 +3,7 @@ import test, { after } from "node:test";
 
 import { decodeJwt } from "jose";
 
+import { dropHarnessObjects, runHarnessDdl } from "./helpers/pg-barrier.js";
 import { administradorDe } from "./helpers/users-seg-desativado-sessao.js";
 import {
   bearer,
@@ -337,26 +338,27 @@ if (!connectionString) {
     const before = await hashes(h, f);
     const name = `s2p_gpatom_${Date.now()}`;
 
-    await h.admin.$executeRawUnsafe(`
-      CREATE FUNCTION ${name}_fn() RETURNS trigger AS $$
-      BEGIN
-        IF NEW.tenant_id = '${last.tenantId}'::uuid THEN RAISE EXCEPTION 'GP-ATOM falha injetada'; END IF;
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql
-    `);
-    await h.admin.$executeRawUnsafe(
+    await runHarnessDdl(h.admin, `CREATE FUNCTION ${name}_fn() RETURNS trigger AS $$ BEGIN IF NEW.tenant_id = '${last.tenantId}'::uuid THEN RAISE EXCEPTION 'GP-ATOM falha injetada'; END IF; RETURN NEW; END; $$ LANGUAGE plpgsql`);
+    await runHarnessDdl(
+      h.admin,
       `CREATE TRIGGER ${name} BEFORE UPDATE ON local_auth_credentials FOR EACH ROW EXECUTE FUNCTION ${name}_fn()`,
     );
 
-    let change: Awaited<ReturnType<typeof trocarSenha>>;
+    let change!: Awaited<ReturnType<typeof trocarSenha>>;
+    let cleanupError: unknown;
 
     try {
       change = await trocarSenha(h, session.body.data.access_token, f.password, "SenhaNovaATOM!987");
-    } finally {
-      await h.admin.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${name} ON local_auth_credentials`);
-      await h.admin.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${name}_fn()`);
+    } catch (error) {
+      cleanupError = error;
     }
+
+    await dropHarnessObjects(h.admin, cleanupError, [
+      `DROP TRIGGER IF EXISTS ${name} ON local_auth_credentials`,
+      `DROP FUNCTION IF EXISTS ${name}_fn()`,
+    ]);
+
+    if (cleanupError !== undefined) throw cleanupError;
 
     // A falha chega pelo tratador genérico de erro da main (medido: 400 invalid_request); o que se afirma é o resultado.
     assert.notEqual(change.status, 200, `GP-ATOM: a troca não aconteceu (status ${change.status})`);

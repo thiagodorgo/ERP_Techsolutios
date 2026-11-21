@@ -18,7 +18,7 @@ import {
 // papel do app NOSUPERUSER NOBYPASSRLS. Pelas rotas do app real. Mutações (literais, no diário dev-s2p-cl):
 //   GL1 · `registerAnonymousFailureAcrossPairs`: `forEachTenantRls(prisma, tenantIdsDosPares,` → `[tenantIdsDosPares[0]]`
 //   GL2 · a mesma troca em `finalizeAnonymousLoginAcrossPairs`
-//   GL3 · a mesma troca em `changePasswordAcrossPairs`
+//   GL3 · mutação histórica da troca compartilhada (espelho removido na Revisão 1 da emenda)
 //   GL4 · `forEachTenantRls(prisma,` → `Promise.all(tenantIdsDosPares.map((t) => withTenantRls(prisma, t,` (com o fecho)
 //   GL5 · `buildService(tx).registerFailure(credentialId` → `buildService(tx).registerFailure(undefined`
 // -----------------------------------------------------------------------------------------------

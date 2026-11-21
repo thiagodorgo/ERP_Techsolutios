@@ -151,7 +151,12 @@ export async function probeGroupPeers(
 
   let users = 0;
   const identityIds = new Set<string>();
-  const origins: Array<{ tenantId: string; userId: string; identityId: string | null }> = [];
+  const origins: Array<{
+    tenantId: string;
+    userId: string;
+    identityId: string | null;
+    attachedVia: string | null;
+  }> = [];
 
   try {
     if (ownGroupId !== null) {
