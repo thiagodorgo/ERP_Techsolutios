@@ -121,6 +121,20 @@ if (!connectionString) {
     assert.deepEqual((await credenciais(h, f)).map((row) => row.failed_attempts), [1, 1], "GL4 controle: a volta grava nos dois");
   });
 
+  test("GL-ID1 — sem organização, pelo runtime real: 2 pares da mesma identidade colapsam em 1 e a conta soma nos 2 (GP5b-sem-org)", async () => {
+    const h = await harness();
+    const f = await novaFamilia(h, "glid1", { pairs: 2 });
+
+    for (let i = 0; i < 2; i += 1) assert.equal((await login(h, null, f.email, "errada")).status, 401);
+
+    assert.deepEqual((await credenciais(h, f)).map((row) => row.failed_attempts), [2, 2], "GL-ID1: a conta da senha soma nos 2 pares (S2p)");
+
+    const entered = await login(h, null, f.email, f.password);
+
+    assert.equal(entered.status, 200, `GL-ID1: os 2 candidatos colapsam em 1, sem escolha (S2a): ${entered.status} ${JSON.stringify(entered.body).slice(0, 160)}`);
+    assert.deepEqual((await credenciais(h, f)).map((row) => row.failed_attempts), [0, 0], "GP5b-sem-org: o acerto sem organização zera os 2 pares");
+  });
+
   test("GL5 — sob o papel sem bypass, a volta de cada par grava só a linha daquele par", async () => {
     const h = await harness();
     const a = await novaFamilia(h, "gl5", { pairs: 2 });

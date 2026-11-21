@@ -324,7 +324,7 @@ if (!connectionString) {
     assert.equal((await login(h, z.tenantId, f.email, "SenhaNovaGP6!987")).status, 200, "GP6: a senha nova vale em Z");
   });
 
-  test("GP-ATOM — falha depois de gravar o 1º par e antes do último: nenhum par fica com a senha nova", async () => {
+  test("GP-ATOM-rota — pela rota, falha depois de gravar o 1º par e antes do último: nenhum par fica com a senha nova", async () => {
     const h = await harness();
     const f = await novaFamilia(h, "gpatom");
     const [x, ...rest] = f.orgs;
