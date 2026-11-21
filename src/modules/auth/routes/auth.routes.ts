@@ -596,6 +596,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
             temporary_password: result.temporaryPassword,
             must_change_password: true,
             revoked_sessions: result.revokedSessions,
+            ...(result.affectedPatios.length > 1 ? { affected_patios: result.affectedPatios } : {}),
           },
         });
       } catch (error) {

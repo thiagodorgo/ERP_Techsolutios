@@ -8,6 +8,7 @@ import {
   type LocalAuthLoginRole,
   type LocalAuthLoginUser,
 } from "../types/auth.types.js";
+import { isTemporaryPasswordExpired } from "../temporary-password.rules.js";
 import { verifyPassword } from "./password.service.js";
 
 type LocalAuthCredentialRecord = {
@@ -18,6 +19,7 @@ type LocalAuthCredentialRecord = {
   readonly password_hash: string;
   readonly locked_until: Date | null;
   readonly must_change_password: boolean;
+  readonly password_updated_at: Date;
   // B-O6R-07a ciclo 2 (C2·3) — opcional para não quebrar dublês estruturais existentes; a linha
   // real do Prisma sempre o tem. Alimenta SÓ a escolha do candidato cobrado (menor contador).
   readonly failed_attempts?: number;
@@ -171,6 +173,15 @@ export class LocalAuthLoginService {
       };
     }
 
+    if (isTemporaryPasswordExpired(credential)) {
+      await this.recordLoginFailure(tenantId, email, "invalid_credentials", auditContext);
+
+      return {
+        ok: false,
+        reason: "invalid_credentials",
+      };
+    }
+
     const user = await this.users.findByIdForTenant(credential.user_id, tenantId);
 
     if (!user || user.status !== "active") {
@@ -271,6 +282,10 @@ export class LocalAuthLoginService {
           failed_attempts: credential.failed_attempts ?? 0,
         },
       };
+    }
+
+    if (isTemporaryPasswordExpired(credential)) {
+      return { ok: false, reason: "invalid_credentials" };
     }
 
     const user = await this.users.findByIdForTenant(credential.user_id, tenantId);

@@ -117,6 +117,15 @@ export class LocalAuthCredentialRepository {
     });
   }
 
+  findByIdForTenant(id: string, tenantId: string) {
+    return this.client.localAuthCredential.findFirst({
+      where: {
+        id,
+        tenant_id: tenantId,
+      },
+    });
+  }
+
   // B-USERS-ACESSO-SEG (S7) — a troca pelo PRÓPRIO usuário apaga a marca "trocar a senha no próximo
   // acesso" (coluna da P1): quem escolheu a senha agora é o dono da conta.
   updatePassword(userId: string, tenantId: string, data: UpdateLocalAuthPasswordData) {

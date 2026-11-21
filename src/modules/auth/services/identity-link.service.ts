@@ -20,8 +20,10 @@ import {
 } from "../repositories/identity-link.repository.js";
 import { IdentityLinkEventRepository } from "../repositories/identity-link-event.repository.js";
 import { normalizePairIdentity } from "./identity-resolver.js";
+import { resolvePasswordFamilyPairs, uniqueTenantIdsFromPairs } from "./password-family.js";
 import { validateLocalPassword } from "./local-auth-credential.service.js";
 import { hashPassword, verifyPassword } from "./password.service.js";
+import { isTemporaryPasswordExpired } from "../temporary-password.rules.js";
 import type { AuthenticatedActor, LocalAuthLoginInput, LocalAuthLoginResult } from "../types/auth.types.js";
 
 // -----------------------------------------------------------------------------------------------
@@ -94,6 +96,7 @@ export type AdminPasswordResetResult = {
   readonly userId: string;
   readonly temporaryPassword: string;
   readonly revokedSessions: number;
+  readonly affectedPatios: readonly string[];
 };
 
 // Orçamento da transação do reset (S1): espera por conexão, duração da transação e os timeouts LOCAIS
@@ -480,7 +483,7 @@ export class IdentityLinkService {
         return { kind: "invalid" as const };
       }
 
-      return { kind: "ok" as const, email: credential.email };
+      return { kind: "ok" as const, email: credential.email, credential };
     });
 
     if (proof.kind === "inactive") {
@@ -497,6 +500,15 @@ export class IdentityLinkService {
 
     if (proof.kind === "invalid") {
       throw identityLinkError(401, "UNAUTHORIZED", "invalid_credentials", "Invalid credentials.");
+    }
+
+    if (isTemporaryPasswordExpired(proof.credential)) {
+      throw identityLinkError(
+        409,
+        "CONFLICT",
+        "temporary_password_expired",
+        "Temporary password expired. Ask an administrator to reset it.",
+      );
     }
 
     try {
@@ -520,10 +532,17 @@ export class IdentityLinkService {
     const password = await hashPassword(input.newPassword);
 
     return this.handlePasswordChange(actor, async (tx) => {
-      await new LocalAuthCredentialRepository(tx).updatePassword(actor.userId, actor.tenantId, {
-        password_hash: password.password_hash,
-        password_algorithm: password.password_algorithm,
+      const pairs = await resolvePasswordFamilyPairs(tx, actor.tenantId, actor.userId, {
+        onlyActiveUsers: true,
       });
+
+      for (const pair of pairs) {
+        await setTenantRlsContext(tx, pair.tenantId);
+        await new LocalAuthCredentialRepository(tx).updatePassword(pair.userId, pair.tenantId, {
+          password_hash: password.password_hash,
+          password_algorithm: password.password_algorithm,
+        });
+      }
     });
   }
 
@@ -615,22 +634,40 @@ export class IdentityLinkService {
           }
 
           const identityId = pairLink.identity_id;
-
-          await this.assertNotLinkedElsewhere(tx, actor.tenantId, identityId, deadline);
-
-          await setTenantRlsContext(tx, actor.tenantId);
-          await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
-            tenant_id: actor.tenantId,
-            user_id: target.id,
-            email: target.email,
-            password_hash: password.password_hash,
-            password_algorithm: password.password_algorithm,
+          const familyPairs = await resolvePasswordFamilyPairs(tx, actor.tenantId, target.id, {
+            onlyActiveUsers: true,
           });
+          const tenantIdsDosPares = uniqueTenantIdsFromPairs(familyPairs);
 
-          const revoked = await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(
-            target.id,
-            actor.tenantId,
-          );
+          await this.assertNotLinkedElsewhere(tx, actor.tenantId, identityId, deadline, new Set(tenantIdsDosPares));
+
+          let revokedSessions = 0;
+
+          for (const pair of familyPairs) {
+            await setTenantRlsContext(tx, pair.tenantId);
+            const pairUser = await tx.user.findFirst({
+              where: { id: pair.userId, tenant_id: pair.tenantId },
+              select: { email: true },
+            });
+
+            if (!pairUser) {
+              continue;
+            }
+
+            await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
+              tenant_id: pair.tenantId,
+              user_id: pair.userId,
+              email: pairUser.email,
+              password_hash: password.password_hash,
+              password_algorithm: password.password_algorithm,
+            });
+
+            const revoked = await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(
+              pair.userId,
+              pair.tenantId,
+            );
+            revokedSessions += revoked.count;
+          }
 
           await this.recordAudit(tx, {
             tenantId: actor.tenantId,
@@ -642,12 +679,18 @@ export class IdentityLinkService {
             outcome: "success",
             severity: "warning",
             metadata: {
-              revoked_sessions: revoked.count,
+              revoked_sessions: revokedSessions,
               must_change_password: true,
+              affected_patios: tenantIdsDosPares,
             },
           });
 
-          return { userId: target.id, temporaryPassword, revokedSessions: revoked.count };
+          return {
+            userId: target.id,
+            temporaryPassword,
+            revokedSessions,
+            affectedPatios: tenantIdsDosPares,
+          };
         },
       );
     } catch (error) {
@@ -934,6 +977,7 @@ export class IdentityLinkService {
     activeTenantId: string,
     identityId: string,
     deadline: number,
+    allowedTenantIds: ReadonlySet<string> = new Set([activeTenantId]),
   ): Promise<void> {
     const others = await tx.tenant.findMany({
       where: { id: { not: activeTenantId } },
@@ -942,6 +986,10 @@ export class IdentityLinkService {
     });
 
     for (const other of others) {
+      if (allowedTenantIds.has(other.id)) {
+        continue;
+      }
+
       await setTenantRlsContext(tx, other.id);
 
       const seen = await tx.$queryRaw<Array<{ tenantId: string }>>`
