@@ -89,8 +89,8 @@ if (!connectionString) {
   });
 
   test("apporg2s drill (a): migrate deploy aplica tabela, índice parcial e os dois CHECK com 'concessao'", async () => {
-    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString! }) });
+    const { createPrismaClient } = await import("../src/database/pg-connection.js");
+    admin = createPrismaClient(connectionString!);
     const source = new URL(connectionString!);
     const base = decodeURIComponent(source.pathname.replace(/^\//, "")) || "postgres";
     databaseName = `${base}_apporg2s_${randomUUID().replaceAll("-", "").slice(0, 8)}`.slice(0, 63);
@@ -104,7 +104,7 @@ if (!connectionString) {
       env: { ...process.env, DATABASE_URL: target.toString() },
       stdio: "pipe",
     });
-    db = new PrismaClient({ adapter: new PrismaPg({ connectionString: target.toString() }) });
+    db = createPrismaClient(target.toString());
     const applied = (await db.$queryRawUnsafe(
       `SELECT count(*)::int AS n FROM _prisma_migrations WHERE migration_name = $1 AND finished_at IS NOT NULL`,
       MIGRATION_NAME,

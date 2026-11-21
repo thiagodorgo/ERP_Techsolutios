@@ -26,7 +26,7 @@ CREATE UNIQUE INDEX "user_creation_log_em_curso_key" ON "user_creation_log"("ema
 CREATE INDEX "user_creation_log_tenant_id_seq_idx" ON "user_creation_log"("tenant_id", "seq");
 
 ALTER TABLE "user_creation_log" ADD CONSTRAINT "user_creation_log_tenant_id_fkey"
-  FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- RLS forcada por organizacao (molde 20260608000000_enable_tenant_rls).
 ALTER TABLE "user_creation_log" ENABLE ROW LEVEL SECURITY;
