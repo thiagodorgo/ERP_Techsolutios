@@ -572,11 +572,13 @@ export class IdentityLinkService {
     if (family.length > 1) {
       const { getLocalAuthLoginService } = await import("../auth-runtime.js");
       const mirrors = await getLocalAuthLoginService();
+      const ownPair: ResetPair = { tenantId: actor.tenantId, userId: actor.userId };
+      const otherPairs: ResetPair[] = family.filter((link) => link.tenant_id !== actor.tenantId || link.user_id !== actor.userId).map((link) => ({ tenantId: link.tenant_id, userId: link.user_id }));
+      const newPassword = { password_hash: password.password_hash, password_algorithm: password.password_algorithm };
 
-      await mirrors.changePasswordAcrossPairs(
-        family.map((link) => ({ tenantId: link.tenant_id, userId: link.user_id })),
-        { password_hash: password.password_hash, password_algorithm: password.password_algorithm },
-      );
+      // MD3/MD11 (1.8.3.11, Revisão 1): o próprio par e os outros na MESMA transação, o próprio primeiro. Nenhum
+      // estado em que um par tem a senha nova e outro a velha. O gancho que vem depois só revoga e audita.
+      await mirrors.changePasswordAcrossPairs([ownPair, ...otherPairs], newPassword);
 
       return this.handlePasswordChange(actor);
     }

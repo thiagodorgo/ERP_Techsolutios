@@ -324,6 +324,49 @@ if (!connectionString) {
     assert.equal((await login(h, z.tenantId, f.email, "SenhaNovaGP6!987")).status, 200, "GP6: a senha nova vale em Z");
   });
 
+  test("GP-ATOM — falha depois de gravar o 1º par e antes do último: nenhum par fica com a senha nova", async () => {
+    const h = await harness();
+    const f = await novaFamilia(h, "gpatom");
+    const [x, ...rest] = f.orgs;
+    // A volta grava o próprio par (X) primeiro e os outros em ordem fixa por pátio: o último é o de maior id.
+    const last = [...rest].sort((a, b) => (a.tenantId < b.tenantId ? -1 : 1))[rest.length - 1];
+    const session = await login(h, x.tenantId, f.email, f.password);
+
+    assert.equal(session.status, 200);
+
+    const before = await hashes(h, f);
+    const name = `s2p_gpatom_${Date.now()}`;
+
+    await h.admin.$executeRawUnsafe(`
+      CREATE FUNCTION ${name}_fn() RETURNS trigger AS $$
+      BEGIN
+        IF NEW.tenant_id = '${last.tenantId}'::uuid THEN RAISE EXCEPTION 'GP-ATOM falha injetada'; END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    await h.admin.$executeRawUnsafe(
+      `CREATE TRIGGER ${name} BEFORE UPDATE ON local_auth_credentials FOR EACH ROW EXECUTE FUNCTION ${name}_fn()`,
+    );
+
+    let change: Awaited<ReturnType<typeof trocarSenha>>;
+
+    try {
+      change = await trocarSenha(h, session.body.data.access_token, f.password, "SenhaNovaATOM!987");
+    } finally {
+      await h.admin.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${name} ON local_auth_credentials`);
+      await h.admin.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${name}_fn()`);
+    }
+
+    // A falha chega pelo tratador genérico de erro da main (medido: 400 invalid_request); o que se afirma é o resultado.
+    assert.notEqual(change.status, 200, `GP-ATOM: a troca não aconteceu (status ${change.status})`);
+    assert.deepEqual(await hashes(h, f), before, "GP-ATOM: nenhum par com a senha nova");
+
+    for (const org of f.orgs) {
+      assert.equal((await login(h, org.tenantId, f.email, "SenhaNovaATOM!987")).status, 401, "GP-ATOM: a nova não entra");
+    }
+  });
+
   // ---------------------------------------------------------------------------------------------
   // P2 — gerada pelo sistema e mostrada uma vez (GP7)
   // ---------------------------------------------------------------------------------------------
