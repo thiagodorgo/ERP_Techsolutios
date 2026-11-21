@@ -73,7 +73,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
           );
 
     return ErpScaffold(
-      title: 'Gestao de Despesas',
+      title: 'Gestão de Despesas',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: canCreate ? () => context.go('/expenses/new') : null,
         icon: const Icon(Icons.add),

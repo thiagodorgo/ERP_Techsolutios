@@ -218,13 +218,13 @@ const devBootstrapSession = BootstrapSession(
   enabledModules: [
     EnabledModule(
       id: 'expense_management',
-      title: 'Gestao de Despesas',
+      title: 'Gestão de Despesas',
       route: '/expenses',
       requiredPermissions: ['expense_report:read', 'expense_report:create'],
     ),
     EnabledModule(
       id: 'field_operations',
-      title: 'Operacoes de Campo',
+      title: 'Operações de Campo',
       route: '/work-orders',
       requiredPermissions: ['field_location:send'],
     ),
@@ -236,13 +236,13 @@ const devBootstrapSession = BootstrapSession(
     ),
     EnabledModule(
       id: 'inventory',
-      title: 'Estoque do Tecnico',
+      title: 'Estoque do Técnico',
       route: '/inventory',
       requiredPermissions: ['inventory.read'],
     ),
     EnabledModule(
       id: 'approvals',
-      title: 'Aprovacoes',
+      title: 'Aprovações',
       route: '/approvals',
       requiredPermissions: ['work_orders:approve'],
     ),

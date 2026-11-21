@@ -52,7 +52,7 @@ Widget _homeWithPermissions(Set<String> permissions) {
             enabledModules: const [
               EnabledModule(
                 id: 'expense_management',
-                title: 'Gestao de Despesas',
+                title: 'Gestão de Despesas',
                 route: '/expenses',
                 requiredPermissions: ['expense_report:create'],
               ),

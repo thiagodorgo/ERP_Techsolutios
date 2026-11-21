@@ -9883,6 +9883,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `pre-existente` — concessões do `support` antecedem o bloco.
 - **dono:** fila pós-gate (política de suporte).
 - **teste de encerramento:** com a política, as seis saem da allowlist com evidência; sem ela, a concessão é retirada.
+- **apenso 2026-11-20 (registro de 20/11; Emenda 3 do plano `B-USERS-CONCESSAO-PAINEL`; vale no merge do PR #614):** a célula **l.34 × support** (`dashboard:read`) sai desta pendência. A Q2 = (a) do dono (`D-DONO-2011-RESPOSTAS`: o Suporte sozinho vê o painel da organização, só leitura) muda a célula de qualificada para `read`. O guarda `tests/san3-04a-matriz-x-catalogo-guard.test.ts` tira a entrada, e a contagem B passa de 14 para 13. A pendência segue ABERTA com as outras células.
+- **conflito registrado (§A2, sem consolidar):** a Emenda 3 diz que ficam "as outras 2 células (l.33 e l.43)". Medido no ramo do #614 (`1efc0645`), o guarda mantém **6** entradas com esta pendência: l.33 `users.read`, l.43 `tenant_checklists:read`, l.44 `checklist_runs:read`, l.48 `purchase_orders:read`, l.50 `billing:read` e l.56 `audit:read`. Este registro tira só a l.34; as l.44, l.48, l.50 e l.56 continuam aqui até medição que as retire. A l.50 está no guarda e não estava na prova desta pendência (diferença anterior, aqui registrada).
 
 ## P-SAN3-04A-DASHBOARD-SCOPED (2026-09-18) — o painel do Técnico de Campo é da organização inteira, não do seu recorte — MÉDIA
 
@@ -10592,6 +10594,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **apenso B-ASS-00:** `B-ASS-02` persiste somente `tenant.plan`; a persistência das demais propriedades e ações da organização continua com `B-SAN3-18`.
 - **apenso 2026-11-08 (registro de 08/11; achado A3 do revisor do #509):** a parte `tenant.plan` do `B-ASS-02` está **entregue** pelo PR #504 (merge `43716227`): a assinatura vigente da organização vive em tabela própria (`tenant_subscriptions`), o detalhe da organização a lê de lá (`src/modules/platform/platform-tenant-detail.service.ts:23-110`), e os módulos da organização acompanham a versão do plano (`src/modules/subscription-billing/plans/tenant-modules.sync.ts`). O que sobra é exibição: o campo `plan` literal das organizações em memória (`src/modules/platform/platform-tenants.repository.ts:8,29,64`), que continua com `B-SAN3-18` e com o item 46 do portão (lista de Organizações com dado inventado). Medido em `origin/main` `04bb0e17` por `git grep`. O item 57 do `PLANO_SAN3.md` segue fechado.
 - **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
+- **apenso 2026-11-20 (registro de 20/11; o nome `P-PLATFORM-TENANTS-EM-MEMORIA` do registro do orquestrador é esta mesma pendência, e não abre outra):** na F7 do `B-APP-ORG` (`f7-apporg-cl`, prova no emulador), o dev mediu que `POST /api/v1/platform/tenants` **não cria organização no banco**: `src/modules/platform/platform-tenants.repository.ts:48-60` é repositório em memória, com 2 organizações fictícias iniciais, e `create()` devolve um id `pten-<slug>`. Nenhuma rota HTTP cria organização no Postgres. A 2ª organização do teste saiu de `PrismaCoreSaasService.createTenant`, num script fora do repositório. O diário da F1 citava a rota de plataforma como a porta da 2ª organização, o que não confere.
 
 ## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
 
@@ -12845,7 +12848,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS-CANAL-DESLIGADO (2026-11-03) — canal de pagamento e nota, cofre e webhooks ainda não existem — ALTA
 
-- **status:** ABERTA · **escopo:** item 60 do portão vendável · **dono:** `B-ASS-05`, `B-ASS-06`, `B-ASS-07` e `B-ASS-08` · **PR-alvo:** PRs desses quatro blocos · **bloqueia:** item 60.
+- **status:** FECHADA (2026-11-20, PR #608, `B-ASS-08c3`, squash `769f29d6`; o canal fica pronto e DESLIGADO, porque ligar é ato do dono) · antes: ABERTA · **escopo:** item 60 do portão vendável · **dono:** `B-ASS-05`, `B-ASS-06`, `B-ASS-07` e `B-ASS-08` · **PR-alvo:** PRs desses quatro blocos · **bloqueia:** não (bloqueava o item 60, agora fechado).
+- **prova do fechamento (registro de 20/11, ressalva R3 do `porteiro-608`):** o porteiro (LIBERADO COM RESSALVA) conferiu cumprida a condição "merge + porteira do 08c3". Medido por ele: `prisma/schema.prisma:4326` `enabled Boolean @default(false)`; no CI do head aprovado `a23b7850` (18/18 check-runs `success`), `ok 488 - CA-OFF…` e `ok 489 - CA-OFF3 (mão B)…` (o canal desligado abre 0 conexões); no CI da `main` em `769f29d6`, backend 7336/7334/0 fail e backend-postgres 1092/1092. Cofre, portas, outbox, webhook autenticado, baixa e emissão entraram pelos #569, #579, #587 e #608. Ata `J-608-b-ass-08c3`; item 60 FECHADO no `PLANO_SAN3.md`.
 - **origem:** falas literais registradas em `D-ASS-PLANOS-FRANQUIA-E-CANAL`.
 - **andamento (PR #507, desvio declarado no relatório do dev):** no demonstrativo, `charge_status` e `invoice_status` nascem em `none` e só mudam pelo canal (`B-ASS-06` a `B-ASS-08`); nenhuma rota do B-ASS-04 os altera.
 - **encerramento:** cofre, portas Asaas/Focus NFe, outbox, webhook autenticado, baixa e emissão ficam implementados e fail-closed, com zero chamada externa nos testes e com o canal desligado por padrão.
@@ -17227,7 +17231,8 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma falha aberta, e 5 rotas pedem chaves fora do catálogo — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA (escalada de privilégio de plataforma, hoje sem papel em produção) · **escopo:** `pre-existente` (o desenho da porta de plataforma × o catálogo) · **dono:** `B-PLAT-PERMISSAO` (o item 72 saiu do portão por `D-DONO-1711-72-FORA-DO-PORTAO`) · **gatilho:** a volta do bloco `B-PLAT-PERMISSAO` · **bloqueia:** depois dos bloqueantes (não entra no portão), **e bloqueia a Fase 6 da AWS** (criação do 1º administrador da plataforma), por `D-AWS-13`.
+- **status:** FECHADA (2026-11-20, PR #610, `B-PLAT-PERMISSAO`, squash `3b7351e7`, head `c5f30058`; ressalva (1) do `porteiro-610-cl`) · antes: ABERTA · **gravidade:** ALTA (escalada de privilégio de plataforma, hoje sem papel em produção) · **escopo:** `pre-existente` (o desenho da porta de plataforma × o catálogo) · **dono:** `B-PLAT-PERMISSAO` (o item 72 saiu do portão por `D-DONO-1711-72-FORA-DO-PORTAO`) · **bloqueia:** não no repositório. Na AWS, a Fase 6 só começa com a migração `20260905000000` aplicada lá (`D-AWS-13`, "no ar"; depende da `P-AWS-MIGRADOR`).
+- **prova do fechamento (registro de 20/11):** o porteiro conferiu o critério no código: `src/modules/platform/platform-permissions.ts:76`, `if (!hasPlatformRole || !hasPermission)`; as 6 chaves em `catalog.ts`; a migração `20260905000000_plat_permissoes_de_organizacao`, só para o `super_admin`. Conferiu também por mutação: sem `|| !hasPermission`, matriz e censo deram `fail 3`. No CI do merge: backend 7228/7226/0 fail e backend-postgres 1009/1009, com `ok 518..521 plat-perm`. Junta completa: ata `J-610-b-plat-permissao`. Absorve a `P-PLAT-PORTAO-SEM-PERMISSAO`, aberta na F4 do bloco (`6a9a8c24`) e não restaurada, porque duplicaria esta.
 - **origem:** a correção do orquestrador sobre o item 72 (17/11 16:0x, §A2) e a decisão do dono de 22:00 (`D-DONO-1711-72-FORA-DO-PORTAO`).
 - **fato:** o `requirePlatformPermission` não confere a permissão (falha aberta); 5 rotas pedem 6 chaves que não estão no catálogo; o banco (a migração do B-ASS-04, `settle` só para o `super_admin`) diverge do catálogo. O plano + Emendas 1 e 2 ficaram prontos, e a migração das 6 chaves (só para o `super_admin`) segue autorizada (`D-DONO-1711-72-P1`).
 - **critério de encerramento:** a checagem falha fechada, as 6 chaves entram no catálogo (migração autorizada) e as 5 rotas passam a exigir a permissão que de fato possuem, com teste e junta completa.
@@ -17464,3 +17469,60 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** notas C2-N3 e C2-N4 da cadeira C2 (`jc2-608-cl`) da junta do #608, B-ASS-08c3; triagem do orquestrador de 20/11. As outras notas da C2 foram consertadas no #608 (C2-N2, C2-N7, C2-N8) ou anexadas a pendências existentes (C2-N5 à `P-08C3-TESTES-DB-DE-VERDADE`, C2-N6 à `P-08C3-40P01-CRU`); a C2-01 virou a `P-08C3-CLOSE-TIMEOUT-FRIO`.
 - **C2-N3:** o EW1 por comportamento (`tests/ass-08c3-provider-routes-db.test.ts`) pula a rota `POST /vault/rotate` no laço (`grep -n '/vault/rotate' tests/ass-08c3-provider-routes-db.test.ts`). Pela leitura, o `rotate` só toca credenciais, nunca o `enabled`. **Critério:** o EW1 exercita também o `rotate` e mostra o `enabled` intacto.
 - **C2-N4:** com o canal desligado, a trilha da confirmação do operador publica evento na fila de jobs (Redis da infraestrutura) dentro da transação: `audit-log.service.ts:65` → `domain-event.publisher.ts:72` → `job.queue.ts` → `redis.client.ts:24`. É a única conexão tentada na sonda CA-OFF3 da C2, e não é rede de provedor. **Critério:** a publicação sai da transação (depois do commit, ou pela outbox de eventos), ou fica escrito por que ela pode ficar dentro, com teste.
+
+## P-AWS-ROTEIRO-TRACCAR-DIVERGE (2026-11-20) — o roteiro da AWS para o Traccar (fases 3c e 3d) diverge da arquitetura aprovada — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `dentro-do-plano` · **dono:** o PR de documentação que corrigir o roteiro, antes de qualquer provisionamento do Traccar · **bloqueia:** o provisionamento das fases 3c e 3d.
+- **origem:** o levantamento do Traccar de 20/11.
+- **Divergências** (arquivo e linha do roteiro × decisão que contraria):
+  1. o roteiro põe o Traccar em sub-rede com NAT (`docs/infra/roteiro-aws-cloudshell.md:243` e `:996`), e a decisão é "sem saída para a internet" e manda "sem NAT" (`agent-orchestration/controle/decisoes.md:3345`). A rota que leva as sub-redes privadas ao NAT está em `:261` ("as privadas, só pelo NAT (passo 1.4)") e em `:335` (`aws ec2 create-route --route-table-id "$RT_PRIV" --destination-cidr-block 0.0.0.0/0 --network-interface-id "$NAT_ENI"`);
+  2. o roteiro puxa a imagem do Docker Hub (`docs/infra/roteiro-aws-cloudshell.md:872`: `traccar/traccar@sha256:…`), e a decisão é espelhar no ECR (`agent-orchestration/controle/decisoes.md:3346`: "imagem é espelhada num ECR privado com o mesmo digest");
+  3. o roteiro guarda o backup por 7 dias (`docs/infra/roteiro-aws-cloudshell.md:897`: `--backup-retention-period 7` do RDS do Traccar), e a decisão do dono (F-8) fixou 14 (`agent-orchestration/controle/decisoes.md:3388`: "Backup do banco do Traccar: 14 dias");
+  4. o roteiro abre a porta 5055 (OsmAnd) em público (`docs/infra/roteiro-aws-cloudshell.md:55` e `:1032`), e a decisão `D-TRC-CELULAR-PELO-APP` diz que o celular vai pelo app — a 5055 só serviria a teste (`agent-orchestration/controle/decisoes.md:3478`: "em produção não é preciso abrir a porta OsmAnd"). **Duas fontes aprovadas apontam em direções diferentes — conflito registrado sem escolher lado (§A2):**
+    - o roteiro não inventou a 5055: segue a `PD-TRC-616`, aprovada por escrito pelo dono em 2026-10-11 com OsmAnd e GT06 (`docs/omega-pd.md:1696`: "aprovada por escrito pelo dono em 2026-10-11, com OsmAnd e GT06"), e abre exatamente o que ela aprovou (`docs/infra/roteiro-aws-cloudshell.md:1032`: "Abre-se **só** o que a `PD-TRC-616` aprovou: **GT06 na 5023** e **OsmAnd na 5055**");
+    - a `D-TRC-CELULAR-PELO-APP` entrega a escolha da porta pública ao gate `G-TRC-NLB` (`agent-orchestration/controle/decisoes.md:3479`: "porta pública de cada protocolo se decide no `G-TRC-NLB`"), e o roteiro já põe esse gate como trava antes de executar (`docs/infra/roteiro-aws-cloudshell.md:55`: "trava: modelo de ameaças do `G-TRC-NLB` + junta 5/5 antes de executar"). A pergunta ao dono ("abrir a 5055 só para teste ou nunca") continua aberta;
+  5. o roteiro sobe a 3c direto em produção (`docs/infra/roteiro-aws-cloudshell.md:995`: `--cluster erp-prod`), e o plano do Traccar manda staging depois dos blocos 01 a 05 (`docs/revisoes/TRACCAR/PLANO_TRACCAR.md:62-63`: "Do B-TRC-01 ao B-TRC-05 tudo roda em dev" e "a escolha só pesa no staging (B-TRC-06)") — é uma decisão do dono, a registrar;
+  6. o custo da 3d aparece duas vezes com valores diferentes no próprio roteiro: cerca de US$ 35/mês na tabela (`docs/infra/roteiro-aws-cloudshell.md:55`) e cerca de US$ 24 mais logs no detalhe (`docs/infra/roteiro-aws-cloudshell.md:1034`). Não escolho um valor: registro os dois.
+- **Perguntas ao dono, sem resposta:** "staging × produção direta" e "abrir a 5055 só para teste ou nunca".
+
+## P-SYNC-SETSTATE-NO-BUILD (2026-11-20) — a tela de Sincronização do app dispara "setState() called during build" quando é reaberta depois de a sessão mudar — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (defeito anterior ao `B-APP-ORG`, visto na F5) · **dono:** o próximo bloco que tocar a tela de Sincronização do app · **bloqueia:** não.
+- **origem:** Emenda 1.5 do plano `B-APP-ORG` (E1.5-2), a partir do diário da F5 (`dev-apporg-f5-cl`) e da conferência visual do orquestrador, 20/11.
+- **fato:** reaberta depois de a sessão mudar, a tela dispara, em debug, "setState() or markNeedsBuild() called during build" (`sync_screen.dart:171`). É hipótese com evidência, ainda a reproduzir na `main`.
+- **critério de encerramento:** reproduzido na `main` e consertado, com um teste que reabre a tela depois da troca de sessão sem o aviso; ou não reproduzido, com o comando registrado.
+
+## P-SYNC-LINHA-TRANSBORDA-390 (2026-11-20) — na tela de Sincronização, uma linha transborda 37 px no aparelho de 390 px — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (anterior ao `B-APP-ORG`) · **dono:** o próximo bloco que tocar a tela de Sincronização do app · **bloqueia:** não.
+- **origem:** Emenda 1.5 do plano `B-APP-ORG` (E1.5-2).
+- **fato:** com uma ação de OS pendente, uma linha da tela de Sincronização transborda 37 px no aparelho de 390 px.
+- **critério de encerramento:** a linha cabe em 390 px com uma ação pendente, provada por teste de widget nessa largura.
+
+## P-APPORG-RESUMO-POR-ORGANIZACAO (2026-11-20) — falta no backend o resumo por organização, a situação dela e a hora do bootstrap que a maquete da Seleção de organização mostra — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA ("falta no backend") · **escopo:** `pre-existente` (dado que o servidor não dá) · **dono:** o AP-5 (as aparências B e C das telas Entrar e Seleção de organização) · **bloqueia:** não.
+- **origem:** Emenda 1.5 do plano `B-APP-ORG` (E1.5-3). As diferenças em relação à maquete aprovada foram aceitas porque o servidor não dá o dado.
+- **fato:** "Envios pendentes" e "OS abertas hoje" aparecem só da organização ATUAL, porque o servidor não dá os das outras. Não há a pílula "Suspensa", porque a lista não traz a situação. O aviso de pendências mostra só o total, sem quebra por tipo. Não há o estado "dados desatualizados", porque o bootstrap não guarda a hora.
+- **critério de encerramento:** o servidor entrega, por organização da pessoa, o resumo, a situação e a hora do bootstrap, e a tela os mostra.
+
+## P-API-CLIENT-DETAILS-DESCARTADO (2026-11-20) — o cliente de API da web descarta o `details` do erro, e a recusa de Ligar o canal não chega à tela com a lista do servidor
+
+- **status:** ABERTA · **gravidade:** sem fonte (o registro do orquestrador abre a pendência sem dizer a gravidade) · **escopo:** `pre-existente` (`frontend/src/services/api/client.ts`, fora do escopo do `B-ASS-10c-OPERACAO`) · **dono:** sem fonte (a nomear pelo orquestrador) · **bloqueia:** não, pela decisão do orquestrador de 20/11 ~17:00 SP, que mandou não mexer no `client.ts` neste bloco e deixar a janela com texto honesto.
+- **origem:** pedido de emenda E-DEV-1 do dev da tela de operação da cobrança (`dev-cobop-cl`, PR #612); a pendência foi aberta pelo orquestrador em 20/11.
+- **fato:** `client.ts` descarta o `details` do envelope de erro, então a lista `details.failed[]` da recusa de Ligar não chega à tela. A janela mostra um checklist DERIVADO do que já leu do canal, e diz isso com texto honesto (o teste `T-LIG-2` prende o texto). O conserto proposto pelo dev são 4 linhas aditivas em `client.ts` (`ApiError.details` opcional, lido do envelope).
+- **critério de encerramento:** o `details` do erro chega à tela, e a janela de Ligar mostra a lista da recusa do servidor, com teste.
+
+## P-ASS10C-FORMA-DA-COBRANCA (2026-11-20) — a forma de cada cobrança não vem nas respostas do servidor, e o quadro "Cobranças por forma" da tela de operação fica sem dado
+
+- **status:** ABERTA · **gravidade:** sem fonte (proposta pelo dev, sem gravidade) · **escopo:** `pre-existente` (dado que o servidor não dá) · **dono:** `B-ASS-10d` (proposto pelo dev) · **bloqueia:** não (a tela diz, com o selo "ainda não vem do servidor", que o dado falta).
+- **origem:** leitura declarada do dev da tela de operação da cobrança (`dev-cobop-cl`, PR #612), registrada pelo orquestrador em 20/11.
+- **fato:** a forma de cada cobrança não vem no demonstrativo nem em `/charges`; o quadro "Cobranças por forma" da opção A fica sem dado.
+- **critério de encerramento:** o servidor devolve a forma da cobrança, e o quadro mostra o dado real.
+
+## P-USRCON-R11-R12-SEM-CASO-DB (2026-11-20) — no banco, as leituras R11 e R12 do despachante com técnico perderam o caso de teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` ao bloco no plano (o §7.3 do plano do `B-USERS-CONCESSAO-PAINEL` só pede R10a/R10b) · **dono:** o plano do `B-USERS-CONCESSAO-PAINEL` · **bloqueia:** não.
+- **origem:** achado A4 da verificação `verif-usrcon-b-cl` (F4/F5a da concessão, `8eeec29f`), 20/11.
+- **fato:** no `tests/wo-leitura-scope-db.test.ts` do ramo da concessão, R11 e R12 do despachante com técnico saíram do `D-UNIAO` e não entraram no `D-MODULO`. Em memória, o `L-MODULO` cobre R11/R12. Na verificação, o `grep -E` das linhas `D-(UNIAO|MODULO) · field_dispatcher+ft · R1[12]` no TAP do `-db` deu 0.
+- **critério de encerramento:** R11 e R12 do despachante com técnico têm caso no `-db`, com o resultado que a regra do bloco manda.
