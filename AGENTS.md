@@ -303,6 +303,11 @@ Organização · Console Dispatcher · Cobranças.
    - **Quem monta a maquete é o Claude, nunca o Gemini** (decisão do dono, 2026-10-13, `D-DESIGN-SO-CLAUDE`): *"nao use
      o gemini free para essas coisas, eu so confio no claude desing"*. Vale para maquete, opção visual e todo trabalho de
      tela.
+   - **Telas novas: um LOTE por módulo, e sai UMA tela** (decisão do dono, 2026-11-20, `D-DONO-2011-UMA-TELA-POR-LOTE`; atualiza, só para as telas novas, as regras de 3 opções acima). Nas palavras do dono: *"as telas que faltam você vai passar um lote para mim, por exemplo, lote do estoque, aí eu beleza, aí a gente vai tela por tela definindo quais itens e o que mostrar nessas telas, para você só ter que fazer uma tela ao invés de três"*; e, ao confirmar: *"[as] que tem as três aparências aprovadas, vamos manter. Isso vai servir só para as novas. Vale também para o app. Claro, tem que deixar na ordem. A ordem dos lotes tanto faz."*
+     - **O lote:** para as telas que ainda NÃO têm as 3 aparências aprovadas (web e app), o orquestrador apresenta ao dono um lote por módulo, num artefato. Para cada tela, o lote mostra como ela está hoje, o desenho aprovado e a recomendação de itens: o que mostrar, indicadores, filtros e o que abre ao clicar. O dono responde tela a tela pelo seletor do artefato.
+     - **A tela sai UMA**, como o dono definiu, no padrão do sistema (itens 1 a 6 deste §4). Não há maquete de 3 opções nem as 3 aparências para essas telas.
+     - **As que já têm as 3 aparências aprovadas ficam como estão**, com o seletor de aparência por usuário funcionando.
+     - **Leitura do orquestrador, declarada (§A6):** "tem que deixar na ordem" quer dizer que a tela fica arrumada, no padrão do sistema. A ordem dos lotes é do orquestrador. Quem monta o lote e a tela é o Claude (`D-DESIGN-SO-CLAUDE`).
 
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 
@@ -1018,7 +1023,7 @@ ao PR corrente**.
 - [ ] **Padrão do sistema (§4, `D-TELAS-SEGUEM-O-PADRAO`):** a tela nasce da tela-modelo existente citada no plano, com as
       skills `ts-frontend-full` e `ui-ux-pro-max`; nada de layout ou componente novo onde o sistema já tem o equivalente.
 - [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela sai com as 3 opções aprovadas pelo dono, como aparências que cada usuário escolhe (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`),
-      registrada em `screen-refs/`.
+      registrada em `screen-refs/`. **Tela nova (sem as 3 aprovadas):** sai UMA, como o dono definiu no lote (`D-DONO-2011-UMA-TELA-POR-LOTE`).
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 
 ## 11. Fidelidade visual — referências renderizadas (`screen-refs/`)

@@ -6234,3 +6234,13 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
   - D-COM-12 cai: P1 = (b).
   - D-COM-13 cai: P4 = o valor total da OS.
 - **Próximo passo:** a Emenda 1 vai a uma segunda crítica em outra casa.
+
+## D-DONO-2011-UMA-TELA-POR-LOTE (2026-11-20 ~22:00 SP) — telas novas por lote, com saída de uma tela
+
+- **Falas do dono (verbatim):** *"as telas que faltam você vai passar um lote para mim, por exemplo, lote do estoque, aí eu beleza, aí a gente vai tela por tela definindo quais itens e o que mostrar nessas telas, para você só ter que fazer uma tela ao invés de três"*; e *"[as] que tem as três aparências aprovadas, vamos manter. Isso vai servir só para as novas. Vale também para o app. Claro, tem que deixar na ordem. A ordem dos lotes tanto faz."*.
+- **Regra (4 linhas):**
+  - Para telas sem 3 aparências aprovadas (web e app), o orquestrador apresenta ao dono um lote por módulo em artefato com estado atual, desenho aprovado e recomendação de itens por tela (mostrar, indicadores, filtros e abertura ao clique), com resposta tela a tela no seletor.
+  - Cada tela nova sai UMA, no padrão do sistema (§4 itens 1 a 6); não há maquete de 3 opções nem entrega de 3 aparências para essas telas.
+  - Telas que já têm 3 aparências aprovadas ficam como estão, com seletor de aparência por usuário.
+  - "Tem que deixar na ordem" é leitura declarada do orquestrador para manter a tela arrumada no padrão do sistema; a ordem dos lotes é do orquestrador; lote e tela seguem `D-DESIGN-SO-CLAUDE`.
+- **Atualização de decisões:** atualiza `D-TELAS-TRES-OPCOES`, `D-APARENCIA-POR-USUARIO` e `D-TELAS-SAEM-COM-TRES` só para as telas novas.
