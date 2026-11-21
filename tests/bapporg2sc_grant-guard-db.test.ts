@@ -12,6 +12,7 @@ import {
   withRoleCatalogLock,
   type EphemeralRole,
 } from "./helpers/auth-identity-fixture.js";
+import { createPrismaClient } from "../src/database/pg-connection.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-APP-ORG-2S-c (SC, D3-2) — a saída do grupo derruba os acessos na hora, pelo dia de negócio de
@@ -45,11 +46,7 @@ if (!connectionString) {
 
   const harness = (): Promise<Harness> =>
     (harnessPromise ??= (async () => {
-      const [{ PrismaPg }, { PrismaClient: Client }] = await Promise.all([
-        import("@prisma/adapter-pg"),
-        import("@prisma/client"),
-      ]);
-      const admin = new Client({ adapter: new PrismaPg({ connectionString }) });
+      const admin = createPrismaClient(connectionString);
       const role = await createEphemeralRole(admin, connectionString);
 
       // O portão e os serviços usam o Prisma GLOBAL; ele é o papel efêmero.

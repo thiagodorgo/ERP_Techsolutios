@@ -11,6 +11,7 @@ import {
   createEphemeralRole,
   type EphemeralRole,
 } from "./helpers/auth-identity-fixture.js";
+import { createPrismaClient } from "../src/database/pg-connection.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-APP-ORG-2S-c (SC) — HD1 (trava do dev, 1.8.3 §6): a conferência de sessão com par `concessao`
@@ -42,11 +43,7 @@ if (!connectionString) {
 
   const harness = (): Promise<Harness> =>
     (harnessPromise ??= (async () => {
-      const [{ PrismaPg }, { PrismaClient: Client }] = await Promise.all([
-        import("@prisma/adapter-pg"),
-        import("@prisma/client"),
-      ]);
-      const admin = new Client({ adapter: new PrismaPg({ connectionString }) });
+      const admin = createPrismaClient(connectionString);
       const role = await createEphemeralRole(admin, connectionString);
       (globalThis as { prisma?: unknown }).prisma = role.client;
       return { admin, role, tenantIds: [], groupIds: [] };
