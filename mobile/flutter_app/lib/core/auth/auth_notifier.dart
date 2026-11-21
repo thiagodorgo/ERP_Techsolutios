@@ -138,6 +138,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         await repo.commitRefreshed(refreshed);
         return AuthState(status: AuthStatus.authenticated, session: refreshed);
       } on ApiUnauthorizedError {
+        // dart format off
+        await _listenSessions.discardAll(); // queda na abertura: os tokens do diário vão para a revogação
+        // dart format on
         await _clearDevice(repo);
         return AuthState(
           status: AuthStatus.expired,
@@ -164,6 +167,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncValue.loading();
     final release = await _enterSessionLock();
     try {
+      // dart format off
+      await _listenSessions.discardAll(); // entrada: nada da escuta de antes fica
+      // dart format on
       final repo = ref.read(authRepositoryProvider);
       final session = await repo.login(
         email: email,
@@ -273,7 +279,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // dart format off
           await _listenSessions.discardAll(); // troca: a época antiga sai
           // dart format on
-      await repo.commitSwitched(switched);
+      try {
+        await repo.commitSwitched(switched);
+      } catch (_) {
+        // dart format off
+        _listenSessions.reopen(); // a troca não gravou: a sessão fica, e a escuta volta
+        // dart format on
+        rethrow;
+      }
       _bumpEpoch(); // ciclo: troca de organização
       state = AsyncValue.data(
         AuthState(
