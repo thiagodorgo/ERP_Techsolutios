@@ -7,7 +7,7 @@ import { MemoryRouter } from "react-router-dom";
 
 import { APPEARANCE_SCREENS } from "../src/modules/appearance/appearance.registry";
 import { NO_BILLING_OPS_ACCESS, type BillingOpsAccess } from "../src/modules/platform/billing-operations/billing-ops.access";
-import { INITIAL_UI, selectTarget, toggleRow, type BillingOpsUi } from "../src/modules/platform/billing-operations/billing-ops.state";
+import { buildBillingOpsView, INITIAL_UI, selectTarget, toggleRow, type BillingOpsUi, type BillingOpsView } from "../src/modules/platform/billing-operations/billing-ops.state";
 import { PlatformBillingOpsScreen, type BillingOpsScreenProps } from "../src/modules/platform/billing-operations/pages/PlatformBillingOpsPage";
 import type { BillingOpsData } from "../src/modules/platform/billing-operations/billing-ops.types";
 import * as fixture from "./helpers/billing-ops.fixture";
@@ -19,10 +19,10 @@ import * as fixture from "./helpers/billing-ops.fixture";
 const FULL: BillingOpsAccess = { read: true, readTenants: true, settle: true, manageProviders: true };
 const noop = () => undefined;
 
-function render(options: { readonly appearance?: string; readonly ui?: BillingOpsUi; readonly access?: BillingOpsAccess; readonly data?: BillingOpsData; readonly fixtureOptions?: fixture.FixtureOptions; readonly details?: BillingOpsScreenProps["details"] } = {}): string {
+function render(options: { readonly appearance?: string; readonly ui?: BillingOpsUi; readonly access?: BillingOpsAccess; readonly data?: BillingOpsData; readonly fixtureOptions?: fixture.FixtureOptions; readonly details?: BillingOpsScreenProps["details"]; readonly model?: BillingOpsView } = {}): string {
   const ui = options.ui ?? INITIAL_UI;
   const data = options.data ?? fixture.fixtureData(options.fixtureOptions);
-  const model = fixture.fixtureModel(ui, options.fixtureOptions);
+  const model = options.model ?? fixture.fixtureModel(ui, options.fixtureOptions);
   const props: BillingOpsScreenProps = {
     data,
     model,
@@ -216,4 +216,26 @@ test("T-LIN-1 / T-ERR-2 nenhum termo técnico, código snake_case nem tenantId n
 test("T-LIN-1 vermelho-controle: o mesmo detector acusa um código cru no texto", () => {
   assert.notEqual(FORBIDDEN.exec(visible("<p>amount_exceeds_balance</p>")), null);
   assert.notEqual(FORBIDDEN.exec(visible("<p>fila NEEDS_REVIEW</p>")), null);
+});
+
+// ---- R5 do porteiro do #608: o texto da nota confere com a Q1 (b) do contrato ----------------------------------------------
+// `API_CONTRACTS.md` (§ "Estorno do provedor e a nota: Q1 (b), decisão do dono"): "a nota fica, com aviso para o contador, até
+// todo o dinheiro ser devolvido"; e `live_on_unpaid` é a "nota viva num demonstrativo que não está pago: o estorno de só uma
+// parte, ou a recusa do cancelamento". A frase antiga ("saiu antes do pagamento total… precisa ser cancelada") era da Q1 (a).
+test("T-R5-1 nota emitida sobre mês não quitado: a nota fica e o contador é avisado, nas 3 aparências; nunca 'precisa ser cancelada'", () => {
+  const base = fixture.fixtureData();
+  const litoral = base.readings["org-litoral"];
+  assert.ok(litoral && litoral.state === "ok");
+  const data = { ...base, readings: { ...base.readings, "org-litoral": { ...litoral, backlog: [{ statementId: "st-lit-10", period: fixture.MONTH, category: "live_on_unpaid" as const }] } } };
+  const closed = buildBillingOpsView({ data, month: fixture.MONTH, ui: INITIAL_UI, today: fixture.TODAY, currentMonth: fixture.CURRENT_MONTH, serverOff: null });
+  const row = closed.rows.find((item) => item.statement.id === "st-lit-10");
+  assert.equal(row?.backlog, "live_on_unpaid", "controle: a linha é a da nota viva sem quitar");
+  const ui = toggleRow(INITIAL_UI, row!.key);
+  const model = buildBillingOpsView({ data, month: fixture.MONTH, ui, today: fixture.TODAY, currentMonth: fixture.CURRENT_MONTH, serverOff: null });
+  for (const appearance of ["A", "B", "C"]) {
+    const html = visible(render({ appearance, data, ui, model }));
+    assert.match(html, /Enquanto houver valor pago no mês, a nota fica como está e o contador é avisado/, appearance);
+    assert.match(html, /só é cancelada quando todo o dinheiro for devolvido/, appearance);
+    assert.doesNotMatch(html, /precisa ser cancelada|saiu antes do pagamento total/, appearance);
+  }
 });

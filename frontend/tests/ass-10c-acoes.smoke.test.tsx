@@ -28,6 +28,14 @@ const { createRoot } = await import("react-dom/client");
 const { billingOpsActions } = await import("../src/modules/platform/billing-operations/useBillingOpsActions");
 const { NO_BILLING_OPS_ACCESS } = await import("../src/modules/platform/billing-operations/billing-ops.access");
 const { BillingOpsDialogs } = await import("../src/modules/platform/billing-operations/components/BillingOpsDialogs");
+const { MemoryRouter } = await import("react-router-dom");
+const { AuthProvider } = await import("../src/providers/AuthProvider");
+const { TenantProvider } = await import("../src/providers/TenantProvider");
+const { PermissionProvider } = await import("../src/providers/PermissionProvider");
+const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+const { mockSession } = await import("../src/mocks/auth/context");
+const { PlatformBillingOpsPage } = await import("../src/modules/platform/billing-operations/pages/PlatformBillingOpsPage");
+const { asMoney, formatBRL } = await import("../src/modules/platform/billing-operations/billing-ops.money");
 const fixture = await import("./helpers/billing-ops.fixture");
 
 type Access = import("../src/modules/platform/billing-operations/billing-ops.access").BillingOpsAccess;
@@ -416,5 +424,98 @@ test("T-ACT-15 cancelar cobrança vista no provedor: o código inválido é erro
     assert.equal(server.writes().length, 0);
   } finally {
     await view.unmount();
+  }
+});
+
+// ---- R5 do porteiro do #608: o estorno de só uma parte, pela Q1 (b) ---------------------------------------------------------
+test("T-R5-2 o estorno de só uma parte diz que a nota fica e que o contador é avisado; o que zera diz que a nota entrou em cancelamento", async () => {
+  const outcomes: [string, RegExp, RegExp][] = [
+    ["kept_partial_reversal", /A nota fiscal fica: ainda há valor pago neste mês, e o contador é avisado/, /entrou em cancelamento/],
+    ["cancel_requested", /A nota fiscal entrou em cancelamento/, /A nota fiscal fica/],
+    ["none", /Estorno registrado\. A tela vai reler o demonstrativo/, /A nota fiscal (fica|entrou)/],
+  ];
+  for (const [invoice, says, never] of outcomes) {
+    server.serve(on("POST", "/reverse", { data: { invoice } }));
+    const payment = { id: "pg-1", source: "manual" as const, amount: "500.00" as never, reversedAmount: null, reversed: false, paidAt: "2026-11-15", method: "Pix", note: null };
+    const view = await openDialog({ kind: "reverse", row: PATIO, payment });
+    try {
+      await type(textarea(view.container), "baixa lançada em dobro");
+      await click(confirmButton(view.container));
+      await click(confirmButton(view.container));
+      assert.equal(server.writes().length, 1, invoice);
+      assert.match(text(view.container), says, invoice);
+      assert.doesNotMatch(text(view.container), never, invoice);
+    } finally {
+      await view.unmount();
+    }
+  }
+});
+
+// ---- R-RELE na tela inteira -------------------------------------------------------------------------------------------------
+// A página REAL (leitura, janela e releitura), com a sessão do console e o `fetch` como único dublê. A escrita devolve um
+// demonstrativo com um saldo que o servidor NUNCA lê de volta (999,99): se a tela usasse o que a própria escrita devolveu, ou
+// não relesse, o saldo da tela não seria o da releitura (870,00).
+test("T-RELE-1 depois da baixa, a tela relê o demonstrativo (GET depois do POST) e mostra o saldo da releitura, nunca o da escrita", async () => {
+  // Os saldos numa fonte só: o que o servidor falso devolve é o que a tela tem de mostrar (sem número literal na asserção).
+  const BEFORE = "1890.00";
+  const AFTER = "870.00";
+  const BAIT = "999.99";
+  const brl = (decimal: string) => formatBRL(asMoney(decimal));
+  let paid = false;
+  const litoral = () => fixture.statementJson("st-lit-10", fixture.MONTH, paid ? { paidAmount: "1020.00", balance: AFTER } : { balance: BEFORE });
+  server.serve(
+    on("GET", /\/platform\/tenants$/, { data: fixture.ORGS.map((org) => ({ ...org, slug: org.id, plan: "pro", status: "active", activeUsers: 1, enabledModules: [], createdAt: "2026-01-01" })) }),
+    on("GET", "/statements/st-lit-10/charges?", { data: { charges: [] } }),
+    on("GET", "/statements/st-lit-10?", () => ({ data: { ...litoral(), payments: [], credits: [] } })),
+    on("GET", "/statements?tenantId=org-litoral", () => ({ data: [litoral()] })),
+    on("GET", "/statements?", { data: [] }),
+    on("GET", "/outbox?", { data: [] }),
+    on("GET", "/invoices/backlog", { data: [] }),
+    on("GET", "/billing-profile", { data: { complete: true, missing: [] } }),
+    on("GET", "/providers", { data: [] }),
+    on("POST", "/statements/st-lit-10/payments", () => {
+      paid = true;
+      return { status: 201, data: { notice: null, statement: fixture.statementJson("st-lit-10", fixture.MONTH, { paidAmount: "1020.00", balance: BAIT }) } };
+    }),
+  );
+  dom.storage.clear();
+  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: ["Super Admin"], permissions: ["platform:billing:read", "platform:tenants:read", "platform:billing:settle"] } });
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  await act(async () => {
+    root.render(
+      React.createElement(
+        MemoryRouter,
+        { initialEntries: [`/platform/billing?org=org-litoral&mes=${fixture.MONTH}`] },
+        React.createElement(AuthProvider, null, React.createElement(TenantProvider, null, React.createElement(PermissionProvider, null, React.createElement(PlatformBillingOpsPage)))),
+      ),
+    );
+  });
+  try {
+    await settle();
+    const row = elements(container, (el) => el.localName === "tr" && el.getAttribute("class") === "pat-ab-row" && /Guinchos Litoral Norte/.test(text(el)))[0];
+    assert.ok(row, "a linha do demonstrativo da organização");
+    await act(async () => (propsOf(row).onClick as () => void)());
+    await settle();
+    assert.ok(text(container).includes(brl(BEFORE)), `antes: o saldo lido (${brl(BEFORE)})`);
+    await click(button(container, /^Registrar baixa manual/));
+    await type(field(container, (el) => el.getAttribute("data-campo") === "valor"), "1.020,00");
+    await click(confirmButton(container));
+    await click(confirmButton(container));
+    await settle();
+    const calls = server.state.calls.map((call) => `${call.method} ${call.url.replace("/api/v1/platform/billing", "")}`);
+    const post = calls.indexOf("POST /statements/st-lit-10/payments");
+    assert.ok(post >= 0, `a baixa saiu: ${JSON.stringify(calls)}`);
+    assert.deepEqual(writes(), [["POST", "/statements/st-lit-10/payments", { tenantId: "org-litoral", amount: "1020.00" }]]);
+    const after = calls.slice(post + 1);
+    assert.ok(after.includes("GET /statements/st-lit-10?tenantId=org-litoral"), `R-RELE: o GET do demonstrativo depois do POST: ${JSON.stringify(after)}`);
+    assert.ok(after.includes("GET /statements?tenantId=org-litoral"), `R-RELE: a lista da organização relida depois do POST: ${JSON.stringify(after)}`);
+    const shown = text(container);
+    assert.ok(shown.includes(brl(AFTER)), `o saldo da releitura (${brl(AFTER)})`);
+    assert.ok(!shown.includes(brl(BAIT)), `nunca o saldo que a escrita devolveu (${brl(BAIT)})`);
+  } finally {
+    await act(async () => root.unmount());
+    dom.doc.body.removeChild(container);
   }
 });

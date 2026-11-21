@@ -11,6 +11,12 @@
 //  R10/R11        — a geometria não perde a marca por parâmetro `number` de função do módulo nem por anotação de tipo;
 //  R13 template   — valor marcado (dinheiro, percentual, taxa) não entra cru num template (`${money}`): vira texto sem
 //                   marca (B-ASS-10c-OPERACAO, regra 1 da `P-567-TRAVA-DINHEIRO-TEMPLATE`);
+//  R0 sem tipo    — FALHA FECHADO: valor com o TIPO DE ERRO do verificador (o de um acesso a propriedade que não existe,
+//                   de um nome que não resolve) como operando de conta, argumento de conversão ou trecho de template. Ali
+//                   a marca é invisível, então a trava não pode dizer "não é dinheiro" (B-ASS-10c-OPERACAO, conserto da
+//                   pré-revisão, A-04/A-05: `Number(s.balance)` e `Number(`${s.balance}`)` sobre um tipo sem `balance`
+//                   passavam caladas). O `any` explícito NÃO entra (o `Array.isArray` estreita para `any[]` em código
+//                   legítimo): segue limite declarado, como as formas 2 e 4;
 //  R12 escala     — a marca `data-escala` (o texto de escala dos eixos, A8-r2) só existe nos componentes da biblioteca
 //                   (`frontend/src/components/**`), nunca num arquivo do módulo.
 // LIMITES DECLARADOS (A4-r2 formas 2 e 4): geometria dentro de lista/contêiner perdendo a marca (`const xs: number[] =
@@ -37,8 +43,23 @@ const UNARY = new Set([ts.SyntaxKind.PlusToken, ts.SyntaxKind.MinusToken, ts.Syn
 const PERCENT_AFTER = /^\s?%/;
 const CONVERTERS = /^(Number|parseFloat|parseInt|BigInt|String|JSON\.parse|Number\.parse(Float|Int))$/;
 
-export function moneyViolations(files: readonly string[], options: ts.CompilerOptions, root: string, moduleDir: string, moneyFile: string): string[] {
-  const program = ts.createProgram([...files], options);
+/**
+ * `overrides` (opcional): conteúdo EM MEMÓRIA para arquivos do programa (caminho → texto), para provar uma mutação no
+ * módulo REAL sem escrever no disco — os imports seguem resolvendo de verdade (B-ASS-10c-OPERACAO, T-DIN-2/3).
+ */
+export function moneyViolations(files: readonly string[], options: ts.CompilerOptions, root: string, moduleDir: string, moneyFile: string, overrides: Readonly<Record<string, string>> = {}): string[] {
+  const host = ts.createCompilerHost(options, true);
+  const replaced = new Map(Object.entries(overrides).map(([file, text]) => [path.resolve(file), text] as const));
+  if (replaced.size > 0) {
+    const readFile = host.readFile.bind(host);
+    const getSourceFile = host.getSourceFile.bind(host);
+    host.readFile = (fileName) => replaced.get(path.resolve(fileName)) ?? readFile(fileName);
+    host.getSourceFile = (fileName, language, onError, shouldCreate) => {
+      const text = replaced.get(path.resolve(fileName));
+      return text === undefined ? getSourceFile(fileName, language, onError, shouldCreate) : ts.createSourceFile(fileName, text, language, true);
+    };
+  }
+  const program = ts.createProgram([...files], options, host);
   const checker = program.getTypeChecker();
   const relative = (fileName: string) => path.relative(root, path.resolve(fileName)).split(path.sep).join("/");
   const inModule = (fileName: string) => relative(fileName).startsWith(moduleDir) && relative(fileName) !== moneyFile;
@@ -52,6 +73,11 @@ export function moneyViolations(files: readonly string[], options: ts.CompilerOp
     return null;
   };
   const brandOf = (node: ts.Node): Brand | null => brandOfType(checker.getTypeAtLocation(node));
+  // R0: o tipo de erro do verificador (`intrinsicName === "error"`) — só existe quando o código não tipa; a trava não absolve.
+  const untyped = (node: ts.Node): boolean => {
+    const type = checker.getTypeAtLocation(node);
+    return (type.flags & ts.TypeFlags.Any) !== 0 && (type as ts.Type & { readonly intrinsicName?: string }).intrinsicName === "error";
+  };
   const brandOfArgument = (node: ts.Expression): Brand | null => {
     if (!ts.isSpreadElement(node)) return brandOf(node);
     const element = checker.getIndexTypeOfType(checker.getTypeAtLocation(node.expression), ts.IndexKind.Number);
@@ -69,12 +95,14 @@ export function moneyViolations(files: readonly string[], options: ts.CompilerOp
     const visit = (node: ts.Node): void => {
       if (ts.isBinaryExpression(node) && ARITHMETIC.has(node.operatorToken.kind)) {
         if (brandOf(node.left) || brandOf(node.right)) flag(node, "R1 conta com valor marcado");
+        else if (untyped(node.left) || untyped(node.right)) flag(node, "R0 conta com valor sem tipo");
         if (node.operatorToken.kind === ts.SyntaxKind.PlusToken && ts.isStringLiteralLike(node.right) && PERCENT_AFTER.test(node.right.text)) flag(node, "R7 percentual montado na tela");
       }
       if ((ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) && UNARY.has(node.operator) && brandOf(node.operand)) flag(node, "R1 conta com valor marcado");
       if (ts.isCallExpression(node)) {
         const callee = node.expression.getText(source);
         if ((CONVERTERS.test(callee) || /^Math\./.test(callee)) && node.arguments.some((argument) => brandOfArgument(argument))) flag(node, "R3 conversão de valor marcado");
+        else if ((CONVERTERS.test(callee) || /^Math\./.test(callee)) && node.arguments.some((argument) => untyped(argument))) flag(node, "R0 conversão de valor sem tipo");
         // A4-r2 (formas 1 e 3): a função de conversão passada como callback sobre uma lista de valor marcado
         if (ts.isPropertyAccessExpression(node.expression) && node.arguments.some((argument) => (ts.isIdentifier(argument) || ts.isPropertyAccessExpression(argument)) && CONVERTERS.test(argument.getText(source))) && brandOfElements(node.expression.expression)) {
           flag(node, "R3 conversão de valor marcado (callback)");
@@ -103,6 +131,7 @@ export function moneyViolations(files: readonly string[], options: ts.CompilerOp
           // função do arquivo de dinheiro (`formatBRL(x)` devolve texto comum, que pode entrar no template).
           const spanBrand = brandOf(span.expression);
           if (spanBrand && spanBrand !== "geometry") flag(span, "R13 desmarcação por template");
+          else if (!spanBrand && untyped(span.expression)) flag(span, "R0 template com valor sem tipo");
           if (PERCENT_AFTER.test(span.literal.text)) flag(span, "R7 percentual montado na tela");
         }
       }

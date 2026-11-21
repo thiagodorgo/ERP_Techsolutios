@@ -4,21 +4,16 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import ts from "typescript";
-
-import { moneyViolations } from "./ass-10b-nao-calcula.guard";
-
 // B-ASS-10c-OPERACAO · R-ROTA, R-PERM (estático), R-SEGREDO (estático) e R-T5-DIN — a rota `/platform/billing` sob o
 // guarda de `platform:billing:read`; o item "Cobrança" no menu do console e na navegação; só o `App.tsx` importa a página;
-// cada chave da tela é a MESMA da rota do servidor; nada do módulo usa armazenamento do navegador nem `console`; e a tela
-// não calcula dinheiro (a trava T-DIN-P do T5, parametrizada para este módulo).
+// cada chave da tela é a MESMA da rota do servidor; e nada do módulo usa armazenamento do navegador nem `console`. A trava
+// "a tela não calcula dinheiro" (T-DIN-1 a 3) vive em `ass-10c-nao-calcula.guard.test.ts`, o arquivo que o plano nomeia.
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FRONTEND = path.dirname(HERE);
 const REPO = path.dirname(FRONTEND);
 const SRC = path.join(FRONTEND, "src");
 const MODULE_DIR = "modules/platform/billing-operations/";
-const MONEY_FILE = "modules/platform/billing-operations/billing-ops.money.ts";
 
 function files(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -75,15 +70,4 @@ test("T-PERM-1 cada chave da tela é a MESMA de uma rota do servidor (a de canal
 test("T-SEG-4 nada do módulo usa armazenamento do navegador, nem console, nem põe segredo na URL", () => {
   const offenders = files(path.join(SRC, MODULE_DIR)).filter((file) => /localStorage|sessionStorage|console\.(log|info|debug|warn|error)|[?&](secret|password|pfxBase64)=/.test(read(file)));
   assert.deepEqual(offenders, []);
-});
-
-const OPTIONS: ts.CompilerOptions = {
-  ...ts.parseJsonConfigFileContent(ts.readConfigFile(path.join(FRONTEND, "tsconfig.json"), ts.sys.readFile).config, ts.sys, FRONTEND).options,
-  types: [],
-};
-
-test("T-DIN-1 a tela não calcula dinheiro (a trava T-DIN-P do T5 sobre billing-operations/, com billing-ops.money.ts como arquivo de dinheiro)", () => {
-  const moduleFiles = files(path.join(SRC, MODULE_DIR));
-  assert.ok(moduleFiles.length >= 15, `controle de vacuidade: ${moduleFiles.length} arquivos`);
-  assert.deepEqual(moneyViolations(moduleFiles, OPTIONS, SRC, MODULE_DIR, MONEY_FILE), []);
 });

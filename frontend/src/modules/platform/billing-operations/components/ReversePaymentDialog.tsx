@@ -57,7 +57,9 @@ export function ReversePaymentDialog({ row, actions, payment, onClose, onDone }:
         </>
       }
       onSubmit={() => actions.reversePayment({ tenantId: row.org.id, statementId: row.statement.id }, payment.id, confirmInvoiceCancel ? { reason: reason.trim(), confirmInvoiceCancel: true } : { reason: reason.trim() })}
-      onSuccess={(value) => ({ message: `Estorno registrado. ${value.invoiceCancelling ? "A nota fiscal entrou em cancelamento. " : ""}A tela vai reler o demonstrativo.` })}
+      onSuccess={(value) => ({
+        message: `Estorno registrado. ${value.invoiceCancelling ? "A nota fiscal entrou em cancelamento. " : value.invoiceKept ? "A nota fiscal fica: ainda há valor pago neste mês, e o contador é avisado. " : ""}A tela vai reler o demonstrativo.`,
+      })}
       onRefusal={(reason) => {
         if (reason === "invoice_cancel_confirmation_required") {
           setNeedsInvoice(true);

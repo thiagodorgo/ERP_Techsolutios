@@ -493,7 +493,7 @@ export function StatementDetail({ row, reading, access, onDialog, onOpenOrg, onR
         <DetailItem tone="danger">
           <AlertTriangle size={14} aria-hidden="true" />
           <span>
-            <b>Nota emitida sem pagamento.</b> A nota deste mês saiu antes do pagamento total. Se o restante não entrar, ela precisa ser cancelada.
+            <b>Nota emitida sem pagamento.</b> O mês tem nota, mas não está quitado. Enquanto houver valor pago no mês, a nota fica como está e o contador é avisado; ela só é cancelada quando todo o dinheiro for devolvido.
           </span>
         </DetailItem>
       ) : null}

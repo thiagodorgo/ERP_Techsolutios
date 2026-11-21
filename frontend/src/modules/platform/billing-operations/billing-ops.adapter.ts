@@ -117,13 +117,17 @@ export function registerPaymentFromApi(tenantId: string, statementId: string, in
   }).then((data) => ({ fullAmountChargeOpen: isRecord(data) && data.notice === "full_amount_charge_open" }));
 }
 
-export type PaymentReversed = { readonly invoiceCancelling: boolean };
+// `invoiceKept`: o estorno de só uma parte — pela Q1 (b) do contrato, a nota fica e o contador é avisado.
+export type PaymentReversed = { readonly invoiceCancelling: boolean; readonly invoiceKept: boolean };
 export function reversePaymentFromApi(tenantId: string, statementId: string, paymentId: string, input: { readonly reason: string; readonly confirmInvoiceCancel?: true }): Promise<PaymentReversed> {
   return write<unknown>(`${BASE}/statements/${enc(statementId)}/payments/${enc(paymentId)}/reverse`, "POST", {
     tenantId,
     reason: input.reason,
     ...(input.confirmInvoiceCancel ? { confirmInvoiceCancel: true } : {}),
-  }).then((data) => ({ invoiceCancelling: isRecord(data) && (data.invoice === "cancel_requested" || data.invoice === "cancel_in_progress") }));
+  }).then((data) => ({
+    invoiceCancelling: isRecord(data) && (data.invoice === "cancel_requested" || data.invoice === "cancel_in_progress"),
+    invoiceKept: isRecord(data) && data.invoice === "kept_partial_reversal",
+  }));
 }
 
 export type InvoiceRequested = { readonly providerDisabled: boolean };

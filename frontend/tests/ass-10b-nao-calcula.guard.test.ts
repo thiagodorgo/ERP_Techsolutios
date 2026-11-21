@@ -40,6 +40,23 @@ test("T-DIN-P a tela real (todo arquivo de cloud-billing/**, menos o de dinheiro
   assert.deepEqual(violations, []);
 });
 
+// B-ASS-10c-OPERACAO — o caso da `P-567-TRAVA-DINHEIRO-TEMPLATE` (regra 1, R13) e a R0 sobre as DUAS telas reais de dinheiro:
+// a do Cloud Billing e a de operação da cobrança, cada uma com o seu arquivo de dinheiro. É o teste que a M19 do plano do
+// B-ASS-10c (§8.4) deixa vermelho, aplicada no `billing-ops.state.ts` real.
+const MONEY_SCREENS = [
+  { moduleDir: "modules/platform/cloud-billing/", moneyFile: "modules/platform/cloud-billing/cloud-billing.money.ts" },
+  { moduleDir: "modules/platform/billing-operations/", moneyFile: "modules/platform/billing-operations/billing-ops.money.ts" },
+] as const;
+
+test("N-DIN-5/7 (P-567, regra 1) as telas reais de dinheiro não desmarcam por template nem convertem valor sem tipo", () => {
+  for (const screen of MONEY_SCREENS) {
+    const moduleFiles = files(path.join(SRC, screen.moduleDir));
+    assert.ok(moduleFiles.length >= 8, `controle de vacuidade: ${screen.moduleDir} (${moduleFiles.length})`);
+    const violations = moneyViolations(moduleFiles, OPTIONS, SRC, screen.moduleDir, screen.moneyFile).filter((violation) => / R(13|0) /.test(violation));
+    assert.deepEqual(violations, [], screen.moduleDir);
+  }
+});
+
 const MODEL = `import type { Money, Pct } from "./cloud-billing.money";
 export type Line = { id: string; name: string; allocatedCost: Money | null; margin: Money | null; marginPct: Pct | null; alert: string };
 export type Model = {
@@ -112,6 +129,10 @@ const MUTATIONS: Record<string, { readonly code: string; readonly rule: RegExp }
     code: `export const solto2 = (model: Model) => { const texto = \`\${model.totals.allocatedCost ?? "0"}\`; return parseFloat(texto) * 2; };`,
     rule: /R13 desmarcação por template/,
   },
+  // B-ASS-10c-OPERACAO (conserto da pré-revisão, A-04/A-05) — R0: o acesso que NÃO TIPA (aqui, `saldo` não existe no
+  // modelo) tem o tipo de erro do verificador, e a marca some; a trava falha fechado em vez de absolver
+  "N-DIN-7 conversão de valor que não tipa": { code: `export const semTipo = (model: Model) => Number(model.global.saldo) + 1;`, rule: /R0 conversão de valor sem tipo/ },
+  "N-DIN-8 template de valor que não tipa": { code: `export const semTipo2 = (model: Model) => parseFloat(\`\${model.totals.saldo}\`);`, rule: /R0 template com valor sem tipo/ },
   // Emenda 1, A8-r2 — M-UI-ESC (parte da trava): a view escreve um R$ calculado e o marca como escala
   "M-UI-ESC data-escala numa view": { code: `export function Eixo({ model }: { model: Model }) { return <text data-escala="">{formatBRL(model.totals.allocatedCost)}</text>; }`, rule: /R12 data-escala/ },
 };
