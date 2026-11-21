@@ -684,6 +684,7 @@ function isCreationBudgetExhausted(error: unknown): boolean {
 
   const candidate = error as {
     readonly code?: unknown;
+    readonly cause?: { readonly code?: unknown };
     readonly meta?: { readonly code?: unknown; readonly message?: unknown };
     readonly message?: unknown;
   };
@@ -692,8 +693,8 @@ function isCreationBudgetExhausted(error: unknown): boolean {
     return true;
   }
 
-  const metaCode = candidate.meta?.code;
-  if (metaCode === "55P03" || metaCode === "57014") {
+  const databaseCode = candidate.cause?.code ?? candidate.meta?.code;
+  if (databaseCode === "55P03" || databaseCode === "57014") {
     return true;
   }
 

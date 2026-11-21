@@ -276,17 +276,22 @@ if (!connectionString) {
         const email = `k14-${suffix}@example.com`.toLowerCase();
         const emailKey = await import("../src/modules/core-saas/services/user-creation-log.js").then((m) => m.creationEmailKey(email));
 
+        let confirmLockHeld!: () => void;
+        const lockHeld = new Promise<void>((resolve) => {
+          confirmLockHeld = resolve;
+        });
         const hold = admin.$transaction(async (tx) => {
           await tx.$executeRawUnsafe(
             `INSERT INTO user_creation_log (tenant_id, email_key, state) VALUES ($1::uuid, $2, 'em_curso')`,
             A,
             emailKey,
           );
+          confirmLockHeld();
           await new Promise((resolve) => setTimeout(resolve, 3200));
           await tx.$executeRawUnsafe(`DELETE FROM user_creation_log WHERE tenant_id = $1::uuid AND email_key = $2 AND state = 'em_curso'`, A, emailKey);
         });
 
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await lockHeld;
         const err: any = await serviceB.createUser({ tenantId: A, name: "A", email, roles: [ROLE_KEY] }).then(() => null, (e) => e);
         await hold;
 
