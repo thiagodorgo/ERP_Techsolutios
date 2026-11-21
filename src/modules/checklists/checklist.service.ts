@@ -481,10 +481,10 @@ export class ChecklistService {
   /** B-WO-LEITURA — a OS é legível pelo ator? Organização inteira: sim. Campo: `getForRead` sem 404/400; 503 sobe (fail-closed). */
   private async canReadWorkOrder(actor: ActorContext, workOrderId: string): Promise<boolean> {
     const woActor = toWorkOrderActor(actor);
-    if (!actorReadsAssignedOnly(woActor)) return true;
+    if (!actorReadsAssignedOnly(woActor, "vistoria")) return true; // B-USERS-CONCESSAO:vistoria-pred
     if (!workOrderId) return false;
     try {
-      await (await this.resolveWorkOrderService()).getForRead(woActor, workOrderId);
+      await (await this.resolveWorkOrderService()).getForRead(woActor, workOrderId, "vistoria"); // B-USERS-CONCESSAO:vistoria-porta
       return true;
     } catch (error) {
       if (error instanceof WorkOrderError && (error.statusCode === 404 || error.statusCode === 400)) return false;
@@ -499,7 +499,8 @@ export class ChecklistService {
    */
   async assertRunReadScope(actor: ActorContext, runId: string): Promise<RepositoryRunDetails> {
     const woActor = toWorkOrderActor(actor);
-    const readScope = await (await this.resolveWorkOrderService()).readScopeFor(woActor); // 503 nasce aqui, antes do getRun
+    // 503 nasce aqui, antes do getRun.
+    const readScope = await (await this.resolveWorkOrderService()).readScopeFor(woActor, "vistoria"); // B-USERS-CONCESSAO:vistoria-escopo
     const details = await this.getRun(actor, runId);
     if (!readScope) return details;
     const workOrderId =

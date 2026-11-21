@@ -18,6 +18,7 @@ import {
   RoleNotAssignableError,
   assertAssignableRole,
   isPlatformRole,
+  resolvePermissionsForRoles,
 } from "../src/modules/core-saas/permissions/catalog.js";
 import { requirePlatformPermission } from "../src/modules/platform/platform-permissions.js";
 import { CoreSaasRegistry } from "../src/modules/core-saas/services/core-saas.service.js";
@@ -67,7 +68,7 @@ test("partição em runtime: PLATFORM ∪ TENANT_ASSIGNABLE == DEFAULT_ROLES, se
 const PAPEIS_DE_PLATAFORMA_ESPERADOS: readonly string[] = ["super_admin", "platform_admin"];
 
 test("classificação pinada a literais independentes: autoridade E comportamento por papel", () => {
-  assert.equal(DEFAULT_ROLES.length, 13, "o catálogo tem 13 papéis; papel novo exige decisão explícita aqui");
+  assert.equal(DEFAULT_ROLES.length, 14, "o catálogo tem 14 papéis; papel novo exige decisão explícita aqui");
 
   for (const role of DEFAULT_ROLES) {
     const esperadoPlataforma = PAPEIS_DE_PLATAFORMA_ESPERADOS.includes(role);
@@ -111,7 +112,34 @@ test("contrato do consumidor de deploy: snapshot dos valores exportados (conteú
   assert.deepEqual(JSON.parse(JSON.stringify(ROLE_PERMISSIONS)), snapshot.ROLE_PERMISSIONS);
 });
 
-test("concordância middleware × catálogo: a decisão de plataforma é a MESMA para os 13 papéis", () => {
+
+test("T-OV-SEM-CHAVE — organization_view não adiciona chave", () => {
+  assert.deepEqual(resolvePermissionsForRoles(["organization_view"]), []);
+  assert.deepEqual(
+    resolvePermissionsForRoles(["support", "organization_view"]),
+    resolvePermissionsForRoles(["support"]),
+  );
+});
+
+test("T-CATALOGO — users:grant_organization_view só em tenant_admin/manager/super_admin/platform_admin", () => {
+  const papeisComChave = new Set<string>(["tenant_admin", "manager", "super_admin", "platform_admin"]);
+
+  for (const role of DEFAULT_ROLES) {
+    assert.equal(
+      ROLE_PERMISSIONS[role].includes("users:grant_organization_view"),
+      papeisComChave.has(role),
+      `distribuição da chave divergente em ${role}`,
+    );
+  }
+});
+
+test("T-PAPEL-AUTORIDADE — organization_view é atribuível por tenant e nunca por plataforma", () => {
+  assert.equal(ROLE_AUTHORITY.organization_view, "tenant");
+  assert.equal((TENANT_ASSIGNABLE_ROLES as readonly string[]).includes("organization_view"), true);
+  assert.equal((PLATFORM_ROLES as readonly string[]).includes("organization_view"), false);
+});
+
+test("concordância middleware × catálogo: a decisão de plataforma é a MESMA para os 14 papéis", () => {
   // A superfície REAL do middleware (requirePlatformPermission), papel a papel, contra o
   // catálogo. Se alguém reintroduzir um literal independente em platform-permissions.ts que
   // DIVIRJA do ROLE_AUTHORITY, é aqui que fica vermelho (drill 3 do ciclo 2 prova por mutação).

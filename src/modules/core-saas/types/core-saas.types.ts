@@ -77,6 +77,14 @@ export type UpdateUserInput = {
   readonly status?: UserStatus;
 };
 
+// B-USERS-CONCESSAO-PAINEL (§2.3) — conceder (`granted: true`) ou retirar (`false`) SÓ o papel `organization_view`.
+// Nenhum papel, nome ou status vem de fora: o papel é uma constante do servidor e o tenant vem do claim.
+export type SetOrganizationViewInput = {
+  readonly userId: string;
+  readonly tenantId: string;
+  readonly granted: boolean;
+};
+
 export type ListTenantOptions = {
   readonly status?: TenantStatus;
 };

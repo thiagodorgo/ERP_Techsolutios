@@ -411,12 +411,13 @@ const describe = (f: Finding | Excedente) => `${key(f.line, f.role)} [${f.cell}]
 type Justificativa = { readonly evidencia: string } | { readonly pendencia: string };
 type AllowEntry = { readonly line: number; readonly role: CanonRole; readonly perms: readonly string[] } & Justificativa;
 
-// B — 14 células qualificadas ("por escopo/atribuição/suporte") concedidas sem o backend aplicar escopo. Cada uma
+// B — 13 células qualificadas ("por escopo/atribuição/suporte") concedidas sem o backend aplicar escopo. Cada uma
 // vive aqui SÓ com uma pendência nomeada com dono ou com evidência de que o escopo É aplicado (plano §3, B1–B13).
 const ALLOWLIST_QUALIFICADAS: readonly AllowEntry[] = [
   { line: 33, role: "support", perms: ["users.read"], pendencia: "P-SAN3-04A-SUPPORT-SEM-POLITICA" },
   { line: 34, role: "field_technician", perms: ["dashboard:read"], pendencia: "P-SAN3-04A-DASHBOARD-SCOPED" },
-  { line: 34, role: "support", perms: ["dashboard:read"], pendencia: "P-SAN3-04A-SUPPORT-SEM-POLITICA" },
+  // l.34 × support saiu (B-USERS-CONCESSAO-PAINEL, 2026-11-20): a célula passou a "read" pela Q2 = (a) do dono
+  // (`D-DONO-2011-RESPOSTAS`; o Suporte sozinho vê o painel da organização, só leitura) e deixou de ser qualificada.
   { line: 43, role: "support", perms: ["tenant_checklists:read"], pendencia: "P-SAN3-04A-SUPPORT-SEM-POLITICA" },
   { line: 44, role: "manager", perms: ["checklist_runs:complete"], pendencia: "P-SAN3-04A-CHECKLIST-POR-ESCOPO-ESCRITORIO" },
   {
@@ -532,7 +533,7 @@ test("[B] toda qualificada concedida sem escopo está na allowlist (com evidênc
   const { foraDaAllowlist, mortas } = diffSets(byKind("B"), ALLOWLIST_QUALIFICADAS);
   assert.deepEqual(foraDaAllowlist, [], "célula B fora da allowlist — 'por escopo' concedido sem escopo e sem pendência");
   assert.deepEqual(mortas, [], "entrada morta na allowlist — a célula já não é B; remova a entrada (e feche a pendência)");
-  assert.equal(byKind("B").length, 14);
+  assert.equal(byKind("B").length, 13); // 14 → 13: l.34 × support virou "read" (Q2 = (a) do dono, B-USERS-CONCESSAO-PAINEL)
 });
 
 test("[§A2] os conflitos internos da matriz são exatamente os registrados (l.37 × finance/inventory; l.41 × finance) e nada foi concedido", () => {

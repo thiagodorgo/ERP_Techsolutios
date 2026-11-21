@@ -32,6 +32,10 @@ export const PERMISSION_CATALOG = [
   "users.manage",
   "users.read",
   "users:read",
+  // B-USERS-CONCESSAO-PAINEL — conceder e retirar so o papel organization_view, sem users.manage.
+  // tenant_admin herda pelo filtro nao-platform, super_admin/platform_admin pelo catalogo inteiro,
+  // e manager por linha explicita em ROLE_PERMISSIONS.
+  "users:grant_organization_view",
   "roles.manage",
   "audit.read",
   "audit:read",
@@ -326,7 +330,13 @@ export const LEGACY_ROLES = [
   "support",
 ] as const;
 
-export const DEFAULT_ROLES = [...STANDARD_ROLES, ...LEGACY_ROLES] as const;
+// B-USERS-CONCESSAO-PAINEL — papel ADICIONAL: nao e funcao, e concessao. So alarga a LEITURA de OS de quem ja
+// tem papel de campo e nao da chave nem escrita.
+export const ADDITIONAL_ROLES = ["organization_view"] as const;
+
+export const DEFAULT_ROLES = [...STANDARD_ROLES, ...LEGACY_ROLES, ...ADDITIONAL_ROLES] as const;
+
+export const ORGANIZATION_VIEW_ROLE = "organization_view" as const satisfies Role;
 
 export type Role = (typeof DEFAULT_ROLES)[number];
 
@@ -367,6 +377,7 @@ export const ROLE_AUTHORITY = {
   field_technician: "tenant",
   auditor: "tenant",
   support: "tenant",
+  organization_view: "tenant",
 } as const satisfies Record<Role, "platform" | "tenant">;
 
 export type RoleAuthority = (typeof ROLE_AUTHORITY)[Role];
@@ -443,6 +454,7 @@ export const ROLE_PERMISSIONS = {
     "billing:read",
     "dashboard:read",
     "users.read",
+    "users:grant_organization_view", // B-USERS-CONCESSAO:manager
     "audit.read",
     "audit:read",
     // Ω2-e (Parâmetros): Configurações é território admin. Manager só LÊ (matriz: Configurações manager R);
@@ -1075,6 +1087,7 @@ export const ROLE_PERMISSIONS = {
   // = leitura constrangida, só read). NÃO recebe purchase_orders:create.
   // B-ASS-04 — RBAC_MATRIX.md:50 (Billing: support = support-view → billing:read).
   support: ["billing:read", "dashboard:read", "reports:read", "purchase_orders:read", "users.read", "audit.read", "audit:read", "os.read", "notifications:read", "tenant_checklists:read", "checklist_runs:read"],
+  organization_view: [], // B-USERS-CONCESSAO:sem-chave
 } as const satisfies Record<Role, readonly Permission[]>;
 
 // B-SAN3-04a (item 15, P-RBAC-CHECKLIST-DRIFT) — REVOGAÇÕES DELIBERADAS, NOMEADAS. `scripts/provision-rbac.ts` é

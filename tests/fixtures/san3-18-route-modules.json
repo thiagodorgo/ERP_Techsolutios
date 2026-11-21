@@ -20,6 +20,7 @@
  "DELETE /api/v1/service-quotes/:serviceQuoteId/items/:itemId": "{quotes}",
  "DELETE /api/v1/teams/:teamId/members/:userId": "{master_data}",
  "DELETE /api/v1/tenant/checklists/:checklistId": "{tenant_checklist}",
+ "DELETE /api/v1/users/:userId/organization-view": "NUCLEO",
  "DELETE /api/v1/work-orders/:workOrderId/attachments/:attachmentId": "{work_orders}",
  "DELETE /api/v1/work-orders/:workOrderId/comments/:commentId": "{work_orders}",
  "DELETE /api/v1/work-orders/:workOrderId/comments/:commentId/tags/:tagId": "{work_orders}",
@@ -467,5 +468,6 @@
  "PUT /api/v1/platform/billing/providers/:provider/credentials": "PLATAFORMA",
  "PUT /api/v1/platform/billing/tenants/:tenantId/billing-profile": "PLATAFORMA",
  "PUT /api/v1/platform/billing/tenants/:tenantId/subscription": "PLATAFORMA",
- "PUT /api/v1/tenant-settings/:key": "NUCLEO"
+ "PUT /api/v1/tenant-settings/:key": "NUCLEO",
+ "PUT /api/v1/users/:userId/organization-view": "NUCLEO"
 }

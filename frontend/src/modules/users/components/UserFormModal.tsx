@@ -2,7 +2,7 @@ import type { CSSProperties, FormEvent } from "react";
 import { useMemo, useState } from "react";
 
 import { Alert, Button, Input, Modal, Select } from "../../../components/ui";
-import { USER_ROLE_OPTIONS, interpretUserSubmitError, roleLabel, validateUser } from "../users.adapter";
+import { USER_ROLE_OPTIONS, interpretUserSubmitError, preserveOrganizationViewRole, roleLabel, validateUser } from "../users.adapter";
 import { createUser, updateUser } from "../users.service";
 import type { User, UserField, UsersApiContext, UserWritableStatus } from "../users.types";
 
@@ -37,7 +37,7 @@ export function UserFormModal({
   const isEdit = Boolean(user);
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
-  const [roles, setRoles] = useState<string[]>(user?.roles ?? []);
+  const [roles, setRoles] = useState<string[]>(user?.roles.filter((role) => role !== "organization_view") ?? []);
   const [status, setStatus] = useState<UserWritableStatus>(user?.status === "inactive" ? "inactive" : "active");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<UserField, string>>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function UserFormModal({
   // (para não descartá-los silenciosamente ao editar).
   const roleOptions = useMemo(() => {
     const options = [...USER_ROLE_OPTIONS];
-    for (const role of user?.roles ?? []) {
+    for (const role of (user?.roles ?? []).filter((value) => value !== "organization_view")) {
       if (!options.some((option) => option.value === role)) options.push({ value: role, label: roleLabel(role) });
     }
     return options;
@@ -73,7 +73,7 @@ export function UserFormModal({
     setSaving(true);
     try {
       if (isEdit && user) {
-        const updated = await updateUser(context, user.id, { name: draft.name, roles: draft.roles, status });
+        const updated = await updateUser(context, user.id, { name: draft.name, roles: preserveOrganizationViewRole(draft.roles, user.roles), status });
         onSaved(updated ?? undefined);
       } else {
         const created = await createUser(context, { name: draft.name, email: draft.email, roles: draft.roles, status });

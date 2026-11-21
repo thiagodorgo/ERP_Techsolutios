@@ -44,6 +44,15 @@ export async function updateUser(context: UsersApiContext, id: string, patch: Us
   return adaptUserResponse(response);
 }
 
+// PUT/DELETE estreitos: concedem ou retiram somente a Visão da organização; nenhum dado vem do corpo.
+export async function setOrganizationView(context: UsersApiContext, id: string, granted: boolean): Promise<User | null> {
+  const response = await apiRequest<unknown>(`/users/${id}/organization-view`, {
+    ...context,
+    method: granted ? "PUT" : "DELETE",
+  });
+  return adaptUserResponse(response);
+}
+
 function buildQuery(params: Partial<UsersFilters>): string {
   const query = new URLSearchParams();
   const search = params.search?.trim();

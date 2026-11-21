@@ -1,5 +1,5 @@
-import { AlertTriangle, Ban, Pencil, Plus, RotateCcw, ScrollText, Search, ShieldCheck, UserCheck, Users, UserX } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertTriangle, Ban, CheckCircle2, Eye, Pencil, Plus, RotateCcw, ScrollText, Search, ShieldCheck, UserCheck, Users, UserX } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { DENSE_LIST_FETCH_LIMIT } from "../../../components/dense-list";
@@ -9,8 +9,17 @@ import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
+import { OrganizationViewBadge, OrganizationViewControl } from "../components/OrganizationViewControl";
 import { UserFormModal } from "../components/UserFormModal";
-import { filterUsers, formatUserDate, getUserStatusLabel, interpretUserSubmitError, roleLabel } from "../users.adapter";
+import {
+  filterUsers,
+  formatUserDate,
+  getUserStatusLabel,
+  hasOrganizationView,
+  interpretUserSubmitError,
+  profileRoles,
+  roleLabel,
+} from "../users.adapter";
 import { updateUser } from "../users.service";
 import type { User, UsersFilters, UsersStatusFilter, UserStatus } from "../users.types";
 import { useUsers } from "../useUsers";
@@ -84,7 +93,12 @@ export function UsersPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
-  const { items, pagination, loading, error, refresh } = useUsers(STABLE_FILTERS);
+  const { items: loadedItems, pagination, loading, error, refresh } = useUsers(STABLE_FILTERS);
+  // B-USERS-CONCESSAO-PAINEL (F5b) — a resposta do PUT/DELETE da visão atualiza a linha na hora; a próxima carga do
+  // servidor substitui a correção local (o servidor é a verdade).
+  const [savedUsers, setSavedUsers] = useState<Readonly<Record<string, User>>>({});
+  useEffect(() => setSavedUsers({}), [loadedItems]);
+  const items = useMemo(() => loadedItems.map((user) => savedUsers[user.id] ?? user), [loadedItems, savedUsers]);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
 
@@ -99,8 +113,14 @@ export function UsersPage() {
   const [pendingToggle, setPendingToggle] = useState<User | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [viewTargetId, setViewTargetId] = useState<string | null>(null);
+  const [viewNotice, setViewNotice] = useState<string | null>(null);
 
   const canManage = can("users.manage");
+  // B-USERS-CONCESSAO-PAINEL — dar ou tirar SÓ a "Visão da organização" (administrador e gestor). Quem tem esta chave e
+  // não tem `users.manage` (o gestor) vê só este controle, nunca o formulário de edição.
+  const canGrantView = can("users:grant_organization_view");
+  const viewTarget = viewTargetId ? items.find((user) => user.id === viewTargetId) ?? null : null;
   // Trilha de auditoria visível para quem enxerga auditoria (auditor/tenant_admin/manager/support).
   const canSeeAudit = can("audit.read") || can("audit:read");
 
@@ -170,7 +190,7 @@ export function UsersPage() {
   // Opções REAIS do seletor de perfil: só papéis presentes na janela carregada (nunca inventadas).
   const roleOptions = useMemo(() => {
     const keys = new Set<string>();
-    for (const user of items) for (const role of user.roles) keys.add(role);
+    for (const user of items) for (const role of profileRoles(user.roles)) keys.add(role);
     return [...keys]
       .map((value) => ({ value, label: roleLabel(value) }))
       .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
@@ -331,6 +351,15 @@ export function UsersPage() {
         </div>
       ) : null}
 
+      <div role="status" aria-live="polite">
+        {viewNotice ? (
+          <div className="pat-banner" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d" }}>
+            <CheckCircle2 size={14} aria-hidden="true" />
+            <span>{viewNotice}</span>
+          </div>
+        ) : null}
+      </div>
+
       {/* Tabela padronizada (card 14px, grade do design) */}
       <div className="pat-table">
         <div className="pat-table__head pat-users-grid" aria-hidden="true">
@@ -376,12 +405,13 @@ export function UsersPage() {
                   </span>
                 </div>
 
-                {/* PERFIL DE ACESSO — um chip por papel REAL + selo "acesso total" p/ administradores */}
+                {/* PERFIL DE ACESSO — um chip por papel REAL + selo "acesso total" p/ administradores + o selo da
+                    "Visão da organização" (concessão, nunca chip de perfil) */}
                 <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, flexWrap: "wrap" }}>
-                  {user.roles.length === 0 ? (
+                  {profileRoles(user.roles).length === 0 ? (
                     <span className="pat-cell-sub">—</span>
                   ) : (
-                    user.roles.map((role) => {
+                    profileRoles(user.roles).map((role) => {
                       const roleTone = ROLE_TONE[role.trim().toLowerCase()] ?? ROLE_TONE_FALLBACK;
                       return (
                         <span key={role} className="pat-role-chip" style={{ background: roleTone.bg, color: roleTone.fg }}>
@@ -391,6 +421,7 @@ export function UsersPage() {
                     })
                   )}
                   {admin ? <span className="pat-admin-badge">acesso total</span> : null}
+                  {hasOrganizationView(user.roles) ? <OrganizationViewBadge roles={user.roles} /> : null}
                 </div>
 
                 {/* SITUAÇÃO — pill com dot (tamanho base: precedente da junta do PR-B) */}
@@ -431,6 +462,20 @@ export function UsersPage() {
                       </button>
                     </>
                   ) : null}
+                  {canGrantView ? (
+                    <button
+                      type="button"
+                      className="pat-icon-btn"
+                      title="Visão da organização"
+                      aria-label={`Visão da organização de ${user.name}`}
+                      onClick={() => {
+                        setViewNotice(null);
+                        setViewTargetId(user.id);
+                      }}
+                    >
+                      <Eye size={14} aria-hidden="true" />
+                    </button>
+                  ) : null}
                   {canSeeAudit ? (
                     <Link
                       className="pat-icon-btn"
@@ -441,7 +486,7 @@ export function UsersPage() {
                       <ScrollText size={14} aria-hidden="true" />
                     </Link>
                   ) : null}
-                  {!canManage && !canSeeAudit ? <span className="pat-cell-sub">—</span> : null}
+                  {!canManage && !canSeeAudit && !canGrantView ? <span className="pat-cell-sub">—</span> : null}
                 </div>
               </div>
             );
@@ -475,6 +520,38 @@ export function UsersPage() {
             void refresh();
           }}
         />
+      ) : null}
+
+      {viewTarget ? (
+        <Modal title="Visão da organização" open onClose={() => setViewTargetId(null)}>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0, marginBottom: 12 }}>
+            <InitialsAvatar name={viewTarget.name} size={34} />
+            <span style={{ minWidth: 0 }}>
+              <span className="pat-cell-main">{viewTarget.name}</span>
+              {viewTarget.email ? <span className="pat-cell-sub">{viewTarget.email}</span> : null}
+            </span>
+          </div>
+          <OrganizationViewControl
+            key={viewTarget.id}
+            user={viewTarget}
+            context={context}
+            isSelf={session?.user?.id === viewTarget.id}
+            stale={Boolean(error)}
+            onSaved={(saved, granted) => {
+              setSavedUsers((current) => ({ ...current, [saved.id]: saved }));
+              setViewNotice(
+                granted
+                  ? `Visão da organização dada a ${saved.name}. Vale a partir do próximo clique.`
+                  : `Visão da organização retirada de ${saved.name}. Vale a partir do próximo clique.`,
+              );
+            }}
+          />
+          <footer style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-8)", marginTop: "var(--space-16)" }}>
+            <Button type="button" variant="ghost" onClick={() => setViewTargetId(null)}>
+              Fechar
+            </Button>
+          </footer>
+        </Modal>
       ) : null}
 
       {pendingToggle ? (

@@ -12,7 +12,7 @@ import {
   UserRepository,
   UserRoleRepository,
 } from "../repositories/index.js";
-import { assertAssignableRole, isValidRole, validateRole, type Role } from "../permissions/catalog.js";
+import { ORGANIZATION_VIEW_ROLE, assertAssignableRole, isValidRole, validateRole, type Role } from "../permissions/catalog.js";
 import {
   TENANT_ADMIN_ROLE,
   assertSelfChangeAllowed,
@@ -35,6 +35,7 @@ import {
 import type {
   AsyncCoreSaasStore,
   CreatePersistentAuditEventInput,
+  SetOrganizationViewPersistenceInput,
   UpdateUserPersistenceInput,
 } from "./async-core-saas.store.js";
 
@@ -346,6 +347,103 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
           before: toUserAuditSnapshot({ name: current.name, status: current.status, roles: currentRoles }),
           after: toUserAuditSnapshot(updatedUser),
           ...(revokedSessions !== undefined ? { revoked_sessions: revokedSessions } : {}),
+        },
+      });
+
+      return updatedUser;
+    });
+  }
+
+  // B-USERS-CONCESSAO-PAINEL (§2.3) — a concessão ESTREITA: acrescenta ou retira UM vínculo, o do papel
+  // `organization_view`, e nada mais. Não chama `updateUser`: aquele caminho regrava o conjunto inteiro, e um conjunto
+  // lido fora da trava poderia devolver um papel acabado de retirar por outro superior (escalada por corrida).
+  async setOrganizationView(input: SetOrganizationViewPersistenceInput): Promise<User> {
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      const txUsers = new UserRepository(tx);
+      const txRoles = new RoleRepository(tx);
+      const txUserRoles = new UserRoleRepository(tx);
+      const txAudit = new AuditLogRepository(tx);
+
+      // Passo 2: a MESMA trava da organização do `updateUser` (FOR NO KEY UPDATE em `tenants`). Uma concessão e um PATCH
+      // de papéis da mesma organização ficam em fila, e quem chega depois relê o que o primeiro gravou.
+      await tx.$queryRaw`SELECT id FROM "tenants" WHERE id = ${input.tenantId}::uuid FOR NO KEY UPDATE`; // B-USERS-CONCESSAO:trava
+
+      // Passo 3: o usuário, lido DEPOIS da trava, por (organização, id) e sob a RLS da organização do claim. Id que não é
+      // uuid, inexistente ou de outra organização: o MESMO 404.
+      const current = isUuid(input.userId) ? await txUsers.findByIdForTenant(input.userId, input.tenantId) : null;
+
+      if (!current) {
+        throw new CoreSaasError(404, "NOT_FOUND", "user_not_found", `User not found: ${input.userId}`);
+      }
+
+      const currentRoles = mapRoleAssignmentsFromPrisma(current.role_assignments);
+      const has = currentRoles.includes(ORGANIZATION_VIEW_ROLE);
+
+      // Passo 4: idempotente — nada grava, nada audita (não houve ato).
+      if (has === input.granted) return mapUserFromPrisma(current); // B-USERS-CONCESSAO:idempotente
+
+      // Passo 5: retirar a visão de quem só tem ela deixaria o usuário sem papel.
+      if (!input.granted && currentRoles.length === 1) {
+        throw new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "user_role_required", "User must have at least one role."); // B-USERS-CONCESSAO:ultimo-papel
+      }
+
+      // Passo 6: defesa (papel de plataforma nunca se atribui por aqui) e o papel global pela chave. Banco sem o papel
+      // provisionado → 503, fail-closed, nunca o 500 genérico.
+      assertAssignableRole(ORGANIZATION_VIEW_ROLE);
+
+      if (input.granted) {
+        const roleRecord = await txRoles.findByKeyForTenant(ORGANIZATION_VIEW_ROLE, input.tenantId);
+
+        if (!roleRecord) {
+          throw new CoreSaasError(503, "SERVICE_UNAVAILABLE", "role_not_provisioned", "Role organization_view is not provisioned."); // B-USERS-CONCESSAO:nao-provisionado
+        }
+
+        // Passo 7: UMA linha só; os outros vínculos não são tocados.
+        await txUserRoles.assignRole({ tenant_id: input.tenantId, user_id: input.userId, role_id: roleRecord.id, branch_id: null }); // B-USERS-CONCESSAO:uma-linha
+      } else {
+        for (const assignment of current.role_assignments) {
+          if (assignment.role.key === ORGANIZATION_VIEW_ROLE) {
+            await txUserRoles.removeAssignment(assignment.id, input.tenantId); // B-USERS-CONCESSAO:retira-uma-linha
+          }
+        }
+      }
+
+      // Passo 8 — Q1 respondida pelo dono (20/11, `D-DONO-2011-RESPOSTAS`, Q1 = (a)): dar ou tirar a visão NÃO encerra as
+      // sessões. O middleware persistente relê os papéis do banco a cada pedido, então o efeito vale no próximo pedido e a
+      // pessoa segue logada (o técnico no campo não cai). Nenhuma sessão é tocada aqui. // B-USERS-CONCESSAO:sessoes
+
+      const actorId = isUuid(input.actorUserId ?? "")
+        ? (
+            await tx.user.findFirst({
+              where: { id: input.actorUserId!, tenant_id: input.tenantId },
+              select: { id: true },
+            })
+          )?.id ?? null
+        : null;
+
+      const savedUser = await txUsers.findByIdForTenant(input.userId, input.tenantId);
+
+      if (!savedUser) {
+        throw new Error(`User not found after organization view change: ${input.userId}`);
+      }
+
+      const updatedUser = mapUserFromPrisma(savedUser);
+
+      // Passo 9: auditoria na MESMA transação — se ela falhar, a concessão se desfaz. Só a lista permitida (nome, status,
+      // papéis) e o `change`; nada de e-mail, tenant_id nem token.
+      await new EnterpriseAuditLogService(txAudit).record({
+        tenantId: input.tenantId,
+        actorId,
+        actorType: actorId ? "user" : "system",
+        action: "user.updated",
+        resourceType: "user",
+        resourceId: input.userId,
+        outcome: "success",
+        severity: "info",
+        metadata: {
+          before: toUserAuditSnapshot({ name: current.name, status: current.status, roles: currentRoles }),
+          after: toUserAuditSnapshot(updatedUser),
+          change: input.granted ? "organization_view.granted" : "organization_view.revoked",
         },
       });
 

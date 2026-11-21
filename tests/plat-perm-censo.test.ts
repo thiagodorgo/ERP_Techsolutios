@@ -11,7 +11,8 @@ import test, { after } from "node:test";
 //   (ii)  toda rota sob /api/v1/platform: 403 `platform_actor_required` sem ator; 403 `platform_permission_required` com
 //         papel de organização. Rota de plataforma nascida sem portão fica vermelha.
 //   (iii) toda permissão do instantâneo ∈ PERMISSION_CATALOG.
-//   (iv)  os 11 papéis de organização têm 0 chave `platform:` no catálogo (torna a MP-2 equivalente por invariante).
+//   (iv)  os papéis de organização (derivados do catálogo: autoridade `tenant`) têm 0 chave `platform:` no catálogo (torna a MP-2
+//         equivalente por invariante).
 //   (v)   camadas `use` COM caminho sob o prefixo: a allowlist literal é `/api/v1/platform` com 1 camada (o
 //         `attachAuthenticatedActor` de src/app.ts, sem portão); toda outra só passa com portão na 1ª camada.
 //   (v′)  camadas `use` SEM caminho (middleware/handler, não roteador) sob o prefixo: allowlist literal e VAZIA.
@@ -35,7 +36,7 @@ const ATOR_ORGANIZACAO = { "x-user-id": "plat-perm-censo", "x-role": "auditor", 
 const SUPER_ADMIN_LEGADO = { "x-user-id": "plat-perm-censo", "x-role": "super_admin" };
 
 const censo: any = await import("../scripts/plat-perm-censo.mjs");
-const { PERMISSION_CATALOG, ROLE_PERMISSIONS, PLATFORM_ROLES } = await import("../src/modules/core-saas/permissions/catalog.js");
+const { PERMISSION_CATALOG, ROLE_PERMISSIONS, PLATFORM_ROLES, TENANT_ASSIGNABLE_ROLES } = await import("../src/modules/core-saas/permissions/catalog.js");
 const amb = await censo.subirApp();
 after(() => amb.fechar());
 
@@ -80,10 +81,15 @@ test("(iii) toda permissão do instantâneo está no PERMISSION_CATALOG", () => 
   assert.deepEqual(fora, []);
 });
 
-test("(iv) os 11 papéis de organização têm 0 chave `platform:` no catálogo", () => {
+test("(iv) os papéis de organização (derivados do catálogo) têm 0 chave `platform:` no catálogo", () => {
   const plataforma = new Set<string>(PLATFORM_ROLES);
   const organizacao = Object.entries(ROLE_PERMISSIONS as Record<string, readonly string[]>).filter(([role]) => !plataforma.has(role));
-  assert.equal(organizacao.length, 11, "11 papéis de organização no catálogo");
+  // B-USERS-CONCESSAO-PAINEL (Emenda 2, E2-2) — o número é DERIVADO do catálogo (autoridade `tenant` em ROLE_AUTHORITY), não um
+  // literal; todo papel que não é de plataforma tem autoridade de organização, e o "Visão da organização" está entre eles.
+  const autoridadeOrganizacao = [...(TENANT_ASSIGNABLE_ROLES as readonly string[])].sort();
+  assert.deepEqual(organizacao.map(([role]) => role).sort(), autoridadeOrganizacao, "papéis de organização = autoridade tenant");
+  assert.equal(organizacao.length, autoridadeOrganizacao.length, `${autoridadeOrganizacao.length} papéis de organização no catálogo`);
+  assert.ok(organizacao.some(([role]) => role === "organization_view"), "organization_view é papel de organização");
   const comPlataforma = organizacao
     .map(([role, perms]) => [role, perms.filter((p) => p.startsWith("platform:")).length] as const)
     .filter(([, n]) => n > 0);

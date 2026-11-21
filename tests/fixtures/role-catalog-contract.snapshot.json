@@ -29,7 +29,8 @@
     "inventory",
     "field_technician",
     "auditor",
-    "support"
+    "support",
+    "organization_view"
   ],
   "PLATFORM_ROLES": [
     "super_admin",
@@ -46,7 +47,8 @@
     "inventory",
     "field_technician",
     "auditor",
-    "support"
+    "support",
+    "organization_view"
   ],
   "ROLE_PERMISSIONS_KEY_ORDER": [
     "super_admin",
@@ -61,7 +63,8 @@
     "inventory",
     "field_technician",
     "auditor",
-    "support"
+    "support",
+    "organization_view"
   ],
   "ROLE_PERMISSIONS": {
     "super_admin": [
@@ -91,6 +94,7 @@
       "users.manage",
       "users.read",
       "users:read",
+      "users:grant_organization_view",
       "roles.manage",
       "audit.read",
       "audit:read",
@@ -282,6 +286,7 @@
       "users.manage",
       "users.read",
       "users:read",
+      "users:grant_organization_view",
       "roles.manage",
       "audit.read",
       "audit:read",
@@ -471,6 +476,7 @@
       "billing:read",
       "dashboard:read",
       "users.read",
+      "users:grant_organization_view",
       "audit.read",
       "audit:read",
       "tenant_settings:read",
@@ -774,6 +780,7 @@
       "users.manage",
       "users.read",
       "users:read",
+      "users:grant_organization_view",
       "roles.manage",
       "audit.read",
       "audit:read",
@@ -1235,6 +1242,7 @@
       "notifications:read",
       "tenant_checklists:read",
       "checklist_runs:read"
-    ]
+    ],
+    "organization_view": []
   }
 }

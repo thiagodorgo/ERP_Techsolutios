@@ -23,6 +23,14 @@ export type UpdateUserPersistenceInput = {
   readonly actorUserId?: string;
 };
 
+// B-USERS-CONCESSAO-PAINEL (§2.3) — a variante de persistência da concessão estreita.
+export type SetOrganizationViewPersistenceInput = {
+  readonly userId: string;
+  readonly tenantId: string;
+  readonly granted: boolean;
+  readonly actorUserId?: string;
+};
+
 export type AsyncCoreSaasStore = {
   createTenant(input: CreateTenantInput): Promise<Tenant>;
   findTenantById(tenantId: string): Promise<Tenant | undefined>;
@@ -31,6 +39,7 @@ export type AsyncCoreSaasStore = {
   // B-USERS-ACESSO-SEG (S2) — com `credential`, a credencial local nasce na MESMA transação da criação (só o hash).
   createUser(input: CreateUserInput, credential?: InitialCredentialInput): Promise<User>;
   updateUser(input: UpdateUserPersistenceInput): Promise<User>;
+  setOrganizationView(input: SetOrganizationViewPersistenceInput): Promise<User>;
   findUserByIdForTenant(userId: string, tenantId: string): Promise<User | undefined>;
   listUsersByTenant(tenantId: string): Promise<User[]>;
   listRolesByUserForTenant(userId: string, tenantId: string): Promise<Role[]>;

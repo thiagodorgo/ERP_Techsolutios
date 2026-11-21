@@ -74,6 +74,33 @@ export function createUsersRouter(service: ICoreSaasService): Router {
     }),
   );
 
+  // B-USERS-CONCESSAO-PAINEL — conceder / retirar SÓ a "Visão da organização". O corpo é IGNORADO por inteiro (nenhum papel,
+  // nome ou status vem dele); o tenant vem do claim. Quem chama precisa de `users:grant_organization_view`, não de `users.manage`.
+  router.put(
+    "/:userId/organization-view",
+    requirePermission("users:grant_organization_view"), // B-USERS-CONCESSAO:put-gate
+    handleAsyncRoute(async (request, response) => {
+      const actor = requireTenantContext(request);
+      const user = await service.setOrganizationView(
+        { userId: readRouteParam(request.params.userId), tenantId: actor.tenantId, granted: true }, // B-USERS-CONCESSAO:put
+        actor,
+      );
+      response.status(200).json({ data: user });
+    }),
+  );
+  router.delete(
+    "/:userId/organization-view",
+    requirePermission("users:grant_organization_view"), // B-USERS-CONCESSAO:delete-gate
+    handleAsyncRoute(async (request, response) => {
+      const actor = requireTenantContext(request);
+      const user = await service.setOrganizationView(
+        { userId: readRouteParam(request.params.userId), tenantId: actor.tenantId, granted: false }, // B-USERS-CONCESSAO:delete
+        actor,
+      );
+      response.status(200).json({ data: user });
+    }),
+  );
+
   router.get(
     "/:userId",
     requirePermission("users.read"),
