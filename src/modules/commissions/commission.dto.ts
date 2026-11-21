@@ -67,6 +67,8 @@ export function toCommissionCalculationDto(calculation: CommissionCalculation) {
     eligibleUserId: calculation.eligibleUserId ?? null,
     payeeId: calculation.payeeId ?? null,
     amount: calculation.amount,
+    // B-APP-ORG-2S (S2e) — centavos exatos em texto; o app lê só este campo. `amount` (número) fica para a web.
+    amountCents: calculation.amountCents,
     currency: calculation.currency,
     status: calculation.status,
     calculationSnapshot: calculation.calculationSnapshot,
@@ -114,9 +116,11 @@ export function toCommissionSummaryDto(summary: CommissionSummaryResult) {
     items: summary.items.map((item) => ({
       payeeId: item.payeeId,
       total: item.total,
+      totalCents: item.totalCents,
       count: item.count,
     })),
     total: summary.total,
+    totalCents: summary.totalCents,
     from: summary.from ? summary.from.toISOString() : null,
     to: summary.to ? summary.to.toISOString() : null,
   };
