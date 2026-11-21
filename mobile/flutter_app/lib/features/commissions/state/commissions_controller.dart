@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_notifier.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/network/connectivity_repository.dart';
+import '../data/commission_patio_clients.dart';
 import '../data/commissions_by_patio.dart';
 
 /// B-APP-ORG-2 (A3, tela) — o estado da aba Comissões, só em memória (CM6):
@@ -40,7 +42,9 @@ final commissionPatiosProvider = Provider<List<CommissionPatioEntry>?>((ref) {
 /// monta cliente HTTP (guarda G1 do B-APP-SESSAO-RENOVA). Sem a ligação, cada
 /// bloco mostra o erro do pátio.
 final commissionRepositoryProvider = Provider<CommissionByPatioRepository?>(
-  (ref) => null,
+  (ref) => CommissionByPatioRepository(
+    patioClients: ref.watch(commissionPatioClientsProvider),
+  ),
 );
 
 /// O relógio da aba (os testes fixam a hora).
@@ -97,8 +101,12 @@ final commissionsControllerProvider =
 class CommissionsController
     extends Notifier<Map<String, CommissionPatioState>> {
   @override
-  Map<String, CommissionPatioState> build() =>
-      const <String, CommissionPatioState>{};
+  Map<String, CommissionPatioState> build() {
+    // dart format off
+    ref.watch(sessionKeyProvider); // o que a aba sabe é da sessão viva: outra sessão, estado vazio
+    // dart format on
+    return const <String, CommissionPatioState>{};
+  }
 
   bool get _offline => ref.read(networkStatusProvider) == NetworkStatus.offline;
 
@@ -136,8 +144,11 @@ class CommissionsController
         stale: previous?.stale ?? false,
       ),
     );
+    final key = ref.read(sessionKeyProvider);
     final result = await _fetch(patio, clock());
-    if (!ref.mounted) return;
+    // dart format off
+    if (!ref.mounted || ref.read(sessionKeyProvider) != key) return; // a sessão mudou durante o pedido: o resultado não é de ninguém
+    // dart format on
     final at = clock();
     final kept = previous?.block;
     if (result.status == CommissionPatioBlockStatus.failed &&

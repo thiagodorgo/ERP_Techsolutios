@@ -6,6 +6,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_notifier.dart';
 import '../../../core/auth/listen_sessions.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/network/api_error.dart';
@@ -14,6 +15,9 @@ import '../domain/work_order_models.dart';
 import 'work_order_remote_api.dart';
 
 final otherPatiosCallsProvider = Provider<OtherPatiosCalls>((ref) {
+  // dart format off
+  ref.watch(sessionKeyProvider); // os blocos guardados são da sessão viva: outra sessão, outra instância
+  // dart format on
   return OtherPatiosCalls(listen: ref.watch(listenSessionsProvider));
 });
 
