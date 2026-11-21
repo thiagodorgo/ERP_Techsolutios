@@ -34,7 +34,12 @@ final class ApiSessionExpiredError extends ApiUnauthorizedError {
 
 /// 403: a sessão vale, mas o papel não pode fazer esta ação.
 final class ApiForbiddenError extends ApiUnauthorizedError {
-  const ApiForbiddenError() : super('Você não tem permissão para esta ação.');
+  const ApiForbiddenError({this.reason})
+    : super('Você não tem permissão para esta ação.');
+
+  /// B-APP-ORG-2 (CA182-09): o `error.reason` do 403 (`module_not_enabled`,
+  /// `forbidden`…). Só escolhe a frase da tela; nunca é exibido.
+  final String? reason;
 }
 
 final class ApiConflictError extends ApiError {

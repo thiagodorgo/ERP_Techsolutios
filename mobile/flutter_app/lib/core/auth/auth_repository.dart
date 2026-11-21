@@ -1,5 +1,3 @@
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:convert';
 import 'dart:math';
 
@@ -267,7 +265,14 @@ class LocalDevAuthRepository implements AuthRepository {
     required AuthSession current,
     required String tenantId,
     required Dio client,
-  }) => switchTenant(current: current, tenantId: tenantId, client: client);
+  }) async {
+    // Sem servidor: a escuta só vale para as organizações da lista.
+    final known = devBootstrapSession.availableTenants.any(
+      (t) => t.tenantId == tenantId,
+    );
+    if (!known) throw const TenantSwitchRefusedError();
+    return _buildDevSession(email: current.user.email, tenantId: tenantId);
+  }
 
   /// B-APP-ORG (70): no modo de desenvolvimento, a troca só vale para as
   /// organizações da lista de desenvolvimento; fora dela, é recusada.
@@ -692,7 +697,7 @@ class DioAuthRepository implements AuthRepository {
     } on DioException catch (e) {
       throw _switchFailure(e);
     }
-    return _listenSessionFromActiveTenantJson(response.data, tenantId, current);
+    return _listenSessionFromActiveTenantJson(response.data, tenantId);
   }
 
   /// O 403 é a recusa do vínculo; sem rede, a mensagem da troca; o resto, como
@@ -709,7 +714,7 @@ class DioAuthRepository implements AuthRepository {
   /// O corpo do 200 do `/auth/active-tenant` (`auth.routes.ts`): `tenant`,
   /// `user` (sem `tenant_id`), `roles` em texto, `permissions`, os tokens e
   /// `must_change_password`. Cada troca é uma sessão nova (`sessionNonce`).
-  AuthSession _sessionFromActiveTenantJson(Object? data, AuthSession current) {
+  AuthSession _sessionFromActiveTenantJson(Object? data, AuthSession? current) {
     final json = data as Map<String, dynamic>;
     final envelopeData = json['data'];
     final body = envelopeData is Map<String, dynamic> ? envelopeData : json;
@@ -729,7 +734,7 @@ class DioAuthRepository implements AuthRepository {
       ),
       user: AuthUser(
         sub: userJson['id'] as String,
-        email: userJson['email'] as String? ?? current.user.email,
+        email: userJson['email'] as String? ?? current?.user.email ?? '',
         tenantId: tenantJson['id'] as String,
         tenantRole: roles.isNotEmpty ? roles.first : 'tenant_member',
         tenantRoles: roles,
@@ -745,15 +750,18 @@ class DioAuthRepository implements AuthRepository {
     );
   }
 
+  /// B-APP-ORG-2 (A1): a resposta de outro pátio não vira sessão de escuta; o
+  /// token de renovação recebido sai no erro, para ser revogado (L9).
   AuthSession _listenSessionFromActiveTenantJson(
     Object? data,
     String tenantId,
-    AuthSession current,
   ) {
-    final session = _sessionFromActiveTenantJson(data, current);
-    final parsed = _ListenSessionResult(session);
-    if (parsed.tenantId != tenantId)
-      throw ListenTenantMismatchError(parsed.refreshToken);
+    final parsed = _ListenSessionResult(
+      _sessionFromActiveTenantJson(data, null),
+    );
+    // dart format off
+    if (parsed.tenantId != tenantId) throw ListenTenantMismatchError(parsed.refreshToken);
+    // dart format on
     return parsed.session;
   }
 

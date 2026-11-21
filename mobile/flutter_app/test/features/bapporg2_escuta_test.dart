@@ -1,322 +1,308 @@
-import 'dart:convert';
+// B-APP-ORG-2 (A1) — as sessões e o cliente de escuta.
+//
+// Plano B-APP-ORG-69-70: Emenda 1.8 §5.2 (L2 a L5, L9, G-ESCUTA), 1.8.1 §7.3
+// (L9 reescrito), 1.8.2 §4.3 (o censo G-ESCUTA ampliado) e 1.8.3 §4 e §5.3
+// (L11 a L11d, o diário e o `reason` do 403). O repositório é o REAL
+// (`DioAuthRepository`), e todo HTTP passa pelo servidor falso.
+
+import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_repository.dart';
-import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
-import 'package:erp_techsolutions_mobile/core/auth/listen_sessions.dart';
-import 'package:erp_techsolutions_mobile/core/auth/listen_token_journal.dart';
-import 'package:erp_techsolutions_mobile/core/auth/pending_revocations.dart';
+import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/core/network/listen_http_client.dart';
-import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'bapporg2_fakes.dart';
 
 void main() {
   group('B-APP-ORG-2 A1 — sessões de escuta', () {
-    test('L1 — a sessão viva não muda ao adquirir a escuta', () async {
-      final fixture = _Fixture();
-      await fixture.storage.saveSession(fixture.live);
+    test('L2 — todo pedido da escuta de Y leva o token de Y; nenhum pedido do '
+        'cliente vivo leva o token de Y', () async {
+      final e = Escuta();
+      await e.sessions.acquire('Y', liveSession());
 
-      final listened = await fixture.sessions.acquire('Y', fixture.live);
+      await e.sessions.clientFor('Y').get(kWorkOrders);
 
-      expect(listened?.user.tenantId, 'Y');
-      expect((await fixture.storage.loadSession()), fixture.live);
-      expect(fixture.sessions.sessions, hasLength(1));
-    });
-
-    test('L2 — cada pedido usa somente o token do pátio escutado', () async {
-      final fixture = _Fixture();
-      await fixture.sessions.acquire('Y', fixture.live);
-      final adapter = _Adapter();
-      fixture.sessions.clientFor('Y').httpClientAdapter = adapter;
-
-      await fixture.sessions.clientFor('Y').get('/api/v1/work-orders');
-
-      expect(adapter.authorization, ['Bearer access-Y-1']);
-      expect(adapter.authorization, isNot(contains('Bearer access-X')));
-    });
-
-    test('L3 — método diferente de GET é recusado localmente', () async {
-      final client = createListenHttpClient(
-        const ApiConfig(),
-        accessToken: 'listen',
-      );
-      final adapter = _Adapter();
-      client.httpClientAdapter = adapter;
-
-      await expectLater(
-        client.post('/api/v1/work-orders'),
-        throwsA(isA<DioException>()),
-      );
-      expect(adapter.requests, 0);
-    });
-
-    test('L4 — caminho fora da allowlist é recusado localmente', () async {
-      final client = createListenHttpClient(
-        const ApiConfig(),
-        accessToken: 'listen',
-      );
-      final adapter = _Adapter();
-      client.httpClientAdapter = adapter;
-
-      await expectLater(
-        client.get('/api/v1/users'),
-        throwsA(isA<DioException>()),
-      );
-      expect(adapter.requests, 0);
-    });
-
-    test('L5 — 401 derruba a escuta e o ciclo seguinte pede outra', () async {
-      final fixture = _Fixture();
-      await fixture.sessions.acquire('Y', fixture.live);
-      fixture.sessions.clientFor('Y').httpClientAdapter = _Adapter(status: 401);
-
-      await expectLater(
-        fixture.sessions.clientFor('Y').get('/api/v1/work-orders'),
-        throwsA(isA<DioException>()),
-      );
-      expect(fixture.sessions.sessions, isEmpty);
-      await fixture.sessions.acquire('Y', fixture.live);
-      expect(fixture.repository.acquisitions, 2);
-    });
-
-    test('L6 — pátio removido é revogado sem afetar os demais', () async {
-      final fixture = _Fixture();
-      await fixture.sessions.acquire('Y', fixture.live);
-      await fixture.sessions.acquire('Z', fixture.live);
-
-      await fixture.sessions.retainTenants({'Z'});
-
-      expect(fixture.sessions.sessions.map((s) => s.user.tenantId), ['Z']);
-      expect(fixture.repository.revoked, contains('refresh-Y-1'));
-    });
-
-    test('L7 — Sair revoga e descarta todas as escutas', () async {
-      final fixture = _Fixture();
-      await fixture.sessions.acquire('Y', fixture.live);
-      await fixture.sessions.acquire('Z', fixture.live);
-
-      await fixture.sessions.discardAll();
-
-      expect(fixture.sessions.sessions, isEmpty);
-      expect(await fixture.journal.all(), isEmpty);
+      final listened = e.server.to(kWorkOrders);
+      expect(listened.map((s) => s.auth), ['Bearer tok-Y-1']);
+      final fromLive = e.server.to(kActiveTenant);
+      expect(fromLive.map((s) => s.auth), ['Bearer $kLiveToken']);
       expect(
-        fixture.repository.revoked,
-        containsAll(['refresh-Y-1', 'refresh-Z-2']),
+        e.server.sent.where((s) => s.path != kWorkOrders).map((s) => s.auth),
+        everyElement(isNot(contains('tok-Y'))),
       );
     });
 
-    test('L8 — troca de época descarta escutas antigas', () async {
-      final fixture = _Fixture();
-      await fixture.sessions.acquire('Y', fixture.live);
-      final oldClient = fixture.sessions.clientFor('Y');
+    test('L3 — pedido que não é GET é recusado sem sair do aparelho', () async {
+      final e = Escuta();
+      await e.sessions.acquire('Y', liveSession());
 
-      await fixture.sessions.discardAll();
+      final error = await _caught(e.sessions.clientFor('Y').post(kWorkOrders));
 
-      expect(() => fixture.sessions.clientFor('Y'), throwsStateError);
-      expect(fixture.sessions.sessions, isEmpty);
-      expect(oldClient, isNot(same(fixture.liveClient)));
+      expect(error, isA<DioException>());
+      expect((error as DioException).error, isA<ListenRequestRefused>());
+      expect(e.server.to(kWorkOrders), isEmpty);
     });
 
-    test('L9 — resposta de outro pátio é recusada e não vira escuta', () async {
-      final fixture = _Fixture();
-      fixture.repository.replyTenant = 'Z';
+    test(
+      'L4 — caminho fora da lista é recusado sem sair do aparelho',
+      () async {
+        final e = Escuta();
+        await e.sessions.acquire('Y', liveSession());
 
-      await expectLater(
-        fixture.sessions.acquire('Y', fixture.live),
-        throwsA(isA<ListenTenantMismatchError>()),
+        final error = await _caught(
+          e.sessions.clientFor('Y').get('/api/v1/users'),
+        );
+
+        expect(error, isA<DioException>());
+        expect((error as DioException).error, isA<ListenRequestRefused>());
+        expect(e.server.to('/api/v1/users'), isEmpty);
+      },
+    );
+
+    test('L5 — 401 na escuta: a sessão cai, 0 renovação, e o ciclo seguinte '
+        'pede outra', () async {
+      final e = Escuta();
+      await e.sessions.acquire('Y', liveSession());
+      e.server.workOrdersStatus = 401;
+
+      final error = await _caught(e.sessions.clientFor('Y').get(kWorkOrders));
+
+      expect(error, isA<DioException>());
+      expect(e.sessions.sessions, isEmpty);
+      expect(e.server.to(kRefresh), isEmpty);
+      final again = await e.sessions.acquire('Y', liveSession());
+      expect(again?.tokens.accessToken, 'tok-Y-2');
+      expect(e.server.to(kActiveTenant), hasLength(2));
+      expect(e.server.to(kRefresh), isEmpty);
+    });
+
+    test('L9 — resposta do active-tenant com outro pátio: a sessão não é '
+        'guardada, o token recebido vai para a revogação e nenhum pedido sai '
+        'com ela', () async {
+      final e = Escuta();
+      e.server.replyTenant = 'Z';
+
+      final error = await _caught(e.sessions.acquire('Y', liveSession()));
+
+      expect(error, isA<ListenTenantMismatchError>());
+      expect(e.sessions.sessions, isEmpty);
+      expect(() => e.sessions.clientFor('Y'), throwsStateError);
+      expect(await e.journal.all(), isEmpty);
+      expect(e.server.events, ['acquire:Y', 'revoke:ref-Z-1']);
+      expect(e.server.liveOf('Z'), 0);
+      expect(
+        e.server.sent.map((s) => s.auth),
+        everyElement(isNot(contains('tok-Z'))),
       );
-      expect(fixture.sessions.sessions, isEmpty);
     });
 
-    test('L10 — um ciclo de escuta não persiste dados operacionais', () async {
-      final fixture = _Fixture();
-      await fixture.sessions.acquire('Y', fixture.live);
-      fixture.sessions.clientFor('Y').httpClientAdapter = _Adapter();
-
-      await fixture.sessions.clientFor('Y').get('/api/v1/work-orders');
-
-      expect(await fixture.storage.loadSession(), isNull);
-      expect(await fixture.journal.all(), {'Y': 'refresh-Y-1'});
-    });
-
-    test('L11 — cinco expirações mantêm no máximo uma sessão viva', () async {
-      final fixture = _Fixture();
+    test('L11 — 5 expirações da escuta de Y com o logout respondendo: as '
+        'sessões vivas de Y nunca passam de 1', () async {
+      final e = Escuta();
       for (var cycle = 0; cycle < 5; cycle++) {
-        await fixture.sessions.acquire('Y', fixture.live);
-        await fixture.sessions.drop('Y');
+        await e.sessions.acquire('Y', liveSession());
+        expect(e.server.liveOf('Y'), 1);
+        e.expire();
       }
+      await e.sessions.acquire('Y', liveSession());
 
-      expect(fixture.repository.acquisitions, 5);
-      expect(fixture.repository.maxLive, 1);
-      expect(fixture.repository.liveCount, 1);
+      expect(e.server.to(kActiveTenant), hasLength(6));
+      expect(e.server.to(kLogout), hasLength(5));
+      expect(e.server.maxLive['Y'], 1);
+      expect(e.server.liveOf('Y'), 1);
     });
 
-    test('L11b — sem resposta definitiva não pede sessão nova', () async {
-      final fixture = _Fixture();
-      await fixture.sessions.acquire('Y', fixture.live);
-      await fixture.sessions.drop('Y');
-      fixture.repository.revocationOutcome = RevocationOutcome.retry;
-
+    test('L11b — logout de Y sem resposta (503 e sem rede): 0 pedido de sessão '
+        'nova em 5 ciclos, vivas = 1; o logout volta: 1 revogação, 1 pedido, '
+        'vivas = 1', () async {
+      final e = Escuta();
+      await e.sessions.acquire('Y', liveSession());
+      e.expire();
       for (var cycle = 0; cycle < 5; cycle++) {
-        expect(await fixture.sessions.acquire('Y', fixture.live), isNull);
+        e.server.logout = cycle.isEven
+            ? LogoutMode.unavailable
+            : LogoutMode.offline;
+        expect(await e.sessions.acquire('Y', liveSession()), isNull);
       }
+      expect(e.server.to(kActiveTenant), hasLength(1));
+      expect(e.server.liveOf('Y'), 1);
+      expect(await e.journal.all(), {'Y': 'ref-Y-1'});
 
-      expect(fixture.repository.acquisitions, 1);
-      expect(fixture.repository.liveCount, 1);
-    });
+      e.server.logout = LogoutMode.ok;
+      final revokedBefore = e.server.events.length;
+      final session = await e.sessions.acquire('Y', liveSession());
 
-    test('L11c — reabrir revoga o token persistido antes de pedir', () async {
-      final fixture = _Fixture();
-      await fixture.sessions.acquire('Y', fixture.live);
-      final reopened = fixture.reopen();
-
-      await reopened.acquire('Y', fixture.live);
-
-      expect(fixture.repository.events, [
-        'acquire:Y',
-        'revoke:refresh-Y-1',
+      expect(session?.tokens.accessToken, 'tok-Y-2');
+      expect(e.server.events.sublist(revokedBefore), [
+        'revoke:ref-Y-1',
         'acquire:Y',
       ]);
-      expect(fixture.repository.maxLive, 1);
+      expect(e.server.to(kActiveTenant), hasLength(2));
+      expect(e.server.liveOf('Y'), 1);
+      expect(e.server.maxLive['Y'], 1);
     });
 
-    test('L11d — diário tem um token por pátio e limpa no Sair', () async {
-      final fixture = _Fixture();
-      await fixture.journal.put('Y', 'old');
-      await fixture.journal.put('Y', 'new');
-      await fixture.journal.put('Z', 'z');
-      expect(await fixture.journal.all(), {'Y': 'new', 'Z': 'z'});
+    test('L11c — fechar e abrir o app: o token da execução anterior é revogado '
+        'antes de qualquer pedido; vivas nunca passa de 1', () async {
+      final e = Escuta();
+      await e.sessions.acquire('Y', liveSession());
+      final reopened = e.open();
 
-      await fixture.sessions.discardAll();
+      await reopened.acquire('Y', liveSession());
 
-      expect(await fixture.journal.all(), isEmpty);
-      expect(fixture.repository.revoked, containsAll(['new', 'z']));
+      expect(e.server.events, ['acquire:Y', 'revoke:ref-Y-1', 'acquire:Y']);
+      expect(e.server.maxLive['Y'], 1);
+      expect(e.server.liveOf('Y'), 1);
     });
 
-    test('G-ESCUTA — cliente não usa renovação nem cliente autenticado', () {
-      const source = String.fromEnvironment('G_ESCUTA_SOURCE');
-      expect(
-        source,
-        isEmpty,
-        reason: 'censo de fonte roda também no script de mutação',
+    test('L11d — o diário nunca tem mais de 1 token por pátio nem token de '
+        'pátio fora da lista; o Sair o esvazia e leva os tokens para a fila do '
+        'Sair', () async {
+      final e = Escuta();
+      await e.sessions.acquire('Y', liveSession());
+      await e.sessions.acquire('Z', liveSession());
+      e.expire();
+      await e.sessions.acquire('Y', liveSession());
+      expect(await e.journal.all(), {'Y': 'ref-Y-3', 'Z': 'ref-Z-2'});
+
+      await e.sessions.retainTenants({'Y'});
+      expect(await e.journal.all(), {'Y': 'ref-Y-3'});
+      expect(e.server.events.last, 'revoke:ref-Z-2');
+
+      e.server.logout = LogoutMode.offline;
+      await e.sessions.discardAll();
+
+      expect(await e.journal.all(), isEmpty);
+      expect(e.sessions.sessions, isEmpty);
+      final queued = await e.storage.loadPendingRevocations();
+      expect(queued.map((q) => q.token), ['ref-Y-3']);
+    });
+
+    test(
+      'R403 (CA182-09) — o 403 da escuta traz o reason do servidor',
+      () async {
+        final e = Escuta();
+        await e.sessions.acquire('Y', liveSession());
+        e.server.workOrdersStatus = 403;
+
+        final error = await _caught(e.sessions.clientFor('Y').get(kWorkOrders));
+
+        final mapped = mapDioError(error! as DioException);
+        expect(mapped, isA<ApiForbiddenError>());
+        expect((mapped as ApiForbiddenError).reason, 'module_not_enabled');
+        expect(e.sessions.sessions, hasLength(1));
+      },
+    );
+
+    test('R403b — o reason só passa como identificador curto', () {
+      ApiError map(Object? data) => mapDioError(
+        DioException(
+          requestOptions: RequestOptions(path: kWorkOrders),
+          type: DioExceptionType.badResponse,
+          response: Response<Object?>(
+            requestOptions: RequestOptions(path: kWorkOrders),
+            statusCode: 403,
+            data: data,
+          ),
+        ),
       );
-      expect(kListenPaths, hasLength(3));
+      String? reason(Object? data) => (map(data) as ApiForbiddenError).reason;
+
+      expect(
+        reason({
+          'error': {'reason': 'forbidden'},
+        }),
+        'forbidden',
+      );
+      expect(
+        reason({
+          'error': {'reason': 'Texto livre do servidor'},
+        }),
+        isNull,
+      );
+      expect(reason({'reason': 'forbidden'}), isNull);
+      expect(reason('forbidden'), isNull);
+      expect(reason(null), isNull);
+    });
+  });
+
+  group('G-ESCUTA — o censo da escuta em lib/', () {
+    final sources = _libSources();
+
+    List<String> filesWith(bool Function(String line) match) => [
+      for (final entry in sources.entries)
+        if (entry.value.any(match)) entry.key,
+    ]..sort();
+
+    test('kActiveTenantPath só em auth_repository.dart', () {
+      expect(filesWith((l) => l.contains('kActiveTenantPath')), [
+        'lib/core/auth/auth_repository.dart',
+      ]);
+    });
+
+    test('acquireListenSession( só é chamado em listen_sessions.dart', () {
+      expect(
+        filesWith(
+          (l) =>
+              l.contains('acquireListenSession(') &&
+              !l.contains('Future<AuthSession> acquireListenSession('),
+        ),
+        ['lib/core/auth/listen_sessions.dart'],
+      );
+    });
+
+    test('createListenHttpClient( só é chamado em listen_sessions.dart', () {
+      expect(
+        filesWith(
+          (l) =>
+              l.contains('createListenHttpClient(') &&
+              !l.contains('Dio createListenHttpClient('),
+        ),
+        ['lib/core/auth/listen_sessions.dart'],
+      );
+    });
+
+    test('o cliente de escuta não tem renovação nem o cliente autenticado', () {
+      final cli = sources['lib/core/network/listen_http_client.dart']!;
+      expect(cli.where((l) => l.contains('AuthRefreshInterceptor')), isEmpty);
+      expect(
+        cli.where((l) => l.contains('createAuthenticatedHttpClient')),
+        isEmpty,
+      );
+      expect(kListenPaths, {
+        '/api/v1/work-orders',
+        '/api/v1/commissions/calculations/mine',
+        '/api/v1/commissions/statements/my-summary',
+      });
     });
   });
 }
 
-class _Fixture {
-  _Fixture() {
-    repository = _Repository(storage);
-    journal = ListenTokenJournal(storage);
-    revocations = PendingRevocations(
-      repository: repository,
-      storage: storage,
-      report: (_) {},
-    );
-    sessions = reopen();
-  }
-
-  final InMemoryAuthTokenStorage storage = InMemoryAuthTokenStorage();
-  late final _Repository repository;
-  late final ListenTokenJournal journal;
-  late final PendingRevocations revocations;
-  final Dio liveClient = Dio();
-  late final ListenSessions sessions;
-
-  AuthSession get live => _session('X', 0);
-
-  ListenSessions reopen() => ListenSessions(
-    repository: repository,
-    journal: journal,
-    revocations: revocations,
-    config: const ApiConfig(baseUrl: 'https://example.invalid'),
-    liveClient: liveClient,
-  );
-}
-
-class _Repository extends LocalDevAuthRepository {
-  _Repository(AuthTokenStorage storage) : super(storage: storage);
-
-  int acquisitions = 0;
-  int liveCount = 0;
-  int maxLive = 0;
-  String? replyTenant;
-  RevocationOutcome revocationOutcome = RevocationOutcome.revoked;
-  final List<String> revoked = [];
-  final List<String> events = [];
-
-  @override
-  Future<AuthSession> acquireListenSession({
-    required AuthSession current,
-    required String tenantId,
-    required Dio client,
-  }) async {
-    acquisitions++;
-    liveCount++;
-    maxLive = liveCount > maxLive ? liveCount : maxLive;
-    events.add('acquire:$tenantId');
-    final session = _session(replyTenant ?? tenantId, acquisitions);
-    if (session.user.tenantId != tenantId) {
-      throw ListenTenantMismatchError(session.tokens.refreshToken!);
-    }
-    return session;
-  }
-
-  @override
-  Future<RevocationOutcome> revokeRefreshToken(String refreshToken) async {
-    revoked.add(refreshToken);
-    events.add('revoke:$refreshToken');
-    if (revocationOutcome != RevocationOutcome.retry && liveCount > 0) {
-      liveCount--;
-    }
-    return revocationOutcome;
+Future<Object?> _caught(Future<Object?> future) async {
+  try {
+    await future;
+    return null;
+  } catch (error) {
+    return error;
   }
 }
 
-AuthSession _session(String tenantId, int sequence) => AuthSession(
-  tokens: AuthTokens(
-    accessToken: sequence == 0 ? 'access-X' : 'access-$tenantId-$sequence',
-    refreshToken: sequence == 0 ? 'refresh-X' : 'refresh-$tenantId-$sequence',
-    expiresAt: DateTime.utc(2030),
-  ),
-  user: AuthUser(
-    sub: 'technician',
-    email: 'technician@example.invalid',
-    tenantId: tenantId,
-    tenantRole: 'field_technician',
-    tenantRoles: const ['field_technician'],
-    permissions: const [],
-    scope: 'tenant',
-  ),
-  sessionNonce: 'nonce-$tenantId-$sequence',
-);
-
-class _Adapter implements HttpClientAdapter {
-  _Adapter({this.status = 200});
-
-  final int status;
-  int requests = 0;
-  final List<String?> authorization = [];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<List<int>>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests++;
-    authorization.add(options.headers['Authorization'] as String?);
-    return ResponseBody.fromBytes(
-      utf8.encode('{}'),
-      status,
-      headers: {
-        Headers.contentTypeHeader: ['application/json'],
-      },
-    );
+/// As linhas de código (sem comentário) de cada arquivo `.dart` de `lib/`.
+Map<String, List<String>> _libSources() {
+  final result = <String, List<String>>{};
+  final files = Directory('lib')
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'));
+  for (final file in files) {
+    final path = file.path.replaceAll(r'\', '/');
+    result[path] = [
+      for (final line in file.readAsLinesSync())
+        if (!line.trimLeft().startsWith('//')) line,
+    ];
   }
-
-  @override
-  void close({bool force = false}) {}
+  return result;
 }
