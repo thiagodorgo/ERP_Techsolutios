@@ -11,6 +11,10 @@ import '../theme/erp_mobile_theme.dart';
 ///
 /// Widgets usam tokens explícitos (não dependem do ColorScheme) para garantir
 /// fidelidade — mesma abordagem dos estilos inline no web.
+///
+/// Peças registradas por bloco (no fim do arquivo, cada uma com o seu
+/// cabeçalho): `MobileSkeletonList`, o esqueleto de lista no carregando
+/// (B-APP-ORG-2, A2; Emenda 1.8.3.7, Adendo 1).
 
 // ---------------------------------------------------------------------------
 // Pílula de status / prioridade / chip informativo
@@ -2220,6 +2224,81 @@ class MobileShortSteps extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// B-APP-ORG-2 (A2; Emenda 1.8.3.7, Adendo 1) — esqueleto de lista
+// ---------------------------------------------------------------------------
+
+/// O esqueleto de uma lista que ainda está carregando: [rows] cartões brancos
+/// de borda fina (o mesmo cartão do [MobileOsCard]), cada um com [rowHeight]
+/// de altura e duas barras cinza no lugar do texto. Parado, sem animação. Para
+/// quem usa leitor de tela, é um elemento só, com o rótulo [semanticsLabel].
+class MobileSkeletonList extends StatelessWidget {
+  const MobileSkeletonList({
+    this.rows = 3,
+    this.rowHeight = 64,
+    this.semanticsLabel = 'Carregando',
+    super.key,
+  });
+
+  final int rows;
+  final double rowHeight;
+  final String semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < rows; i++)
+            Container(
+              height: rowHeight,
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: ErpMobileTheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: ErpMobileTheme.cardBorder),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SkeletonBar(widthFactor: 0.55, height: 12),
+                  SizedBox(height: 8),
+                  _SkeletonBar(widthFactor: 0.35, height: 10),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBar extends StatelessWidget {
+  const _SkeletonBar({required this.widthFactor, required this.height});
+
+  final double widthFactor;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      widthFactor: widthFactor,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: ErpMobileTheme.pageBg,
+          borderRadius: BorderRadius.circular(99),
+        ),
+      ),
     );
   }
 }

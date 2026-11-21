@@ -782,7 +782,7 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
         Container(
           margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ErpMobileTheme.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: ErpMobileTheme.cardBorder),
           ),
@@ -1122,8 +1122,9 @@ class _LocalCacheBanner extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// B-APP-ORG-2 (A2) — peças da seção "Outros pátios" (tokens do kit; o cartão
-// branco de borda fina é o mesmo do `MobileOsCard`)
+// B-APP-ORG-2 (A2; Emenda 1.8.3.7, Adendo 1) — peças da seção "Outros pátios",
+// montadas só com peças do kit (`MobileSkeletonList`, `MobileNoticeBanner`) e
+// tokens de `ErpMobileTheme`, sem cor literal
 // ---------------------------------------------------------------------------
 
 class _OtherPatiosLoading extends StatelessWidget {
@@ -1131,37 +1132,22 @@ class _OtherPatiosLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Carregando os chamados dos outros pátios',
-      excludeSemantics: true,
-      child: Container(
-        key: const Key('outros-carregando'),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: ErpMobileTheme.cardBorder),
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Buscando os chamados dos outros pátios…',
+            style: TextStyle(fontSize: 12.5, color: ErpMobileTheme.inkMuted),
+          ),
         ),
-        child: const Row(
-          children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Buscando os chamados dos outros pátios…',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: ErpMobileTheme.inkMuted,
-                ),
-              ),
-            ),
-          ],
+        MobileSkeletonList(
+          key: Key('outros-carregando'),
+          rows: 2,
+          semanticsLabel: 'Carregando os chamados dos outros pátios',
         ),
-      ),
+      ],
     );
   }
 }
@@ -1173,33 +1159,24 @@ class _OtherPatioFailed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.fromLTRB(11, 4, 4, 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFECACA)),
-      ),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(
-            Icons.cloud_off_outlined,
-            size: 18,
-            color: ErpMobileTheme.danger,
+          const MobileNoticeBanner(
+            icon: Icons.cloud_off_outlined,
+            message: 'Não foi possível carregar os chamados deste pátio agora.',
+            tone: PillTone.danger,
           ),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Não foi possível carregar os chamados deste pátio agora.',
-              style: TextStyle(fontSize: 12.5, color: Color(0xFF991B1B)),
-            ),
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44),
-            child: TextButton(
-              onPressed: onRetry,
-              child: const Text('Tentar novamente'),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: TextButton(
+                onPressed: onRetry,
+                child: const Text('Tentar novamente'),
+              ),
             ),
           ),
         ],
@@ -1219,51 +1196,30 @@ class _OtherPatioSwitching extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       container: true,
-      child: Container(
+      child: Column(
         key: const Key('outros-entrando'),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: ErpMobileTheme.cardBorder),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Entrando em $target',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: ErpMobileTheme.ink,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Entrando em $target',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: ErpMobileTheme.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    current.isEmpty
-                        ? 'Conferindo o seu acesso.'
-                        : 'Conferindo o seu acesso. O que é de $current '
-                              'continua guardado neste aparelho.',
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      height: 1.4,
-                      color: ErpMobileTheme.inkMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          MobileNoticeBanner(
+            icon: Icons.sync,
+            message: current.isEmpty
+                ? 'Conferindo o seu acesso.'
+                : 'Conferindo o seu acesso. O que é de $current '
+                      'continua guardado neste aparelho.',
+            tone: PillTone.info,
+          ),
+          const SizedBox(height: 6),
+          const LinearProgressIndicator(minHeight: 3),
+        ],
       ),
     );
   }
