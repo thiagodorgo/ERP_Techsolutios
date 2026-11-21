@@ -90,18 +90,28 @@ class OtherPatiosCalls {
       }
     }
     for (final session in sessions) {
-      final calls = await _fetch(session, names[session.tenantId] ?? '');
+      final calls = await _fetch(
+        session,
+        names[session.tenantId] ?? '',
+        current,
+      );
       blocks[session.tenantId] = calls;
     }
     return [for (final tenant in others) ?blocks[tenant.tenantId]];
   }
 
-  Future<OtherPatioBlock> _fetch(AuthSession session, String tenantName) async {
+  Future<OtherPatioBlock> _fetch(
+    AuthSession session,
+    String tenantName,
+    AuthSession current,
+  ) async {
     final tenantId = session.tenantId;
     try {
-      final orders = await _api(
-        _listen.clientFor(tenantId),
-      ).fetchWorkOrders(tenantId: tenantId);
+      // dart format off
+      final client = await _listen.clientOf(tenantId, current); // P-ÉPOCA: depois da espera de rede, só a sessão viva de agora recebe o cliente
+      if (client == null) return _failed(tenantId, tenantName); // a sessão que saiu não pede nada
+      // dart format on
+      final orders = await _api(client).fetchWorkOrders(tenantId: tenantId);
       return _last[tenantId] = OtherPatioBlock(
         tenantId: tenantId,
         tenantName: tenantName,

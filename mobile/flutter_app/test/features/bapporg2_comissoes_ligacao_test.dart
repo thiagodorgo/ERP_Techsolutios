@@ -302,6 +302,7 @@ void main() {
 
     final porta = h.container.read(commissionPatioClientsProvider);
     final client = await porta.clientFor(_orgA);
+    expect(client, isNotNull);
     final response = await client!.get<Object?>(
       commission.commissionStatementsMySummaryPath,
     );
@@ -482,6 +483,7 @@ void main() {
     final porta = h.container.read(commissionPatioClientsProvider);
     final deB = await porta.clientFor(_orgB);
     final deA = await porta.clientFor(_orgA);
+    expect(deB, isNotNull);
     await deB!.get<Object?>(resumo);
     await deA!.get<Object?>(resumo);
 
@@ -491,4 +493,42 @@ void main() {
     expect(h.server.to(_activeTenant).last.body, {'tenantId': _orgA});
     solta.complete();
   });
+
+  // Adendo 1 da Emenda 1.8.3.9 (MI2): a porta nunca lança. Com o servidor
+  // recusando a escuta, o pátio vivo recebe o cliente vivo, sem pedir escuta, e
+  // o outro pátio recebe `null`.
+  for (final (status, error) in const [
+    (403, {'code': 'FORBIDDEN', 'reason': 'forbidden'}),
+    (503, {'code': 'UNAVAILABLE'}),
+  ]) {
+    test(
+      'IC9 — a porta nunca lanca: com falha ($status), devolve null',
+      () async {
+        const baseVivo = 'https://vivo.local';
+        final h = await _abre(baseVivo: baseVivo);
+        h.server.on(
+          _activeTenant,
+          (_) => (status, <String, Object?>{'error': error}),
+        );
+        final porta = h.container.read(commissionPatioClientsProvider);
+        Future<(Dio?, Object?)> pede(String patioId) async {
+          try {
+            return (await porta.clientFor(patioId), null);
+          } catch (falha) {
+            return (null, falha);
+          }
+        }
+
+        final (vivo, erroVivo) = await pede(_orgA);
+        final (outro, erroOutro) = await pede(_orgB);
+        expect(erroVivo, isNull, reason: 'a porta lançou no pátio vivo');
+        expect(erroOutro, isNull, reason: 'a porta lançou no outro pátio');
+        expect(vivo, isNotNull);
+        expect(vivo!.options.baseUrl, baseVivo);
+        expect(outro, isNull);
+        expect(h.server.to(_activeTenant), hasLength(1));
+        expect(h.server.to(_activeTenant).single.body, {'tenantId': _orgB});
+      },
+    );
+  }
 }

@@ -396,6 +396,7 @@ void main() {
     expect(h.listen.sessions, isEmpty);
     expect(h.server.revoked, contains('ref-bl'));
     final again = await h.listen.acquire(_orgB, a);
+    expect(again, isNotNull);
     expect(again!.tokens.accessToken, 'tok-bl3');
   });
 
@@ -490,6 +491,84 @@ void main() {
     expect(blocosC.single.state, OtherPatioState.failed);
     expect(blocosC.single.orders, isEmpty);
   });
+
+  // Adendo 1 da Emenda 1.8.3.9 (ATQ2): o GET do 1º pátio fica segurado, a
+  // pessoa sai, a outra entra e pega a escuta do 2º pátio; o GET é solto. O
+  // laço da pessoa que saiu não pode pedir o 2º pátio com o cliente da nova.
+  test(
+    'OP2 — o laco da pessoa que saiu nao pede com o cliente da que entrou',
+    () async {
+      final h = await _abre();
+      const orgC = 'org-c';
+      const tenants = [
+        TenantContext(tenantId: _orgA, displayName: 'A'),
+        TenantContext(tenantId: _orgB, displayName: 'B'),
+        TenantContext(tenantId: orgC, displayName: 'C'),
+      ];
+      var emitidas = 0;
+      final chegou = Completer<void>();
+      final solta = Completer<void>();
+      h.server
+        ..on(_activeTenant, (sent) {
+          emitidas++;
+          final de = sent.auth == 'Bearer tok-c' ? 'c' : 'a';
+          final tenant = sent.body['tenantId'] as String;
+          return (200, _ativa(tenant, 'tok-l$de$emitidas-$tenant'));
+        })
+        ..on(_login, (_) => (200, _entrou('u-c', _orgA, 'tok-c')))
+        ..on(_workOrders, (sent) async {
+          if (!chegou.isCompleted) {
+            chegou.complete();
+            await solta.future;
+          }
+          final daNova = sent.auth?.startsWith('Bearer tok-lc') ?? false;
+          return (
+            200,
+            <String, Object?>{
+              'items': [
+                {
+                  'id': daNova ? 'os-de-c' : 'os-de-a',
+                  'code': daNova ? 'OS-DE-C' : 'OS-DE-A',
+                  'title': 'Remoção',
+                  'status': 'assigned',
+                },
+              ],
+              'pagination': {'nextCursor': null},
+            },
+          );
+        });
+      final deA = h.container.read(otherPatiosCallsProvider);
+      final cicloDeA = deA.load(current: h.value.session!, tenants: tenants);
+      await chegou.future;
+      expect(h.listen.sessions, hasLength(2));
+      await h.auth.logout();
+      await h.auth.login(email: _email, password: 'x');
+      final c = h.value.session!;
+      expect(c.user.sub, 'u-c');
+      final escutaDeC = await h.listen.acquire(orgC, c);
+      expect(escutaDeC, isNotNull);
+      expect(escutaDeC!.tokens.accessToken, startsWith('tok-lc'));
+      solta.complete();
+      final blocosA = await cicloDeA;
+
+      final pedidosComTokenNovo = [
+        for (final s in h.server.to(_workOrders))
+          if (s.auth?.startsWith('Bearer tok-lc') ?? false) s.auth,
+      ];
+      expect(
+        pedidosComTokenNovo,
+        isEmpty,
+        reason:
+            'P-ÉPOCA: o laço da sessão que saiu usou o cliente da sessão nova',
+      );
+      expect(h.server.to(_workOrders), hasLength(1));
+      for (final bloco in blocosA) {
+        expect(bloco.orders.map((o) => o.code), isNot(contains('OS-DE-C')));
+      }
+      expect(blocosA.last.tenantId, orgC);
+      expect(blocosA.last.state, OtherPatioState.failed);
+    },
+  );
 
   test('CE1 — o estado da aba nao passa de pessoa', () async {
     final com = _Com();

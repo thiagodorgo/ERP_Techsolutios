@@ -98,10 +98,15 @@ void main() {
     await m.e.sessions.discardAll();
     final b = pessoa('u-b', 'C');
     m.e.liveKey = sessionKeyOf(b);
-    final r1 = await m.e.sessions.acquire('Y', b);
+    // Prazo curto: se o B reaproveitar o pedido em voo da época antiga (que
+    // espera o hold), o resultado é `null` e o `expect` abaixo falha, sem
+    // depender do tempo esgotado do teste (Adendo 1, ME9).
+    final r1 = await m.e.sessions
+        .acquire('Y', b)
+        .timeout(const Duration(seconds: 2), onTimeout: () => null);
+    expect(r1, isNotNull, reason: 'o B faz o pedido DELE');
     h.release.complete();
     expect(await f0, isNull);
-    expect(r1, isNotNull);
     expect(m.server.to(kActiveTenant), hasLength(2));
     expect(m.server.liveOf('Y'), 1);
     expect(await m.e.journal.all(), {'Y': r1!.tokens.refreshToken});
