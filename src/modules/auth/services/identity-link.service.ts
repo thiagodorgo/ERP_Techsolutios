@@ -20,7 +20,14 @@ import {
 } from "../repositories/identity-link.repository.js";
 import { IdentityLinkEventRepository } from "../repositories/identity-link-event.repository.js";
 import { normalizePairIdentity } from "./identity-resolver.js";
+import { readActorPasswordFamily } from "./password-family.js";
 import { validateLocalPassword } from "./local-auth-credential.service.js";
+import { isTemporaryPasswordExpired } from "../temporary-password.rules.js";
+import {
+  groupOfTenantOn,
+  todayBusinessDate,
+  type MemberRow,
+} from "../../subscription-billing/economic-groups/membership.rules.js";
 import { hashPassword, verifyPassword } from "./password.service.js";
 import type { AuthenticatedActor, LocalAuthLoginInput, LocalAuthLoginResult } from "../types/auth.types.js";
 
@@ -94,6 +101,36 @@ export type AdminPasswordResetResult = {
   readonly userId: string;
   readonly temporaryPassword: string;
   readonly revokedSessions: number;
+  // B-APP-ORG-2S (1.8.3 §2.3) — quantos pátios receberam a provisória (o do ator incluído). Só o número:
+  // nenhum identificador de outro pátio sai (§2.8).
+  readonly affectedPatios: number;
+};
+
+// B-APP-ORG-2S (1.8.3 §2.3, P1 (a) do dono) — um par que recebe a provisória da redefinição.
+export type ResetPair = {
+  readonly tenantId: string;
+  readonly userId: string;
+};
+
+function sameResetPair(a: ResetPair, b: ResetPair): boolean {
+  return a.tenantId === b.tenantId && a.userId === b.userId;
+}
+
+function byResetPair(a: ResetPair, b: ResetPair): number {
+  return a.tenantId === b.tenantId ? 0 : a.tenantId < b.tenantId ? -1 : 1;
+}
+
+// Relógio do dia de negócio de São Paulo que decide o grupo vigente na redefinição (GR4 o fixa). Na
+// integração com o S1, vira o `groupProbeClock` da volta (leitura declarada do dev, diário dev-s2p-cl).
+export const resetGroupClock = {
+  now: (): Date => new Date(),
+};
+
+type ResetLinkRow = {
+  readonly tenantId: string;
+  readonly userId: string;
+  readonly attachedVia: string;
+  readonly userActive: boolean;
 };
 
 // Orçamento da transação do reset (S1): espera por conexão, duração da transação e os timeouts LOCAIS
@@ -475,10 +512,12 @@ export class IdentityLinkService {
       const matches = await this.verifyPasswordFn(input.currentPassword, credential.password_hash);
 
       if (!matches) {
-        await credentials.incrementFailedAttempts(credential.id, actor.tenantId);
+        await this.chargeSharedPasswordFailure(tx, actor, credential.id);
 
         return { kind: "invalid" as const };
       }
+
+      if (isTemporaryPasswordExpired(credential)) return { kind: "expired" as const };
 
       return { kind: "ok" as const, email: credential.email };
     });
@@ -497,6 +536,16 @@ export class IdentityLinkService {
 
     if (proof.kind === "invalid") {
       throw identityLinkError(401, "UNAUTHORIZED", "invalid_credentials", "Invalid credentials.");
+    }
+
+    // B-APP-ORG-2S (1.8.3 §2.2) — a provisória vencida não troca: só uma nova redefinição devolve o acesso.
+    if (proof.kind === "expired") {
+      throw identityLinkError(
+        409,
+        "CONFLICT",
+        "temporary_password_expired",
+        "Sua senha provisória venceu. Peça uma nova ao seu pátio.",
+      );
     }
 
     try {
@@ -519,12 +568,75 @@ export class IdentityLinkService {
     // Chamado direto para não instanciar repositório com o client raiz (ratchet B-SAN3-05, T13).
     const password = await hashPassword(input.newPassword);
 
-    return this.handlePasswordChange(actor, async (tx) => {
-      await new LocalAuthCredentialRepository(tx).updatePassword(actor.userId, actor.tenantId, {
-        password_hash: password.password_hash,
-        password_algorithm: password.password_algorithm,
-      });
-    });
+    const newPassword = { password_hash: password.password_hash, password_algorithm: password.password_algorithm };
+
+    return this.handlePasswordChange(actor, (tx) => this.writePasswordToFamily(tx, actor, newPassword));
+  }
+
+  private async writePasswordToFamily(
+    tx: Prisma.TransactionClient,
+    actor: AuthenticatedActor,
+    newPassword: { readonly password_hash: string; readonly password_algorithm: string },
+  ): Promise<void> {
+    const written: ResetPair[] = [];
+    let pending: ResetPair[];
+
+    try {
+      do {
+        const family = await readActorPasswordFamily(tx, actor);
+        pending = family.map((link) => ({ tenantId: link.tenant_id, userId: link.user_id })).filter((pair) => !written.some((done) => sameResetPair(done, pair)));
+
+        for (const pair of pending) {
+          await setTenantRlsContext(tx, pair.tenantId);
+          await new LocalAuthCredentialRepository(tx).updatePassword(pair.userId, pair.tenantId, newPassword);
+          if (pair.tenantId !== actor.tenantId) await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(pair.userId, pair.tenantId);
+        }
+
+        written.push(...pending);
+      } while (pending.length > 0);
+    } finally {
+      await setTenantRlsContext(tx, actor.tenantId);
+    }
+  }
+
+  // B-APP-ORG-2S (1.8.3.1 §3, GP5c) — a troca de senha também é porta das 5 tentativas: a senha atual errada
+  // soma 1 em todos os pares ATIVOS da família (o mesmo contexto de RLS por pátio da volta da redefinição),
+  // em ordem fixa por par. Roda na transação da prova, que sobrevive à recusa. O GUC volta ao pátio do ator.
+  private async chargeSharedPasswordFailure(
+    tx: Prisma.TransactionClient,
+    actor: AuthenticatedActor,
+    credentialId: string,
+  ): Promise<void> {
+    const family = await readActorPasswordFamily(tx, actor);
+
+    try {
+      for (const pair of family) {
+        await setTenantRlsContext(tx, pair.tenant_id);
+        const credentials = new LocalAuthCredentialRepository(tx);
+
+        if (pair.tenant_id === actor.tenantId && pair.user_id === actor.userId) {
+          await credentials.incrementFailedAttempts(credentialId, actor.tenantId);
+          continue;
+        }
+
+        const user = await tx.user.findFirst({
+          where: { id: pair.user_id, tenant_id: pair.tenant_id },
+          select: { status: true },
+        });
+
+        if (!user || user.status !== "active") {
+          continue;
+        }
+
+        const other = await credentials.findByUserForTenant(pair.user_id, pair.tenant_id);
+
+        if (other) {
+          await credentials.incrementFailedAttempts(other.id, pair.tenant_id);
+        }
+      }
+    } finally {
+      await setTenantRlsContext(tx, actor.tenantId);
+    }
   }
 
   // POST /auth/users/:userId/reset-password (B-USERS-ACESSO-SEG, S1 — Emenda 1, UEM-R2-01) — o
@@ -553,7 +665,8 @@ export class IdentityLinkService {
 
     // A provisória e o hash nascem FORA da transação (o scrypt é lento; a transação fica curta).
     const temporaryPassword = generateInitialPassword();
-    const password = await hashPassword(temporaryPassword);
+    // B-APP-ORG-2S (1.8.3 §2.3) — a mesma hora em todos os pares que recebem a provisória.
+    const password = { ...(await hashPassword(temporaryPassword)), written_at: new Date() };
     const budget = this.options.resetBudget ?? ADMIN_RESET_BUDGET;
     // O prazo da transação, contado ANTES de abri-la (um pouco antes do relógio do Prisma: falha fechada).
     // Medido na sonda do S1·f: o Prisma não cancela a instrução bloqueada quando o `timeout` da transação
@@ -602,6 +715,13 @@ export class IdentityLinkService {
           // identidade dele: a religação que move esse vínculo (o alvo como conta provada) trava a mesma linha
           // com FOR UPDATE, e a do próprio alvo (o alvo como ator) com FOR SHARE (T2). Quem chega depois espera
           // o outro confirmar e lê o estado novo: a identidade vem da linha TRAVADA (a versão confirmada).
+          // B-APP-ORG-2S (GR5) — antes, a FILA da identidade: duas redefinições da MESMA identidade, por pátios
+          // diferentes, travariam cada uma o vínculo do próprio par e esperariam o da outra na volta (FOR SHARE);
+          // o PostgreSQL derrubava uma por impasse (medido: `deadlock detected`, 503). A trava consultiva é da
+          // transação e respeita o `lock_timeout` do orçamento. Se a religação mover a identidade no meio, a
+          // conferência logo abaixo sai 503 e nada muda.
+          const hintedIdentityId = await this.identityOfPair(tx, actor.tenantId, target.id);
+          if (hintedIdentityId !== null) await this.lockEarlierLinksOfIdentity(tx, actor.tenantId, hintedIdentityId, deadline);
           let pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
 
           if (!pairLink) {
@@ -614,24 +734,41 @@ export class IdentityLinkService {
             throw resetUnavailableError();
           }
 
-          const identityId = pairLink.identity_id;
+          if (hintedIdentityId !== null && pairLink.identity_id !== hintedIdentityId) {
+            throw resetUnavailableError();
+          }
 
-          await this.assertNotLinkedElsewhere(tx, actor.tenantId, identityId, deadline);
+          // B-APP-ORG-2S (1.8.3 §2.3, P1 (a)) — grava PRIMEIRO a provisória no par do próprio pátio e só depois
+          // descobre os outros pares (a ordem que fecha a corrida com uma concessão em voo). Os pares do grupo
+          // recebem a MESMA provisória (mesmo hash, marca ligada, mesma hora, contador zerado), ativo ou não
+          // o técnico lá, e as sessões dele caem em todos.
+          const actorTenant = await tx.tenant.findUnique({ where: { id: actor.tenantId }, select: { name: true } });
+          const actorTenantName = actorTenant?.name ?? "";
+
+          const ownPair: ResetPair = { tenantId: actor.tenantId, userId: target.id };
+          const written: ResetPair[] = [];
+          let pending: ResetPair[];
+
+          do {
+            const found = await this.resolveResetFamily(tx, actor.tenantId, pairLink, deadline);
+            pending = [ownPair, ...found].filter((pair) => !written.some((done) => sameResetPair(done, pair))).sort(byResetPair);
+            for (const pair of pending) await this.writeTemporaryPassword(tx, pair, target.email, password);
+            written.push(...pending);
+          } while (pending.length > 0);
+
+          const family = written.filter((pair) => pair !== ownPair);
+
+          let revokedSessions = 0;
+
+          for (const pair of [{ tenantId: actor.tenantId, userId: target.id }, ...family]) {
+            await setTenantRlsContext(tx, pair.tenantId);
+            const revoked = await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(pair.userId, pair.tenantId);
+            revokedSessions += revoked.count;
+          }
+
+          for (const pair of family) await this.recordPeerResetAudit(tx, pair, actorTenantName);
 
           await setTenantRlsContext(tx, actor.tenantId);
-          await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
-            tenant_id: actor.tenantId,
-            user_id: target.id,
-            email: target.email,
-            password_hash: password.password_hash,
-            password_algorithm: password.password_algorithm,
-          });
-
-          const revoked = await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(
-            target.id,
-            actor.tenantId,
-          );
-
           await this.recordAudit(tx, {
             tenantId: actor.tenantId,
             actorId: actor.userId,
@@ -642,12 +779,13 @@ export class IdentityLinkService {
             outcome: "success",
             severity: "warning",
             metadata: {
-              revoked_sessions: revoked.count,
+              revoked_sessions: revokedSessions,
               must_change_password: true,
+              affected_patios: family.length + 1,
             },
           });
 
-          return { userId: target.id, temporaryPassword, revokedSessions: revoked.count };
+          return { userId: target.id, temporaryPassword, revokedSessions, affectedPatios: family.length + 1 };
         },
       );
     } catch (error) {
@@ -927,18 +1065,30 @@ export class IdentityLinkService {
   //     o contexto da volta derruba o reset (vira 503), nunca vira resultado.
   //   - O prazo da transação (`deadline`) é conferido depois de cada leitura e no fim: vencido, a resposta é
   //     503 `reset_unavailable`, ache a sonda o vínculo ou não.
+  //   - B-APP-ORG-2S (1.8.3 §2.3, P1 (a) do dono; era `assertNotLinkedElsewhere`) — a volta não para mais no
+  //     primeiro achado: CLASSIFICA cada vínculo firme. Vínculo `religacao`, ou par do alvo `religacao`: 409,
+  //     como antes (a `D-USERS-1` segue). Pátio fora do grupo vigente do pátio do ator (dia de São Paulo) com
+  //     o usuário ativo: 409; inativo: ignorado. Pátio do grupo: entra na família e recebe a provisória. O
+  //     retorno são só os pares (pátio e usuário), que nunca saem na resposta.
   // Pós-condição: o GUC fica na ÚLTIMA organização sondada; o chamador repõe o da organização ativa antes
   // de escrever.
-  private async assertNotLinkedElsewhere(
+  private async resolveResetFamily(
     tx: Prisma.TransactionClient,
     activeTenantId: string,
-    identityId: string,
+    pairLink: LinkRow,
     deadline: number,
-  ): Promise<void> {
+  ): Promise<readonly ResetPair[]> {
+    const identityId = pairLink.identity_id;
+    const ownVia = pairLink.attached_via;
+    const day = todayBusinessDate(resetGroupClock.now());
+    await setTenantRlsContext(tx, activeTenantId);
+    const ownGroupId = await this.groupOfTenantToday(tx, activeTenantId, day);
+    const peers = new Set<string>();
+    const family: ResetPair[] = [];
     const others = await tx.tenant.findMany({
       where: { id: { not: activeTenantId } },
       select: { id: true },
-      orderBy: [{ created_at: "asc" }, { id: "asc" }],
+      orderBy: { id: "asc" },
     });
 
     for (const other of others) {
@@ -957,24 +1107,135 @@ export class IdentityLinkService {
         continue;
       }
 
-      const firm = await tx.$queryRaw<Array<{ tenantId: string }>>`
-        SELECT tenant_id::text AS "tenantId" FROM auth_identity_links
-        WHERE tenant_id = ${other.id}::uuid AND identity_id = ${identityId}::uuid
+      const firm = await tx.$queryRaw<ResetLinkRow[]>`
+        SELECT l.tenant_id::text AS "tenantId", l.user_id::text AS "userId", l.attached_via AS "attachedVia",
+               (u.status = 'active') AS "userActive"
+        FROM auth_identity_links l
+        JOIN users u ON u.tenant_id = l.tenant_id AND u.id = l.user_id
+        WHERE l.tenant_id = ${other.id}::uuid AND l.identity_id = ${identityId}::uuid
         LIMIT 1
-        FOR SHARE
+        FOR SHARE OF l
       `;
 
       assertDeadline(deadline);
       assertRowsBelongToTenant(firm, other.id, "auth_identity_links");
 
-      if (firm.length === 0) {
+      const link = firm[0];
+
+      if (!link) {
         throw resetUnavailableError();
       }
 
-      throw identityLinkedElsewhereError();
+      if (ownGroupId !== null && (await this.groupOfTenantToday(tx, other.id, day)) === ownGroupId) peers.add(other.id);
+      if (link.attachedVia === "religacao" || ownVia === "religacao") throw identityLinkedElsewhereError();
+      if (!peers.has(other.id)) { if (link.userActive) throw identityLinkedElsewhereError(); continue; }
+      family.push({ tenantId: other.id, userId: link.userId });
     }
 
     assertDeadline(deadline);
+
+    return family;
+  }
+
+  // B-APP-ORG-2S (GR5) — a fila das redefinições de uma identidade: lê a identidade do par (sem trava) e toma
+  // a trava consultiva da transação por ela. Par sem vínculo ainda não tem família: sem fila.
+  private async identityOfPair(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    userId: string,
+  ): Promise<string | null> {
+    const rows = await tx.$queryRaw<Array<{ identityId: string }>>`
+      SELECT identity_id::text AS "identityId" FROM auth_identity_links
+      WHERE tenant_id = ${tenantId}::uuid AND user_id = ${userId}::uuid
+    `;
+    const identityId = rows[0]?.identityId ?? null;
+
+    return identityId;
+  }
+
+  private async lockEarlierLinksOfIdentity(
+    tx: Prisma.TransactionClient,
+    activeTenantId: string,
+    identityId: string,
+    deadline: number,
+  ): Promise<void> {
+    const earlier = await tx.tenant.findMany({ where: { id: { lt: activeTenantId } }, select: { id: true }, orderBy: { id: "asc" } });
+
+    try {
+      for (const other of earlier) {
+        await setTenantRlsContext(tx, other.id);
+
+        const rows = await tx.$queryRaw<Array<{ tenantId: string }>>`
+          SELECT tenant_id::text AS "tenantId" FROM auth_identity_links
+          WHERE tenant_id = ${other.id}::uuid AND identity_id = ${identityId}::uuid
+          FOR SHARE
+        `;
+
+        assertDeadline(deadline);
+        assertRowsBelongToTenant(rows, other.id, "auth_identity_links");
+      }
+    } finally {
+      await setTenantRlsContext(tx, activeTenantId);
+    }
+  }
+
+  // B-APP-ORG-2S (1.8.3 §2.3) — o grupo vigente de UM pátio no dia de São Paulo, lido sob o GUC dele (o
+  // chamador já o pôs). Dois vínculos no mesmo dia falham fechado (`MembershipOverlapError` → 503).
+  private async groupOfTenantToday(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    day: string,
+  ): Promise<string | null> {
+    const rows = await tx.$queryRaw<Array<{ tenantId: string; groupId: string; validFrom: string; validTo: string | null }>>`
+      SELECT tenant_id::text AS "tenantId", group_id::text AS "groupId",
+             valid_from::text AS "validFrom", valid_to::text AS "validTo"
+      FROM economic_group_members WHERE tenant_id = ${tenantId}::uuid
+    `;
+
+    assertRowsBelongToTenant(rows, tenantId, "economic_group_members");
+
+    const members: MemberRow[] = rows.map((row) => ({ ...row }));
+
+    return groupOfTenantOn(members, tenantId, day);
+  }
+
+  // B-APP-ORG-2S (1.8.3 §2.3) — grava a provisória num par, sob o GUC do pátio dele.
+  private async writeTemporaryPassword(
+    tx: Prisma.TransactionClient,
+    pair: ResetPair,
+    email: string,
+    password: { readonly password_hash: string; readonly password_algorithm: string; readonly written_at: Date },
+  ): Promise<void> {
+    await setTenantRlsContext(tx, pair.tenantId);
+    await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
+      tenant_id: pair.tenantId,
+      user_id: pair.userId,
+      email,
+      password_hash: password.password_hash,
+      password_algorithm: password.password_algorithm,
+      password_updated_at: password.written_at,
+    });
+  }
+
+  // B-APP-ORG-2S (1.8.3 §2.2, auditoria) — no outro pátio atingido: o técnico DAQUELE pátio e o NOME do pátio
+  // que gerou. Sem identificador de outro pátio, sem o ator de fora, sem valor nem hash.
+  private async recordPeerResetAudit(
+    tx: Prisma.TransactionClient,
+    pair: ResetPair,
+    originPatioName: string,
+  ): Promise<void> {
+    await setTenantRlsContext(tx, pair.tenantId);
+    await this.recordAudit(tx, {
+      tenantId: pair.tenantId,
+      actorId: null,
+      actorType: "system",
+      action: "user.password_reset_by_group_patio",
+      resourceType: "user",
+      resourceId: pair.userId,
+      outcome: "success",
+      severity: "warning",
+      metadata: { origin_patio_name: originPatioName },
+    });
   }
 
   // B-USERS-ACESSO-SEG (P-SEG-2) — a marca da senha provisória do PAR. Pré-condição do chamador: o GUC

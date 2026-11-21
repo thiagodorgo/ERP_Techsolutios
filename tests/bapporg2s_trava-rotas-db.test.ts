@@ -5,7 +5,12 @@ import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import test from "node:test";
 
-import { closeServer, getBaseUrl, requestJson } from "./helpers/auth-identity-fixture.js";
+import {
+  closeServer,
+  createEphemeralRole,
+  getBaseUrl,
+  requestJson,
+} from "./helpers/auth-identity-fixture.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-APP-ORG-2S — a trava do dev HK1 PELAS ROTAS (plano 1.8.3 §6; arquivo declarado "nasce no bloco"
@@ -22,11 +27,11 @@ import { closeServer, getBaseUrl, requestJson } from "./helpers/auth-identity-fi
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
-const adminConnectionString = process.env.ADMIN_DATABASE_URL;
+const adminConnectionString = process.env.ADMIN_DATABASE_URL ?? connectionString;
 
-if (!connectionString || !adminConnectionString) {
-  test("B-APP-ORG-2S HK1 requer DATABASE_URL e ADMIN_DATABASE_URL", {
-    skip: "Informe o papel de runtime e a conexão administrativa do Postgres descartável.",
+if (!connectionString) {
+  test("B-APP-ORG-2S HK1 requer DATABASE_URL", {
+    skip: "Informe a conexão administrativa do Postgres descartável.",
   });
 } else {
   test("HK1 pelas rotas: K1, K10 e K11", async (t) => {
@@ -46,7 +51,8 @@ if (!connectionString || !adminConnectionString) {
       ]);
 
     const admin = createPrismaClient(adminConnectionString);
-    const runtime = createPrismaClient(connectionString);
+    const runtimeRole = await createEphemeralRole(admin, adminConnectionString, createPrismaClient);
+    const runtime = runtimeRole.client;
     const service = new PrismaCoreSaasService(new PrismaCoreSaasStore(runtime), runtime);
     let server: Server | undefined;
 
@@ -198,7 +204,7 @@ if (!connectionString || !adminConnectionString) {
       });
     } finally {
       if (server) await closeServer(server);
-      await Promise.allSettled([runtime.$disconnect(), admin.$disconnect()]);
+      await Promise.allSettled([runtimeRole.drop(), admin.$disconnect()]);
     }
   });
 }

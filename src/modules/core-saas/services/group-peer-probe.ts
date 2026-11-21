@@ -28,6 +28,7 @@ export type GroupPeerProbeResult = {
     readonly tenantId: string;
     readonly userId: string;
     readonly identityId: string | null;
+    readonly attachedVia: string | null;
   }[];
 };
 
@@ -66,12 +67,14 @@ type PeerUserRow = {
   readonly id: string;
   readonly tenantId: string;
   readonly identityId: string | null;
+  readonly attachedVia: string | null;
 };
 
 type PeerUserDbRow = {
   readonly id: string;
   readonly tenant_id: string;
   readonly identity_id: string | null;
+  readonly attached_via: string | null;
 };
 
 function toMemberRow(row: MembershipDbRow): MemberRow {
@@ -110,10 +113,19 @@ async function readPeerUsers(
   email: string,
 ): Promise<PeerUserRow[]> {
   const rows = await tx.$queryRaw<Array<PeerUserDbRow>>`
-    SELECT u.id::text AS id, u.tenant_id::text AS tenant_id, l.identity_id::text AS identity_id
+    SELECT
+      u.id::text AS id,
+      u.tenant_id::text AS tenant_id,
+      l.identity_id::text AS identity_id,
+      l.attached_via AS attached_via
     FROM users u LEFT JOIN auth_identity_links l ON l.tenant_id = u.tenant_id AND l.user_id = u.id WHERE u.tenant_id = ${peerId}::uuid AND u.email = ${email}
   `;
-  const peers = rows.map((row) => ({ id: row.id, tenantId: row.tenant_id, identityId: row.identity_id }));
+  const peers = rows.map((row) => ({
+    id: row.id,
+    tenantId: row.tenant_id,
+    identityId: row.identity_id,
+    attachedVia: row.attached_via,
+  }));
   assertRowsBelongToTenant(peers, peerId, "users");
 
   return peers;
@@ -139,7 +151,12 @@ export async function probeGroupPeers(
 
   let users = 0;
   const identityIds = new Set<string>();
-  const origins: Array<{ tenantId: string; userId: string; identityId: string | null }> = [];
+  const origins: Array<{
+    tenantId: string;
+    userId: string;
+    identityId: string | null;
+    attachedVia: string | null;
+  }> = [];
 
   try {
     if (ownGroupId !== null) {
@@ -153,7 +170,12 @@ export async function probeGroupPeers(
         const peerUsers = await readPeerUsers(tx, peerId, input.email);
         for (const row of peerUsers) {
           users += 1;
-          origins.push({ tenantId: row.tenantId, userId: row.id, identityId: row.identityId });
+          origins.push({
+            tenantId: row.tenantId,
+            userId: row.id,
+            identityId: row.identityId,
+            attachedVia: row.attachedVia,
+          });
           if (row.identityId !== null) {
             identityIds.add(row.identityId);
           }
@@ -166,4 +188,16 @@ export async function probeGroupPeers(
   }
 
   return { users, identityIds: [...identityIds], origins };
+}
+
+export function loginOriginsOf(
+  origins: GroupPeerProbeResult["origins"],
+  identityId: string,
+): GroupPeerProbeResult["origins"] {
+  return origins.filter(
+    (peer) =>
+      peer.identityId === identityId &&
+      peer.attachedVia !== "concessao" &&
+      peer.attachedVia !== "religacao",
+  );
 }
