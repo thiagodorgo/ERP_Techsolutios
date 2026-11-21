@@ -568,32 +568,35 @@ export class IdentityLinkService {
     // Chamado direto para não instanciar repositório com o client raiz (ratchet B-SAN3-05, T13).
     const password = await hashPassword(input.newPassword);
 
-    // B-APP-ORG-2S (P3 do dono; 1.8.3.2 §1 e 1.8.3.3 item 1) — a troca vale em TODOS os pares que guardam a
-    // senha (a família, lida pelo braço de identidade do ator), pelo espelho `changePasswordAcrossPairs`, numa
-    // transação só: hash novo, marca de troca apagada e as sessões de cada par derrubadas. Login de um par só
-    // segue o caminho da `main` (a troca dentro do gancho).
-    const family = await this.prisma.$transaction((tx) => readActorPasswordFamily(tx, actor));
+    const newPassword = { password_hash: password.password_hash, password_algorithm: password.password_algorithm };
 
-    if (family.length > 1) {
-      const { getLocalAuthLoginService } = await import("../auth-runtime.js");
-      const mirrors = await getLocalAuthLoginService();
-      const ownPair: ResetPair = { tenantId: actor.tenantId, userId: actor.userId };
-      const otherPairs: ResetPair[] = family.filter((link) => link.tenant_id !== actor.tenantId || link.user_id !== actor.userId).map((link) => ({ tenantId: link.tenant_id, userId: link.user_id }));
-      const newPassword = { password_hash: password.password_hash, password_algorithm: password.password_algorithm };
+    return this.handlePasswordChange(actor, (tx) => this.writePasswordToFamily(tx, actor, newPassword));
+  }
 
-      // MD3/MD11 (1.8.3.11, Revisão 1): o próprio par e os outros na MESMA transação, o próprio primeiro. Nenhum
-      // estado em que um par tem a senha nova e outro a velha. O gancho que vem depois só revoga e audita.
-      await mirrors.changePasswordAcrossPairs([ownPair, ...otherPairs], newPassword);
+  private async writePasswordToFamily(
+    tx: Prisma.TransactionClient,
+    actor: AuthenticatedActor,
+    newPassword: { readonly password_hash: string; readonly password_algorithm: string },
+  ): Promise<void> {
+    const written: ResetPair[] = [];
+    let pending: ResetPair[];
 
-      return this.handlePasswordChange(actor);
+    try {
+      do {
+        const family = await readActorPasswordFamily(tx, actor);
+        pending = family.map((link) => ({ tenantId: link.tenant_id, userId: link.user_id })).filter((pair) => !written.some((done) => sameResetPair(done, pair)));
+
+        for (const pair of pending) {
+          await setTenantRlsContext(tx, pair.tenantId);
+          await new LocalAuthCredentialRepository(tx).updatePassword(pair.userId, pair.tenantId, newPassword);
+          if (pair.tenantId !== actor.tenantId) await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(pair.userId, pair.tenantId);
+        }
+
+        written.push(...pending);
+      } while (pending.length > 0);
+    } finally {
+      await setTenantRlsContext(tx, actor.tenantId);
     }
-
-    return this.handlePasswordChange(actor, async (tx) => {
-      await new LocalAuthCredentialRepository(tx).updatePassword(actor.userId, actor.tenantId, {
-        password_hash: password.password_hash,
-        password_algorithm: password.password_algorithm,
-      });
-    });
   }
 
   // B-APP-ORG-2S (1.8.3.1 §3, GP5c) — a troca de senha também é porta das 5 tentativas: a senha atual errada

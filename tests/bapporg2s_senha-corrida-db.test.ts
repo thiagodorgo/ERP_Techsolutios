@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
 import test, { after } from "node:test";
 
+import { dropHarnessObjects, runHarnessDdl } from "./helpers/pg-barrier.js";
 import { administradorDe, papelGlobal } from "./helpers/users-seg-desativado-sessao.js";
 import { call, desmontarArnes, login, montarArnes, novaFamilia, trocarSenha, type Arnes, type Familia } from "./bapporg2s_familia-helper.js";
 
@@ -166,5 +168,122 @@ for (const quem of ["origem", "outro"] as const) {
     const fora = rows.filter((row) => row.password_hash !== novo).map((row) => (row.tenant_id === z ? "Z(concedido)" : row.tenant_id === origem.tenantId ? "origem" : "outro"));
     console.log(`# SONDA ${quem}: pares=${rows.length} hashes=${new Set(rows.map((row) => row.password_hash)).size} com-senha-velha=[${fora.join(",")}] affected_patios=${r.body.data.affected_patios}`);
     assert.equal(new Set(rows.map((row) => row.password_hash)).size, 1, `GR6-DET ${quem}: um hash só entre ${rows.length} pares`);
+  });
+}
+
+for (const pares of [1, 2] as const) {
+  test(`G9b-DET (${pares} par${pares > 1 ? "es" : ""}) — a concessão em voo já leu a origem; o técnico troca a senha: um hash só e a nova entra no pátio concedido`, { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const f = await novaFamilia(h, `g9b-${pares}`, { pairs: pares });
+    const sorted = [...f.orgs].sort((a, b) => (a.tenantId < b.tenantId ? -1 : 1));
+    const quemTroca = sorted[sorted.length - 1]!;
+    const z = await patioNoGrupoDet(h, f, `g9b-${pares}`);
+    const adminZ = await administradorDe(h, z);
+    const session = await login(h, quemTroca.tenantId, f.email, f.password);
+
+    assert.equal(session.status, 200);
+    const token = String(session.body.data.access_token ?? session.body.data.accessToken);
+    const nova = "SenhaNova!2026-G9b-Aa";
+
+    let soltar!: () => void;
+    const solta = new Promise<void>((resolve) => { soltar = resolve; });
+    let travou!: () => void;
+    const travada = new Promise<void>((resolve) => { travou = resolve; });
+    const trava = h.admin.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM roles WHERE key = 'field_technician' FOR UPDATE`;
+      travou();
+      await solta;
+    }, { timeout: 60_000 });
+
+    await travada;
+    const grant = call(h, "/api/v1/users/access-grants", { method: "POST", headers: adminZ.headers, body: { email: f.email, name: "Técnico do grupo" } });
+    assert.equal(await ate(h, 1, 5_000), 1, "coreografia: a concessão está parada na trava do papel");
+    const troca = trocarSenha(h, token, f.password, nova);
+    const w2 = await ate(h, 2, 1_500);
+    soltar();
+    await trava;
+    const [g, t] = await Promise.all([grant, troca]);
+
+    assert.equal(g.status, 201, `concessão ${g.status} ${JSON.stringify(g.body).slice(0, 160)}`);
+    assert.equal(t.status, 200, `troca ${t.status} ${JSON.stringify(t.body).slice(0, 160)}`);
+
+    const rows = await h.admin.localAuthCredential.findMany({ where: { email: f.email }, select: { tenant_id: true, password_hash: true } });
+    const entraEmZ = (await login(h, z, f.email, nova)).status;
+    const velhaEmZ = (await login(h, z, f.email, f.password)).status;
+
+    assert.equal(new Set(rows.map((row) => row.password_hash)).size, 1, `G9b-DET: um hash só entre ${rows.length} pares`);
+    assert.equal(entraEmZ, 200, "G9b-DET: a senha nova entra no pátio concedido");
+    assert.equal(velhaEmZ, 401, "G9b-DET: a senha velha não entra mais");
+  });
+}
+
+for (const pares of [1, 2] as const) {
+  test(`GP-ATOM-TARDIA (${pares}) — a gravação do par que nasce durante a troca FALHA: nenhum par fica com a senha nova`, { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const f = await novaFamilia(h, `atomt-${pares}`, { pairs: pares });
+    const quemTroca = f.orgs[f.orgs.length - 1]!;
+    const tenant = await h.admin.tenant.create({ data: { name: `S2P atom ${randomBytes(4).toString("hex")}`, slug: `s2p-at-${randomBytes(5).toString("hex")}` } });
+    const z = tenant.id;
+
+    h.tenantIds.push(z);
+    await papelGlobal(h, "field_technician", "tenant");
+    await h.admin.economicGroupMember.create({ data: { tenant_id: z, group_id: f.groupId, valid_from: new Date("2026-01-01T00:00:00Z"), valid_to: null } });
+    const adminZ = await administradorDe(h, z);
+    const session = await login(h, quemTroca.tenantId, f.email, f.password);
+
+    assert.equal(session.status, 200);
+    const token = String(session.body.data.access_token ?? session.body.data.accessToken);
+    const nova = "SenhaNova!2026-Atom-Aa";
+    const antes = await h.admin.localAuthCredential.findMany({ where: { email: f.email }, select: { tenant_id: true, password_hash: true } });
+    const name = `s2p_atomt_${randomBytes(5).toString("hex")}`;
+
+    await runHarnessDdl(h.admin, `CREATE FUNCTION ${name}_fn() RETURNS trigger AS $$ BEGIN IF NEW.tenant_id = '${z}'::uuid THEN RAISE EXCEPTION 'falha injetada no par tardio'; END IF; RETURN NEW; END; $$ LANGUAGE plpgsql`);
+    await runHarnessDdl(h.admin, `CREATE TRIGGER ${name} BEFORE UPDATE ON local_auth_credentials FOR EACH ROW EXECUTE FUNCTION ${name}_fn()`);
+
+    let g!: Awaited<ReturnType<typeof call>>;
+    let t!: Awaited<ReturnType<typeof call>>;
+    let esperou = 0;
+    let corpo: unknown;
+
+    try {
+      let soltar!: () => void;
+      const solta = new Promise<void>((resolve) => { soltar = resolve; });
+      let travou!: () => void;
+      const travada = new Promise<void>((resolve) => { travou = resolve; });
+      const trava = h.admin.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM roles WHERE key = 'field_technician' FOR UPDATE`;
+        travou();
+        await solta;
+      }, { timeout: 60_000 });
+
+      await travada;
+      const grant = call(h, "/api/v1/users/access-grants", { method: "POST", headers: adminZ.headers, body: { email: f.email, name: "Técnico do grupo" } });
+      assert.equal(await ate(h, 1, 5_000), 1, "coreografia: a concessão está parada depois de ler a origem");
+      const troca = trocarSenha(h, token, f.password, nova);
+      const w2 = await ate(h, 2, 1_500);
+      soltar();
+      await trava;
+      [g, t] = await Promise.all([grant, troca]);
+      esperou = w2;
+    } catch (error) {
+      corpo = error;
+    }
+
+    await dropHarnessObjects(h.admin, corpo, [`DROP TRIGGER IF EXISTS ${name} ON local_auth_credentials`, `DROP FUNCTION IF EXISTS ${name}_fn()`]);
+    if (corpo !== undefined) throw corpo;
+
+    assert.equal(esperou, 2, "coreografia: a troca espera a concessão em voo");
+    const rows = await h.admin.localAuthCredential.findMany({ where: { email: f.email }, select: { tenant_id: true, password_hash: true } });
+    const mudaram = antes.filter((old) => rows.find((row) => row.tenant_id === old.tenant_id)?.password_hash !== old.password_hash).length;
+    const copiaDeAntes = antes.some((old) => old.password_hash === rows.find((row) => row.tenant_id === z)?.password_hash);
+    const novaEmX = (await login(h, quemTroca.tenantId, f.email, nova)).status;
+    const velhaEmZ = (await login(h, z, f.email, f.password)).status;
+
+    assert.equal(g.status, 201, "a concessão passa");
+    assert.notEqual(t.status, 200, "a troca não responde 200 quando um par não pôde ser gravado");
+    assert.equal(mudaram, 0, "GP-ATOM-TARDIA: nenhum par que já existia mudou de senha");
+    assert.equal(copiaDeAntes, true, "GP-ATOM-TARDIA: o par novo guarda a senha de antes, igual aos outros");
+    assert.equal(novaEmX, 401, "GP-ATOM-TARDIA: a senha nova não entra em pátio nenhum");
+    assert.equal(velhaEmZ, 200, "GP-ATOM-TARDIA: a senha de antes segue valendo em todos");
   });
 }

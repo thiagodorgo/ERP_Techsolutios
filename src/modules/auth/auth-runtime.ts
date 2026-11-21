@@ -9,10 +9,6 @@ import type { SharedPasswordPair } from "./services/password-family.js";
 export type SharedPasswordMirrors = {
   registerAnonymousFailureAcrossPairs(pairs: readonly SharedPasswordPair[]): Promise<void>;
   finalizeAnonymousLoginAcrossPairs(pairs: readonly SharedPasswordPair[], ownCredentialId: string): Promise<void>;
-  changePasswordAcrossPairs(
-    pairs: readonly { readonly tenantId: string; readonly userId: string }[],
-    passwordData: { readonly password_hash: string; readonly password_algorithm: string },
-  ): Promise<void>;
 };
 
 let localAuthLoginServicePromise: Promise<LocalAuthLoginService & SharedPasswordMirrors> | undefined;
@@ -39,7 +35,6 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
     { LocalAuthLoginService },
     { resolveIdentityIdForPair },
     { readLoginPasswordPairs },
-    { AuthSessionRepository },
   ] = await Promise.all([
     import("../../database/prisma.js"),
     import("../../database/rls.js"),
@@ -48,7 +43,6 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
     import("./services/local-auth-login.service.js"),
     import("./services/identity-resolver.js"),
     import("./services/password-family.js"),
-    import("./repositories/auth-session.repository.js"),
   ]);
 
   // B-APP-ORG-2S (1.8.3.2 §1) — a porta da senha compartilhada do LOGIN: a leitura dos pares roda na
@@ -119,21 +113,6 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
         return [];
       });
     },
-    // B-APP-ORG-2S (1.8.3.2 §1, 1.8.3.3 item 1; P3) — a troca vale em todos os pares: hash novo, marca de troca
-    // apagada e as sessões do par derrubadas, numa transação só.
-    async changePasswordAcrossPairs(
-      pairs: readonly { readonly tenantId: string; readonly userId: string }[],
-      passwordData: { readonly password_hash: string; readonly password_algorithm: string },
-    ) {
-      const tenantIdsDosPares = pairs.map((pair) => pair.tenantId);
-
-      await forEachTenantRls(prisma, tenantIdsDosPares, async (tx, tenantId) => {
-        const userId = userOfPair(pairs, tenantId);
-        await new LocalAuthCredentialRepository(tx).updatePassword(userId, tenantId, passwordData);
-        await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(userId, tenantId);
-        return [];
-      });
-    },
   } as LocalAuthLoginService & SharedPasswordMirrors;
 
   return service;
@@ -147,16 +126,6 @@ function credentialOfPair(pairs: readonly SharedPasswordPair[], tenantId: string
   }
 
   return pair.credentialId;
-}
-
-function userOfPair(pairs: readonly { readonly tenantId: string; readonly userId: string }[], tenantId: string): string {
-  const pair = pairs.find((candidate) => candidate.tenantId === tenantId);
-
-  if (!pair) {
-    throw new Error("shared_password_pair_missing");
-  }
-
-  return pair.userId;
 }
 
 async function createAuthSessionService(): Promise<AuthSessionService> {
