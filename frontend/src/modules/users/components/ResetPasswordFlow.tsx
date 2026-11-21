@@ -7,7 +7,7 @@ import { TemporaryPasswordDialog } from "./TemporaryPasswordDialog";
 
 // B-APP-ORG-2S (S3, plano 1.8.3 §2.3) — "Redefinir senha": confirmar → o servidor gera a provisória → o diálogo a mostra
 // UMA vez → fechar descarta o valor (`dismiss` do hook). Carregando, erro (frase fixa por motivo) e sem permissão.
-// O gatilho (onde o botão fica na UsersPage) está PARADO à espera de emenda: ver o diário do dev-s3-cl.
+// O gatilho é o botão "Redefinir senha" do diálogo "Editar usuário" (`UserFormModal`, Emenda 1.8.3.4).
 
 const footerStyle: CSSProperties = { display: "flex", justifyContent: "flex-end", gap: "var(--space-8)", marginTop: "var(--space-16)" };
 

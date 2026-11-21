@@ -127,8 +127,10 @@ const input = (root: MiniDomElement, id: string) => {
   assert.equal(found.length, 1, `input #${id}`);
   return found[0];
 };
+// Como no navegador: clicar num botão sem tratador não faz nada (e o teste diz o que esperava ver).
 async function click(el: MiniDomElement) {
-  await act(async () => (propsOf(el).onClick as () => void)());
+  const handler = propsOf(el).onClick;
+  if (typeof handler === "function") await act(async () => (handler as () => void)());
   await settle();
 }
 async function type(el: MiniDomElement, value: string) {
@@ -387,6 +389,33 @@ test("W7: religação, inativo, permissão, falha e resposta sem provisória: fr
     assert.equal(hasButton(view.container, /^Redefinir senha$/), true, "W7: dá para tentar de novo");
     await view.unmount();
   }
+});
+
+// =====================================================================================================================
+// W-BTN — o gatilho (Emenda 1.8.3.4): "Redefinir senha" no diálogo "Editar usuário", nunca no "Novo usuário"
+// =====================================================================================================================
+test("W-BTN: no modo de edição o botão aparece e abre o fluxo; no modo de criação ele não aparece", async () => {
+  serve(on("POST", `/api/v1/auth/users/${TECH.id}/reset-password`, { body: { data: { user_id: TECH.id, temporary_password: PROVISORIA, must_change_password: true, revoked_sessions: 1, affected_patios: 2 } } }));
+  const create = await mount(React.createElement(UserFormModal, { user: null, context: CONTEXT, onClose: () => {}, onSaved: () => {} }));
+  assert.equal(hasButton(create.container, /Redefinir senha/), false, "W-BTN-criação: sem o botão");
+  await create.unmount();
+
+  const edit = await mount(React.createElement(UserFormModal, { user: TECH, context: CONTEXT, onClose: () => assert.fail("o formulário não fecha"), onSaved: () => assert.fail("não salvou") }));
+  const trigger = button(edit.container, /^Redefinir senha$/);
+  assert.equal(trigger.getAttribute("aria-label"), "Redefinir a senha de Carlos Guincheiro", "W-BTN-rótulo");
+  assert.equal((propsOf(trigger).style as { minHeight?: number }).minHeight, 44, "W-BTN-alvo de 44 px");
+  assert.equal(calls.length, 0, "W-BTN: mostrar o botão não chama o servidor");
+  await click(trigger);
+  assert.match(text(edit.container), /Redefinir a senha de Carlos Guincheiro\?/, "W-BTN-abre: o clique abre o fluxo (a confirmação)");
+  assert.equal(writes().length, 0, "W-BTN: abrir o fluxo ainda não redefine");
+  await click(button(edit.container, /^Redefinir senha$/));
+  assert.equal(writes().length, 1);
+  assert.equal(text(edit.container).split(PROVISORIA).length - 1, 1, "W-BTN-provisória uma vez");
+  assert.match(text(edit.container), /Esta senha vale em todos os pátios do grupo em que o técnico tem acesso\./);
+  await click(button(edit.container, /^Fechar$/));
+  assert.doesNotMatch(text(edit.container), new RegExp(PROVISORIA), "W-BTN: fechar descarta a provisória");
+  assert.match(text(edit.container), /Editar usuário/, "W-BTN: fechar o fluxo volta ao formulário");
+  await edit.unmount();
 });
 
 // =====================================================================================================================
