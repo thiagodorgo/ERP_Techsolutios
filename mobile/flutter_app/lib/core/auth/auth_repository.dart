@@ -124,6 +124,9 @@ enum PasswordChangeFailure {
   /// 403 `credential_unavailable`.
   credentialUnavailable,
 
+  /// 409 `temporary_password_expired`.
+  temporaryExpired,
+
   /// 423 `account_locked`.
   accountLocked,
 
@@ -144,6 +147,8 @@ String passwordChangeMessage(PasswordChangeFailure failure) {
       'Seu acesso está desativado. Fale com o administrador da sua organização.',
     PasswordChangeFailure.credentialUnavailable =>
       'Não foi possível trocar a senha por aqui. Fale com o administrador da sua organização.',
+    PasswordChangeFailure.temporaryExpired =>
+      'Sua senha provisória venceu. Peça uma nova ao seu pátio.',
     PasswordChangeFailure.accountLocked =>
       'Conta bloqueada por tentativas. Fale com o administrador da sua organização.',
     PasswordChangeFailure.unavailable =>
@@ -163,7 +168,8 @@ class PasswordChangeError implements Exception {
   /// formulário e deixa só "Sair".
   bool get locksForm =>
       failure == PasswordChangeFailure.accessDisabled ||
-      failure == PasswordChangeFailure.credentialUnavailable;
+      failure == PasswordChangeFailure.credentialUnavailable ||
+      failure == PasswordChangeFailure.temporaryExpired;
 
   @override
   String toString() => 'PasswordChangeError(${failure.name})';
@@ -200,6 +206,8 @@ PasswordChangeError mapPasswordChangeError(DioException e) {
     403 when reason == 'user_inactive' => PasswordChangeFailure.accessDisabled,
     403 when reason == 'credential_unavailable' =>
       PasswordChangeFailure.credentialUnavailable,
+    409 when reason == 'temporary_password_expired' =>
+      PasswordChangeFailure.temporaryExpired,
     423 when reason == 'account_locked' => PasswordChangeFailure.accountLocked,
     _ => PasswordChangeFailure.unavailable,
   };
