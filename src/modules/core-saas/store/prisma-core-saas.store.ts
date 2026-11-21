@@ -1,7 +1,7 @@
 ﻿import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../../../database/prisma.js";
-import { setTenantRlsContext, withTenantRls } from "../../../database/rls.js";
+import { setTenantRlsContext, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
 import { AuthSessionRepository } from "../../auth/repositories/auth-session.repository.js";
 import { LocalAuthCredentialRepository } from "../../auth/repositories/local-auth-credential.repository.js";
 import { EnterpriseAuditLogService } from "../audit/audit-log.service.js";
@@ -20,6 +20,8 @@ import {
   removesActiveTenantAdmin,
 } from "../services/tenant-admin-guard.js";
 import { toUserAuditSnapshot } from "../services/user-audit-snapshot.js";
+import { confirmCreation, insertCancelledCreation, openCreationLog } from "../services/user-creation-log.js";
+import { EmailInGroupError, probeGroupPeers } from "../services/group-peer-probe.js";
 import {
   CoreSaasError,
   type AuditEvent,
@@ -41,6 +43,16 @@ import type {
 type PrismaTenant = Awaited<ReturnType<TenantRepository["create"]>>;
 type PrismaUser = NonNullable<Awaited<ReturnType<UserRepository["findByIdForTenant"]>>>;
 type PrismaAuditLog = Awaited<ReturnType<AuditLogRepository["create"]>>;
+
+// B-APP-ORG-2S (S1) — orcamento da transacao da criacao: espera por conexao, duracao da transacao
+// e timeouts locais de trava/statement. Estourar o lock (a outra criacao do mesmo e-mail segurando
+// a linha 'em_curso') vira 503 `creation_unavailable` (K14) e nada muda.
+export const USER_CREATION_BUDGET = {
+  maxWait: 5_000,
+  timeout: 15_000,
+  lockTimeoutMs: 2_000,
+  statementTimeoutMs: 5_000,
+} as const;
 
 export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
   constructor(
@@ -110,11 +122,18 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
   }
 
   async createUser(input: CreateUserInput, credential?: InitialCredentialInput): Promise<User> {
-    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+    return withTenantRlsBudget(this.prismaClient, input.tenantId, USER_CREATION_BUDGET, async (tx) => {
       const txUsers = new UserRepository(tx);
       const txRoles = new RoleRepository(tx);
       const txUserRoles = new UserRoleRepository(tx);
       const txAudit = new AuditLogRepository(tx);
+
+      // B-APP-ORG-2S (S1) — a trava do e-mail unico no grupo: primeira gravacao e a linha 'em_curso'
+      // (o indice unico parcial segura a outra criacao do mesmo e-mail), depois a volta patio a patio.
+      const creationSeq = await openCreationLog(tx, input);
+      const peers = await probeGroupPeers(tx, input);
+
+      if (peers.users > 0) throw new EmailInGroupError();
 
       // Step 1: create user record
       const user = await txUsers.createWithRoleAssignments({
@@ -124,6 +143,7 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         email: input.email,
         status: input.status ?? "active",
       });
+      await confirmCreation(tx, input, creationSeq, user.id);
 
       // Step 2: assign roles — if any fail, the whole transaction rolls back (no orphaned user)
       for (const role of input.roles.map((value) => validateRole(value))) {
@@ -196,6 +216,36 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       const savedUser = await txUsers.findByIdForTenant(user.id, input.tenantId);
 
       return mapUserFromPrisma(savedUser ?? user);
+    });
+  }
+
+
+  // B-APP-ORG-2S (S1) — o registro do perdedor, em transacao curta propria: linha 'cancelado' com
+  // numero maior que o do vencedor e a auditoria do patio que tentou. Nunca guarda o patio vencedor.
+  async recordCancelledCreation(tenantId: string, email: string, actorUserId?: string): Promise<void> {
+    return withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      await insertCancelledCreation(tx, { tenantId, email, actorUserId }, "email_in_group");
+
+      const actorId = isUuid(actorUserId ?? "")
+        ? (
+            await tx.user.findFirst({
+              where: { id: actorUserId!, tenant_id: tenantId },
+              select: { id: true },
+            })
+          )?.id ?? null
+        : null;
+
+      await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+        tenantId,
+        actorId,
+        actorType: actorId ? "user" : "system",
+        action: "user.created",
+        resourceType: "user",
+        resourceId: null,
+        outcome: "denied",
+        severity: "warning",
+        metadata: { email },
+      });
     });
   }
 

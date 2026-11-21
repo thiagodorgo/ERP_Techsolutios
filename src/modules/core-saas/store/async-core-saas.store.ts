@@ -30,6 +30,7 @@ export type AsyncCoreSaasStore = {
   listTenantsForTenant(tenantId: string, options?: ListTenantOptions): Promise<Tenant[]>;
   // B-USERS-ACESSO-SEG (S2) — com `credential`, a credencial local nasce na MESMA transação da criação (só o hash).
   createUser(input: CreateUserInput, credential?: InitialCredentialInput): Promise<User>;
+  recordCancelledCreation(tenantId: string, email: string, actorUserId?: string): Promise<void>;
   updateUser(input: UpdateUserPersistenceInput): Promise<User>;
   findUserByIdForTenant(userId: string, tenantId: string): Promise<User | undefined>;
   listUsersByTenant(tenantId: string): Promise<User[]>;
