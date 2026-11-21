@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { assertRowsBelongToTenant, setIdentityRlsContext, setTenantRlsContext } from "../../../database/rls.js";
 import { IdentityLinkRepository } from "../repositories/identity-link.repository.js";
 import { normalizeCredentialEmail } from "../repositories/local-auth-credential.repository.js";
-import { listLoginCandidatesViaFunction } from "../repositories/login-candidates.repository.js";
+import { listLoginCandidatesViaFunction, readSqlState, type LoginCandidateRow } from "../repositories/login-candidates.repository.js";
 import type { AuthenticatedActor } from "../types/auth.types.js";
 
 // B-APP-ORG-2S (Emenda 1.8.3 §2.2, P3 do dono: um login e uma senha em todos os pátios) — a FAMÍLIA da
@@ -40,6 +40,14 @@ export type SharedPasswordPair = {
   readonly tenantId: string;
   readonly userId: string;
   readonly credentialId: string;
+};
+
+// A listagem dos candidatos do login: a entrada única da consulta por e-mail. Injetável SÓ para o teste, pelo
+// mesmo motivo do arnês `candidatosPeloAdministrador` (a migração deixa a função sem EXECUTE para o papel
+// efêmero; em produção a concessão é o passo 5 do runbook): o teste troca `list` pela conexão do
+// administrador, e todo o resto do login segue no papel sem bypass.
+export const loginCandidatesSource = {
+  list: (tx: Prisma.TransactionClient, email: string): Promise<LoginCandidateRow[]> => listLoginCandidatesViaFunction(tx, email),
 };
 
 type LoginPairRow = {
@@ -81,7 +89,27 @@ export async function readLoginPasswordPairs(
     return [toPair(own)];
   }
 
-  const candidates = await listLoginCandidatesViaFunction(tx, normalizeCredentialEmail(email));
+  // Sem EXECUTE na função (42501) ou sem a função (42883), o login segue como na `main`: conta só no próprio
+  // par. O SAVEPOINT impede que o erro derrube a transação do login.
+  let candidates: LoginCandidateRow[];
+
+  await tx.$executeRaw`SAVEPOINT login_password_pairs`;
+
+  try {
+    candidates = await loginCandidatesSource.list(tx, normalizeCredentialEmail(email));
+    await tx.$executeRaw`RELEASE SAVEPOINT login_password_pairs`;
+  } catch (error) {
+    const sqlState = readSqlState(error);
+
+    if (sqlState !== "42501" && sqlState !== "42883") {
+      throw error;
+    }
+
+    await tx.$executeRaw`ROLLBACK TO SAVEPOINT login_password_pairs`;
+
+    return [toPair(own)];
+  }
+
   const rows: LoginPairRow[] = [own];
 
   try {
