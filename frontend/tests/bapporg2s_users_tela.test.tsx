@@ -403,7 +403,7 @@ test("W-BTN: no modo de edição o botão aparece e abre o fluxo; no modo de cri
   const edit = await mount(React.createElement(UserFormModal, { user: TECH, context: CONTEXT, onClose: () => assert.fail("o formulário não fecha"), onSaved: () => assert.fail("não salvou") }));
   const trigger = button(edit.container, /^Redefinir senha$/);
   assert.equal(trigger.getAttribute("aria-label"), "Redefinir a senha de Carlos Guincheiro", "W-BTN-rótulo");
-  assert.equal((propsOf(trigger).style as { minHeight?: number }).minHeight, 44, "W-BTN-alvo de 44 px");
+  assert.equal((propsOf(trigger).style as { minHeight?: number }).minHeight, 38, "W-BTN-alvo de 38 px");
   assert.equal(calls.length, 0, "W-BTN: mostrar o botão não chama o servidor");
   await click(trigger);
   assert.match(text(edit.container), /Redefinir a senha de Carlos Guincheiro\?/, "W-BTN-abre: o clique abre o fluxo (a confirmação)");

@@ -17,8 +17,9 @@ const FIELD_ID: Record<string, string> = {
 const gridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--space-12)" };
 const fullWidth: CSSProperties = { gridColumn: "1 / -1" };
 const footerStyle: CSSProperties = { display: "flex", justifyContent: "flex-end", gap: "var(--space-8)", marginTop: "var(--space-16)" };
-// B-APP-ORG-2S (S3, Emenda 1.8.3.4) — "Redefinir senha" no modo de edição, à esquerda do rodapé, com alvo de 44 px.
-const resetPasswordStyle: CSSProperties = { marginRight: "auto", minHeight: 44 };
+// B-APP-ORG-2S (S3, Emenda 1.8.3.4 + D-DONO-2111-BOTAO-38):
+// "Redefinir senha" no modo de edição, à esquerda do rodapé, com 38 px (altura padrão de `.ui-button`).
+const resetPasswordStyle: CSSProperties = { marginRight: "auto", minHeight: 38 };
 const grantOfferStyle: CSSProperties = { display: "flex", justifyContent: "flex-start", margin: "var(--space-8) 0 var(--space-12)" };
 const hintStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--text-secondary)" };
 const fieldsetStyle: CSSProperties = { border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-6)", padding: "var(--space-10)", margin: 0 };
