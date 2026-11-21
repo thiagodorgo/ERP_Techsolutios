@@ -9,6 +9,7 @@ import {
   type LocalAuthLoginUser,
 } from "../types/auth.types.js";
 import { isTemporaryPasswordExpired } from "../temporary-password.rules.js";
+import type { SharedPasswordPair } from "./password-family.js";
 import { verifyPassword } from "./password.service.js";
 
 type LocalAuthCredentialRecord = {
@@ -19,6 +20,7 @@ type LocalAuthCredentialRecord = {
   readonly password_hash: string;
   readonly locked_until: Date | null;
   readonly must_change_password: boolean;
+  // B-APP-ORG-2S (1.8.3 §2.2) — a hora em que a senha foi gravada: a validade da provisória conta dela.
   readonly password_updated_at: Date;
   // B-O6R-07a ciclo 2 (C2·3) — opcional para não quebrar dublês estruturais existentes; a linha
   // real do Prisma sempre o tem. Alimenta SÓ a escolha do candidato cobrado (menor contador).
@@ -72,6 +74,18 @@ type UserRoleRepositoryLike = {
 
 type TenantContextRunner = <T>(tenantId: string, work: () => Promise<T>) => Promise<T>;
 
+// B-APP-ORG-2S (1.8.3 §2.2 e 1.8.3.2 §1; P3 e P2 do dono) — a porta da senha COMPARTILHADA: com uma senha só
+// em todos os pátios, cada tentativa errada soma 1 em todos os pares ativos que guardam aquela senha e o
+// acerto zera todos (5 tentativas no total, por qualquer porta; o bloqueio de 15 min pega todos os pares
+// juntos). `pairsOf` lê os pares (`readLoginPasswordPairs`, nunca do pedido); as duas escritas são os espelhos
+// de `auth-runtime.ts`, cada um numa transação única (`forEachTenantRls`). Sem a porta (dublês de teste), o
+// serviço faz o que a `main` fazia: só o próprio par.
+export type SharedPasswordPort = {
+  pairsOf(tenantId: string, credentialId: string, email: string): Promise<readonly SharedPasswordPair[]>;
+  registerFailureAcrossPairs(pairs: readonly SharedPasswordPair[]): Promise<void>;
+  clearAcrossPairs(pairs: readonly SharedPasswordPair[], ownCredentialId: string): Promise<void>;
+};
+
 // Resultado da verificação anônima de um candidato (interno; `credential_id` alimenta só a
 // finalização — nunca sai da borda do serviço).
 export type AnonymousCandidateResult =
@@ -108,6 +122,7 @@ export class LocalAuthLoginService {
     private readonly userRoles: UserRoleRepositoryLike,
     private readonly auditLogs: AuditLogWriter,
     private readonly runWithTenantContext: TenantContextRunner = async (_tenantId, work) => work(),
+    private readonly sharedPassword?: SharedPasswordPort,
   ) {}
 
   async authenticateLocalCredential(
@@ -164,7 +179,7 @@ export class LocalAuthLoginService {
     const passwordMatches = await verifyPassword(password, credential.password_hash);
 
     if (!passwordMatches) {
-      await this.credentials.incrementFailedAttempts(credential.id, tenantId);
+      await this.chargeSharedPassword(credential, tenantId, email);
       await this.recordLoginFailure(tenantId, email, "invalid_credentials", auditContext);
 
       return {
@@ -173,14 +188,7 @@ export class LocalAuthLoginService {
       };
     }
 
-    if (isTemporaryPasswordExpired(credential)) {
-      await this.recordLoginFailure(tenantId, email, "invalid_credentials", auditContext);
-
-      return {
-        ok: false,
-        reason: "invalid_credentials",
-      };
-    }
+    if (isTemporaryPasswordExpired(credential)) return this.refuseExpired(tenantId, email, auditContext);
 
     const user = await this.users.findByIdForTenant(credential.user_id, tenantId);
 
@@ -195,7 +203,7 @@ export class LocalAuthLoginService {
 
     const roles = await this.userRoles.listByUserForTenant(user.id, tenantId);
 
-    await this.credentials.markSuccessfulLogin(credential.id, tenantId);
+    await this.clearSharedPassword(credential, tenantId, email);
     await new EnterpriseAuditLogService(this.auditLogs).record({
       tenantId,
       actorId: user.id,
@@ -284,9 +292,7 @@ export class LocalAuthLoginService {
       };
     }
 
-    if (isTemporaryPasswordExpired(credential)) {
-      return { ok: false, reason: "invalid_credentials" };
-    }
+    if (isTemporaryPasswordExpired(credential)) return { ok: false, reason: "invalid_credentials" };
 
     const user = await this.users.findByIdForTenant(credential.user_id, tenantId);
 
@@ -324,7 +330,7 @@ export class LocalAuthLoginService {
     roleCount: number,
     auditContext: LocalAuthAuditContext,
   ): Promise<void> {
-    await this.credentials.markSuccessfulLogin(credentialId, tenantId);
+    await this.clearSharedPassword({ id: credentialId }, tenantId, user.email);
     await new EnterpriseAuditLogService(this.auditLogs).record({
       tenantId,
       actorId: user.id,
@@ -357,7 +363,7 @@ export class LocalAuthLoginService {
     email: string,
     auditContext: LocalAuthAuditContext,
   ): Promise<void> {
-    await this.credentials.incrementFailedAttempts(credentialId, tenantId);
+    await this.chargeSharedPassword({ id: credentialId }, tenantId, email);
     await this.recordLoginFailure(
       tenantId,
       normalizeCredentialEmail(email),
@@ -367,13 +373,78 @@ export class LocalAuthLoginService {
     );
   }
 
+  // B-APP-ORG-2S (1.8.3.2 §1) — o primitivo POR PAR das voltas dos espelhos: soma 1 na credencial daquele par,
+  // com o MESMO UPDATE atômico do B01 (limite → `locked_until`). Roda sob o GUC do par da volta.
+  async registerFailure(credentialId: string, tenantId: string): Promise<void> {
+    await this.credentials.incrementFailedAttempts(credentialId, tenantId);
+  }
+
+  // B-APP-ORG-2S (1.8.3 §2.2) — a tentativa errada conta para a SENHA, não para o par: soma em todos os pares
+  // que a guardam (porta presente) ou só no próprio (sem porta).
+  private async chargeSharedPassword(
+    credential: Pick<LocalAuthCredentialRecord, "id">,
+    tenantId: string,
+    email: string,
+  ): Promise<void> {
+    if (!this.sharedPassword) {
+      await this.credentials.incrementFailedAttempts(credential.id, tenantId);
+      return;
+    }
+
+    const pairs = await this.sharedPassword.pairsOf(tenantId, credential.id, email);
+
+    if (pairs.length === 0) {
+      await this.credentials.incrementFailedAttempts(credential.id, tenantId);
+      return;
+    }
+
+    await this.sharedPassword.registerFailureAcrossPairs(pairs);
+  }
+
+  // B-APP-ORG-2S (1.8.3 §2.2, 1.8.3.1 §1) — o acerto zera a conta em todos os pares da senha; no próprio par
+  // também grava o último acesso.
+  private async clearSharedPassword(
+    credential: Pick<LocalAuthCredentialRecord, "id">,
+    tenantId: string,
+    email: string,
+  ): Promise<void> {
+    if (!this.sharedPassword) {
+      await this.credentials.markSuccessfulLogin(credential.id, tenantId);
+      return;
+    }
+
+    const pairs = await this.sharedPassword.pairsOf(tenantId, credential.id, email);
+
+    if (pairs.length === 0) {
+      await this.credentials.markSuccessfulLogin(credential.id, tenantId);
+      return;
+    }
+
+    await this.sharedPassword.clearAcrossPairs(pairs, credential.id);
+  }
+
+  // B-APP-ORG-2S (1.8.3 §2.2) — provisória vencida: o MESMO 401 da senha errada, sem contar como tentativa
+  // errada; a auditoria interna grava o motivo.
+  private async refuseExpired(
+    tenantId: string,
+    email: string,
+    auditContext: LocalAuthAuditContext,
+  ): Promise<LocalAuthLoginResult> {
+    await this.recordLoginFailure(tenantId, email, "temporary_password_expired", auditContext);
+
+    return {
+      ok: false,
+      reason: "invalid_credentials",
+    };
+  }
+
   // `loginMode` distingue o rastro do caminho SEM organização (B-O6R-07a §3.4) do rastro do
   // login direcionado — espelho do que `finalizeAnonymousLogin` já faz no sucesso. A allowlist do
   // metadado não muda: e-mail normalizado e motivo, nada de senha, hash ou identificador externo.
   private async recordLoginFailure(
     tenantId: string,
     email: string,
-    reason: "invalid_credentials" | "locked" | "inactive",
+    reason: "invalid_credentials" | "locked" | "inactive" | "temporary_password_expired",
     auditContext: LocalAuthAuditContext,
     loginMode?: "without_org",
   ): Promise<void> {

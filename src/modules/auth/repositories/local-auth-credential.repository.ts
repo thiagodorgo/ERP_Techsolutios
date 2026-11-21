@@ -13,6 +13,8 @@ export type CreateLocalAuthCredentialData = {
   readonly email: string;
   readonly password_hash: string;
   readonly password_algorithm: string;
+  // B-APP-ORG-2S (1.8.3 §2.3) — a redefinição grava a MESMA hora em todos os pares da família.
+  readonly password_updated_at?: Date;
 };
 
 export type UpdateLocalAuthPasswordData = {
@@ -80,11 +82,12 @@ export class LocalAuthCredentialRepository {
         password_hash: data.password_hash,
         password_algorithm: data.password_algorithm,
         must_change_password: true,
+        ...(data.password_updated_at ? { password_updated_at: data.password_updated_at } : {}),
       },
       update: {
         password_hash: data.password_hash,
         password_algorithm: data.password_algorithm,
-        password_updated_at: new Date(),
+        password_updated_at: data.password_updated_at ?? new Date(),
         must_change_password: true,
         failed_attempts: 0,
         locked_until: null,
@@ -113,15 +116,6 @@ export class LocalAuthCredentialRepository {
           tenant_id: tenantId,
           user_id: userId,
         },
-      },
-    });
-  }
-
-  findByIdForTenant(id: string, tenantId: string) {
-    return this.client.localAuthCredential.findFirst({
-      where: {
-        id,
-        tenant_id: tenantId,
       },
     });
   }

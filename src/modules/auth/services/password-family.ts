@@ -1,94 +1,152 @@
 import type { Prisma } from "@prisma/client";
 
-import { setTenantRlsContext } from "../../../database/rls.js";
+import { assertRowsBelongToTenant, setIdentityRlsContext, setTenantRlsContext } from "../../../database/rls.js";
+import { IdentityLinkRepository } from "../repositories/identity-link.repository.js";
+import { normalizeCredentialEmail } from "../repositories/local-auth-credential.repository.js";
+import { listLoginCandidatesViaFunction } from "../repositories/login-candidates.repository.js";
+import type { AuthenticatedActor } from "../types/auth.types.js";
 
-export type PasswordFamilyPair = {
+// B-APP-ORG-2S (Emenda 1.8.3 §2.2, P3 do dono: um login e uma senha em todos os pátios) — a FAMÍLIA da
+// senha: os pares que guardam a mesma senha. São os vínculos da MESMA identidade que não chegaram por
+// religação, em ordem fixa por par. Par `religacao` fica sozinho: a religação liga contas de organizações
+// sem relação, que a `D-USERS-1` protege. A troca, a redefinição e a conta das tentativas usam esta função.
+
+export type FamilyLink = {
+  readonly tenant_id: string;
+  readonly user_id: string;
+  readonly attached_via: string;
+};
+
+function byPair(a: FamilyLink, b: FamilyLink): number {
+  if (a.tenant_id !== b.tenant_id) {
+    return a.tenant_id < b.tenant_id ? -1 : 1;
+  }
+
+  if (a.user_id === b.user_id) {
+    return 0;
+  }
+
+  return a.user_id < b.user_id ? -1 : 1;
+}
+
+// `links`: os vínculos da identidade do par `own` (o próprio incluído).
+export function passwordFamilyOf<T extends FamilyLink>(links: readonly T[], own: T): readonly T[] {
+  if (own.attached_via === "religacao") return [own];
+  return links.filter((link) => link.attached_via !== "religacao").sort(byPair);
+}
+
+// Um par da família com a credencial dele (o id da credencial só circula dentro do servidor).
+export type SharedPasswordPair = {
   readonly tenantId: string;
   readonly userId: string;
+  readonly credentialId: string;
 };
 
-type ResolvePasswordFamilyOptions = {
-  readonly onlyActiveUsers?: boolean;
+type LoginPairRow = {
+  readonly tenantId: string;
+  readonly userId: string;
+  readonly credentialId: string;
+  readonly identityId: string | null;
+  readonly attachedVia: string | null;
 };
 
-export async function resolvePasswordFamilyPairs(
+// O leitor do LOGIN (1.8.3 §2.2 e 1.8.3.2 §1): a lista de pares vem dos candidatos do login que já existem
+// (a entrada única da consulta por e-mail, até 3 mais o sentinela), sem varrer pátios, com 1 leitura do
+// vínculo por candidato. Nunca vem do pedido. Roda dentro da transação do login, que já está sob o GUC do
+// pátio da credencial: cada candidato de outro pátio é lido sob o GUC DELE (canário na linha) e o GUC do
+// pátio da credencial é reposto no fim, aconteça o que acontecer.
+export async function readLoginPasswordPairs(
   tx: Prisma.TransactionClient,
-  seedTenantId: string,
-  seedUserId: string,
-  options: ResolvePasswordFamilyOptions = {},
-): Promise<readonly PasswordFamilyPair[]> {
-  const normalizedSeedTenantId = seedTenantId.trim();
-  const normalizedSeedUserId = seedUserId.trim();
+  tenantId: string,
+  credentialId: string,
+  email: string,
+): Promise<readonly SharedPasswordPair[]> {
+  const ownRows = await tx.$queryRaw<LoginPairRow[]>`
+    SELECT c.tenant_id::text AS "tenantId", c.user_id::text AS "userId", c.id::text AS "credentialId",
+           l.identity_id::text AS "identityId", l.attached_via AS "attachedVia"
+    FROM local_auth_credentials c
+    LEFT JOIN auth_identity_links l ON l.tenant_id = c.tenant_id AND l.user_id = c.user_id
+    WHERE c.tenant_id = ${tenantId}::uuid AND c.id = ${credentialId}::uuid
+  `;
 
-  if (!normalizedSeedTenantId || !normalizedSeedUserId) {
+  assertRowsBelongToTenant(ownRows, tenantId, "local_auth_credentials");
+
+  const own = ownRows[0];
+
+  if (!own) {
     return [];
   }
 
-  await setTenantRlsContext(tx, normalizedSeedTenantId);
-  const identityRows = await tx.$queryRaw<Array<{ identity_id: string }>>`
-    SELECT identity_id
-    FROM auth_identity_links
-    WHERE tenant_id = ${normalizedSeedTenantId}::uuid AND user_id = ${normalizedSeedUserId}::uuid
-    LIMIT 1
-  `;
-  const identityId = identityRows[0]?.identity_id ?? null;
+  if (own.identityId === null || own.attachedVia === null || own.attachedVia === "religacao") {
+    return [toPair(own)];
+  }
+
+  const candidates = await listLoginCandidatesViaFunction(tx, normalizeCredentialEmail(email));
+  const rows: LoginPairRow[] = [own];
+
+  try {
+    for (const candidate of candidates) {
+      if (candidate.tenant_id === tenantId) {
+        continue;
+      }
+
+      await setTenantRlsContext(tx, candidate.tenant_id);
+
+      const found = await tx.$queryRaw<LoginPairRow[]>`
+        SELECT l.tenant_id::text AS "tenantId", l.user_id::text AS "userId", c.id::text AS "credentialId",
+               l.identity_id::text AS "identityId", l.attached_via AS "attachedVia"
+        FROM auth_identity_links l
+        JOIN local_auth_credentials c ON c.tenant_id = l.tenant_id AND c.user_id = l.user_id
+        WHERE l.tenant_id = ${candidate.tenant_id}::uuid AND l.user_id = ${candidate.user_id}::uuid
+      `;
+
+      assertRowsBelongToTenant(found, candidate.tenant_id, "auth_identity_links");
+      rows.push(...found);
+    }
+  } finally {
+    await setTenantRlsContext(tx, tenantId);
+  }
+
+  const links = rows
+    .filter((row) => row.identityId === own.identityId)
+    .map((row) => ({ ...toPair(row), tenant_id: row.tenantId, user_id: row.userId, attached_via: row.attachedVia ?? "" }));
+  const ownLink = links.find((link) => link.tenantId === own.tenantId && link.userId === own.userId);
+
+  if (!ownLink) {
+    return [toPair(own)];
+  }
+
+  return passwordFamilyOf(links, ownLink).map(toPair);
+}
+
+// O leitor da TROCA de senha (o gancho de senha, transação nomeada do §3.7): a família do par do ator do
+// JWT, pelo braço de identidade (o setter sancionado). Inclui os pares em que o técnico está inativo: ao
+// voltar, vale a senha atual (P3). O GUC de pátio fica no pátio do ator.
+export async function readActorPasswordFamily(
+  tx: Prisma.TransactionClient,
+  actor: AuthenticatedActor,
+): Promise<readonly FamilyLink[]> {
+  const identityId = await setIdentityRlsContext(tx, actor);
+  const own: FamilyLink = { tenant_id: actor.tenantId, user_id: actor.userId, attached_via: "" };
 
   if (!identityId) {
-    return [{ tenantId: normalizedSeedTenantId, userId: normalizedSeedUserId }];
+    return [own];
   }
 
-  const tenants = await tx.tenant.findMany({
-    select: { id: true },
-    orderBy: [{ created_at: "asc" }, { id: "asc" }],
-  });
-  const pairs: PasswordFamilyPair[] = [];
+  const links = await new IdentityLinkRepository(tx).listByIdentity(identityId);
+  const ownLink = links.find((link) => link.tenant_id === actor.tenantId && link.user_id === actor.userId);
 
-  for (const tenant of tenants) {
-    await setTenantRlsContext(tx, tenant.id);
-    const links = await tx.$queryRaw<Array<{ tenantId: string; userId: string }>>`
-      SELECT tenant_id::text AS "tenantId", user_id::text AS "userId"
-      FROM auth_identity_links
-      WHERE tenant_id = ${tenant.id}::uuid AND identity_id = ${identityId}::uuid
-      LIMIT 1
-    `;
-    const link = links[0];
-
-    if (!link) {
-      continue;
-    }
-
-    const user = await tx.user.findFirst({
-      where: { id: link.userId, tenant_id: link.tenantId },
-      select: { status: true },
-    });
-
-    if (!user) {
-      continue;
-    }
-
-    if (options.onlyActiveUsers && user.status !== "active") {
-      continue;
-    }
-
-    pairs.push({ tenantId: link.tenantId, userId: link.userId });
+  if (!ownLink) {
+    return [own];
   }
 
-  if (pairs.length === 0) {
-    return [{ tenantId: normalizedSeedTenantId, userId: normalizedSeedUserId }];
-  }
-
-  const dedup = new Map<string, PasswordFamilyPair>();
-
-  for (const pair of pairs) {
-    dedup.set(`${pair.tenantId}:${pair.userId}`, pair);
-  }
-
-  return [...dedup.values()];
+  return passwordFamilyOf(links, ownLink).map((link) => ({
+    tenant_id: link.tenant_id,
+    user_id: link.user_id,
+    attached_via: link.attached_via,
+  }));
 }
 
-export function uniqueTenantIdsFromPairs(
-  pairs: readonly PasswordFamilyPair[],
-): readonly string[] {
-  return [...new Set(pairs.map((pair) => pair.tenantId))];
+function toPair(row: { readonly tenantId: string; readonly userId: string; readonly credentialId: string }): SharedPasswordPair {
+  return { tenantId: row.tenantId, userId: row.userId, credentialId: row.credentialId };
 }
-
