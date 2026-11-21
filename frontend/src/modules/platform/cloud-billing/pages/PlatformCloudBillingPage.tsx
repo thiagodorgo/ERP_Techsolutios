@@ -225,6 +225,7 @@ function CloudBillingContent({ initialMonth }: { readonly initialMonth: string }
     onMonth: changeMonth,
     onAction: (action) => {
       if (action.kind === "open-org") navigate(`/platform/tenants/${encodeURIComponent(action.tenantId)}`);
+      else if (action.kind === "open-statement") navigate(`/platform/billing?org=${encodeURIComponent(action.tenantId)}&mes=${action.month}`);
       else if (action.kind === "retry") void reading.reloadAll();
       else setDialog(action);
     },

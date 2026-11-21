@@ -8,6 +8,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
+  Receipt,
   Search,
   Server,
   Settings,
@@ -40,6 +41,7 @@ const PLATFORM_NAV: readonly PlatformNavGroup[] = [
       { label: "Visão Geral", path: "/platform/overview", icon: LayoutDashboard },
       { label: "Organizações", path: "/platform/tenants", icon: Server },
       { label: "Cloud Billing", path: "/platform/cloud-billing", icon: Cloud },
+      { label: "Cobrança", path: "/platform/billing", icon: Receipt },
     ],
   },
   {

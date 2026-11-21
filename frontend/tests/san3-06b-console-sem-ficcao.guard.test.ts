@@ -238,14 +238,15 @@ test("T35 censo de testes rejeita asserção de literal em cópia", () => {
   assert.match(mutated, /com asserção de literal \(match\/equal\) = 1/);
 });
 
-test("T36 inventário classifica todas as rotas e mantém só quatro ligadas no menu", () => {
+// B-ASS-10c-OPERACAO: a tela "Cobrança" (`/platform/billing`) entra LIGADA no menu PRINCIPAL; as contagens sobem 1.
+test("T36 inventário classifica todas as rotas e mantém só cinco ligadas no menu", () => {
   const output = run("san3-06b-telas-de-plataforma.mjs");
-  assert.match(output, /rotas \/platform em App\.tsx = 10/);
-  assert.match(output, /itens PLATFORM_NAV = 4/);
-  assert.match(output, /LIGADA = 6/);
+  assert.match(output, /rotas \/platform em App\.tsx = 11/);
+  assert.match(output, /itens PLATFORM_NAV = 5/);
+  assert.match(output, /LIGADA = 7/);
   assert.match(output, /PARADA-HONESTA = 4/);
   assert.match(output, /SEM-FONTE = 0/);
-  for (const route of ["overview", "tenants", "cloud-billing", "health"]) assert.match(output, new RegExp(`/platform/${route}[^\\n]+LIGADA`));
+  for (const route of ["overview", "tenants", "cloud-billing", "billing", "health"]) assert.match(output, new RegExp(`/platform/${route}[^\\n]+LIGADA`));
 });
 
 test("T37 inventário fica vermelho com parada no menu ou tela sem fonte", () => {
@@ -254,7 +255,7 @@ test("T37 inventário fica vermelho com parada no menu ou tela sem fonte", () =>
   const layout = path.join(first, "frontend/src/layouts/PlatformLayout.tsx");
   writeFileSync(layout, readFileSync(layout, "utf8").replace("items: [", 'items: [\n      { label: "Auditoria Global", path: "/platform/audit", icon: Activity },'));
   const menuMutation = run("san3-06b-telas-de-plataforma.mjs", [first]);
-  assert.match(menuMutation, /itens PLATFORM_NAV = 5/);
+  assert.match(menuMutation, /itens PLATFORM_NAV = 6/);
   assert.match(menuMutation, /\/platform\/audit[^\n]+PARADA-HONESTA[^\n]+PRINCIPAL\/Auditoria Global/);
 
   const second = mkdtempSync(path.join(tmpdir(), "san3-06b-source-"));
