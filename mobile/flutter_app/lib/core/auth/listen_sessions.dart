@@ -1,4 +1,3 @@
-// PROTOTIPO DESCARTAVEL do plan-1839-fable (mede o desenho da Emenda 1.8.3.9).
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
