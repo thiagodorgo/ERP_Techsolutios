@@ -161,10 +161,10 @@ final class CommissionByPatioRepository {
   }
 
   CommissionPatioBlock _errorBlock(CommissionPatio patio, ApiError error) {
+    if (error is ApiForbiddenError && error.reason == 'module_not_enabled') {
+      return CommissionPatioBlock.moduleNotEnabled(patio);
+    }
     if (error is ApiForbiddenError) {
-      if (error.reason == 'module_not_enabled') {
-        return CommissionPatioBlock.moduleNotEnabled(patio);
-      }
       return CommissionPatioBlock.forbidden(patio);
     }
     return CommissionPatioBlock.failed(patio);
@@ -206,8 +206,9 @@ CommissionPatioData _parsePatioData(
     count += itemCount;
   }
 
+  final cents = parseCentsText(summary['totalCents']);
   return CommissionPatioData(
-    totalCents: parseCentsText(summary['totalCents']),
+    totalCents: cents,
     count: count,
     calculations: calculations,
   );
