@@ -54,7 +54,7 @@ if (!connectionString) {
       (globalThis as { prisma?: unknown }).prisma = role.client;
 
       // A função elevada auth_login_candidates nasce sem EXECUTE (runbook humano). O teste X2
-      // (Entrar) precisa listar candidatos sob o papel efêmero; o GRANT vive SÓ nesta suíte, no
+      // (Entrar) precisa listar candidatos sob o papel efêmero; a concessão vive SÓ nesta suíte, no
       // lock de catálogo, e morre junto com a role no teardown (DROP OWNED BY).
       await withRoleCatalogLock(admin, async (tx) => {
         await grantAuthLoginCandidatesExecuteToRole(tx, role.roleName);
