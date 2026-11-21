@@ -28,7 +28,7 @@ export type IdentityLinkRecord = {
   readonly created_at: Date;
 };
 
-export type AttachedVia = "backfill" | "religacao" | "desvinculo";
+export type AttachedVia = "backfill" | "religacao" | "desvinculo" | "concessao";
 
 export class IdentityLinkRepository {
   constructor(private readonly client: PrismaExecutor) {}

@@ -23,12 +23,14 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService> {
     { LocalAuthCredentialRepository },
     { AuditLogRepository, TenantRepository, UserRepository, UserRoleRepository },
     { LocalAuthLoginService },
+    { resolveIdentityIdForPair },
   ] = await Promise.all([
     import("../../database/prisma.js"),
     import("../../database/rls.js"),
     import("./repositories/local-auth-credential.repository.js"),
     import("../core-saas/repositories/index.js"),
     import("./services/local-auth-login.service.js"),
+    import("./services/identity-resolver.js"),
   ]);
 
   const buildService = (tx: Parameters<Parameters<typeof withTenantRls>[2]>[0]) =>
@@ -38,6 +40,8 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService> {
       new UserRepository(tx),
       new UserRoleRepository(tx),
       new AuditLogRepository(tx),
+      async (_tenantId, work) => work(),
+      (tenantId, userId) => resolveIdentityIdForPair(tx, tenantId, userId),
     );
 
   return {

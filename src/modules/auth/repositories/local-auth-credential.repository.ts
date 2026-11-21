@@ -20,6 +20,16 @@ export type UpdateLocalAuthPasswordData = {
   readonly password_algorithm: string;
 };
 
+export type ShareableLocalAuthCredential = {
+  readonly email: string;
+  readonly password_hash: string;
+  readonly password_algorithm: string;
+  readonly password_updated_at: Date;
+  readonly must_change_password: boolean;
+  readonly failed_attempts: number;
+  readonly locked_until: Date | null;
+};
+
 export class LocalAuthCredentialRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
@@ -114,6 +124,45 @@ export class LocalAuthCredentialRepository {
           user_id: userId,
         },
       },
+    });
+  }
+
+  // B-APP-ORG-2S (S2a) — a credencial do par de origem para a COPIA da concessao, travada com FOR SHARE
+  // na transacao da concessao (a troca de senha em voo termina antes; a copia sai com o hash que ficou).
+  // Pre-condicao: o GUC de tenant do patio de origem ja esta posto (RLS, sem bypass).
+  async findForShareByEmailForTenant(
+    rawEmail: string,
+    tenantId: string,
+  ): Promise<ShareableLocalAuthCredential | null> {
+    const email = normalizeCredentialEmail(rawEmail);
+    const rows = await this.client.$queryRaw<Array<ShareableLocalAuthCredential>>`
+      SELECT email, password_hash, password_algorithm, password_updated_at,
+             must_change_password, failed_attempts, locked_until
+      FROM local_auth_credentials
+      WHERE tenant_id = ${tenantId}::uuid AND email = ${email} FOR SHARE
+    `;
+
+    return rows[0] ?? null;
+  }
+
+  insertCopy(
+    tenantId: string,
+    userId: string,
+    origin: ShareableLocalAuthCredential,
+  ) {
+    return this.client.localAuthCredential.create({
+      data: {
+        tenant_id: tenantId,
+        user_id: userId,
+        email: origin.email,
+        password_hash: origin.password_hash,
+        password_algorithm: origin.password_algorithm,
+        password_updated_at: origin.password_updated_at,
+        must_change_password: origin.must_change_password,
+        failed_attempts: origin.failed_attempts,
+        locked_until: origin.locked_until,
+      },
+      select: { id: true },
     });
   }
 

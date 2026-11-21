@@ -4,7 +4,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
-export type IdentityLinkEventKind = "backfill" | "religacao" | "desvinculo";
+export type IdentityLinkEventKind = "backfill" | "religacao" | "desvinculo" | "concessao";
 
 export type AppendIdentityLinkEventInput = {
   readonly link_id: string;

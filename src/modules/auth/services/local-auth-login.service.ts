@@ -69,6 +69,7 @@ type UserRoleRepositoryLike = {
 };
 
 type TenantContextRunner = <T>(tenantId: string, work: () => Promise<T>) => Promise<T>;
+type PairIdentityResolver = (tenantId: string, userId: string) => Promise<string | null>;
 
 // Resultado da verificação anônima de um candidato (interno; `credential_id` alimenta só a
 // finalização — nunca sai da borda do serviço).
@@ -76,6 +77,7 @@ export type AnonymousCandidateResult =
   | {
       readonly ok: true;
       readonly credential_id: string;
+      readonly identityId?: string | null;
       readonly user: LocalAuthLoginUser;
       readonly tenant: { readonly id: string; readonly name: string };
       readonly roles: readonly LocalAuthLoginRole[];
@@ -106,6 +108,7 @@ export class LocalAuthLoginService {
     private readonly userRoles: UserRoleRepositoryLike,
     private readonly auditLogs: AuditLogWriter,
     private readonly runWithTenantContext: TenantContextRunner = async (_tenantId, work) => work(),
+    private readonly resolvePairIdentity: PairIdentityResolver = async () => null,
   ) {}
 
   async authenticateLocalCredential(
@@ -284,6 +287,7 @@ export class LocalAuthLoginService {
     return {
       ok: true,
       credential_id: credential.id,
+      identityId: await this.resolvePairIdentity(tenantId, user.id),
       user: {
         id: user.id,
         tenant_id: user.tenant_id,

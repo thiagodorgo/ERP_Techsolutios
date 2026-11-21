@@ -24,6 +24,11 @@ export type GroupPeerProbeInput = {
 export type GroupPeerProbeResult = {
   readonly users: number;
   readonly identityIds: readonly string[];
+  readonly origins: readonly {
+    readonly tenantId: string;
+    readonly userId: string;
+    readonly identityId: string | null;
+  }[];
 };
 
 // O e-mail ja tem acesso no grupo vigente: a criacao volta inteira e o servico grava o 'cancelado'.
@@ -31,6 +36,20 @@ export class EmailInGroupError extends Error {
   constructor() {
     super("email_in_group");
     this.name = "EmailInGroupError";
+  }
+}
+
+export class LoginNotFoundInGroupError extends Error {
+  constructor() {
+    super("login_not_found_in_group");
+    this.name = "LoginNotFoundInGroupError";
+  }
+}
+
+export class LoginAmbiguousInGroupError extends Error {
+  constructor() {
+    super("login_ambiguous_in_group");
+    this.name = "LoginAmbiguousInGroupError";
   }
 }
 
@@ -120,6 +139,7 @@ export async function probeGroupPeers(
 
   let users = 0;
   const identityIds = new Set<string>();
+  const origins: Array<{ tenantId: string; userId: string; identityId: string | null }> = [];
 
   try {
     if (ownGroupId !== null) {
@@ -133,6 +153,7 @@ export async function probeGroupPeers(
         const peerUsers = await readPeerUsers(tx, peerId, input.email);
         for (const row of peerUsers) {
           users += 1;
+          origins.push({ tenantId: row.tenantId, userId: row.id, identityId: row.identityId });
           if (row.identityId !== null) {
             identityIds.add(row.identityId);
           }
@@ -144,5 +165,5 @@ export async function probeGroupPeers(
     await setTenantRlsContext(tx, ownTenantId);
   }
 
-  return { users, identityIds: [...identityIds] };
+  return { users, identityIds: [...identityIds], origins };
 }

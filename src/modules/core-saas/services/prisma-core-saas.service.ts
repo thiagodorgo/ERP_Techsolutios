@@ -9,7 +9,11 @@ import {
   validateRole,
 } from "../permissions/catalog.js";
 import { PrismaCoreSaasStore, mapTenantFromPrisma, mapUserFromPrisma } from "../store/prisma-core-saas.store.js";
-import { EmailInGroupError } from "./group-peer-probe.js";
+import {
+  EmailInGroupError,
+  LoginAmbiguousInGroupError,
+  LoginNotFoundInGroupError,
+} from "./group-peer-probe.js";
 import type { AsyncCoreSaasStore } from "../store/async-core-saas.store.js";
 import {
   CoreSaasError,
@@ -18,6 +22,8 @@ import {
   type CreateTenantInput,
   type CreateUserInput,
   type CreatedUser,
+  type GrantedUserAccess,
+  type GrantUserAccessInput,
   type ListTenantOptions,
   type LoginCandidate,
   type Tenant,
@@ -203,6 +209,42 @@ export class PrismaCoreSaasService {
         throw creationUnavailable();
       }
 
+      throw error;
+    }
+  }
+
+  async grantUserAccess(
+    input: GrantUserAccessInput,
+    actor: AuthenticatedActor,
+  ): Promise<GrantedUserAccess> {
+    if (input.tenantId !== actor.tenantId) throw accessDeniedAcrossTenants();
+    const tenant = await this.store.findTenantById(input.tenantId);
+    if (!tenant) throw notFound("tenant_not_found", `Tenant not found: ${input.tenantId}`);
+    if (tenant.status !== "active") {
+      throw new CoreSaasError(400, "BAD_REQUEST", "inactive_tenant", "Cannot grant access in an inactive tenant.");
+    }
+
+    const name = input.name.trim();
+    if (!name) {
+      throw new CoreSaasError(400, "BAD_REQUEST", "user_name_required", "User name is required.");
+    }
+    const email = input.email.trim().toLowerCase();
+    if (!isEmail(email)) {
+      throw new CoreSaasError(400, "BAD_REQUEST", "invalid_user_email", "User email is invalid.");
+    }
+
+    try {
+      return await this.store.grantAccess({
+        tenantId: input.tenantId,
+        name,
+        email,
+        actorUserId: actor.userId,
+      });
+    } catch (error) {
+      if (error instanceof LoginNotFoundInGroupError) throw loginNotFoundInGroup();
+      if (error instanceof LoginAmbiguousInGroupError) throw loginAmbiguousInGroup();
+      if (isUserEmailUniqueViolation(error)) throw userEmailConflict();
+      if (isCreationBudgetExhausted(error)) throw creationUnavailable();
       throw error;
     }
   }
@@ -602,6 +644,24 @@ export function emailInGroup(): CoreSaasError {
     "CONFLICT",
     "email_in_group",
     "Este e-mail já tem acesso no grupo.",
+  );
+}
+
+export function loginNotFoundInGroup(): CoreSaasError {
+  return new CoreSaasError(
+    404,
+    "NOT_FOUND",
+    "login_not_found_in_group",
+    "Não há login com este e-mail no grupo.",
+  );
+}
+
+export function loginAmbiguousInGroup(): CoreSaasError {
+  return new CoreSaasError(
+    409,
+    "CONFLICT",
+    "login_ambiguous_in_group",
+    "Há mais de um login com este e-mail no grupo. Fale com o gestor do grupo.",
   );
 }
 

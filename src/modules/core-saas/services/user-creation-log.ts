@@ -49,6 +49,21 @@ export async function confirmCreation(
   });
 }
 
+// A concessao venceu: confirma a linha que segurou o e-mail e guarda a origem somente no
+// registro interno. A resposta e a auditoria publica nunca revelam o patio de origem.
+export async function confirmAccessGrant(
+  tx: Prisma.TransactionClient,
+  input: CreationLogInput,
+  creationSeq: bigint,
+  userId: string,
+  originTenantId: string,
+): Promise<void> {
+  await tx.userCreationLog.updateMany({
+    where: { seq: creationSeq, tenant_id: input.tenantId, state: "em_curso" },
+    data: { state: "concessao", user_id: userId, origin_tenant_id: originTenantId },
+  });
+}
+
 // O registro do perdedor, em transacao curta propria: numero maior que o do vencedor. Nunca guarda
 // o patio vencedor (K5).
 export async function insertCancelledCreation(
