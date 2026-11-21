@@ -1,7 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-import { setIdentityRlsContext, setTenantRlsContext } from "../../../database/rls.js";
-import { IdentityLinkRepository } from "../repositories/identity-link.repository.js";
+import { setTenantRlsContext } from "../../../database/rls.js";
 
 export type PasswordFamilyPair = {
   readonly tenantId: string;
@@ -25,27 +24,41 @@ export async function resolvePasswordFamilyPairs(
     return [];
   }
 
-  const actor = {
-    userId: normalizedSeedUserId,
-    tenantId: normalizedSeedTenantId,
-    email: "",
-    roles: [] as const,
-    authType: "jwt" as const,
-  };
-
-  const identityId = await setIdentityRlsContext(tx, actor);
+  await setTenantRlsContext(tx, normalizedSeedTenantId);
+  const identityRows = await tx.$queryRaw<Array<{ identity_id: string }>>`
+    SELECT identity_id
+    FROM auth_identity_links
+    WHERE tenant_id = ${normalizedSeedTenantId}::uuid AND user_id = ${normalizedSeedUserId}::uuid
+    LIMIT 1
+  `;
+  const identityId = identityRows[0]?.identity_id ?? null;
 
   if (!identityId) {
     return [{ tenantId: normalizedSeedTenantId, userId: normalizedSeedUserId }];
   }
 
-  const links = await new IdentityLinkRepository(tx).listByIdentity(identityId);
+  const tenants = await tx.tenant.findMany({
+    select: { id: true },
+    orderBy: [{ created_at: "asc" }, { id: "asc" }],
+  });
   const pairs: PasswordFamilyPair[] = [];
 
-  for (const link of links) {
-    await setTenantRlsContext(tx, link.tenant_id);
+  for (const tenant of tenants) {
+    await setTenantRlsContext(tx, tenant.id);
+    const links = await tx.$queryRaw<Array<{ tenantId: string; userId: string }>>`
+      SELECT tenant_id::text AS "tenantId", user_id::text AS "userId"
+      FROM auth_identity_links
+      WHERE tenant_id = ${tenant.id}::uuid AND identity_id = ${identityId}::uuid
+      LIMIT 1
+    `;
+    const link = links[0];
+
+    if (!link) {
+      continue;
+    }
+
     const user = await tx.user.findFirst({
-      where: { id: link.user_id, tenant_id: link.tenant_id },
+      where: { id: link.userId, tenant_id: link.tenantId },
       select: { status: true },
     });
 
@@ -57,7 +70,7 @@ export async function resolvePasswordFamilyPairs(
       continue;
     }
 
-    pairs.push({ tenantId: link.tenant_id, userId: link.user_id });
+    pairs.push({ tenantId: link.tenantId, userId: link.userId });
   }
 
   if (pairs.length === 0) {
