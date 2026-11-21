@@ -385,6 +385,8 @@ function buildSummaryWhere(input: SummarizeCalculationsByPayeeInput): Prisma.Com
   return {
     tenant_id: input.tenantId,
     payee_id: input.payeeId ? input.payeeId : { not: null },
+    // B-APP-ORG-2S (S2e; Emenda 1.8.3.5 §1, D-DONO-2111-TELA-COMISSOES): o resumo não conta recusada nem estornada.
+    status: { notIn: ["rejected", "reversed"] },
     ...buildCreatedAtRange(input.from, input.to),
   };
 }

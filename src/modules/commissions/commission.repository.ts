@@ -210,6 +210,8 @@ export class InMemoryCommissionRepository implements CommissionRepository {
       if (!calculation.payeeId) continue;
       if (input.payeeId && calculation.payeeId !== input.payeeId) continue;
       if (!withinRange(calculation.createdAt, input.from, input.to)) continue;
+      // Emenda 1.8.3.5 §1 — a mesma regra do Prisma: o resumo não conta recusada nem estornada.
+      if (calculation.status === "rejected" || calculation.status === "reversed") continue;
 
       const current = totals.get(calculation.payeeId) ?? { total: 0, totalDecimal: new Prisma.Decimal(0), count: 0 };
       totals.set(calculation.payeeId, {

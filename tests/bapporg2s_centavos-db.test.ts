@@ -14,7 +14,9 @@
 //   CS2-total — o mesmo resumo, o `totalCents` do TOTAL geral: "1008", "1376" e "100".
 //   CS2b      — `GET /commissions/statements/summary` (visão do pátio) com dois beneficiários de `0.005000`: itens "1" e "1";
 //               total "1" (a soma exata arredondada uma vez).
-// Mutações que estes testes matam (plano, literais): MN1, MN2 (CS1); MN3 (CS2); MN4, MN5 (CS2-total); MN4b (CS2b).
+//   CS4       — Emenda 1.8.3.5 §1: com linhas `approved` (100), `pending` (50), `rejected` (30) e `reversed` (20) do mesmo
+//               guincheiro, o `totalCents` dá "15000" e a contagem dá 2, no `my-summary` e no `summary`.
+// Mutações que estes testes matam (plano, literais): MN1, MN2 (CS1); MN3 (CS2); MN4, MN5 (CS2-total); MN4b (CS2b); MN6 (CS4).
 import "dotenv/config";
 
 import assert from "node:assert/strict";
@@ -86,7 +88,7 @@ if (!connectionString) {
   }
 
   /** Grava uma linha de comissão com o valor EXATO (texto → numeric). Devolve a chave de idempotência da linha. */
-  async function seedCalculation(fixture: { tenantId: string; policyId: string }, payeeId: string, amount: string): Promise<string> {
+  async function seedCalculation(fixture: { tenantId: string; policyId: string }, payeeId: string, amount: string, status = "calculated"): Promise<string> {
     const key = `s2e-${randomUUID()}`;
     const basisEventId = ((await db.$queryRawUnsafe(
       `INSERT INTO commission_basis_events (tenant_id, source_type, source_id, source_event_name, idempotency_key, payload, occurred_at, policy_id)
@@ -97,13 +99,14 @@ if (!connectionString) {
     )) as Array<{ id: string }>)[0]!.id;
     await db.$executeRawUnsafe(
       `INSERT INTO commission_calculations (tenant_id, basis_event_id, policy_id, payee_id, amount, status, calculation_snapshot, idempotency_key)
-       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::numeric, 'calculated', '{}'::jsonb, $6)`,
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::numeric, $7, '{}'::jsonb, $6)`,
       fixture.tenantId,
       basisEventId,
       fixture.policyId,
       payeeId,
       amount,
       key,
+      status,
     );
     const [stored] = (await db.$queryRawUnsafe(`SELECT amount::text AS amount FROM commission_calculations WHERE idempotency_key = $1`, key)) as Array<{ amount: string }>;
     assert.equal(stored!.amount, amount, "a linha guarda o valor exato de 6 casas");
@@ -122,6 +125,7 @@ if (!connectionString) {
   let threeLines: { tenantId: string; userId: string };
   let thirds: { tenantId: string; userId: string };
   let halfCents: { tenantId: string; payees: [string, string] };
+  let statuses: { tenantId: string; userId: string };
 
   test("setup: base própria migrada, papel NOSUPERUSER NOBYPASSRLS, linhas de 6 casas e o app real no modo prisma", async () => {
     const { PrismaClient } = await import("@prisma/client");
@@ -167,6 +171,14 @@ if (!connectionString) {
     await seedCalculation(t2, q1, "0.005000");
     await seedCalculation(t2, q2, "0.005000");
     halfCents = { tenantId: t2.tenantId, payees: [q1, q2] };
+
+    // CS4: organização própria, um guincheiro com uma linha de cada situação que importa.
+    const t3 = await seedTenant("t3");
+    const g = await seedUser(t3.tenantId, "cs4");
+    for (const [amount, status] of [["100.000000", "approved"], ["50.000000", "pending"], ["30.000000", "rejected"], ["20.000000", "reversed"]] as const) {
+      await seedCalculation(t3, g, amount, status);
+    }
+    statuses = { tenantId: t3.tenantId, userId: g };
 
     (globalThis as { prisma?: unknown }).prisma = role.client;
     process.env.DATABASE_URL = targetUrl;
@@ -250,5 +262,20 @@ if (!connectionString) {
     assert.deepEqual(items.map((item) => item.payeeId).sort(), [...halfCents.payees].sort());
     for (const item of items) assertCentsText(item.totalCents, "1", "CS2b item");
     assertCentsText(data.totalCents, "1", "CS2b total");
+  });
+
+  test("CS4 · o resumo não conta rejected nem reversed: totalCents 15000 e contagem 2, no my-summary e no summary", async () => {
+    const mine = await mySummary(statuses);
+    const pasture = await api("/api/v1/commissions/statements/summary", asFinance(statuses.tenantId));
+    assert.equal(pasture.status, 200, JSON.stringify(pasture.body));
+    for (const [route, data] of [["my-summary", mine], ["summary", pasture.body.data as Json]] as const) {
+      const items = data.items as Json[];
+      assert.equal(items.length, 1, `CS4 ${route}: um beneficiário`);
+      assert.equal(items[0]!.payeeId, statuses.userId, `CS4 ${route}`);
+      assertCentsText(items[0]!.totalCents, "15000", `CS4 ${route} item totalCents`);
+      assert.equal(items[0]!.count, 2, `CS4 ${route} item count`);
+      assertCentsText(data.totalCents, "15000", `CS4 ${route} totalCents do total`);
+      assert.equal(data.total, 150, `CS4 ${route} total em número (o mesmo filtro)`);
+    }
   });
 }
