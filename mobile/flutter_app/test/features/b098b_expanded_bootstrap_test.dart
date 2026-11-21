@@ -42,7 +42,7 @@ Map<String, dynamic> _minimalBody({
   'enabledModules': [
     {
       'id': 'expense_management',
-      'title': 'Gestao de Despesas',
+      'title': 'Gestão de Despesas',
       'route': '/expenses',
       'requiredPermissions': ['expense_report:read'],
     },

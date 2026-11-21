@@ -153,17 +153,17 @@ typedef _ModuleDef = ({String title, String route, List<String> perms});
 
 final _kNavigationModules = <String, _ModuleDef>{
   'expense_management': (
-    title: 'Gestao de Despesas',
+    title: 'Gestão de Despesas',
     route: '/expenses',
     perms: ['expense_report:read', 'expense_report:create'],
   ),
   'field_operations': (
-    title: 'Operacoes de Campo',
+    title: 'Operações de Campo',
     route: '/work-orders',
     perms: ['field_location:send'],
   ),
   'work_orders': (
-    title: 'Ordens de Servico',
+    title: 'Ordens de Serviço',
     route: '/work-orders',
     perms: ['work_orders:read'],
   ),
@@ -173,17 +173,17 @@ final _kNavigationModules = <String, _ModuleDef>{
     perms: ['checklist_runs:read'],
   ),
   'inventory': (
-    title: 'Estoque do Tecnico',
+    title: 'Estoque do Técnico',
     route: '/inventory',
     perms: ['inventory.read'],
   ),
   'approvals': (
-    title: 'Aprovacoes',
+    title: 'Aprovações',
     route: '/approvals',
     perms: ['work_orders:approve'],
   ),
   'notifications': (
-    title: 'Notificacoes',
+    title: 'Notificações',
     route: '/notifications',
     perms: ['notifications:read'],
   ),
