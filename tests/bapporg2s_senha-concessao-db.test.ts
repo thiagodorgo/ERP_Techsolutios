@@ -149,11 +149,7 @@ if (!connectionString) {
     assert.equal(copyZ?.locked_until?.getTime(), originNow?.locked_until?.getTime(), "GP3b: com X bloqueado, a concessão para Z copia o bloqueio (MP12b)");
   });
 
-  // ABERTO (dev-s2p-cl, PARADA registrada): a auditoria da concessão (`grantAccess`, `prisma-core-saas.store.ts`, da S2a,
-  // fora do PERMITIDO da S2p) não grava `temporary_password_pending`; e o filtro da auditoria troca por [REDACTED] toda
-  // chave que casa /password/i. A asserção fica como o plano manda; o `todo` só impede que o defeito conhecido derrube a
-  // suíte. Pendência P-S2P-GP8-PENDENTE-NAO-GRAVADO.
-  test("GP8-pendente — a concessão com a provisória pendente grava temporary_password_pending true; com senha própria, false", { todo: "P-S2P-GP8-PENDENTE-NAO-GRAVADO" }, async () => {
+  test("GP8-pendente — a concessão com a provisória pendente grava temporary_credential_pending true; com senha própria, false", async () => {
     const h = await harness();
     const f = await novaFamilia(h, "gp8p", { pairs: 1 });
     const [x] = f.orgs;
@@ -172,7 +168,7 @@ if (!connectionString) {
     const pending = await h.admin.auditLog.findMany({ where: { tenant_id: y }, select: { action: true, metadata: true } });
     const own = await h.admin.auditLog.findMany({ where: { tenant_id: w }, select: { action: true, metadata: true } });
     const flag = (rows: typeof pending) =>
-      rows.map((row) => (row.metadata as Record<string, unknown> | null)?.temporary_password_pending).find((value) => value !== undefined);
+      rows.map((row) => (row.metadata as Record<string, unknown> | null)?.temporary_credential_pending).find((value) => value !== undefined);
 
     assert.equal(flag(pending), true, `GP8-pendente: true com a provisória pendente (${JSON.stringify(pending).slice(0, 300)})`);
     assert.equal(flag(own), false, "GP8-pendente: false com senha própria");

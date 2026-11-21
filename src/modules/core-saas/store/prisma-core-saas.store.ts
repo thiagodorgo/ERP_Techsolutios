@@ -323,7 +323,11 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         resourceId: user.id,
         outcome: "success",
         severity: "info",
-        metadata: { email: user.email, role: "field_technician" },
+        metadata: {
+          email: user.email,
+          role: "field_technician",
+          temporary_credential_pending: origin.must_change_password,
+        },
       });
 
       const savedUser = await txUsers.findByIdForTenant(user.id, input.tenantId);
