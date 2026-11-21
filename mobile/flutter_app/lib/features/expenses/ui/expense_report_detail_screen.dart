@@ -104,7 +104,7 @@ class ExpenseReportDetailScreen extends ConsumerWidget {
                     ? () => context.go('/expenses/$reportId/submit')
                     : null,
                 icon: const Icon(Icons.send_outlined),
-                label: const Text('Resumo e submissao'),
+                label: const Text('Resumo e submissão'),
               ),
             ],
           ),
