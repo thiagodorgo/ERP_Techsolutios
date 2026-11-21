@@ -47,16 +47,75 @@ final class CommissionCalculation {
   String get formattedAmount => formatBrlCents(amountCents);
 }
 
+/// Um mês do calendário do aparelho: do primeiro milissegundo ao último.
+/// Emenda 1.8.3.5 §2: a tendência é o mesmo resumo pedido mês a mês.
+final class CommissionMonth {
+  const CommissionMonth._(this.start, this.end);
+
+  /// O mês de [day] no fuso do aparelho.
+  factory CommissionMonth.of(DateTime day) {
+    final local = day.toLocal();
+    final start = DateTime(local.year, local.month);
+    final next = DateTime(local.year, local.month + 1);
+    return CommissionMonth._(
+      start,
+      next.subtract(const Duration(milliseconds: 1)),
+    );
+  }
+
+  /// Os [count] meses que terminam no mês de [today], do mais antigo ao atual.
+  static List<CommissionMonth> lastMonths(DateTime today, {int count = 6}) {
+    final local = today.toLocal();
+    return List.unmodifiable([
+      for (var back = count - 1; back >= 0; back--)
+        CommissionMonth.of(DateTime(local.year, local.month - back)),
+    ]);
+  }
+
+  final DateTime start;
+  final DateTime end;
+
+  bool contains(DateTime moment) {
+    final local = moment.toLocal();
+    return !local.isBefore(start) && !local.isAfter(end);
+  }
+
+  Map<String, String> get query => {
+    'from': start.toUtc().toIso8601String(),
+    'to': end.toUtc().toIso8601String(),
+  };
+}
+
+/// O resumo de um mês, exatamente como o servidor mandou.
+final class CommissionMonthSummary {
+  const CommissionMonthSummary({
+    required this.month,
+    required this.totalCents,
+    required this.count,
+  });
+
+  final CommissionMonth month;
+  final int totalCents;
+  final int count;
+
+  String get formattedTotal => formatBrlCents(totalCents);
+}
+
 final class CommissionPatioData {
   const CommissionPatioData({
     required this.totalCents,
     required this.count,
     required this.calculations,
+    this.months = const <CommissionMonthSummary>[],
   });
 
   final int totalCents;
   final int count;
   final List<CommissionCalculation> calculations;
+
+  /// Com `load(..., months:)`, um resumo por mês, do mais antigo ao atual; o
+  /// [totalCents] e o [count] são os do último. Sem, vazio.
+  final List<CommissionMonthSummary> months;
 
   String get formattedTotal => formatBrlCents(totalCents);
 }
@@ -115,23 +174,36 @@ final class CommissionByPatioRepository {
   final PatioTokenSource _tokenSource;
   final CommissionClientFactory _clientFactory;
 
+  /// Sem [months], o resumo e a lista de todo o período (2 pedidos por pátio).
+  /// Com [months] (a aba Comissões), a lista na janela desses meses e o resumo
+  /// pedido mês a mês, nas mesmas duas rotas (`from`/`to` em query).
   Future<List<CommissionPatioBlock>> load(
-    Iterable<CommissionPatio> patios,
-  ) async {
+    Iterable<CommissionPatio> patios, {
+    List<CommissionMonth> months = const <CommissionMonth>[],
+  }) async {
     final blocks = <CommissionPatioBlock>[];
     for (final patio in patios) {
-      blocks.add(await _loadPatio(patio));
+      blocks.add(await _loadPatio(patio, months));
     }
     return List.unmodifiable(blocks);
   }
 
-  Future<CommissionPatioBlock> _loadPatio(CommissionPatio patio) async {
+  Future<CommissionPatioBlock> _loadPatio(
+    CommissionPatio patio,
+    List<CommissionMonth> months,
+  ) async {
     try {
       final token = await _tokenSource.tokenForPatio(patio.id);
       if (token == null || token.isEmpty) {
         return CommissionPatioBlock.failed(patio);
       }
       final client = _clientFactory(token);
+      if (months.isNotEmpty) {
+        return CommissionPatioBlock.loaded(
+          patio,
+          await _loadMonths(client, months),
+        );
+      }
       final calculationsResponse = await client.get(
         commissionCalculationsMinePath,
       );
@@ -151,6 +223,42 @@ final class CommissionByPatioRepository {
     } on TypeError {
       return CommissionPatioBlock.failed(patio);
     }
+  }
+
+  Future<CommissionPatioData> _loadMonths(
+    Dio client,
+    List<CommissionMonth> months,
+  ) async {
+    final calculationsResponse = await client.get(
+      commissionCalculationsMinePath,
+      queryParameters: {
+        'from': months.first.query['from'],
+        'to': months.last.query['to'],
+        'limit': '100',
+      },
+    );
+    final calculations = _parseCalculations(calculationsResponse.data);
+    final summaries = <CommissionMonthSummary>[];
+    for (final month in months) {
+      final response = await client.get(
+        commissionStatementsMySummaryPath,
+        queryParameters: month.query,
+      );
+      final summary = _parseSummary(response.data);
+      summaries.add(
+        CommissionMonthSummary(
+          month: month,
+          totalCents: summary.cents,
+          count: summary.count,
+        ),
+      );
+    }
+    return CommissionPatioData(
+      totalCents: summaries.last.totalCents,
+      count: summaries.last.count,
+      calculations: calculations,
+      months: List.unmodifiable(summaries),
+    );
   }
 
   CommissionPatioBlock _errorBlock(CommissionPatio patio, ApiError error) {
@@ -181,12 +289,25 @@ CommissionPatioData _parsePatioData(
   Object? calculationsBody,
   Object? summaryBody,
 ) {
+  final calculations = _parseCalculations(calculationsBody);
+  final summary = _parseSummary(summaryBody);
+  return CommissionPatioData(
+    totalCents: summary.cents,
+    count: summary.count,
+    calculations: calculations,
+  );
+}
+
+List<CommissionCalculation> _parseCalculations(Object? calculationsBody) {
   final calculationsJson = _jsonMap(calculationsBody);
   final calculationItems = _jsonList(calculationsJson['items']);
-  final calculations = calculationItems
+  return calculationItems
       .map((item) => _parseCalculation(_jsonMap(item)))
       .toList(growable: false);
+}
 
+/// A única leitura do resumo: os dois caminhos de `load` passam por aqui.
+({int cents, int count}) _parseSummary(Object? summaryBody) {
   final summaryEnvelope = _jsonMap(summaryBody);
   final summary = _jsonMap(summaryEnvelope['data']);
   final summaryItems = _jsonList(summary['items']);
@@ -200,11 +321,7 @@ CommissionPatioData _parsePatioData(
   }
 
   final cents = parseCentsText(summary['totalCents']);
-  return CommissionPatioData(
-    totalCents: cents,
-    count: count,
-    calculations: calculations,
-  );
+  return (cents: cents, count: count);
 }
 
 CommissionCalculation _parseCalculation(Map<String, dynamic> json) {
