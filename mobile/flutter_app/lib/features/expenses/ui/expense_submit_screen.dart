@@ -71,7 +71,7 @@ class ExpenseSubmitScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Checagem de submissao',
+                  'Checagem de submissão',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),

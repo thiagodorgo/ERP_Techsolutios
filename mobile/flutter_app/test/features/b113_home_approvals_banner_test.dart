@@ -60,6 +60,8 @@ WorkOrder _wo(String id, WorkOrderStatus status) => WorkOrder(
   createdAt: DateTime.utc(2026, 7, 1),
 );
 
+const _approvalsDestinationKey = Key('b113-approvals-destination');
+
 /// Builds the test widget. When [woOverride] is non-null, the
 /// workOrderRepositoryProvider is replaced with a repo pre-seeded with the
 /// correct session — this avoids the async bootstrap-resolution timing race.
@@ -77,7 +79,12 @@ Widget _wrap(
       ),
       GoRoute(
         path: '/approvals',
-        builder: (_, _) => const Scaffold(body: Text('Aprovações')),
+        // Marcador próprio da página de destino: o banner também mostra
+        // "Aprovações", então o teste 5 prova a navegação por esta Key.
+        builder: (_, _) => const Scaffold(
+          key: _approvalsDestinationKey,
+          body: Text('Destino do teste: /approvals'),
+        ),
       ),
     ],
   );
@@ -153,10 +160,13 @@ void main() {
       await t.pumpWidget(_wrap(_sessionManager, []));
       await t.pumpAndSettle();
 
+      expect(find.byKey(_approvalsDestinationKey), findsNothing);
+
       await t.tap(find.text('Aprovações'));
       await t.pumpAndSettle();
 
-      expect(find.text('Aprovações'), findsOneWidget);
+      expect(find.byKey(_approvalsDestinationKey), findsOneWidget);
+      expect(find.text('Destino do teste: /approvals'), findsOneWidget);
     });
   });
 }
