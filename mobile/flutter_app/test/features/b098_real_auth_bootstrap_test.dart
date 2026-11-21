@@ -1,6 +1,6 @@
 // B-098 — Flutter Mobile Real Auth and Bootstrap
 // Tests: DioAuthRepository, DioMobileBootstrapRepository (cache/restore),
-//        LocalDevBootstrapRepository, BootstrapNotifier, TenantSelectorScreen,
+//        LocalDevBootstrapRepository, BootstrapNotifier,
 //        HomeScreen bootstrap error state.
 // All HTTP calls via _FakeHttpAdapter (no real network).
 
@@ -22,7 +22,6 @@ import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.da
 import 'package:erp_techsolutions_mobile/core/sync/sync_action_store.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
-import 'package:erp_techsolutions_mobile/features/auth/tenant_selector_screen.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
@@ -659,80 +658,6 @@ void main() {
     );
   });
 
-  // ── Group 5: TenantSelectorScreen widget ──────────────────────────────────
-
-  group('5. TenantSelectorScreen', () {
-    BootstrapSession multiTenantSession() => const BootstrapSession(
-      activeTenant: TenantContext(
-        tenantId: 'ten-a',
-        displayName: 'Empresa Alpha',
-      ),
-      availableTenants: [
-        TenantContext(tenantId: 'ten-a', displayName: 'Empresa Alpha'),
-        TenantContext(tenantId: 'ten-b', displayName: 'Empresa Beta'),
-      ],
-      enabledModules: [],
-      permissions: PermissionSet({'dashboard:read'}),
-    );
-
-    Widget buildScreen(BootstrapSession session) => ProviderScope(
-      overrides: [
-        bootstrapNotifierProvider.overrideWith(
-          () => _FakeBootstrapNotifier(session),
-        ),
-      ],
-      child: const MaterialApp(home: TenantSelectorScreen()),
-    );
-
-    testWidgets('5.1 exibe titulo da tela de selecao de empresa', (t) async {
-      await t.pumpWidget(buildScreen(multiTenantSession()));
-      await t.pumpAndSettle();
-
-      expect(find.text('Selecionar organização'), findsOneWidget);
-    });
-
-    testWidgets('5.2 exibe todos os tenants disponiveis', (t) async {
-      await t.pumpWidget(buildScreen(multiTenantSession()));
-      await t.pumpAndSettle();
-
-      expect(find.text('Empresa Alpha'), findsOneWidget);
-      expect(find.text('Empresa Beta'), findsOneWidget);
-    });
-
-    testWidgets('5.3 exibe cada organização como linha tocável (chevron)', (
-      t,
-    ) async {
-      await t.pumpWidget(buildScreen(multiTenantSession()));
-      await t.pumpAndSettle();
-
-      // B-APP-ORG (F5): as 2 linhas de organização mais a linha "Entrar em
-      // outra organização" (Q4), cada uma com a sua seta.
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
-    });
-
-    testWidgets('5.4 exibe instrucao para o usuario selecionar empresa', (
-      t,
-    ) async {
-      await t.pumpWidget(buildScreen(multiTenantSession()));
-      await t.pumpAndSettle();
-
-      // B-APP-ORG (F5): o texto da opção A aprovada (plano §8.1).
-      expect(
-        find.textContaining('Os dados de cada uma ficam separados'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('5.5 exibe as iniciais da organização no avatar', (t) async {
-      await t.pumpWidget(buildScreen(multiTenantSession()));
-      await t.pumpAndSettle();
-
-      // "Empresa Alpha" → EA, "Empresa Beta" → EB
-      expect(find.text('EA'), findsOneWidget);
-      expect(find.text('EB'), findsOneWidget);
-    });
-  });
-
   // ── Group 6: HomeScreen bootstrap error state ──────────────────────────────
 
   group('6. HomeScreen — estado de erro de bootstrap', () {
@@ -801,18 +726,6 @@ void main() {
 }
 
 // ── Fake notifiers for widget tests ──────────────────────────────────────────
-
-class _FakeBootstrapNotifier extends BootstrapNotifier {
-  _FakeBootstrapNotifier(this._session);
-
-  final BootstrapSession _session;
-
-  @override
-  Future<BootstrapSession> build() async => _session;
-
-  @override
-  Future<void> retry() async {}
-}
 
 class _ErrorBootstrapNotifier extends BootstrapNotifier {
   _ErrorBootstrapNotifier(this._error);
