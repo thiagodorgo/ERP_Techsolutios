@@ -215,4 +215,3 @@ async function getBaseUrl(server: Server): Promise<string> {
 async function closeServer(server: Server): Promise<void> {
   await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
 }
-

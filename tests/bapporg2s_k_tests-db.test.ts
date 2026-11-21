@@ -316,5 +316,3 @@ if (!connectionString) {
     }
   });
 }
-
-
