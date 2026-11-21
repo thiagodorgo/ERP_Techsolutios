@@ -100,7 +100,7 @@ ApiError mapDioError(DioException e) {
     DioExceptionType.connectionError => const ApiNetworkError(),
     DioExceptionType.badResponse => switch (status) {
       401 => const ApiSessionExpiredError(),
-      403 => const ApiForbiddenError(),
+      403 => ApiForbiddenError(reason: _errorReason(e.response?.data)),
       409 => const ApiConflictError(),
       _ when status != null && status >= 500 => ApiServerError(
         statusCode: status,
@@ -109,4 +109,12 @@ ApiError mapDioError(DioException e) {
     },
     _ => const ApiNetworkError(),
   };
+}
+
+String? _errorReason(Object? body) {
+  if (body is! Map<String, dynamic>) return null;
+  final error = body['error'];
+  if (error is! Map<String, dynamic>) return null;
+  final reason = error['reason'];
+  return reason is String && reason.isNotEmpty ? reason : null;
 }

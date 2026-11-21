@@ -34,7 +34,12 @@ final class ApiSessionExpiredError extends ApiUnauthorizedError {
 
 /// 403: a sessão vale, mas o papel não pode fazer esta ação.
 final class ApiForbiddenError extends ApiUnauthorizedError {
-  const ApiForbiddenError() : super('Você não tem permissão para esta ação.');
+  const ApiForbiddenError({this.reason})
+    : super('Você não tem permissão para esta ação.');
+
+  /// Motivo estável enviado pelo servidor, quando presente. A mensagem e os
+  /// demais campos do payload não atravessam esta fronteira.
+  final String? reason;
 }
 
 final class ApiConflictError extends ApiError {
