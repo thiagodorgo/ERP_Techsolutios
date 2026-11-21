@@ -57,6 +57,12 @@ abstract class AuthRepository {
   /// login.
   Future<void> commitSwitched(AuthSession session);
 
+  Future<AuthSession> acquireListenSession({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  });
+
   /// O único `POST /auth/logout` do app: entrega ao servidor o token de
   /// renovação que deve morrer (o servidor revoga a sessão inteira). Nunca
   /// lança: devolve [RevocationOutcome] (D11).
@@ -155,6 +161,12 @@ class PasswordChangeError implements Exception {
   String toString() => 'PasswordChangeError(${failure.name})';
 }
 
+class ListenTenantMismatchError implements Exception {
+  const ListenTenantMismatchError(this.refreshToken);
+
+  final String refreshToken;
+}
+
 /// Mapeia a resposta de `POST /api/v1/auth/password` por `status` e `reason`
 /// (envelope `{error:{code, reason, message}}`; o token inválido vem como
 /// `{error:{code:"INVALID_TOKEN"}}`). O `message` do servidor nunca é lido.
@@ -239,6 +251,13 @@ class LocalDevAuthRepository implements AuthRepository {
     _current = session;
     await _storage.saveSession(session);
   }
+
+  @override
+  Future<AuthSession> acquireListenSession({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  }) => switchTenant(current: current, tenantId: tenantId, client: client);
 
   /// B-APP-ORG (70): no modo de desenvolvimento, a troca só vale para as
   /// organizações da lista de desenvolvimento; fora dela, é recusada.
@@ -648,6 +667,24 @@ class DioAuthRepository implements AuthRepository {
     await _storage.saveSession(session);
   }
 
+  @override
+  Future<AuthSession> acquireListenSession({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  }) async {
+    final Response<dynamic> response;
+    try {
+      response = await client.post(
+        kActiveTenantPath,
+        data: {'tenantId': tenantId},
+      );
+    } on DioException catch (e) {
+      throw _switchFailure(e);
+    }
+    return _listenSessionFromActiveTenantJson(response.data, tenantId, current);
+  }
+
   /// O 403 é a recusa do vínculo; sem rede, a mensagem da troca; o resto, como
   /// em qualquer pedido (inclusive o [ApiSessionChangedError] da T-b).
   ApiError _switchFailure(DioException e) {
@@ -696,6 +733,18 @@ class DioAuthRepository implements AuthRepository {
       sessionNonce: const Uuid().v4(), // cada troca é uma sessão nova
       // dart format on
     );
+  }
+
+  AuthSession _listenSessionFromActiveTenantJson(
+    Object? data,
+    String tenantId,
+    AuthSession current,
+  ) {
+    final parsed = _sessionFromActiveTenantJson(data, current);
+    if (parsed.user.tenantId != tenantId) {
+      throw ListenTenantMismatchError(parsed.tokens.refreshToken ?? '');
+    }
+    return parsed;
   }
 
   @override

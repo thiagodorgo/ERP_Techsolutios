@@ -14,6 +14,8 @@ import '../telemetry/telemetry_event.dart';
 import '../telemetry/telemetry_providers.dart';
 import 'auth_repository.dart';
 import 'auth_token_storage.dart';
+import 'listen_sessions.dart';
+import 'listen_token_journal.dart';
 import 'pending_revocations.dart';
 import 'session_http_client.dart';
 import 'session_renewal.dart';
@@ -33,6 +35,17 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
     );
   }
   return LocalDevAuthRepository(storage: storage);
+});
+
+final listenSessionsProvider = Provider<ListenSessions>((ref) {
+  return ListenSessions(
+    repository: ref.watch(authRepositoryProvider),
+    journal: ListenTokenJournal(ref.watch(authTokenStorageProvider)),
+    revocations: ref.watch(pendingRevocationsProvider),
+    config: ref.watch(authenticatedApiConfigProvider),
+    liveClient: () =>
+        sessionHttpClient(ref, ref.read(authenticatedApiConfigProvider)),
+  );
 });
 
 /// B-APP-ORG (70, Emenda 1 §A4): o cliente da troca nasce NA HORA da troca,
@@ -269,6 +282,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // 5. O token de renovação de A, a sessão B gravada e a época nova.
       final previousRefreshToken =
           await _readStoredRefreshToken() ?? session.tokens.refreshToken;
+      await _listenSessions.discardAll(); // troca: a época antiga sai
       await repo.commitSwitched(switched);
       _bumpEpoch(); // ciclo: troca de organização
       state = AsyncValue.data(
@@ -323,6 +337,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     // definitiva do servidor.
     final release = await _enterSessionLock();
     try {
+      await _listenSessions.discardAll(); // Sair: as sessões de escuta saem
       final storedRefreshToken = await _readStoredRefreshToken();
       if (storedRefreshToken == null) return await _clearDeviceAfterLogout();
       // dart format off
@@ -335,6 +350,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   PendingRevocations get _revocations => ref.read(pendingRevocationsProvider);
+  ListenSessions get _listenSessions => ref.read(listenSessionsProvider);
 
   Future<void> _clearDeviceAfterLogout() async {
     final repo = ref.read(authRepositoryProvider);
