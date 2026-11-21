@@ -51,6 +51,10 @@ Dio createExpenseHttpClient(ApiConfig config) {
 /// B-APP-SESSAO-RENOVA (D4, D5) — o cliente autenticado: põe o token vivo da
 /// sessão em cada pedido e, num 401, pede a renovação à porta única do app
 /// (o notifier). Só o `sessionHttpClient` monta este cliente.
+///
+/// B-APP-ORG (T-b): [boundSessionKey] é a chave da sessão de quando o cliente
+/// nasceu, e [currentSessionKey] lê a da sessão viva. Sem os dois (só os
+/// testes antigos), o cliente nunca recusa, como antes.
 Dio createAuthenticatedHttpClient(
   ApiConfig config, {
   required Future<SessionRenewalOutcome> Function(
@@ -61,6 +65,8 @@ Dio createAuthenticatedHttpClient(
   required Future<void> Function(int requestEpoch) expire,
   required String? Function() currentAccessToken,
   required int Function() currentEpoch,
+  String? boundSessionKey,
+  String? Function()? currentSessionKey,
 }) {
   final dio = createExpenseHttpClient(config);
   dio.interceptors.add(
@@ -70,15 +76,20 @@ Dio createAuthenticatedHttpClient(
       expire: expire,
       currentAccessToken: currentAccessToken,
       currentEpoch: currentEpoch,
+      boundSessionKey: boundSessionKey,
+      currentSessionKey: currentSessionKey ?? _noLiveSessionKey,
     ),
   );
   return dio;
 }
 
+String? _noLiveSessionKey() => null;
+
 // Converts a DioException to a typed ApiError.
 // Never includes response body, URLs with private parameters, or tokens.
 ApiError mapDioError(DioException e) {
   // dart format off
+  if (e.error is SessionChangedLocalError) return const ApiSessionChangedError(); // T-b: não tentou
   if (e.error is SessionRenewalLocalError) return const ApiServerError(statusCode: 0, safeMessage: kSessionCheckFailedMessage);
   // dart format on
   final status = e.response?.statusCode;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/auth_models.dart';
@@ -5,6 +7,8 @@ import '../../features/checklists/data/checklist_attachment_upload.dart';
 import '../../features/checklists/data/checklist_repository.dart';
 import '../auth/auth_notifier.dart';
 import '../bootstrap/bootstrap_repository.dart';
+import '../bootstrap/bootstrap_session.dart';
+import '../bootstrap/bootstrap_session_match.dart';
 import '../location/location_consent_providers.dart';
 import '../network/api_error.dart';
 import '../network/connectivity_repository.dart';
@@ -46,6 +50,10 @@ class AutoSyncState {
 
 // ── Coordinator ───────────────────────────────────────────────────────────────
 
+/// B-APP-ORG (T-a): quanto a troca de organização espera a passada em curso
+/// terminar. Estourou: a troca não acontece e a porta reabre.
+const kSessionChangeHoldTimeout = Duration(seconds: 30);
+
 /// Listens to [networkStatusProvider] and triggers a sync pass for all domains
 /// when connectivity transitions from offline → online.
 ///
@@ -57,8 +65,70 @@ class AutoSyncState {
 /// (expirou, "Sair", login de outra pessoa), a passada para, e só a expiração
 /// vira mensagem. Depois de uma sessão morta, o novo login roda uma passada
 /// sozinho.
+///
+/// B-APP-ORG (T-a e T-c, itens 69 e 70): a troca de sessão fecha a porta
+/// ([holdForSessionChange]) e espera a passada em curso parar no próximo
+/// limite de domínio; e a passada só roda quando o bootstrap é da sessão viva.
 class AutoSyncCoordinator extends Notifier<AutoSyncState> {
   bool _running = false;
+
+  /// T-a: a porta fechada pela troca de sessão. Nenhuma passada começa, e a
+  /// passada em curso para no próximo limite de domínio.
+  bool _held = false;
+
+  /// T-a: completa quando a passada em curso termina (`_running == false`).
+  Completer<void>? _passEnded;
+
+  /// T-a: fecha a porta e espera a passada em curso terminar, até [timeout].
+  /// `true`: nenhuma passada em curso, pode trocar. `false`: o prazo estourou;
+  /// a porta reabre e a troca não deve acontecer.
+  Future<bool> holdForSessionChange({
+    Duration timeout = kSessionChangeHoldTimeout,
+  }) async {
+    _held = true;
+    if (!_running) return true;
+    final ended = _passEnded ??= Completer<void>();
+    try {
+      await ended.future.timeout(timeout);
+      return true;
+    } on TimeoutException {
+      _held = false; // a troca não acontece: a porta reabre
+      return false;
+    }
+  }
+
+  /// F70-1: a passada disparada pela troca concluída; completa na hora quando
+  /// nenhuma foi disparada.
+  Future<void> _passAfterSessionChange = Future<void>.value();
+
+  /// F70-1: a passada que a última troca concluída disparou (ou um futuro já
+  /// completo). Quem precisa saber que ela terminou espera este futuro.
+  Future<void> get passAfterSessionChange => _passAfterSessionChange;
+
+  /// T-a: reabre a porta, em qualquer desfecho da troca.
+  ///
+  /// F70-1 (B-APP-ORG): com a troca CONCLUÍDA, [switchedTo] é a organização de
+  /// destino. Se a sessão viva é dela, dispara UMA passada para a sessão viva:
+  /// o que ficou pendente nessa organização, dessa pessoa, sai sem precisar de
+  /// "Sincronizar agora" ("são enviados quando você voltar"). A passada é a de
+  /// sempre (T-b, T-c, época e fila por usuário): leva só o que é da sessão
+  /// viva. Troca recusada ou que falhou ([switchedTo] nulo): nada dispara.
+  void releaseAfterSessionChange({String? switchedTo}) {
+    _held = false;
+    if (switchedTo == null) return;
+    _passAfterSessionChange = _triggerAfterSessionChange(switchedTo);
+  }
+
+  /// F70-1: a passada da troca concluída, só quando a sessão viva é a da
+  /// organização de destino, autenticada, e com rede.
+  Future<void> _triggerAfterSessionChange(String switchedTo) async {
+    final live = ref.read(authStateProvider).asData?.value;
+    if (live == null || live.status != AuthStatus.authenticated) return;
+    // dart format off
+    if (live.session?.user.tenantId != switchedTo) return; // a sessão viva não é a do destino: nada dispara
+    // dart format on
+    await _passForLiveSession();
+  }
 
   /// D8: a sessão morreu (`expired`) desde o último login.
   bool _sessionDiedThisRun = false;
@@ -107,29 +177,55 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
   /// com o dono delas (a fila por usuário não muda).
   Future<void> _triggerAfterRelogin() async {
     _sessionDiedThisRun = false;
+    await _passForLiveSession();
+  }
+
+  /// Uma passada da sessão viva, com rede, depois do bootstrap dela (o novo
+  /// login depois de sessão morta, D8; e a troca concluída, F70-1). A sessão
+  /// mudou no meio da espera: nada dispara.
+  Future<void> _passForLiveSession() async {
     if (ref.read(networkStatusProvider) == NetworkStatus.offline) return;
     final epoch = _currentEpoch();
     // O bootstrap segue a chave da sessão na microtarefa seguinte (D6).
     await Future<void>.delayed(Duration.zero);
+    if (!ref.mounted) return;
     try {
       await ref.read(bootstrapSessionProvider.future);
     } catch (_) {
       return;
     }
-    if (!_passStillValid(epoch)) return;
+    if (!ref.mounted || !_passStillValid(epoch)) return;
     await _triggerSync();
   }
 
   /// Manually request a sync pass (e.g. from a button tap).
   Future<void> triggerManual() => _triggerSync();
 
+  /// T-c: o bootstrap da passada ainda é da sessão viva.
+  bool _passSessionStillLive(BootstrapSession? passSession) =>
+      passSession == null ||
+      bootstrapMatchesLiveSession(
+        passSession,
+        ref.read(authStateProvider).asData?.value,
+      );
+
   Future<void> _triggerSync() async {
+    if (_held) return;
     if (_running) return;
     _running = true;
     final epoch = _currentEpoch();
+    BootstrapSession? passSession;
+    var passStarted = false;
     // D8: a guarda entre domínios: a sessão mudou, a passada para aqui.
+    // B-APP-ORG: também quando a troca pediu para parar (T-a) ou o bootstrap
+    // da passada deixou de ser da sessão viva (T-c).
     bool superseded() {
-      if (_passStillValid(epoch)) return false;
+      // F70-1: o coordenador saiu de cena (container descartado): para sem
+      // tocar em mais nada.
+      if (!ref.mounted) return true;
+      // dart format off
+      if (_passStillValid(epoch) && !_held && _passSessionStillLive(passSession)) return false;
+      // dart format on
       _stopSuperseded();
       return true;
     }
@@ -142,6 +238,12 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
         state = state.copyWith(isRunning: false);
         return;
       }
+      passSession = session;
+      final liveAuth = ref.read(authStateProvider).asData?.value;
+      // dart format off
+      if (!bootstrapMatchesLiveSession(session, liveAuth)) return; // T-c: bootstrap de outra sessão, a passada não roda
+      // dart format on
+      passStarted = true;
       final tenantId = session.activeTenant.tenantId;
 
       try {
@@ -245,6 +347,14 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       state = state.copyWith(isRunning: false, lastSafeError: _safeMessage(e));
     } finally {
       _running = false;
+      // T-c: a passada que não rodou também deixa de estar "em andamento".
+      if (ref.mounted && passSession != null && !passStarted) {
+        state = state.copyWith(isRunning: false);
+      }
+      // T-a: quem espera a troca fica sabendo que a passada terminou.
+      final ended = _passEnded;
+      _passEnded = null;
+      ended?.complete();
     }
   }
 

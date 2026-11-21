@@ -52,6 +52,75 @@ final class ApiServerError extends ApiError {
   final int statusCode;
 }
 
+// ── B-APP-ORG (itens 69 e 70): a escolha e a troca de organização ────────────
+
+/// Uma organização que o servidor ofereceu no 409 do login (`error.tenants`).
+/// Só o identificador e o nome: nada além do que o servidor mandou.
+final class TenantChoice {
+  const TenantChoice(this.id, this.name);
+
+  final String id;
+  final String name;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TenantChoice && other.id == id && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(id, name);
+
+  @override
+  String toString() => 'TenantChoice($id)';
+}
+
+const kTenantSelectionRequiredMessage =
+    'Sua senha vale em mais de uma organização. Escolha a organização para '
+    'entrar.';
+const kTenantSwitchRefusedMessage =
+    'Não foi possível entrar nessa organização. Fale com o administrador.';
+const kTenantSwitchMismatchMessage =
+    'Não foi possível trocar de organização agora. Você continua na '
+    'organização atual.';
+
+/// 69: o login sem organização recebeu o 409 com a lista. A pessoa escolhe
+/// uma das [tenants], e só delas.
+final class TenantSelectionRequiredError extends ApiError {
+  const TenantSelectionRequiredError(
+    this.tenants, [
+    super.safeMessage = kTenantSelectionRequiredMessage,
+  ]);
+
+  final List<TenantChoice> tenants;
+}
+
+/// 70: o servidor recusou a troca (403: sem vínculo, inativo ou suspensa). A
+/// sessão atual fica como está. Herda direto de [ApiError]: não é sessão morta.
+final class TenantSwitchRefusedError extends ApiError {
+  const TenantSwitchRefusedError([
+    super.safeMessage = kTenantSwitchRefusedMessage,
+  ]);
+}
+
+/// 70: a troca respondeu com outra organização que não a pedida. O app recusa
+/// e fica na atual (fail-closed).
+final class TenantSwitchMismatchError extends ApiError {
+  const TenantSwitchMismatchError([
+    super.safeMessage = kTenantSwitchMismatchMessage,
+  ]);
+}
+
+/// §A1 (T-b): o pedido era de outra sessão e foi recusado sem sair do aparelho.
+/// "Não tentou": quem recebe volta a ação a pendente sem gastar tentativa.
+// dart format off
+const kSessionChangedMessage = 'A organização mudou. Nada foi enviado; o que ficou pendente sai quando você voltar a ela.';
+// dart format on
+
+/// Herda direto de [ApiError], nunca de [ApiUnauthorizedError]: um
+/// `on ApiUnauthorizedError` leva a ação a `conflict` ou manda ao login.
+final class ApiSessionChangedError extends ApiError {
+  const ApiSessionChangedError() : super(kSessionChangedMessage);
+}
+
 /// Thrown by Pending* stubs when the remote integration is not yet active.
 /// UIs must catch this and display a controlled, user-friendly message.
 final class ApiIntegrationUnavailableError extends ApiError {

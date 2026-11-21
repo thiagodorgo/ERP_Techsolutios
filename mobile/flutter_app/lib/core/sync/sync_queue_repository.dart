@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'sync_models.dart';
 import 'sync_action_store.dart';
 
@@ -20,10 +22,27 @@ abstract class TransactionalSyncQueue implements SyncQueueRepository {
   );
 }
 
-class PersistentSyncQueueRepository implements TransactionalSyncQueue {
+/// B-APP-ORG (F70-2) — a fila que avisa quando muda (enfileirar, atualizar,
+/// gravar em lote), para quem conta pendências recalcular. Fora da interface
+/// [SyncQueueRepository]: os fakes de fila dos testes não mudam.
+abstract class ObservableSyncQueue {
+  /// Um evento depois de cada mutação da fila (com sucesso ou não).
+  Stream<void> get changes;
+}
+
+class PersistentSyncQueueRepository
+    implements TransactionalSyncQueue, ObservableSyncQueue {
   PersistentSyncQueueRepository(this._store);
 
   final SyncActionStore _store;
+
+  // Síncrono: quem conta já recalcula quando a mutação devolve o controle.
+  final StreamController<void> _changes = StreamController<void>.broadcast(
+    sync: true,
+  );
+
+  @override
+  Stream<void> get changes => _changes.stream;
 
   // B-O6R-11 (Ω6R-QUA-005) — `enqueue` e `update` são read-modify-write da fila INTEIRA
   // (`load()` → altera → `save(tudo)`). A fila é UMA instância partilhada
@@ -35,7 +54,8 @@ class PersistentSyncQueueRepository implements TransactionalSyncQueue {
   Future<void> _tail = Future<void>.value();
 
   Future<T> _serialized<T>(Future<T> Function() op) {
-    final run = _tail.then((_) => op());
+    // F70-2: toda mutação passa por aqui; ao terminar, a fila avisa.
+    final run = _tail.then((_) => op()).whenComplete(() => _changes.add(null));
     // Erro de uma mutação não trava a fila: a próxima roda mesmo assim, e o erro continua
     // chegando a quem chamou, por `run`.
     _tail = run.then<void>((_) {}, onError: (Object _) {});
@@ -140,8 +160,17 @@ class PersistentSyncQueueRepository implements TransactionalSyncQueue {
   }
 }
 
-class InMemorySyncQueueRepository implements SyncQueueRepository {
+class InMemorySyncQueueRepository
+    implements SyncQueueRepository, ObservableSyncQueue {
   final Map<String, SyncAction> _actionsById = <String, SyncAction>{};
+
+  // Síncrono: quem conta já recalcula quando a mutação devolve o controle.
+  final StreamController<void> _changes = StreamController<void>.broadcast(
+    sync: true,
+  );
+
+  @override
+  Stream<void> get changes => _changes.stream;
 
   @override
   Future<void> enqueue(SyncAction action) async {
@@ -154,6 +183,7 @@ class InMemorySyncQueueRepository implements SyncQueueRepository {
     }
 
     _actionsById.putIfAbsent(action.clientActionId, () => action);
+    _changes.add(null);
   }
 
   @override
@@ -179,5 +209,6 @@ class InMemorySyncQueueRepository implements SyncQueueRepository {
   @override
   Future<void> update(SyncAction action) async {
     _actionsById[action.clientActionId] = action;
+    _changes.add(null);
   }
 }

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1331** |
-| IDs distintos | 1316 |
-| **ABERTAS** | **1009** |
+| Cabecalhos `## P-` | **1337** |
+| IDs distintos | 1322 |
+| **ABERTAS** | **1015** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **948** |
+| — das quais **ativas nesta rodada** | **954** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 318 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1331 cabecalhos para 1316 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1337 cabecalhos para 1322 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 380
+## ABERTAS · balde A — material — 383
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -429,33 +429,36 @@
 | `P-APP-CHECKLIST-MODELO-DEMO-NO-REAL` | 16866 | MÉDIA | sim | P-APP-CHECKLIST-MODELO-DEMO-NO-REAL (2026-11-16) — os modelos de vistoria de demonstraçã |
 | `P-APP-TEXTOS-SEM-ACENTO` | 16873 | MÉDIA | sim | P-APP-TEXTOS-SEM-ACENTO (2026-11-16) — textos do app sem acento — MÉDIA |
 | `P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA` | 16888 | ALTA | sim | P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA (2026-11-16) — o app não deixa escolher a organização  |
-| `P-APP-TROCA-ORG-NAO-TROCA` | 16895 | ALTA | sim | P-APP-TROCA-ORG-NAO-TROCA (2026-11-16) — a troca de organização no app não troca — ALTA |
-| `P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR` | 16918 | ALTA | sim | P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fil |
-| `P-GUI02-DISPATCHER-LER-MODELOS` | 16956 | ALTA | sim | P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da O |
-| `P-GUI02-VISTORIA-ENVIADA-POR-LINHA` | 16963 | MÉDIA | sim | P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistor |
-| `P-RBAC-TECNICO-LEITURAS-FORA-DE-OS` | 17005 | CRÍTICA | sim | P-RBAC-TECNICO-LEITURAS-FORA-DE-OS (2026-11-17) — o catálogo dá ao técnico leitura da or |
-| `P-DESPACHO-EX-TECNICO-MUTACAO` | 17020 | MÉDIA | sim | P-DESPACHO-EX-TECNICO-MUTACAO (2026-11-17) — o ex-técnico ainda transiciona o despacho a |
-| `P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR` | 17035 | MÉDIA | sim | P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR (2026-11-17) — com o app aberto, a volta da rede |
-| `P-OS-CONCLUSAO-EVENTO-DUPLO` | 17070 | MÉDIA | sim | P-OS-CONCLUSAO-EVENTO-DUPLO (2026-11-17) — duas conclusões simultâneas da mesma OS grava |
-| `P-PLAT-PAPEL-SEM-RELEITURA` | 17116 | MÉDIA | sim | P-PLAT-PAPEL-SEM-RELEITURA (2026-11-17) — as rotas da plataforma não releem papel nem pe |
-| `P-NODE-ENV-AUSENTE-E-DEV` | 17144 | CRÍTICA | sim | P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 |
-| `P-AWS-MIGRADOR` | 17223 | ALTA | sim | P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS —  |
-| `P-AWS-BACKUP-PGDUMP` | 17230 | MÉDIA | sim | P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS |
-| `P-FRONT-API-BASE-URL` | 17244 | MÉDIA | sim | P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em ve |
-| `P-AWS-SSE-TIMEOUT` | 17251 | MÉDIA | sim | P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou p |
-| `P-AWS-PORTAL-TENANT` | 17258 | MÉDIA | sim | P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant |
-| `P-AWS-IP-FIXO` | 17265 | MÉDIA | sim | P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco  |
-| `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO` | 17300 | MÉDIA | sim | P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai  |
-| `P-USERS-TELA-SEM-PAPEIS-DE-CAMPO` | 17321 | MÉDIA | sim | P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_te |
-| `P-WO-LEITURA-DESPACHANTE-VISTORIA` | 17335 | MÉDIA | sim | P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias |
-| `P-AWS-CUSTO-VIRGINIA` | 17342 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
-| `P-AWS-LGPD-TRANSFERENCIA` | 17349 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
-| `P-ASS-OPERACAO-COBRANCA-TELA` | 17356 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
-| `P-08C3-TESTES-DB-DE-VERDADE` | 17370 | MÉDIA | sim | P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda  |
-| `P-T13-INJETADO-PONTO-CEGO` | 17378 | MÉDIA | sim | P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em mé |
-| `P-AWS-ROTEIRO-TRACCAR-DIVERGE` | 17428 | ALTA | sim | P-AWS-ROTEIRO-TRACCAR-DIVERGE (2026-11-20) — o roteiro da AWS para o Traccar (fases 3c e |
+| `P-APP-TROCA-ORG-NAO-TROCA` | 16896 | ALTA | sim | P-APP-TROCA-ORG-NAO-TROCA (2026-11-16) — a troca de organização no app não troca — ALTA |
+| `P-APP-ORG-MAIS-DE-3` | 16904 | MÉDIA | sim | P-APP-ORG-MAIS-DE-3 (2026-11-20) — quem tem o e-mail em 4 ou mais organizações não entra |
+| `P-APP-ORG-VINCULAR-PELO-APP` | 16911 | MÉDIA | sim | P-APP-ORG-VINCULAR-PELO-APP (2026-11-20) — a pessoa não consegue ligar, pelo app, o aces |
+| `P-APP-CACHE-NEGOCIO-SO-POR-ORGANIZACAO` | 16932 | MÉDIA | sim | P-APP-CACHE-NEGOCIO-SO-POR-ORGANIZACAO (2026-11-20) — o cache de OS, despesas e vistoria |
+| `P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR` | 16962 | ALTA | sim | P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fil |
+| `P-GUI02-DISPATCHER-LER-MODELOS` | 17000 | ALTA | sim | P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da O |
+| `P-GUI02-VISTORIA-ENVIADA-POR-LINHA` | 17007 | MÉDIA | sim | P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistor |
+| `P-RBAC-TECNICO-LEITURAS-FORA-DE-OS` | 17049 | CRÍTICA | sim | P-RBAC-TECNICO-LEITURAS-FORA-DE-OS (2026-11-17) — o catálogo dá ao técnico leitura da or |
+| `P-DESPACHO-EX-TECNICO-MUTACAO` | 17064 | MÉDIA | sim | P-DESPACHO-EX-TECNICO-MUTACAO (2026-11-17) — o ex-técnico ainda transiciona o despacho a |
+| `P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR` | 17079 | MÉDIA | sim | P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR (2026-11-17) — com o app aberto, a volta da rede |
+| `P-OS-CONCLUSAO-EVENTO-DUPLO` | 17115 | MÉDIA | sim | P-OS-CONCLUSAO-EVENTO-DUPLO (2026-11-17) — duas conclusões simultâneas da mesma OS grava |
+| `P-PLAT-PAPEL-SEM-RELEITURA` | 17161 | MÉDIA | sim | P-PLAT-PAPEL-SEM-RELEITURA (2026-11-17) — as rotas da plataforma não releem papel nem pe |
+| `P-NODE-ENV-AUSENTE-E-DEV` | 17189 | CRÍTICA | sim | P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 |
+| `P-AWS-MIGRADOR` | 17268 | ALTA | sim | P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS —  |
+| `P-AWS-BACKUP-PGDUMP` | 17275 | MÉDIA | sim | P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS |
+| `P-FRONT-API-BASE-URL` | 17289 | MÉDIA | sim | P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em ve |
+| `P-AWS-SSE-TIMEOUT` | 17296 | MÉDIA | sim | P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou p |
+| `P-AWS-PORTAL-TENANT` | 17303 | MÉDIA | sim | P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant |
+| `P-AWS-IP-FIXO` | 17310 | MÉDIA | sim | P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco  |
+| `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO` | 17345 | MÉDIA | sim | P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai  |
+| `P-USERS-TELA-SEM-PAPEIS-DE-CAMPO` | 17366 | MÉDIA | sim | P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_te |
+| `P-WO-LEITURA-DESPACHANTE-VISTORIA` | 17380 | MÉDIA | sim | P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias |
+| `P-AWS-CUSTO-VIRGINIA` | 17387 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
+| `P-AWS-LGPD-TRANSFERENCIA` | 17394 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
+| `P-ASS-OPERACAO-COBRANCA-TELA` | 17401 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
+| `P-08C3-TESTES-DB-DE-VERDADE` | 17415 | MÉDIA | sim | P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda  |
+| `P-T13-INJETADO-PONTO-CEGO` | 17423 | MÉDIA | sim | P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em mé |
+| `P-AWS-ROTEIRO-TRACCAR-DIVERGE` | 17473 | ALTA | sim | P-AWS-ROTEIRO-TRACCAR-DIVERGE (2026-11-20) — o roteiro da AWS para o Traccar (fases 3c e |
 
-## ABERTAS · balde B — processo/registro — 568
+## ABERTAS · balde B — processo/registro — 571
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -983,50 +986,53 @@
 | `P-OS-LISTA-SEM-CIDADE` | 16819 | BAIXA | sim | P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entre |
 | `P-OS-REBOQUE-SEM-MODELO-E-COR` | 16826 | BAIXA | sim | P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo |
 | `P-572-GUARDA-PULA-NUL` | 16859 | BAIXA | sim | P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto c |
-| `P-GUI00-ERRO-ESCOLHE-A-DIRETO` | 16902 | BAIXA | sim | P-GUI00-ERRO-ESCOLHE-A-DIRETO (2026-11-17) — no caminho de erro, três telas do app escol |
-| `P-SAN305-T15-PORTA-SUBSTRING` | 16949 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 do `B-SAN3-05` compara a porta com `in |
-| `P-GUI02-QUEM-ESCOLHEU` | 16970 | BAIXA | sim | P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA |
-| `P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO` | 16977 | BAIXA | sim | P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o  |
-| `P-GUI02-ESPELHO-OS-EM-VOO` | 16984 | BAIXA | sim | P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o e |
-| `P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO` | 16991 | BAIXA | sim | P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" nu |
-| `P-WO-LEITURA-ID-EM-FROTA` | 16998 | BAIXA | sim | P-WO-LEITURA-ID-EM-FROTA (2026-11-17) — `damages`, `fuel-logs` e `service-quotes` expõem |
-| `P-MOBILE-AVAILABILITY-TENANT-ID` | 17012 | BAIXA | sim | P-MOBILE-AVAILABILITY-TENANT-ID (2026-11-17) — `GET /mobile/inventory/availability` põe  |
-| `P-NOTIF-DECISAO-EX-TECNICO` | 17027 | BAIXA | sim | P-NOTIF-DECISAO-EX-TECNICO (2026-11-17) — a exceção do ex-técnico no `API_CONTRACTS.md`  |
-| `P-APP-INICIO-PENDENTES-FANTASMA` | 17042 | BAIXA | sim | P-APP-INICIO-PENDENTES-FANTASMA (2026-11-17) — a Início mostra "2 pendentes" com 0 pende |
-| `P-APP-TESTE-OSCILA-MAQUINA-CARREGADA` | 17049 | BAIXA | sim | P-APP-TESTE-OSCILA-MAQUINA-CARREGADA (2026-11-17) — flakiness do teste de sessão sob con |
-| `P-APP-LIGAR-SEM-DISCADOR` | 17056 | BAIXA | sim | P-APP-LIGAR-SEM-DISCADOR (2026-11-17) — o botão de ligar do detalhe do app exige um paco |
-| `P-APROV-MEMORIA-SEM-CAS` | 17063 | BAIXA | sim | P-APROV-MEMORIA-SEM-CAS (2026-11-17) — o repositório em memória das aprovações não é CAS |
-| `P-SAN305-T15-PORTA-SUBSTRING` | 17101 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 compara a porta com `includes` no log  |
-| `P-PLAT-PORTAO-SEM-ORG-PLATAFORMA` | 17123 | BAIXA | sim | P-PLAT-PORTAO-SEM-ORG-PLATAFORMA (2026-11-17) — o portão da plataforma não confere se o  |
-| `P-FRONT-ATALHO-SUPER-ADMIN` | 17130 | BAIXA | sim | P-FRONT-ATALHO-SUPER-ADMIN (2026-11-17) — o front libera toda permissão para "Super Admi |
-| `P-CLOUD-CHARGE-ROUTER-ORFAO` | 17137 | BAIXA | sim | P-CLOUD-CHARGE-ROUTER-ORFAO (2026-11-17) — `cloud-charge.routes.ts` está exportado e não |
-| `P-PARSE-ROLES-SEM-TRIM` | 17151 | BAIXA | sim | P-PARSE-ROLES-SEM-TRIM (2026-11-17) — `parseRoles` devolve o papel sem trim, e `ROLE_PER |
-| `P-VARREDURAS-SEM-USE-SEM-CAMINHO` | 17158 | BAIXA | sim | P-VARREDURAS-SEM-USE-SEM-CAMINHO (2026-11-17) — as 3 varreduras irmãs não enumeram camad |
-| `P-ENV-EXAMPLE-RUNTIME-GUARD` | 17165 | BAIXA | sim | P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.e |
-| `P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE` | 17172 | BAIXA | sim | P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchFo |
-| `P-MOBILE-INVENTORY-MANAGE-SEM-USO` | 17195 | BAIXA | sim | P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-s |
-| `P-AWS-IMAGEM-ARM64` | 17202 | BAIXA | sim | P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AW |
-| `P-AWS-VALKEY-TLS` | 17237 | BAIXA | sim | P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — |
-| `P-AWS-CLAMAV-ARM64` | 17272 | BAIXA | sim | P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA |
-| `P-AWS-CLAMAV-IMAGEM` | 17279 | BAIXA | sim | P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no iníc |
-| `P-AWS-TRACCAR-ARM64` | 17286 | BAIXA | sim | P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA |
-| `P-WO-ORACULO-403-404-ESCRITA` | 17293 | BAIXA | sim | P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexisten |
-| `P-ATTACHMENTS-WORK-ORDER-SEM-PORTA` | 17307 | BAIXA | sim | P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` r |
-| `P-PAINEL-SUPORTE-SCOPED` | 17314 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
-| `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17328 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
-| `P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT` | 17363 | BAIXA | sim | P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração o |
-| `P-08C3-40P01-CRU` | 17385 | BAIXA | sim | P-08C3-40P01-CRU (2026-11-20) — o deadlock no estorno cruzado sobe como erro cru (`P2010 |
-| `P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO` | 17393 | BAIXA | sim | P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO (2026-11-20) — o crédito desfeito muda o total |
-| `P-08C3-FOCUS-404-NO-SANDBOX` | 17400 | BAIXA | sim | P-08C3-FOCUS-404-NO-SANDBOX (2026-11-20) — confirmar no sandbox que o Focus responde 404 |
-| `P-08C3-EVENTOS-ASAAS-NO-SANDBOX` | 17407 | BAIXA | sim | P-08C3-EVENTOS-ASAAS-NO-SANDBOX (2026-11-20) — conferir no sandbox a lista `ASAAS_WEBHOO |
-| `P-08C3-CLOSE-TIMEOUT-FRIO` | 17414 | BAIXA | sim | P-08C3-CLOSE-TIMEOUT-FRIO (2026-11-20) — o 1º fechamento de um processo frio, sob carga, |
-| `P-08C3-NOTAS-JUNTA-C2` | 17421 | BAIXA | sim | P-08C3-NOTAS-JUNTA-C2 (2026-11-20) — duas notas não graves da C2 da junta do #608 (C2-N3 |
-| `P-SYNC-SETSTATE-NO-BUILD` | 17443 | BAIXA | sim | P-SYNC-SETSTATE-NO-BUILD (2026-11-20) — a tela de Sincronização do app dispara "setState |
-| `P-SYNC-LINHA-TRANSBORDA-390` | 17450 | BAIXA | sim | P-SYNC-LINHA-TRANSBORDA-390 (2026-11-20) — na tela de Sincronização, uma linha transbord |
-| `P-APPORG-RESUMO-POR-ORGANIZACAO` | 17457 | BAIXA | sim | P-APPORG-RESUMO-POR-ORGANIZACAO (2026-11-20) — falta no backend o resumo por organização |
-| `P-API-CLIENT-DETAILS-DESCARTADO` | 17464 | — | sim | P-API-CLIENT-DETAILS-DESCARTADO (2026-11-20) — o cliente de API da web descarta o `detai |
-| `P-ASS10C-FORMA-DA-COBRANCA` | 17471 | — | sim | P-ASS10C-FORMA-DA-COBRANCA (2026-11-20) — a forma de cada cobrança não vem nas respostas |
-| `P-USRCON-R11-R12-SEM-CASO-DB` | 17478 | BAIXA | sim | P-USRCON-R11-R12-SEM-CASO-DB (2026-11-20) — no banco, as leituras R11 e R12 do despachan |
+| `P-WEB-TROCA-NAO-REVOGA-ORIGEM` | 16918 | BAIXA | sim | P-WEB-TROCA-NAO-REVOGA-ORIGEM (2026-11-20) — a troca de organização no web deixa a sessã |
+| `P-APP-ENTRAR-APARENCIA-ANTES-DO-LOGIN` | 16925 | BAIXA | sim | P-APP-ENTRAR-APARENCIA-ANTES-DO-LOGIN (2026-11-20) — a tela Entrar não sabe que aparênci |
+| `P-APP-TELEMETRIA-SESSAO-EXPIRADA-GASTA-TENTATIVA` | 16939 | BAIXA | sim | P-APP-TELEMETRIA-SESSAO-EXPIRADA-GASTA-TENTATIVA (2026-11-20) — o envio de telemetria do |
+| `P-GUI00-ERRO-ESCOLHE-A-DIRETO` | 16946 | BAIXA | sim | P-GUI00-ERRO-ESCOLHE-A-DIRETO (2026-11-17) — no caminho de erro, três telas do app escol |
+| `P-SAN305-T15-PORTA-SUBSTRING` | 16993 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 do `B-SAN3-05` compara a porta com `in |
+| `P-GUI02-QUEM-ESCOLHEU` | 17014 | BAIXA | sim | P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA |
+| `P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO` | 17021 | BAIXA | sim | P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o  |
+| `P-GUI02-ESPELHO-OS-EM-VOO` | 17028 | BAIXA | sim | P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o e |
+| `P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO` | 17035 | BAIXA | sim | P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" nu |
+| `P-WO-LEITURA-ID-EM-FROTA` | 17042 | BAIXA | sim | P-WO-LEITURA-ID-EM-FROTA (2026-11-17) — `damages`, `fuel-logs` e `service-quotes` expõem |
+| `P-MOBILE-AVAILABILITY-TENANT-ID` | 17056 | BAIXA | sim | P-MOBILE-AVAILABILITY-TENANT-ID (2026-11-17) — `GET /mobile/inventory/availability` põe  |
+| `P-NOTIF-DECISAO-EX-TECNICO` | 17071 | BAIXA | sim | P-NOTIF-DECISAO-EX-TECNICO (2026-11-17) — a exceção do ex-técnico no `API_CONTRACTS.md`  |
+| `P-APP-INICIO-PENDENTES-FANTASMA` | 17086 | BAIXA | sim | P-APP-INICIO-PENDENTES-FANTASMA (2026-11-17) — a Início mostra "2 pendentes" com 0 pende |
+| `P-APP-TESTE-OSCILA-MAQUINA-CARREGADA` | 17093 | BAIXA | sim | P-APP-TESTE-OSCILA-MAQUINA-CARREGADA (2026-11-17) — flakiness do teste de sessão sob con |
+| `P-APP-LIGAR-SEM-DISCADOR` | 17101 | BAIXA | sim | P-APP-LIGAR-SEM-DISCADOR (2026-11-17) — o botão de ligar do detalhe do app exige um paco |
+| `P-APROV-MEMORIA-SEM-CAS` | 17108 | BAIXA | sim | P-APROV-MEMORIA-SEM-CAS (2026-11-17) — o repositório em memória das aprovações não é CAS |
+| `P-SAN305-T15-PORTA-SUBSTRING` | 17146 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 compara a porta com `includes` no log  |
+| `P-PLAT-PORTAO-SEM-ORG-PLATAFORMA` | 17168 | BAIXA | sim | P-PLAT-PORTAO-SEM-ORG-PLATAFORMA (2026-11-17) — o portão da plataforma não confere se o  |
+| `P-FRONT-ATALHO-SUPER-ADMIN` | 17175 | BAIXA | sim | P-FRONT-ATALHO-SUPER-ADMIN (2026-11-17) — o front libera toda permissão para "Super Admi |
+| `P-CLOUD-CHARGE-ROUTER-ORFAO` | 17182 | BAIXA | sim | P-CLOUD-CHARGE-ROUTER-ORFAO (2026-11-17) — `cloud-charge.routes.ts` está exportado e não |
+| `P-PARSE-ROLES-SEM-TRIM` | 17196 | BAIXA | sim | P-PARSE-ROLES-SEM-TRIM (2026-11-17) — `parseRoles` devolve o papel sem trim, e `ROLE_PER |
+| `P-VARREDURAS-SEM-USE-SEM-CAMINHO` | 17203 | BAIXA | sim | P-VARREDURAS-SEM-USE-SEM-CAMINHO (2026-11-17) — as 3 varreduras irmãs não enumeram camad |
+| `P-ENV-EXAMPLE-RUNTIME-GUARD` | 17210 | BAIXA | sim | P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.e |
+| `P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE` | 17217 | BAIXA | sim | P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchFo |
+| `P-MOBILE-INVENTORY-MANAGE-SEM-USO` | 17240 | BAIXA | sim | P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-s |
+| `P-AWS-IMAGEM-ARM64` | 17247 | BAIXA | sim | P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AW |
+| `P-AWS-VALKEY-TLS` | 17282 | BAIXA | sim | P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — |
+| `P-AWS-CLAMAV-ARM64` | 17317 | BAIXA | sim | P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA |
+| `P-AWS-CLAMAV-IMAGEM` | 17324 | BAIXA | sim | P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no iníc |
+| `P-AWS-TRACCAR-ARM64` | 17331 | BAIXA | sim | P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA |
+| `P-WO-ORACULO-403-404-ESCRITA` | 17338 | BAIXA | sim | P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexisten |
+| `P-ATTACHMENTS-WORK-ORDER-SEM-PORTA` | 17352 | BAIXA | sim | P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` r |
+| `P-PAINEL-SUPORTE-SCOPED` | 17359 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
+| `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17373 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
+| `P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT` | 17408 | BAIXA | sim | P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração o |
+| `P-08C3-40P01-CRU` | 17430 | BAIXA | sim | P-08C3-40P01-CRU (2026-11-20) — o deadlock no estorno cruzado sobe como erro cru (`P2010 |
+| `P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO` | 17438 | BAIXA | sim | P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO (2026-11-20) — o crédito desfeito muda o total |
+| `P-08C3-FOCUS-404-NO-SANDBOX` | 17445 | BAIXA | sim | P-08C3-FOCUS-404-NO-SANDBOX (2026-11-20) — confirmar no sandbox que o Focus responde 404 |
+| `P-08C3-EVENTOS-ASAAS-NO-SANDBOX` | 17452 | BAIXA | sim | P-08C3-EVENTOS-ASAAS-NO-SANDBOX (2026-11-20) — conferir no sandbox a lista `ASAAS_WEBHOO |
+| `P-08C3-CLOSE-TIMEOUT-FRIO` | 17459 | BAIXA | sim | P-08C3-CLOSE-TIMEOUT-FRIO (2026-11-20) — o 1º fechamento de um processo frio, sob carga, |
+| `P-08C3-NOTAS-JUNTA-C2` | 17466 | BAIXA | sim | P-08C3-NOTAS-JUNTA-C2 (2026-11-20) — duas notas não graves da C2 da junta do #608 (C2-N3 |
+| `P-SYNC-SETSTATE-NO-BUILD` | 17488 | BAIXA | sim | P-SYNC-SETSTATE-NO-BUILD (2026-11-20) — a tela de Sincronização do app dispara "setState |
+| `P-SYNC-LINHA-TRANSBORDA-390` | 17495 | BAIXA | sim | P-SYNC-LINHA-TRANSBORDA-390 (2026-11-20) — na tela de Sincronização, uma linha transbord |
+| `P-APPORG-RESUMO-POR-ORGANIZACAO` | 17502 | BAIXA | sim | P-APPORG-RESUMO-POR-ORGANIZACAO (2026-11-20) — falta no backend o resumo por organização |
+| `P-API-CLIENT-DETAILS-DESCARTADO` | 17509 | — | sim | P-API-CLIENT-DETAILS-DESCARTADO (2026-11-20) — o cliente de API da web descarta o `detai |
+| `P-ASS10C-FORMA-DA-COBRANCA` | 17516 | — | sim | P-ASS10C-FORMA-DA-COBRANCA (2026-11-20) — a forma de cada cobrança não vem nas respostas |
+| `P-USRCON-R11-R12-SEM-CASO-DB` | 17523 | BAIXA | sim | P-USRCON-R11-R12-SEM-CASO-DB (2026-11-20) — no banco, as leituras R11 e R12 do despachan |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -1406,13 +1412,13 @@
 | `P-T17-FILA-B-CHECAGEM-SEM-PID` | 16762 | BAIXA | sim | P-T17-FILA-B-CHECAGEM-SEM-PID (2026-11-15) — a checagem "R depois de A" do [T-17-FILA-db |
 | `P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA` | 16841 | MÉDIA | sim | P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor c |
 | `P-KPI-APPEND-FLUTTER-OUTRAS` | 16880 | BAIXA | sim | P-KPI-APPEND-FLUTTER-OUTRAS (2026-11-17) — o anexador de histórico de KPI não lê o fim d |
-| `P-08C2-CLOSE-POOL-PRESO` | 16909 | MÉDIA | sim | P-08C2-CLOSE-POOL-PRESO (2026-11-17) — 10 fechamentos concorrentes de um demonstrativo n |
-| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 16925 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — o corte da varredura na composição em  |
-| `P-08C2-GSISO-ANTIGOS` | 16933 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-16) — o critério GS-ISO só vale para os arquivos de teste  |
-| `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 16941 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — a reconsulta da nota não preenche o `provid |
-| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 17077 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — a composição em memória da varredura n |
-| `P-08C2-GSISO-ANTIGOS` | 17085 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-17) — seis suítes antigas ainda criam o outbox sem `tenant |
-| `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 17093 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — o `provider_invoice_id` continua nulo depoi |
-| `P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS` | 17108 | MÉDIA | sim | P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS (2026-11-17) — o `npm test` local trava sem fim no |
-| `P-SAN305-T10-VIRADA-DA-MEIA-NOITE` | 17179 | BAIXA | sim | P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia- |
-| `P-PLATAFORMA-PERMISSAO-IGNORADA` | 17187 | ALTA | sim | P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma fal |
+| `P-08C2-CLOSE-POOL-PRESO` | 16953 | MÉDIA | sim | P-08C2-CLOSE-POOL-PRESO (2026-11-17) — 10 fechamentos concorrentes de um demonstrativo n |
+| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 16969 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — o corte da varredura na composição em  |
+| `P-08C2-GSISO-ANTIGOS` | 16977 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-16) — o critério GS-ISO só vale para os arquivos de teste  |
+| `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 16985 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — a reconsulta da nota não preenche o `provid |
+| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 17122 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — a composição em memória da varredura n |
+| `P-08C2-GSISO-ANTIGOS` | 17130 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-17) — seis suítes antigas ainda criam o outbox sem `tenant |
+| `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 17138 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — o `provider_invoice_id` continua nulo depoi |
+| `P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS` | 17153 | MÉDIA | sim | P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS (2026-11-17) — o `npm test` local trava sem fim no |
+| `P-SAN305-T10-VIRADA-DA-MEIA-NOITE` | 17224 | BAIXA | sim | P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia- |
+| `P-PLATAFORMA-PERMISSAO-IGNORADA` | 17232 | ALTA | sim | P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma fal |

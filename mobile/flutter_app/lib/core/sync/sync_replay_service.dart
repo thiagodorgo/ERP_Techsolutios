@@ -6,6 +6,7 @@ import '../network/http_client.dart';
 import '../network/work_order_api_codec.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
+import 'sync_session_changed.dart';
 import 'sync_session_expired.dart';
 
 // ── Result model ──────────────────────────────────────────────────────────────
@@ -339,6 +340,17 @@ class SyncReplayService {
       // dart format on
       for (final action in syncing) {
         await _queue.update(backToPendingSessionExpired(action));
+      }
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
+      );
+      // dart format off
+    } on ApiSessionChangedError { // sessão trocou: lote de despesa
+      // dart format on
+      for (final action in syncing) {
+        await _queue.update(backToPendingSessionChanged(action));
       }
       return SyncReplayResult(
         synced: synced,
@@ -1220,6 +1232,13 @@ class WorkOrderSyncReplayService {
         await _queue.update(backToPendingSessionExpired(a));
       }
       return const SyncReplayResult(synced: [], failed: [], conflicts: []);
+      // dart format off
+    } on ApiSessionChangedError { // sessão trocou: lote de OS
+      // dart format on
+      for (final a in syncing) {
+        await _queue.update(backToPendingSessionChanged(a));
+      }
+      return const SyncReplayResult(synced: [], failed: [], conflicts: []);
     } catch (_) {
       final failed = <SyncAction>[];
       for (final a in syncing) {
@@ -1939,6 +1958,13 @@ class ChecklistSyncReplayService {
       // dart format on
       for (final a in syncing) {
         await _queue.update(backToPendingSessionExpired(a));
+      }
+      return const SyncReplayResult(synced: [], failed: [], conflicts: []);
+      // dart format off
+    } on ApiSessionChangedError { // sessão trocou: lote de checklist
+      // dart format on
+      for (final a in syncing) {
+        await _queue.update(backToPendingSessionChanged(a));
       }
       return const SyncReplayResult(synced: [], failed: [], conflicts: []);
     } catch (_) {

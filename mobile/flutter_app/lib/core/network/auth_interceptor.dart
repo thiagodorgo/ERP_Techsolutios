@@ -10,6 +10,12 @@ import '../auth/session_renewal.dart';
 /// - `onError`, num 401 de pedido comum: o pedido já repetido expira pela época
 ///   dele; senão pede a renovação (uma só no app inteiro, no notifier) com o
 ///   token que falhou e a época do pedido, e decide pelo desfecho.
+///
+/// B-APP-ORG (T-b, Emenda 1 §A1 e §A4): o cliente é da sessão que o criou
+/// ([boundSessionKey]). Se a sessão viva existe e é outra, o pedido é recusado
+/// antes de sair, com [SessionChangedLocalError] (o `mapDioError` o converte
+/// no erro de sessão trocada, "não tentou"). Sem sessão viva, o pedido
+/// segue como hoje.
 class AuthRefreshInterceptor extends Interceptor {
   AuthRefreshInterceptor({
     required this.client,
@@ -17,6 +23,8 @@ class AuthRefreshInterceptor extends Interceptor {
     required this.expire,
     required this.currentAccessToken,
     required this.currentEpoch,
+    this.boundSessionKey,
+    this.currentSessionKey = _noLiveSessionKey,
   });
 
   final Dio client;
@@ -37,6 +45,27 @@ class AuthRefreshInterceptor extends Interceptor {
   /// A época da sessão de agora.
   final int Function() currentEpoch;
 
+  /// T-b: a chave (`sessionKeyOf`) da sessão de quando o cliente nasceu.
+  final String? boundSessionKey;
+
+  /// T-b: a chave da sessão viva de agora (`null` sem sessão autenticada).
+  final String? Function() currentSessionKey;
+
+  static String? _noLiveSessionKey() => null;
+
+  /// T-b: recusa só quando a sessão viva existe e é outra.
+  bool _sessionChanged() {
+    final live = currentSessionKey();
+    return live != null && live != boundSessionKey;
+  }
+
+  static DioException _sessionChangedRequest(RequestOptions options) =>
+      DioException(
+        requestOptions: options,
+        type: DioExceptionType.cancel,
+        error: const SessionChangedLocalError(),
+      );
+
   static const _skipPaths = {
     '/api/v1/auth/login',
     '/api/v1/auth/refresh',
@@ -48,6 +77,9 @@ class AuthRefreshInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (!_isAuthPath(options.path)) {
+      // dart format off
+      if (_sessionChanged()) return handler.reject(_sessionChangedRequest(options)); // T-b: cliente de outra sessão
+      // dart format on
       options.extra.putIfAbsent('_authEpoch', currentEpoch);
       if (options.extra['_authRetry'] != true) {
         final token = currentAccessToken();
@@ -120,4 +152,14 @@ class AuthRefreshInterceptor extends Interceptor {
     type: DioExceptionType.connectionError,
     error: err.error,
   );
+}
+
+/// B-APP-ORG (T-b): o marcador da recusa de um pedido de outra sessão. Falha
+/// LOCAL, antes de sair do aparelho; o `mapDioError` a converte em
+/// erro de sessão trocada ("não tentou").
+final class SessionChangedLocalError implements Exception {
+  const SessionChangedLocalError();
+
+  @override
+  String toString() => 'SessionChangedLocalError';
 }
