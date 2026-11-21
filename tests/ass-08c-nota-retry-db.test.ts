@@ -170,6 +170,19 @@ if (!connectionString) {
     }
   });
 
+  test("NR1b: o falso devolve id no GET → depois da reconsulta provider_invoice_id é o devolvido ([LOOKUP-ID])", async () => {
+    const focus = await startFocusNfeFake("create_then_drop", { returnIdInGet: true });
+    servers.push(focus);
+    const t0 = new Date();
+    const seeded = await seedPaidWithIntent("nr1b", t0);
+    await firstAttemptLost(focus, seeded, t0);
+    const second = await dispatch(focus, seeded.tenantId, new Date(t0.getTime() + 2 * MINUTE));
+    assert.equal(second.outcomes.recovered, 1, JSON.stringify(second.outcomes));
+    assert.deepEqual(requestsFor(focus, seeded.statementId), { posts: 1, gets: 1 }, "1 GET de reconsulta e nenhum POST novo");
+    assert.equal((await line(seeded.lineId)).status, "SENT");
+    assert.deepEqual((await notes(seeded.statementId)).map((n) => [n.seq, n.status]), [[1, "pending"]]);
+    assert.deepEqual((await notes(seeded.statementId)).map((n) => n.provider_invoice_id), ["nfse_1"], "provider_invoice_id = o id devolvido no GET");
+  });
   test("NR2: o 2º POST receberia um 422 de duplicidade com texto não reconhecido → a nota NUNCA fica rejected; 0 linha nova; fora do backlog needs_review", async () => {
     const focus = await startFocusNfeFake("duplicate_ref_unrecognized");
     servers.push(focus);

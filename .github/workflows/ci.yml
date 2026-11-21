@@ -384,6 +384,16 @@ jobs:
           SUITES="$SUITES tests/ass-08c-nota-presa-db.test.ts"
           SUITES="$SUITES tests/ass-08c-nota-retry-db.test.ts"
           SUITES="$SUITES tests/ass-08c-statement-busy-db.test.ts"
+          # B-ASS-08c3: fechamento do canal, pronto e desligado (A1 — uma linha por suíte -db nova).
+          SUITES="$SUITES tests/ass-08c3-provider-routes-db.test.ts"
+          SUITES="$SUITES tests/ass-08c3-orfa-isolada-db.test.ts"
+          SUITES="$SUITES tests/ass-08c3-troca-provedor-nota-db.test.ts"
+          SUITES="$SUITES tests/ass-08c3-trilha-despacho-db.test.ts"
+          SUITES="$SUITES tests/ass-08c3-cancel-conferido-db.test.ts"
+          SUITES="$SUITES tests/ass-08c3-cancel-unknown-releitura-db.test.ts"
+          SUITES="$SUITES tests/ass-08c3-credito-estornado-db.test.ts"
+          SUITES="$SUITES tests/ass-08c3-close-pool-db.test.ts"
+          SUITES="$SUITES tests/ass-08c3-estorno-provedor-parcial-db.test.ts"
           SUITES="$SUITES tests/bgui02-ordem-por-etapa-db.test.ts"
           # B-WO-LEITURA-TECNICO (item 71 do portão; Emendas 1, 2, 3.1 e 3.2) — o escopo de leitura do técnico de campo no Postgres
           # real, sob papel efêmero NOSUPERUSER NOBYPASSRLS: as 18 rotas do bloco (D-POS, D-NEG, D-UNIAO, D-MESMA-REGRA para

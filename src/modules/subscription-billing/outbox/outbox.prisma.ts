@@ -46,6 +46,8 @@ import {
   type ResolveOutcome,
   type RetryByOperatorInput,
   type RetryByOperatorOutcome,
+  type ConfirmCancelledByOperatorInput,
+  type ConfirmCancelledByOperatorOutcome,
 } from "./outbox.repository.js";
 import {
   idempotencyKeyOf,
@@ -444,8 +446,10 @@ export class PrismaOutboxRepository implements OutboxRepository {
   async #mutate(tenantId: string, id: string, lease: OutboxLease, data: Prisma.BillingOutboxUpdateInput): Promise<boolean> {
     return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
       // [LEASE-01] A posse faz parte do predicado de TODA escrita do despacho. Zero linhas = lease perdida, sem exceção.
+      // [MUTATE-TENANT] Conserto da junta do #608 (C2-N2): a organização também entra no predicado, além da RLS (defesa em
+      // profundidade, a mesma classe do A-7): com um cliente que ignora a RLS, o id de outra organização não muda nada.
       const result = await tx.billingOutbox.updateMany({
-        where: { id, status: "PROCESSING", claimed_by: lease.claimedBy, attempt_started_at: lease.attemptStartedAt },
+        where: { id, tenant_id: tenantId, status: "PROCESSING", claimed_by: lease.claimedBy, attempt_started_at: lease.attemptStartedAt },
         data,
       });
       return result.count === 1;
@@ -467,6 +471,47 @@ export class PrismaOutboxRepository implements OutboxRepository {
       updated_at: now,
       // Conserto da J-530 (C): devolve a tentativa que o claim somou (o `#mutate` é chamado, nunca alterado).
       ...(options.refundAttempt ? { attempts: { decrement: 1 } } : {}),
+    });
+  }
+
+  async deferOrphan(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "PROCESSING", attempt_started_at: now, last_error: lastError, next_attempt_at: null, updated_at: now });
+  }
+
+  async retargetUntriedInvoiceIssues(provider: string, now: Date): Promise<number> {
+    const tenants = await this.#tenantsWithRefs();
+    if (tenants.length === 0) return 0;
+    // A-7: a organização no predicado ALÉM da RLS (o molde das escritas por organização); a RLS deixa de ser a única defesa.
+    const counts = await forEachTenantRls<number>(this.client, tenants, async (tx, tenantId) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE billing_outbox
+            SET provider = $1, skip_reason = NULL, updated_at = $2
+          WHERE kind = 'invoice_issue' AND status = 'PENDING' AND attempts = 0 AND external_id IS NULL AND claimed_by IS NULL AND provider <> $1 AND tenant_id = $3::uuid
+          RETURNING id`,
+        provider,
+        now,
+        tenantId,
+      )) as Array<{ id: string }>; // [RETARGET-01]
+      return [rows.length];
+    });
+    return counts.reduce((sum, n) => sum + n, 0);
+  }
+
+  async isChargeKnown(tenantId: string, statementId: string, chargeId: string): Promise<boolean> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      // Plano §4.7.2 (A-5): a MESMA regra da regra 1 do `cancel-unknown` (`charge-request.service.ts`): a cobrança é conhecida
+      // pela tabela de cobranças do demonstrativo OU pelo `external_id` de uma linha do demonstrativo na fila. (`$3 = external_id`,
+      // com o parâmetro à esquerda: é LEITURA, e o censo textual de escritores do EK1 lê `external_id = <valor>` como escrita.)
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT 1 FROM subscription_statement_charges WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND external_charge_id = $3
+         UNION ALL
+         SELECT 1 FROM billing_outbox WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND $3 = external_id
+         LIMIT 1`,
+        tenantId,
+        statementId,
+        chargeId,
+      )) as Array<{ '?column?': number }>;
+      return rows.length > 0;
     });
   }
 
@@ -662,6 +707,76 @@ export class PrismaOutboxRepository implements OutboxRepository {
         const rows = (await tx.$queryRawUnsafe(REOPEN_UPDATE_SQL, id, tenantId, now, dueDate ?? null)) as Row[];
         if (rows.length === 0) return { kind: "not_failed" };
         return { kind: "reopened", row: toDomain(rows[0]!), dueDateRewritten: dueDate !== undefined };
+      });
+    } catch (error) {
+      if (postgresErrorCode(error) === "55P03") throw new StatementError(409, "statement_busy", "The statement is busy; try again.");
+      throw error;
+    }
+  }
+
+  async confirmCancelledByOperator(tenantId: string, id: string, input: ConfirmCancelledByOperatorInput): Promise<ConfirmCancelledByOperatorOutcome> {
+    try {
+      return await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+        const owners = (await tx.$queryRawUnsafe(
+          `SELECT o.id, o.statement_id, o.kind, o.provider, o.status, o.last_error, o.payload
+             FROM billing_outbox o
+             JOIN subscription_statements s ON s.id = o.statement_id AND s.tenant_id = o.tenant_id
+            WHERE o.id = $1::uuid AND o.tenant_id = $2::uuid
+            FOR NO KEY UPDATE OF s
+            FOR UPDATE OF o`,
+          id,
+          tenantId,
+        )) as Array<{ id: string; statement_id: string; kind: string; provider: string; status: string; last_error: string | null; payload: Record<string, unknown> | null }>; // [CONFIRM-LOCK]
+        const owner = owners[0];
+        if (!owner) return { kind: "not_found" } satisfies ConfirmCancelledByOperatorOutcome;
+        if (owner.kind !== "charge_cancel" || owner.status !== "NEEDS_REVIEW" || !["charge_not_listed", "charge_state_unknown"].includes(owner.last_error ?? "")) {
+          return { kind: "not_allowed" } satisfies ConfirmCancelledByOperatorOutcome; // [CONFIRM-CODES]
+        }
+        if (String(owner.payload?.chargeId ?? "") !== input.chargeId) return { kind: "mismatch" } satisfies ConfirmCancelledByOperatorOutcome;
+
+        const updated = (await tx.$queryRawUnsafe(
+          `UPDATE billing_outbox
+              SET status = 'SENT', external_id = $3, last_error = NULL, skip_reason = NULL, next_attempt_at = NULL, updated_at = $4
+            WHERE id = $1::uuid AND tenant_id = $2::uuid
+            RETURNING *`,
+          id,
+          tenantId,
+          input.chargeId,
+          input.now,
+        )) as Row[];
+
+        // Plano §4.7 item 5 ("o MESMO efeito" do registro do cancelamento pelo provedor): a MESMA instrução do CANCEL-TX-CHG, byte a byte (o teste
+        // CF-A1 compara os dois textos): só cobrança alvo de cancelamento (`cancelTarget`) vira `cancelled`. A cobrança já paga,
+        // estornada ou contestada na tabela fica como está: o dinheiro que entrou não vira "cancelada" pela mão do operador.
+        await tx.$executeRawUnsafe( // [CONFIRM-CHG]
+          `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4
+          WHERE tenant_id = $1::uuid AND provider = $2 AND external_charge_id = $3 AND status IN (${sqlStatusList("cancelTarget")})`,
+          tenantId,
+          owner.provider,
+          input.chargeId,
+          input.now,
+        );
+
+        const chargeCreateId = typeof owner.payload?.chargeCreateId === "string" ? owner.payload.chargeCreateId : null;
+        if (chargeCreateId) {
+          await tx.$executeRawUnsafe(
+            `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = 'charge_cancelled', updated_at = $3
+               WHERE id = $1::uuid AND tenant_id = $2::uuid AND kind = 'charge_create' AND status = 'SENT'`,
+            chargeCreateId,
+            tenantId,
+            input.now,
+          );
+        }
+
+        await writeOutboxAuditInTx(tx, tenantId, {
+          actorId: input.actorId,
+          action: "billing_outbox.cancel_confirmed_by_operator",
+          entityId: id,
+          // Plano §4.7 item 6: `code` = o `last_error` de ANTES (`charge_not_listed` ou `charge_state_unknown`), já conferido pela allowlist CONFIRM-CODES.
+          metadata: { statementId: owner.statement_id, kind: owner.kind, code: owner.last_error, reason: input.reason },
+        });
+
+        return { kind: "confirmed", row: toDomain(updated[0]!) } satisfies ConfirmCancelledByOperatorOutcome;
       });
     } catch (error) {
       if (postgresErrorCode(error) === "55P03") throw new StatementError(409, "statement_busy", "The statement is busy; try again.");

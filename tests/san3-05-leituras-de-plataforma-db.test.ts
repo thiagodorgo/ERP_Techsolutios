@@ -114,6 +114,7 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/billing/outbox`, S("FORCE-POR-TENANT", ["billing_outbox"], "listForTenant sob withTenantRls, com o tenant_id no predicado; global: billing_provider_configs (createChannelRuntime)")],
   [`POST ${P}/billing/outbox/:id/resolve`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "audit_logs"], "resolve sob withTenantRlsBudget (FOR UPDATE OF s) e a trilha no mesmo tx; global: billing_provider_configs (createChannelRuntime)")],
   [`POST ${P}/billing/outbox/:id/retry`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox"], "retryByOperator sob withTenantRlsBudget (FOR UPDATE OF s); global: billing_provider_configs (createChannelRuntime)")],
+  [`POST ${P}/billing/outbox/:id/confirm-cancelled`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "subscription_statement_charges", "audit_logs"], "R-PLAT-TENANT-CORPO: confirmação do operador sob withTenantRlsBudget, demonstrativo e fila travados; sem rede")],
   // B-ASS-09: a visão de custo × assinatura, o câmbio do mês e os grupos. `platform_fx_rates` e `economic_groups` são GLOBAIS
   // (sem RLS); `economic_group_members` é da organização, sob RLS FORCE, e só se lê e grava por `forEachTenantRls`. A rota
   // FORCE nomeia só as tabelas FORCE que toca; cada uma tem cenário próprio nos dois papéis (T11e).
@@ -132,6 +133,10 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/billing/providers/:provider`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials"], "configuração e resumo das credenciais: tabelas globais da plataforma (M4)")],
   [`PUT ${P}/billing/providers/:provider`, S("SEM-FORCE", ["billing_provider_configs", "platform_audit_logs"], "upsert da configuração global e trilha de plataforma (M4)")],
   [`PUT ${P}/billing/providers/:provider/credentials`, S("SEM-FORCE", ["billing_provider_credentials", "platform_audit_logs"], "cofre global (M4): grava a credencial cifrada e a trilha")],
+  [`POST ${P}/billing/providers/:provider/test-connection`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials", "platform_audit_logs"], "teste de conexão e trilha em tabelas globais; a rede é provada no teste-dono")],
+  [`POST ${P}/billing/providers/:provider/register-webhook`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials", "platform_audit_logs"], "registro do webhook e trilha em tabelas globais")],
+  [`POST ${P}/billing/providers/:provider/enable`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials", "platform_audit_logs"], "enable sob trava da configuração global e trilha de plataforma")],
+  [`POST ${P}/billing/providers/:provider/disable`, S("SEM-FORCE", ["billing_provider_configs", "platform_audit_logs"], "disable idempotente da configuração global e trilha de plataforma")],
   [`POST ${P}/billing/vault/rotate`, S("SEM-FORCE", ["billing_provider_credentials", "platform_audit_logs"], "rotação da chave do cofre global (M4)")],
   [`GET ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`POST ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
@@ -1175,6 +1180,18 @@ if (!connectionString) {
           assert.equal(reaberto.status, 200, JSON.stringify(reaberto.body));
           const reabertoData = reaberto.body.data as { outbox: Record<string, unknown>; notice: unknown };
           registrarRota(`POST ${P}/billing/outbox/:id/retry`, { outbox: projetarLinha(reabertoData.outbox), notice: reabertoData.notice });
+
+          await admin.$executeRawUnsafe(
+            "UPDATE billing_outbox SET status = 'NEEDS_REVIEW', last_error = 'charge_not_listed' WHERE id = $1::uuid",
+            idCancelamento,
+          );
+          const confirmado = await http("POST", `${P}/billing/outbox/${idCancelamento}/confirm-cancelled`, {
+            tenantId: B,
+            chargeId: cobranca,
+            reason: "conferido no painel do provedor",
+          });
+          assert.equal(confirmado.status, 200, JSON.stringify(confirmado.body));
+          registrarRota(`POST ${P}/billing/outbox/:id/confirm-cancelled`, projetarLinha(confirmado.body.data as Record<string, unknown>));
 
           // F7: o `cancel-unknown` de uma cobrança que o sistema não conhece → enfileira o `charge_cancel` (a rota não fala com o
           // provedor; quem confere a referência é o despacho).

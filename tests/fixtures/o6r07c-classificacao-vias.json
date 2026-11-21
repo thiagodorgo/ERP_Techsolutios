@@ -1687,6 +1687,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/outbox/:id/confirm-cancelled": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/billing/outbox/:id/resolve": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1700,6 +1704,22 @@
   "n": 1
  },
  "ROTA POST /api/v1/platform/billing/plans/:planId/versions": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/providers/:provider/disable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/providers/:provider/enable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/providers/:provider/register-webhook": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/providers/:provider/test-connection": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },

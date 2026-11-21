@@ -3731,7 +3731,7 @@
     "backend_tests": "4892/4894",
     "frontend_smoke_tests": "1676/1676",
     "blocks_completed": 214,
-    "description": "PR-529 — É um registro formal das decisões da administração do projeto, do controle de pendências operacionais e do acompanhamento das revisões recentes.. NÚMEROS DA CI no merge commit `091ecde8` (push na `main`), workflow `ci`, run 42947144511, tentativa 1: backend `4894 teste(s) · pass 4892 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1067/1067. `blocks_completed` 214 -> 214.",
+    "description": "PR-529 — É um registro formal das decisões da administração do projeto, do controle de pendências operacionais e do acompanhamento das revisões recentes. NÚMEROS DA CI no merge commit `091ecde8` (push na `main`), workflow `ci`, run 42947144511, tentativa 1: backend `4894 teste(s) · pass 4892 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1067/1067. `blocks_completed` 214 -> 214.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 529`; números do log da rodada 42947144511. Nada fica `null`."
   },
   {
@@ -3745,7 +3745,7 @@
     "backend_tests": "4892/4894",
     "frontend_smoke_tests": "1676/1676",
     "blocks_completed": 214,
-    "description": "PR-531 — É uma alteração de governança que atualiza as regras de operação da equipe, autorizando revisões simultâneas e o uso da capacidade máxima das máquinas de trabalho.. NÚMEROS DA CI no merge commit `9eb65ed1` (push na `main`), workflow `ci`, run 42949091301, tentativa 1: backend `4894 teste(s) · pass 4892 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1067/1067. `blocks_completed` 214 -> 214.",
+    "description": "PR-531 — É uma alteração de governança que atualiza as regras de operação da equipe, autorizando revisões simultâneas e o uso da capacidade máxima das máquinas de trabalho. NÚMEROS DA CI no merge commit `9eb65ed1` (push na `main`), workflow `ci`, run 42949091301, tentativa 1: backend `4894 teste(s) · pass 4892 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1067/1067. `blocks_completed` 214 -> 214.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 531`; números do log da rodada 42949091301. Nada fica `null`."
   },
   {
@@ -3759,7 +3759,7 @@
     "backend_tests": "4892/4894",
     "frontend_smoke_tests": "1676/1676",
     "blocks_completed": 214,
-    "description": "PR-532 — O aplicativo de campo passa a respeitar rigorosamente a privacidade do profissional, descartando qualquer posição de localização após o encerramento do rastreamento ou quando o aplicativo entra em segundo plano. A captura de localização continua permitida apenas com o aplicativo em primeiro plano.. NÚMEROS DA CI no merge commit `d0da291e` (push na `main`), workflow `ci`, run 42964322769, tentativa 1: backend `4894 teste(s) · pass 4892 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1068/1068. `blocks_completed` 214 -> 214.",
+    "description": "PR-532 — O aplicativo de campo passa a respeitar rigorosamente a privacidade do profissional, descartando qualquer posição de localização após o encerramento do rastreamento ou quando o aplicativo entra em segundo plano. A captura de localização continua permitida apenas com o aplicativo em primeiro plano. NÚMEROS DA CI no merge commit `d0da291e` (push na `main`), workflow `ci`, run 42964322769, tentativa 1: backend `4894 teste(s) · pass 4892 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1068/1068. `blocks_completed` 214 -> 214.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 532`; números do log da rodada 42964322769. Nada fica `null`."
   },
   {
@@ -3773,7 +3773,7 @@
     "backend_tests": "4962/4964",
     "frontend_smoke_tests": "1713/1713",
     "blocks_completed": 215,
-    "description": "B-USERS-ACESSO-SEG — O sistema passa a exigir troca obrigatória de senha provisória no acesso inicial e permite a redefinição de credenciais pela administração, impedindo que a organização fique sem administrador responsável. A invalidação imediata de acessos gerados antes da troca de credenciais ainda não foi ativada.. NÚMEROS DA CI no merge commit `07898adf` (push na `main`), workflow `ci`, run 42966803068, tentativa 1: backend `4964 teste(s) · pass 4962 · fail 0 · skipped 2`; frontend 1713/1713; flutter 1100/1100. `blocks_completed` 214 -> 215.",
+    "description": "B-USERS-ACESSO-SEG — O sistema passa a exigir troca obrigatória de senha provisória no acesso inicial e permite a redefinição de credenciais pela administração, impedindo que a organização fique sem administrador responsável. A invalidação imediata de acessos gerados antes da troca de credenciais ainda não foi ativada. NÚMEROS DA CI no merge commit `07898adf` (push na `main`), workflow `ci`, run 42966803068, tentativa 1: backend `4964 teste(s) · pass 4962 · fail 0 · skipped 2`; frontend 1713/1713; flutter 1100/1100. `blocks_completed` 214 -> 215.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 527`; números do log da rodada 42966803068. Nada fica `null`."
   },
   {
@@ -3787,7 +3787,7 @@
     "backend_tests": "4971/4973",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 216,
-    "description": "PR-533 — B-SAN3-08 (itens 40 e 41): a tela permite que o setor financeiro crie orçamentos e aprove serviços de reboque informando origem e destino para gerar novas ordens de serviço. A conferência de alçada na aprovação e a proteção contra ordem de serviço em dobro ficam para etapas próprias.. NÚMEROS DA CI no merge commit `b6caf568` (push na `main`), workflow `ci`, run 42975252227, tentativa 1: backend `4973 teste(s) · pass 4971 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 215 -> 216.",
+    "description": "PR-533 — B-SAN3-08 (itens 40 e 41): a tela permite que o setor financeiro crie orçamentos e aprove serviços de reboque informando origem e destino para gerar novas ordens de serviço. A conferência de alçada na aprovação e a proteção contra ordem de serviço em dobro ficam para etapas próprias. NÚMEROS DA CI no merge commit `b6caf568` (push na `main`), workflow `ci`, run 42975252227, tentativa 1: backend `4973 teste(s) · pass 4971 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 215 -> 216.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 533`; números do log da rodada 42975252227. Nada fica `null`."
   },
   {
@@ -3801,7 +3801,7 @@
     "backend_tests": "5036/5038",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 217,
-    "description": "B-ASS-08b — Foram integradas as rotinas de faturamento e a comunicação com serviços de emissão de notas e avisos do provedor de pagamento para cobrança de assinaturas. Esse canal de cobrança e as automações associadas permanecem desligados aguardando liberação final.. NÚMEROS DA CI no merge commit `a0979f51` (push na `main`), workflow `ci`, run 42997614148, tentativa 1: backend `5038 teste(s) · pass 5036 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 216 -> 217.",
+    "description": "B-ASS-08b — Foram integradas as rotinas de faturamento e a comunicação com serviços de emissão de notas e avisos do provedor de pagamento para cobrança de assinaturas. Esse canal de cobrança e as automações associadas permanecem desligados aguardando liberação final. NÚMEROS DA CI no merge commit `a0979f51` (push na `main`), workflow `ci`, run 42997614148, tentativa 1: backend `5038 teste(s) · pass 5036 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 216 -> 217.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 530`; números do log da rodada 42997614148. Nada fica `null`."
   },
   {
@@ -3815,7 +3815,7 @@
     "backend_tests": "5036/5038",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 217,
-    "description": "PR-538 — É um registro formal que documenta as novas decisões da administração, o andamento das avaliações técnicas e a atualização do quadro de pendências operacionais.. NÚMEROS DA CI no merge commit `2f8a9a5e` (push na `main`), workflow `ci`, run 43009069329, tentativa 1: backend `5038 teste(s) · pass 5036 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 217 -> 217.",
+    "description": "PR-538 — É um registro formal que documenta as novas decisões da administração, o andamento das avaliações técnicas e a atualização do quadro de pendências operacionais. NÚMEROS DA CI no merge commit `2f8a9a5e` (push na `main`), workflow `ci`, run 43009069329, tentativa 1: backend `5038 teste(s) · pass 5036 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 217 -> 217.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 538`; números do log da rodada 43009069329. Nada fica `null`."
   },
   {
@@ -3829,7 +3829,7 @@
     "backend_tests": "5038/5040",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 218,
-    "description": "PR-535 — B-SAN3-07 (item 47): a inicialização de dados de demonstração passa a contemplar todos os perfis de usuários com suas respectivas permissões e adota o nome oficial para a organização de teste. A padronização dos termos no aplicativo de campo para o sem conexão permanece pendente.. NÚMEROS DA CI no merge commit `d98481e6` (push na `main`), workflow `ci`, run 43012508312, tentativa 1: backend `5040 teste(s) · pass 5038 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 217 -> 218.",
+    "description": "PR-535 — B-SAN3-07 (item 47): a inicialização de dados de demonstração passa a contemplar todos os perfis de usuários com suas respectivas permissões e adota o nome oficial para a organização de teste. A padronização dos termos no aplicativo de campo para o sem conexão permanece pendente. NÚMEROS DA CI no merge commit `d98481e6` (push na `main`), workflow `ci`, run 43012508312, tentativa 1: backend `5040 teste(s) · pass 5038 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 217 -> 218.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 535`; números do log da rodada 43012508312. Nada fica `null`."
   },
   {
@@ -3843,7 +3843,7 @@
     "backend_tests": "5038/5040",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 219,
-    "description": "PR-540 — B-SAN3-19b (itens 48 e 47): o aplicativo de campo substitui termos técnicos e códigos internos por mensagens claras em linguagem de negócio nas telas de despesas, avisos de acesso não permitido e demonstração. As áreas ainda não disponíveis no aplicativo, como estoque e listas de verificação, continuam sinalizadas como indisponíveis.. NÚMEROS DA CI no merge commit `945f2002` (push na `main`), workflow `ci`, run 43029531649, tentativa 1: backend `5040 teste(s) · pass 5038 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1119/1119. `blocks_completed` 218 -> 219.",
+    "description": "PR-540 — B-SAN3-19b (itens 48 e 47): o aplicativo de campo substitui termos técnicos e códigos internos por mensagens claras em linguagem de negócio nas telas de despesas, avisos de acesso não permitido e demonstração. As áreas ainda não disponíveis no aplicativo, como estoque e listas de verificação, continuam sinalizadas como indisponíveis. NÚMEROS DA CI no merge commit `945f2002` (push na `main`), workflow `ci`, run 43029531649, tentativa 1: backend `5040 teste(s) · pass 5038 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1119/1119. `blocks_completed` 218 -> 219.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 540`; números do log da rodada 43029531649. Nada fica `null`."
   },
   {
@@ -3857,7 +3857,7 @@
     "backend_tests": "5045/5047",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 219,
-    "description": "PR-541 — Os testes automáticos da rotina de orçamentos foram aperfeiçoados para tolerar a remoção de tabelas temporárias durante verificações paralelas, evitando reprovações indevidas. A alteração atua exclusivamente na estabilidade das validações internas, sem modificações nas telas nem novas regras ativadas para os usuários.. NÚMEROS DA CI no merge commit `da12fec6` (push na `main`), workflow `ci`, run 43032684320, tentativa 1: backend `5047 teste(s) · pass 5045 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1119/1119. `blocks_completed` 219 -> 219.",
+    "description": "PR-541 — Os testes automáticos da rotina de orçamentos foram aperfeiçoados para tolerar a remoção de tabelas temporárias durante verificações paralelas, evitando reprovações indevidas. A alteração atua exclusivamente na estabilidade das validações internas, sem modificações nas telas nem novas regras ativadas para os usuários. NÚMEROS DA CI no merge commit `da12fec6` (push na `main`), workflow `ci`, run 43032684320, tentativa 1: backend `5047 teste(s) · pass 5045 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1119/1119. `blocks_completed` 219 -> 219.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 541`; números do log da rodada 43032684320. Nada fica `null`."
   },
   {
@@ -3871,7 +3871,7 @@
     "backend_tests": "5076/5078",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 220,
-    "description": "PR-536 — B-SAN3-23 (item 23): o sistema passa a impedir que ordens de serviço canceladas recebam novos lançamentos financeiros e bloqueia ações concorrentes que possam reverter indevidamente o cancelamento. As operações de baixa, estorno de títulos e cálculo automático de comissões continuam fora desse mecanismo de proteção.. NÚMEROS DA CI no merge commit `c95ad4fd` (push na `main`), workflow `ci`, run 43035742812, tentativa 1: backend `5078 teste(s) · pass 5076 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1119/1119. `blocks_completed` 219 -> 220.",
+    "description": "PR-536 — B-SAN3-23 (item 23): o sistema passa a impedir que ordens de serviço canceladas recebam novos lançamentos financeiros e bloqueia ações concorrentes que possam reverter indevidamente o cancelamento. As operações de baixa, estorno de títulos e cálculo automático de comissões continuam fora desse mecanismo de proteção. NÚMEROS DA CI no merge commit `c95ad4fd` (push na `main`), workflow `ci`, run 43035742812, tentativa 1: backend `5078 teste(s) · pass 5076 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1119/1119. `blocks_completed` 219 -> 220.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 536`; números do log da rodada 43035742812. Nada fica `null`."
   },
   {
@@ -3885,7 +3885,7 @@
     "backend_tests": "5117/5119",
     "frontend_smoke_tests": "1730/1730",
     "blocks_completed": 221,
-    "description": "PR-534 — B-SAN3-26 (item 53): o registro de chegada ao local pelo aplicativo de campo passa a validar os caracteres finais da placa real do veículo atendido, permitindo também a confirmação direta pela base operacional. A realização dessa confirmação sem placa informada durante o uso desconectado permanece indisponível e exige assistência da central.. NÚMEROS DA CI no merge commit `68a208ad` (push na `main`), workflow `ci`, run 43075910214, tentativa 1: backend `5119 teste(s) · pass 5117 · fail 0 · skipped 2`; frontend 1730/1730; flutter 1137/1137. `blocks_completed` 220 -> 221.",
+    "description": "PR-534 — B-SAN3-26 (item 53): o registro de chegada ao local pelo aplicativo de campo passa a validar os caracteres finais da placa real do veículo atendido, permitindo também a confirmação direta pela base operacional. A realização dessa confirmação sem placa informada durante o uso desconectado permanece indisponível e exige assistência da central. NÚMEROS DA CI no merge commit `68a208ad` (push na `main`), workflow `ci`, run 43075910214, tentativa 1: backend `5119 teste(s) · pass 5117 · fail 0 · skipped 2`; frontend 1730/1730; flutter 1137/1137. `blocks_completed` 220 -> 221.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 534`; números do log da rodada 43075910214. Nada fica `null`."
   },
   {
@@ -3899,7 +3899,7 @@
     "backend_tests": "5164/5166",
     "frontend_smoke_tests": "1730/1730",
     "blocks_completed": 222,
-    "description": "PR-539 — B-O6R-12 (item 24): o cálculo de cobrança de diárias e as regras de liberação de veículos no pátio passam a ficar congelados conforme o regulamento da data de entrada do veículo, sem sofrer impacto de alterações normativas futuras. O ajuste na contagem de permanência em caso de alteração no fuso horário do pátio ainda não foi integrado.. NÚMEROS DA CI no merge commit `f5b79026` (push na `main`), workflow `ci`, run 43082194997, tentativa 1: backend `5166 teste(s) · pass 5164 · fail 0 · skipped 2`; frontend 1730/1730; flutter 1137/1137. `blocks_completed` 221 -> 222.",
+    "description": "PR-539 — B-O6R-12 (item 24): o cálculo de cobrança de diárias e as regras de liberação de veículos no pátio passam a ficar congelados conforme o regulamento da data de entrada do veículo, sem sofrer impacto de alterações normativas futuras. O ajuste na contagem de permanência em caso de alteração no fuso horário do pátio ainda não foi integrado. NÚMEROS DA CI no merge commit `f5b79026` (push na `main`), workflow `ci`, run 43082194997, tentativa 1: backend `5166 teste(s) · pass 5164 · fail 0 · skipped 2`; frontend 1730/1730; flutter 1137/1137. `blocks_completed` 221 -> 222.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 539`; números do log da rodada 43082194997. Nada fica `null`."
   },
   {
@@ -3913,7 +3913,7 @@
     "backend_tests": "5246/5248",
     "frontend_smoke_tests": "1733/1733",
     "blocks_completed": 223,
-    "description": "PR-537 — B-O6R-09 (item 7): o despacho de equipes e a atribuição da ordem de serviço passam a ocorrer de forma unificada e segura, impedindo descompasso de responsáveis e eliminando a criação de ordens em duplicidade ao aprovar orçamentos. A proteção durante manutenções estruturais simultâneas no banco de dados continua dependente de rotinas operacionais complementares.. NÚMEROS DA CI no merge commit `81fb7d27` (push na `main`), workflow `ci`, run 43114587275, tentativa 1: backend `5248 teste(s) · pass 5246 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1137/1137. `blocks_completed` 222 -> 223.",
+    "description": "PR-537 — B-O6R-09 (item 7): o despacho de equipes e a atribuição da ordem de serviço passam a ocorrer de forma unificada e segura, impedindo descompasso de responsáveis e eliminando a criação de ordens em duplicidade ao aprovar orçamentos. A proteção durante manutenções estruturais simultâneas no banco de dados continua dependente de rotinas operacionais complementares. NÚMEROS DA CI no merge commit `81fb7d27` (push na `main`), workflow `ci`, run 43114587275, tentativa 1: backend `5248 teste(s) · pass 5246 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1137/1137. `blocks_completed` 222 -> 223.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 537`; números do log da rodada 43114587275. Nada fica `null`."
   },
   {
@@ -3927,7 +3927,7 @@
     "backend_tests": "5258/5260",
     "frontend_smoke_tests": "1733/1733",
     "blocks_completed": 224,
-    "description": "PR-545 — B-O6R-11d (item 3): o aplicativo de campo passa a exibir a situação e a prioridade exatas das ordens de serviço na lista de atendimentos e na linha do tempo, sinalizando conflitos caso a central altere o técnico antes do envio. A resolução automática desses conflitos na fila de sincronização e o ajuste na largura da tela de detalhes permanecem para um próximo ciclo.. NÚMEROS DA CI no merge commit `a02aacce` (push na `main`), workflow `ci`, run 43119306697, tentativa 1: backend `5260 teste(s) · pass 5258 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1156/1156. `blocks_completed` 223 -> 224.",
+    "description": "PR-545 — B-O6R-11d (item 3): o aplicativo de campo passa a exibir a situação e a prioridade exatas das ordens de serviço na lista de atendimentos e na linha do tempo, sinalizando conflitos caso a central altere o técnico antes do envio. A resolução automática desses conflitos na fila de sincronização e o ajuste na largura da tela de detalhes permanecem para um próximo ciclo. NÚMEROS DA CI no merge commit `a02aacce` (push na `main`), workflow `ci`, run 43119306697, tentativa 1: backend `5260 teste(s) · pass 5258 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1156/1156. `blocks_completed` 223 -> 224.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 545`; números do log da rodada 43119306697. Nada fica `null`."
   },
   {
@@ -3941,7 +3941,7 @@
     "backend_tests": "5314/5316",
     "frontend_smoke_tests": "1733/1733",
     "blocks_completed": 225,
-    "description": "PR-544 — B-SAN3-18 (item 16): o sistema passa a bloquear no servidor os acessos a áreas que a organização não contratou e oculta do menu de navegação todos os itens fora do plano contratado, preservando as funções essenciais. O aviso de contratação obrigatória na tela de gerenciamento de módulos da organização na plataforma continua pendente de atualização visual.. NÚMEROS DA CI no merge commit `fd51409c` (push na `main`), workflow `ci`, run 43174264598, tentativa 1: backend `5316 teste(s) · pass 5314 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1156/1156. `blocks_completed` 224 -> 225.",
+    "description": "PR-544 — B-SAN3-18 (item 16): o sistema passa a bloquear no servidor os acessos a áreas que a organização não contratou e oculta do menu de navegação todos os itens fora do plano contratado, preservando as funções essenciais. O aviso de contratação obrigatória na tela de gerenciamento de módulos da organização na plataforma continua pendente de atualização visual. NÚMEROS DA CI no merge commit `fd51409c` (push na `main`), workflow `ci`, run 43174264598, tentativa 1: backend `5316 teste(s) · pass 5314 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1156/1156. `blocks_completed` 224 -> 225.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 544`; números do log da rodada 43174264598. Nada fica `null`."
   },
   {
@@ -3955,7 +3955,7 @@
     "backend_tests": "5350/5352",
     "frontend_smoke_tests": "1733/1733",
     "blocks_completed": 226,
-    "description": "B-USERS-SEG-DESATIVADO — O acesso de qualquer usuário desativado ou com sessão encerrada passa a ser interrompido instantaneamente em todas as rotas, no aplicativo de campo e nas transmissões de mapas ao vivo. A confirmação final sobre a desconexão automática no momento de troca de perfil de permissões segue aguardando validação da administração.. NÚMEROS DA CI no merge commit `50b782e1` (push na `main`), workflow `ci`, run 43182367021, tentativa 1: backend `5352 teste(s) · pass 5350 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1156/1156. `blocks_completed` 225 -> 226.",
+    "description": "B-USERS-SEG-DESATIVADO — O acesso de qualquer usuário desativado ou com sessão encerrada passa a ser interrompido instantaneamente em todas as rotas, no aplicativo de campo e nas transmissões de mapas ao vivo. A confirmação final sobre a desconexão automática no momento de troca de perfil de permissões segue aguardando validação da administração. NÚMEROS DA CI no merge commit `50b782e1` (push na `main`), workflow `ci`, run 43182367021, tentativa 1: backend `5352 teste(s) · pass 5350 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1156/1156. `blocks_completed` 225 -> 226.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 543`; números do log da rodada 43182367021. Nada fica `null`."
   },
   {
@@ -3969,7 +3969,7 @@
     "backend_tests": "5422/5424",
     "frontend_smoke_tests": "1733/1733",
     "blocks_completed": 227,
-    "description": "PR-542 — B-ASS-09a (item 61): a importação de custos de infraestrutura passa a gerar automaticamente a distribuição proporcional dos valores entre as organizações para cada mês de competência. As telas operacionais para visualização desse demonstrativo e os painéis de consulta continuam desligados aguardando as próximas entregas.. NÚMEROS DA CI no merge commit `bf29a86a` (push na `main`), workflow `ci`, run 43186373151, tentativa 1: backend `5424 teste(s) · pass 5422 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1156/1156. `blocks_completed` 226 -> 227.",
+    "description": "PR-542 — B-ASS-09a (item 61): a importação de custos de infraestrutura passa a gerar automaticamente a distribuição proporcional dos valores entre as organizações para cada mês de competência. As telas operacionais para visualização desse demonstrativo e os painéis de consulta continuam desligados aguardando as próximas entregas. NÚMEROS DA CI no merge commit `bf29a86a` (push na `main`), workflow `ci`, run 43186373151, tentativa 1: backend `5424 teste(s) · pass 5422 · fail 0 · skipped 2`; frontend 1733/1733; flutter 1156/1156. `blocks_completed` 226 -> 227.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 542`; números do log da rodada 43186373151. Nada fica `null`."
   },
   {
@@ -4669,7 +4669,77 @@
     "backend_tests": "7197/7199",
     "frontend_smoke_tests": "2005/2005",
     "blocks_completed": 263,
-    "description": "PR-602 — O técnico de campo passa a enxergar apenas as ordens atribuídas a ele; quando tenta abrir ordem de outro técnico, o sistema responde como inexistente. A mesma trava passa a valer para anexos, comentários, financeiro, histórico, despachos, aprovações e painel. A exceção de vistorias para quem acumula despacho e técnico fica registrada para decisão separada.. NÚMEROS DA CI no merge commit `917bc6cd` (push na `main`), workflow `ci`, run 44417953563, tentativa 1: backend `7199 teste(s) · pass 7197 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 262 -> 263.",
+    "description": "PR-602 — O técnico de campo passa a enxergar apenas as ordens atribuídas a ele; quando tenta abrir ordem de outro técnico, o sistema responde como inexistente. A mesma trava passa a valer para anexos, comentários, financeiro, histórico, despachos, aprovações e painel. A exceção de vistorias para quem acumula despacho e técnico fica registrada para decisão separada. NÚMEROS DA CI no merge commit `917bc6cd` (push na `main`), workflow `ci`, run 44417953563, tentativa 1: backend `7199 teste(s) · pass 7197 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 262 -> 263.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 602`; números do log da rodada 44417953563. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-19",
+    "version": "PR-606",
+    "pr": 606,
+    "merge_commit": "f15b38d6e1e7e028fabbe4f53cd4ffc16621a6c8",
+    "approved_head": "801ae02fd295ce0d9fc44641e713901d969e2654",
+    "status": "published_per_pr",
+    "flutter_tests": "1859/2097",
+    "backend_tests": "7197/7199",
+    "frontend_smoke_tests": "2005/2005",
+    "blocks_completed": 263,
+    "description": "PR-606 — O roteiro da nuvem passa a usar a região da Virgínia em toda a operação, com banco em duas zonas desde o começo, checagem de cotas antes da abertura, entrada sem organização prevista no passo de virada e ensaio do aplicativo em aparelho real. O custo fica atualizado só onde houve medição oficial e o restante fica marcado para recalcular. NÚMEROS DA CI no merge commit `f15b38d6` (push na `main`), workflow `ci`, run 44566417237, tentativa 1: backend `7199 teste(s) · pass 7197 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 263 -> 263.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 606`; números do log da rodada 44566417237. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-19",
+    "version": "B-TESTE-FILHOS",
+    "pr": 605,
+    "merge_commit": "a4768db26a5faa083d458c2e79cfe6081ee53c62",
+    "approved_head": "d27b23141d0e8b00fc5e795178117e99242b7667",
+    "status": "published_per_pr",
+    "flutter_tests": "1859/2097",
+    "backend_tests": "7202/7204",
+    "frontend_smoke_tests": "2005/2005",
+    "blocks_completed": 263,
+    "description": "B-TESTE-FILHOS — Os ensaios automáticos que levantam servidor temporário agora encerram sempre, inclusive em erro e estouro de tempo, e o cenário da virada da meia-noite para de reaproveitar data antiga. O efeito é tirar processo preso e falso vermelho recorrente nos ensaios. NÚMEROS DA CI no merge commit `a4768db2` (push na `main`), workflow `ci`, run 44605302587, tentativa 1: backend `7204 teste(s) · pass 7202 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 263 -> 263.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 605`; números do log da rodada 44605302587. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-19",
+    "version": "PR-607",
+    "pr": 607,
+    "merge_commit": "7b39c01a3d3e73f00f3a863de8fb25c643f64a41",
+    "approved_head": "af6db571b1d00089e5729d00c86bac585517c9b4",
+    "status": "published_per_pr",
+    "flutter_tests": "1859/2097",
+    "backend_tests": "7202/7204",
+    "frontend_smoke_tests": "2005/2005",
+    "blocks_completed": 263,
+    "description": "PR-607 — As regras de trabalho passam a registrar de forma espelhada o conjunto de ferramentas de nuvem escolhido pelo dono, com validação de paridade entre os contratos. É registro de governança, sem entrega de produto. NÚMEROS DA CI no merge commit `7b39c01a` (push na `main`), workflow `ci`, run 44610568211, tentativa 1: backend `7204 teste(s) · pass 7202 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 263 -> 263.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 607`; números do log da rodada 44610568211. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-20",
+    "version": "PR-609",
+    "pr": 609,
+    "merge_commit": "ebdcf62f4c28d91d5d34953ef184210c0d4bcc67",
+    "approved_head": "7a90e3ddd35261f877237167a7e94e5a2a52835c",
+    "status": "published_per_pr",
+    "flutter_tests": "1859/2097",
+    "backend_tests": "7202/7204",
+    "frontend_smoke_tests": "2005/2005",
+    "blocks_completed": 263,
+    "description": "PR-609 — Fica registrado o fechamento do dia com decisões da nuvem na Virgínia, arnês de testes liberado, avanço de etapa acelerada e novas pendências abertas com responsável e gravidade. É trilha de controle, sem mudança no produto. NÚMEROS DA CI no merge commit `ebdcf62f` (push na `main`), workflow `ci`, run 44747377036, tentativa 1: backend `7204 teste(s) · pass 7202 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 263 -> 263.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 609`; números do log da rodada 44747377036. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-20",
+    "version": "B-PLAT-PERMISSAO",
+    "pr": 610,
+    "merge_commit": "3b7351e7625d53ba55ac91c93672f0867ea001f6",
+    "approved_head": "c5f300580e4703433229bd5501cc3e657328b1a7",
+    "status": "published_per_pr",
+    "flutter_tests": "1859/2097",
+    "backend_tests": "7226/7228",
+    "frontend_smoke_tests": "2005/2005",
+    "blocks_completed": 264,
+    "description": "B-PLAT-PERMISSAO — A administração da plataforma passa a falhar fechado: cada ação só entra com a permissão certa, e quem não tem fica barrado. As seis permissões ficam no catálogo e, por ora, só o perfil mais alto recebe esse acesso; este trabalho permanece fora do portão vendável. NÚMEROS DA CI no merge commit `3b7351e7` (push na `main`), workflow `ci`, run 44783265921, tentativa 1: backend `7228 teste(s) · pass 7226 · fail 0 · skipped 2`; frontend 2005/2005; flutter 1859/2097. `blocks_completed` 263 -> 264.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 610`; números do log da rodada 44783265921. Nada fica `null`."
   }
 ]

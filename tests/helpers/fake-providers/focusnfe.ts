@@ -65,8 +65,11 @@ function scenario(req: IncomingMessage, fallback: string): string {
   return selected === "ok" ? fallback : selected;
 }
 
-export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeServer> {
+export type FocusNfeFakeOptions = { readonly returnIdInGet?: boolean };
+
+export async function startFocusNfeFake(defaultScenario = "ok", options: FocusNfeFakeOptions = {}): Promise<FakeServer> {
   resetFocusNfeFakeState();
+  const returnIdInGet = options.returnIdInGet === true;
   return startFakeServer(async (req, res, body) => {
     const selected = scenario(req, defaultScenario);
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
@@ -78,6 +81,18 @@ export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeSer
     }
     if (selected === "validation_422") {
       return sendJson(res, 422, { status: "erro_validacao", mensagem: `credencial rejeitada: ${String(req.headers.authorization ?? "")}` });
+    }
+    if (selected === "credential_rejected_401") {
+      return sendJson(res, 401, { mensagem: "credencial inválida" });
+    }
+    if (selected === "credential_rejected_403") {
+      return sendJson(res, 403, { mensagem: "sem permissão para este recurso" });
+    }
+    if (selected === "provider_unavailable_500") {
+      return sendJson(res, 500, { mensagem: "erro interno do provedor" });
+    }
+    if (selected === "not_found_404") {
+      return sendJson(res, 404, { mensagem: "referência inexistente" });
     }
 
     if (method === "POST" && (url.pathname === "/v2/nfsen" || url.pathname === "/v2/nfse")) {
@@ -117,11 +132,11 @@ export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeSer
       if (!invoice) return sendJson(res, 200, { status: "situacao_desconhecida" });
       invoice.queryCount += 1;
       // B-ASS-08b: depois do DELETE a consulta devolve `cancelado` (é o que o poll-settled/webhook lê para fechar a nota).
-      if (invoice.status === "cancelado") return sendJson(res, 200, { id: invoice.id, ref, status: "cancelado" });
-      if (invoice.status === "erro_autorizacao") return sendJson(res, 200, { id: invoice.id, ref, status: invoice.status, erros: [{ mensagem: "rejeição simulada" }] });
-      if (invoice.queryCount === 1 && selected !== "authorized") return sendJson(res, 200, { id: invoice.id, ref, status: "processando_autorizacao" });
+      if (invoice.status === "cancelado") return sendJson(res, 200, { ...(returnIdInGet ? { id: invoice.id } : {}), ref, status: "cancelado" });
+      if (invoice.status === "erro_autorizacao") return sendJson(res, 200, { ...(returnIdInGet ? { id: invoice.id } : {}), ref, status: invoice.status, erros: [{ mensagem: "rejeição simulada" }] });
+      if (invoice.queryCount === 1 && selected !== "authorized") return sendJson(res, 200, { ...(returnIdInGet ? { id: invoice.id } : {}), ref, status: "processando_autorizacao" });
       return sendJson(res, 200, {
-        id: invoice.id,
+        ...(returnIdInGet ? { id: invoice.id } : {}),
         ref,
         status: "autorizado",
         numero: "NFSE-1001",
