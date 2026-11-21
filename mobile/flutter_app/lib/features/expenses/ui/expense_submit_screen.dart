@@ -58,7 +58,7 @@ class ExpenseSubmitScreen extends ConsumerWidget {
         final allGreen = checks.every((c) => c.ok);
 
         return ErpScaffold(
-          title: 'Resumo de submissao',
+          title: 'Resumo de submissão',
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(

@@ -17,7 +17,7 @@ void main() {
     await tester.pumpWidget(const _TestApp(initialLocation: '/expenses'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Gestao de Despesas'), findsOneWidget);
+    expect(find.text('Gestão de Despesas'), findsOneWidget);
     expect(
       find.text('Prestação de Contas atendimento OS-1042'),
       findsOneWidget,

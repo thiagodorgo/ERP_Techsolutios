@@ -178,12 +178,12 @@ final _kNavigationModules = <String, _ModuleDef>{
     perms: ['inventory.read'],
   ),
   'approvals': (
-    title: 'Aprovacoes',
+    title: 'Aprovações',
     route: '/approvals',
     perms: ['work_orders:approve'],
   ),
   'notifications': (
-    title: 'Notificacoes',
+    title: 'Notificações',
     route: '/notifications',
     perms: ['notifications:read'],
   ),

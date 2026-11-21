@@ -77,7 +77,7 @@ Widget _wrap(
       ),
       GoRoute(
         path: '/approvals',
-        builder: (_, _) => const Scaffold(body: Text('Aprovacoes')),
+        builder: (_, _) => const Scaffold(body: Text('Aprovações')),
       ),
     ],
   );
@@ -117,7 +117,7 @@ void main() {
       await t.pumpWidget(_wrap(_sessionTechnician, []));
       await t.pumpAndSettle();
 
-      expect(find.text('Aprovacoes'), findsNothing);
+      expect(find.text('Aprovações'), findsNothing);
     });
 
     testWidgets('3. Banner sem pendentes exibe mensagem neutra', (t) async {
@@ -156,7 +156,7 @@ void main() {
       await t.tap(find.text('Aprovações'));
       await t.pumpAndSettle();
 
-      expect(find.text('Aprovacoes'), findsOneWidget);
+      expect(find.text('Aprovações'), findsOneWidget);
     });
   });
 }
