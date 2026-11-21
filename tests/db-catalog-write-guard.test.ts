@@ -82,6 +82,14 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
       },
     ],
     [
+      "helpers/auth-login-candidates-grant.ts",
+      {
+        count: 1,
+        reason:
+          "helper nomeado da SC (emenda 1.8.3.12): centraliza a concessão de execute em auth_login_candidates para ser chamado dentro de withRoleCatalogLock",
+      },
+    ],
+    [
       "rls-tenant-isolation.test.ts",
       {
         count: 8,

@@ -12,6 +12,7 @@ import {
   withRoleCatalogLock,
   type EphemeralRole,
 } from "./helpers/auth-identity-fixture.js";
+import { grantAuthLoginCandidatesExecuteToRole } from "./helpers/auth-login-candidates-grant.js";
 import { createPrismaClient } from "../src/database/pg-connection.js";
 
 // -----------------------------------------------------------------------------------------------
@@ -56,9 +57,7 @@ if (!connectionString) {
       // (Entrar) precisa listar candidatos sob o papel efêmero; o GRANT vive SÓ nesta suíte, no
       // lock de catálogo, e morre junto com a role no teardown (DROP OWNED BY).
       await withRoleCatalogLock(admin, async (tx) => {
-        await tx.$executeRawUnsafe(
-          `GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO "${role.roleName}"`,
-        );
+        await grantAuthLoginCandidatesExecuteToRole(tx, role.roleName);
       });
 
       return { admin, role, tenantIds: [], groupIds: [] };
