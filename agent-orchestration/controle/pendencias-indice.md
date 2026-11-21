@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1324** |
-| IDs distintos | 1309 |
-| **ABERTAS** | **1004** |
+| Cabecalhos `## P-` | **1325** |
+| IDs distintos | 1310 |
+| **ABERTAS** | **1005** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **943** |
+| — das quais **ativas nesta rodada** | **944** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 316 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1324 cabecalhos para 1309 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1325 cabecalhos para 1310 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 381
+## ABERTAS · balde A — material — 382
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -455,6 +455,7 @@
 | `P-ASS-OPERACAO-COBRANCA-TELA` | 17351 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
 | `P-08C3-TESTES-DB-DE-VERDADE` | 17365 | MÉDIA | sim | P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda  |
 | `P-T13-INJETADO-PONTO-CEGO` | 17373 | MÉDIA | sim | P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em mé |
+| `P-AWS-ROTEIRO-TRACCAR-DIVERGE` | 17423 | ALTA | sim | P-AWS-ROTEIRO-TRACCAR-DIVERGE (2026-11-20) — o roteiro da AWS para o Traccar (fases 3c e |
 
 ## ABERTAS · balde B — processo/registro — 562
 
