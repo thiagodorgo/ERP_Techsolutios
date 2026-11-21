@@ -364,10 +364,6 @@ Widget aparApp(
         path: '/location',
         builder: (_, _) => const LocationConsentScreen(),
       ),
-      GoRoute(
-        path: '/tenant-select',
-        builder: (_, _) => const Scaffold(body: Text('Organizações')),
-      ),
     ],
   );
   return ProviderScope(
