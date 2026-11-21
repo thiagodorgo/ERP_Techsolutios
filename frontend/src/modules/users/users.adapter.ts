@@ -1,5 +1,7 @@
 import { resolveFrontendRoles } from "../auth/auth.adapter";
 import type {
+  CreatedUserResult,
+  PasswordResetResult,
   User,
   UserField,
   UserFieldError,
@@ -214,6 +216,70 @@ export function validateUser(input: { name?: string; email?: string; roles?: rea
   return errors;
 }
 
+// ── B-APP-ORG-2S (S3): respostas da criação, da concessão e da redefinição ─────
+// A provisória é lida SÓ destas respostas e nunca entra no `User` (a lista nunca a guarda).
+export function adaptCreatedUserResponse(response: unknown): CreatedUserResult {
+  const data = readRecord(readRecord(response)?.data);
+  return {
+    user: adaptUserResponse(response),
+    temporaryPassword: readString(data, ["temporaryPassword"]) ?? null,
+  };
+}
+
+// Falha fechada: sem a provisória não há o que mostrar, e a tela diz que não foi possível (nunca um diálogo vazio).
+export function adaptPasswordResetResponse(response: unknown): PasswordResetResult | null {
+  const data = readRecord(readRecord(response)?.data);
+  const temporaryPassword = readString(data, ["temporary_password"]);
+  if (!temporaryPassword) return null;
+  const affected = data?.affected_patios;
+  const affectedPatios = typeof affected === "number" && Number.isInteger(affected) && affected >= 1 ? affected : 1;
+  return { temporaryPassword, affectedPatios };
+}
+
+export const EMAIL_IN_GROUP_MESSAGE = "Este e-mail já tem acesso no grupo.";
+export const GRANT_ACCESS_ACTION_LABEL = "Dar acesso a este login neste pátio";
+export const TEMPORARY_PASSWORD_VALIDITY_NOTICE = "Vale por 24 horas e só serve para o técnico criar a própria senha.";
+export const TEMPORARY_PASSWORD_GROUP_NOTICE = "Esta senha vale em todos os pátios do grupo em que o técnico tem acesso.";
+
+/** O 409 da criação é o do e-mail que já tem acesso no grupo? (a tela oferece dar acesso só neste caso). */
+export function isEmailInGroupError(error: unknown): boolean {
+  return readErrorReason(error) === "email_in_group";
+}
+
+// Dar acesso (plano 1.8 §3.1). Frases fixas, nenhuma ecoa o servidor; nenhuma revela o outro pátio.
+const GRANT_REASON_MESSAGE: Record<string, string> = {
+  login_not_found_in_group: "Não há login com este e-mail no grupo.",
+  login_ambiguous_in_group: "Há mais de um login com este e-mail no grupo. Fale com o gestor do grupo.",
+  user_email_conflict: "Este e-mail já tem usuário neste pátio.",
+};
+
+export function interpretAccessGrantError(error: unknown): string {
+  const reason = readErrorReason(error);
+  if (reason && GRANT_REASON_MESSAGE[reason]) return GRANT_REASON_MESSAGE[reason];
+  const status = readErrorStatus(error);
+  if (status === 400) return "Confira o nome e tente novamente.";
+  if (status === 403) return "Você não tem permissão para dar acesso a usuários neste pátio.";
+  return "Não foi possível dar acesso agora. Nada foi criado. Tente novamente.";
+}
+
+// Redefinir senha (plano 1.8.3 §2.3; códigos da ref em `identity-link.service.ts` e `auth.routes.ts`).
+const RESET_REASON_MESSAGE: Record<string, string> = {
+  identity_linked_elsewhere: "Este técnico tem conta ligada a outra organização. Só ele pode trocar a senha.",
+  user_inactive: "Este usuário está inativo neste pátio. Reative o acesso antes de redefinir a senha.",
+  cannot_reset_self: "Para trocar a sua própria senha, use a troca de senha.",
+  target_not_manageable: "A senha deste usuário não pode ser redefinida por este pátio.",
+  user_not_found: "Usuário não encontrado. Atualize a lista e tente novamente.",
+};
+
+export function interpretPasswordResetError(error: unknown): string {
+  const reason = readErrorReason(error);
+  if (reason && RESET_REASON_MESSAGE[reason]) return RESET_REASON_MESSAGE[reason];
+  const status = readErrorStatus(error);
+  if (status === 404) return RESET_REASON_MESSAGE.user_not_found;
+  if (status === 403) return "Você não tem permissão para redefinir senhas neste pátio.";
+  return "Não foi possível redefinir a senha agora. Nada foi alterado. Tente novamente.";
+}
+
 // ── Interpretação dos erros de domínio ({error:{reason}}) ─────────────────────
 // A ApiError não expõe o corpo cru; motivos explícitos (testes/integração) mapeiam campo+mensagem.
 export type UserSubmitContext = "create" | "update";
@@ -253,6 +319,18 @@ export const USER_REASON_FEEDBACK: Record<string, UserSubmitFeedback> = {
   user_not_found: {
     reason: "user_not_found",
     message: "Usuário não encontrado. Atualize a lista e tente novamente.",
+  },
+  // B-APP-ORG-2S (S3) — o e-mail já tem login em outro pátio do grupo (plano 1.7.1 §2.1, 1.8.1 §3). A frase é fixa:
+  // não diz qual pátio, nome, perfil nem situação (1.7.2 §2.4). A tela oferece dar acesso ao login que já existe.
+  email_in_group: {
+    reason: "email_in_group",
+    field: "email",
+    message: EMAIL_IN_GROUP_MESSAGE,
+  },
+  user_email_conflict: {
+    reason: "user_email_conflict",
+    field: "email",
+    message: "Este e-mail já tem usuário neste pátio.",
   },
 };
 

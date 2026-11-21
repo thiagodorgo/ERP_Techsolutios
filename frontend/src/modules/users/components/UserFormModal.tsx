@@ -2,9 +2,10 @@ import type { CSSProperties, FormEvent } from "react";
 import { useMemo, useState } from "react";
 
 import { Alert, Button, Input, Modal, Select } from "../../../components/ui";
-import { USER_ROLE_OPTIONS, interpretUserSubmitError, roleLabel, validateUser } from "../users.adapter";
+import { GRANT_ACCESS_ACTION_LABEL, USER_ROLE_OPTIONS, interpretUserSubmitError, isEmailInGroupError, roleLabel, validateUser } from "../users.adapter";
 import { createUser, updateUser } from "../users.service";
 import type { User, UserField, UsersApiContext, UserWritableStatus } from "../users.types";
+import { ResetPasswordFlow } from "./ResetPasswordFlow";
 
 const FIELD_ID: Record<string, string> = {
   name: "user-field-name",
@@ -16,6 +17,9 @@ const FIELD_ID: Record<string, string> = {
 const gridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--space-12)" };
 const fullWidth: CSSProperties = { gridColumn: "1 / -1" };
 const footerStyle: CSSProperties = { display: "flex", justifyContent: "flex-end", gap: "var(--space-8)", marginTop: "var(--space-16)" };
+// B-APP-ORG-2S (S3, Emenda 1.8.3.4) — "Redefinir senha" no modo de edição, à esquerda do rodapé, com alvo de 44 px.
+const resetPasswordStyle: CSSProperties = { marginRight: "auto", minHeight: 44 };
+const grantOfferStyle: CSSProperties = { display: "flex", justifyContent: "flex-start", margin: "var(--space-8) 0 var(--space-12)" };
 const hintStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--text-secondary)" };
 const fieldsetStyle: CSSProperties = { border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-6)", padding: "var(--space-10)", margin: 0 };
 const legendStyle: CSSProperties = { fontSize: "var(--text-sm)", fontWeight: 700, padding: "0 var(--space-6)" };
@@ -28,11 +32,15 @@ export function UserFormModal({
   context,
   onClose,
   onSaved,
+  onRequestAccessGrant,
 }: {
   readonly user: User | null;
   readonly context: UsersApiContext;
   readonly onClose: () => void;
-  readonly onSaved: (saved?: User) => void;
+  // B-APP-ORG-2S (S3): a criação devolve a senha provisória UMA vez; quem abriu o formulário a mostra no diálogo dela.
+  readonly onSaved: (saved?: User, temporaryPassword?: string) => void;
+  // B-APP-ORG-2S (S3): depois da recusa `email_in_group`, o operador pode dar acesso ao login que já existe no grupo.
+  readonly onRequestAccessGrant?: (draft: { readonly email: string; readonly name: string }) => void;
 }) {
   const isEdit = Boolean(user);
   const [name, setName] = useState(user?.name ?? "");
@@ -42,6 +50,10 @@ export function UserFormModal({
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<UserField, string>>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // O e-mail recusado com `email_in_group` (só ele abre o "Dar acesso"); outra edição do e-mail desarma a oferta.
+  const [emailInGroup, setEmailInGroup] = useState<string | null>(null);
+  // B-APP-ORG-2S (S3, Emenda 1.8.3.4) — o fluxo de redefinição abre NO LUGAR do formulário e, ao fechar, volta a ele.
+  const [resetOpen, setResetOpen] = useState(false);
 
   // Opções = papéis canônicos + eventuais papéis já atribuídos ao usuário fora da lista padrão
   // (para não descartá-los silenciosamente ao editar).
@@ -60,6 +72,7 @@ export function UserFormModal({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setServerError(null);
+    setEmailInGroup(null);
 
     const draft = { name: name.trim(), email: email.trim(), roles };
     const errors = validateUser(draft, { isEdit });
@@ -77,11 +90,12 @@ export function UserFormModal({
         onSaved(updated ?? undefined);
       } else {
         const created = await createUser(context, { name: draft.name, email: draft.email, roles: draft.roles, status });
-        onSaved(created ?? undefined);
+        onSaved(created.user ?? undefined, created.temporaryPassword ?? undefined);
       }
     } catch (error) {
       // 400 invalid_role → sob o campo Papéis; 404 → Alerta. Foca o primeiro campo inválido.
       const feedback = interpretUserSubmitError(error, isEdit ? "update" : "create");
+      if (!isEdit && isEmailInGroupError(error)) setEmailInGroup(draft.email);
       if (feedback.field) {
         setFieldErrors((prev) => ({ ...prev, [feedback.field as UserField]: feedback.message }));
         focusField(feedback.field as UserField);
@@ -92,6 +106,10 @@ export function UserFormModal({
     }
   }
 
+  if (resetOpen && user) {
+    return <ResetPasswordFlow user={user} context={context} onClose={() => setResetOpen(false)} />;
+  }
+
   return (
     <Modal title={isEdit ? "Editar usuário" : "Novo usuário"} open onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate>
@@ -99,6 +117,13 @@ export function UserFormModal({
           <Alert title="Não foi possível salvar" tone="danger">
             {serverError}
           </Alert>
+        ) : null}
+        {emailInGroup && emailInGroup === email.trim() && onRequestAccessGrant ? (
+          <div style={grantOfferStyle}>
+            <Button type="button" variant="secondary" onClick={() => onRequestAccessGrant({ email: emailInGroup, name: name.trim() })}>
+              {GRANT_ACCESS_ACTION_LABEL}
+            </Button>
+          </div>
         ) : null}
 
         <div style={gridStyle}>
@@ -164,6 +189,18 @@ export function UserFormModal({
         </div>
 
         <footer style={footerStyle}>
+          {isEdit && user ? (
+            <Button
+              type="button"
+              variant="secondary"
+              style={resetPasswordStyle}
+              onClick={() => setResetOpen(true)}
+              disabled={saving}
+              aria-label={`Redefinir a senha de ${user.name}`}
+            >
+              Redefinir senha
+            </Button>
+          ) : null}
           <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>
