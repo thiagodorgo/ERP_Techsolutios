@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1330** |
-| IDs distintos | 1315 |
-| **ABERTAS** | **1008** |
+| Cabecalhos `## P-` | **1331** |
+| IDs distintos | 1316 |
+| **ABERTAS** | **1009** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **947** |
+| — das quais **ativas nesta rodada** | **948** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 318 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1330 cabecalhos para 1315 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1331 cabecalhos para 1316 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 379
+## ABERTAS · balde A — material — 380
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -453,6 +453,7 @@
 | `P-ASS-OPERACAO-COBRANCA-TELA` | 17356 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
 | `P-08C3-TESTES-DB-DE-VERDADE` | 17370 | MÉDIA | sim | P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda  |
 | `P-T13-INJETADO-PONTO-CEGO` | 17378 | MÉDIA | sim | P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em mé |
+| `P-AWS-ROTEIRO-TRACCAR-DIVERGE` | 17428 | ALTA | sim | P-AWS-ROTEIRO-TRACCAR-DIVERGE (2026-11-20) — o roteiro da AWS para o Traccar (fases 3c e |
 
 ## ABERTAS · balde B — processo/registro — 568
 
@@ -1020,12 +1021,12 @@
 | `P-08C3-EVENTOS-ASAAS-NO-SANDBOX` | 17407 | BAIXA | sim | P-08C3-EVENTOS-ASAAS-NO-SANDBOX (2026-11-20) — conferir no sandbox a lista `ASAAS_WEBHOO |
 | `P-08C3-CLOSE-TIMEOUT-FRIO` | 17414 | BAIXA | sim | P-08C3-CLOSE-TIMEOUT-FRIO (2026-11-20) — o 1º fechamento de um processo frio, sob carga, |
 | `P-08C3-NOTAS-JUNTA-C2` | 17421 | BAIXA | sim | P-08C3-NOTAS-JUNTA-C2 (2026-11-20) — duas notas não graves da C2 da junta do #608 (C2-N3 |
-| `P-SYNC-SETSTATE-NO-BUILD` | 17428 | BAIXA | sim | P-SYNC-SETSTATE-NO-BUILD (2026-11-20) — a tela de Sincronização do app dispara "setState |
-| `P-SYNC-LINHA-TRANSBORDA-390` | 17435 | BAIXA | sim | P-SYNC-LINHA-TRANSBORDA-390 (2026-11-20) — na tela de Sincronização, uma linha transbord |
-| `P-APPORG-RESUMO-POR-ORGANIZACAO` | 17442 | BAIXA | sim | P-APPORG-RESUMO-POR-ORGANIZACAO (2026-11-20) — falta no backend o resumo por organização |
-| `P-API-CLIENT-DETAILS-DESCARTADO` | 17449 | — | sim | P-API-CLIENT-DETAILS-DESCARTADO (2026-11-20) — o cliente de API da web descarta o `detai |
-| `P-ASS10C-FORMA-DA-COBRANCA` | 17456 | — | sim | P-ASS10C-FORMA-DA-COBRANCA (2026-11-20) — a forma de cada cobrança não vem nas respostas |
-| `P-USRCON-R11-R12-SEM-CASO-DB` | 17463 | BAIXA | sim | P-USRCON-R11-R12-SEM-CASO-DB (2026-11-20) — no banco, as leituras R11 e R12 do despachan |
+| `P-SYNC-SETSTATE-NO-BUILD` | 17443 | BAIXA | sim | P-SYNC-SETSTATE-NO-BUILD (2026-11-20) — a tela de Sincronização do app dispara "setState |
+| `P-SYNC-LINHA-TRANSBORDA-390` | 17450 | BAIXA | sim | P-SYNC-LINHA-TRANSBORDA-390 (2026-11-20) — na tela de Sincronização, uma linha transbord |
+| `P-APPORG-RESUMO-POR-ORGANIZACAO` | 17457 | BAIXA | sim | P-APPORG-RESUMO-POR-ORGANIZACAO (2026-11-20) — falta no backend o resumo por organização |
+| `P-API-CLIENT-DETAILS-DESCARTADO` | 17464 | — | sim | P-API-CLIENT-DETAILS-DESCARTADO (2026-11-20) — o cliente de API da web descarta o `detai |
+| `P-ASS10C-FORMA-DA-COBRANCA` | 17471 | — | sim | P-ASS10C-FORMA-DA-COBRANCA (2026-11-20) — a forma de cada cobrança não vem nas respostas |
+| `P-USRCON-R11-R12-SEM-CASO-DB` | 17478 | BAIXA | sim | P-USRCON-R11-R12-SEM-CASO-DB (2026-11-20) — no banco, as leituras R11 e R12 do despachan |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
