@@ -605,6 +605,29 @@ void main() {
     await _ficouEmA(h, key: key, epoch: epoch);
   });
 
+  // Conserto da junta J-613 (C2-01, a MO4): o teste acima passa pelo
+  // orquestrador, que tem a própria guarda; este chama o AuthNotifier direto,
+  // para que a guarda DELE também tenha quem a vigie. O servidor responderia
+  // 200 com a própria organização atual: sem a guarda, o pedido sai, a época
+  // sobe e a sessão de A é revogada.
+  test('T-ATUAL-notifier — o AuthNotifier, chamado direto para a organização '
+      'atual, não faz nada', () async {
+    final h = await _abre();
+    h.server.on(
+      _activeTenant,
+      (_) => (200, _trocou(tenantId: _orgA, access: 'tok-a9')),
+    );
+    final key = h.key!;
+    final epoch = h.auth.epoch;
+    final eventos = [...h.telemetria.eventos];
+
+    await h.auth.switchTenant(_orgA);
+
+    expect(h.server.to(_activeTenant), isEmpty);
+    expect(h.telemetria.eventos, eventos);
+    await _ficouEmA(h, key: key, epoch: epoch);
+  });
+
   test(
     'o modo de desenvolvimento troca só para organizações da lista dele',
     () async {

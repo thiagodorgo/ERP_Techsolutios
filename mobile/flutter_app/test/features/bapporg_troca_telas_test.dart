@@ -1004,4 +1004,105 @@ void main() {
       expect(tester.getSize(linha.first).height, greaterThanOrEqualTo(44));
     }
   });
+
+  // ── Linguagem: nenhum termo técnico em texto visível (§3; J-613, C2-02) ────
+
+  testWidgets('LINGUAGEM — Seleção, detalhe, aviso de pendências e "Entrar em '
+      'outra organização": nenhum termo técnico na tela', (tester) async {
+    await _abre(tester, pendentesDeA: 2);
+    _semTermoTecnico(tester, 'Seleção');
+
+    await tester.tap(await _abreDetalhe(tester, _orgB));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('troca-pendencias')), findsOneWidget);
+    _semTermoTecnico(tester, 'detalhe e aviso de pendências');
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    final outra = find.byKey(const Key('troca-entrar-em-outra'));
+    await tester.ensureVisible(outra);
+    await tester.tap(outra);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('troca-outra')), findsOneWidget);
+    _semTermoTecnico(tester, 'linha e aviso "Entrar em outra organização"');
+  });
+
+  testWidgets('LINGUAGEM — Recusa (403): nenhum termo técnico na tela', (
+    tester,
+  ) async {
+    final h = await _abre(tester);
+    h.server.onSwitch = (_) => (
+      403,
+      {
+        'error': {'code': 'TENANT_ACCESS_DENIED'},
+      },
+    );
+    await _trocaPelaTela(tester, _orgB);
+    expect(find.byKey(const Key('troca-recusada')), findsOneWidget);
+    _semTermoTecnico(tester, 'Recusa');
+  });
+
+  testWidgets('LINGUAGEM — Sem conexão: nenhum termo técnico na tela', (
+    tester,
+  ) async {
+    await _abre(tester, offline: true);
+    expect(find.byKey(const Key('troca-sem-conexao')), findsOneWidget);
+    _semTermoTecnico(tester, 'Sem conexão');
+  });
+
+  testWidgets('LINGUAGEM — Carregando: nenhum termo técnico na tela', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    await _abre(tester, antes: (b) => b.gate = gate, settle: false);
+    expect(find.byKey(const Key('troca-carregando')), findsOneWidget);
+    _semTermoTecnico(tester, 'Carregando');
+    gate.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('LINGUAGEM — Erro: nenhum termo técnico na tela', (tester) async {
+    await _abre(
+      tester,
+      antes: (b) => b.failWith = const ApiNetworkError(),
+      settle: false,
+    );
+    expect(find.byKey(const Key('troca-erro')), findsOneWidget);
+    _semTermoTecnico(tester, 'Erro');
+  });
+
+  testWidgets('LINGUAGEM — Perfil com 2 organizações: nenhum termo técnico na '
+      'tela', (tester) async {
+    await _abre(tester, inicio: '/profile');
+    expect(find.text('Trocar de organização'), findsOneWidget);
+    _semTermoTecnico(tester, 'Perfil');
+  });
+}
+
+/// Conserto da junta J-613 (C2-02, a MO6). §3 do contrato: a tela nunca mostra
+/// termo técnico. Junta TODO texto pintado na tela (cada `Text` vira um
+/// `RichText`; os campos de digitação são `EditableText`) e procura as palavras
+/// da camada técnica: `tenant` e `org` (na tela, "organização"), `role`,
+/// `scope`, `rbac`, `permission` e os nomes técnicos dos papéis.
+final _termoTecnico = RegExp(
+  r'\b(tenants?|orgs?|roles?|scopes?|rbac|permissions?|platform_admin|'
+  r'tenant_admin|super_admin|field_technician|field_dispatcher)\b',
+  caseSensitive: false,
+);
+
+List<String> _textosVisiveis(WidgetTester tester) => [
+  for (final w in tester.widgetList<RichText>(find.byType(RichText)))
+    w.text.toPlainText(),
+  for (final w in tester.widgetList<EditableText>(find.byType(EditableText)))
+    w.controller.text,
+];
+
+void _semTermoTecnico(WidgetTester tester, String onde) {
+  final textos = _textosVisiveis(tester);
+  expect(textos, isNotEmpty, reason: onde);
+  final comTermo = [
+    for (final t in textos)
+      if (_termoTecnico.hasMatch(t)) t,
+  ];
+  expect(comTermo, isEmpty, reason: '$onde: termo técnico em texto visível');
 }
