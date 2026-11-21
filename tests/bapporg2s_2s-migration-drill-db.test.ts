@@ -11,7 +11,7 @@ import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 
 // -----------------------------------------------------------------------------------------------
-// B-APP-ORG-2S (S1) — DRILL DA MIGRAÇÃO 20260906000000_apporg2s_registro_e_concessao EM BASE PRÓPRIA.
+// B-APP-ORG-2S (S1) — DRILL DA MIGRAÇÃO 20260907000000_apporg2s_registro_e_concessao EM BASE PRÓPRIA.
 //   (a) o `migrate deploy` aplica a tabela `user_creation_log` (RLS FORCE, índice único parcial
 //       `em_curso`) e o modo `concessao` nos dois CHECK de `auth_identity_links`/`auth_identity_link_events`;
 //   (b) o down do runbook, numa transação só, apaga a tabela e restaura os dois CHECK sem `concessao`;
@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const MIGRATION_NAME = "20260906000000_apporg2s_registro_e_concessao";
+const MIGRATION_NAME = "20260907000000_apporg2s_registro_e_concessao";
 const MIGRATION = path.join(ROOT, "prisma", "migrations", MIGRATION_NAME, "migration.sql");
 
 const migrationSql = (): string => readFileSync(MIGRATION, "utf8").replace(/\r\n/g, "\n");
