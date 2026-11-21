@@ -5565,3 +5565,21 @@ Relatório visual para o dono: `~/erp-pausa-2026-10-03/relatorio-2026-10-13/inde
 ## Estado em 2026-11-18 — registro de 17/11 tarde a 18/11 manhã
 
 O registro leva ao repositório os fechamentos do portão: o item 68 (sessão do app) fecha no #588 (squash `054d5939`, porteiro `porteiro-588-cl` LIBERADO COM RESSALVA), o item 67 (aprovações duráveis) no #586 (squash `89cf79fe`, porteiro `porteiro-586-cl`), o item 44 (roteiro de demonstração e operação) no #599 (`de00d1fc`, porteiro `porteiro-599-cl`) e o item 31 (estoque do app) no #582 (`3fa7fc1b`, porteiro `porteiro-582-cl`); o item 71 (a leitura de OS alheias pelo técnico, `B-WO-LEITURA-TECNICO`) entra no portão, e o item 72 (o administrador da plataforma mexendo em dinheiro sem permissão) fica fora do portão pela decisão do dono (`P-PLATAFORMA-PERMISSAO-IGNORADA`, ALTA), com pré-requisito explícito para a Fase 6 da AWS (`D-AWS-13`). Entram as atas J-588, J-586, J-597, J-596 e J-582. As decisões do dono do período ficam registradas em `decisoes.md` (canal do artefato, Fable de volta e suspenso, item 72 fora do portão, roteiro AWS pelo CloudShell, Traccar e antivírus já, banco próprio do Traccar e a porta com os devidos cuidados, o painel por permissão do superior e o gestor que concede, a "mesma regra" em todas as leituras, a migração autorizada, as Q1–Q4 do app de organização e o Claude com uma tarefa até sexta), junto das emendas 2.2 do B-GUI-02, 1.2 do B-GUI-D1 e 7 do B-ASS-08c2.
+
+## Estado em 2026-11-20 — registro de 20/11
+
+- **Na `main`, em 20/11** (horas de SP, pelo `mergedAt` do `gh pr view`):
+  - #609, registro de 19/11: squash `ebdcf62f` às 10:47;
+  - #610 (`B-PLAT-PERMISSAO`, o antigo item 72, fora do portão): squash `3b7351e7` às 14:26, ata `J-610-b-plat-permissao`, porteiro `porteiro-610-cl` LIBERADO COM RESSALVA;
+  - #611, marco de KPI de 20/11: squash `23006599` às 16:41;
+  - #608 (`B-ASS-08c3`, item 60): squash `769f29d6` às 19:23, ata `J-608-b-ass-08c3`, porteiro `porteiro-608` LIBERADO COM RESSALVA.
+- **Portão:** o item 60 fecha, pronto e DESLIGADO (ligar o canal é ato do dono). O portão vai a **65/71**. Fecham `P-ASS-CANAL-DESLIGADO` e `P-PLATAFORMA-PERMISSAO-IGNORADA`.
+- **Abertos, em rascunho:**
+  - #612, a tela de operação da cobrança (`B-ASS-10c-OPERACAO`), com a ressalva R5 do porteiro do #608;
+  - #613, escolher e trocar de organização no app (`B-APP-ORG`, itens 69 e 70);
+  - #614, a Visão da organização (`B-USERS-CONCESSAO-PAINEL`).
+- **Planos do dia, fora do repositório:**
+  - `B-COMISSAO-MOTOR` (Fable) com as Emendas 1, 1.1, 1.2 e 1.3. A 1ª crítica deu VOLTA, e as decisões do dono estão em `decisoes.md`;
+  - `B-USERS-ACESSO-POR-MODULO`.
+- **Reinício do Windows às 19:44 SP** (atualização do sistema). A retomada seguiu o roteiro do P8: o porteiro do #608 foi retomado pelo P3, e o orquestrador limpou os resíduos do bloco.
+- **Junta J-608:** as 3 cadeiras do Codex caíram por limite às 16:03–16:09 SP, e a C1 do Argon travou antes. Os sucessores tinham identidade nova (ata `J-608-b-ass-08c3`).
