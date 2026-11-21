@@ -179,10 +179,11 @@ export async function novaFamilia(
   `;
   const identityId = identity[0]!.id;
 
-  for (const org of orgs) {
+  for (const [index, org] of orgs.entries()) {
+    const attachedVia = index === 0 ? "backfill" : "concessao";
     await h.admin.$executeRaw`
       INSERT INTO auth_identity_links (identity_id, tenant_id, user_id, attached_via)
-      VALUES (${identityId}::uuid, ${org.tenantId}::uuid, ${org.userId}::uuid, 'backfill')
+      VALUES (${identityId}::uuid, ${org.tenantId}::uuid, ${org.userId}::uuid, ${attachedVia})
     `;
   }
 

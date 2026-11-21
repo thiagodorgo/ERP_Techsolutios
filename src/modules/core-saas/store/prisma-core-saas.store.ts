@@ -36,6 +36,7 @@ import {
   EmailInGroupError,
   LoginAmbiguousInGroupError,
   LoginNotFoundInGroupError,
+  loginOriginsOf,
   probeGroupPeers,
 } from "../services/group-peer-probe.js";
 import {
@@ -261,24 +262,20 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
 
       // A credencial do par de origem, lida com FOR SHARE no contexto de RLS do patio de origem (papel sem
       // bypass): a troca de senha em voo termina antes, e a copia sai com o hash que ficou (MD2).
+      const loginOrigins = loginOriginsOf(peers.origins, identityId);
+      if (loginOrigins.length === 0) throw new LoginNotFoundInGroupError();
+      if (loginOrigins.length > 1) throw new LoginAmbiguousInGroupError();
+      const originTenantId = loginOrigins[0].tenantId;
       let origin: ShareableLocalAuthCredential | null = null;
-      let originTenantId: string | null = null;
 
       try {
-        for (const peer of peers.origins) {
-          if (peer.identityId !== identityId) continue;
-          await setTenantRlsContext(tx, peer.tenantId);
-          origin = await credentials.findForShareByEmailForTenant(input.email, peer.tenantId);
-          if (origin) {
-            originTenantId = peer.tenantId;
-            break;
-          }
-        }
+        await setTenantRlsContext(tx, originTenantId);
+        origin = await credentials.findForShareByEmailForTenant(input.email, originTenantId);
       } finally {
         await setTenantRlsContext(tx, input.tenantId);
       }
 
-      if (!origin || !originTenantId) throw new LoginNotFoundInGroupError();
+      if (!origin) throw new LoginNotFoundInGroupError();
 
       const role = await txRoles.findByKeyForTenant("field_technician", input.tenantId);
       if (!role) throw new Error("Role is not assignable to tenant: field_technician");
