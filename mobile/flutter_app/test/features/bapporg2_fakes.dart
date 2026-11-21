@@ -240,6 +240,9 @@ class Escuta {
   late ListenSessions sessions;
   DateTime clock = DateTime.now().toUtc();
 
+  /// A chave da sessão viva de agora (os testes a trocam).
+  String? liveKey = 'u-x|X|n-x';
+
   /// Um aparelho que abre de novo: memória nova, o mesmo armazenamento.
   ListenSessions open() => ListenSessions(
     repository: repository,
@@ -247,6 +250,7 @@ class Escuta {
     revocations: revocations,
     config: const ApiConfig(baseUrl: kBase),
     liveClient: () => liveClient,
+    liveKey: () => liveKey,
     now: () => clock,
     adapter: server,
   );

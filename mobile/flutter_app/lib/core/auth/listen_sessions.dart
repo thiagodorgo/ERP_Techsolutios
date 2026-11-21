@@ -1,16 +1,4 @@
-// B-APP-ORG-2 (A1; Emendas 1.8 §5.2, 1.8.1 §5.3, 1.8.2 §4.3 e 1.8.3 §4): as
-// sessões de escuta, só de leitura, dos outros pátios.
-//
-// - Cada pátio de escuta tem a sua sessão e o seu cliente; a sessão viva não
-//   muda (nada gravado, a época igual).
-// - A escuta nunca renova: no 401 e na expiração a sessão sai da memória, e o
-//   próximo ciclo pede outra.
-// - Sem acúmulo no servidor (CA182-05): o diário guarda no máximo 1 token de
-//   renovação por pátio, gravado ANTES de usar a sessão; só se pede sessão nova
-//   com a revogação da anterior confirmada (2xx ou 400). Sem resposta
-//   definitiva, não se pede outra.
-// - Sair, troca e queda da sessão viva: os tokens do diário vão para a fila do
-//   Sair, e o diário e a memória se esvaziam.
+// PROTOTIPO DESCARTAVEL do plan-1839-fable (mede o desenho da Emenda 1.8.3.9).
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,10 +9,8 @@ import 'auth_notifier.dart';
 import 'auth_repository.dart';
 import 'listen_token_journal.dart';
 import 'pending_revocations.dart';
+import 'session_renewal.dart';
 
-/// Não vigia a sessão viva: o notifier lê este provider na troca, no Sair e na
-/// queda. O cliente vivo (o da troca, `tenantSwitchClientProvider`) nasce na
-/// hora de cada pedido de sessão de escuta.
 final listenSessionsProvider = Provider<ListenSessions>((ref) {
   return ListenSessions(
     repository: ref.watch(authRepositoryProvider),
@@ -32,6 +18,9 @@ final listenSessionsProvider = Provider<ListenSessions>((ref) {
     revocations: ref.watch(pendingRevocationsProvider),
     config: const ApiConfig(),
     liveClient: () => ref.read(tenantSwitchClientProvider)(),
+    // dart format off
+    liveKey: () => ref.read(authStateProvider.notifier).liveSessionKey, // a chave da sessão viva de agora, lida na hora
+    // dart format on
     report: (errorType) {
       try {
         ref.read(authFailureReporterProvider)(errorType);
@@ -54,6 +43,7 @@ class ListenSessions {
     required PendingRevocations revocations,
     required ApiConfig config,
     required Dio Function() liveClient,
+    required String? Function() liveKey,
     void Function(String errorType)? report,
     DateTime Function()? now,
     HttpClientAdapter? adapter,
@@ -62,6 +52,7 @@ class ListenSessions {
        _revocations = revocations,
        _config = config,
        _liveClientOf = liveClient,
+       _liveKey = liveKey,
        _report = report ?? _noReport,
        _now = now ?? DateTime.now,
        _adapter = adapter;
@@ -71,50 +62,84 @@ class ListenSessions {
   final PendingRevocations _revocations;
   final ApiConfig _config;
   final Dio Function() _liveClientOf;
+  final String? Function() _liveKey;
   final void Function(String errorType) _report;
   final DateTime Function() _now;
-
-  /// Os testes trocam o adaptador dos clientes de escuta por aqui.
   final HttpClientAdapter? _adapter;
   final Map<String, AuthSession> _sessions = {};
   final Map<String, Dio> _clients = {};
   final Map<String, Future<AuthSession?>> _inFlight = {};
-
-  /// Sobe no Sair, na troca e na queda: um pedido que começou antes não vira
-  /// sessão de escuta depois.
   int _generation = 0;
+  String? _owner;
+  String? _closedFor;
 
-  /// O cliente da sessão viva, que leva o pedido de sessão de escuta.
   Dio get _liveClient => _liveClientOf();
 
-  List<AuthSession> get sessions => List.unmodifiable(_sessions.values);
+  String? get _served {
+    final live = _liveKey();
+    // dart format off
+    if (live == null || live == _closedFor) return null; // a sessão que saiu nunca mais é servida
+    // dart format on
+    return live;
+  }
+
+  String? _keyFor(AuthSession current) {
+    final served = _served;
+    // dart format off
+    if (served == null || served != sessionKeyOf(current)) return null; // só a sessão viva de agora pede e recebe
+    // dart format on
+    return served;
+  }
+
+  bool get _ownerServed => _owner != null && _owner == _served;
+
+  List<AuthSession> get sessions =>
+      _ownerServed ? List.unmodifiable(_sessions.values) : const [];
+
+  Dio? _clientOrNull(String tenantId) =>
+      _ownerServed ? _clients[tenantId] : null;
 
   Dio clientFor(String tenantId) {
-    final client = _clients[tenantId];
-    if (client == null) throw StateError('Sessão de escuta indisponível.');
+    final client = _clientOrNull(tenantId);
+    if (client == null) throw StateError("Sessão de escuta indisponível.");
     return client;
   }
 
-  /// A sessão de escuta do pátio, ou `null` quando a revogação da anterior não
-  /// teve resposta definitiva (o bloco fica com os dados que já tinha).
-  Future<AuthSession?> acquire(String tenantId, AuthSession current) {
-    final pending = _inFlight[tenantId];
-    if (pending != null) return pending;
-    final started = _acquire(tenantId, current);
-    _inFlight[tenantId] = started;
-    return started.whenComplete(() => _inFlight.remove(tenantId));
+  Future<Dio?> clientOf(String tenantId, AuthSession current) async {
+    final session = await acquire(tenantId, current);
+    return session == null ? null : _clientOrNull(tenantId);
   }
 
-  Future<AuthSession?> _acquire(String tenantId, AuthSession current) async {
+  Future<AuthSession?> acquire(String tenantId, AuthSession current) {
+    final key = _keyFor(current);
+    if (key == null) return Future.value();
+    // dart format off
+    if (_owner != key) _wipe(key); // a sessão viva mudou: a memória de antes não serve a ninguém
+    // dart format on
+    final pending = _inFlight[tenantId];
+    if (pending != null) return pending;
+    final started = _acquire(tenantId, current, _generation);
+    _inFlight[tenantId] = started;
+    return started.whenComplete(() {
+      if (identical(_inFlight[tenantId], started)) _inFlight.remove(tenantId);
+    });
+  }
+
+  Future<AuthSession?> _acquire(
+    String tenantId,
+    AuthSession current,
+    int generation,
+  ) async {
+    bool alive() => generation == _generation && _keyFor(current) != null;
     final existing = _sessions[tenantId];
     if (existing != null && existing.tokens.expiresAt.isAfter(_now())) {
       return existing;
     }
     await _drop(tenantId); // expirou: sai da memória; o diário revoga abaixo
-    final generation = _generation;
     final previous = await _journal.tokenFor(tenantId);
     // dart format off
     if (previous != null && !await _revoked(tenantId, previous)) return null; // sem resposta definitiva: não pede outra
+    if (!alive()) return null; // GA: a época mudou antes do pedido: nenhum pedido sai
     // dart format on
     final AuthSession session;
     try {
@@ -124,17 +149,14 @@ class ListenSessions {
         client: _liveClient,
       );
     } on ListenTenantMismatchError catch (error) {
-      // L9: a sessão não é guardada e o token recebido vai para a revogação.
       await _revocations.revokeOrQueue(error.refreshToken);
       rethrow;
     }
-    if (generation != _generation) {
-      // A época mudou durante o pedido: a sessão nova nunca é usada.
-      await _revocations.revokeOrQueue(session.refreshToken);
-      return null;
-    }
+    final token = session.refreshToken;
     // dart format off
-    await _journal.put(tenantId, session.refreshToken); // grava antes de usar: o próximo início revoga
+    if (!alive()) return _refuse(tenantId, token); // GB: a época mudou durante o pedido: o token nunca entra no diário
+    if (!await _journaled(tenantId, token)) return _refuse(tenantId, token); // grava antes de usar; sem diário, a sessão não é usada
+    if (!alive()) return _refuse(tenantId, token); // GC: a época mudou na gravação: a sessão nunca é instalada
     final client = createListenHttpClient(_config, accessToken: session.accessToken);
     // dart format on
     final adapter = _adapter;
@@ -142,7 +164,9 @@ class ListenSessions {
     client.interceptors.add(
       InterceptorsWrapper(
         onError: (error, handler) async {
-          await _handleStatus(error.response?.statusCode, tenantId);
+          // dart format off
+          if (identical(_clients[tenantId], client)) await _handleStatus(error.response?.statusCode, tenantId); // só o cliente instalado derruba a sessão do pátio
+          // dart format on
           handler.next(error);
         },
       ),
@@ -152,8 +176,26 @@ class ListenSessions {
     return session;
   }
 
-  /// Tira a sessão de escuta da memória; o token fica no diário e é revogado
-  /// antes do próximo pedido.
+  Future<AuthSession?> _refuse(String tenantId, String token) async {
+    await _revocations.revokeOrQueue(token);
+    try {
+      await _journal.removeIfSame(tenantId, token);
+    } catch (error) {
+      _report(error.runtimeType.toString());
+    }
+    return null;
+  }
+
+  Future<bool> _journaled(String tenantId, String token) async {
+    try {
+      await _journal.put(tenantId, token);
+      return true;
+    } catch (error) {
+      _report(error.runtimeType.toString());
+      return false;
+    }
+  }
+
   Future<void> drop(String tenantId) => _drop(tenantId);
 
   Future<void> _handleStatus(int? status, String tenantId) async {
@@ -165,15 +207,21 @@ class ListenSessions {
     _clients.remove(tenantId);
   }
 
-  /// O pátio que saiu da lista: o token vai para a fila do Sair e sai do
-  /// diário e da memória.
+  void _wipe(String? owner) {
+    _generation++;
+    _owner = owner;
+    _sessions.clear();
+    _clients.clear();
+    _inFlight.clear();
+  }
+
   Future<void> retainTenants(Set<String> tenantIds) async {
     try {
       final journal = await _journal.all();
       for (final entry in journal.entries) {
         if (tenantIds.contains(entry.key)) continue;
         await _revocations.revokeOrQueue(entry.value);
-        await _journal.remove(entry.key);
+        await _journal.removeIfSame(entry.key, entry.value);
       }
     } catch (error) {
       _report(error.runtimeType.toString());
@@ -183,26 +231,28 @@ class ListenSessions {
     }
   }
 
-  /// Sair, troca e queda: nunca lança (o Sair e a troca seguem).
   Future<void> discardAll() async {
-    _generation++;
-    _sessions.clear();
-    _clients.clear();
+    // dart format off
+    _closedFor = _liveKey(); // a sessão que sai não pede mais escuta
+    _wipe(null); // a memória sai no mesmo passo, antes de qualquer espera
+    // dart format on
     try {
       final journal = await _journal.all();
-      for (final token in journal.values) {
-        await _revocations.revokeOrQueue(token);
+      for (final entry in journal.entries) {
+        await _revocations.revokeOrQueue(entry.value);
+        await _journal.removeIfSame(entry.key, entry.value);
       }
-      await _journal.clear();
     } catch (error) {
       _report(error.runtimeType.toString());
     }
   }
 
+  void reopen() => _closedFor = null;
+
   Future<bool> _revoked(String tenantId, String refreshToken) async {
     final outcome = await _repository.revokeRefreshToken(refreshToken);
     if (outcome == RevocationOutcome.retry) return false;
-    await _journal.remove(tenantId);
+    await _journal.removeIfSame(tenantId, refreshToken);
     return true;
   }
 }

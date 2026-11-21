@@ -303,6 +303,7 @@ Future<_H> _abre(
         (ref) => ListenSessions(
           repository: ref.watch(authRepositoryProvider),
           journal: ListenTokenJournal(ref.watch(authTokenStorageProvider)),
+          liveKey: () => ref.read(authStateProvider.notifier).liveSessionKey,
           revocations: ref.watch(pendingRevocationsProvider),
           config: const ApiConfig(baseUrl: kBase),
           liveClient: () => ref.read(tenantSwitchClientProvider)(),
