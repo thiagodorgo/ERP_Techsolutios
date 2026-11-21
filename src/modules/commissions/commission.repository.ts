@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
 
+import { Prisma } from "@prisma/client";
+
+import { commissionCents, commissionCentsOfSum } from "./commission-money.js";
 import type {
   CommissionBasisEvent,
   CommissionCalculation,
@@ -198,7 +201,9 @@ export class InMemoryCommissionRepository implements CommissionRepository {
   }
 
   async summarizeCalculationsByPayee(input: SummarizeCalculationsByPayeeInput): Promise<CommissionPayeeSummary> {
-    const totals = new Map<string, { total: number; count: number }>();
+    // B-APP-ORG-2S (S2e) — o dublê em memória guarda `number`; os centavos saem do `Decimal` montado a partir dele
+    // (não é o caminho de produção: o CS1, o CS2 e o CS2b rodam no Postgres).
+    const totals = new Map<string, { total: number; totalDecimal: Prisma.Decimal; count: number }>();
 
     for (const calculation of this.calculations.values()) {
       if (calculation.tenantId !== input.tenantId) continue;
@@ -206,19 +211,26 @@ export class InMemoryCommissionRepository implements CommissionRepository {
       if (input.payeeId && calculation.payeeId !== input.payeeId) continue;
       if (!withinRange(calculation.createdAt, input.from, input.to)) continue;
 
-      const current = totals.get(calculation.payeeId) ?? { total: 0, count: 0 };
+      const current = totals.get(calculation.payeeId) ?? { total: 0, totalDecimal: new Prisma.Decimal(0), count: 0 };
       totals.set(calculation.payeeId, {
         total: current.total + calculation.amount,
+        totalDecimal: current.totalDecimal.plus(new Prisma.Decimal(calculation.amount)),
         count: current.count + 1,
       });
     }
 
     const items = [...totals.entries()]
-      .map(([payeeId, aggregate]) => ({ payeeId, total: aggregate.total, count: aggregate.count }))
+      .map(([payeeId, aggregate]) => ({
+        payeeId,
+        total: aggregate.total,
+        totalCents: commissionCents(aggregate.totalDecimal),
+        count: aggregate.count,
+      }))
       .sort((left, right) => right.total - left.total);
     const total = items.reduce((sum, item) => sum + item.total, 0);
+    const totalCents = commissionCentsOfSum([...totals.values()].map((aggregate) => aggregate.totalDecimal));
 
-    return { items, total };
+    return { items, total, totalCents };
   }
 
   seedCalculationForTests(input: SeedCommissionCalculationInput): CommissionCalculation {
@@ -231,6 +243,7 @@ export class InMemoryCommissionRepository implements CommissionRepository {
       eligibleUserId: input.eligibleUserId,
       payeeId: input.payeeId,
       amount: input.amount,
+      amountCents: commissionCents(new Prisma.Decimal(input.amount)),
       currency: input.currency ?? "BRL",
       status: input.status ?? "calculated",
       calculationSnapshot: input.calculationSnapshot ?? {},

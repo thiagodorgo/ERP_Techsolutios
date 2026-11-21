@@ -21,6 +21,7 @@ import type {
   ListResult,
   SummarizeCalculationsByPayeeInput,
 } from "./commission.types.js";
+import { commissionCents, commissionCentsOfSum } from "./commission-money.js";
 import type { CommissionRepository } from "./commission.repository.js";
 import {
   evaluateWorkOrderCommissionEligibility,
@@ -258,12 +259,14 @@ export class PrismaCommissionRepository implements CommissionRepository {
       .map((row) => ({
         payeeId: row.payee_id,
         total: decimalToNumber(row._sum.amount),
+        totalCents: commissionCents(row._sum.amount),
         count: row._count,
       }))
       .sort((left, right) => right.total - left.total);
     const total = items.reduce((sum, item) => sum + item.total, 0);
-
-    return { items, total };
+    // B-APP-ORG-2S (S2e) — o total geral em centavos sai da soma EXATA no `Decimal` do banco, arredondada uma vez.
+    const totalCents = commissionCentsOfSum(grouped.filter((row) => row.payee_id !== null).map((row) => row._sum.amount));
+    return { items, total, totalCents };
   }
 
   async listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>> {
@@ -465,6 +468,7 @@ function mapCalculationRecord(record: CalculationRecord): CommissionCalculation 
     eligibleUserId: record.eligible_user_id ?? undefined,
     payeeId: record.payee_id ?? undefined,
     amount: decimalToNumber(record.amount),
+    amountCents: commissionCents(record.amount),
     currency: record.currency,
     status: record.status as CommissionCalculationStatus,
     calculationSnapshot: isRecord(record.calculation_snapshot) ? record.calculation_snapshot : {},
@@ -557,7 +561,7 @@ type CalculationRecord = {
   readonly policy_id: string;
   readonly eligible_user_id: string | null;
   readonly payee_id: string | null;
-  readonly amount: unknown;
+  readonly amount: Prisma.Decimal;
   readonly currency: string;
   readonly status: string;
   readonly calculation_snapshot: unknown;

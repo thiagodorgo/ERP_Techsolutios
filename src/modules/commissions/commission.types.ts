@@ -84,6 +84,8 @@ export type CommissionCalculation = {
   readonly eligibleUserId?: string;
   readonly payeeId?: string;
   readonly amount: number;
+  // B-APP-ORG-2S (S2e) — os centavos exatos, em texto de dígitos, do `Decimal(20,6)` (commission-money.ts).
+  readonly amountCents: string;
   readonly currency: string;
   readonly status: CommissionCalculationStatus;
   readonly calculationSnapshot: CommissionJsonRecord;
@@ -153,12 +155,16 @@ export type SummarizeCalculationsByPayeeInput = {
 export type CommissionPayeeSummaryItem = {
   readonly payeeId: string;
   readonly total: number;
+  // B-APP-ORG-2S (S2e) — os centavos exatos da soma do beneficiário, em texto (commission-money.ts).
+  readonly totalCents: string;
   readonly count: number;
 };
 
 export type CommissionPayeeSummary = {
   readonly items: readonly CommissionPayeeSummaryItem[];
   readonly total: number;
+  // B-APP-ORG-2S (S2e) — a soma exata de todos os beneficiários, arredondada uma vez, em texto.
+  readonly totalCents: string;
 };
 
 export type CommissionSummaryResult = CommissionPayeeSummary & {
