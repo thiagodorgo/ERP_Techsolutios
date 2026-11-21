@@ -118,6 +118,9 @@ export const resetGroupClock = {
   now: (): Date => new Date(),
 };
 
+// Semente da trava consultiva da fila de redefinição por identidade (distinta das travas de catálogo dos testes).
+const RESET_QUEUE_LOCK_SEED = 2026112102;
+
 type ResetLinkRow = {
   readonly tenantId: string;
   readonly userId: string;
@@ -702,6 +705,12 @@ export class IdentityLinkService {
           // identidade dele: a religação que move esse vínculo (o alvo como conta provada) trava a mesma linha
           // com FOR UPDATE, e a do próprio alvo (o alvo como ator) com FOR SHARE (T2). Quem chega depois espera
           // o outro confirmar e lê o estado novo: a identidade vem da linha TRAVADA (a versão confirmada).
+          // B-APP-ORG-2S (GR5) — antes, a FILA da identidade: duas redefinições da MESMA identidade, por pátios
+          // diferentes, travariam cada uma o vínculo do próprio par e esperariam o da outra na volta (FOR SHARE);
+          // o PostgreSQL derrubava uma por impasse (medido: `deadlock detected`, 503). A trava consultiva é da
+          // transação e respeita o `lock_timeout` do orçamento. Se a religação mover a identidade no meio, a
+          // conferência logo abaixo sai 503 e nada muda.
+          const queuedIdentityId = await this.queueResetOfIdentity(tx, actor.tenantId, target.id);
           let pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
 
           if (!pairLink) {
@@ -711,6 +720,10 @@ export class IdentityLinkService {
           }
 
           if (!pairLink) {
+            throw resetUnavailableError();
+          }
+
+          if (queuedIdentityId !== null && pairLink.identity_id !== queuedIdentityId) {
             throw resetUnavailableError();
           }
 
@@ -1103,6 +1116,26 @@ export class IdentityLinkService {
     assertDeadline(deadline);
 
     return family;
+  }
+
+  // B-APP-ORG-2S (GR5) — a fila das redefinições de uma identidade: lê a identidade do par (sem trava) e toma
+  // a trava consultiva da transação por ela. Par sem vínculo ainda não tem família: sem fila.
+  private async queueResetOfIdentity(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    userId: string,
+  ): Promise<string | null> {
+    const rows = await tx.$queryRaw<Array<{ identityId: string }>>`
+      SELECT identity_id::text AS "identityId" FROM auth_identity_links
+      WHERE tenant_id = ${tenantId}::uuid AND user_id = ${userId}::uuid
+    `;
+    const identityId = rows[0]?.identityId ?? null;
+
+    if (identityId !== null) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${identityId}, ${RESET_QUEUE_LOCK_SEED}::bigint))`;
+    }
+
+    return identityId;
   }
 
   // B-APP-ORG-2S (1.8.3 §2.3) — o grupo vigente de UM pátio no dia de São Paulo, lido sob o GUC dele (o
