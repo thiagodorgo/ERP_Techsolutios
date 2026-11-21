@@ -10,6 +10,7 @@ import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_repository.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
 import 'package:erp_techsolutions_mobile/core/auth/session_renewal.dart';
+import 'package:erp_techsolutions_mobile/core/auth/tenant_switch_orchestrator.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_codec.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
@@ -431,18 +432,11 @@ void main() {
           .read(authStateProvider.notifier)
           .login(email: 'tecnico@demo.test', password: 'senha');
       expect((await bootstrapDe(c1)).activeTenant.tenantId, 'tenant-demo');
-      await c1
-          .read(bootstrapNotifierProvider.notifier)
-          .switchTenant(
-            const TenantContext(
-              tenantId: 'tenant-field',
-              displayName: 'Organização Serviços de Campo',
-            ),
-          );
-      expect(
-        c1.read(bootstrapNotifierProvider).asData?.value.activeTenant.tenantId,
-        'tenant-field',
-      );
+      // B-APP-ORG (§5.4): a troca é da sessão, pelo orquestrador; a sessão
+      // gravada passa a ser a de tenant-field.
+      await c1.read(tenantSwitchOrchestratorProvider).run('tenant-field');
+      expect((await storage.loadSession())!.user.tenantId, 'tenant-field');
+      expect((await bootstrapDe(c1)).activeTenant.tenantId, 'tenant-field');
       c1.dispose();
 
       final c2 = appLocal(storage);
@@ -453,7 +447,8 @@ void main() {
     timeout: const Timeout(Duration(seconds: 20)),
   );
 
-  test('[T3h] os 4 fetch gravam ownerKey == sessionKeyOf(session)', () async {
+  // B-APP-ORG (§5.4): o `fetchForTenant` saiu; ficam os 2 fetch.
+  test('[T3h] os 2 fetch gravam ownerKey == sessionKeyOf(session)', () async {
     final s = sessaoGuardada(acesso: 'A0', sessionNonce: 'n-t3h');
     final key = sessionKeyOf(s);
     expect(key, 'u1|t1|n-t3h');
@@ -463,18 +458,10 @@ void main() {
     expect(fl.ownerKey, key, reason: 'fetch local');
     await local.cache(fl);
     expect((await local.restoreCached())?.ownerKey, key);
-    final tl = await local.fetchForTenant(s, 'tenant-field');
-    expect(tl.ownerKey, key, reason: 'troca local');
-    await local.cache(tl);
-    expect((await local.restoreCached())?.ownerKey, key);
 
     final remoto = bootstrapRemoto(terreno, InMemoryAuthTokenStorage());
     final fr = await remoto.fetch(s);
     expect(fr.ownerKey, key, reason: 'fetch remoto');
-    expect((await remoto.restoreCached())?.ownerKey, key);
-    final tr = await remoto.fetchForTenant(s, 't2');
-    expect(tr.ownerKey, key, reason: 'troca remota');
-    expect(tr.activeTenant.tenantId, 't2');
     expect((await remoto.restoreCached())?.ownerKey, key);
   }, timeout: const Timeout(Duration(seconds: 20)));
 

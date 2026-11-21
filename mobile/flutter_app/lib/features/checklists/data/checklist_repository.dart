@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/auth/auth_notifier.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
+import '../../../core/bootstrap/bootstrap_session_match.dart';
 import '../../../core/evidence/evidence_blob_store.dart';
 import '../../../core/local_db/database_provider.dart';
 import '../../../core/local_db/drift_checklist_local_store.dart';
@@ -1047,7 +1048,14 @@ final checklistRepositoryProvider = Provider<ChecklistRepository>((ref) {
         syncQueue: ref.watch(syncQueueRepositoryProvider),
         actionFactory: ref.watch(syncActionFactoryProvider),
         localStore: ref.watch(checklistLocalStoreProvider),
-        remoteApi: ref.watch(checklistRemoteApiProvider),
+        // troca: sem API com bootstrap de outra sessão
+        remoteApi:
+            bootstrapMatchesLiveSession(
+              session,
+              ref.read(authStateProvider).asData?.value,
+            )
+            ? ref.watch(checklistRemoteApiProvider)
+            : const PendingBackendChecklistRemoteApi(),
         blobStore: ref.watch(evidenceBlobStoreProvider),
         workOrderStore: workOrderStore,
       );

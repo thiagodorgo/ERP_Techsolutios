@@ -23,8 +23,36 @@ DioException _badResponse(int status, Map<String, Object?> body) {
 }
 
 void main() {
+  // B-APP-ORG (69, plano §5.4): o 409 com a lista passa a ser a escolha, com a
+  // lista do servidor; sem lista, continua conflito, agora com acento.
   test(
-    '409 TENANT_SELECTION_REQUIRED vira conflito com copia de organizacao',
+    '409 TENANT_SELECTION_REQUIRED com a lista vira a escolha, com cópia de organização',
+    () {
+      final error = mapLoginError(
+        _badResponse(409, {
+          'error': {
+            'code': 'TENANT_SELECTION_REQUIRED',
+            'message': 'choose one',
+            'tenants': [
+              {'id': 'org-a', 'name': 'Org A'},
+              {'id': 'org-b', 'name': 'Org B'},
+            ],
+          },
+        }),
+      );
+
+      expect(error, isA<TenantSelectionRequiredError>());
+      expect((error as TenantSelectionRequiredError).tenants.map((t) => t.id), [
+        'org-a',
+        'org-b',
+      ]);
+      expect(error.safeMessage.contains('organização'), isTrue);
+      expect(error.safeMessage.toLowerCase().contains('tenant'), isFalse);
+    },
+  );
+
+  test(
+    '409 TENANT_SELECTION_REQUIRED sem a lista vira conflito com cópia de organização',
     () {
       final error = mapLoginError(
         _badResponse(409, {
@@ -36,13 +64,13 @@ void main() {
       );
 
       expect(error, isA<ApiConflictError>());
-      expect(error.safeMessage.contains('organizacao'), isTrue);
+      expect(error.safeMessage.contains('organização'), isTrue);
       expect(error.safeMessage.toLowerCase().contains('tenant'), isFalse);
     },
   );
 
   test(
-    '400 TENANT_ID_REQUIRED pede a organizacao (distinto do 400 generico)',
+    '400 TENANT_ID_REQUIRED fala da organização (distinto do 400 genérico)',
     () {
       final error = mapLoginError(
         _badResponse(400, {
@@ -55,7 +83,7 @@ void main() {
 
       expect(error, isA<ApiServerError>());
       expect((error as ApiServerError).statusCode, 400);
-      expect(error.safeMessage.contains('organizacao'), isTrue);
+      expect(error.safeMessage.contains('organização'), isTrue);
 
       final genericBadRequest = mapLoginError(
         _badResponse(400, {

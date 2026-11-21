@@ -8,6 +8,10 @@ import 'auth_notifier.dart';
 /// O cliente Dio de toda chamada autenticada: põe o token vivo da sessão em
 /// cada pedido e, num 401, renova pela porta única do notifier (uma renovação
 /// por vez no app inteiro) e repete o pedido uma vez.
+///
+/// B-APP-ORG (T-b): o cliente guarda a chave da sessão de quando nasceu. Usado
+/// depois de uma troca de sessão (outra organização, outra pessoa), ele recusa
+/// o pedido sem mandá-lo, em vez de mandar com o token da sessão nova.
 Dio sessionHttpClient(Ref ref, ApiConfig config) {
   final notifier = ref.read(authStateProvider.notifier);
   return createAuthenticatedHttpClient(
@@ -16,5 +20,7 @@ Dio sessionHttpClient(Ref ref, ApiConfig config) {
     expire: notifier.expireSession,
     currentAccessToken: () => notifier.liveAccessToken,
     currentEpoch: () => notifier.epoch,
+    boundSessionKey: notifier.liveSessionKey,
+    currentSessionKey: () => notifier.liveSessionKey,
   );
 }

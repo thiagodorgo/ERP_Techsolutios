@@ -21,13 +21,6 @@ abstract class MobileBootstrapRepository {
   // Fetches bootstrap for the given auth session (null → dev/mock session).
   Future<BootstrapSession> fetch(AuthSession? session);
 
-  // Fetches bootstrap scoped to a specific tenant (multi-tenant switch).
-  // Default implementation delegates to fetch(); remote impl passes tenantId.
-  Future<BootstrapSession> fetchForTenant(
-    AuthSession session,
-    String tenantId,
-  ) => fetch(session);
-
   // Returns cached bootstrap from secure storage, or null if absent.
   Future<BootstrapSession?> restoreCached();
 
@@ -96,33 +89,6 @@ class LocalDevBootstrapRepository implements MobileBootstrapRepository {
       _storage.saveBootstrapJson(BootstrapSessionCodec.encode(session));
 
   @override
-  Future<BootstrapSession> fetchForTenant(
-    AuthSession session,
-    String tenantId,
-  ) async {
-    final base = await fetch(session);
-    // Dev mode: search across the full dev tenant list, not just session tenant
-    final allAvailable = devBootstrapSession.availableTenants;
-    final selected = allAvailable.firstWhere(
-      (t) => t.tenantId == tenantId,
-      orElse: () => base.activeTenant,
-    );
-    final result = BootstrapSession(
-      activeTenant: selected,
-      availableTenants: allAvailable,
-      user: base.user,
-      enabledModules: base.enabledModules,
-      permissions: base.permissions,
-      mobilePolicy: base.mobilePolicy,
-      expenseCategories: base.expenseCategories,
-      expensePolicy: base.expensePolicy,
-    );
-    // dart format off
-    return result.withOwnerKey(sessionKeyOf(session)); // dono: troca local
-    // dart format on
-  }
-
-  @override
   Future<void> clearCache() => _storage.clearBootstrap();
 
   // Nome de exibição da organização no app local (B-SAN3-19b, item 47): o da sessão de
@@ -153,17 +119,17 @@ typedef _ModuleDef = ({String title, String route, List<String> perms});
 
 final _kNavigationModules = <String, _ModuleDef>{
   'expense_management': (
-    title: 'Gestao de Despesas',
+    title: 'Gestão de Despesas',
     route: '/expenses',
     perms: ['expense_report:read', 'expense_report:create'],
   ),
   'field_operations': (
-    title: 'Operacoes de Campo',
+    title: 'Operações de Campo',
     route: '/work-orders',
     perms: ['field_location:send'],
   ),
   'work_orders': (
-    title: 'Ordens de Servico',
+    title: 'Ordens de Serviço',
     route: '/work-orders',
     perms: ['work_orders:read'],
   ),
@@ -173,17 +139,17 @@ final _kNavigationModules = <String, _ModuleDef>{
     perms: ['checklist_runs:read'],
   ),
   'inventory': (
-    title: 'Estoque do Tecnico',
+    title: 'Estoque do Técnico',
     route: '/inventory',
     perms: ['inventory.read'],
   ),
   'approvals': (
-    title: 'Aprovacoes',
+    title: 'Aprovações',
     route: '/approvals',
     perms: ['work_orders:approve'],
   ),
   'notifications': (
-    title: 'Notificacoes',
+    title: 'Notificações',
     route: '/notifications',
     perms: ['notifications:read'],
   ),
@@ -492,29 +458,6 @@ class DioMobileBootstrapRepository implements MobileBootstrapRepository {
   }
 
   @override
-  Future<BootstrapSession> fetchForTenant(
-    AuthSession session,
-    String tenantId,
-  ) async {
-    final client = _createClient(
-      ApiConfig(accessToken: session.tokens.accessToken),
-    );
-    try {
-      final response = await client.get(
-        ExpenseApiEndpoints.mobileBootstrap,
-        queryParameters: {'tenantId': tenantId},
-      );
-      // dart format off
-      final bootstrap = bootstrapSessionFromJson(response.data as Map<String, dynamic>).withOwnerKey(sessionKeyOf(session)); // dono: troca remota
-      // dart format on
-      await cache(bootstrap);
-      return bootstrap;
-    } on DioException catch (e) {
-      throw mapDioError(e);
-    }
-  }
-
-  @override
   Future<BootstrapSession?> restoreCached() async {
     final json = await _storage.loadBootstrapJson();
     if (json == null) return null;
@@ -575,20 +518,9 @@ final bootstrapSessionProvider = FutureProvider<BootstrapSession>((ref) async {
   return repo.fetch(null);
 });
 
-// ── Bootstrap notifier (B-098) — adds retry() and switchTenant() ─────────────
+// ── Bootstrap notifier (B-098) — adds retry() (a troca é do orquestrador) ────
 
 class BootstrapNotifier extends AsyncNotifier<BootstrapSession> {
-  // Set to true after the user explicitly selects a tenant, preventing
-  // HomeScreen from re-triggering the /tenant-select redirect.
-  bool _tenantWasSelected = false;
-
-  bool get pendingTenantSelection {
-    if (!kIsRemoteAuth) return false;
-    if (_tenantWasSelected) return false;
-    final data = state.asData?.value;
-    return data != null && data.availableTenants.length > 1;
-  }
-
   @override
   Future<BootstrapSession> build() async {
     // B-APP-SESSAO-RENOVA (D6): só a chave da sessão; renovar não recarrega.
@@ -615,25 +547,7 @@ class BootstrapNotifier extends AsyncNotifier<BootstrapSession> {
   Future<void> retry() async {
     final repo = ref.read(mobileBootstrapRepositoryProvider);
     await repo.clearCache();
-    _tenantWasSelected = false;
     ref.invalidateSelf();
-  }
-
-  Future<void> switchTenant(TenantContext tenant) async {
-    final authAsync = ref.read(authStateProvider);
-    final session = authAsync.asData?.value.session;
-    if (session == null) return;
-
-    state = const AsyncValue.loading();
-    try {
-      final repo = ref.read(mobileBootstrapRepositoryProvider);
-      final updated = await repo.fetchForTenant(session, tenant.tenantId);
-      await repo.cache(updated);
-      _tenantWasSelected = true;
-      state = AsyncValue.data(updated);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
   }
 }
 

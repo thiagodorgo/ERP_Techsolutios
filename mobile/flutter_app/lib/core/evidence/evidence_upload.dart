@@ -216,6 +216,9 @@ class EvidenceBinaryUploadService {
           await _store.saveEvidence(next);
           failed.add(next);
         }
+        // dart format off
+      } on ApiSessionChangedError { break; // sessão trocou: foto
+        // dart format on
       } on ApiConflictError {
         final next = item.copyWith(
           uploadStatus: SyncStatus.conflict,

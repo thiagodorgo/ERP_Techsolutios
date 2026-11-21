@@ -10,6 +10,7 @@ import '../network/api_error.dart';
 import '../network/http_client.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
+import 'sync_session_changed.dart';
 import 'sync_session_expired.dart';
 
 /// B-RDV-COMPROVANTE (§G.3) — replay MULTIPART do comprovante de despesa, 1 arquivo por
@@ -401,6 +402,17 @@ class ExpenseReceiptSyncService {
             );
             conflicts.add(next);
           }
+          // dart format off
+        } on ApiSessionChangedError { // sessão trocou: comprovante
+          // dart format on
+          // Não tentou: nada sobe, nada vai a `busy` nem a `failed`; o laço para.
+          await record(backToPendingSessionChanged(syncing));
+          await _repository.markReceiptUploadStatus(
+            reportLocalId,
+            receiptLocalId,
+            ReceiptUploadStatus.pending,
+          );
+          break;
         } on ExpenseReceiptRefusal catch (refusal) {
           // (c)4 e §12.9 — recusa de domínio, pelo motivo: conflito, e o blob fica.
           final (code, text) = _refusal(refusal);

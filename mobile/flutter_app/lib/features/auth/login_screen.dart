@@ -4,8 +4,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/auth/auth_notifier.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_error.dart';
+import '../../core/network/connectivity_repository.dart';
 import '../../shared/theme/erp_mobile_theme.dart';
+import '../../shared/ui/mobile_kit.dart';
 import 'auth_models.dart';
+import 'tenant_selector_screen.dart' show OrganizationAvatar;
+
+/// B-APP-ORG (Q4): o e-mail que "Entrar em outra organização" deixa
+/// preenchido no Entrar. Só em memória; a tela de entrada o lê uma vez.
+final loginEmailPrefillProvider = NotifierProvider<LoginEmailPrefill, String?>(
+  LoginEmailPrefill.new,
+);
+
+class LoginEmailPrefill extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? email) => state = email;
+}
+
+/// B-APP-ORG: o texto de sem conexão do Entrar (maquete aprovada, opção A).
+const kLoginOfflineMessage =
+    'Sem conexão. Para entrar, o aparelho precisa de internet.';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +38,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  /// B-APP-ORG (69): a lista do 409, guardada pela tela enquanto a pessoa
+  /// escolhe e enquanto o 2º login (com a organização) corre. Só memória.
+  List<TenantChoice> _choices = const <TenantChoice>[];
+
+  /// A organização escolhida, enquanto o 2º login corre.
+  String? _choosingId;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefill = ref.read(loginEmailPrefillProvider);
+    if (prefill != null && prefill.isNotEmpty) {
+      _emailController.text = prefill;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(loginEmailPrefillProvider.notifier).set(null);
+      });
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -25,12 +64,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  /// B-APP-ORG (69): o que o login respondeu. A escolha só aparece com MAIS de
+  /// uma organização (decisão do dono, 20/11); com uma só, a tela entra nela
+  /// direto, sem mostrar a escolha.
+  void _onAuthChanged(AsyncValue<AuthState> next) {
+    if (next.isLoading || !mounted) return;
+    final choices = loginTenantChoicesOf(next);
+    if (choices.length == 1 && _choosingId != choices.single.id) {
+      _choose(choices.single); // uma organização só: pula a escolha
+      return;
+    }
+    setState(() {
+      _choices = choices;
+      _choosingId = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<AuthState>>(
+      authStateProvider,
+      (_, next) => _onAuthChanged(next),
+    );
     final authAsync = ref.watch(authStateProvider);
     final isLoading = authAsync.isLoading;
+    final offline = ref.watch(networkStatusProvider) == NetworkStatus.offline;
+    final showChoices = _choices.length > 1;
 
     final safeError = switch (authAsync) {
+      AsyncError(error: TenantSelectionRequiredError()) => null,
+      AsyncError(error: ApiNetworkError() || ApiTimeoutError()) =>
+        kLoginOfflineMessage,
       AsyncError(:final error) =>
         error is ApiError
             ? error.safeMessage
@@ -60,21 +124,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (offline) ...[
+                    const MobileNoticeBanner(
+                      key: Key('login-sem-conexao'),
+                      icon: Icons.wifi_off,
+                      message: kLoginOfflineMessage,
+                      tone: PillTone.warning,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   const _BrandCard(),
                   const SizedBox(height: 16),
-                  _EntrarCard(
-                    emailController: _emailController,
-                    passwordController: _passwordController,
-                    isLoading: isLoading,
-                    error: safeError,
-                    notice: safeNotice,
-                    onSubmit: _doLogin,
-                    onForgot: _showForgotPasswordDialog,
-                  ),
-                  const SizedBox(height: 14),
-                  _GoogleButton(
-                    onPressed: isLoading ? null : _showGoogleMockDialog,
-                  ),
+                  if (showChoices)
+                    _EscolhaCard(
+                      choices: _choices,
+                      email: _emailController.text.trim(),
+                      choosingId: _choosingId,
+                      busy: isLoading,
+                      onChoose: _choose,
+                      onBack: _backToForm,
+                    )
+                  else
+                    _EntrarCard(
+                      emailController: _emailController,
+                      passwordController: _passwordController,
+                      isLoading: isLoading,
+                      offline: offline,
+                      error: safeError,
+                      notice: safeNotice,
+                      onSubmit: _doLogin,
+                      onForgot: _showForgotPasswordDialog,
+                    ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -119,9 +199,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     if (email.isEmpty || password.isEmpty) return;
+    setState(() {
+      _choices = const <TenantChoice>[];
+      _choosingId = null;
+    });
     await ref
         .read(authStateProvider.notifier)
         .login(email: email, password: password);
+  }
+
+  /// B-APP-ORG (69): o 2º login, direcionado à organização escolhida. Só as
+  /// organizações que o 409 trouxe chegam aqui.
+  Future<void> _choose(TenantChoice choice) async {
+    setState(() => _choosingId = choice.id);
+    await ref
+        .read(authStateProvider.notifier)
+        .login(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          tenantId: choice.id,
+        );
+  }
+
+  /// B-APP-ORG (69): o "Voltar" da escolha. Nenhum pedido, nada gravado.
+  void _backToForm() {
+    ref.read(authStateProvider.notifier).dismissTenantChoice();
+    setState(() {
+      _choices = const <TenantChoice>[];
+      _choosingId = null;
+    });
   }
 
   /// Only available when kIsDevMode is true (--dart-define=ERP_ENV=dev).
@@ -142,24 +248,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         title: const Text('Esqueci minha senha'),
         content: const Text(
           'Solicite ao administrador da sua organização a redefinição de senha.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Fechar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGoogleMockDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Entrar com Google'),
-        content: const Text(
-          'Entrar com Google não está disponível nesta versão.',
         ),
         actions: [
           TextButton(
@@ -226,11 +314,58 @@ class _BrandCard extends StatelessWidget {
   }
 }
 
+BoxDecoration _cardDecoration() => BoxDecoration(
+  color: Colors.white,
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(color: ErpMobileTheme.cardBorder),
+);
+
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: Container(
+        key: const Key('login-erro'),
+        width: double.infinity,
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFECACA)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.error_outline, size: 18, color: Color(0xFF991B1B)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: Color(0xFF991B1B),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EntrarCard extends StatelessWidget {
   const _EntrarCard({
     required this.emailController,
     required this.passwordController,
     required this.isLoading,
+    required this.offline,
     required this.error,
     required this.onSubmit,
     required this.onForgot,
@@ -240,6 +375,7 @@ class _EntrarCard extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final bool isLoading;
+  final bool offline;
   final String? error;
   final String? notice;
   final Future<void> Function() onSubmit;
@@ -247,13 +383,10 @@ class _EntrarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canSubmit = !isLoading && !offline;
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ErpMobileTheme.cardBorder),
-      ),
+      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -292,25 +425,7 @@ class _EntrarCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
           ],
-          if (error != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(11),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFECACA)),
-              ),
-              child: Text(
-                error!,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: Color(0xFF991B1B),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-          ],
+          if (error != null) ...[_ErrorBox(error!), const SizedBox(height: 14)],
           const _FieldLabel('E-mail'),
           TextField(
             controller: emailController,
@@ -326,7 +441,7 @@ class _EntrarCard extends StatelessWidget {
             obscureText: true,
             textInputAction: TextInputAction.done,
             enabled: !isLoading,
-            onSubmitted: isLoading ? null : (_) => onSubmit(),
+            onSubmitted: canSubmit ? (_) => onSubmit() : null,
             decoration: _fieldDecoration(
               hint: '••••••••',
               prefix: Icons.lock_outline,
@@ -335,13 +450,18 @@ class _EntrarCard extends StatelessWidget {
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
+            height: 48,
             child: FilledButton(
-              onPressed: isLoading ? null : () => onSubmit(),
+              key: const Key('login-entrar'),
+              onPressed: canSubmit ? () => onSubmit() : null,
               child: isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+                      child: CircularProgressIndicator.adaptive(
+                        strokeWidth: 2,
+                        semanticsLabel: 'Entrando',
+                      ),
                     )
                   : const Text('Entrar'),
             ),
@@ -349,6 +469,7 @@ class _EntrarCard extends StatelessWidget {
           const SizedBox(height: 4),
           Center(
             child: TextButton(
+              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
               onPressed: isLoading ? null : onForgot,
               child: const Text('Esqueci minha senha'),
             ),
@@ -381,6 +502,192 @@ class _EntrarCard extends StatelessWidget {
   }
 }
 
+/// B-APP-ORG (69): o passo "Escolha a organização", dentro do mesmo cartão do
+/// Entrar (opção A aprovada). Cada linha é uma escolha: o 409 só traz o nome.
+class _EscolhaCard extends StatelessWidget {
+  const _EscolhaCard({
+    required this.choices,
+    required this.email,
+    required this.choosingId,
+    required this.busy,
+    required this.onChoose,
+    required this.onBack,
+  });
+
+  final List<TenantChoice> choices;
+  final String email;
+  final String? choosingId;
+  final bool busy;
+  final ValueChanged<TenantChoice> onChoose;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('login-escolha'),
+      padding: const EdgeInsets.all(18),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Escolha a organização',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: ErpMobileTheme.ink,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Sua senha vale em ${choices.length} organizações. Toque na '
+            'organização em que quer entrar.',
+            style: const TextStyle(
+              fontSize: 12.5,
+              height: 1.4,
+              color: ErpMobileTheme.inkMuted,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(
+                Icons.mail_outline,
+                size: 16,
+                color: ErpMobileTheme.inkFaint,
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Entrando como ',
+                style: TextStyle(fontSize: 12, color: ErpMobileTheme.inkMuted),
+              ),
+              Flexible(
+                child: Text(
+                  email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: ErpMobileTheme.ink,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          for (var i = 0; i < choices.length; i++)
+            _ChoiceRow(
+              choice: choices[i],
+              index: i,
+              choosing: choosingId == choices[i].id,
+              enabled: !busy,
+              onTap: () => onChoose(choices[i]),
+            ),
+          const SizedBox(height: 4),
+          Center(
+            child: TextButton.icon(
+              key: const Key('login-escolha-voltar'),
+              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+              onPressed: busy ? null : onBack,
+              icon: const Icon(Icons.arrow_back, size: 18),
+              label: const Text('Voltar'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChoiceRow extends StatelessWidget {
+  const _ChoiceRow({
+    required this.choice,
+    required this.index,
+    required this.choosing,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final TenantChoice choice;
+  final int index;
+  final bool choosing;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: choosing ? 'Entrando em ${choice.name}' : choice.name,
+        excludeSemantics: true,
+        child: Material(
+          color: choosing
+              ? MobilePill.colorsFor(PillTone.info).$1
+              : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: choosing
+                  ? ErpMobileTheme.primary
+                  : ErpMobileTheme.cardBorder,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: Key('login-escolha-${choice.id}'),
+            onTap: enabled ? onTap : null,
+            focusColor: ErpMobileTheme.primary.withValues(alpha: 0.16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    OrganizationAvatar(
+                      name: choice.name,
+                      index: index,
+                      size: 32,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        choice.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: ErpMobileTheme.ink,
+                        ),
+                      ),
+                    ),
+                    if (choosing)
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: ErpMobileTheme.inkFaint,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FieldLabel extends StatelessWidget {
   const _FieldLabel(this.text);
 
@@ -396,46 +703,6 @@ class _FieldLabel extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: ErpMobileTheme.inkMuted,
-        ),
-      ),
-    );
-  }
-}
-
-class _GoogleButton extends StatelessWidget {
-  const _GoogleButton({required this.onPressed});
-
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: ErpMobileTheme.ink,
-          side: const BorderSide(color: ErpMobileTheme.cardBorder),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'G',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF4285F4),
-              ),
-            ),
-            SizedBox(width: 10),
-            Text(
-              'Entrar com Google',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ],
         ),
       ),
     );

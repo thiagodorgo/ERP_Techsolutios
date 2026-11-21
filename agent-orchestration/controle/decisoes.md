@@ -6087,3 +6087,160 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 - **Fato (decisão do dono):** o dono confirmou em 19/11 que "o 72 fica pronto antes da Fase 6 da AWS" (a fase que cria o 1º administrador da plataforma).
 - **Efeito:** o `B-PLAT-PERMISSAO` deixa de ser item do portão (`D-DONO-1711-72-FORA-DO-PORTAO`), segue como pendência ALTA (`P-PLATAFORMA-PERMISSAO-IGNORADA`) e vira **pré-requisito obrigatório** da Fase 6 da AWS.
 - **Trilha afetada:** `PLANO_SAN3.md` permanece com 71 itens; o gate do portão não muda; muda a ordem de execução na trilha AWS (Fase 6 só começa após o fechamento da pendência).
+
+## D-DONO-2011-RITMO (2026-11-20 09:55 e 10:28 SP) — até 4 tarefas do Claude ao mesmo tempo, nenhum braço parado, e cobrir quem cai com nível alto
+
+- **Fato (palavras do dono):** *"claude, vc eh minha maior ajuda. fazer ate 4 tarefas ao mesmo tempo e nao deixe seus bracos sem tarefa"*; *"vamos aproveitar seus limites renovados"*; *"como sempre, vc cobre quem cair"*; e, às 10:28, *"pode cobrir quem falha com nivel alto e ensine aos seus bracos a trabalhar corretamente"*.
+- **Leitura do orquestrador, declarada (§A6):** são até 4 subagentes Claude, além da orquestração, e cada braço livre recebe tarefa. Antes de todo mandato, os lançadores entregam um caderno de lições dos braços, fora do repositório, com cada regra ligada ao erro real que a criou.
+- **Também no dia:** às 16:10 SP, a ordem *"tenho pressa vamos focar no 60"* e *"forca total ate onde o pc aguentar"*. Efeito: a triagem da J-608 foi antecipada (ata `J-608-b-ass-08c3`).
+
+## D-DONO-2011-ACESSO-POR-MODULO (2026-11-20 15:15 e 15:20 SP) — o mesmo mecanismo da Visão da organização, módulo por módulo
+
+- **Pedido do dono (15:15):** *"eu queria esse mesmo mecanismo por modulo [...] qualquer papel vai ter as opcoes padrao para aquele papel ativadas, as outras todas desativadas"*.
+- **Respostas do dono às 4 perguntas (15:20, no chat):** *"1 ja conserta; 2 ok; 2 ok ma o gestor do cliente ver tudu(ele eh o dono ou gerente do cliente), pode ate fazer as tarefas do financeiro numa eventualidade e com justificativa na hora da ativacao mas o financeiro nas atribuicoes dele eh o padrao; 4 ok"*.
+- **Leitura do orquestrador, declarada (§A6):**
+  - Q1: os acessos extras por módulo nascem já com os 2 níveis (ver e alterar).
+  - Q2: o padrão do perfil não se desliga individualmente.
+  - Q3: concedem o administrador e o gestor, e o gestor só o que ele tem. O gestor (dono ou gerente da organização) vê tudo por padrão e pode ativar o módulo financeiro (alterar) numa eventualidade, com justificativa obrigatória na ativação, registrada na auditoria. Leitura: ele pode ativar para si mesmo; a confirmar no plano. O financeiro continua sendo o padrão do perfil Financeiro.
+  - Q4: o bloco atual (`B-USERS-CONCESSAO-PAINEL`) segue, e o bloco novo `B-USERS-ACESSO-POR-MODULO` generaliza o interruptor para todos os módulos.
+- **Modelo do plano:** Fable, no topo. O dono: *"o fable esta disponivel pra demandas indicadas a ele, use-o com moderacao"*.
+
+## D-DONO-2011-RESPOSTAS (2026-11-20 15:45 SP) — as 3 maquetes do dia aprovadas e as perguntas menores pela recomendação
+
+- **Fato (palavras do dono, no chat):** *"1 esta ox, mas desde que so apareca a tela com varias organizacoes se tiver mais de uma cadastrada e com acesso, se tiver somente uma pula essa tela. 2 a visao ja pedi conserto e ja esta no padrao. 3 completo. 4 vou contigo. siga"*.
+- **Leitura do orquestrador, declarada (§A6), casando a lista das 3 maquetes com o item 4:**
+  1. As 3 opções das telas Entrar e Seleção de organização (`B-APP-ORG`) estão APROVADAS, com uma condição: a Seleção só aparece se a pessoa tem MAIS DE UMA organização cadastrada e com acesso. Com uma só, a tela é pulada.
+  2. As 3 opções da Visão da organização estão APROVADAS. O mecanismo por módulo segue no `B-USERS-ACESSO-POR-MODULO`.
+  3. As 3 opções da tela de operação da cobrança estão APROVADAS.
+  4. Todas as perguntas menores seguem a recomendação:
+     - Q3-bis = O1 (o código da organização);
+     - `dusers-q1` = (a): não precisa entrar de novo;
+     - `dusers-q2` = (a): a matriz diz que o Suporte vê o painel;
+     - `dusers-q3` = (a): as 3 aparências da tela inteira num bloco próprio;
+     - `dmod-q1` = (a): ver primeiro;
+     - `dmod-q2` = (a): o gestor liga para si com motivo, e tudo fica registrado. Soma-se a pendência do bloco que avisa ou impede a mesma pessoa nas duas etapas;
+     - `dmod-q3` = (a): fica ligado até desligar;
+     - `dmod-q4` = (a): a migração da chave "conceder acesso por módulo" está AUTORIZADA.
+- A AWS segue com o dono.
+
+## C-APP-ORG-Q3-REFEITA (registro de CONFLITO, §A2, 2026-11-20) — a Q3 do B-APP-ORG: "lista completa" × "refeita ao dono"
+
+- **Os dois lados:** o mandato da Emenda 1 do plano `B-APP-ORG` dizia que a Q3 era "lista completa no login, sem busca" (`D-DONO-1811-APP-ORG-Q1-Q4`). O registro do orquestrador dizia que, às 10:46 de 18/11, ela foi refeita ao dono como "Manter a segurança" (até 3 organizações, a lista; com mais, pede o código).
+- **O que a emenda fez:** não escolheu lado. Aplicou o padrão "sem resposta" do plano: um texto que diz a verdade, sem mudar o servidor. Levou ao dono o fato medido (o servidor não lista acima de 3) como Q3-bis.
+- **Estado:** RESOLVIDO pela `D-DONO-2011-RESPOSTAS`, item 4: Q3-bis = O1, o código da organização, num bloco próprio depois do `B-APP-ORG`, com junta completa (autenticação). Ligar o item 4 à Q3-bis é leitura do orquestrador, declarada.
+
+## D-08C3-EMENDA3 (2026-11-20 ~16:24 SP) — os 3 arquivos fora do PERMITIDO do B-ASS-08c3 ficam autorizados
+
+- **Fato:** a Emenda 3 do plano do `B-ASS-08c3`, escrita pelo orquestrador na triagem antecipada da J-608, autoriza os 3 arquivos que a C3 achou fora do PERMITIDO (C3-608-01 a 03). Triagem do §C7 item 10(3): não grave e simples, resolvido por emenda, sem reverter código necessário.
+  - `statements/statement.prisma-runtime.ts`: o `saveCredit` grava `amount` (+2 linhas, do conserto do B2-1). Sem a linha, o `CR-PARCIAL-db` falha.
+  - `providers/provider-config.enable-state.typecheck.ts` (novo): é o teste de tipo do EN6t, que só vive em `src/`.
+  - `tests/ass-08-outbox.test.ts` (+72 −1): regressão extra. A única linha removida é um `import` trocado; nenhuma asserção sai.
+- **Efeito:** o PERMITIDO do plano (§8) passa a incluir os 3 caminhos.
+- **Limite declarado:** a autorização veio depois do código (a C3 anotou isso como nota). Ata `J-608-b-ass-08c3`.
+
+## D-USERS-CONCESSAO-EMENDA3 (2026-11-20 ~21:05 SP) — o guarda da matriz entra no PERMITIDO do B-USERS-CONCESSAO-PAINEL
+
+- **Fato:** a verificação `verif-usrcon-fim-cx` (Codex 2, Sol) deu NÃO CONFERIDO só por escopo: `tests/san3-04a-matriz-x-catalogo-guard.test.ts` (+4 −3), sem achado de comportamento e com CI verde.
+- **Por quê:** a Q2 = (a) do dono (`D-DONO-2011-RESPOSTAS`) muda a célula l.34 × support da matriz de qualificada para `read`, e o próprio guarda manda remover a entrada morta. A Emenda 3 do plano autoriza o arquivo como efeito mecânico necessário da Q2. Triagem: não grave e simples. Nada foi afrouxado, e o vermelho-controle (a matriz antiga com o guarda novo) dá `not ok 4 - [B]`.
+- **Efeito no registro:** a `P-SAN3-04A-SUPPORT-SEM-POLITICA` segue aberta, sem a célula l.34, que sai no merge do PR #614.
+- **Divergência registrada (§A2) no apenso da pendência:** a emenda diz que ficam "as outras 2 (l.33 e l.43)", mas o guarda do ramo mantém 6 entradas com essa pendência.
+
+## D-DONO-2011-COMISSAO-FABLE (2026-11-20 ~20:10 SP) — o plano do motor de comissão abre no Fable
+
+- **Fato (palavras do dono):** perguntado se o plano do cálculo de comissão podia abrir no Fable, respondeu *"pode ir de fable"*. É o motor que nunca existiu, da pendência `P-COMISSAO-MOTOR-E-POLITICA`.
+- **Efeito:** o plano `B-COMISSAO-MOTOR` foi escrito por `plan-comissao-fable` (planejador-mestre, Fable, topo), fora do repositório. É bloco de dinheiro, com junta completa. As perguntas de regra vão ao dono com recomendação.
+
+## D-DONO-2011-COMISSAO-TELAS (2026-11-20 ~20:15 SP) — o guincheiro vê a própria comissão no app; a web tem uma página de comissões com BI
+
+- **Fato (palavras do dono):** *"a comissão do guincheiro, ele vai poder ver a dele próprio no app de campo. E ... na web, os operador, o administrador, quem tiver acesso, vai ver as comissões dele numa página própria de comissões, naquele mesmo estilo. Uma lista com todos uns gráficos para ficar bonito. Você sabe que eu gosto de BI no negócio. Clicando na linha lá correspondente ao guincheiro, abre lá uns detalhezinhos, as comissões dele, o que é que tem para receber, quanto foi pago no mês e tal, e tem um botão lá para ver o histórico mais completo."*
+- **Leitura do orquestrador, declarada (§A6):** o app mostra só as comissões da própria pessoa. A web ganha uma página de comissões no padrão `D-PADRAO-BLOCOS-CLICAVEIS`, com gráficos de BI: blocos clicáveis e linha que abre o detalhe do guincheiro (comissões, a receber, pago no mês e o botão "histórico completo"). Quem vê sai da `RBAC_MATRIX.md`. A página tem 3 opções (`D-TELAS-TRES-OPCOES`).
+
+## D-DONO-2011-COMISSAO-A-E-B (2026-11-20 ~20:20 SP) — a comissão do guincheiro se define no cadastro do usuário e no módulo de Comissões
+
+- **Fato (palavras do dono):** *"Na hora de cadastrar o usuário como guicheiro, vai se poder definir o valor da comissão dele. Ou, na aba, no módulo lá de comissões,"* e, em seguida, *"a comissão do guicheiro vai poder ser definida no cenário A e no cenário B."*
+- O cenário A é o cadastro do usuário (perfil de guincheiro ou técnico de campo); o B é o módulo de Comissões.
+- **Leitura do orquestrador, declarada (§A6):** é um dado só, a regra individual, editável pelas duas telas com a mesma permissão, a mesma validação, auditoria com justificativa e histórico. Mudar a regra não reescreve o que já foi calculado.
+
+## D-DONO-2011-COMISSAO-PADRAO-ZERO (2026-11-20 ~20:22 SP) — a comissão nasce zero, em percentual ou valor fixo
+
+- **Fato (palavras do dono):** *"Com relação ao percentual ou valor fixo, isso a priori vai ser definido como zero, mas vai ter como se alterar ou no cadastro de novos usuários ou no módulo de comissões."*
+- **Leitura do orquestrador, declarada (§A6):** a regra nasce zero para todo guincheiro. O sistema aceita percentual e valor fixo, escolhidos por pessoa, editáveis no cadastro e no módulo de Comissões (`D-DONO-2011-COMISSAO-A-E-B`).
+
+## D-DONO-2011-COMISSAO-P1-P4 (2026-11-20 ~20:40 SP) — as respostas às 4 perguntas do plano B-COMISSAO-MOTOR
+
+- **Fato (palavras do dono):** *"1 ok; 2 antes de pagar, o sistema recalcula sozinho. Depois de paga, vira saldo a ser resarcido no proximo pagamento ou na falta de pagamento o financeiro decide.; 3 manter as permissões de hoje e acrescentar que ninguém define a própria comissão. exceto o gestor que mexe em tudo; 4 o valor total da OS (bruto a receber)"*.
+- **Como entram** (registro do orquestrador e §E1.1 da Emenda 1 do plano):
+  - P1 = (b): a comissão vira "a receber" quando a OS concluída é validada.
+  - P2: antes de pagar, o sistema recalcula sozinho. Depois de paga, a diferença vira saldo compensado no próximo pagamento; sem próximo pagamento, o financeiro decide. Muda o desenho, pela Emenda 1.
+  - P3: ficam as permissões de hoje, e ninguém define a própria comissão, exceto o gestor, que mexe em tudo. Muda a trava, pela Emenda 1.
+  - P4: a base é o valor total da OS (bruto a receber).
+- **Leituras do planejador, declaradas (§A6, Emenda 1 §E1.1 e §E1.6):**
+  - A diferença para mais também vai como crédito no próximo pagamento.
+  - "Próximo pagamento" é a próxima liquidação que tenha comissão daquele guincheiro.
+  - "O financeiro decide" são três atos com justificativa: cobrar ou quitar agora, ou baixar.
+  - A exceção da trava vale para `manager` e também para `tenant_admin`, `super_admin` e `platform_admin` ("quem pode o mais pode o menos"). Se o dono quiser só o gestor, é uma linha.
+
+## D-DONO-2011-COMISSAO-SALDO-NEGATIVO (2026-11-20 ~21:12 SP) — o saldo do guincheiro pode ficar negativo; o pagamento nunca é negativo
+
+- **Fato (palavras do dono):** *"Eu penso o seguinte: se o guicheiro ficou devendo, o saldo dele na conta é zero, pode ficar negativo sim. Ele vai ficar devendo a casa."*
+- **Leitura do orquestrador, declarada (§A6):** o pagamento do mês não sai negativo, ou seja, não se tira dinheiro do guincheiro no pagamento. O que não cabe fica como saldo negativo visível na conta dele (ele deve à casa), e a próxima comissão abate esse saldo. Sem próximo pagamento, o financeiro decide.
+- **Como entra:** Emenda 1.1 do plano `B-COMISSAO-MOTOR`.
+  - O saldo negativo não tem piso nem prazo, e é abatido do mais antigo ao mais novo.
+  - A dívida não abatida aparece no módulo de Comissões e no app, não no extrato do profissional. A Emenda 1.1 previa abrir `P-COMISSAO-SALDO-NO-EXTRATO` (BAIXA) para levá-la ao extrato. A Emenda 1.3 dispensa essa pendência, pela `D-DONO-2011-COMISSAO-DIVIDA-NO-EXTRATO`, e ela não abre.
+
+## D-DONO-2011-COMISSAO-SALDO-SO-SINAL (2026-11-20 ~21:30 SP) — o saldo negativo aparece só com o sinal, sem "deve à casa"
+
+- **Fato (palavras do dono):** *"nao precisa mostrar "o app mostra "Saldo: −R$ X · deve à casa" o deve a cesa, so o sinal de negativo."*
+- **Efeito:** o saldo negativo aparece só com o sinal (por exemplo, "Saldo: −R$ 50,00"), sem o texto "deve à casa", no app e na web. Vale para a Emenda 1.1 do `B-COMISSAO-MOTOR`, para o `B-COMISSAO-WEB` e para o `B-GUI-07`. Na liquidação, o texto fica "A pagar agora: R$ 0,00 · saldo −R$ X".
+- **Como entra:** Emenda 1.2 do plano, escrita pelo orquestrador. Ela muda só o texto das telas; servidor, contas e testes de dinheiro não mudam. O `state` técnico que o servidor devolve (ex.: `owes`) nunca aparece na tela (§3).
+- **Leitura do orquestrador, declarada (§A6):** o indicador web "Devem à casa" também perde o texto e passa a algo como "Saldo negativo" (quantos guincheiros e a soma). O rótulo final se confirma na maquete das 3 opções.
+
+## D-DONO-2011-COMISSAO-DIVIDA-NO-EXTRATO (2026-11-20 ~21:35 SP) — a dívida só vai ao extrato quando é consolidada, já como desconto; a exceção é a baixa da dívida perdida
+
+- **Fato (palavras do dono):** *"Sobre a dívida que ainda não abatida, aparece no modo de comissões e no app. Mas não no extrato profissional. Vamos partir da premissa que o módulo comissões, que alimenta o extrato do profissional, e essa dívida, essa pendência, não está consolidada ainda no módulo comissões. Quando tiver consolidada, vai para o extrato profissional, mas já reduzindo o valor que ele teria que receber corretamente. Salvo quando o administrativo validar essa dívida e falar que o guicheiro deixou de trabalhar no pátio e não se tem mais contato com ele."*
+- **Efeito (Emenda 1.3 do plano `B-COMISSAO-MOTOR`):**
+  - O desenho da Emenda 1.1 fica confirmado. A dívida em aberto vive no módulo de Comissões e aparece no app; vai ao extrato do profissional só quando é consolidada num pagamento, já como desconto no valor a receber.
+  - A `P-COMISSAO-SALDO-NO-EXTRATO` **não abre**.
+  - A exceção é a baixa da dívida perdida (o guincheiro saiu e não há contato). É a ação "baixar" da rota com `commissions:adjust` da Emenda 1, com justificativa obrigatória e auditoria; o saldo vai a zero sem lançamento no extrato. O motivo "o guincheiro saiu, sem contato" entra como opção da justificativa.
+  - Testes: entra uma mutação nova, em que a baixa sem justificativa tem de ser recusada.
+- **Leitura do orquestrador, declarada (§A6):** "o administrativo" é quem já tem a permissão de ajuste, ou seja, o administrador e o financeiro, a confirmar com o dono. Se ele quiser outro papel, a mudança é uma linha do catálogo e da matriz.
+- **Emendas do texto das telas e da dívida:** a 1.2 (`D-DONO-2011-COMISSAO-SALDO-SO-SINAL`) e a 1.3 (esta).
+
+## D-DONO-2011-COMISSAO-MIGRACAO-INDICES (2026-11-20 ~21:12 SP) — autorizada a migração dos 4 índices únicos parciais do motor de comissão
+
+- **Fato (palavras do dono):** *"pode fazer a migração pequena, que só cria 4 índices no banco."*
+- **Efeito:** está AUTORIZADA a migração aditiva `<data>_commission_engine_uniques` (§E1.9 da Emenda 1 do `B-COMISSAO-MOTOR`). São só os 4 índices únicos parciais, com `BEGIN;`/`COMMIT;`, sem `CONCURRENTLY`; nada em `schema.prisma`, nada apagado. O rollback é o `DROP INDEX` dos quatro.
+- **Como entra:** Emenda 1.1 do plano. A migração vai no PR1, e a `P-COMISSAO-REGRA-SEM-INDICE` não abre.
+
+## CRIT-COMISSAO-CX3 (2026-11-20 20:54 SP) — a 1ª crítica do plano B-COMISSAO-MOTOR: VOLTA, e a decisão por defeito
+
+- **Crítica:** `crit-comissao-cx3` (critico-adversarial, GPT-5.6 Sol, nível menor, outra casa que o autor Fable). Foi por execução em worktree próprio, sobre a `origin/main` `769f29d6`.
+- **Veredito:** **VOLTA**, com 13 defeitos:
+  - 7 graves incondicionais: D-COM-01 a 06 e D-COM-08;
+  - 3 altos: D-COM-09 a 11;
+  - 3 condicionais às alternativas que o dono não escolheu: D-COM-07, 12 e 13.
+- **Decisão por defeito** (Emenda 1 do plano, §E1.2; cada achado re-medido na `origin/main` antes de aceitar): **10 aceitos** (um em parte), **0 recusados**, **3 caem** pelas respostas do dono.
+  - D-COM-01 aceito: uma comissão viva por OS, com trava exclusiva da linha da OS e índices únicos parciais (agora autorizados).
+  - D-COM-02 aceito: espaço reservado do motor, que a rota antiga recusa.
+  - D-COM-03 aceito: a liquidação relê a base sob a trava da OS.
+  - D-COM-04 aceito: a liquidação de cada guincheiro vira uma transação.
+  - D-COM-05 aceito: predicado explícito de organização em toda consulta, com teste sob conexão que ignora o isolamento e mutação.
+  - D-COM-06 aceito: a rota antiga não é segunda porta, e a trava da própria comissão fica num ponto só.
+  - D-COM-07 cai: o dono respondeu "manter as permissões de hoje".
+  - D-COM-08 aceito em parte: abre `src/modules/professional-statements/**` no mínimo; `work-order-financials/**` continua proibido.
+  - D-COM-09 aceito: `tests/job-worker-bootstrap.test.ts` entra no PERMITIDO.
+  - D-COM-10 aceito: a suíte inteira roda no fim de cada fatia, e o bloco é partido em dois PRs.
+  - D-COM-11 aceito: a F0 ganha as medições que faltavam e roda antes de qualquer código.
+  - D-COM-12 cai: P1 = (b).
+  - D-COM-13 cai: P4 = o valor total da OS.
+- **Próximo passo:** a Emenda 1 vai a uma segunda crítica em outra casa.
+
+## D-DONO-2011-UMA-TELA-POR-LOTE (2026-11-20 ~22:00 SP) — telas novas por lote, com saída de uma tela
+
+- **Falas do dono (verbatim):** *"as telas que faltam você vai passar um lote para mim, por exemplo, lote do estoque, aí eu beleza, aí a gente vai tela por tela definindo quais itens e o que mostrar nessas telas, para você só ter que fazer uma tela ao invés de três"*; e *"[as] que tem as três aparências aprovadas, vamos manter. Isso vai servir só para as novas. Vale também para o app. Claro, tem que deixar na ordem. A ordem dos lotes tanto faz."*.
+- **Regra (4 linhas):**
+  - Para telas sem 3 aparências aprovadas (web e app), o orquestrador apresenta ao dono um lote por módulo em artefato com estado atual, desenho aprovado e recomendação de itens por tela (mostrar, indicadores, filtros e abertura ao clique), com resposta tela a tela no seletor.
+  - Cada tela nova sai UMA, no padrão do sistema (§4 itens 1 a 6); não há maquete de 3 opções nem entrega de 3 aparências para essas telas.
+  - Telas que já têm 3 aparências aprovadas ficam como estão, com seletor de aparência por usuário.
+  - "Tem que deixar na ordem" é leitura declarada do orquestrador para manter a tela arrumada no padrão do sistema; a ordem dos lotes é do orquestrador; lote e tela seguem `D-DESIGN-SO-CLAUDE`.
+- **Atualização de decisões:** atualiza `D-TELAS-TRES-OPCOES`, `D-APARENCIA-POR-USUARIO` e `D-TELAS-SAEM-COM-TRES` só para as telas novas.

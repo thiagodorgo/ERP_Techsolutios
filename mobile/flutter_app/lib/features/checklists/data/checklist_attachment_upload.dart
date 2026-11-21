@@ -196,6 +196,9 @@ class ChecklistAttachmentUploadService {
           await _store.saveAttachment(next);
           failed.add(next);
         }
+        // dart format off
+      } on ApiSessionChangedError { break; // sessão trocou: anexo
+        // dart format on
       } on ApiConflictError {
         final next = att.copyWith(
           uploadStatus: SyncStatus.conflict,
