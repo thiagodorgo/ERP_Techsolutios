@@ -416,15 +416,17 @@ if (!connectionString) {
     const created = await call(h, "/api/v1/users", {
       method: "POST",
       headers: admin.headers,
-      body: { name: "Criado GP7", email: chosenEmail, roles: [], password: "EscolhidaGP7!123" },
+      body: { name: "Criado GP7", email: chosenEmail, roles: ["field_technician"], password: "EscolhidaGP7!123" },
     });
 
-    assert.ok(created.status === 201 || created.status === 400 || created.status === 409, `GP7: criação ${created.status}`);
-    assert.notEqual(
+    assert.equal(created.status, 201, "GP7: a criação com senha no corpo passa e ignora a senha");
+    assert.equal(
       (await login(h, x.tenantId, chosenEmail, "EscolhidaGP7!123")).status,
-      200,
+      401,
       "GP7: a senha mandada pelo cliente na criação não entra",
     );
+    assert.equal(typeof created.body.data.temporaryPassword, "string", "GP7: a criação devolve a provisória gerada pelo sistema");
+    assert.notEqual(created.body.data.temporaryPassword, "EscolhidaGP7!123", "GP7: a provisória não é a senha mandada pelo cliente");
   });
 
   // ---------------------------------------------------------------------------------------------
