@@ -14,6 +14,7 @@ import '../telemetry/telemetry_event.dart';
 import '../telemetry/telemetry_providers.dart';
 import 'auth_repository.dart';
 import 'auth_token_storage.dart';
+import 'listen_sessions.dart';
 import 'pending_revocations.dart';
 import 'session_http_client.dart';
 import 'session_renewal.dart';
@@ -137,6 +138,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         await repo.commitRefreshed(refreshed);
         return AuthState(status: AuthStatus.authenticated, session: refreshed);
       } on ApiUnauthorizedError {
+        // dart format off
+        await _listenSessions.discardAll(); // queda na abertura: os tokens do diário vão para a revogação
+        // dart format on
         await _clearDevice(repo);
         return AuthState(
           status: AuthStatus.expired,
@@ -163,6 +167,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncValue.loading();
     final release = await _enterSessionLock();
     try {
+      // dart format off
+      await _listenSessions.discardAll(); // entrada: nada da escuta de antes fica
+      // dart format on
       final repo = ref.read(authRepositoryProvider);
       final session = await repo.login(
         email: email,
@@ -269,7 +276,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // 5. O token de renovação de A, a sessão B gravada e a época nova.
       final previousRefreshToken =
           await _readStoredRefreshToken() ?? session.tokens.refreshToken;
-      await repo.commitSwitched(switched);
+      // dart format off
+          await _listenSessions.discardAll(); // troca: a época antiga sai
+          // dart format on
+      try {
+        await repo.commitSwitched(switched);
+      } catch (_) {
+        // dart format off
+        _listenSessions.reopen(); // a troca não gravou: a sessão fica, e a escuta volta
+        // dart format on
+        rethrow;
+      }
       _bumpEpoch(); // ciclo: troca de organização
       state = AsyncValue.data(
         AuthState(
@@ -323,6 +340,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     // definitiva do servidor.
     final release = await _enterSessionLock();
     try {
+      await _listenSessions.discardAll(); // Sair: as sessões de escuta saem
       final storedRefreshToken = await _readStoredRefreshToken();
       if (storedRefreshToken == null) return await _clearDeviceAfterLogout();
       // dart format off
@@ -335,6 +353,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   PendingRevocations get _revocations => ref.read(pendingRevocationsProvider);
+  ListenSessions get _listenSessions => ref.read(listenSessionsProvider);
 
   Future<void> _clearDeviceAfterLogout() async {
     final repo = ref.read(authRepositoryProvider);
@@ -455,6 +474,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     _bumpEpoch();
     final release = await _enterSessionLock();
     try {
+      await _listenSessions.discardAll(); // queda: as sessões de escuta saem
       final repo = ref.read(authRepositoryProvider);
       try {
         await repo.clearSession();

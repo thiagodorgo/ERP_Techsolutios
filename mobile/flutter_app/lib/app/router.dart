@@ -8,7 +8,6 @@ import '../core/diagnostics/diagnostics_screen.dart';
 import '../features/auth/change_password_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/splash_screen.dart';
-import '../features/auth/tenant_selector_screen.dart';
 import '../features/expenses/ui/expense_item_receipts_screen.dart';
 import '../features/expenses/ui/expense_report_detail_screen.dart';
 import '../features/expenses/ui/expense_submit_screen.dart';
@@ -16,6 +15,8 @@ import '../features/expenses/ui/expense_list_screen.dart';
 import '../features/expenses/ui/new_expense_item_screen.dart';
 import '../features/expenses/ui/new_expense_report_screen.dart';
 import '../features/checklists/domain/checklist_models.dart';
+import '../features/commissions/ui/commissions_screen.dart';
+import '../features/commissions/ui/finance_section_switch.dart';
 import '../features/checklists/ui/checklist_acknowledgement_screen.dart';
 import '../features/checklists/ui/checklist_available_screen.dart';
 import '../features/checklists/ui/checklist_comparison_screen.dart';
@@ -74,7 +75,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (!authState.isAuthenticated && !isLoginRoute) return '/login';
 
       // B-APP-ORG (69): a organização já foi escolhida no login (a senha decidiu,
-      // ou a pessoa escolheu no 409). Trocar é um ato voluntário, pelo Perfil.
+      // ou a pessoa escolheu no 409). Trocar é um ato voluntário: B-APP-ORG-2
+      // (A2) tirou a rota da Seleção; troca-se tocando num chamado ou num bloco
+      // de "Outros pátios", na lista de chamados.
       if (authState.isAuthenticated && isLoginRoute) return '/';
 
       return null;
@@ -89,10 +92,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/change-password',
         builder: (context, state) => const ChangePasswordScreen(),
       ),
-      GoRoute(
-        path: '/tenant-select',
-        builder: (context, state) => const TenantSelectorScreen(),
-      ),
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/profile',
@@ -105,6 +104,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/expenses/new',
         builder: (context, state) => const NewExpenseReportScreen(),
+      ),
+      GoRoute(
+        path: commissionsRoutePath,
+        builder: (context, state) => const CommissionsScreen(),
       ),
       GoRoute(
         path: '/expenses/:reportId',
@@ -276,6 +279,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/expenses/new',
       builder: (context, state) => const NewExpenseReportScreen(),
+    ),
+    GoRoute(
+      path: commissionsRoutePath,
+      builder: (context, state) => const CommissionsScreen(),
     ),
     GoRoute(
       path: '/expenses/:reportId',

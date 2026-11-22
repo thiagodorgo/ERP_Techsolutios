@@ -6,6 +6,7 @@ import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/permissions/permission_resolver.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
+import '../../commissions/ui/finance_section_switch.dart';
 import '../data/expense_repository.dart';
 import '../domain/expense_models.dart';
 import '../services/expense_policy_evaluator.dart';
@@ -98,6 +99,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
 
           return Column(
             children: [
+              const FinanceSectionSwitch(current: FinanceSection.expenses),
               if (session != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
