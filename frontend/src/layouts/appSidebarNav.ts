@@ -62,7 +62,7 @@ const DASHBOARD: NavItem = { label: "Dashboard", path: "/dashboard", icon: Layou
 // B-GRUPO-GESTOR-1b (Emenda 1b §2.3) — Painel do grupo. O item só aparece com 2 ou mais pátios no `GET /group-panel/scope`
 // (ver `groupPanelNavVisible`); a porta real é o servidor (403 `not_group_manager`) e o `PermissionGuard` da rota.
 export const GROUP_PANEL_PATH = "/group";
-const PAINEL_GRUPO: NavItem = { label: "Painel do grupo", path: GROUP_PANEL_PATH, icon: Network };
+const PAINEL_GRUPO: NavItem = { label: "Painel do grupo", path: "/group", icon: Network };
 
 const OS: NavItem = { label: "Ordens de Serviço", path: "/work-orders", icon: ClipboardList };
 const DESPACHOS: NavItem = { label: "Despachos", path: "/operations/dispatches", icon: Send };

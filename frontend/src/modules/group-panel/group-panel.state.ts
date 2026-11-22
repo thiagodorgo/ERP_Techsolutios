@@ -287,4 +287,3 @@ export function groupPanelStateFrom(input: {
   const good: GroupPanelGood = { summary: summary.data, scope: scopeData, at: input.now };
   return { state: { status: "ready", summary: summary.data, scope: scopeData, stale: false, lastGoodAt: good.at }, good };
 }
-
