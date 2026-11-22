@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import http from "node:http";
 
 import type { PrismaClient } from "@prisma/client";
@@ -191,6 +192,21 @@ export async function novaFamilia(
       INSERT INTO auth_identity_links (identity_id, tenant_id, user_id, attached_via)
       VALUES (${identityId}::uuid, ${org.tenantId}::uuid, ${org.userId}::uuid, ${attachedVia})
     `;
+
+    // B-APP-ORG-2S-c (SC): o par `concessao` carrega a linha `concessao` do registro de criações com a origem (o
+    // 1º pátio), como a concessão real grava (`confirmAccessGrant`, S2a). Sem ela, a guarda de saída de grupo não
+    // acha a origem e derruba o acesso (falha fechada).
+    if (attachedVia === "concessao") {
+      await h.admin.userCreationLog.create({
+        data: {
+          tenant_id: org.tenantId,
+          user_id: org.userId,
+          origin_tenant_id: orgs[0]!.tenantId,
+          state: "concessao",
+          email_key: createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("hex"),
+        },
+      });
+    }
   }
 
   const group = await h.admin.economicGroup.create({ data: { name: `Grupo S2P ${suffix}` } });
