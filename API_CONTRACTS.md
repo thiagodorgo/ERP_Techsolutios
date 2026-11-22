@@ -329,6 +329,13 @@ Fontes: `src/modules/platform/platform.routes.ts` (montado em `/api/v1/platform`
 | DELETE | `/platform/billing/economic-groups/:groupId` | `platform:billing:manage` | Exclusão lógica; recusada com membro vigente ou agendado (B-ASS-09). |
 | PUT | `/platform/billing/economic-groups/:groupId/members` | `platform:billing:manage` | Define o conjunto de organizações do grupo a partir de `validFrom` (B-ASS-09). |
 | GET | `/platform/billing/economic-groups/:groupId/history` | `platform:billing:read` | Todas as linhas do grupo, inclusive as fechadas e as agendadas (B-ASS-09). |
+| GET | `/api/v1/platform/billing/economic-groups/:groupId/managers` | `platform:billing:read` | Lista as marcas ativas e as contas vigentes da pessoa nos pátios do grupo. |
+| POST | `/api/v1/platform/billing/economic-groups/:groupId/managers` | `platform:users:create_admin` | Marca a identidade do par `organizationId` + `userId`; 409 se já marcada, 422 se o pátio não pertence ao grupo ou o usuário está inativo. |
+| DELETE | `/api/v1/platform/billing/economic-groups/:groupId/managers/:managerId` | `platform:users:create_admin` | Revoga logicamente a marca; não apaga histórico. |
+
+**Gestores do grupo — `platform_group_managers@2026-11.b-grupo-gestor`.** A marca pertence à identidade autenticável,
+fica sob RLS FORCE na organização de sistema `platform` e não concede permissão de plataforma. A resposta pública da
+lista contém somente `managerId`, `grantedAt` e `accounts[{organizationId,organizationName,userId,userName}]`.
 
 **Visão de custo × assinatura — `platform_billing_overview@2026-11.b-ass-09`.** As 10 rotas `/platform/billing/overview`,
 `/fx-rates` e `/economic-groups` da tabela acima (B-ASS-09). Só a plataforma (`platform:billing:read` para ler,

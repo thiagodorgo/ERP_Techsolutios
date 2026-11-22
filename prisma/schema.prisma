@@ -4541,6 +4541,43 @@ model EconomicGroup {
   @@map("economic_groups")
 }
 
+// B-GRUPO-GESTOR (FM) — marca global de uma identidade como gestora do grupo. A linha pertence
+// sempre à organização de sistema `platform`; revogação é lógica, nunca DELETE.
+model EconomicGroupManager {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String    @db.Uuid
+  group_id    String    @db.Uuid
+  identity_id String    @db.Uuid
+  granted_by  String?   @db.Uuid
+  granted_at  DateTime  @default(now()) @db.Timestamptz(6)
+  revoked_by  String?   @db.Uuid
+  revoked_at  DateTime? @db.Timestamptz(6)
+
+  @@index([tenant_id, group_id], map: "economic_group_managers_tenant_group_idx")
+  @@index([identity_id], map: "economic_group_managers_identity_id_idx")
+  @@map("economic_group_managers")
+}
+
+// B-GRUPO-GESTOR (FM) — pedido tenant-scoped e auditável de desvinculação. O fluxo que usa a
+// tabela vem em fatia posterior; ela já nasce fechada por estado e sob RLS ENABLE + FORCE.
+model UserDeactivationRequest {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String    @db.Uuid
+  target_user_id String    @db.Uuid
+  group_id       String    @db.Uuid
+  state          String    @default("pendente")
+  reason         String
+  requested_by   String    @db.Uuid
+  requested_at   DateTime  @default(now()) @db.Timestamptz(6)
+  decided_by     String?   @db.Uuid
+  decided_at     DateTime? @db.Timestamptz(6)
+  decision_note  String?
+
+  @@index([tenant_id, requested_at], map: "user_deactivation_requests_tenant_requested_idx")
+  @@index([tenant_id, state], map: "user_deactivation_requests_tenant_state_idx")
+  @@map("user_deactivation_requests")
+}
+
 // B-ASS-09 (M6) — vínculo de uma organização a um grupo, por vigência em data de negócio (SP): [valid_from, valid_to),
 // valid_to NULL = aberto. Tabela DA ORGANIZAÇÃO, RLS ENABLE + FORCE pela política da casa. Uma organização tem no máximo
 // um vínculo em qualquer dia: EXCLUDE USING gist (tenant_id WITH =, daterange(valid_from, valid_to, '[)') WITH &&), com
