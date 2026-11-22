@@ -530,6 +530,7 @@ if (!connectionString) {
   test("DB-3: startReleaseAtomic expectedDailyCount=3 e livro vazio -> release_daily_charges_missing", async () => {
     const ctx = await seedActiveCustody(`db3-${Date.now()}`, new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000)));
     try {
+      const occurredAt = new Date();
       await assert.rejects(
         () =>
           releaseRepo.startReleaseAtomic({
@@ -539,8 +540,8 @@ if (!connectionString) {
             kind: "STANDARD",
             requirements: [],
             actorId: undefined,
-            occurredAt: new Date(),
-            chargeBasis: { expectedDailyCount: 3, enteredAt: ctx.enteredAt, frozenAt: new Date() },
+            occurredAt,
+            chargeBasis: { expectedDailyCount: 3, enteredAt: ctx.enteredAt, frozenAt: occurredAt },
           } as never),
         (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_missing",
       );
@@ -576,8 +577,8 @@ if (!connectionString) {
             occurredAt: new Date(),
             chargeBasis: {
               expectedDailyCount: 3,
-              enteredAt: new Date(ctx.enteredAt.getTime() - MS_PER_DAY),
-              frozenAt: null,
+              enteredAt: ctx.enteredAt,
+              frozenAt: new Date(ctx.enteredAt.getTime()),
             },
           } as never),
         (error: unknown) => (error as { reason?: string }).reason === "concurrent_custody_append",
@@ -619,7 +620,7 @@ if (!connectionString) {
             chargeBasis: {
               expectedDailyCount: 3,
               enteredAt: new Date(ctx.enteredAt.getTime() - MS_PER_DAY),
-              frozenAt: new Date(ctx.frozenAt!.getTime() - MS_PER_DAY),
+              frozenAt: ctx.frozenAt,
             },
           } as never),
         (error: unknown) => (error as { reason?: string }).reason === "concurrent_custody_append",
