@@ -132,9 +132,9 @@ for (const quem of ["origem", "outro"] as const) {
   test(`GR6-DET (${quem}) — a concessão em voo já leu a origem; redefine o pátio ${quem === "origem" ? "de ORIGEM da cópia" : "que NÃO é a origem da cópia"}: um hash só`, { timeout: 120_000 }, async () => {
     const h = await harness();
     const f = await novaFamilia(h, `det-${quem}`, { pairs: 2 });
-    const sorted = [...f.orgs].sort((a, b) => (a.tenantId < b.tenantId ? -1 : 1));
-    const origem = sorted[0]!;
-    const outro = sorted[1]!;
+    // A origem da cópia é o vínculo `backfill` (f.orgs[0]), não o menor tenant_id (Emenda 1.8.3.17, Adendo 1, I13).
+    const origem = f.orgs[0]!;
+    const outro = f.orgs[1]!;
     const resetter = quem === "origem" ? origem : outro;
     const z = await patioNoGrupoDet(h, f, `det-${quem}`);
     const adminR = await administradorDe(h, resetter.tenantId);
