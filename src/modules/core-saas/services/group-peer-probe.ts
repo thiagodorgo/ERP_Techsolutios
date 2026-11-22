@@ -118,7 +118,7 @@ async function readPeerUsers(
       u.tenant_id::text AS tenant_id,
       l.identity_id::text AS identity_id,
       l.attached_via AS attached_via
-    FROM users u LEFT JOIN auth_identity_links l ON l.tenant_id = u.tenant_id AND l.user_id = u.id WHERE u.tenant_id = ${peerId}::uuid AND u.email = ${email}
+    FROM users u LEFT JOIN auth_identity_links l ON l.tenant_id = u.tenant_id AND l.user_id = u.id WHERE u.tenant_id = ${peerId}::uuid AND lower(u.email) = lower(${email})
   `;
   const peers = rows.map((row) => ({
     id: row.id,
