@@ -176,6 +176,19 @@ void main() {
         find.text('Sua senha provisória venceu. Peça uma nova ao seu pátio.'),
         findsOneWidget,
       );
+      // C4-04: o título e o subtítulo não mandam mais trocar a senha.
+      expect(find.text('Senha provisória vencida'), findsOneWidget);
+      expect(
+        find.text('Para continuar, saia e entre com a nova senha provisória.'),
+        findsOneWidget,
+      );
+      expect(find.text('Crie sua nova senha'), findsNothing);
+      expect(
+        find.text(
+          'Por segurança, troque a senha provisória antes de continuar.',
+        ),
+        findsNothing,
+      );
       expect(find.byKey(ChangePasswordScreen.exitButtonKey), findsOneWidget);
       expect(find.byKey(ChangePasswordScreen.saveButtonKey), findsNothing);
       expect(find.byType(TextField), findsNothing);

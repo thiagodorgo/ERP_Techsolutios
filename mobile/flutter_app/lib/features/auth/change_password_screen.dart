@@ -110,11 +110,15 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Senha vencida (C4-04): o título e o subtítulo
+                          // dizem o mesmo que a frase de saída.
                           Semantics(
                             header: true,
-                            child: const Text(
-                              'Crie sua nova senha',
-                              style: TextStyle(
+                            child: Text(
+                              exitOnly
+                                  ? 'Senha provisória vencida'
+                                  : 'Crie sua nova senha',
+                              style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
                                 color: ErpMobileTheme.ink,
@@ -123,9 +127,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            'Por segurança, troque a senha provisória antes de continuar.',
-                            style: TextStyle(
+                          Text(
+                            exitOnly
+                                ? 'Para continuar, saia e entre com a nova senha provisória.'
+                                : 'Por segurança, troque a senha provisória antes de continuar.',
+                            style: const TextStyle(
                               fontSize: 13,
                               color: ErpMobileTheme.inkMuted,
                               height: 1.35,
