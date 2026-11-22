@@ -49,6 +49,15 @@ export async function confirmCreation(
   });
 }
 
+// A concessao nao confirmou a linha 'em_curso' que abriu: falha fechada (C2-04, J-625). Sem a linha
+// 'concessao' com a origem, a guarda da SC derrubaria um acesso valido; por isso a transacao inteira cai.
+export class CreationLogNotConfirmedError extends Error {
+  constructor() {
+    super("a concessao nao confirmou a linha do registro de criacoes");
+    this.name = "CreationLogNotConfirmedError";
+  }
+}
+
 // A concessao venceu: confirma a linha que segurou o e-mail e guarda a origem somente no
 // registro interno. A resposta e a auditoria publica nunca revelam o patio de origem.
 export async function confirmAccessGrant(
@@ -58,10 +67,11 @@ export async function confirmAccessGrant(
   userId: string,
   originTenantId: string,
 ): Promise<void> {
-  await tx.userCreationLog.updateMany({
+  const confirmed = await tx.userCreationLog.updateMany({
     where: { seq: creationSeq, tenant_id: input.tenantId, state: "em_curso" },
     data: { state: "concessao", user_id: userId, origin_tenant_id: originTenantId },
   });
+  if (confirmed.count !== 1) throw new CreationLogNotConfirmedError();
 }
 
 // O registro do perdedor, em transacao curta propria: numero maior que o do vencedor. Nunca guarda
