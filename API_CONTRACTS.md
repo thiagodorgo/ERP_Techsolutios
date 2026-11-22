@@ -1091,11 +1091,11 @@ o estado atual não permite o salto.
 | GET/POST | `/impound-processes/:id/release` (+ `/start`, `/consume`, `/recipient`, `/checks`, `/approve`, `/for-repair/start`, `/for-repair/return`) | `impound:read`/`transition`, `release:process`/`approve` | Liberação do veículo (I5). |
 | GET/POST | `/impound-processes/:id/auction` (+ `/eligibility`, `/attempts`, `/edicts`, `/appraisal`, `/lot`, `/sale`, `/settlement`, …) | `impound:read`/`transition`, `auction:appraise` | Funil de leilão / elegibilidade (2-strikes, I8) e liquidação em cascata. |
 
-**B-PATIO-LIVRO-VAZIO — reasons de guard da liberação (`409 RELEASE_GUARD_FAILED`):**
+**B-PATIO-LIVRO-VAZIO — reasons de guard da liberação (`409 IMPOUND_GUARD_FAILED`):**
 
-- `release_daily_charges_unpostable`: o `start` não consegue lançar as diárias devidas (serviço/tarifa ausente).
-- `release_daily_charges_missing`: o `consume` detecta, sob trava, diárias devidas ainda não lançadas no livro.
-- `release_no_charges_posted`: o `consume` encontra livro sem nenhuma cobrança lançada para o processo.
+- `release_daily_charges_unpostable`: vale no `start` e no `consume` quando as diárias devidas não podem ser lançadas (serviço/tarifa ausente).
+- `release_daily_charges_missing`: vale no `start` e no `consume` quando há diárias devidas ainda não lançadas no livro.
+- `release_no_charges_posted`: vale no `start` e no `consume` quando o livro não tem nenhuma cobrança lançada para o processo.
 
 ### 3.13 Telemetria
 

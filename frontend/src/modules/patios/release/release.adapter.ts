@@ -66,9 +66,9 @@ export function releaseActionErrorMessage(reason: string | null | undefined, sta
     case "release_reconciliation_pending":
       return "Reconcilie as diárias acumuladas além do congelamento antes de consumar a liberação.";
     case "release_daily_charges_missing":
-      return "Há diárias obrigatórias ainda não lançadas no livro. Feche o lançamento antes de consumar a liberação.";
+      return "Há diárias devidas ainda não lançadas. Atualize o dossiê e tente novamente.";
     case "release_no_charges_posted":
-      return "Nenhuma cobrança foi lançada para este processo. Registre as cobranças antes de consumar a liberação.";
+      return "Não há nenhuma cobrança lançada para este veículo. Lance a remoção ou peça ao gestor para registrar a isenção.";
     case "release_debts_unsettled":
       return "Registre a quitação de todos os débitos exigíveis antes de consumar a liberação.";
     case "release_requirement_unmet":
@@ -78,7 +78,7 @@ export function releaseActionErrorMessage(reason: string | null | undefined, sta
     case "release_recipient_missing":
       return "Identifique quem retira o veículo antes de consumar a liberação.";
     case "release_daily_charges_unpostable":
-      return "Não foi possível lançar as diárias obrigatórias (serviço/tarifa ausente). Ajuste o cadastro e tente novamente.";
+      return "Não foi possível lançar as diárias devidas: a organização não tem serviço de diária ou tarifa vigente para o período. Peça ao gestor para configurar a tarifa.";
     // Saída para reparo (art. 271 §2º)
     case "repair_deadline_invalid":
       return "Informe um prazo de reparo válido (até 60 dias, art. 23 §1º).";
