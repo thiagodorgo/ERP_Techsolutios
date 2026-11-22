@@ -449,6 +449,24 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     requiredModules: ["finance"],
     tenantOnly: true,
   },
+  // B-GRUPO-GESTOR-1b — Painel do grupo (`/group`), só de leitura. A porta REAL é a marca de gestor do grupo, conferida
+  // no servidor pelo `/group-panel/*` (403 `not_group_manager` sem ela); aqui o item usa o mesmo gate do `PermissionGuard`
+  // da rota no App.tsx (`financial_entries:read`) e o módulo da classe do Painel em `route-modules.ts` (`finance`). SEM
+  // permissão nova. O registro não expressa "2 ou mais pátios no /scope" (H2 da F0 caiu): o esconde fino fica para emenda.
+  {
+    id: "group.panel",
+    label: "Painel do grupo",
+    description: "Financeiro, chamados e funcionários dos pátios do grupo, somados e por pátio.",
+    path: "/group",
+    icon: "Building2",
+    group: "finance",
+    order: 460,
+    status: "implemented",
+    requiredPermissions: ["financial_entries:read"],
+    requiredModules: ["finance"],
+    tenantOnly: true,
+    relatedEndpoints: ["GET /api/v1/group-panel/scope", "GET /api/v1/group-panel/summary"],
+  },
   // Ω4C PR-14 — Telemetria (app de campo): 4 paths GOVERNADOS (veto coordenador-de-acessos, mesma classe
   // do V1 de Orçamentos). Gate ÚNICO `telemetry:read` (PR-12; SEM permissão nova) e SEM requiredModules até o B-SAN3-18 (hoje com o módulo da área) —
   // sem provisão de módulo novo; getGovernedNavigationPaths os inclui, então o gating dinâmico ESCONDE o
