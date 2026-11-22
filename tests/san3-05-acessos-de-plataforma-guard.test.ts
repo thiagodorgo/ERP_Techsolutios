@@ -639,6 +639,11 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/subscription-billing/economic-groups/economic-group-managers.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
     "B-GRUPO-GESTOR, Emenda 3: o AuditLogRepository recebe o tx da transação única de grant/revoke; antes da trilha o repositório fixa o GUC do pátio com setTenantRlsContext, e só depois troca para a organização platform para gravar a marca e a trilha global. Provado em tests/grupo-gestor-marca-db.test.ts (RLS-1/T-ORG-SIS) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  // B-GRUPO-GESTOR (1a, F2), Emenda 3 §2.3/§2.4: o passo 0 do Painel lê a marca da própria pessoa.
+  [
+    k("L1", "src/modules/group-panel/group-panel.prisma.ts", "PrismaGroupManagerMarksReader.listMarksForActor", "tx.economicGroupManager", "economicGroupManager.findMany", "economic_group_managers", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-GRUPO-GESTOR, Emenda 3 §2.3 (passo 0 do Painel): a 1ª instrução do `$transaction` é `setIdentityRlsContext(tx, actor)` — o setter de `src/database/rls.ts` que o gerador não reconhece como setter —, que fixa o GUC de organização no pátio ATIVO do token e o GUC de identidade pelo par re-resolvido; a leitura filtra por `identity_id` e passa pelo canário `assertMarksOfIdentity`. Provado em tests/grupo-gestor-isolamento-db.test.ts (LMK-1 a LMK-4, GM-1 a GM-5) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

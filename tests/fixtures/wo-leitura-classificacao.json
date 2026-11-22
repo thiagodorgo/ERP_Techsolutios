@@ -373,6 +373,9 @@
   "GET /api/v1/platform/billing/economic-groups/:groupId/history": {
     "classe": "NAO-ALCANCADA"
   },
+  "GET /api/v1/platform/billing/economic-groups/:groupId/managers": {
+    "classe": "NAO-ALCANCADA"
+  },
   "GET /api/v1/platform/billing/fx-rates": {
     "classe": "NAO-ALCANCADA"
   },
