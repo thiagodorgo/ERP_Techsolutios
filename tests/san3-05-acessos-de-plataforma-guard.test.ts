@@ -864,5 +864,3 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     }
   });
 });
-
-
