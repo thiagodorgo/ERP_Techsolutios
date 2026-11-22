@@ -164,8 +164,9 @@ revogar requerem `platform:users:create_admin`. A revogação é lógica e o gru
 
 As rotas `GET /api/v1/group-panel/scope` e `GET /api/v1/group-panel/summary` reutilizam a marca como porta do painel,
 sem criar permissão nova. Dentro do alcance, o servidor volta a autorizar o usuário local de cada organização:
-`financial_entries:read` para o financeiro, `dashboard:read` sem recorte de campo para chamados/SLA e `users.read` para
-funcionários. Falta de permissão em um bloco não é suprida pela marca e não altera nenhuma célula dos 9 papéis canônicos.
+`financial_entries:read` para o financeiro; `dashboard:read`, sem recorte de papel de campo, para chamados/SLA; e
+`users.read` E `work_orders:read`, também sem recorte de papel de campo, para funcionários. Falta de permissão em um
+bloco não é suprida pela marca e não altera nenhuma célula dos 9 papéis canônicos.
 
 ## Notes
 - "limited-support" means support actions must be constrained, logged, and never silently exceed tenant-scoped support permissions.
