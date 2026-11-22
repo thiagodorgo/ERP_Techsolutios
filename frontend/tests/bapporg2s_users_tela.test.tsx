@@ -278,7 +278,43 @@ test("W4: o módulo Usuários não tem recusa de desativação de técnico de do
 // =====================================================================================================================
 // W5 — "Redefinir senha": a provisória aparece UMA vez, com copiar, e some ao fechar
 // =====================================================================================================================
+// B-APP-ORG-2S (Emenda 1.8.3.17, Adendo 1, I12; C4-07): o armazenamento do navegador, em memória e enumerável, para
+// provar que a provisória não vai para `sessionStorage` nem `localStorage`. Mutação MI12.
+function armazenamentosDoNavegador() {
+  const alvos = [globalThis, window] as unknown as Array<Record<string, unknown>>;
+  const nomes = ["sessionStorage", "localStorage"] as const;
+  const antes = alvos.map((alvo) => nomes.map((nome) => Object.getOwnPropertyDescriptor(alvo, nome)));
+  const mapas = nomes.map(() => new Map<string, string>());
+  nomes.forEach((nome, i) => {
+    const mapa = mapas[i];
+    const store = {
+      getItem: (key: string) => (mapa.has(key) ? mapa.get(key)! : null),
+      setItem: (key: string, value: unknown) => void mapa.set(key, String(value)),
+      removeItem: (key: string) => void mapa.delete(key),
+      clear: () => mapa.clear(),
+      key: (index: number) => [...mapa.keys()][index] ?? null,
+      get length() {
+        return mapa.size;
+      },
+    };
+    for (const alvo of alvos) Object.defineProperty(alvo, nome, { configurable: true, writable: true, value: store });
+  });
+  return {
+    valores: () => mapas.flatMap((mapa) => [...mapa.keys(), ...mapa.values()]),
+    restaurar: () => {
+      alvos.forEach((alvo, a) =>
+        nomes.forEach((nome, n) => {
+          const d = antes[a][n];
+          if (d) Object.defineProperty(alvo, nome, d);
+          else delete alvo[nome];
+        }),
+      );
+    },
+  };
+}
+
 test("W5: redefinir chama a rota com corpo vazio, mostra a provisória uma vez, copia, e o valor some ao fechar", async () => {
+  const navegador = armazenamentosDoNavegador();
   serve(on("POST", `/api/v1/auth/users/${TECH.id}/reset-password`, { body: { data: { user_id: TECH.id, temporary_password: PROVISORIA, must_change_password: true, revoked_sessions: 2, affected_patios: 1 } } }));
   clipboardWrites = [];
   const closed: string[] = [];
@@ -295,6 +331,7 @@ test("W5: redefinir chama a rota com corpo vazio, mostra a provisória uma vez, 
   assert.equal(writes()[0].rawBody, undefined, "W5-corpo-vazio: o cliente não manda senha");
   const shown = text(view.container);
   assert.equal(shown.split(PROVISORIA).length - 1, 1, "W5-uma-vez: a provisória aparece exatamente 1 vez");
+  assert.ok(!navegador.valores().some((valor) => valor.includes(PROVISORIA)), "W5-sem-armazenamento: a provisória não vai para sessionStorage nem localStorage");
   assert.match(shown, /Ela aparece só agora/);
 
   await click(button(view.container, /Copiar/));
@@ -309,6 +346,7 @@ test("W5: redefinir chama a rota com corpo vazio, mostra a provisória uma vez, 
   assert.doesNotMatch(text(view.container), new RegExp(PROVISORIA), "W5-some-da-memória: remontar não traz o valor de volta");
   assert.match(text(view.container), /Redefinir a senha de Carlos Guincheiro\?/);
   await view.unmount();
+  navegador.restaurar();
 });
 
 test("W5: clique duplo gera UMA redefinição; resposta que chega depois de fechar não reabre a provisória", async () => {
