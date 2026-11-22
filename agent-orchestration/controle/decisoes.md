@@ -6458,3 +6458,78 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 - **ID dado pelo redator;** o conflito está na Emenda 2 item 6 do plano `B-ASS-10c-OPERACAO` (fora do repositório) e na nota C3-03 da junta J-612.
 - **Os dois lados:** a maquete aprovada da tela de operação da cobrança dizia que a nota emitida sem pagamento *"precisa ser cancelada"*, frase da época da Q1 (a). O item 60 vale com a Q1 (b): a nota fica e o contador é avisado.
 - **Resolução:** vale a Q1 (b), que é a regra do dono, sobre o texto da maquete (§A1: regra de negócio vence o protótipo). A tela segue a Q1 (b) (testes T-R5-1 e T-R5-2), e o conserto da junta (`80b883cd`) alinhou a frase da referência versionada `platform-cobranca-3opcoes.reference.html`. Ata: `omega/juntas/J-612-b-ass-10c-operacao.md`.
+
+## D-DONO-2211-J2S-CADEIRAS-CLAUDE (2026-11-22 01:13 SP) — todas as cadeiras de junta ficam no Claude
+
+- **Fato (palavras do dono):** *"nao, faca vc as cadeiras da junta do servidor (J-2S)"*; em seguida, *"todas"*.
+- **Efeito:** inspetor e cadeiras da J-2S e das juntas seguintes ficam no Claude, com identidades novas e sem cruzamento, declarado por ordem do dono. Pré-revisão e conferência continuam em outra casa quando houver crédito.
+
+## D-DONO-2211-REDIS-LIMPAR (2026-11-22 09:53 SP) — limpar a fila de teste do Redis local
+
+- **Fato (palavras do dono):** *"pode sim, coloque pra rodar no ci do github"*.
+- **Efeito executado:** antes da limpeza houve `BGSAVE`; foram removidas as chaves de teste antigas e a fila pendente foi reconstruída somente com ids ainda existentes. O Redis vivo não volta a ser terreno de teste.
+
+## D-DONO-2211-TESTES-NO-CI (2026-11-22 09:53 SP) — suíte inteira no CI
+
+- **Fato (palavras do dono):** *"pode sim, coloque pra rodar no ci do github"*.
+- **Leitura do orquestrador, declarada (§A6):** suíte inteira no CI do GitHub; localmente, somente o teste pontual do achado, com Postgres e Redis próprios.
+
+## D-DONO-2211-CI-NO-GITHUB-PRIMEIRO (2026-11-22 14:41 SP) — GitHub é a primeira opção para todo CI
+
+- **Fato (palavras do dono):** *"todo ci rodar no github como primeira opcao"*; antes, *"ci faz pelo github"*.
+- **Efeito:** suíte, regressões e confirmação final rodam primeiro no GitHub. O roteiro local de CI inteiro só entra se o GitHub estiver indisponível, e a exceção fica registrada.
+
+## D-DONO-2211-GEMINI-TETO-20 (2026-11-22 11:20 SP) — Gemini CLI como segundo revisor, com teto total
+
+- **Fato (palavras do dono):** *"use o gemini cli com uns modelos para lhe ajudar, teto 20 reias"*.
+- **Efeito:** Gemini permanece segundo revisor, somente leitura, e todo achado precisa de conferência por outro modelo. O teto é total para a tarefa, não por chamada.
+
+## D-DONO-2211-PATIO-LIVRO-A (2026-11-22 10:44 SP) — livro calcula o devido antes da liberação
+
+- **Fato (resposta do dono no artefato):** *"opção (a)"*.
+- **Efeito:** o sistema calcula o devido, lança as diárias faltantes e só libera o veículo com tudo pago; isenção exige registro de gestor.
+
+## D-DONO-2211-PATIO-P2-RECUSA (2026-11-22 11:03 SP) — livro vazio recusa a liberação
+
+- **Fato (resposta do dono no artefato):** *"P2 = recusa"*.
+- **Efeito:** sem cobrança lançada, o veículo não sai até registro do gestor.
+
+## D-DONO-2211-PATIO-P3-I (2026-11-22 11:03 SP) — isenção fica no próprio livro
+
+- **Fato (resposta do dono no artefato):** *"P3 = (i)"*.
+- **Efeito:** isenção grava diárias a 0,00 no próprio livro, com motivo e autor, sem migração.
+
+## D-DONO-2211-PATIO-P4-II (2026-11-22 14:36 SP) — leilão e reciclagem em bloco próprio
+
+- **Fato (resposta do dono no artefato):** *"P4 = (ii)"*.
+- **Efeito:** `B-PATIO-LEILAO-DIARIAS` fecha as diárias devidas antes de congelar arremate ou reciclagem, para que a cascata credite o devido.
+
+## D-DONO-2211-LEILAO-P5 (2026-11-22 15:54 SP) — custódia completa antes do leilão
+
+- **Fato (palavras do dono):** *"o veiculo sem diaria, sem documentos de custodia nao vai para leilao, para acontecer o leilao todos os passos da custodia do veiculo tem que estarem descritos em sua documentação, casos omissos o adm do patio trata"*.
+- **Efeito:** sem tarifa de diária, ou sem a custódia completa documentada, arremate e reciclagem são recusados. O administrador completa a falta; não há dispensa automática.
+
+## D-DONO-2211-LEILAO-P6-P7 (2026-11-22 17:20 SP) — remoção não é creditada duas vezes; diária segue até o pagamento
+
+- **Fato (respostas do dono no artefato):** *"P6 = (i)"* e *"P7 = (ii)"*. Nota: *"se o dono do veiculo pagou o veiculo nem vai para ieilao, o paramento tem que ser quitado ate 24 horas do inicio do leilao"*.
+- **Efeito:** remoção já paga não volta a ser creditada na cascata; diária só para quando o pagamento do arremate é confirmado. O corte temporal foi substituído pela decisão P10 abaixo.
+
+## D-DONO-2211-LEILAO-P10 (2026-11-22 18:09 SP) — emissão da lista é o corte da quitação
+
+- **Fato (palavras do dono):** *"apos a lista do leilao de veiculos ser emitida, nao sera mais possivel a quitacao do debito, foi para leilao..."*.
+- **Efeito:** antes da emissão da lista, quitar retira o veículo; depois, não há mais quitação e o veículo segue ao leilão. Substitui o corte de 24 horas mencionado na P6.
+
+## D-DONO-2211-LEILAO-P8-P9-P11 (2026-11-22 18:17 SP) — documentação mínima, sem dispensa, e resgate administrativo
+
+- **Fato (respostas do dono na janela):** *"P8 = (ii)"*, *"P9 = (i)"* e *"P11 = (i)"*.
+- **Efeito:** documentado significa diárias lançadas, vistoria de recepção com fotos, pátio atribuído e remoção lançada; o administrador completa o que falta, sem dispensar; o resgate `LOTTED → ACTIVE_CUSTODY` continua e exige alçada administrativa.
+
+## D-DONO-2211-LEILAO-P11-GESTOR (2026-11-22 18:39 SP) — o gestor também pode resgatar em último caso
+
+- **Fato (palavras do dono):** *"o gestor tbm faz, em ultimo caso"*.
+- **Efeito:** o resgate depois do lote vale para Administrador e Gestor, como exceção registrada com motivo; os perfis de plataforma mantêm a alçada prevista.
+
+## D-DONO-2211-GRUPO-JANELA-A (2026-11-22 18:15 SP) — opção A para Gestores do grupo
+
+- **Fato (palavras do dono):** *"escolho a"*.
+- **Efeito:** o menu do Painel entra no PR de integração; a janela Gestores do grupo fica em PR próprio (`B-GRUPO-GESTOR-1c`), com servidor S1/S2 e junta completa. O esboço A foi aprovado sem nota de mudança.

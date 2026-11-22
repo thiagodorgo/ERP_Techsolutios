@@ -16891,7 +16891,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA (2026-11-16) — o app não deixa escolher a organização no login — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA (produto: quem pertence a mais de uma organização não entra pelo app na organização certa) · **escopo:** `pre-existente` (app de campo, `main` `cf0034d1`) · **dono:** o item 69 do portão (`docs/revisoes/SAN3/PLANO_SAN3.md` §4.1), bloco próprio a abrir (a tela 14 do plano do app guincho; fora do §5) · **gatilho:** a abertura desse bloco; a pendência fecha junto com o item 69 · **bloqueia:** a versão vendável, pelo item 69.
+- **status:** FECHADA em 2026-11-22 · **gravidade:** ALTA · **fechamento:** PRs #619, #622 e #625 na `main`; ensaio E-69/E-70 com 11/11 passos; item 69 fechado com ressalva pelo `porteiro-6970` · **bloqueia:** não mais.
 - **origem:** retrato do app de campo de 16/11 17:56 SP ("App de Campo Hoje", workflow `retrato-do-app`, 7 leitores e 1 crítico, sobre a `main` `cf0034d1`), a confirmar por execução; decisão F (a) do dono (`D-DONO-1711-RETOMADA-APROVA-TUDO`, 17/11): entra no portão como item 69.
 - **N e forma:** achado por leitura do código, ainda não executado: `mobile/flutter_app/lib/features/auth/login_screen.dart` não envia a organização, e o servidor devolve a lista de organizações; 1 tela.
 - **critério de encerramento:** o login do app envia a organização escolhida (o servidor devolve a lista), a escolha chega ao contexto da sessão, e isso está provado por teste no app e no emulador.
@@ -16899,7 +16899,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-APP-TROCA-ORG-NAO-TROCA (2026-11-16) — a troca de organização no app não troca — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA (produto e isolamento: o app segue falando com a organização do token e mostra o cache da anterior) · **escopo:** `pre-existente` (app de campo, `main` `cf0034d1`) · **dono:** o item 70 do portão (`docs/revisoes/SAN3/PLANO_SAN3.md` §4.1), bloco próprio a abrir (a tela 15 do plano do app guincho; fora do §5) · **gatilho:** a abertura desse bloco; a pendência fecha junto com o item 70 · **bloqueia:** a versão vendável, pelo item 70.
+- **status:** FECHADA em 2026-11-22 · **gravidade:** ALTA · **fechamento:** PRs #619, #622 e #625 na `main`; ensaio E-69/E-70 com 11/11 passos; item 70 fechado com ressalva pelo `porteiro-6970` · **bloqueia:** não mais.
 - **origem:** retrato do app de campo de 16/11 17:56 SP ("App de Campo Hoje", sobre a `main` `cf0034d1`), a confirmar por execução; decisão F (a) do dono (`D-DONO-1711-RETOMADA-APROVA-TUDO`, 17/11): entra no portão como item 70.
 - **N e forma:** achado por leitura do código, ainda não executado: o servidor usa a organização do token; o app não chama `/auth/active-tenant` e não limpa o cache, embora `mobile/flutter_app/lib/features/auth/tenant_selector_screen.dart` diga que limpa; 1 tela.
 - **critério de encerramento:** ao trocar de organização, o app chama `/auth/active-tenant`, passa a usar o token da organização nova e limpa o cache da anterior, provado por teste no app e no emulador.
@@ -17682,21 +17682,21 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-GRUPO-VOLTA-TODAS-AS-ORGS (2026-11-21) — a procura dos pátios do grupo lê todas as organizações da plataforma — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S` (custo O(N) aceito no plano 1.8 §3.1) · **dono:** `B-APP-ORG-2S` (leitura do redator, declarada) · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S` (custo O(N) aceito no plano 1.8 §3.1) · **dono:** `B-APP-ORG-2S-ESCALA` (novo dono após o merge do #622; leitura do redator, declarada) · **bloqueia:** não.
 - **origem:** Emenda 1.8.3.10 §4; verificação `verif-s2a-dp` (S2a `ab4083ce`), 21/11 ~16:41 SP.
 - **fato:** `probeGroupPeers` lê todas as organizações (`SELECT id FROM tenants`) e troca o contexto de RLS uma a uma a cada criação ou concessão. Medido: 93 → 155 ms de 10 para 200 organizações (~+0,5 ms por organização). Usuário só é lido dentro do grupo; sem vazamento medido.
 - **critério de encerramento:** a procura limitada aos pátios do grupo, com o custo medido de novo.
 
 ## P-GRUPO-EMAIL-MAIUSCULA (2026-11-21) — a trava do e-mail único no grupo diferencia maiúsculas — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA, a confirmar (sobe se a base viva tiver e-mail com maiúscula) · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S` (fatia S1) · **dono:** `B-APP-ORG-2S` · **bloqueia:** não, salvo a medição achar caso.
+- **status:** FECHADA em 2026-11-22 · **gravidade:** BAIXA · **fechamento:** o #622 compara com `lower(u.email) = lower(...)`, o K0-MAIUSCULA passou no CI e a medição de leitura na base viva encontrou 0 e-mails com maiúscula · **bloqueia:** não.
 - **origem:** verificação `verif-s1-cl` do S1 (`0a0fa336`), 21/11 ~17:25 SP.
 - **fato:** um usuário antigo gravado em maiúsculas direto no banco não trava a criação com o mesmo e-mail em minúsculas. A regra do dono é o e-mail único no grupo (`D-DONO-2011-EMAIL-UNICO-NO-GRUPO`).
 - **critério de encerramento:** medido quantos e-mails com maiúscula há na base viva; a trava compara sem diferenciar maiúsculas, ou a medição dá 0 e a API normaliza na entrada.
 
 ## P-SC-TESTES-SAIDA-PELO-VALID-TO (2026-11-21) — os testes da saída do grupo simulam a saída apagando a linha — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S-c` · **dono:** `B-APP-ORG-2S-c` · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S-c` · **dono:** `B-APP-ORG-SC-SEG` (novo dono após o merge do #625) · **bloqueia:** não.
 - **origem:** verificação `verif-sc-cl` da SC (`c23ddfef`), 21/11 ~17:30 SP.
 - **fato:** X1-X3, X5 e X6 simulam a saída apagando a linha do grupo; a forma real (`valid_to`) só tem o X4 e a sonda do verificador.
 - **critério de encerramento:** os testes da saída usam o `valid_to`.
@@ -17756,6 +17756,227 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** diário da fatia A3-tela (`dev-a3t-cl`, §8, pendência (4)); nota C3-07 da junta J-619 (a pendência só existia descrita no diário, sem id e sem dono); ressalva (2) do `porteiro-619`. Registrada no registro de 22/11 (`reg-2211-cl`).
 - **fato:** cada lançamento da aba Comissões (`lib/features/commissions/ui/commissions_screen.dart`) aparece sem o número do chamado que o gerou. O cálculo devolvido pelo servidor traz `sourceType` e `sourceId`, mas não o número que a pessoa conhece.
 - **critério de encerramento:** o servidor devolve o número do chamado em cada lançamento, e a linha o mostra, provado por teste.
+
+# Registro de 22/11/2026 — juntas #622, #623, #625, ensaio 69/70 e pátio
+
+## P-ENV-REDIS-PADRAO-LOCALHOST (2026-11-22) — teste sem `REDIS_URL` escreve no Redis vivo — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de processo · **dono:** `B-ARNES-REDIS-ISOLADO` (bloco de ferramenta a abrir) · **bloqueia:** qualquer teste que apague ou omita `REDIS_URL` sem a guarda da base viva.
+- **origem:** rodadas 2s3/2s4 da J-622; `src/config/env.ts` cai em `localhost:6379`.
+- **critério de encerramento:** teste sem `REDIS_URL` falha antes de conectar ao Redis vivo, e o guard é exercido por mutação no CI.
+
+## P-ARNES-APAGA-REDIS-URL (2026-11-22) — geradores removem `REDIS_URL` do terreno — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de processo · **dono:** `B-ARNES-REDIS-ISOLADO` · **bloqueia:** não, enquanto a guarda de base viva for obrigatória.
+- **origem:** J-622 rodada 2s4 e ressalva R2 do porteiro #622.
+- **critério de encerramento:** os geradores preservam/injetam o Redis próprio, e uma sonda prova que nunca alcançam `127.0.0.1:6379`.
+
+## P-S2P-HC1B-OSCILA-NO-CI (2026-11-22) — HC1b ultrapassou 300 ms numa tentativa — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-2S-ESTABILIDADE` · **bloqueia:** não.
+- **origem:** pré-revisão do #622 e C3-04 da J-622: 323,5 ms numa tentativa e 125,2 ms na repetição.
+- **critério de encerramento:** N ≥ 20 rodadas no GitHub abaixo do limite, ou orçamento/teste redesenhado com causa medida.
+
+## P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO (2026-11-22) — concessão passa do orçamento ao esperar redefinição — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-APP-ORG-2S-ESTABILIDADE` · **bloqueia:** não; falha fechada.
+- **origem:** dev/conferência do #622 e C3-16/C5-N3 da J-622.
+- **critério de encerramento:** GR6 verde em pelo menos 20 rodadas no CI e em corrida própria, sem 400/503 espúrio.
+
+## P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE (2026-11-22) — prazo esgotado depende do idioma do PostgreSQL — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-APP-ORG-2S-ERROS-SQL` · **bloqueia:** não; a falha é fechada.
+- **origem:** C1-02 da J-622 e conferência do conserto da 1.8.3.17.
+- **critério de encerramento:** o SQLSTATE é lido da causa real do adaptador, e o mesmo teste devolve 503 com `lc_messages` em inglês e português.
+
+## P-J622-CONTROLE-SERIAL-C5 (2026-11-22) — sonda espera 403 e o produto dá 401 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de arnês · **dono:** `B-APP-ORG-2S-TESTES` · **bloqueia:** não.
+- **origem:** classificação do dev e ressalva R2 do porteiro #622; C5-N2.
+- **critério de encerramento:** a sonda afirma 401 `session_inactive` e preserva a propriedade de que o vínculo não move.
+
+## P-J622-C1-NOTAS (2026-11-22) — oito notas da cadeira C1 — BAIXA/MÉDIA
+
+- **status:** ABERTA · **gravidade:** BAIXA/MÉDIA · **dono do grupo:** `B-APP-ORG-2S-TESTES`; **C1-07/C1-08:** `B-APP-ORG-2S-ESCALA`; **C1-02:** `B-APP-ORG-2S-ERROS-SQL` · **bloqueia:** não.
+- **itens:** C1-01 e C1-03 a C1-06 corrigem âncoras/mutações ou o teste nominal; C1-02 é o locale; C1-07 mede a volta O(N); C1-08 mede o custo de `lower(email)`.
+- **critério de encerramento:** cada mutação aplicável morre no teste nomeado; locale independe do idioma; a busca não percorre toda a plataforma e tem orçamento publicado.
+
+## P-J622-C2-NOTAS (2026-11-22) — seis notas da cadeira C2 — BAIXA/MÉDIA
+
+- **status:** ABERTA · **gravidade:** BAIXA/MÉDIA · **dono:** `B-APP-ORG-2S-SEGURANCA-SENHA`; C2-N6 acompanha `B-APP-ORG-2S-ESCALA` · **bloqueia:** não.
+- **itens:** C2-N2 (falha silenciosa sem `EXECUTE`), C2-N3 (âncora duplicada), C2-N4 (faltam 20 rodadas), C2-N5 (erro transitório mapeado como 400), C2-05 (reauth conta tentativa só num par) e C2-N6 (religação O(N)).
+- **critério de encerramento:** falha de permissão é explícita; mutação tem âncora única; corrida roda 20 vezes; erro transitório tem envelope correto; tentativas contam por pessoa; religação deixa de percorrer toda a base.
+
+## P-J622-C3-NOTAS (2026-11-22) — nove notas da cadeira C3 — BAIXA/MÉDIA
+
+- **status:** ABERTA · **gravidade:** BAIXA/MÉDIA · **dono:** `B-APP-ORG-2S-REGISTRO-TESTES`; C3-13 fica com `B-DADOS-RETENCAO-TENANT`; C3-15/C3-16 com `B-APP-ORG-2S-ESTABILIDADE` · **bloqueia:** não.
+- **itens:** C3-02 ordem compartilhada; C3-04 HC1b; C3-06 motivos genéricos; C3-07r CR residual; C3-09 trailers; C3-10 registro; C3-13 FK `CASCADE`; C3-15 travas globais; C3-16 GR6.
+- **critério de encerramento:** cada apenso canônico acima fecha; motivos e autoria ficam verificáveis; retenção da FK é decidida; testes paralelos deixam de compartilhar ordem/trava global.
+
+## P-J622-C4-NOTAS (2026-11-22) — quatro notas da cadeira C4 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-2-REGRESSAO-UI` · **bloqueia:** não.
+- **itens:** C4-05 origem interna não exposta; C4-08 centavos sem teste no dublê; C4-09 guarda de armazenamento incompleta; C4-10 restauro fora de `finally`.
+- **critério de encerramento:** teste prende centavos exatos, qualquer escrita em armazenamento e restauração mesmo em falha; a origem segue fora do payload/auditoria pública.
+
+## P-J622-C5-NOTAS (2026-11-22) — três notas da cadeira C5 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-2S-ESTABILIDADE` e `B-APP-ORG-2S-TESTES` · **bloqueia:** não.
+- **itens:** C5-N1 erro de espera >5 s vira 400; C5-N2 sonda espera 403 em vez de 401; C5-N3 GR6 intermitente.
+- **critério de encerramento:** envelope transitório correto, sonda alinhada ao produto e GR6 estável por N ≥ 20 no CI.
+
+## P-GRUPO-TRILHA-COMPLETE-FINAL (2026-11-22) — `complete` registra o estado anterior às gravações — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-GRUPO-GESTOR-2b` · **bloqueia:** não.
+- **critério de encerramento:** semântica final de `complete` decidida e provada quando outra trilha falha.
+
+## P-GRUPO-FKS-SEM-RELATION (2026-11-22) — FKs novas não têm `@relation` — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de integridade · **dono:** `B-GRUPO-GESTOR-2b` · **bloqueia:** o merge do 2b e qualquer `prisma migrate dev`.
+- **critério de encerramento:** `migrate diff` não propõe derrubar as oito FKs e a FK tenant-first segue protegida.
+
+## P-GRUPO-SUMMARY-ORCAMENTO-TEMPO (2026-11-22) — `/summary` sem orçamento para muitos pátios — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** o mesmo de `P-GRUPO-ESCALA-100` · **bloqueia:** não.
+- **critério de encerramento:** re-medição após o recorte mensal e orçamento aprovado para 10, 30 e 100 pátios.
+
+## P-GRUPO-SLA-CUSTO-POR-LINHA (2026-11-22) — conversão de data custa CPU por linha — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** o mesmo de `P-GRUPO-ESCALA-100` · **bloqueia:** não.
+- **critério de encerramento:** conversão deixa o laço do processo ou cumpre orçamento medido em 20 mil e 100 mil linhas.
+
+## P-GRUPO-REVOKE-400-INTERMITENTE (2026-11-22) — retirar gestor deu 400 uma vez — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-GRUPO-GESTOR-GP` · **bloqueia:** não; volta ao conserto se repetir no CI do dono.
+- **critério de encerramento:** causa raiz classificada e zero ocorrência em N ≥ 20 rodadas.
+
+## P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA (2026-11-22) — exclusão corre com abertura de vínculo — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de integridade · **dono:** `B-GRUPO-GESTOR-GP` · **bloqueia:** esse bloco.
+- **critério de encerramento:** exclusão e abertura concorrentes não deixam grupo apagado com vínculo aberto, por teste de corrida.
+
+## P-GRUPO-TOTAL-DE-PATIOS (2026-11-22) — total do grupo pendente — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** fatia `GP` · **bloqueia:** não.
+- **critério de encerramento:** total real de pátios exposto e testado.
+
+## P-GRUPO-ESCALA-100 (2026-11-22) — painel com 100 pátios — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** segunda entrega do Painel · **bloqueia:** não.
+- **critério de encerramento:** carga de 100 pátios dentro do orçamento aprovado, sem consulta N+1.
+
+## P-GRUPO-SLA-PRAZO (2026-11-22) — prazo do SLA a definir — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** bloco a nomear depois do MVP · **bloqueia:** não.
+- **critério de encerramento:** regra de prazo decidida, documentada e testada.
+
+## P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL (2026-11-22) — presença depende do sinal de campo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** trilha posterior ao Traccar · **bloqueia:** não.
+- **critério de encerramento:** estado em campo derivado do sinal real, com teste.
+
+## P-GRUPO-TICKET-MEDIO (2026-11-22) — definição de ticket médio pendente — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** produto define; depois, bloco pequeno · **bloqueia:** não.
+- **critério de encerramento:** fórmula e janela aprovadas e implementadas sem `float`.
+
+## P-GRUPO-HISTORICO-DE-POSICAO (2026-11-22) — histórico de posição pendente — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** bloco a nomear · **bloqueia:** não.
+- **critério de encerramento:** histórico real disponível ao Painel com retenção definida.
+
+## P-GRUPO-COMENTARIO-SLA (2026-11-22) — comentário dizia o oposto do código — FECHADA
+
+- **status:** FECHADA em 2026-11-22 · **gravidade:** BAIXA · **dono:** PR #626 · **fechamento:** comentário alinhado à regra; CI verde · **bloqueia:** não.
+
+## P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO (2026-11-22) — lista ainda mostra pátio cujo acesso caiu — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-SC-SEG` · **bloqueia:** não.
+- **critério de encerramento:** `/me/tenants` não lista Y após a saída, com teste que mata a remoção do filtro.
+
+## P-SC-ARNES-ENTRAR-SEM-GUARDA (2026-11-22) — arnês substitui o Entrar por leitura administrativa — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-SC-SEG` · **bloqueia:** não.
+- **critério de encerramento:** o arnês passa pela guarda SC, ou declara explicitamente que não mede esse caminho.
+
+## P-SC-GR6-503-INTERMITENTE (2026-11-22) — GR6 teve 503 isolado — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-SC-SEG` · **bloqueia:** não; falha fechada.
+- **critério de encerramento:** zero ocorrência em pelo menos 20 rodadas de `backend-postgres`; qualquer repetição recebe diagnóstico de causa.
+
+## P-REG-CONFIRMA-CRIACAO-SEM-COUNT (2026-11-22) — confirmação não verifica linha alterada — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-SC-SEG` · **bloqueia:** não.
+- **critério de encerramento:** `confirmCreation` exige `count === 1` e falha fechado, com teste de mutação.
+
+## P-SC-VINCULO-SEM-ORIGEM (2026-11-22) — concessão sem origem falha fechado — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-SC-SEG` · **bloqueia:** não.
+- **critério de encerramento:** consulta de leitura na base viva dá zero e `confirmAccessGrant` impede o estado, com teste.
+
+## P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES (2026-11-22) — acessos concedidos caem na saída — FECHADA
+
+- **status:** FECHADA em 2026-11-22 · **gravidade:** ALTA · **fechamento:** PR #625, regra SC nos quatro pontos e conferência independente · **bloqueia:** não.
+
+## P-6970-ABRIR-OUTRO-PATIO-2-TOQUES (2026-11-22) — chamado de outro pátio abre só no segundo toque — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-APP-ORG-2d` · **bloqueia:** não o portão; entra no MVP do app.
+- **critério de encerramento:** teste do caminho real sem OS pré-gravada fica vermelho hoje e verde no conserto; reensaio abre no primeiro toque.
+
+## P-6970-DETALHE-SEM-PATIO (2026-11-22) — detalhe da OS não mostra o pátio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-2d` · **bloqueia:** não.
+- **critério de encerramento:** com mais de um pátio, o detalhe mostra o nome; decisão do dono resolve também a linha do pátio ativo.
+
+## P-6970-INICIO-SO-PATIO-ATIVO (2026-11-22) — Início não mostra outros pátios — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-APP-ORG-2d`, após pergunta de UX ao dono · **bloqueia:** não.
+- **critério de encerramento:** decisão registrada; se a seção entrar, teste de tela correspondente.
+
+## P-6970-COMISSAO-VALOR-PONTA-A-PONTA (2026-11-22) — ensaio não teve comissão real calculada — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-COMISSAO-MOTOR` · **bloqueia:** não o portão.
+- **critério de encerramento:** E70-3 com cálculo real em X e Y, cada valor somente no bloco do respectivo pátio.
+
+## P-6970-WEB-NOVO-USUARIO-SEM-TECNICO (2026-11-22) — formulário não oferece Técnico de Campo — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-USERS-TECNICO` · **bloqueia:** não o portão; entra no MVP.
+- **critério de encerramento:** formulário oferece Técnico de Campo e o `POST /users` pela tela devolve 201; antes, confirmar se a omissão era intencional.
+
+## P-6970-PORTAO-CRITERIO-NOVO (2026-11-22) — portão ainda trazia o critério antigo — FECHADA
+
+- **status:** FECHADA neste PR de registro · **gravidade:** ALTA de registro · **dono:** `reg-2211-cx6` · **bloqueia:** não mais.
+- **fechamento:** itens 69/70 reescritos com Emenda 1.8.1 §6 e D7, nota `C-APP-ORG-69-70-SENTIDO-MUDOU`, evidência dos PRs #619/#622/#625 e ensaio 11/11.
+
+## P-PATIO-HELPERS-CADEIA-RASOS (2026-11-22) — helpers não provam toda a cadeia de custódia — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-PATIO-LIBERACAO-ENDURECIMENTO` · **bloqueia:** não.
+- **critério de encerramento:** helpers exercitam a cadeia completa e ficam vermelhos ao retirar qualquer elo exigido.
+
+## P-RELEASE-SETTLEDTOTAL-SOB-TRAVA (2026-11-22) — total quitado precisa ser lido sob trava — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** `B-PATIO-LIBERACAO-ENDURECIMENTO` · **bloqueia:** o fechamento desse bloco.
+- **critério de encerramento:** total quitado é calculado sob a mesma transação/trava da liberação, com corrida reproduzida.
+
+## P-PATIO-F3-SEM-CORRIDA (2026-11-22) — F3 sem teste concorrente — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-PATIO-LIBERACAO-ENDURECIMENTO` · **bloqueia:** não.
+- **critério de encerramento:** teste de corrida prende a propriedade da F3 e fica vermelho sem o conserto.
+
+## P-PATIO-FUSO-NO-REGIME (2026-11-22) — regime de diária sem fuso explícito — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-PATIO-FUSO-NO-REGIME` · **bloqueia:** não.
+- **critério de encerramento:** data de negócio usa o fuso aprovado e os limites de dia são testados.
+
+## P-LEILAO-VOLTA-COM-FROZEN (2026-11-22) — resgate do lote preserva estado congelado — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** `B-PATIO-LEILAO-DIARIAS` · **bloqueia:** esse bloco.
+- **critério de encerramento:** `LOTTED → ACTIVE_CUSTODY` recompõe o estado correto sem reaproveitar valor congelado indevido, com teste de regressão.
+
+## P-PATIO-LIVRO-VAZIO-LIBERA (2026-11-22) — livro vazio liberava sem pagamento — ALTA/GRAVE
+
+- **status:** FECHADA em 2026-11-22 · **gravidade:** ALTA/GRAVE de dinheiro · **dono:** PR #624 · **bloqueia:** não mais.
+- **fechamento:** #624, squash `6235b894e`, cumpre `D-DONO-2211-PATIO-LIVRO-A`, P2 e P3; CI e registro do bloco na `main`.
 
 ## P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e outra redefinição: uma das duas cai em 503 — BAIXA
 
