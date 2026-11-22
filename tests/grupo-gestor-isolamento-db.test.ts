@@ -51,9 +51,6 @@ function addDays(day: string, days: number): string {
 
 /** Todo caso tem prazo: um pedido que não volta vira vermelho, e o `after` (que apaga a base própria) ainda roda. */
 const CASE_TIMEOUT_MS = 120_000;
-function caso(name: string, fn: () => Promise<void>): void {
-  test(name, { timeout: CASE_TIMEOUT_MS }, fn);
-}
 
 function semHora(body: any) {
   const copy = JSON.parse(JSON.stringify(body));
@@ -74,7 +71,7 @@ if (!connectionString) {
 
   // ------------------------------------------------------------------------------------- LMK: a leitura das marcas
 
-  caso("LMK-1: a marca RETIRADA volta, com revokedAt, ao lado da viva — lida do pátio ativo pelo braço de identidade", async () => {
+  test("LMK-1: a marca RETIRADA volta, com revokedAt, ao lado da viva — lida do pátio ativo pelo braço de identidade", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gB);
@@ -90,7 +87,7 @@ if (!connectionString) {
     assert.ok(viva.length > 0, "a marca viva foi gravada");
   });
 
-  caso("LMK-2: a marca de OUTRA identidade não volta (a pessoa Y, no mesmo pátio, não lê a marca de X)", async () => {
+  test("LMK-2: a marca de OUTRA identidade não volta (a pessoa Y, no mesmo pátio, não lê a marca de X)", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const x = await c.pessoa([{ tenantId: a1.id, role: "manager" }]);
@@ -101,7 +98,7 @@ if (!connectionString) {
     assert.deepEqual(own, [{ groupId: c.gA, revokedAt: null }], "controle: X lê a própria");
   });
 
-  caso("LMK-3: sem contexto, não volta nada — par sem vínculo de identidade e cliente sem GUC leem zero", async () => {
+  test("LMK-3: sem contexto, não volta nada — par sem vínculo de identidade e cliente sem GUC leem zero", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const x = await c.pessoa([{ tenantId: a1.id, role: "manager" }]);
@@ -111,7 +108,7 @@ if (!connectionString) {
     assert.equal((await ctx.role.client.economicGroupManager.findMany()).length, 0, "o papel sem GUC não lê marca nenhuma");
   });
 
-  caso("LMK-4: no contexto da organização dona das marcas, a pessoa recebe só as próprias (filtro e canário de identidade)", async () => {
+  test("LMK-4: no contexto da organização dona das marcas, a pessoa recebe só as próprias (filtro e canário de identidade)", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const x = await c.pessoa([{ tenantId: a1.id, role: "manager" }, { tenantId: ctx.platform, role: "manager" }]);
@@ -124,7 +121,7 @@ if (!connectionString) {
 
   // ------------------------------------------------------------------------------------- GM (banco): a porta da marca
 
-  caso("GM-1: sem marca, 403 not_group_manager nas duas rotas (P-F)", async () => {
+  test("GM-1: sem marca, 403 not_group_manager nas duas rotas (P-F)", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const p = await c.pessoa([{ tenantId: a1.id, role: "manager" }]);
@@ -135,7 +132,7 @@ if (!connectionString) {
     }
   });
 
-  caso("GM-2: marca no grupo A e organização ativa em B1 — 403", async () => {
+  test("GM-2: marca no grupo A e organização ativa em B1 — 403", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { b1, p } = await c.gestorDeTres();
     const response = await ctx.call(SUMMARY, { token: await p.token(b1.id) });
@@ -143,7 +140,7 @@ if (!connectionString) {
     assert.equal(response.body?.error?.reason, "not_group_manager");
   });
 
-  caso("GM-3: marca retirada — 403", async () => {
+  test("GM-3: marca retirada — 403", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, p, mark } = await c.gestorDeTres();
     assert.equal((await ctx.call(SUMMARY, { token: await p.token(a1.id) })).status, 200, "controle: com a marca abre");
@@ -153,7 +150,7 @@ if (!connectionString) {
     assert.equal(response.body?.error?.reason, "not_group_manager");
   });
 
-  caso("GM-4: o gestor marcado vê só os pátios do grupo em que tem conta", async () => {
+  test("GM-4: o gestor marcado vê só os pátios do grupo em que tem conta", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, p } = await c.gestorDeTres();
     const a3 = await c.org("Pátio A3", c.gA);
@@ -163,7 +160,7 @@ if (!connectionString) {
     assert.ok(!JSON.stringify(response.body).includes(a3.id), "A3 (sem conta) não sai na resposta");
   });
 
-  caso("GM-5: a organização ativa saiu do grupo — 403", async () => {
+  test("GM-5: a organização ativa saiu do grupo — 403", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const fora = await c.org("Pátio Saiu", c.gA);
     const p = await c.pessoa([{ tenantId: fora.id, role: "manager" }]);
@@ -176,7 +173,7 @@ if (!connectionString) {
 
   // ------------------------------------------------------------------------------------- ISO (banco)
 
-  caso("ISO-1: A1 e A2 do grupo A, B1 do grupo B, ativa A1 — B1 não aparece em lugar nenhum da resposta, nem na contagem", async () => {
+  test("ISO-1: A1 e A2 do grupo A, B1 do grupo B, ativa A1 — B1 não aparece em lugar nenhum da resposta, nem na contagem", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, b1, p } = await c.gestorDeTres();
     await c.semear(a1.id, 100);
@@ -194,7 +191,7 @@ if (!connectionString) {
     assert.equal(summary.body.data.consolidated.finance.receivableOpen, 200, "só A1 (2 × 100); B1 (2 × 999) fora");
   });
 
-  caso("ISO-2: a mesma pessoa, marcada também no grupo B, com a ativa em B1, vê só B1", async () => {
+  test("ISO-2: a mesma pessoa, marcada também no grupo B, com a ativa em B1, vê só B1", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, b1, p } = await c.gestorDeTres();
     await c.marcar(p, c.gB, b1.id);
@@ -205,7 +202,7 @@ if (!connectionString) {
     assert.ok(!text.includes(a1.id) && !text.includes(a2.id), "A1 e A2 não saem na resposta da ativa B1");
   });
 
-  caso("ISO-3: usuário comum com conta e Financeiro em A1 e A2, sem marca — 403 not_group_manager", async () => {
+  test("ISO-3: usuário comum com conta e Financeiro em A1 e A2, sem marca — 403 not_group_manager", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA);
@@ -216,7 +213,7 @@ if (!connectionString) {
     assert.equal((await ctx.call("/api/v1/financial-summary", { token: await p.token(a1.id) })).status, 200, "controle: o Financeiro de A1 abre");
   });
 
-  caso("ISO-4: Financeiro em A1 e papel sem financial_entries:read em A2 — A2 fora do bloco financeiro e do total", async () => {
+  test("ISO-4: Financeiro em A1 e papel sem financial_entries:read em A2 — A2 fora do bloco financeiro e do total", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA);
@@ -235,7 +232,7 @@ if (!connectionString) {
     assert.equal(data.consolidated.finance.receivableOpen, 200, "só A1 (2 × 100) no total");
   });
 
-  caso("ISO-5: A2 saiu do grupo ontem (valid_to = hoje) — A2 não aparece", async () => {
+  test("ISO-5: A2 saiu do grupo ontem (valid_to = hoje) — A2 não aparece", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, p } = await c.gestorDeTres();
     await c.fecharVinculo(a2.id, ctx.today);
@@ -245,7 +242,7 @@ if (!connectionString) {
     assert.ok(!JSON.stringify(response.body).includes(a2.id), "A2 (fora do grupo hoje) não sai na resposta");
   });
 
-  caso("ISO-6: A2 entra no grupo amanhã (valid_from = amanhã) — A2 não aparece", async () => {
+  test("ISO-6: A2 entra no grupo amanhã (valid_from = amanhã) — A2 não aparece", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA, { validFrom: addDays(ctx.today, 1) });
@@ -257,7 +254,7 @@ if (!connectionString) {
     assert.ok(!JSON.stringify(response.body).includes(a2.id), "A2 (entra amanhã) não sai na resposta");
   });
 
-  caso("ISO-7: conta da pessoa em A2 desativada, ou A2 suspensa — A2 não aparece", async () => {
+  test("ISO-7: conta da pessoa em A2 desativada, ou A2 suspensa — A2 não aparece", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, p } = await c.gestorDeTres();
     assert.equal((await ctx.call(SUMMARY, { token: await p.token(a1.id) })).body.data.organizations.length, 2, "controle");
@@ -270,7 +267,7 @@ if (!connectionString) {
     assert.deepEqual(suspensa.body.data.organizations.map((org: any) => org.id), [a1.id], "organização suspensa");
   });
 
-  caso("ISO-8: organização ativa sem grupo — 403 not_group_manager, nada de outra organização é lido", async () => {
+  test("ISO-8: organização ativa sem grupo — 403 not_group_manager, nada de outra organização é lido", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const solta = await c.org("Pátio Sem Grupo", null);
@@ -285,7 +282,7 @@ if (!connectionString) {
     assert.equal(await ctx.viewsIn([a1.id, solta.id]), 0, "nenhuma trilha: nada foi lido");
   });
 
-  caso("ISO-9: X-Tenant-Id, parâmetro organization_id e corpo que nomeiam B1 — resposta idêntica à do pedido sem eles", async () => {
+  test("ISO-9: X-Tenant-Id, parâmetro organization_id e corpo que nomeiam B1 — resposta idêntica à do pedido sem eles", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, b1, p } = await c.gestorDeTres();
     await c.semear(a1.id, 10);
@@ -302,7 +299,7 @@ if (!connectionString) {
     assert.ok(!JSON.stringify(forjado.body).includes(b1.id), "B1 não sai na resposta forjada");
   });
 
-  caso("ISO-10: gestor marcado sem Financeiro na ativa — 200, com a ativa em sem_permissao; sem marca, 403", async () => {
+  test("ISO-10: gestor marcado sem Financeiro na ativa — 200, com a ativa em sem_permissao; sem marca, 403", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA);
@@ -315,7 +312,7 @@ if (!connectionString) {
     assert.deepEqual(status, { [a1.id]: "sem_permissao", [a2.id]: "ok" });
   });
 
-  caso("ISO-11: sem token, 401; cabeçalho legado sem JWT também não abre", async () => {
+  test("ISO-11: sem token, 401; cabeçalho legado sem JWT também não abre", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, p } = await c.gestorDeTres();
     for (const route of [SUMMARY, SCOPE]) {
@@ -325,7 +322,7 @@ if (!connectionString) {
     }
   });
 
-  caso("ISO-12: duas organizações com o mesmo e-mail e SEM vínculo de identidade — a outra não aparece (o e-mail não decide)", async () => {
+  test("ISO-12: duas organizações com o mesmo e-mail e SEM vínculo de identidade — a outra não aparece (o e-mail não decide)", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA);
@@ -338,7 +335,7 @@ if (!connectionString) {
     assert.ok(!JSON.stringify(response.body).includes(a2.id), "A2 (sem vínculo) não sai na resposta");
   });
 
-  caso("ISO-13: canário — o repositório devolve vínculo de outra organização na volta de A2: TenantRowsLeakError, 500, nenhum número", async () => {
+  test("ISO-13: canário — o repositório devolve vínculo de outra organização na volta de A2: TenantRowsLeakError, 500, nenhum número", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, p } = await c.gestorDeTres();
     await c.semear(a1.id, 50);
@@ -373,7 +370,7 @@ if (!connectionString) {
     }
   });
 
-  caso("ISO-14: escritório em A1 e papel de campo em A2 — o bloco de chamados de A2 fica fora; as OS lidas são só as de cada pátio", async () => {
+  test("ISO-14: escritório em A1 e papel de campo em A2 — o bloco de chamados de A2 fica fora; as OS lidas são só as de cada pátio", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA);
@@ -396,7 +393,7 @@ if (!connectionString) {
     assert.equal(summary.body.data.consolidated.operations.openedThisMonth, 1, "o consolidado soma somente A1");
   });
 
-  caso("ISO-15: dashboard:read em A1 e não em A2 — A2 sem bloco de chamados; o financeiro de A2 não muda", async () => {
+  test("ISO-15: dashboard:read em A1 e não em A2 — A2 sem bloco de chamados; o financeiro de A2 não muda", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA);
@@ -418,7 +415,7 @@ if (!connectionString) {
     assert.deepEqual(a2View.finance.summary, direto.body.data, "o financeiro de A2 é o do Financeiro de A2");
   });
 
-  caso("ISO-16: A2 com o módulo financeiro desligado — modulo_desligado, sem número, fora do total; o Financeiro de A2 dá 403", async () => {
+  test("ISO-16: A2 com o módulo financeiro desligado — modulo_desligado, sem número, fora do total; o Financeiro de A2 dá 403", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA, { modules: ["work_orders"] });
@@ -437,7 +434,7 @@ if (!connectionString) {
     assert.equal(direto.body?.error?.reason, "module_not_enabled");
   });
 
-  caso("ISO-17: os funcionários de B1 não entram em lugar nenhum — fora do alcance e fora da leitura de cada pátio", async () => {
+  test("ISO-17: os funcionários de B1 não entram em lugar nenhum — fora do alcance e fora da leitura de cada pátio", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, b1, p } = await c.gestorDeTres();
     const funcionarioB1 = await c.usuarioAvulso(b1.id, `func-b1-${randomUUID()}@example.com`, "operator");
@@ -464,7 +461,7 @@ if (!connectionString) {
 
   // ------------------------------------------------------------------------------------- RLS-1, PAR-2, AUD-5
 
-  caso("RLS-1: a leitura de cada pátio roda com o GUC daquele pátio (A1 em A1, A2 em A2) e devolve o número dele", async () => {
+  test("RLS-1: a leitura de cada pátio roda com o GUC daquele pátio (A1 em A1, A2 em A2) e devolve o número dele", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, p } = await c.gestorDeTres();
     await c.semear(a1.id, 100);
@@ -492,7 +489,7 @@ if (!connectionString) {
     assert.notDeepEqual(result.organizations[0]!.finance.summary, result.organizations[1]!.finance.summary, "controle: números diferentes");
   });
 
-  caso("PAR-2 (Prisma): pela API, o pátio no Painel é igual ao GET /financial-summary daquele pátio; o total é a soma", async () => {
+  test("PAR-2 (Prisma): pela API, o pátio no Painel é igual ao GET /financial-summary daquele pátio; o total é a soma", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const { a1, a2, p } = await c.gestorDeTres();
     await c.semear(a1.id, 100);
@@ -509,7 +506,7 @@ if (!connectionString) {
     assert.equal(painel.body.data.consolidated.finance.cashBalance, 400, "100 + 300");
   });
 
-  caso("AUD-5: leitura de A1, A2 e A3 — uma linha de trilha em cada uma, com o ator local de cada uma; nenhuma em B1", async () => {
+  test("AUD-5: leitura de A1, A2 e A3 — uma linha de trilha em cada uma, com o ator local de cada uma; nenhuma em B1", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
     const a2 = await c.org("Pátio A2", c.gA);
