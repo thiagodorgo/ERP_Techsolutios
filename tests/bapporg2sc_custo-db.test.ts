@@ -67,7 +67,7 @@ if (!connectionString) {
     }
   });
 
-  test("HD1 — p95 da conferência de sessão (concessao) menos p95 (origem) ≤ 20 ms; par não concessao = 1 leitura", async () => {
+  test("HD1 — p95 da conferência de sessão (concessao) menos p95 (origem) ≤ 20 ms; par não concessao = 1 leitura", async (t) => {
     const h = await harness();
     const suffix = `${Date.now()}-${randomHex(4)}`;
 
@@ -154,6 +154,7 @@ if (!connectionString) {
     const concessaoP95 = p95(concessaoSamples);
     const origemP95 = p95(origemSamples);
 
+    t.diagnostic(`HD1 p95(concessao)=${concessaoP95.toFixed(2)} ms p95(origem)=${origemP95.toFixed(2)} ms delta=${(concessaoP95 - origemP95).toFixed(2)} ms n=${concessaoSamples.length}+${origemSamples.length}`);
     assert.ok(
       concessaoP95 - origemP95 <= 20,
       `p95(concessao)=${concessaoP95.toFixed(2)} ms, p95(origem)=${origemP95.toFixed(2)} ms; diferença deve ser ≤ 20 ms`,

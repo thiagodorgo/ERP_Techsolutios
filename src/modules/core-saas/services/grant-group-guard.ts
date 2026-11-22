@@ -123,7 +123,7 @@ async function endGrant(
   tenantId: string,
   userId: string,
 ): Promise<void> {
-  await tx.user.updateMany({
+  const ended = await tx.user.updateMany({
     where: { id: userId, tenant_id: tenantId, status: "active" },
     data: { status: "inactive" },
   });
@@ -132,6 +132,9 @@ async function endGrant(
     where: { tenant_id: tenantId, user_id: userId, revoked_at: null },
     data: { revoked_at: new Date() },
   });
+
+  // A queda se audita uma vez: só quem tirou o usuário de ativo grava a linha (C1-04, J-625).
+  if (ended.count === 0) return;
 
   const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
     import("../audit/audit-log.service.js"),
