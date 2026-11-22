@@ -1,6 +1,6 @@
 import { env } from "../../config/env.js";
 import { createMemoryChargeService } from "../charging/charge.service.js";
-import type { ReleaseChargeState } from "../charging/charge.types.js";
+import type { AccrueProcessResult, ReleaseChargeState } from "../charging/charge.types.js";
 import type { ImpoundRepository } from "../impound/impound.repository.js";
 import { getMemoryImpoundRepositoryForTests } from "../impound/impound.service.js";
 import { resolveTransition } from "../impound/impound.transitions.js";
@@ -30,13 +30,27 @@ import {
 type RawRecord = Record<string, unknown>;
 
 // Port do estado do ledger p/ o gate I5 (dono = charging). Injetado no runtime; testável por DI.
-export type ReleaseChargeStatePort = (tenantId: string, processId: string) => Promise<ReleaseChargeState | undefined>;
+export type ReleaseChargeStatePort = (tenantId: string, processId: string, now: Date) => Promise<ReleaseChargeState | undefined>;
+export type ReleaseCloseDailiesPort = (tenantId: string, processId: string, now: Date, actorId?: string) => Promise<AccrueProcessResult>;
+
+// J-624 C1-01: só o portão 1 (legalidade) de resolveTransition, com o portão 2 neutro. Roda ANTES do fechamento
+// das diárias, para que uma chamada recusada pelo estado do processo não escreva no livro.
+const LEGALITY_ONLY_CONSUME_GATE = {
+  reconciliationPending: false,
+  chargesMissing: false,
+  noChargesPosted: false,
+  debtsUnsettled: false,
+  requirementUnmet: false,
+  authorityMissing: false,
+  recipientMissing: false,
+} as const;
 
 export class ReleaseService {
   constructor(
     private readonly repository: ReleaseRepository,
     private readonly impound: Pick<ImpoundRepository, "findProcessById">,
     private readonly chargeState: ReleaseChargeStatePort,
+    private readonly closeDailies: ReleaseCloseDailiesPort,
   ) {}
 
   // GET /impound-processes/:id/release — a liberação EM CURSO + checklist (impound:read).
@@ -53,6 +67,7 @@ export class ReleaseService {
   // Snapshot dos requisitos do perfil (I9). Gate-start: sem liberação em curso + freeze NÃO-retroativo.
   async start(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<ReleaseView> {
     const normalizedId = parseRequiredUuid(processId, "processId");
+    const occurredAt = new Date();
     const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
     if (!process) {
       throw new ReleaseError(404, "RELEASE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
@@ -64,15 +79,29 @@ export class ReleaseService {
     if (alreadyInProgress) {
       throw new ReleaseError(409, "RELEASE_CONFLICT", "release_already_in_progress", "A release is already in progress for this process.");
     }
-    const chargeState = await this.chargeState(actor.tenantId, normalizedId);
+    resolveTransition(process, "RELEASE_IN_PROGRESS", { releaseStart: { alreadyInProgress, freezeRetroactive: false } });
+    const startClosing = await this.closeDailies(actor.tenantId, normalizedId, occurredAt, actor.userId);
+    if (startClosing.errors > 0) {
+      throw new ReleaseError(
+        409,
+        "RELEASE_GUARD_FAILED",
+        "release_daily_charges_unpostable",
+        "Could not post required daily charges due to missing service or active tariff.",
+      );
+    }
+    const chargeState = await this.chargeState(actor.tenantId, normalizedId, occurredAt);
+    if (!chargeState) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_gate_unresolved", "Release gate state could not be resolved.");
+    }
     // freeze-retroactive: congelar em now estranharia DAILYs já acumuladas cujo período termina depois de now.
-    const freezeRetroactive = chargeState ? chargeState.nDueNow < chargeState.persistedDailyCount : false;
+    const freezeRetroactive = chargeState.nDueNow < chargeState.persistedDailyCount;
 
     // resolveTransition = portão 1 (legalidade ACTIVE_CUSTODY→RELEASE_IN_PROGRESS) + guardReleaseStart (PURA).
     const decision = resolveTransition(process, "RELEASE_IN_PROGRESS", {
       releaseStart: { alreadyInProgress, freezeRetroactive },
     });
 
+    const startFrozenAt = process.frozenAt ?? occurredAt;
     const requirements = (await this.repository.loadReleaseRequirements(actor.tenantId, normalizedId)) ?? [];
     return this.repository.startReleaseAtomic({
       tenantId: actor.tenantId,
@@ -84,7 +113,12 @@ export class ReleaseService {
       recipientDocument: parseRecipientDocument(body.recipient_document ?? body.recipientDocument),
       recipientRelationship: parseRecipientRelationship(body.recipient_relationship ?? body.recipientRelationship),
       actorId: actor.userId,
-      occurredAt: new Date(),
+      occurredAt,
+      chargeBasis: {
+        expectedDailyCount: chargeState.nAccrueAtFreeze,
+        enteredAt: process.enteredAt ?? null,
+        frozenAt: startFrozenAt,
+      },
     });
   }
 
@@ -133,6 +167,7 @@ export class ReleaseService {
   // RE-VERIFICA sob lock e aplica o efeito atômico (RELEASE + release COMPLETED + vacate).
   async consume(actor: { tenantId: string; userId?: string }, processId: string): Promise<ReleaseView> {
     const normalizedId = parseRequiredUuid(processId, "processId");
+    const occurredAt = new Date();
     const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
     if (!process) {
       throw new ReleaseError(404, "RELEASE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
@@ -141,21 +176,36 @@ export class ReleaseService {
     if (!view) {
       throw new ReleaseError(404, "RELEASE_NOT_FOUND", "release_not_found", "No release in progress for this process.");
     }
-    const chargeState = await this.chargeState(actor.tenantId, normalizedId);
+    resolveTransition(process, "RELEASED", { releaseGate: LEGALITY_ONLY_CONSUME_GATE });
+    const consumeClosing = await this.closeDailies(actor.tenantId, normalizedId, occurredAt, actor.userId);
+    if (consumeClosing.errors > 0) {
+      throw new ReleaseError(
+        409,
+        "RELEASE_GUARD_FAILED",
+        "release_daily_charges_unpostable",
+        "Could not post required daily charges due to missing service or active tariff.",
+      );
+    }
+    const chargeState = await this.chargeState(actor.tenantId, normalizedId, occurredAt);
+    const consumeChargeState = chargeState;
+    if (!consumeChargeState) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_gate_unresolved", "Release gate state could not be resolved.");
+    }
 
-    const debtsUnsettled = chargeState ? !chargeState.debtsSettled : false;
-    const reconciliationPending = chargeState ? !chargeState.reconciliationConsistent : false;
+    const chargesMissing = consumeChargeState.dailyShortfall > 0;
+    const noChargesPosted = consumeChargeState.exigibleCount === 0;
+    const debtsUnsettled = !consumeChargeState.debtsSettled;
+    const reconciliationPending = !consumeChargeState.reconciliationConsistent;
     const requirementUnmet = view.checks.some((check) => check.required && !check.satisfied);
     const authorityMissing = view.release.authorityApprovedAt === undefined;
     const recipientMissing = !view.release.recipientName;
 
     // resolveTransition = portão 1 (RELEASE_IN_PROGRESS→RELEASED) + guardReleaseGate (PURA; 5 reasons distintos).
     const decision = resolveTransition(process, "RELEASED", {
-      releaseGate: { debtsUnsettled, reconciliationPending, requirementUnmet, authorityMissing, recipientMissing },
+      releaseGate: { reconciliationPending, chargesMissing, noChargesPosted, debtsUnsettled, requirementUnmet, authorityMissing, recipientMissing },
     });
 
-    const occurredAt = new Date();
-    const settledTotal = chargeState?.settledTotal ?? "0.00";
+    const settledTotal = consumeChargeState.settledTotal;
     // Snapshot RELEASE §2.8: só refs/hashes/valores-string. ZERO CPF/nome/token do proprietário.
     const eventPayload: CanonicalValue = {
       event: "RELEASE",
@@ -172,10 +222,15 @@ export class ReleaseService {
       releaseId: view.release.id,
       expectedFrom: decision.from,
       settledTotal,
-      overAccruedDailyIds: chargeState?.overAccruedDailyIds ?? [],
+      overAccruedDailyIds: chargeState.overAccruedDailyIds,
       eventPayload,
       actorId: actor.userId,
       occurredAt,
+      chargeBasis: {
+        expectedDailyCount: chargeState.nAccrueAtFreeze,
+        enteredAt: chargeState.enteredAt ?? null,
+        frozenAt: chargeState.frozenAt ?? null,
+      },
     });
   }
 
@@ -276,7 +331,8 @@ export function createMemoryReleaseService(): ReleaseService {
   return new ReleaseService(
     memoryReleaseRepository,
     getMemoryImpoundRepositoryForTests(),
-    (tenantId, processId) => memoryChargeService.getReleaseChargeState(tenantId, processId),
+    (tenantId, processId, now) => memoryChargeService.getReleaseChargeState(tenantId, processId, now),
+    (tenantId, processId, now, actorId) => memoryChargeService.accrueProcess(tenantId, processId, now, actorId),
   );
 }
 
@@ -306,5 +362,10 @@ async function createPrismaReleaseService(): Promise<ReleaseService> {
     createPrismaImpoundRepository(),
     createDefaultChargeService(),
   ]);
-  return new ReleaseService(repository, impound, (tenantId, processId) => chargeService.getReleaseChargeState(tenantId, processId));
+  return new ReleaseService(
+    repository,
+    impound,
+    (tenantId, processId, now) => chargeService.getReleaseChargeState(tenantId, processId, now),
+    (tenantId, processId, now, actorId) => chargeService.accrueProcess(tenantId, processId, now, actorId),
+  );
 }

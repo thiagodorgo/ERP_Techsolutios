@@ -13,13 +13,15 @@ import {
   getMemoryReleaseRepositoryForTests,
   resetReleaseRuntimeForTests,
 } from "../src/modules/release/release.service.js";
+import { getMemoryPriceTableRepositoryForTests, resetPriceTableRuntimeForTests } from "../src/modules/price-tables/price-table.service.js";
 import type { ReleaseActorContext } from "../src/modules/release/release.types.js";
+import { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests } from "../src/modules/tariffs/tariff.service.js";
 import { getMemoryYardRepositoryForTests } from "../src/modules/yard/yard.service.js";
 import type { DailyCap, DailyModel, ProfileScope } from "../src/modules/jurisdiction/jurisdiction.types.js";
 
 const MS_PER_DAY = 86_400_000;
 
-type Ctx = { tenantId: string; processId: string; profileId: string; spotId?: string };
+type Ctx = { tenantId: string; processId: string; profileId: string; dailyServiceCatalogId: string; spotId?: string };
 
 function actor(tenantId: string): ReleaseActorContext {
   return {
@@ -34,6 +36,8 @@ async function reset(): Promise<string> {
   resetImpoundRuntimeForTests();
   resetChargeRuntimeForTests();
   resetReleaseRuntimeForTests();
+  resetPriceTableRuntimeForTests();
+  resetTariffRuntimeForTests();
   return randomUUID();
 }
 
@@ -52,6 +56,7 @@ async function makeActiveProcess(
 ): Promise<Ctx> {
   const impound = getMemoryImpoundRepositoryForTests();
   const profileId = randomUUID();
+  const dailyServiceCatalogId = randomUUID();
   const process = await impound.openFromRemovalAtomic({
     tenantId,
     serviceOrderId: randomUUID(),
@@ -74,7 +79,7 @@ async function makeActiveProcess(
     scope: options.scope ?? "PUBLIC_AGREEMENT",
     model: options.model ?? "ROLLING_24H",
     cap: options.cap ?? "SIX_MONTHS",
-    dailyServiceCatalogId: randomUUID(),
+    dailyServiceCatalogId,
   });
   getMemoryReleaseRepositoryForTests().setProfileRequirementsForTests(tenantId, profileId, options.requirements ?? []);
 
@@ -87,7 +92,27 @@ async function makeActiveProcess(
     await impound.assignSpotAtomic({ tenantId, processId: process.id, spotId: spot.id, occurredAt: new Date() });
     spotId = spot.id;
   }
-  return { tenantId, processId: process.id, profileId, spotId };
+  return { tenantId, processId: process.id, profileId, dailyServiceCatalogId, spotId };
+}
+
+async function seedMemoryTariff(tenantId: string, serviceCatalogId: string, unitPrice: number): Promise<void> {
+  const priceTable = await getMemoryPriceTableRepositoryForTests().create({
+    tenantId,
+    name: `Tabela ${randomUUID().slice(0, 6)}`,
+    currency: "BRL",
+    version: 1,
+    status: "published",
+  });
+  await getMemoryTariffRepositoryForTests().create({
+    tenantId,
+    priceTableId: priceTable.id,
+    serviceCatalogId,
+    name: "Diária",
+    unitPrice,
+    currency: "BRL",
+    origin: "test",
+    status: "active",
+  });
 }
 
 async function addRemoval(tenantId: string, processId: string, amount = "150.00"): Promise<void> {
@@ -126,10 +151,11 @@ async function expectReason(promise: Promise<unknown>, reason: string): Promise<
 test("(i) happy path: start→settle→approve→consume ⇒ RELEASED + RELEASE na cadeia + vaga liberada", async () => {
   const tenantId = await reset();
   const ctx = await makeActiveProcess(tenantId, {
-    t0: new Date(Date.now() - 2 * MS_PER_DAY),
+    t0: new Date(Date.now() - 3_600_000),
     requirements: [{ code: "AUTHORITY_RELEASE", label: "Autorização do órgão", required: true }],
     withSpot: true,
   });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId, "150.00");
   const release = createMemoryReleaseService();
   const charge = createMemoryChargeService();
@@ -173,6 +199,7 @@ test("(ii) already_in_progress + freeze_retroactive (salto A)", async () => {
 
   // already_in_progress
   const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await release.start(who, ctx.processId, {});
   await expectReason(release.start(who, ctx.processId, {}), "release_already_in_progress");
 
@@ -190,12 +217,14 @@ test("(ii) salto B: 5 reasons DISTINTOS (reconciliation, debts, requirement, aut
 
   // release_reconciliation_pending: over-accrued sem estorno (checado antes de debts).
   const recon = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 40 * MS_PER_DAY), cap: "THIRTY_DAYS_LEGACY" });
+  await seedMemoryTariff(tenantId, recon.dailyServiceCatalogId, 40);
   await accrueDailies(tenantId, recon.processId, 35);
   await release.start(who, recon.processId, { recipient_name: "R" });
   await expectReason(release.consume(who, recon.processId), "release_reconciliation_pending");
 
   // release_debts_unsettled: REMOVAL não quitada, sem diárias (reconciliação vazia = consistente).
   const debts = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  await seedMemoryTariff(tenantId, debts.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, debts.processId);
   await release.start(who, debts.processId, { recipient_name: "R" });
   await expectReason(release.consume(who, debts.processId), "release_debts_unsettled");
@@ -205,6 +234,7 @@ test("(ii) salto B: 5 reasons DISTINTOS (reconciliation, debts, requirement, aut
     t0: new Date(Date.now() - 2 * MS_PER_DAY),
     requirements: [{ code: "OWNERSHIP_PROOF", label: "Prova de propriedade", required: true }],
   });
+  await seedMemoryTariff(tenantId, req.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, req.processId);
   await release.start(who, req.processId, { recipient_name: "R" });
   await charge.settle(who, req.processId, {});
@@ -213,6 +243,7 @@ test("(ii) salto B: 5 reasons DISTINTOS (reconciliation, debts, requirement, aut
 
   // release_authority_missing: quitado + requisito ok + recipiente ok, mas sem aprovação.
   const auth = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  await seedMemoryTariff(tenantId, auth.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, auth.processId);
   await release.start(who, auth.processId, { recipient_name: "R" });
   await charge.settle(who, auth.processId, {});
@@ -220,6 +251,7 @@ test("(ii) salto B: 5 reasons DISTINTOS (reconciliation, debts, requirement, aut
 
   // release_recipient_missing: quitado + aprovado, mas sem quem-retira.
   const recip = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  await seedMemoryTariff(tenantId, recip.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, recip.processId);
   await release.start(who, recip.processId, {});
   await charge.settle(who, recip.processId, {});
@@ -317,6 +349,7 @@ test("(iv) recipiente + comprovante entrada/saída persistidos", async () => {
   const tenantId = await reset();
   const t0 = new Date(Date.now() - 2 * MS_PER_DAY);
   const ctx = await makeActiveProcess(tenantId, { t0 });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId);
   const release = createMemoryReleaseService();
   const charge = createMemoryChargeService();
@@ -362,6 +395,7 @@ test("(vi) verify: cadeia permanece valid após SETTLEMENT + estorno + RELEASE",
 test("(viii) approve idempotente: 2ª aprovação = no-op (mantém authorityApprovedAt original)", async () => {
   const tenantId = await reset();
   const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   const release = createMemoryReleaseService();
   const who = actor(tenantId);
 

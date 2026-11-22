@@ -38,6 +38,7 @@ if (!connectionString) {
             expectedFrom: "RELEASE_IN_PROGRESS",
             settledTotal: "0.00",
             overAccruedDailyIds: [],
+            chargeBasis: { expectedDailyCount: 0, enteredAt: ctx.enteredAt, frozenAt: ctx.frozenAt },
             eventPayload: payload,
             actorId: undefined,
             occurredAt: new Date(),
@@ -94,6 +95,7 @@ if (!connectionString) {
               expectedFrom: "RELEASE_IN_PROGRESS",
               settledTotal: "0.00",
               overAccruedDailyIds: ctx.dailyId ? [ctx.dailyId] : [],
+              chargeBasis: { expectedDailyCount: 0, enteredAt: ctx.enteredAt, frozenAt: ctx.frozenAt },
               eventPayload: { event: "RELEASE", releaseId: ctx.releaseId, settledTotal: "0.00" },
               actorId: undefined,
               occurredAt: new Date(),
@@ -173,7 +175,8 @@ async function bootstrap(connection: string) {
 type SeedOpts = { unsettledRemoval?: boolean; unmetRequirement?: boolean; overAccruedDaily?: boolean };
 
 // Semeia um processo pronto p/ consumar: RELEASE_IN_PROGRESS (frozen) + release AUTHORIZED (recipiente + aprovação).
-// Sem opts o gate I5 PASSA (a corrida testa o anti-dupla-liberação). Com opts, injeta UMA violação p/ o teste da
+// Sem opts, o cenário semeia uma REMOVAL QUITADA e a base com expectedDailyCount 0 (livro completo e quitado): o consume
+// pode passar, e a corrida aqui testa só o anti-dupla-liberação. Com opts, injeta UMA violação p/ o teste da
 // defesa sob lock (BAIXO-3): unsettledRemoval (débito não-quitado) / unmetRequirement (requisito required aberto) /
 // overAccruedDaily (DAILY QUITADA com líquido≠0 sem estorno → reconciliação por-valor pendente).
 async function seedReadyRelease(client: BootstrapClient, suffix: string, opts: SeedOpts = {}) {
@@ -185,9 +188,11 @@ async function seedReadyRelease(client: BootstrapClient, suffix: string, opts: S
     const [profile] = await tx.$queryRaw<Array<{ id: string }>>`
       INSERT INTO jurisdiction_profiles (tenant_id, name, scope) VALUES (${tenant.id}::uuid, 'Perfil', 'PUBLIC_AGREEMENT') RETURNING id
     `;
+    const enteredAt = new Date(Date.now() - 3 * 86_400_000);
+    const frozenAt = new Date(Date.now() - 2 * 86_400_000);
     const [proc] = await tx.$queryRaw<Array<{ id: string }>>`
       INSERT INTO impound_processes (tenant_id, profile_id, origin_authority, vehicle_unidentified, unidentified_reason, status, entered_at, frozen_at, custody_seq_head, custody_hash_head)
-      VALUES (${tenant.id}::uuid, ${profile.id}::uuid, 'Autoridade', true, 'Placa adulterada', 'RELEASE_IN_PROGRESS', now(), now(), 1, ${custodyHash})
+      VALUES (${tenant.id}::uuid, ${profile.id}::uuid, 'Autoridade', true, 'Placa adulterada', 'RELEASE_IN_PROGRESS', ${enteredAt}, ${frozenAt}, 1, ${custodyHash})
       RETURNING id
     `;
     await tx.$queryRaw`
@@ -203,6 +208,11 @@ async function seedReadyRelease(client: BootstrapClient, suffix: string, opts: S
       await tx.$queryRaw`
         INSERT INTO process_charges (tenant_id, process_id, kind, quantity, unit_amount, total_amount)
         VALUES (${tenant.id}::uuid, ${proc.id}::uuid, 'REMOVAL', 1, 150.00, 150.00)
+      `;
+    } else if (!opts.unmetRequirement && !opts.overAccruedDaily) {
+      await tx.$queryRaw`
+        INSERT INTO process_charges (tenant_id, process_id, kind, quantity, unit_amount, total_amount, settled_at)
+        VALUES (${tenant.id}::uuid, ${proc.id}::uuid, 'REMOVAL', 1, 150.00, 150.00, now())
       `;
     }
     if (opts.unmetRequirement) {
@@ -220,7 +230,7 @@ async function seedReadyRelease(client: BootstrapClient, suffix: string, opts: S
       `;
       dailyId = daily.id; // QUITADA (settled_at set) mas líquido = 30 ≠ 0 (sem estorno) → reconciliação por-valor pendente
     }
-    return { profileId: profile.id, processId: proc.id, releaseId: release.id, dailyId };
+    return { profileId: profile.id, processId: proc.id, releaseId: release.id, dailyId, enteredAt, frozenAt };
   });
   return { tenantId: tenant.id, ...seeded };
 }

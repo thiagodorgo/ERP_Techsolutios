@@ -329,7 +329,7 @@ if (!connectionString) {
 
   test("B-O6R-12 C20: liberação iniciada depois da edição usa os requisitos da abertura", async () => {
     const c = await semear("lib");
-    const processId = await abrir(c, new Date(Date.now() - 3 * MS_PER_DAY));
+    const processId = await abrir(c, new Date(Date.now() - 12 * 60 * 60 * 1000));
     await editar(c, {
       release_requirements: [
         { code: "crlv", label: "CRLV", required: true },
@@ -337,8 +337,11 @@ if (!connectionString) {
       ],
     });
     const cobranca = new ChargeService(new RlsPrismaChargeRepository(admin), resolverQueAnota().resolver);
-    const liberacao = new ReleaseService(new RlsPrismaReleaseRepository(admin), new RlsPrismaImpoundRepository(admin), (t, p) =>
-      cobranca.getReleaseChargeState(t, p),
+    const liberacao = new ReleaseService(
+      new RlsPrismaReleaseRepository(admin),
+      new RlsPrismaImpoundRepository(admin),
+      (t, p, now) => cobranca.getReleaseChargeState(t, p, now),
+      (t, p, now, actorId) => cobranca.accrueProcess(t, p, now, actorId),
     );
     const view = await liberacao.start({ tenantId: c.tenantId, userId: c.userId }, processId, {});
     assert.deepEqual(
