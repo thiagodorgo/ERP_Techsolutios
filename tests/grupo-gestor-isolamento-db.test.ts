@@ -1,8 +1,8 @@
 // B-GRUPO-GESTOR (1a, fatia F2) — os testes de isolamento COM BANCO do Painel do grupo, sob o papel de runtime
 // `NOSUPERUSER NOBYPASSRLS` (plano-base §3.7; Emendas 1 §1.3 e 2 §2.1 e §4.2).
 //
-// Terreno: uma base PRÓPRIA (template0 + `prisma migrate deploy` + `scripts/provision-rbac.ts`), para que (a) os papéis do
-// catálogo venham do provisionamento real, (b) a organização de sistema `platform` exista sem disputar o slug único com
+// Terreno: uma base PRÓPRIA (template0 + `prisma migrate deploy` + `prisma db seed`), para que (a) os papéis do
+// catálogo venham da mesma semente do CI, (b) a organização de sistema `platform` exista sem disputar o slug único com
 // outra suíte que rode em paralelo, e (c) as mutações da migração (MUT-21) sejam reaplicadas a cada execução. O app real
 // (`createApp`) roda no modo `prisma`, com o singleton do Prisma apontado para o cliente do papel efêmero, e os tokens são
 // JWT de verdade (`signAccessToken`). A semeadura e a limpeza usam a conexão administrativa; a marca de gestor é dada e
@@ -25,6 +25,7 @@ import test, { after, before } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
+import { computeOperations } from "../src/modules/group-panel/group-panel.sla.js";
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -169,6 +170,21 @@ if (!connectionString) {
     const response = await ctx.call(SUMMARY, { token: await p.token(fora.id) });
     assert.equal(response.status, 403);
     assert.equal(response.body?.error?.reason, "not_group_manager");
+  });
+
+  test("GM-8: grupo apagado não abre scope nem summary e não grava trilha", { timeout: CASE_TIMEOUT_MS }, async () => {
+    const c = await ctx.cenario();
+    const { a1, p } = await c.gestorDeTres();
+    const token = await p.token(a1.id);
+    assert.equal((await ctx.call(SUMMARY, { token })).status, 200, "controle: grupo vivo abre");
+    const viewsBefore = await ctx.viewsIn([a1.id]);
+    await ctx.db.economicGroup.update({ where: { id: c.gA }, data: { deleted_at: new Date("2026-11-22T15:00:00.000Z") } });
+    for (const route of [SCOPE, SUMMARY]) {
+      const response = await ctx.call(route, { token });
+      assert.equal(response.status, 403, route);
+      assert.equal(response.body.error?.reason, "not_group_manager", route);
+    }
+    assert.equal(await ctx.viewsIn([a1.id]), viewsBefore);
   });
 
   // ------------------------------------------------------------------------------------- ISO (banco)
@@ -506,6 +522,62 @@ if (!connectionString) {
     assert.equal(painel.body.data.consolidated.finance.cashBalance, 400, "100 + 300");
   });
 
+  test("LEITOR-OS: lê o mês anterior e chamados abertos antigos, mas não terminal antigo", { timeout: CASE_TIMEOUT_MS }, async () => {
+    const c = await ctx.cenario();
+    const patio = await c.org("Pátio Leitor", c.gA);
+    const now = new Date("2026-11-22T15:00:00.000Z");
+    const rows = [
+      { tenant_id: patio.id, code: `OLD-DONE-${randomUUID()}`, title: "OS", customer_name: "Cliente", status: "completed", created_at: new Date("2025-01-10T15:00:00.000Z"), completed_at: new Date("2025-01-10T16:00:00.000Z") },
+      { tenant_id: patio.id, code: `OLD-OPEN-${randomUUID()}`, title: "OS", customer_name: "Cliente", status: "on_site", created_at: new Date("2025-01-11T15:00:00.000Z"), scheduled_for: new Date("2025-01-11T16:00:00.000Z") },
+      { tenant_id: patio.id, code: `CURRENT-${randomUUID()}`, title: "OS", customer_name: "Cliente", status: "open", created_at: new Date("2026-11-10T15:00:00.000Z") },
+    ] as const;
+    await ctx.db.workOrder.createMany({ data: [...rows] });
+    const selected = await ctx.mod.prisma.readGroupPanelWorkOrderRows(ctx.role.client, { tenantId: patio.id, now });
+    assert.deepEqual(selected.map((row: any) => row.status).sort(), ["on_site", "open"].sort());
+    assert.deepEqual(computeOperations(selected, now), computeOperations(rows.map((row) => ({
+      status: row.status as any,
+      createdAt: row.created_at,
+      scheduledFor: "scheduled_for" in row ? row.scheduled_for : null,
+      arrivedAt: null,
+      completedAt: "completed_at" in row ? row.completed_at : null,
+      assignedUserId: null,
+    })), now));
+  });
+
+  test("LEITOR-OS-PLANO: explica o SQL real capturado e usa índice sem Seq Scan", { timeout: CASE_TIMEOUT_MS }, async () => {
+    const c = await ctx.cenario();
+    const patio = await c.org("Pátio Plano", c.gA);
+    const now = new Date("2026-11-22T15:00:00.000Z");
+    for (let offset = 0; offset < 20_000; offset += 1_000) {
+      await ctx.db.workOrder.createMany({ data: Array.from({ length: 1_000 }, (_, index) => ({
+        tenant_id: patio.id,
+        code: `PLAN-${offset + index}-${randomUUID()}`,
+        title: "OS",
+        customer_name: "Cliente",
+        status: "completed",
+        created_at: new Date("2025-01-10T15:00:00.000Z"),
+      })) });
+    }
+    await ctx.db.workOrder.createMany({ data: [
+      { tenant_id: patio.id, code: `PLAN-OPEN-${randomUUID()}`, title: "OS", customer_name: "Cliente", status: "on_site", created_at: new Date("2025-01-11T15:00:00.000Z") },
+      { tenant_id: patio.id, code: `PLAN-PREV-${randomUUID()}`, title: "OS", customer_name: "Cliente", status: "completed", created_at: new Date("2026-10-10T15:00:00.000Z") },
+      { tenant_id: patio.id, code: `PLAN-CURRENT-${randomUUID()}`, title: "OS", customer_name: "Cliente", status: "open", created_at: new Date("2026-11-10T15:00:00.000Z") },
+    ] });
+    await ctx.db.$executeRawUnsafe("ANALYZE work_orders");
+    ctx.queryEvents.length = 0;
+    const selected = await ctx.mod.prisma.readGroupPanelWorkOrderRows(ctx.role.client, { tenantId: patio.id, now });
+    assert.equal(selected.length, 3);
+    const event = [...ctx.queryEvents].reverse().find((candidate) => candidate.query.includes('FROM "public"."work_orders"'));
+    assert.ok(event, "LEITOR-OS-PLANO: o evento query captura o SELECT real de work_orders");
+    assert.ok(event!.query.includes("created_at") && event!.query.includes("status"), `SQL capturado: ${event!.query}`);
+    const params = JSON.parse(event!.params) as unknown[];
+    const { withTenantRls } = await import("../src/database/rls.js");
+    const explained = await withTenantRls(ctx.role.client, patio.id, (tx: any) => tx.$queryRawUnsafe(`EXPLAIN (FORMAT JSON) ${event!.query}`, ...params));
+    const plan = JSON.stringify(explained);
+    assert.doesNotMatch(plan, /Seq Scan[^}]*work_orders/i);
+    assert.match(plan, /(Index Scan|Index Only Scan|Bitmap Index Scan)/i);
+  });
+
   test("AUD-5: leitura de A1, A2 e A3 — uma linha de trilha em cada uma, com o ator local de cada uma; nenhuma em B1", { timeout: CASE_TIMEOUT_MS }, async () => {
     const c = await ctx.cenario();
     const a1 = await c.org("Pátio A1", c.gA);
@@ -530,6 +602,7 @@ if (!connectionString) {
     assert.equal(rows.length, 3);
     assert.deepEqual(byTenant, { [a1.id]: p.users.get(a1.id), [a2.id]: p.users.get(a2.id), [a3.id]: p.users.get(a3.id) });
     for (const row of rows as any[]) {
+      assert.deepEqual(Object.keys(row.metadata).sort(), ["actorType", "complete", "correlationId", "origin", "outcome", "resourceType", "severity"].sort());
       assert.equal(row.metadata.origin, "group_panel");
       assert.equal(row.metadata.complete, true);
       const text = JSON.stringify(row.metadata);
@@ -553,10 +626,19 @@ async function bootstrap(connection: string) {
   const childEnv = { ...process.env, DATABASE_URL: targetUrl };
   const prismaCli = createRequire(path.join(ROOT, "package.json")).resolve("prisma/build/index.js");
   execFileSync(process.execPath, [prismaCli, "migrate", "deploy"], { cwd: ROOT, env: childEnv, stdio: "pipe" });
-  execFileSync(process.execPath, ["--import", "tsx", "scripts/provision-rbac.ts"], { cwd: ROOT, env: childEnv, stdio: "pipe" });
+  if (process.platform === "win32") {
+    execFileSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "npm run db:seed"], { cwd: ROOT, env: childEnv, stdio: "pipe" });
+  } else {
+    execFileSync("npm", ["run", "db:seed"], { cwd: ROOT, env: childEnv, stdio: "pipe" });
+  }
 
   const db = new PrismaClient({ adapter: pg.createPgAdapter(targetUrl) });
-  const role: EphemeralRole = await createEphemeralRole(db, targetUrl);
+  const queryEvents: Array<{ query: string; params: string }> = [];
+  const role: EphemeralRole = await createEphemeralRole(db, targetUrl, (roleUrl) => new PrismaClient({
+    adapter: pg.createPgAdapter(roleUrl),
+    log: [{ emit: "event", level: "query" }],
+  }));
+  (role.client as any).$on("query", (event: { query: string; params: string }) => queryEvents.push(event));
   const [posture] = (await db.$queryRawUnsafe(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1`, role.roleName)) as Array<{ rolsuper: boolean; rolbypassrls: boolean }>;
   assert.deepEqual(posture, { rolsuper: false, rolbypassrls: false }, "o papel do app é NOSUPERUSER NOBYPASSRLS");
 
@@ -736,6 +818,7 @@ async function bootstrap(connection: string) {
   return {
     db,
     role,
+    queryEvents,
     core,
     platform,
     today,

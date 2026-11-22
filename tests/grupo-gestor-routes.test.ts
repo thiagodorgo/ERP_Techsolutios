@@ -206,6 +206,22 @@ test("GM-5: a organização ativa saiu do grupo — 403", async () => {
   assert.equal(response.reason, "not_group_manager");
 });
 
+test("GM-8: grupo apagado não abre scope nem summary e não grava trilha", async () => {
+  const control = await cenario();
+  const live = await gestorDeTres(control);
+  assert.equal((await h.chamar("GET", SUMMARY, { token: await live.p.token(live.a1.id) })).status, 200, "controle: grupo vivo abre");
+  const c = await cenario();
+  const { a1, p } = await gestorDeTres(c);
+  const token = await p.token(a1.id);
+  await c.groups.softDeleteGroup(c.gA, null, new Date("2026-11-22T15:00:00.000Z"));
+  for (const path of [SCOPE, SUMMARY]) {
+    const response = await h.chamar("GET", path, { token });
+    assert.equal(response.status, 403, path);
+    assert.equal(response.reason, "not_group_manager", path);
+  }
+  assert.equal(gp.getMemoryGroupPanelViewsForTests().length, 0);
+});
+
 // ------------------------------------------------------------------------------------------- ISO (memória)
 
 test("ISO-1 (memória): A1 e A2 do grupo A, B1 do grupo B, ativa A1 — B1 não aparece em lugar nenhum da resposta", async () => {
@@ -480,7 +496,7 @@ test("PAY-1: as duas respostas só têm as chaves do contrato (lista fechada)", 
     "data.organizations[].id", "data.organizations[].name", "data.organizations[].finance.status",
     ...SUMMARY_FINANCIAL_KEYS.map((key) => `data.organizations[].finance.summary.${key}`),
     "data.organizations[].finance.receivedVariationPct", "data.organizations[].finance.paidVariationPct",
-    ...OPERATIONS_KEYS.map((key) => `data.consolidated.operations.${key}`),
+    ...OPERATIONS_KEYS.map((key) => `data.consolidated.operations.${key}`), "data.consolidated.operations.included",
     ...STAFF_KEYS.map((key) => `data.consolidated.staff.${key}`),
     "data.organizations[].operations.status",
     ...OPERATIONS_KEYS.map((key) => `data.organizations[].operations.summary.${key}`),
@@ -491,7 +507,7 @@ test("PAY-1: as duas respostas só têm as chaves do contrato (lista fechada)", 
   const scope = await h.chamar("GET", SCOPE, { token });
   assert.deepEqual(
     [...new Set(keyPaths(scope.body))].sort(),
-    ["data.inGroup", "data.organizations[].finance", "data.organizations[].id", "data.organizations[].name", "data.organizations[].operations", "data.organizations[].staff"].sort(),
+    ["data.inGroup", "data.omittedCount", "data.organizations[].finance", "data.organizations[].id", "data.organizations[].name", "data.organizations[].operations", "data.organizations[].staff", "data.overLimit"].sort(),
   );
 });
 
@@ -563,4 +579,29 @@ test("ROT-3: o /scope lista os pátios do alcance com o que a pessoa pode ver em
   const byId = Object.fromEntries(response.body.data.organizations.map((org: any) => [org.id, org]));
   assert.deepEqual(byId[a1.id], { id: a1.id, name: a1.name, finance: true, operations: true, staff: true });
   assert.deepEqual(byId[a2.id], { id: a2.id, name: a2.name, finance: false, operations: false, staff: false });
+});
+
+test("ROT-4: o /scope respeita o teto de 30 e usa os mesmos pátios processados pelo /summary", async () => {
+  const authorizationCalls: string[] = [];
+  const moduleCalls: string[] = [];
+  const tenantIds = Array.from({ length: 31 }, (_, index) => `p${String(index + 1).padStart(2, "0")}`);
+  const readers: import("../src/modules/group-panel/group-panel.types.js").GroupPanelReaders = {
+    async identityMemberships() { return tenantIds.map((tenantId) => ({ tenantId, tenantName: tenantId, userId: `u-${tenantId}` })); },
+    async groupMemberships(ids) { return ids.map((tenantId) => ({ tenantId, groupId: "g", validFrom: "2026-01-01", validTo: null })); },
+    async managerMarks() { return [{ groupId: "g", revokedAt: null }]; },
+    async authorization({ tenantId }) { authorizationCalls.push(tenantId); return { roles: ["manager"], permissions: ["financial_entries:read", "dashboard:read", "users.read", "work_orders:read"] }; },
+    async modules({ tenantId }) { moduleCalls.push(tenantId); return ["finance"]; },
+    async financeSummary() { throw new Error("scope não lê financeiro"); },
+    async workOrders() { return []; },
+    async staffRows() { return []; },
+    async recordView() {},
+  };
+  const service = new gp.GroupPanelService(readers, () => new Date("2026-11-22T15:00:00.000Z"));
+  const actor = { userId: "u-p01", tenantId: "p01", email: "gestor@example.com", roles: ["manager"], authType: "jwt" as const };
+  const scope = await service.getScope(actor);
+  assert.equal(authorizationCalls.length, 30);
+  assert.equal(moduleCalls.length, 30);
+  assert.deepEqual(scope.organizations.map((org) => org.id), tenantIds.slice(0, 30));
+  assert.equal(scope.overLimit, true);
+  assert.equal(scope.omittedCount, 1);
 });

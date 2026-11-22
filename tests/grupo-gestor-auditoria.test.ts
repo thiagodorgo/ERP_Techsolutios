@@ -95,6 +95,10 @@ test("AUD-3: a trilha de um pátio não grava — ele sai como erro, sem número
   const a2View = result.organizations.find((org) => org.id === a2)!;
   assert.equal(a2View.finance.status, "erro");
   assert.equal(a2View.finance.summary, null);
+  assert.equal(a2View.operations.status, "erro");
+  assert.equal(a2View.operations.summary, null);
+  assert.equal(a2View.staff.status, "erro");
+  assert.equal(a2View.staff.summary, null);
   assert.deepEqual(recorded.sort(), [a1, a3].sort());
 });
 

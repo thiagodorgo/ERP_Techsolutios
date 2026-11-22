@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { FinancialSummary } from "../src/modules/financial-summary/financial-summary.types.js";
+import { deriveCompetencia } from "../src/config/business-time.js";
 import { consolidate, fromCents, sumMoney, toCents, variationPct } from "../src/modules/group-panel/group-panel.money.js";
 import { GroupPanelService } from "../src/modules/group-panel/group-panel.service.js";
 import type { GroupPanelReaders } from "../src/modules/group-panel/group-panel.types.js";
@@ -208,4 +209,13 @@ test("MON-7: tudo certo — o consolidado sai e é a soma dos pátios, com a moe
   assert.equal(result.consolidated?.currency, "BRL");
   assert.equal(result.consolidated?.finance.receivableOpen, 1.44);
   assert.equal(result.consolidated?.finance.cashBalance, 0.3);
+});
+
+test("MON-8: a competência do consolidado é sempre o mês atual de São Paulo", () => {
+  const now = new Date("2026-11-22T15:00:00.000Z");
+  const current = deriveCompetencia(now);
+  const empty = consolidate([], current);
+  assert.match(empty.competencia, /^\d{4}-\d{2}$/);
+  assert.equal(empty.competencia, current);
+  assert.equal(consolidate([summaryOf()], current).competencia, current);
 });

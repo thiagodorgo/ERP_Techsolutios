@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   computeOperations,
   consolidateOperations,
+  groupPanelWorkOrderWindowStart,
+  isInGroupPanelWorkOrderWindow,
   type GroupPanelWorkOrderRow,
 } from "../src/modules/group-panel/group-panel.sla.js";
 import type { WorkOrderStatus } from "../src/modules/work-orders/work-order.types.js";
@@ -41,7 +43,7 @@ test("SLA-1: média mensal usa abertura até No local", () => {
   assert.equal(result.arrivalCount, 2);
 });
 
-test("SLA-2: agendamento não desloca o início decidido pelo dono", () => {
+test("SLA-2: chamado agendado conta a partir da hora agendada", () => {
   const result = computeOperations([
     row({
       createdAt: "2026-11-02T12:00:00Z",
@@ -49,7 +51,7 @@ test("SLA-2: agendamento não desloca o início decidido pelo dono", () => {
       arrivedAt: "2026-11-02T13:30:00Z",
     }),
   ], NOW);
-  assert.equal(result.arrivalAvgMinutes, 90);
+  assert.equal(result.arrivalAvgMinutes, 30);
 });
 
 test("SLA-3: cancelado e recusado ficam fora", () => {
@@ -67,8 +69,11 @@ test("SLA-4: pátio sem chegada no mês devolve média nula", () => {
   assert.equal(result.arrivalMissingCount, 1);
 });
 
-test("SLA-5: chegada anterior à abertura fica fora", () => {
-  const result = computeOperations([row({ arrivedAt: "2026-11-10T14:59:00Z" })], NOW);
+test("SLA-5: chegada antes do início fica fora, inclusive o agendado atendido adiantado", () => {
+  const result = computeOperations([
+    row({ arrivedAt: "2026-11-10T14:59:00Z" }),
+    row({ createdAt: "2026-11-10T15:00:00Z", scheduledFor: "2026-11-10T17:00:00Z", arrivedAt: "2026-11-10T16:00:00Z" }),
+  ], NOW);
   assert.equal(result.arrivalCount, 0);
   assert.equal(result.arrivalAvgMinutes, null);
 });
@@ -153,6 +158,58 @@ test("OPS-7: serviço lê cada pátio e entrega chamados/SLA por pátio e consol
   assert.equal(result.organizations[1]?.operations.summary?.arrivalAvgMinutes, 90);
   assert.equal(result.consolidated?.operations.arrivalAvgMinutes, 60);
   assert.equal(result.consolidated?.operations.openedThisMonth, 2);
+});
+
+test("OPS-8: consolidado de chamados informa quantos pátios realmente entraram", async () => {
+  const base = serviceReaders({ a: [row()], b: [row()] });
+  const readers: GroupPanelReaders = {
+    ...base,
+    async authorization({ tenantId }) {
+      return tenantId === "b"
+        ? { roles: ["finance"], permissions: ["financial_entries:read"] }
+        : { roles: ["manager"], permissions: ["financial_entries:read", "dashboard:read", "users.read", "work_orders:read"] };
+    },
+  };
+  const result = await new GroupPanelService(readers, () => NOW).getSummary(ACTOR);
+  assert.equal(result.coverage.included, 2);
+  assert.equal(result.consolidated?.operations.included, 1);
+});
+
+test("OPS-9: a janela preserva todos os números e os técnicos em atendimento em 200 sorteios", () => {
+  let seed = 20261122;
+  const next = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 0x1_0000_0000;
+  };
+  const statuses: WorkOrderStatus[] = ["open", "assigned", "accepted", "on_route", "on_site", "in_progress", "paused", "completed", "cancelled", "rejected"];
+  for (let draw = 0; draw < 200; draw += 1) {
+    const now = draw === 0
+      ? new Date("2026-12-01T03:30:00.000Z")
+      : draw === 1
+        ? new Date("2026-12-01T02:30:00.000Z")
+        : new Date(Date.UTC(2024 + Math.floor(next() * 3), Math.floor(next() * 12), 1 + Math.floor(next() * 27), Math.floor(next() * 24), 30));
+    const rows = Array.from({ length: 20 + Math.floor(next() * 30) }, (_, index) => {
+      const ageDays = Math.floor(next() * 1_095);
+      const createdAt = new Date(now.getTime() - ageDays * 86_400_000 - Math.floor(next() * 86_400_000));
+      const status = statuses[Math.floor(next() * statuses.length)]!;
+      const scheduledFor = next() < 0.6 ? new Date(createdAt.getTime() + Math.floor(next() * 15) * 86_400_000) : null;
+      const arrivedAt = next() < 0.5 ? new Date(createdAt.getTime() + Math.floor(next() * 600) * 60_000) : null;
+      const completedAt = next() < 0.4 ? new Date(createdAt.getTime() + Math.floor(next() * 1_200) * 60_000) : null;
+      return row({ createdAt: createdAt.toISOString(), status, scheduledFor: scheduledFor?.toISOString() ?? null, arrivedAt: arrivedAt?.toISOString() ?? null, completedAt: completedAt?.toISOString() ?? null, assignedUserId: `u-${index}` });
+    });
+    const windowStart = groupPanelWorkOrderWindowStart(now);
+    const selected = rows.filter((item) => isInGroupPanelWorkOrderWindow(item, windowStart));
+    assert.deepEqual(computeOperations(selected, now), computeOperations(rows, now), `sorteio ${draw}`);
+    const inService = (items: readonly GroupPanelWorkOrderRow[]) => items.filter((item) => ["on_route", "on_site", "in_progress"].includes(item.status)).map((item) => item.assignedUserId).filter(Boolean).sort();
+    assert.deepEqual(inService(selected), inService(rows), `técnicos do sorteio ${draw}`);
+  }
+});
+
+test("OPS-10: guardas nulos do consolidado nunca produzem NaN", () => {
+  const result = consolidateOperations([]);
+  assert.equal(result.completionRatePct, null);
+  assert.equal(result.arrivalAvgMinutes, null);
+  assert.equal(result.completionAvgMinutes, null);
 });
 
 const ACTOR = { userId: "u-a", tenantId: "a", email: "gestor@example.com", roles: ["manager"], authType: "jwt" as const };
