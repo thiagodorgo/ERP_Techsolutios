@@ -220,6 +220,42 @@ if (!connectionString) {
     assert.equal(head.custody_hash_head, tip.hash, "head.hash igual ao último evento");
   }
 
+  async function releaseCount(tenantId: string, processId: string): Promise<number> {
+    const rows = await withTenantRls(client, tenantId, (tx) =>
+      tx.$queryRaw<Array<{ n: number }>>`
+        SELECT count(*)::int AS n
+        FROM impound_releases
+        WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid
+      `,
+    );
+    return rows[0]?.n ?? 0;
+  }
+
+  async function assertReleaseSettledTotalMatchesEvent(tenantId: string, processId: string): Promise<void> {
+    const releaseRows = await withTenantRls(client, tenantId, (tx) =>
+      tx.$queryRaw<Array<{ settled_total: string | null }>>`
+        SELECT settled_total::text
+        FROM impound_releases
+        WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid AND status = 'COMPLETED'
+        ORDER BY released_at DESC NULLS LAST, created_at DESC
+        LIMIT 1
+      `,
+    );
+    const eventRows = await withTenantRls(client, tenantId, (tx) =>
+      tx.$queryRaw<Array<{ settled_total: string | null }>>`
+        SELECT payload->>'settledTotal' AS settled_total
+        FROM custody_events
+        WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid AND type = 'RELEASE'
+        ORDER BY seq DESC
+        LIMIT 1
+      `,
+    );
+    const releaseTotal = releaseRows[0]?.settled_total ?? null;
+    const eventTotal = eventRows[0]?.settled_total ?? null;
+    assert.ok(releaseTotal, "release COMPLETED deve ter settled_total");
+    assert.equal(eventTotal, releaseTotal, "evento RELEASE settledTotal deve igualar impound_releases.settled_total");
+  }
+
   async function teardownTenant(tenantId: string): Promise<void> {
     await client.$transaction(async (tx) => {
       await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
@@ -279,6 +315,8 @@ if (!connectionString) {
       const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
       assert.equal(view.release.status, "COMPLETED");
       assert.equal(view.release.settledTotal, "120.00");
+      await assertChainValid(ctx.tenantId, ctx.processId);
+      await assertReleaseSettledTotalMatchesEvent(ctx.tenantId, ctx.processId);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -348,7 +386,10 @@ if (!connectionString) {
       );
       await charge.settle(actor(ctx.tenantId, ctx.userId), ctx.processId, {});
       const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
+      assert.equal(view.release.status, "COMPLETED");
       assert.equal(view.release.settledTotal, "270.00");
+      await assertChainValid(ctx.tenantId, ctx.processId);
+      await assertReleaseSettledTotalMatchesEvent(ctx.tenantId, ctx.processId);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -364,18 +405,33 @@ if (!connectionString) {
         () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_no_charges_posted",
       );
+      await addRemoval(ctx.tenantId, ctx.processId, true);
+      const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
+      assert.equal(view.release.status, "COMPLETED");
+      assert.equal(view.release.settledTotal, "150.00");
+      await assertChainValid(ctx.tenantId, ctx.processId);
+      await assertReleaseSettledTotalMatchesEvent(ctx.tenantId, ctx.processId);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
   });
 
-  test("E: teto de 30 diárias com 40 dias -> start lança exatamente 30", async () => {
+  test("E: teto de 30 diárias com 40 dias -> start lança exatamente 30 e quitadas libera", async () => {
     const ctx = await seedActiveCustody(`E-${Date.now()}`, new Date(Date.now() - 40 * MS_PER_DAY), "THIRTY_DAYS_LEGACY");
     const release = await createDefaultReleaseService();
+    const charge = await createDefaultChargeService();
     try {
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
       await release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" });
       assert.equal(await countCharges(ctx.tenantId, ctx.processId, "DAILY"), 30);
+      await addRemoval(ctx.tenantId, ctx.processId, true);
+      await release.approve(actor(ctx.tenantId, ctx.userId), ctx.processId, { authority_reference: "AUT" });
+      await charge.settle(actor(ctx.tenantId, ctx.userId), ctx.processId, {});
+      const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
+      assert.equal(view.release.status, "COMPLETED");
+      assert.equal(view.release.settledTotal, "1350.00");
+      await assertChainValid(ctx.tenantId, ctx.processId);
+      await assertReleaseSettledTotalMatchesEvent(ctx.tenantId, ctx.processId);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -394,6 +450,10 @@ if (!connectionString) {
       await charge.settle(actor(ctx.tenantId, ctx.userId), ctx.processId, {});
       const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
       assert.equal(view.release.status, "COMPLETED");
+      assert.equal(await countCharges(ctx.tenantId, ctx.processId, "DAILY"), 3);
+      assert.equal(view.release.settledTotal, "270.00");
+      await assertChainValid(ctx.tenantId, ctx.processId);
+      await assertReleaseSettledTotalMatchesEvent(ctx.tenantId, ctx.processId);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -492,6 +552,8 @@ if (!connectionString) {
   test("DB-4a: start com base divergente -> concurrent_custody_append", async () => {
     const ctx = await seedActiveCustody(`db4a-${Date.now()}`, new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000)));
     try {
+      const frozenAtBefore = await latestFrozenAt(ctx.tenantId, ctx.processId);
+      const releasesBefore = await releaseCount(ctx.tenantId, ctx.processId);
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
       await addRemoval(ctx.tenantId, ctx.processId, true);
       await withTenantRls(client, ctx.tenantId, async (tx) => {
@@ -515,11 +577,13 @@ if (!connectionString) {
             chargeBasis: {
               expectedDailyCount: 3,
               enteredAt: new Date(ctx.enteredAt.getTime() - MS_PER_DAY),
-              frozenAt: new Date(),
+              frozenAt: null,
             },
           } as never),
         (error: unknown) => (error as { reason?: string }).reason === "concurrent_custody_append",
       );
+      assert.equal((await latestFrozenAt(ctx.tenantId, ctx.processId))?.getTime() ?? null, frozenAtBefore?.getTime() ?? null);
+      assert.equal(await releaseCount(ctx.tenantId, ctx.processId), releasesBefore, "DB-4a não cria liberação nova");
     } finally {
       await teardownTenant(ctx.tenantId);
     }
