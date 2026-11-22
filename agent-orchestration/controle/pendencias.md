@@ -10595,6 +10595,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **apenso 2026-11-08 (registro de 08/11; achado A3 do revisor do #509):** a parte `tenant.plan` do `B-ASS-02` está **entregue** pelo PR #504 (merge `43716227`): a assinatura vigente da organização vive em tabela própria (`tenant_subscriptions`), o detalhe da organização a lê de lá (`src/modules/platform/platform-tenant-detail.service.ts:23-110`), e os módulos da organização acompanham a versão do plano (`src/modules/subscription-billing/plans/tenant-modules.sync.ts`). O que sobra é exibição: o campo `plan` literal das organizações em memória (`src/modules/platform/platform-tenants.repository.ts:8,29,64`), que continua com `B-SAN3-18` e com o item 46 do portão (lista de Organizações com dado inventado). Medido em `origin/main` `04bb0e17` por `git grep`. O item 57 do `PLANO_SAN3.md` segue fechado.
 - **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
 - **apenso 2026-11-20 (registro de 20/11; o nome `P-PLATFORM-TENANTS-EM-MEMORIA` do registro do orquestrador é esta mesma pendência, e não abre outra):** na F7 do `B-APP-ORG` (`f7-apporg-cl`, prova no emulador), o dev mediu que `POST /api/v1/platform/tenants` **não cria organização no banco**: `src/modules/platform/platform-tenants.repository.ts:48-60` é repositório em memória, com 2 organizações fictícias iniciais, e `create()` devolve um id `pten-<slug>`. Nenhuma rota HTTP cria organização no Postgres. A 2ª organização do teste saiu de `PrismaCoreSaasService.createTenant`, num script fora do repositório. O diário da F1 citava a rota de plataforma como a porta da 2ª organização, o que não confere.
+- **apenso 2026-11-21 (registro de 21/11; o nome `P-PLATAFORMA-CRIAR-ORGANIZACAO-SEM-CAMINHO` do registro do orquestrador é esta mesma pendência, e não abre outra):** os ensaios da prova E-69/E-70 (`prep-e5-cx3`, `prep-e6-cl` e `prep-e7-dp`) mediram na `origin/main` que `POST /api/v1/platform/tenants` grava só no repositório em memória mesmo com `CORE_SAAS_PERSISTENCE=prisma`, e que o único caminho que cria organização no banco é `scripts/demo-isolado/fundacao.ts`, que recusa base que não esteja virgem (`ALVO_NAO_VIRGEM`, código 3). Não há caminho de produto para criar 2 organizações no mesmo banco. Pela `D-DONO-2111-E1`, a prova cria os 2 pátios por script num banco descartável, e o conserto desta pendência vira um bloco próprio, depois. **Gravidade para o portão vendável (leitura do orquestrador):** ALTA, como já estava.
 
 ## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
 
@@ -16023,10 +16024,11 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-567-VER-DEMONSTRATIVO (2026-11-15) — o detalhe da organização na tela de custos não abre o demonstrativo do mês — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (não existe a tela que a ação abriria) · **dono:** o bloco que fizer a tela do demonstrativo da organização no console da plataforma (leitura do dev, declarada: o `B-ASS-10c`, a T4 do item 61, se for ele; trocável pelo orquestrador)
+- **status:** FECHADA (2026-11-21, PR #612, `B-ASS-10c-OPERACAO`, squash `36b5586d`) · antes: ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (não existe a tela que a ação abriria) · **dono:** o bloco que fizer a tela do demonstrativo da organização no console da plataforma (leitura do dev, declarada: o `B-ASS-10c`, a T4 do item 61, se for ele; trocável pelo orquestrador)
 - **origem:** achado CV-5 do `cognicao-visual` na J-567 (#567), triado pela ata da J-567 na leva A com a nota "se não existir rota de demonstrativo, a ação NÃO é inventada: vira pendência"; registrada pelo conserto da J-567 (`dev-10b-a-cl`).
 - **fato:** a referência aprovada (`screen-refs/platform-cloud-billing-3opcoes.reference.html`) traz "Ver demonstrativo de <mês>" entre "Abrir organização" e "Mudar de grupo" no detalhe da organização (só com assinatura no mês). Medido em 15/11 no ramo do #567: o console da plataforma não tem rota nem tela de demonstrativo (`App.tsx`: as rotas `/platform/*` são overview, plans-modules, audit, health, apis, settings, tenants, tenants/:tenantId, tenants/:tenantId/modules e cloud-billing). Um botão sem destino seria tela morta, proibida.
 - **critério de encerramento:** existe a tela do demonstrativo da organização no console da plataforma, e o detalhe da organização na tela de custos ganha "Ver demonstrativo de <mês>" que a abre (só quando há assinatura no mês), com teste.
+- **prova do fechamento (registro de 21/11; nota C3-01 da J-612, o plano do bloco §12 mandava fechar no merge):** na `origin/main` `36b5586d`, `frontend/src/modules/platform/cloud-billing/views/cloudBilling.shared.tsx:701` traz "Ver demonstrativo de <mês>", que leva a `/platform/billing?org=&mes=`; o teste `frontend/tests/ass-10c-ver-demonstrativo.smoke.test.tsx` (T-VDE-1) prova que ele aparece só para a organização com assinatura no mês. O `porteiro-612` reexecutou a suíte do bloco (107/107) e o smoke (2097/2097).
 
 ## P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA (2026-11-15) — depois de quitar à mão (a cobrança é cancelada) e estornar a baixa manual, a conta volta a `closed` sem cobrança viva — BAIXA
 
@@ -16306,6 +16308,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** J-567, J567-C1-01; já citada em `docs/revisoes/ASSINATURA/B-ASS-10b-dev.md:142`.
 - **fato:** a desmarcação por template (`${money}`) ou por parâmetro `string` de função do próprio módulo escapa; com a conta no `aria-label` do gráfico de 6 meses, nenhum teste pega. O objeto não usa esse caminho.
 - **critério de encerramento:** a trava recusa os 2 caminhos, provado por mutação.
+- **apenso 2026-11-21 (registro de 21/11; nota C3-02 da J-612) — NÃO fecha com o #612:** o plano do `B-ASS-10c-OPERACAO` §12 mandava fechar no merge, mas só a regra 1 (desmarcação por template, R13, mutação M19) foi feita. A regra 2 (parâmetro `string` de função do módulo) saiu por ordem do orquestrador, sem emenda escrita; o próprio guarda diz isso (`frontend/tests/ass-10b-nao-calcula.guard.ts:32`, "a regra 2 ... segue aberta"). Segue ABERTA só pela regra 2, com o mesmo dono (o próximo bloco de tela de dinheiro).
 
 ## P-567-DETALHE-A-SERVICO-CORTADO (2026-11-15) — o detalhe da aparência A corta o nome do serviço — BAIXA
 
@@ -17441,6 +17444,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** plano do `B-ASS-08c3` §4.8 e §14 (fora do repositório). Nasce porque a Q3 ficou em (a), resposta do dono de 19/11 15:19 SP (registrada em `C-08C3-Q1-PADRAO-SEM-RESPOSTA`, `controle/decisoes.md`).
 - **N e forma:** um pagamento que gerou crédito é estornado depois que o crédito já pagou parte do mês seguinte, e esse mês já tem nota. O bloco devolve à dívida do mês seguinte o valor do crédito (CR-PARCIAL), mas a nota desse mês continua com o valor antigo. Pela Q3 = (a), não há ato fiscal automático: a nota não é cancelada nem reemitida.
 - **critério de encerramento:** a tela de operação da cobrança (`B-ASS-10c`) mostra o alerta da nota que diverge do total, e o contador define a regra fiscal, registrada como decisão do dono.
+- **apenso 2026-11-21 (registro de 21/11; Emenda 2 item 7 do plano `B-ASS-10c-OPERACAO` e nota C3-01 da J-612) — novo dono do alerta na tela: `B-ASS-10d`.** O #612 não mostra o alerta: nenhuma leitura do servidor traz o sinal de divergência, e mostrá-lo exigiria a tela calcular dinheiro ou uma rota nova. A parte do contador (a regra fiscal) não muda.
 
 ## P-08C3-FOCUS-404-NO-SANDBOX (2026-11-20) — confirmar no sandbox que o Focus responde 404 à referência inexistente com credencial válida, e se devolve `id` no GET — BAIXA
 
@@ -17526,3 +17530,200 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** achado A4 da verificação `verif-usrcon-b-cl` (F4/F5a da concessão, `8eeec29f`), 20/11.
 - **fato:** no `tests/wo-leitura-scope-db.test.ts` do ramo da concessão, R11 e R12 do despachante com técnico saíram do `D-UNIAO` e não entraram no `D-MODULO`. Em memória, o `L-MODULO` cobre R11/R12. Na verificação, o `grep -E` das linhas `D-(UNIAO|MODULO) · field_dispatcher+ft · R1[12]` no TAP do `-db` deu 0.
 - **critério de encerramento:** R11 e R12 do despachante com técnico têm caso no `-db`, com o resultado que a regra do bloco manda.
+
+## P-APP-ORG-ESCOLHA-SAI (2026-11-20) — a tela Seleção de organização e o "Trocar de organização" saem do app — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2` (a regra nova do dono muda o que o #613 entregou) · **dono:** `B-APP-ORG-2` · **bloqueia:** a versão vendável, pelos itens 69 e 70.
+- **origem:** Emenda 1.7 §9 do plano `B-APP-ORG` (Fable, fora do repositório), pela `D-DONO-2011-APP-ORG-ATIVA-NA-WEB`; ressalva R4 do `porteiro-613` (o registro levou para cá). Registrada pelo PR de registro de 21/11 (`reg-2111-cl`).
+- **fato:** o #613 (squash `38442d94`) deixou na `main` a tela Seleção de organização (`mobile/flutter_app/lib/features/auth/tenant_selector_screen.dart`, rota `/tenant-select`) e a entrada "Trocar de organização" do Perfil. Pela decisão do dono de 20/11, o guincheiro não escolhe: o app entra direto nas organizações que a web ativou.
+- **andamento (21/11):** a fatia A2 do `B-APP-ORG-2` apaga a tela e tira a rota (Emenda 1.8.3.7, `2175575c`, CONFERIDA por `reconf2-a2-cx5`), e está no PR #619.
+- **critério de encerramento:** o PR do `B-APP-ORG-2` na `main` sem a tela de escolha, com o app entrando direto nas organizações ativas (Emenda 1.7 §6), provado por teste.
+
+## P-GRUPO-GESTOR-PAINEL (2026-11-20) — falta o painel do gestor do grupo, com o financeiro do grupo e de cada pátio — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (prioridade "altíssima" do dono) · **escopo:** bloco novo · **dono:** `B-GRUPO-GESTOR` · **bloqueia:** não o portão; a `D-DONO-2111-BLOQUEANTES-PRIMEIRO` pôs os itens 69 e 70 antes dele.
+- **origem:** `D-DONO-2011-GESTOR-DO-GRUPO` e `D-DONO-2011-GESTOR-GRUPO-PRIORIDADE` (20/11 ~23:10 e ~23:14 SP).
+- **fato:** não existe tela nem papel para o gestor dos pátios de um mesmo grupo ver o financeiro do grupo e de cada pátio. O plano `B-GRUPO-GESTOR` (Fable, com as Emendas 1, 2, 3 e 3.1, fora do repositório) está pronto para o dev: a 1ª entrega traz a marca de gestor, o financeiro, os chamados, o SLA (tempo de chegada, média do mês) e os funcionários, com as 2 tabelas autorizadas pela `D-DONO-2111-RESPOSTAS-13` (item 2).
+- **critério de encerramento:** a 1ª entrega do `B-GRUPO-GESTOR` na `main`, com junta completa.
+
+## P-GRUPO-PROVEDOR-COMPARTILHADO (2026-11-20) — a configuração de pagamento e de nota é global da plataforma, não do grupo — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (leitura do redator, declarada: a Q4 do recorte pôs o pagamento on-line no MVP) · **escopo:** `pre-existente` (o #608 guarda a configuração do provedor para a plataforma inteira) · **dono:** `B-PATIO-RECEBIMENTO`, ou um bloco próprio (plano `B-GRUPO-GESTOR`, Emenda 1) · **bloqueia:** o pagamento on-line do pátio num grupo.
+- **origem:** fala do dono de 20/11 ~23:16 SP (`D-DONO-2011-GESTOR-DO-GRUPO`: *"a API de pagamento e a API de nota fiscal do grupo é uma só"*), que confirma a `D-CNPJ-UNICO-FILIAIS-DOIS-MODOS`; plano `B-GRUPO-GESTOR`.
+- **fato:** hoje a configuração do provedor (pagamento e nota) é da plataforma. A regra do dono é uma configuração por grupo, compartilhada pelos pátios, com os recebimentos da conta única atribuídos a cada pátio.
+- **critério de encerramento:** a configuração do provedor ligada ao grupo, com o recebimento atribuído ao pátio certo, provado por teste.
+
+## P-PATIO-LIBERA-COM-LIVRO-VAZIO (2026-11-21) — com o livro de cobranças vazio, o servidor dá a taxa do pátio como paga — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (risco de dinheiro, a confirmar por execução) · **escopo:** `pre-existente` (`src/modules/charging/charge.service.ts:185` na `origin/main` `38442d94`) · **dono:** o recorte do MVP (pátio) · **bloqueia:** o pátio 100% do MVP mínimo, se confirmada.
+- **origem:** varredura do pátio para o MVP mínimo (Explore, Opus, só leitura em `origin/main` `38442d94`), 21/11 ~09:55 SP.
+- **fato:** `const debtsSettled = exigible.every((line) => line.settledAt !== undefined);` dá verdadeiro para a lista vazia. Hipótese com evidência de leitura: sem cobrança lançada, o veículo pode sair sem pagar.
+- **critério de encerramento:** medido por execução; se confirmado, a liberação com livro vazio é recusada (ou segue a regra que o dono definir), com teste que fica vermelho sem o conserto.
+
+## P-612-ACEITE-FORMA-REAL (2026-11-21) — o aceite na forma real da tela de operação da cobrança não roda sem banco — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `dentro-do-bloco` do `B-ASS-10c-OPERACAO` (aceite §8.2 do plano) · **dono:** o orquestrador (o e2e com banco no CI ou o ensaio da AWS) · **bloqueia:** não.
+- **origem:** achado C1-01 da junta J-612 (`jc1-612-sol3`), triado como não grave e grande (`omega/juntas/J-612-b-ass-10c-operacao.md`).
+- **fato:** com a API em memória, o login de `platform_admin` responde 500 e a lista vem vazia, então o aceite §8.2 do plano não roda na forma real.
+- **critério de encerramento:** o aceite §8.2 roda com banco (no e2e do CI ou no ensaio da AWS), com a saída registrada.
+
+## P-612-RAMO-ORIGINAL-ABSORCAO (2026-11-21) — o ramo original `feat/cobranca-operacao` ficou sem prova de absorção — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** limpeza §C5 do #612 · **dono:** o orquestrador · **bloqueia:** não.
+- **origem:** limpeza do merge do #612 e ressalva (c) do `porteiro-612`.
+- **fato:** o ramo `feat/cobranca-operacao` (`3fcd973f`), anterior ao squash do #608, foi mantido de propósito: o merge-tree com a `main` sobra 20 arquivos (+1132) que não foram provados absorvidos.
+- **critério de encerramento:** árvores comparadas com a `main` (`rev^{tree}`) e o ramo apagado, ou o que faltar levado por PR.
+
+## P-612-COMENTARIO-MAQUETE (2026-11-21) — 3 comentários citam uma maquete que não existe — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do #612 (texto, não comportamento) · **dono:** o próximo PR que tocar o módulo `platform/billing-operations` · **bloqueia:** não.
+- **origem:** ressalva (d) do `porteiro-612`.
+- **fato:** `frontend/src/modules/appearance/appearance.registry.ts:122`, `frontend/src/modules/platform/billing-operations/pages/PlatformBillingOpsPage.tsx:22` e `frontend/src/modules/platform/billing-operations/views/billingOps.shared.tsx:60` citam `cob-op-3opcoes.reference.html`; o nome certo é `platform-cobranca-3opcoes.reference.html`.
+- **critério de encerramento:** os 3 comentários com o nome certo.
+
+## P-ASS10C-RESUMO-ENTRE-ORGANIZACOES (2026-11-21) — a tela de operação da cobrança lê organização por organização — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** fora do `B-ASS-10c-OPERACAO` (resposta P2 (a) do plano) · **dono:** `B-ASS-10d` · **bloqueia:** não; a fazer antes de a base passar de ~30 organizações.
+- **origem:** plano do `B-ASS-10c-OPERACAO` §4 e P2 (fora do repositório); nota C3-01 da J-612 (não estava registrada).
+- **fato:** os indicadores da plataforma leem N organizações, no máximo 3 por vez, e contam linhas sem somar dinheiro; organização que falhou aparece como "não carregou".
+- **critério de encerramento:** uma rota de resumo entre organizações no servidor, e a tela a usa.
+
+## P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA (2026-11-21) — o detalhe da cobrança na plataforma não mostra o número nem o PDF da nota — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10c-OPERACAO` · **dono:** `B-ASS-10d` · **bloqueia:** não.
+- **origem:** plano do `B-ASS-10c-OPERACAO` §4; nota C3-01 da J-612.
+- **fato:** o detalhe mostra só a situação da nota (`invoiceStatus`), sem número nem PDF.
+- **critério de encerramento:** o número e o PDF da nota no detalhe, vindos do servidor.
+
+## P-ASS10C-MENU-SERVIDOR (2026-11-21) — o item "Cobrança" não está no menu do servidor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10c-OPERACAO` · **dono:** `B-ASS-10d`, junto da `P-ASS10B-MENU-SERVIDOR-GUARDA` · **bloqueia:** não.
+- **origem:** plano do `B-ASS-10c-OPERACAO` §4; nota C3-01 da J-612.
+- **fato:** o item entra só em `PlatformLayout.tsx` e em `platformNavigation.ts`; o `src/modules/navigation/navigation.registry.ts` não o tem.
+- **critério de encerramento:** o item no menu do servidor, com o guarda de paridade.
+
+## P-GINVOICE-COMENTARIO-POR-REGEX (2026-11-21) — o guarda G-INVOICE tira comentário por regex, e um `/*` dentro de comentário esconde código — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`frontend/tests/b-san3-25-faturar-os.smoke.test.tsx:149`, `stripComments`) · **dono:** o próximo bloco que tocar o guarda G-INVOICE (leitura do redator, declarada: a nota C3-01 da J-612 achou a pendência sem dono) · **bloqueia:** não.
+- **origem:** Emenda 2 item 7 do plano `B-ASS-10c-OPERACAO` e o diário do conserto `fix-cobop-cl` §10.1 (fora do repositório); nota C3-01 da J-612.
+- **fato:** no conserto da pré-revisão, o `/*` dentro do comentário de `billing-ops.adapter.ts` (`` `/api/v1/platform/billing/*` ``) abriu um pseudo-comentário que só fechava 150 linhas depois. O guarda acusou um falso positivo; o mesmo caminho pode esconder um verdadeiro.
+- **critério de encerramento:** o guarda tira comentário por parser (ou equivalente), com caso de teste do `/*` dentro de comentário.
+
+## P-COMISSAO-LIQUIDACAO-CENTAVO (2026-11-21; apelido `P-COMISSAO-LIQUIDACAO-ARREDONDA-EM-DOUBLE`) — a liquidação da comissão arredonda em double e erra 1 centavo — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` ao `B-APP-ORG-2S` · **dono:** `B-COMISSAO-MOTOR` · **bloqueia:** não; o teste-trava CS3 segura enquanto nenhum valor de comissão é gravado antes do motor.
+- **origem:** Emenda 1.8.3 do `B-APP-ORG` (Fable), fatos novos; o nome único veio da C0 `c0-apporg183-dp` (C0-02) e da Emenda 1.8.3.2.
+- **fato:** a liquidação arredonda em double e erra 1 centavo em ~5,8% dos empates (medido pelo planejador).
+- **critério de encerramento:** a liquidação em centavos exatos, com o CS3 verde e mutação que o deixa vermelho.
+
+## P-COMISSAO-WEB-EM-NUMBER (2026-11-21) — a web mostra o total da comissão em `number` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`frontend/src/modules/finance/commissions/commissions-kpi-detail.ts:26`, `formatBRL(summary.total)`) · **dono:** `B-COMISSAO-MOTOR` · **bloqueia:** não.
+- **origem:** Emenda 1.8.3.1 (proposta, leitura declarada do planejador); decidida pelo orquestrador na Emenda 1.8.3.2 (C0-03).
+- **fato:** o total da web passa por `number`; no app, o mesmo dado vai em centavos como texto.
+- **critério de encerramento:** a web mostra o total a partir de centavos exatos, com teste.
+
+## P-COMISSAO-LEITOR-GENERICO (2026-11-21) — leitor de dinheiro montado por nome fora de `metering/**` escapa da guarda — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (leitura do redator, declarada; o registro só diz "bloqueia: não") · **escopo:** limite declarado da guarda do `B-COMISSAO-MOTOR` · **dono:** `B-COMISSAO-MOTOR`; quem fecha é a varredura de segurança final do portão (§C7 item 10(6)) · **bloqueia:** não.
+- **origem:** verificação `crit4-comissao-dp` da Emenda 1.5 (D4-COM-01) e Emenda 1.5.1 do plano `B-COMISSAO-MOTOR` (orquestrador).
+- **fato:** um leitor de dinheiro montado por nome fora de `metering/**` não é alcançado pelos dois padrões da guarda.
+- **critério de encerramento:** a varredura final mede que não há esse leitor, ou a guarda passa a alcançá-lo, com mutação.
+
+## P-APP-T13-DADOS-INTERMITENTE (2026-11-21) — o `[T13-dados]` falha 1 vez em 5 por prazo de relógio — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` à fatia A3 (`mobile/flutter_app/test/core/sync/bapporg_isolamento_troca_test.dart:1040`, do #613) · **dono:** `B-APP-ORG-2` · **bloqueia:** não.
+- **origem:** cobertura da A3-dados (`dev-a3d-cl`), 21/11 ~14:06 SP.
+- **fato:** o teste usa um prazo de relógio de 5 s e falhou 1 vez em 5 rodadas.
+- **critério de encerramento:** o teste sem dependência de relógio, verde em N ≥ 10 rodadas.
+
+## P-APP-T9O-SOB-CARGA (2026-11-21) — o T9o estoura o tempo sob carga — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`mobile/flutter_app/test/core/auth/bsessao_renova_revogacao_test.dart`) · **dono:** `B-APP-ORG-2` (leitura do redator, declarada) · **bloqueia:** não.
+- **origem:** fatia A1 (`dev-a1-cl`), 21/11 ~14:36 SP.
+- **fato:** com a suíte inteira e a máquina carregada, o T9o deu tempo esgotado; sozinho, passou 3 de 3.
+- **critério de encerramento:** o T9o verde em N ≥ 10 rodadas sob a suíte inteira, ou o prazo trocado por sinal determinístico.
+
+## P-APP-OSCARD-TRANSBORDA-390 (2026-11-21) — o `MobileOsCard` transborda 23 px no aparelho de 390 px — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (já existia antes do `B-APP-ORG-2`, pelo diário da A2) · **dono:** o próximo bloco que tocar o `MobileOsCard` · **bloqueia:** não.
+- **origem:** fatia A2 (`dev-a2-cl`), 21/11 ~14:53 SP; nota C3-08 da junta do #619.
+- **fato:** com código longo e a situação "Despachada", o cartão passa 23 px a 390 px.
+- **critério de encerramento:** o cartão cabe em 390 px nesse caso, provado por teste de widget nessa largura.
+
+## P-APP-COMISSOES-SKELETON-DO-KIT (2026-11-21) — a aba Comissões usa um esqueleto próprio, não o do kit — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fatia A3 do `B-APP-ORG-2` · **dono:** `B-APP-ORG-2` (leitura do redator, declarada) · **bloqueia:** não.
+- **origem:** Adendo 1 da Emenda 1.8.3.7 (l.44), depois da verificação `verif-a2-cx5`; nota C3-05 da junta do #619.
+- **fato:** a peça `MobileSkeletonList` nasceu no kit para a A2; a A3 continua com o esqueleto dela.
+- **critério de encerramento:** a aba Comissões usa a `MobileSkeletonList` do kit.
+
+## P-APP-SERIAL-LOCK-UNICO (2026-11-21) — duas cópias da trava serial no app — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2` (repetição de propósito, Emenda 1.8.3.9) · **dono:** o bloco de manutenção do app · **bloqueia:** não.
+- **origem:** Emenda 1.8.3.9 §12 (`plan-1839-fable`); nota C3-02 da junta do #619.
+- **fato:** `serial_lock.dart` traz `SerialLock`, igual ao `_SerialLock` de `pending_revocations.dart:125-133`, repetido para não reabrir a fila do Sair aprovada no #613.
+- **critério de encerramento:** uma trava só, usada nos dois lugares, com os testes dos dois verdes.
+
+## P-APP-SAIR-LIMPEZA-QUE-LANCA (2026-11-21) — se o `repo.logout()` lançar no fim do Sair, o app fica "autenticado" com a sessão já revogada — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (`git show 36b5586d:mobile/flutter_app/lib/core/auth/auth_notifier.dart | grep -n "await repo.logout();"` → `341`, do #613) · **dono:** o bloco de sessão do app · **bloqueia:** não (§C7.1-ter(a)).
+- **origem:** Emenda 1.8.3.9 §12 (`plan-1839-fable`); nota C3-03 da junta do #619.
+- **fato:** o estado fica "autenticado" com a sessão revogada no servidor quando a limpeza final lança.
+- **critério de encerramento:** o Sair termina "não autenticado" mesmo quando a limpeza lança, com teste que injeta a falha.
+
+## P-GRUPO-VOLTA-TODAS-AS-ORGS (2026-11-21) — a procura dos pátios do grupo lê todas as organizações da plataforma — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S` (custo O(N) aceito no plano 1.8 §3.1) · **dono:** `B-APP-ORG-2S` (leitura do redator, declarada) · **bloqueia:** não.
+- **origem:** Emenda 1.8.3.10 §4; verificação `verif-s2a-dp` (S2a `ab4083ce`), 21/11 ~16:41 SP.
+- **fato:** `probeGroupPeers` lê todas as organizações (`SELECT id FROM tenants`) e troca o contexto de RLS uma a uma a cada criação ou concessão. Medido: 93 → 155 ms de 10 para 200 organizações (~+0,5 ms por organização). Usuário só é lido dentro do grupo; sem vazamento medido.
+- **critério de encerramento:** a procura limitada aos pátios do grupo, com o custo medido de novo.
+
+## P-GRUPO-EMAIL-MAIUSCULA (2026-11-21) — a trava do e-mail único no grupo diferencia maiúsculas — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA, a confirmar (sobe se a base viva tiver e-mail com maiúscula) · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S` (fatia S1) · **dono:** `B-APP-ORG-2S` · **bloqueia:** não, salvo a medição achar caso.
+- **origem:** verificação `verif-s1-cl` do S1 (`0a0fa336`), 21/11 ~17:25 SP.
+- **fato:** um usuário antigo gravado em maiúsculas direto no banco não trava a criação com o mesmo e-mail em minúsculas. A regra do dono é o e-mail único no grupo (`D-DONO-2011-EMAIL-UNICO-NO-GRUPO`).
+- **critério de encerramento:** medido quantos e-mails com maiúscula há na base viva; a trava compara sem diferenciar maiúsculas, ou a medição dá 0 e a API normaliza na entrada.
+
+## P-SC-TESTES-SAIDA-PELO-VALID-TO (2026-11-21) — os testes da saída do grupo simulam a saída apagando a linha — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S-c` · **dono:** `B-APP-ORG-2S-c` · **bloqueia:** não.
+- **origem:** verificação `verif-sc-cl` da SC (`c23ddfef`), 21/11 ~17:30 SP.
+- **fato:** X1-X3, X5 e X6 simulam a saída apagando a linha do grupo; a forma real (`valid_to`) só tem o X4 e a sonda do verificador.
+- **critério de encerramento:** os testes da saída usam o `valid_to`.
+
+## P-AUDITORIA-EMAIL-NO-METADADO (2026-11-21) — o e-mail vai no metadado de `user.access_granted` e de `auth.login.success` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` em parte (o `auth.login.success` vem da `main`; o `user.access_granted` vem da S2a) · **dono:** `B-APP-ORG-2S` (leitura do redator, declarada) · **bloqueia:** não.
+- **origem:** Adendo 1 da Emenda 1.8.3.13, depois da verificação `verificar-18313`, 21/11 ~21:18 SP.
+- **fato:** o e-mail aparece no metadado de auditoria dos dois eventos, no próprio pátio.
+- **critério de encerramento:** o metadado sem o e-mail (allowlist §2.8), ou a decisão registrada de que ele fica, com o motivo.
+
+## P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE (2026-11-21) — o smoke do compose falha às vezes no login real — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (job `docker` da CI; o PR #619 só mexe em `mobile/flutter_app/`) · **dono:** o próximo bloco que tocar o smoke do compose (leitura do redator, declarada) · **bloqueia:** não.
+- **origem:** CI do PR #619 no `7eee8d11`, 21/11 ~18:45 SP.
+- **fato:** uma rodada do job `docker` deu "login REAL ... fetch failed" no passo 8; a outra rodada do mesmo SHA deu `success`.
+- **critério de encerramento:** a causa medida e o passo estável em N rodadas.
+
+## P-DIARIO-AZURE-POWERSHELL-ESCAPE (2026-11-21) — o braço do Azure grava o diário por um caminho que come `\f` e `\r` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** ferramenta do orquestrador, fora do repositório · **dono:** o orquestrador · **bloqueia:** não.
+- **origem:** reconferência `reconf-a4-cl` da A4 (`cf781a48`), 21/11 ~20:03 SP.
+- **fato:** as literais das mutações MC1, MC4 e MC5 no diário do dev saíram corrompidas; a junta mediu pelas literais da reconferência.
+- **critério de encerramento:** o lançador grava o diário sem escapar caracteres, provado numa tarefa.
+
+## P-APP-OS-LISTA-ACENTO (2026-11-21) — "Ordens de Servico" sem acento na lista de OS do app — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`mobile/flutter_app/lib/features/work_orders/ui/work_order_list_screen.dart:425`) · **dono:** o próximo bloco que tocar a lista de OS do app · **bloqueia:** não.
+- **origem:** conserto `fix-617-cl` do #617 (fora do mandato) e ressalva do `porteiro-617`.
+- **fato:** o texto `'Ordens de Servico'` está sem acento (§11.3 do contrato).
+- **critério de encerramento:** "Ordens de Serviço", com teste do texto.
+
+## P-TESTE-STUB-APROVACOES-FRAGIL (2026-11-21) — o teste do consentimento usa uma página falsa de Aprovações achada pelo texto — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`mobile/flutter_app/test/features/location/bsan317_porta_consentimento_test.dart:198`) · **dono:** o próximo bloco que tocar esse teste · **bloqueia:** não.
+- **origem:** conserto `fix-617-cl` do #617 (a mesma fragilidade do B1, consertado lá por `Key` própria) e ressalva do `porteiro-617`.
+- **fato:** a rota `/approvals` do teste monta `Scaffold(body: Text('Aprovações'))`; um teste que procure o texto passa por essa página falsa.
+- **critério de encerramento:** a página falsa achada por `Key` própria, como no B1 do #617.
