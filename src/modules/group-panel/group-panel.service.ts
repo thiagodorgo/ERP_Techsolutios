@@ -51,7 +51,7 @@ export class GroupPanelService {
     const scope = await this.resolveScope(actor, this.clock());
     const organizations = [];
     for (const organization of scope.organizations) {
-      const access = await this.accessOf(organization);
+      const access = await this.accessOf(actor, organization);
       organizations.push({
         id: organization.tenantId,
         name: organization.name,
@@ -70,7 +70,7 @@ export class GroupPanelService {
 
     const reads: OrganizationRead[] = [];
     for (const organization of scope.processed) {
-      reads.push(await this.readOrganization(organization, now));
+      reads.push(await this.readOrganization(actor, organization, now));
     }
 
     let coverage = coverageOf(reads, scope);
@@ -128,6 +128,7 @@ export class GroupPanelService {
   // A permissão e o módulo são os do PAR daquela organização (o usuário local dela),
   // nunca os do ator da organização ativa (MUT-12). O mesmo vale para as leituras (MUT-5).
   private async accessOf(
+    actor: GroupPanelActor,
     organization: ScopedOrganization,
   ): Promise<{ readonly finance: BlockStatus; readonly operations: boolean; readonly staff: boolean }> {
     try {
@@ -147,8 +148,8 @@ export class GroupPanelService {
     }
   }
 
-  private async readOrganization(organization: ScopedOrganization, now: Date): Promise<OrganizationRead> {
-    const access = await this.accessOf(organization);
+  private async readOrganization(actor: GroupPanelActor, organization: ScopedOrganization, now: Date): Promise<OrganizationRead> {
+    const access = await this.accessOf(actor, organization);
     let status = access.finance;
     let summary: FinancialSummary | null = null;
     if (access.finance === "ok") {
