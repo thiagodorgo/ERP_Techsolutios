@@ -610,6 +610,77 @@ if (!connectionString) {
         assert.equal(blocked.status, 403, JSON.stringify(blocked.body));
         assert.equal(errorOf(blocked).reason, "module_not_enabled");
       });
+
+      // B-APP-ORG-2S (Emenda 1.8.3.17, Adendo 1, I1; C1-01) — o prazo de trava esgotado DENTRO de uma volta com troca de
+      // GUC chega inteiro a quem responde 503: a reposição do GUC nunca toma o lugar do erro que já está subindo. A trava
+      // do administrador só solta DEPOIS da resposta (a resposta não vem antes do prazo de trava do orçamento da criação).
+      const segurarAteResponder = async (
+        travar: (tx: Parameters<Parameters<typeof admin.$transaction>[0]>[0]) => Promise<unknown>,
+        pedir: () => Promise<{ status: number; body: Record<string, unknown> }>,
+      ) => {
+        let travou!: () => void;
+        const travada = new Promise<void>((resolve) => { travou = resolve; });
+        let soltar!: () => void;
+        const solta = new Promise<void>((resolve) => { soltar = resolve; });
+        const trava = admin.$transaction(async (tx) => {
+          await travar(tx);
+          travou();
+          await solta;
+        }, { maxWait: 10_000, timeout: 60_000 });
+        try {
+          await travada;
+          return await pedir();
+        } finally {
+          soltar();
+          await trava.catch(() => undefined);
+        }
+      };
+      const nadaCriado = async (tenantId: string, email: string) => {
+        const [row] = await admin.$queryRaw<Array<{ users: number; creds: number; links: number; em_curso: number }>>`
+          SELECT
+            (SELECT count(*)::int FROM users WHERE tenant_id = ${tenantId}::uuid AND email = ${email}) AS users,
+            (SELECT count(*)::int FROM local_auth_credentials WHERE tenant_id = ${tenantId}::uuid AND email = ${email}) AS creds,
+            (SELECT count(*)::int FROM auth_identity_links WHERE tenant_id = ${tenantId}::uuid) AS links,
+            (SELECT count(*)::int FROM user_creation_log WHERE tenant_id = ${tenantId}::uuid AND state = 'em_curso') AS em_curso
+        `;
+        return row;
+      };
+      const createUser = (p: Patio, email: string) =>
+        requestJson(baseUrl, "/api/v1/users", {
+          method: "POST",
+          headers: headers(p),
+          body: { email, name: "Técnico do grupo", roles: ["field_technician"] },
+        });
+
+      await t.test("GT-PRAZO-A: a credencial de origem travada além do prazo: a concessão dá 503 creation_unavailable e nada nasce", async () => {
+        const A = await patio("PZA");
+        const B = await patio("PZB");
+        await group([{ tenantId: A.tenantId }, { tenantId: B.tenantId }]);
+        const tech = await technician(A, emailOf("pza"));
+        const response = await segurarAteResponder(
+          (tx) => tx.$queryRaw`SELECT id FROM local_auth_credentials WHERE tenant_id = ${tech.tenantId}::uuid AND user_id = ${tech.userId}::uuid FOR UPDATE`,
+          () => grant(B, tech.email),
+        );
+        assert.equal(response.status, 503, "GT-PRAZO-A: a concessão responde 503");
+        assert.equal(errorOf(response).reason, "creation_unavailable", "GT-PRAZO-A: o motivo é o prazo");
+        assert.deepEqual(await nadaCriado(B.tenantId, tech.email), { users: 0, creds: 0, links: 0, em_curso: 0 }, "GT-PRAZO-A: nada nasce no pátio que concede");
+      });
+
+      for (const via of ["criação", "concessão"] as const) {
+        await t.test(`GT-PRAZO-C (${via}): os vínculos de identidade travados além do prazo dentro da volta: 503 creation_unavailable e nada nasce`, async () => {
+          const A = await patio(via === "criação" ? "PZCC" : "PZCG");
+          const B = await patio(via === "criação" ? "PZCC2" : "PZCG2");
+          await group([{ tenantId: A.tenantId }, { tenantId: B.tenantId }]);
+          const tech = await technician(A, emailOf(via === "criação" ? "pzcc" : "pzcg"));
+          const response = await segurarAteResponder(
+            (tx) => tx.$executeRawUnsafe("LOCK TABLE auth_identity_links IN ACCESS EXCLUSIVE MODE"),
+            () => (via === "criação" ? createUser(B, tech.email) : grant(B, tech.email)),
+          );
+          assert.equal(response.status, 503, `GT-PRAZO-C (${via}): responde 503`);
+          assert.equal(errorOf(response).reason, "creation_unavailable", `GT-PRAZO-C (${via}): o motivo é o prazo`);
+          assert.deepEqual(await nadaCriado(B.tenantId, tech.email), { users: 0, creds: 0, links: 0, em_curso: 0 }, `GT-PRAZO-C (${via}): nada nasce no pátio`);
+        });
+      }
     } finally {
       if (server) await closeServer(server);
       await Promise.allSettled([runtimeRole.drop(), admin.$disconnect()]);
