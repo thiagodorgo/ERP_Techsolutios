@@ -718,7 +718,7 @@ export class IdentityLinkService {
           // B-APP-ORG-2S (GR5) — a identidade lida como pista ordena as travas dos vínculos: primeiro os pares
           // de pátios menores recebem FOR SHARE, em ordem de id; depois o próprio par recebe FOR UPDATE. Duas
           // redefinições da mesma identidade seguem a mesma ordem e não formam o ciclo que causava impasse.
-          // Se a religação mover a identidade no meio, a conferência logo abaixo sai 503 e nada muda.
+          // Se a religação mover a identidade no meio, a conferência logo abaixo classifica e nada muda.
           const hintedIdentityId = await this.identityOfPair(tx, actor.tenantId, target.id);
           if (hintedIdentityId !== null) await this.lockEarlierLinksOfIdentity(tx, actor.tenantId, hintedIdentityId, deadline);
           let pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
@@ -733,7 +733,10 @@ export class IdentityLinkService {
             throw resetUnavailableError();
           }
 
+          // Pista divergiu da linha travada: classifica a identidade confirmada (religação ou vínculo ativo fora
+          // do grupo dão 409, D-USERS-1); sem o que recusar, 503. Este ramo nunca grava.
           if (hintedIdentityId !== null && pairLink.identity_id !== hintedIdentityId) {
+            await this.resolveResetFamily(tx, actor.tenantId, pairLink, deadline);
             throw resetUnavailableError();
           }
 
