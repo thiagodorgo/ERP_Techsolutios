@@ -29,6 +29,7 @@ import { createVaultPlatformRouter } from "./vault/vault.platform.routes.js";
 import { createOverviewPlatformRouter } from "./overview/overview.routes.js";
 import { createFxRatesPlatformRouter } from "./fx-rates/fx-rates.routes.js";
 import { createEconomicGroupsPlatformRouter } from "./economic-groups/economic-groups.routes.js";
+import { createEconomicGroupManagersPlatformRouter } from "./economic-groups/economic-group-managers.routes.js";
 
 export function createSubscriptionBillingPlatformRouter(): Router {
   const router = Router();
@@ -184,6 +185,7 @@ export function createSubscriptionBillingPlatformRouter(): Router {
   router.use(createOverviewPlatformRouter());
   router.use(createFxRatesPlatformRouter());
   router.use(createEconomicGroupsPlatformRouter());
+  router.use(createEconomicGroupManagersPlatformRouter());
 
   return router;
 }

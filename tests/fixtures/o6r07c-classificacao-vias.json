@@ -25,7 +25,7 @@
  },
  "MIDDLEWARE /api/v1 · (anônima)": {
   "classe": "MIDDLEWARE",
-  "n": 118
+  "n": 119
  },
  "MIDDLEWARE /api/v1 · moduleGate": {
   "classe": "MIDDLEWARE",
@@ -52,6 +52,10 @@
   "n": 1
  },
  "MIDDLEWARE /api/v1/billing/subscription · tenantContextMiddleware": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/group-panel · tenantContextMiddleware": {
   "classe": "MIDDLEWARE",
   "n": 1
  },
@@ -144,6 +148,10 @@
   "n": 1
  },
  "ROTA DELETE /api/v1/platform/billing/economic-groups/:groupId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/platform/billing/economic-groups/:groupId/managers/:managerId": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -399,6 +407,14 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/group-panel/scope": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/group-panel/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/health": {
   "classe": "LEITURA",
   "n": 1
@@ -640,6 +656,10 @@
   "n": 1
  },
  "ROTA GET /api/v1/platform/billing/economic-groups/:groupId/history": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/economic-groups/:groupId/managers": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1683,6 +1703,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/economic-groups/:groupId/managers": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/billing/outbox/:id/confirm-cancelled": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1965,7 +1989,7 @@
  },
  "ROTEADOR /api/v1": {
   "classe": "ROTEADOR",
-  "n": 61
+  "n": 62
  },
  "ROTEADOR /api/v1/audit-events": {
   "classe": "ROTEADOR",
@@ -2001,7 +2025,7 @@
  },
  "ROTEADOR /api/v1/platform/billing": {
   "classe": "ROTEADOR",
-  "n": 6
+  "n": 7
  },
  "ROTEADOR /api/v1/platform/cloud-cost-allocations": {
   "classe": "ROTEADOR",

@@ -754,6 +754,16 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/auth/auth-runtime.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx)", "×2"),
     "B-APP-ORG-2S, Emenda 1.8.3.17 §2.2 (C2-04): a 2ª ocorrência é a volta de `clearAcrossPairs` em `acrossPairsInTx`, com a `tx` da transação do login (`withTenantRls` do pátio do login), o GUC de cada par posto antes da escrita e o do pátio do login reposto no `finally`; substitui o espelho que abria transação própria no cliente global. Provado em tests/bapporg2s_login-conexao-db.test.ts (GL-POOL1, o app com 1 conexão) e tests/bapporg2s_login-pares-db.test.ts (GL2 e GL5, sob papel NOSUPERUSER NOBYPASSRLS).",
   ],
+  // B-GRUPO-GESTOR, Emenda 3 §2.3/§2.4: a trilha do pátio é gravada dentro da transação de duas voltas da marca.
+  [
+    k("L2", "src/modules/subscription-billing/economic-groups/economic-group-managers.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-GRUPO-GESTOR, Emenda 3: o AuditLogRepository recebe o tx da transação única de grant/revoke; antes da trilha o repositório fixa o GUC do pátio com setTenantRlsContext, e só depois troca para a organização platform para gravar a marca e a trilha global. Provado em tests/grupo-gestor-marca-db.test.ts (RLS-1/T-ORG-SIS) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  // B-GRUPO-GESTOR (1a, F2), Emenda 3 §2.3/§2.4: o passo 0 do Painel lê a marca da própria pessoa.
+  [
+    k("L1", "src/modules/group-panel/group-panel.prisma.ts", "PrismaGroupManagerMarksReader.listMarksForActor", "tx.economicGroupManager", "economicGroupManager.findMany", "economic_group_managers", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-GRUPO-GESTOR, Emenda 3 §2.3 (passo 0 do Painel): a 1ª instrução do `$transaction` é `setIdentityRlsContext(tx, actor)` — o setter de `src/database/rls.ts` que o gerador não reconhece como setter —, que fixa o GUC de organização no pátio ATIVO do token e o GUC de identidade pelo par re-resolvido; a leitura filtra por `identity_id` e passa pelo canário `assertMarksOfIdentity`. Provado em tests/grupo-gestor-isolamento-db.test.ts (LMK-1 a LMK-4, GM-1 a GM-5) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
   // B-APP-ORG-2S-c (SC): as 6 chaves da guarda de saída de grupo, com motivo próprio.
   [
     k("L1", "src/modules/core-saas/services/grant-group-guard.ts", "-.endGrant", "tx.authSession", "authSession.updateMany", "auth_sessions", "PARAMETRO(tx)", "×1"),
@@ -864,7 +874,10 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     // B-ASS-09 (M6): 123 → 124 — exatamente a 1 tabela FORCE nova (economic_group_members) e o model dela; as 2 globais da M6
     // (economic_groups, platform_fx_rates) não têm RLS e não entram no L0.
     // B-APROVACOES-DURAVEIS (item 67): 124 → 125 — exatamente a 1 tabela FORCE nova (operational_approvals) e o model dela.
-    assert.match(f2.stdout, /tabelas ENABLE=126 FORCE=126 · acessores Prisma em FORCE=126/);
+    // B-APP-ORG-2S (S1) 125 → 126 — exatamente a tabela FORCE nova user_creation_log.
+    // B-GRUPO-GESTOR (1a, migração autorizada pelo dono, Emenda 2 §2.3): 126 → 128 — exatamente as 2 tabelas FORCE novas
+    // (economic_group_managers e user_deactivation_requests) e os 2 models delas.
+    assert.match(f2.stdout, /tabelas ENABLE=128 FORCE=128 · acessores Prisma em FORCE=128/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);
