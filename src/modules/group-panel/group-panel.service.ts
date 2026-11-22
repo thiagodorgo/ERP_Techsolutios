@@ -14,8 +14,10 @@
 import { TenantRowsLeakError } from "../../database/rls.js";
 import type { FinancialSummary } from "../financial-summary/financial-summary.types.js";
 import { MembershipOverlapError, todayBusinessDate } from "../subscription-billing/economic-groups/membership.rules.js";
-import { canReadOperations, decideFinanceAccess, resolveActiveGroup, resolveGroupScope, type GroupScopeResult } from "./group-scope.js";
+import { canReadOperations, canReadStaff, decideFinanceAccess, resolveActiveGroup, resolveGroupScope, type GroupScopeResult } from "./group-scope.js";
 import { cashFlowVariations, consolidate, currenciesOf } from "./group-panel.money.js";
+import { computeOperations, consolidateOperations, publicOperations, type GroupPanelOperationsComputed } from "./group-panel.sla.js";
+import { computeStaff, consolidateStaff, publicStaff, STAFF_IN_SERVICE_STATUSES, type GroupPanelStaffComputed } from "./group-panel.staff.js";
 import {
   FINANCE_MODULE_KEY,
   type BlockStatus,
@@ -32,6 +34,10 @@ type OrganizationRead = {
   readonly organization: ScopedOrganization;
   status: BlockStatus;
   summary: FinancialSummary | null;
+  operationsStatus: "ok" | "sem_permissao" | "erro";
+  operations: GroupPanelOperationsComputed | null;
+  staffStatus: "ok" | "sem_permissao" | "erro";
+  staff: GroupPanelStaffComputed | null;
 };
 
 export class GroupPanelService {
@@ -45,12 +51,13 @@ export class GroupPanelService {
     const scope = await this.resolveScope(actor, this.clock());
     const organizations = [];
     for (const organization of scope.organizations) {
-      const access = await this.accessOf(actor, organization);
+      const access = await this.accessOf(organization);
       organizations.push({
         id: organization.tenantId,
         name: organization.name,
         finance: access.finance === "ok",
         operations: access.operations,
+        staff: access.staff,
       });
     }
     return { inGroup: true, organizations };
@@ -63,7 +70,7 @@ export class GroupPanelService {
 
     const reads: OrganizationRead[] = [];
     for (const organization of scope.processed) {
-      reads.push(await this.readOrganization(actor, organization, now));
+      reads.push(await this.readOrganization(organization, now));
     }
 
     let coverage = coverageOf(reads, scope);
@@ -81,13 +88,26 @@ export class GroupPanelService {
     coverage = coverageOf(reads, scope);
 
     const okBlocks = reads.filter((read) => read.status === "ok" && read.summary !== null).map((read) => read.summary!);
+    const operationsBlocks = reads.filter((read) => read.operationsStatus === "ok" && read.operations !== null).map((read) => read.operations!);
+    const staffBlocks = reads.filter((read) => read.staffStatus === "ok" && read.staff !== null).map((read) => read.staff!);
+    const staffRows = staffBlocks.flatMap((block) => block.people.map((person) => ({ identityId: person.key, localKey: person.key })));
+    // âncora (MUT-19): a mesma pessoa em vários pátios conta uma vez no grupo.
+    const distinctPeople = new Set(staffRows.map((row) => row.identityId ?? row.localKey)).size;
     // âncora (MUT-6)
     const consolidated = coverage.complete ? consolidate(okBlocks) : null;
 
     return {
       generatedAt: now,
       coverage,
-      consolidated: consolidated === null ? null : { currency: okBlocks[0]?.cash.currency ?? "BRL", finance: consolidated },
+      consolidated:
+        consolidated === null
+          ? null
+          : {
+              currency: okBlocks[0]?.cash.currency ?? "BRL",
+              finance: consolidated,
+              operations: publicOperations(consolidateOperations(operationsBlocks)),
+              staff: { ...publicStaff(consolidateStaff(staffBlocks)), activeUsers: distinctPeople },
+            },
       organizations: reads.map(organizationView),
     };
   }
@@ -105,33 +125,71 @@ export class GroupPanelService {
     return resolveGroupScope({ activeGroupId, memberships, groupRows, today });
   }
 
-  // O ator está à mão de propósito: a permissão e o módulo são os do PAR daquela organização (o usuário local dela),
-  // nunca os do ator (MUT-12). O mesmo vale para a leitura do resumo (MUT-5).
-  private async accessOf(actor: GroupPanelActor, organization: ScopedOrganization): Promise<{ readonly finance: BlockStatus; readonly operations: boolean }> {
+  // A permissão e o módulo são os do PAR daquela organização (o usuário local dela),
+  // nunca os do ator da organização ativa (MUT-12). O mesmo vale para as leituras (MUT-5).
+  private async accessOf(
+    organization: ScopedOrganization,
+  ): Promise<{ readonly finance: BlockStatus; readonly operations: boolean; readonly staff: boolean }> {
     try {
       // âncora (MUT-12)
       const authorization = await this.readers.authorization({ tenantId: organization.tenantId, userId: organization.userId });
       const modules = await this.readers.modules({ tenantId: organization.tenantId });
       // âncora (MUT-13)
       const financeModuleOn = modules.includes(FINANCE_MODULE_KEY);
-      return { finance: decideFinanceAccess(authorization, financeModuleOn), operations: canReadOperations(authorization) };
+      return {
+        finance: decideFinanceAccess(authorization, financeModuleOn),
+        operations: canReadOperations(authorization),
+        staff: canReadStaff(authorization),
+      };
     } catch (error) {
       rethrowIntegrityError(error);
-      return { finance: "erro", operations: false };
+      return { finance: "erro", operations: false, staff: false };
     }
   }
 
-  private async readOrganization(actor: GroupPanelActor, organization: ScopedOrganization, now: Date): Promise<OrganizationRead> {
-    const access = await this.accessOf(actor, organization);
-    if (access.finance !== "ok") return { organization, status: access.finance, summary: null };
-    try {
+  private async readOrganization(organization: ScopedOrganization, now: Date): Promise<OrganizationRead> {
+    const access = await this.accessOf(organization);
+    let status = access.finance;
+    let summary: FinancialSummary | null = null;
+    if (access.finance === "ok") {
+      try {
       // âncora (MUT-5)
-      const summary = await this.readers.financeSummary({ tenantId: organization.tenantId, now });
-      return { organization, status: "ok", summary };
-    } catch (error) {
-      rethrowIntegrityError(error);
-      return { organization, status: "erro", summary: null };
+        summary = await this.readers.financeSummary({ tenantId: organization.tenantId, now });
+      } catch (error) {
+        rethrowIntegrityError(error);
+        status = "erro";
+      }
     }
+
+    let operationsStatus: OrganizationRead["operationsStatus"] = access.operations ? "ok" : "sem_permissao";
+    let staffStatus: OrganizationRead["staffStatus"] = access.staff ? "ok" : "sem_permissao";
+    let operations: GroupPanelOperationsComputed | null = null;
+    let staff: GroupPanelStaffComputed | null = null;
+    let workOrders = null;
+    if (access.operations || access.staff) {
+      try {
+        workOrders = await this.readers.workOrders({ tenantId: organization.tenantId, now });
+      } catch (error) {
+        rethrowIntegrityError(error);
+        if (access.operations) operationsStatus = "erro";
+        if (access.staff) staffStatus = "erro";
+      }
+    }
+    if (access.operations && workOrders !== null) operations = computeOperations(workOrders, now);
+    if (access.staff && workOrders !== null) {
+      try {
+        const staffRows = await this.readers.staffRows({ tenantId: organization.tenantId });
+        const inServiceUserIds = workOrders
+          .filter((row) => STAFF_IN_SERVICE_STATUSES.includes(row.status as (typeof STAFF_IN_SERVICE_STATUSES)[number]))
+          .flatMap((row) => (row.assignedUserId === null ? [] : [row.assignedUserId]));
+        staff = computeStaff(staffRows, inServiceUserIds);
+      } catch (error) {
+        rethrowIntegrityError(error);
+        staffStatus = "erro";
+      }
+    }
+
+    return { organization, status, summary, operationsStatus, operations, staffStatus, staff };
   }
 }
 
@@ -142,7 +200,9 @@ function rethrowIntegrityError(error: unknown): void {
 
 function coverageOf(reads: readonly OrganizationRead[], scope: GroupScopeResult): GroupPanelCoverage {
   const okBlocks = reads.filter((read) => read.status === "ok" && read.summary !== null).map((read) => read.summary!);
-  const failedReads = reads.filter((read) => read.status === "erro").map((read) => read.organization.tenantId);
+  const failedReads = reads
+    .filter((read) => read.status === "erro" || read.operationsStatus === "erro" || read.staffStatus === "erro")
+    .map((read) => read.organization.tenantId);
   const failed = [...failedReads, ...scope.omitted.map((organization) => organization.tenantId)];
   const reason = scope.overLimit
     ? "teto"
@@ -173,6 +233,14 @@ function organizationView(read: OrganizationRead): GroupPanelOrganization {
       summary: ok ? read.summary : null,
       receivedVariationPct: variations.received,
       paidVariationPct: variations.paid,
+    },
+    operations: {
+      status: read.operationsStatus,
+      summary: read.operations === null ? null : publicOperations(read.operations),
+    },
+    staff: {
+      status: read.staffStatus,
+      summary: read.staff === null ? null : publicStaff(read.staff),
     },
   };
 }

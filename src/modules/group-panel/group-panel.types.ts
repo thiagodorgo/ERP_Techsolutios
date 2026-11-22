@@ -11,6 +11,8 @@
 
 import type { AuthenticatedActor } from "../auth/types/auth.types.js";
 import type { FinancialSummary } from "../financial-summary/financial-summary.types.js";
+import type { GroupPanelOperations, GroupPanelOperationsComputed, GroupPanelWorkOrderRow } from "./group-panel.sla.js";
+import type { GroupPanelStaff, GroupPanelStaffComputed, GroupPanelStaffRow } from "./group-panel.staff.js";
 
 /** Teto de organizações lidas por pedido (plano-base §3.1, passo 8). Acima disso: sem total (§3.4). */
 export const GROUP_PANEL_MAX_ORGANIZATIONS = 30;
@@ -85,6 +87,10 @@ export interface GroupPanelReaders {
   modules(input: { readonly tenantId: string }): Promise<readonly string[]>;
   /** O resumo financeiro daquela organização, no instante `now`, no contexto dela. */
   financeSummary(input: { readonly tenantId: string; readonly now: Date }): Promise<FinancialSummary>;
+  /** F3: as OS daquela organização necessárias para OPS/SLA, sempre no contexto do próprio pátio. */
+  workOrders(input: { readonly tenantId: string; readonly now: Date }): Promise<readonly GroupPanelWorkOrderRow[]>;
+  /** F3: usuários ativos/inativos e seus perfis, com chave interna de identidade para deduplicação do grupo. */
+  staffRows(input: { readonly tenantId: string }): Promise<readonly GroupPanelStaffRow[]>;
   /** E1: UMA linha `group_panel.viewed` na trilha daquela organização, com o usuário local como ator. */
   recordView(input: { readonly tenantId: string; readonly userId: string; readonly complete: boolean }): Promise<void>;
 }
@@ -122,10 +128,22 @@ export type OrganizationFinanceBlock = {
   readonly paidVariationPct: number | null;
 };
 
+export type OrganizationOperationsBlock = {
+  readonly status: Exclude<BlockStatus, "modulo_desligado">;
+  readonly summary: GroupPanelOperations | null;
+};
+
+export type OrganizationStaffBlock = {
+  readonly status: "ok" | "sem_permissao" | "erro";
+  readonly summary: GroupPanelStaff | null;
+};
+
 export type GroupPanelOrganization = {
   readonly id: string;
   readonly name: string;
   readonly finance: OrganizationFinanceBlock;
+  readonly operations: OrganizationOperationsBlock;
+  readonly staff: OrganizationStaffBlock;
 };
 
 export type GroupPanelCoverage = {
@@ -142,7 +160,12 @@ export type GroupPanelCoverage = {
 export type GroupPanelSummary = {
   readonly generatedAt: Date;
   readonly coverage: GroupPanelCoverage;
-  readonly consolidated: { readonly currency: string; readonly finance: ConsolidatedFinance } | null;
+  readonly consolidated: {
+    readonly currency: string;
+    readonly finance: ConsolidatedFinance;
+    readonly operations: GroupPanelOperations;
+    readonly staff: GroupPanelStaff;
+  } | null;
   readonly organizations: readonly GroupPanelOrganization[];
 };
 
@@ -151,6 +174,13 @@ export type GroupPanelScopeOrganization = {
   readonly name: string;
   readonly finance: boolean;
   readonly operations: boolean;
+  readonly staff: boolean;
+};
+
+/** Forma interna usada só pelo serviço para consolidar sem média de médias nem duplicar pessoa. */
+export type GroupPanelInternalBlocks = {
+  readonly operations: GroupPanelOperationsComputed | null;
+  readonly staff: GroupPanelStaffComputed | null;
 };
 
 export type GroupPanelScope = {

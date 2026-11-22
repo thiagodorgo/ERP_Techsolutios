@@ -117,6 +117,14 @@ export function createPrismaGroupPanelReaders(
       return finance.getSummary({ tenantId, now });
     },
 
+    workOrders({ tenantId }) {
+      return readGroupPanelWorkOrderRows(client, { tenantId });
+    },
+
+    staffRows({ tenantId }) {
+      return readGroupPanelStaffRows(client, { tenantId });
+    },
+
     async recordView({ tenantId, userId, complete }) {
       const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
         import("../core-saas/audit/audit-log.service.js"),
