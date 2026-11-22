@@ -6548,4 +6548,6 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Os dois lados:** o mandato da Emenda 1b dizia *"quem pode abrir: a permissão das rotas, `platform:users:create_admin`"*. A `main` lista com `platform:billing:read` e marca e desmarca com `platform:users:create_admin` (`RBAC_MATRIX.md` l.160-163, arquivo-base, fonte 2 do §A1), e a Emenda 3 §1 já decidira que a janela abre em modo de leitura com `platform:billing:read`.
 - **Como foi tratado:** o planejador seguiu a `main` e a Emenda 3 (Emenda 1b §3.2) e registrou a divergência sem consolidar. A janela ficou para o `B-GRUPO-GESTOR-1c` (`D-DONO-2211-GRUPO-JANELA-A`); o 1b não a entrega.
+- **status:** ABERTO, a resolver no plano do `B-GRUPO-GESTOR-1c` · **gravidade:** registro (§A2), sem efeito no produto enquanto a janela não existe.
+- **critério de encerramento:** o plano do `B-GRUPO-GESTOR-1c` declara quem abre a janela (leitura com `platform:billing:read`, ou só com `platform:users:create_admin`), e a escolha fica registrada aqui como resolução.
 - **Dono:** o orquestrador, no plano do `B-GRUPO-GESTOR-1c`. Fechar a janela só para quem tem `create_admin` é uma linha no front e não fere o servidor, que segue como autoridade. Origem do registro: achado A1 do `porteiro-627`; registrado por `dev-628-fix2-cl` (Claude Opus).
