@@ -78,13 +78,13 @@ type PairIdentityResolver = (tenantId: string, userId: string) => Promise<string
 // B-APP-ORG-2S (1.8.3 §2.2 e 1.8.3.2 §1; P3 e P2 do dono) — a porta da senha COMPARTILHADA: com uma senha só
 // em todos os pátios, cada tentativa errada soma 1 em todos os pares ativos que guardam aquela senha e o
 // acerto zera todos (5 tentativas no total, por qualquer porta; o bloqueio de 15 min pega todos os pares
-// juntos). `pairsOf` lê os pares (`readLoginPasswordPairs`, nunca do pedido); as duas escritas são os espelhos
-// de `auth-runtime.ts`, cada um numa transação única (`forEachTenantRls`). Sem a porta (dublês de teste), o
-// serviço faz o que a `main` fazia: só o próprio par.
+// juntos). `pairsOf` lê os pares (`readLoginPasswordPairs`, nunca do pedido); as duas escritas rodam na MESMA
+// transação do login que as pediu, par a par (1.8.3.17 §2.2); `tenantId` é o pátio do login, onde o GUC volta.
+// Sem a porta (dublês de teste), o serviço faz o que a `main` fazia: só o próprio par.
 export type SharedPasswordPort = {
   pairsOf(tenantId: string, credentialId: string, email: string): Promise<readonly SharedPasswordPair[]>;
-  registerFailureAcrossPairs(pairs: readonly SharedPasswordPair[]): Promise<void>;
-  clearAcrossPairs(pairs: readonly SharedPasswordPair[], ownCredentialId: string): Promise<void>;
+  registerFailureAcrossPairs(tenantId: string, pairs: readonly SharedPasswordPair[]): Promise<void>;
+  clearAcrossPairs(tenantId: string, pairs: readonly SharedPasswordPair[], ownCredentialId: string): Promise<void>;
 };
 
 // Resultado da verificação anônima de um candidato (interno; `credential_id` alimenta só a
@@ -402,7 +402,7 @@ export class LocalAuthLoginService {
       return;
     }
 
-    await this.sharedPassword.registerFailureAcrossPairs(pairs);
+    await this.sharedPassword.registerFailureAcrossPairs(tenantId, pairs);
   }
 
   // B-APP-ORG-2S (1.8.3 §2.2, 1.8.3.1 §1) — o acerto zera a conta em todos os pares da senha; no próprio par
@@ -424,7 +424,7 @@ export class LocalAuthLoginService {
       return;
     }
 
-    await this.sharedPassword.clearAcrossPairs(pairs, credential.id);
+    await this.sharedPassword.clearAcrossPairs(tenantId, pairs, credential.id);
   }
 
   // B-APP-ORG-2S (1.8.3 §2.2) — provisória vencida: o MESMO 401 da senha errada, sem contar como tentativa

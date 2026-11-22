@@ -14,13 +14,15 @@ import {
 
 // -----------------------------------------------------------------------------------------------
 // B-APP-ORG-2S, fatia S2p — GL1 a GL5 da Emenda 1.8.3.2 §1: as escritas do LOGIN valem em todos os pares da
-// identidade, pelos 3 espelhos de `src/modules/auth/auth-runtime.ts` (`forEachTenantRls`, transação única), sob o
-// papel do app NOSUPERUSER NOBYPASSRLS. Pelas rotas do app real. Mutações (literais, no diário dev-s2p-cl):
-//   GL1 · `registerAnonymousFailureAcrossPairs`: `forEachTenantRls(prisma, tenantIdsDosPares,` → `[tenantIdsDosPares[0]]`
-//   GL2 · a mesma troca em `finalizeAnonymousLoginAcrossPairs`
-//   GL3 · mutação histórica da troca compartilhada (espelho removido na Revisão 1 da emenda)
-//   GL4 · `forEachTenantRls(prisma,` → `Promise.all(tenantIdsDosPares.map((t) => withTenantRls(prisma, t,` (com o fecho)
-//   GL5 · `buildService(tx).registerFailure(credentialId` → `buildService(tx).registerFailure(undefined`
+// identidade. Desde a Emenda 1.8.3.17 §2.2 (C2-04) elas rodam na MESMA transação do login (`acrossPairsInTx` de
+// `src/modules/auth/auth-runtime.ts`, par a par, uma conexão só), sob o papel do app NOSUPERUSER NOBYPASSRLS. Pelas
+// rotas do app real. Mutações (Emenda 1.8.3.17 §4; literais no diário dev-18317-cl):
+//   MGL1b · a volta de `registerFailureAcrossPairs`: `acrossPairsInTx(tx, tenantId, pairs,` → `pairs.slice(0, 1)` (GL1)
+//   MGL2b · a mesma troca na volta de `clearAcrossPairs` (GL2)
+//   GL3   · mutação histórica da troca compartilhada (espelho removido na Revisão 1 da 1.8.3.13)
+//   GL4   · sem mutação desde a 1.8.3.17 (os espelhos com transação própria deixaram de existir); o teste fica
+//   MGL5b · `registerFailure(pair.credentialId,` → `registerFailure(undefined as unknown as string,` (GL5)
+//   M17-6 · apagar a reposição do GUC no `finally` de `acrossPairsInTx` (GL1)
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;

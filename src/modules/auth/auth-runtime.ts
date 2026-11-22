@@ -2,19 +2,10 @@ import type { LocalAuthLoginService } from "./services/local-auth-login.service.
 import type { AuthSessionService } from "./services/auth-session.service.js";
 import type { SharedPasswordPair } from "./services/password-family.js";
 
-// B-APP-ORG-2S (Emenda 1.8.3.2 §1; P3 do dono) — os espelhos da senha COMPARTILHADA. Com um login e uma senha
-// em todos os pátios, o contador de tentativas, o bloqueio, o zerar no acerto e a troca de senha gravam em
-// TODOS os pares da identidade. Cada espelho recebe a lista de pares (lida pelo leitor da família, nunca do
-// pedido) e roda `forEachTenantRls` numa transação só: todos os pares mudam ou nenhum muda.
-export type SharedPasswordMirrors = {
-  registerAnonymousFailureAcrossPairs(pairs: readonly SharedPasswordPair[]): Promise<void>;
-  finalizeAnonymousLoginAcrossPairs(pairs: readonly SharedPasswordPair[], ownCredentialId: string): Promise<void>;
-};
-
-let localAuthLoginServicePromise: Promise<LocalAuthLoginService & SharedPasswordMirrors> | undefined;
+let localAuthLoginServicePromise: Promise<LocalAuthLoginService> | undefined;
 let authSessionServicePromise: Promise<AuthSessionService> | undefined;
 
-export function getLocalAuthLoginService(): Promise<LocalAuthLoginService & SharedPasswordMirrors> {
+export function getLocalAuthLoginService(): Promise<LocalAuthLoginService> {
   localAuthLoginServicePromise ??= createLocalAuthLoginService();
 
   return localAuthLoginServicePromise;
@@ -26,10 +17,10 @@ export function getAuthSessionService(): Promise<AuthSessionService> {
   return authSessionServicePromise;
 }
 
-async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & SharedPasswordMirrors> {
+async function createLocalAuthLoginService(): Promise<LocalAuthLoginService> {
   const [
     { prisma },
-    { forEachTenantRls, withTenantRls },
+    { setTenantRlsContext, withTenantRls },
     { LocalAuthCredentialRepository },
     { AuditLogRepository, TenantRepository, UserRepository, UserRoleRepository },
     { LocalAuthLoginService },
@@ -45,8 +36,26 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
     import("./services/password-family.js"),
   ]);
 
-  // B-APP-ORG-2S (1.8.3.2 §1) — a porta da senha compartilhada do LOGIN: a leitura dos pares roda na
-  // transação do login (a do espelho que chamou); as escritas, nos espelhos abaixo.
+  // B-APP-ORG-2S (1.8.3.2 §1; 1.8.3.17 §2.2, C2-04) — a porta da senha compartilhada do LOGIN: a leitura E a escrita
+  // nos pares rodam na MESMA transação do login que as pediu (a `tx`), par a par, em ordem de pátio, com o GUC do
+  // par no começo de cada volta e o do pátio do login reposto no fim. O login usa UMA conexão; todos os pares mudam
+  // junto com o login ou nenhum muda. Nada de transação nova no cliente global de dentro da do login.
+  const acrossPairsInTx = async (
+    tx: Parameters<Parameters<typeof withTenantRls>[2]>[0],
+    restoreTenantId: string,
+    pairs: readonly SharedPasswordPair[],
+    work: (pair: SharedPasswordPair) => Promise<void>,
+  ): Promise<void> => {
+    try {
+      for (const pair of pairs) {
+        await setTenantRlsContext(tx, pair.tenantId);
+        await work(pair);
+      }
+    } finally {
+      await setTenantRlsContext(tx, restoreTenantId);
+    }
+  };
+
   const buildService = (tx: Parameters<Parameters<typeof withTenantRls>[2]>[0]) =>
     new LocalAuthLoginService(
       new LocalAuthCredentialRepository(tx),
@@ -58,8 +67,17 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
       (tenantId, userId) => resolveIdentityIdForPair(tx, tenantId, userId),
       {
         pairsOf: (tenantId, credentialId, email) => readLoginPasswordPairs(tx, tenantId, credentialId, email),
-        registerFailureAcrossPairs: (pairs) => service.registerAnonymousFailureAcrossPairs(pairs),
-        clearAcrossPairs: (pairs, ownCredentialId) => service.finalizeAnonymousLoginAcrossPairs(pairs, ownCredentialId),
+        registerFailureAcrossPairs: (tenantId, pairs) =>
+          acrossPairsInTx(tx, tenantId, pairs, async (pair) => {
+            await buildService(tx).registerFailure(pair.credentialId, pair.tenantId);
+          }),
+        clearAcrossPairs: (tenantId, pairs, ownCredentialId) =>
+          acrossPairsInTx(tx, tenantId, pairs, async (pair) => {
+            const credentials = new LocalAuthCredentialRepository(tx);
+            await (pair.credentialId === ownCredentialId
+              ? credentials.markSuccessfulLogin(pair.credentialId, pair.tenantId)
+              : credentials.resetFailedAttempts(pair.credentialId, pair.tenantId));
+          }),
       },
     );
 
@@ -90,42 +108,9 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService & Sh
         buildService(tx).registerAnonymousFailure(tenantId, credentialId, email, auditContext),
       );
     },
-    // B-APP-ORG-2S (1.8.3.2 §1) — a tentativa errada soma 1 em todos os pares da senha, numa transação só.
-    async registerAnonymousFailureAcrossPairs(pairs: readonly SharedPasswordPair[]) {
-      const tenantIdsDosPares = pairs.map((pair) => pair.tenantId);
-
-      await forEachTenantRls(prisma, tenantIdsDosPares, async (tx, tenantId) => {
-        const credentialId = credentialOfPair(pairs, tenantId);
-        await buildService(tx).registerFailure(credentialId, tenantId);
-        return [];
-      });
-    },
-    // B-APP-ORG-2S (1.8.3.2 §1) — o acerto zera a conta em todos os pares da senha; o último acesso só no próprio.
-    async finalizeAnonymousLoginAcrossPairs(pairs: readonly SharedPasswordPair[], ownCredentialId: string) {
-      const tenantIdsDosPares = pairs.map((pair) => pair.tenantId);
-
-      await forEachTenantRls(prisma, tenantIdsDosPares, async (tx, tenantId) => {
-        const credentialId = credentialOfPair(pairs, tenantId);
-        const credentials = new LocalAuthCredentialRepository(tx);
-        await (credentialId === ownCredentialId
-          ? credentials.markSuccessfulLogin(credentialId, tenantId)
-          : credentials.resetFailedAttempts(credentialId, tenantId));
-        return [];
-      });
-    },
-  } as LocalAuthLoginService & SharedPasswordMirrors;
+  } as LocalAuthLoginService;
 
   return service;
-}
-
-function credentialOfPair(pairs: readonly SharedPasswordPair[], tenantId: string): string {
-  const pair = pairs.find((candidate) => candidate.tenantId === tenantId);
-
-  if (!pair) {
-    throw new Error("shared_password_pair_missing");
-  }
-
-  return pair.credentialId;
 }
 
 async function createAuthSessionService(): Promise<AuthSessionService> {
