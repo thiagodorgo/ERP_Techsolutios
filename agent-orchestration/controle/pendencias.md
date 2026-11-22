@@ -11379,6 +11379,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **nova ocorrência (2026-11-12, PR #542):** o run `43175128180` (push, head `72866b87` do #542) falhou no B16 — intermitente conhecido; as duas rodadas dos heads `3acac2ee` e `6c278b84` passaram. Fonte: `REGISTRO-PENDENTE.md` 12/11 04:43.
 - **nova ocorrência (2026-11-02, PR #481):** o run `41386712734`, job `backend` `125089109273`, head `6cea5f3f`, falhou no B16 (`not ok 1772`) e fechou com 4157 testes, 4154 passados, 1 falha e 2 pulados. O head seguinte `c6f74bc3` ficou verde no run `41388491930`, job `backend` `125094505662`. Fonte: `gh run list --branch chore/kpi-marco-2026-11-02 --limit 5`; logs e JSON de `gh run view` desses runs/jobs.
 - **nova ocorrência (2026-11-14, `B-SAN3-17`, PR #568):** na 3ª de 3 rodadas locais do subconjunto do `backend-postgres` (74 arquivos, no Windows), o B16 falhou com `expected 'ok'` × `actual '422|invalid_status_transition'`; as outras 2 rodadas passaram, e o arquivo sozinho deu 22/22 duas vezes. O bloco não toca inventário.
+- **nova ocorrência (2026-11-21, PR #620, só registro):** o run `44970777701` (`pull_request`, head `e15ed435`, ramo `chore/registro-2111`), tentativa 1, job `backend` `137049857740`, falhou no B16 (`not ok 3640`, `expected 'ok'` × `actual '422|entry_already_adjusted'`, `tests/inventory-cycle-count-close-units-db.test.ts:1065`), com `# tests 7337 # pass 7334 # fail 1 # skipped 2`. O run do push do mesmo head (`44970744973`) passou, e a tentativa 2 (`gh run rerun --failed`) deu `success`. O PR não toca código. Medido pelo `reg-2211-cl` em 22/11 com `gh api …/actions/runs/44970777701/attempts/1/jobs` e o log do job; fonte do aviso: `REGISTRO-PENDENTE.md` 21/11 22:38.
 
 ## P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que tem despacho ativo em outro técnico deixa OS e despacho divergentes — MÉDIA (permissão)
 
@@ -17533,11 +17534,18 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-APP-ORG-ESCOLHA-SAI (2026-11-20) — a tela Seleção de organização e o "Trocar de organização" saem do app — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2` (a regra nova do dono muda o que o #613 entregou) · **dono:** `B-APP-ORG-2` · **bloqueia:** a versão vendável, pelos itens 69 e 70.
+- **status:** FECHADA (2026-11-22, PR #619, `B-APP-ORG-2`, squash `51acef6b`, head `d2f55bd1`; ressalva (3) do `porteiro-619`) · antes: ABERTA · **gravidade:** ALTA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2` (a regra nova do dono muda o que o #613 entregou) · **dono:** `B-APP-ORG-2` · **bloqueia:** não mais.
 - **origem:** Emenda 1.7 §9 do plano `B-APP-ORG` (Fable, fora do repositório), pela `D-DONO-2011-APP-ORG-ATIVA-NA-WEB`; ressalva R4 do `porteiro-613` (o registro levou para cá). Registrada pelo PR de registro de 21/11 (`reg-2111-cl`).
 - **fato:** o #613 (squash `38442d94`) deixou na `main` a tela Seleção de organização (`mobile/flutter_app/lib/features/auth/tenant_selector_screen.dart`, rota `/tenant-select`) e a entrada "Trocar de organização" do Perfil. Pela decisão do dono de 20/11, o guincheiro não escolhe: o app entra direto nas organizações que a web ativou.
 - **andamento (21/11):** a fatia A2 do `B-APP-ORG-2` apaga a tela e tira a rota (Emenda 1.8.3.7, `2175575c`, CONFERIDA por `reconf2-a2-cx5`), e está no PR #619.
 - **critério de encerramento:** o PR do `B-APP-ORG-2` na `main` sem a tela de escolha, com o app entrando direto nas organizações ativas (Emenda 1.7 §6), provado por teste.
+- **fechamento (2026-11-22, `reg-2211-cl`, medido na `origin/main` `554ee022`, que contém o squash `51acef6b` do #619):**
+  - `git cat-file -e origin/main:mobile/flutter_app/lib/features/auth/tenant_selector_screen.dart` → `fatal: path … does not exist`, ec 128: a tela saiu;
+  - `git grep -n -E 'tenant-select|TenantSelectorScreen|tenant_selector_screen' origin/main -- mobile/flutter_app/lib` → só o comentário de origem em `lib/shared/ui/organization_avatar.dart:2`: nenhuma rota nem classe;
+  - `git grep -n 'Trocar de organização' origin/main -- mobile/flutter_app/lib` → só comentários, em `lib/shared/ui/profile_screen.dart:161` (o que diz que a entrada saiu) e `:493`: a entrada do Perfil saiu;
+  - o teste que prova: `test/features/bapporg2_outros_patios_tela_test.dart:697`, T5 ("o roteador não tem a rota da Seleção e o Perfil não tem…"), com `expect(doApp, isNot(contains('/tenant-select')))` nas l.709 e 712 e o controle positivo `contains('/work-orders')` na l.708. Verde no CI da `main` no `51acef6b` (run `44973243958`, job `flutter` `+2069 ~238`, medido pelo `porteiro-619`) e na suíte que o porteiro reexecutou;
+  - os chamados dos outros pátios entram na lista de chamados (A2, T1 a T6 do mesmo arquivo), e tocar num deles troca, sem tela de escolha.
+- **o que NÃO fecha aqui, declarado (§A6):** a escolha no Entrar, quando o servidor de hoje responde 409 com mais de uma organização, continua no app (`test/features/bapporg_entrar_escolha_test.dart:283`, L1), porque a parte do servidor (`B-APP-ORG-2S`) não está na `main`. Ela segue nas pendências dos itens 69 e 70 (`P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA` e `P-APP-TROCA-ORG-NAO-TROCA`), que continuam ABERTAS; o `porteiro-619` mediu que nada na `main` declara o 69 ou o 70 fechado.
 
 ## P-GRUPO-GESTOR-PAINEL (2026-11-20) — falta o painel do gestor do grupo, com o financeiro do grupo e de cada pátio — ALTA
 
@@ -17727,3 +17735,33 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** conserto `fix-617-cl` do #617 (a mesma fragilidade do B1, consertado lá por `Key` própria) e ressalva do `porteiro-617`.
 - **fato:** a rota `/approvals` do teste monta `Scaffold(body: Text('Aprovações'))`; um teste que procure o texto passa por essa página falsa.
 - **critério de encerramento:** a página falsa achada por `Key` própria, como no B1 do #617.
+
+## P-APP-ORG-SESSAO-DE-ESCUTA-ORFA (2026-11-21) — app morto ou dados apagados deixam até 1 sessão de escuta órfã por pátio no servidor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2` (resto declarado do desenho da escuta, Emendas 1.8, 1.8.1 §5.3, 1.8.3 §4 e 1.8.3.9 §12) · **dono:** o bloco de sessão do app (leitura do redator, declarada: o mesmo dono da `P-APP-SAIR-LIMPEZA-QUE-LANCA`; trocável pelo orquestrador) · **bloqueia:** não.
+- **origem:** nota C3-04 da junta J-619 (`jc3-app-sol3`, `votos/C3-voto.json`: o id não existia nem no registro de fora nem na `main`); ressalva (2) do `porteiro-619`. Registrada no registro de 22/11 (`reg-2211-cl`).
+- **fato:** o app pede ao servidor uma sessão de escuta por pátio e guarda o token num diário (`lib/core/auth/listen_token_journal.dart`). Se o app morrer entre o servidor emitir o token e o diário gravar, ou se a pessoa apagar os dados do app ou desinstalar, fica no servidor até 1 sessão órfã por pátio por aparelho, que expira em 7 dias. Ela não dá acesso além do que o vínculo já dá (Emenda 1.8, "Riscos"). O parecer `crit-1839-dp` mediu que esse é o único resíduo do funil de revogação.
+- **critério de encerramento:** o servidor revoga, no login seguinte do mesmo aparelho, as sessões de escuta que o app não conhece mais, provado por teste; ou a decisão registrada de que a expiração em 7 dias basta, com o motivo.
+
+## P-APP-ORG-COMISSAO-A-RECEBER (2026-11-21) — a aba Comissões do app não mostra "a receber" nem a divisão por tipo de serviço — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-APP-ORG-2` (a regra do dono para a A3 era "sobre rotas que já existem", e as rotas não dão esses números) · **dono:** `B-COMISSAO-MOTOR` (Emenda 1.8.1 §7.3 e §9) · **bloqueia:** não.
+- **origem:** Emendas 1.8.1 (l.89 e l.249) e 1.8.3.5 do plano `B-APP-ORG` (fora do repositório); nota C3-06 da junta J-619 (o id não existia nem no registro de fora nem na `main`); ressalva (2) do `porteiro-619`. Registrada no registro de 22/11 (`reg-2211-cl`).
+- **fato:** a referência `screen-refs/mobile/comissoes.png` mostra "a receber", "pago no mês" e a divisão por tipo de serviço. As rotas de hoje (`/commissions/calculations/mine` e `/commissions/statements/my-summary`) devolvem lançamentos e totais, sem total "a receber" nem tipo de serviço. A aba entregue no #619 deixa o lugar reservado.
+- **critério de encerramento:** o servidor manda os dois números, e a aba os mostra por pátio, provado por teste.
+
+## P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO (2026-11-21) — a linha da comissão no app não mostra o número do chamado — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-APP-ORG-2` (o servidor não manda o número; a A3 trabalhou sobre as rotas que existem) · **dono:** `B-COMISSAO-MOTOR` (leitura do redator, declarada: é o bloco que redesenha o que a comissão devolve; trocável pelo orquestrador) · **bloqueia:** não.
+- **origem:** diário da fatia A3-tela (`dev-a3t-cl`, §8, pendência (4)); nota C3-07 da junta J-619 (a pendência só existia descrita no diário, sem id e sem dono); ressalva (2) do `porteiro-619`. Registrada no registro de 22/11 (`reg-2211-cl`).
+- **fato:** cada lançamento da aba Comissões (`lib/features/commissions/ui/commissions_screen.dart`) aparece sem o número do chamado que o gerou. O cálculo devolvido pelo servidor traz `sourceType` e `sourceId`, mas não o número que a pessoa conhece.
+- **critério de encerramento:** o servidor devolve o número do chamado em cada lançamento, e a linha o mostra, provado por teste.
+
+## P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e outra redefinição: uma das duas cai em 503 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (falha fechada: nada é gravado) · **escopo:** `dentro-do-bloco` do `B-APP-ORG-2S` (resto declarado das Emendas 1.8.3.13 e 1.8.3.16) · **dono:** `B-APP-ORG-2S` · **bloqueia:** não.
+- **origem:** Emenda 1.8.3.13 l.437 (a corrida de 3 vias, raciocinada e **não medida**) e Emenda 1.8.3.16 §2.4 e Revisão 1, R1.9 (`planejador-mestre`, Fable, 21/11 22:55 SP): a pendência era citada como existente, mas não estava em `pendencias.md`. Registrada no registro de 22/11 (`reg-2211-cl`).
+- **fato:**
+  - **corrida de 3 vias (1.8.3.13):** redefinição por X, concessão a Z e redefinição por Z no mesmo instante; a volta tardia trava o vínculo de Z fora da ordem. Uma das duas redefinições responde 503 e nada muda;
+  - **o resíduo do §2.4 da 1.8.3.16:** em `resetPasswordByAdmin` (`src/modules/auth/services/identity-link.service.ts`), quando a identidade lida sem trava diverge da identidade da linha travada, o ramo chama `resolveResetFamily` só para classificar (409 `identity_linked_elsewhere` ou 503 `reset_unavailable`) e nunca grava. Nesse ramo, a volta pede `FOR SHARE` nos vínculos da identidade confirmada sem a pré-trava dos pátios de id menor (a pré-trava foi feita para a pista). Se cruzar com outra redefinição, o PostgreSQL derruba uma, a resposta é 503 e nada é gravado.
+- **critério de encerramento:** a corrida medida por teste `-db` com barreira, nos dois casos, mostrando 503 sem gravação e nenhum par com senha nova e velha; ou a pré-trava estendida ao ramo, com o mesmo teste.
