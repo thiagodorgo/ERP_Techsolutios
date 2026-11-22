@@ -19,8 +19,9 @@ import {
 // B-APP-ORG-2S (S2a) — a CONCESSÃO dentro do grupo (`POST /api/v1/users/access-grants`, a cópia da
 // credencial do par de origem, D1 do dono: cada pátio comanda o seu) e o Entrar sem escolha pela
 // identidade. Postgres descartável em UTC; o app fala com o banco pelo papel de runtime
-// (NOSUPERUSER NOBYPASSRLS, `DATABASE_URL`); a montagem dos dados usa a conexão administrativa
-// (`ADMIN_DATABASE_URL`). Corridas com duas conexões de verdade (duas requisições HTTP em paralelo).
+// (NOSUPERUSER NOBYPASSRLS, `DATABASE_URL`); a montagem dos dados usa a conexão administrativa.
+// A própria suíte provisiona o RBAC que usa, inclusive no job `backend`, que não executa seed.
+// Corridas com duas conexões de verdade (duas requisições HTTP em paralelo).
 // Testes: G1, G2, G2b, G3–G7, G9b (a parte da S2a), G10–G14 e CM7 (plano 1.8.1 §7.1, 1.8.2 §4.1,
 // 1.8.3 §5.1). G8, G9, G9c e GP* são da senha (S2b/S2p) e não estão aqui.
 // -----------------------------------------------------------------------------------------------
@@ -40,6 +41,14 @@ if (!connectionString) {
     process.env.JWT_SECRET = "bapporg2s-s2a-dev-only-secret-with-32-bytes";
     process.env.JWT_EXPIRES_IN = "15m";
     process.env.CORE_SAAS_PERSISTENCE = "prisma";
+
+    // NODE_TEST_CONTEXT sai do filho: com ele, o processo fala com o runner pai pelo canal interno.
+    const { NODE_TEST_CONTEXT: _ignored, ...inherited } = process.env;
+    execFileSync(process.execPath, ["--import", "tsx", path.join(ROOT, "scripts", "provision-rbac.ts")], {
+      cwd: ROOT,
+      env: { ...inherited, DATABASE_URL: connectionString },
+      stdio: "pipe",
+    });
 
     const [{ createPrismaClient }, { createApp }, { PrismaCoreSaasService }, { PrismaCoreSaasStore }, { hashPassword }] =
       await Promise.all([

@@ -1,9 +1,12 @@
 import "dotenv/config";
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   closeServer,
@@ -28,6 +31,7 @@ import {
 
 const connectionString = process.env.DATABASE_URL;
 const adminConnectionString = process.env.ADMIN_DATABASE_URL ?? connectionString;
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 if (!connectionString) {
   test("B-APP-ORG-2S HK1 requer DATABASE_URL", {
@@ -39,6 +43,15 @@ if (!connectionString) {
     process.env.LOG_LEVEL = "silent";
     process.env.JWT_SECRET = "bapporg2s-hk1-dev-only-secret-with-32-bytes";
     process.env.CORE_SAAS_PERSISTENCE = "prisma";
+
+    // O job `backend` não semeia RBAC; a suíte provisiona as linhas globais que usa.
+    // NODE_TEST_CONTEXT sai do filho para não conectá-lo ao protocolo interno do runner pai.
+    const { NODE_TEST_CONTEXT: _ignored, ...inherited } = process.env;
+    execFileSync(process.execPath, ["--import", "tsx", path.join(ROOT, "scripts", "provision-rbac.ts")], {
+      cwd: ROOT,
+      env: { ...inherited, DATABASE_URL: connectionString },
+      stdio: "pipe",
+    });
 
     const [{ createPrismaClient }, { createApp }, { PrismaCoreSaasService }, { PrismaCoreSaasStore }, { hashPassword }, { creationEmailKey }] =
       await Promise.all([
