@@ -1,0 +1,171 @@
+<title>Lote · Painel do Grupo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* layout: o lote em 2 partes — à esquerda, a tela proposta (maquete no padrão do Financeiro: blocos clicáveis, linha que abre o detalhe); à direita (embaixo no celular), os itens para o dono aprovar */
+:root{
+  --bg:#eef1f5; --card:#ffffff; --fg:#13202c; --mute:#5b6a78; --line:#dce2e8;
+  --navy:#16324f; --side:#122a44; --blue:#1f6feb; --blue-soft:#e6efff; --green:#1a7f4b; --green-soft:#e3f4ea;
+  --amber:#a15c00; --amber-soft:#fdf1dd; --red:#b3261e; --red-soft:#fbe7e5; --violet:#6b3fb8; --violet-soft:#efe8fb;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0e141a; --card:#17202a; --fg:#e7edf3; --mute:#9aa8b6; --line:#263240; --navy:#9cc3ec; --side:#0b1622; --blue:#6aa5ff; --blue-soft:#15284a; --green:#5fd39a; --green-soft:#143326; --amber:#e8b04f; --amber-soft:#3a2a10; --red:#ff8a80; --red-soft:#3d1a18; --violet:#b59cf0; --violet-soft:#2a1f45; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0e141a; --card:#17202a; --fg:#e7edf3; --mute:#9aa8b6; --line:#263240; --navy:#9cc3ec; --side:#0b1622; --blue:#6aa5ff; --blue-soft:#15284a; --green:#5fd39a; --green-soft:#143326; --amber:#e8b04f; --amber-soft:#3a2a10; --red:#ff8a80; --red-soft:#3d1a18; --violet:#b59cf0; --violet-soft:#2a1f45; color-scheme:dark }
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;margin:0;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+h1{font-size:1.5rem;margin:0;line-height:1.2;text-wrap:balance}
+h2{font-size:1rem;margin:0 0 8px}
+p{margin:3px 0;max-width:78ch}
+.sub{color:var(--mute);font-size:.86rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start} @media (max-width:980px){.layout{grid-template-columns:1fr}}
+.pill{display:inline-block;font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-g{background:var(--green-soft);color:var(--green)} .p-a{background:var(--amber-soft);color:var(--amber)} .p-r{background:var(--red-soft);color:var(--red)} .p-b{background:var(--blue-soft);color:var(--blue)} .p-v{background:var(--violet-soft);color:var(--violet)}
+/* a maquete */
+.screen{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg)}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--card);border-bottom:1px solid var(--line);padding:12px 14px}
+.top .t{font-weight:700;font-size:1.05rem} .top .s{font-size:.8rem;color:var(--mute)}
+.top select{font:inherit;font-size:.85rem;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg)}
+.inner{padding:12px;display:grid;gap:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.kpi{all:unset;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:2px}
+.kpi:hover{border-color:var(--blue)} .kpi:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.kpi[aria-pressed="true"]{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.kpi .l{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600}
+.kpi .v{font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:.75rem;color:var(--mute)}
+.charts{display:grid;grid-template-columns:1.4fr 1fr;gap:10px} @media (max-width:720px){.charts{grid-template-columns:1fr}}
+.chart{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+.chart svg{display:block;width:100%;height:auto}
+.chart .h{font-size:.78rem;font-weight:600;margin-bottom:4px}
+.filter{display:flex;gap:8px;align-items:center;font-size:.8rem;color:var(--mute)}
+.filter button{font:inherit;font-size:.75rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:2px 10px;cursor:pointer}
+.list{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(120px,1.4fr) repeat(4,minmax(70px,1fr)) 70px;gap:8px;align-items:center;padding:0 12px;height:44px;border-top:1px solid var(--line);font-size:.84rem;cursor:pointer;font-variant-numeric:tabular-nums}
+.row:first-child{border-top:0}
+.row.head{cursor:default;height:34px;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);font-weight:600}
+.row:not(.head):hover{background:var(--blue-soft)} .row:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.row[aria-expanded="true"]{background:var(--blue-soft)}
+.detail{padding:12px;border-top:1px solid var(--line);background:var(--card);display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.detail .b{border:1px solid var(--line);border-radius:8px;padding:8px 10px} .detail .b .l{font-size:.7rem;color:var(--mute);text-transform:uppercase;letter-spacing:.05em} .detail .b .v{font-weight:700;font-variant-numeric:tabular-nums}
+.detail .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.detail .acts span{font-size:.78rem;border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+.neg{color:var(--red)} .pos{color:var(--green)}
+/* os itens */
+.items{display:grid;gap:8px}
+.it{display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:start;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.it .n{font-family:var(--mono);color:var(--navy);font-weight:500}
+.it b{display:block;font-size:.88rem} .it span{font-size:.8rem;color:var(--mute)}
+.mono{font-family:var(--mono);font-size:.85em}
+</style>
+
+<main>
+  <header class="card" style="background:var(--navy);color:var(--card);border-color:var(--navy)">
+    <div class="sub" style="color:var(--card);opacity:.8;text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;font-weight:600">Lote 1 · prioridade máxima · uma tela só</div>
+    <h1>Painel do Grupo, para o gestor dos pátios</h1>
+    <p style="opacity:.92">Todos os pátios do grupo numa tela, e um seletor para ver um pátio só. Os números vêm do financeiro que cada pátio já tem: o painel só soma, não cria lançamento nem calcula dinheiro na tela. Os números abaixo são de <b>exemplo</b>.</p>
+  </header>
+
+  <div class="layout">
+    <section class="card">
+      <h2>A tela proposta <span class="pill p-b">exemplo</span></h2>
+      <div class="screen" aria-label="Maquete do Painel do Grupo">
+        <div class="top">
+          <div><div class="t">Painel do Grupo</div><div class="s">você vê 4 pátios · 1 do grupo sem acesso</div></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label class="s" for="sel-patio">Ver</label>
+            <select id="sel-patio" aria-label="Ver um pátio"><option>Todos os pátios</option><option>Pátio Centro</option><option>Pátio Norte</option><option>Pátio Sul</option><option>Pátio Rodovia</option></select>
+            <select id="sel-mes" aria-label="Mês"><option>Novembro 2026</option><option>Outubro 2026</option></select>
+          </div>
+        </div>
+        <div class="inner">
+          <div class="kpis">
+            <button class="kpi" type="button" data-k="receber"><span class="l">A receber</span><span class="v">R$ 184.300</span><span class="d">hoje · R$ 22.150 vencidos</span></button>
+            <button class="kpi" type="button" data-k="recebido"><span class="l">Recebido no mês</span><span class="v pos">R$ 312.940</span><span class="d">+8% sobre outubro</span></button>
+            <button class="kpi" type="button" data-k="pagar"><span class="l">A pagar</span><span class="v">R$ 96.480</span><span class="d">hoje · R$ 4.200 vencidos</span></button>
+            <button class="kpi" type="button" data-k="pago"><span class="l">Pago no mês</span><span class="v neg">R$ 201.115</span><span class="d">-3% sobre outubro</span></button>
+            <button class="kpi" type="button" data-k="caixa"><span class="l">Caixa</span><span class="v">R$ 438.720</span><span class="d">hoje · soma dos 4 pátios</span></button>
+            <button class="kpi" type="button" data-k="chamados"><span class="l">Chamados no mês</span><span class="v">1.284</span><span class="d">93% concluídos</span></button>
+          </div>
+          <div class="charts">
+            <div class="chart">
+              <div class="h">Recebido × pago, últimos 6 meses</div>
+              <svg viewBox="0 0 420 150" role="img" aria-label="Exemplo: recebido acima do pago nos 6 meses">
+                <g style="stroke:var(--line)"><path d="M30 20H410M30 60H410M30 100H410M30 130H410"/></g>
+                <polyline points="40,92 112,84 184,80 256,70 328,62 400,52" fill="none" style="stroke:var(--green)" stroke-width="2.5"/>
+                <polyline points="40,108 112,104 184,100 256,98 328,96 400,94" fill="none" style="stroke:var(--red)" stroke-width="2.5"/>
+                <g style="fill:var(--mute);font-size:10px;font-family:var(--sans)" text-anchor="middle"><text x="40" y="145">jun</text><text x="112" y="145">jul</text><text x="184" y="145">ago</text><text x="256" y="145">set</text><text x="328" y="145">out</text><text x="400" y="145">nov</text></g>
+                <circle cx="400" cy="52" r="4" style="fill:var(--green)"/><circle cx="400" cy="94" r="4" style="fill:var(--red)"/>
+              </svg>
+            </div>
+            <div class="chart">
+              <div class="h">Recebido no mês, por pátio</div>
+              <svg viewBox="0 0 300 150" role="img" aria-label="Exemplo: recebido por pátio">
+                <g style="font-size:11px;font-family:var(--sans)">
+                  <text x="0" y="24" style="fill:var(--fg)">Centro</text><rect x="70" y="13" width="190" height="14" rx="3" style="fill:var(--blue)"/><text x="264" y="24" style="fill:var(--mute)">124 mil</text>
+                  <text x="0" y="56" style="fill:var(--fg)">Norte</text><rect x="70" y="45" width="132" height="14" rx="3" style="fill:var(--blue)"/><text x="206" y="56" style="fill:var(--mute)">86 mil</text>
+                  <text x="0" y="88" style="fill:var(--fg)">Sul</text><rect x="70" y="77" width="96" height="14" rx="3" style="fill:var(--blue)"/><text x="170" y="88" style="fill:var(--mute)">63 mil</text>
+                  <text x="0" y="120" style="fill:var(--fg)">Rodovia</text><rect x="70" y="109" width="61" height="14" rx="3" style="fill:var(--blue)"/><text x="135" y="120" style="fill:var(--mute)">40 mil</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <div class="filter" id="filtro" hidden><span id="filtro-t"></span><button type="button" id="limpar">limpar ×</button></div>
+          <div class="list" role="list" aria-label="Pátios do grupo">
+            <div class="row head" role="presentation"><span>Pátio</span><span>A receber</span><span>Recebido</span><span>A pagar</span><span>Caixa</span><span>Chamados</span></div>
+            <div class="row" role="listitem" tabindex="0" aria-expanded="false" data-p="Centro"><span class="nm">Pátio Centro</span><span>R$ 71.200</span><span>R$ 124.300</span><span>R$ 38.900</span><span>R$ 176.400</span><span>512</span></div>
+            <div class="detail" hidden data-d="Centro"><div class="b"><div class="l">Vencidos a receber</div><div class="v neg">R$ 9.800</div></div><div class="b"><div class="l">Pago no mês</div><div class="v">R$ 81.700</div></div><div class="b"><div class="l">Chamados concluídos</div><div class="v">95%</div></div><div class="b"><div class="l">Chamados no mês</div><div class="v">512</div></div><div class="acts"><span>Abrir o Financeiro deste pátio</span><span>Ver os chamados</span></div></div>
+            <div class="row" role="listitem" tabindex="0" aria-expanded="false" data-p="Norte"><span class="nm">Pátio Norte</span><span>R$ 52.600</span><span>R$ 85.900</span><span>R$ 27.100</span><span>R$ 121.800</span><span>371</span></div>
+            <div class="detail" hidden data-d="Norte"><div class="b"><div class="l">Vencidos a receber</div><div class="v neg">R$ 6.050</div></div><div class="b"><div class="l">Pago no mês</div><div class="v">R$ 54.300</div></div><div class="b"><div class="l">Chamados concluídos</div><div class="v">92%</div></div><div class="b"><div class="l">Chamados no mês</div><div class="v">371</div></div><div class="acts"><span>Abrir o Financeiro deste pátio</span><span>Ver os chamados</span></div></div>
+            <div class="row" role="listitem" tabindex="0" aria-expanded="false" data-p="Sul"><span class="nm">Pátio Sul</span><span>R$ 38.400</span><span>R$ 62.840</span><span>R$ 19.880</span><span>R$ 89.020</span><span>254</span></div>
+            <div class="detail" hidden data-d="Sul"><div class="b"><div class="l">Vencidos a receber</div><div class="v neg">R$ 4.100</div></div><div class="b"><div class="l">Pago no mês</div><div class="v">R$ 40.515</div></div><div class="b"><div class="l">Chamados concluídos</div><div class="v">94%</div></div><div class="b"><div class="l">Chamados no mês</div><div class="v">254</div></div><div class="acts"><span>Abrir o Financeiro deste pátio</span><span>Ver os chamados</span></div></div>
+            <div class="row" role="listitem" tabindex="0" aria-expanded="false" data-p="Rodovia"><span class="nm">Pátio Rodovia</span><span>R$ 22.100</span><span>R$ 39.900</span><span>R$ 10.600</span><span>R$ 51.500</span><span>147</span></div>
+            <div class="detail" hidden data-d="Rodovia"><div class="b"><div class="l">Vencidos a receber</div><div class="v neg">R$ 2.200</div></div><div class="b"><div class="l">Pago no mês</div><div class="v">R$ 24.600</div></div><div class="b"><div class="l">Chamados concluídos</div><div class="v">89%</div></div><div class="b"><div class="l">Chamados no mês</div><div class="v">147</div></div><div class="acts"><span>Abrir o Financeiro deste pátio</span><span>Ver os chamados</span></div></div>
+          </div>
+          <p class="sub">Clique num indicador para filtrar a lista, e numa linha para abrir o detalhe do pátio logo abaixo. É o padrão do Financeiro que você aprovou.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card">
+      <h2>Os itens que eu proponho</h2>
+      <p class="sub">Responda no seletor do artefato de estado ("Lote do Painel do Grupo"), aprovando ou pedindo ajuste na nota. A tela sai uma só, como você definir.</p>
+      <div class="items">
+        <div class="it"><span class="n">1</span><div><b>Seletor no topo</b><span>"Todos os pátios" ou um pátio só. O mês vale para o recebido, o pago e os chamados. O a receber, o a pagar e o caixa são sempre a posição de hoje, porque o sistema não guarda o histórico deles. <em>(ajustado pelo plano)</em></span></div></div>
+        <div class="it"><span class="n">2</span><div><b>6 indicadores clicáveis</b><span>A receber (com os vencidos, hoje), recebido no mês, a pagar (com os vencidos, hoje), pago no mês, caixa (hoje) e chamados no mês. A variação sobre o mês anterior aparece só no recebido, no pago e nos chamados, que têm mês. <em>(ajustado)</em></span></div></div>
+        <div class="it"><span class="n">3</span><div><b>Gráfico de 6 meses</b><span>Recebido × pago, do grupo ou do pátio escolhido.</span></div></div>
+        <div class="it"><span class="n">4</span><div><b>Comparação entre pátios</b><span>Recebido no mês por pátio. Clicar numa barra filtra a lista.</span></div></div>
+        <div class="it"><span class="n">5</span><div><b>Lista de pátios, uma linha cada</b><span>A receber, recebido, a pagar, caixa e chamados.</span></div></div>
+        <div class="it"><span class="n">6</span><div><b>Detalhe do pátio, abrindo embaixo</b><span>Vencidos, pago no mês, chamados no mês e % concluídos, e os atalhos para o Financeiro e os chamados daquele pátio. O "ticket médio" sai até você dizer como ele se calcula (por exemplo, recebido no mês ÷ chamados concluídos). <em>(ajustado)</em></span></div></div>
+        <div class="it"><span class="n">7</span><div><b>Quantos pátios aparecem</b><span>"Você vê 4 pátios; 1 do grupo sem acesso". Os pátios sem acesso não somam e aparecem contados à parte. Se algum pátio falhar na leitura, o total do grupo diz "incompleto" em vez de mostrar um número errado. <em>(ajustado)</em></span></div></div>
+        <div class="it"><span class="n">8</span><div><b>Na 2ª entrega (29/11 a 1/12)</b><span>O papel "Gestor do grupo", que dá permissão a qualquer pessoa, e os <b>Pedidos de desativação</b>: o pátio pede, e o gestor decide quando o técnico está em mais de um pátio. Depois, o tempo de SLA e os funcionários.</span></div></div>
+      </div>
+      <p class="sub" style="margin-top:8px">Estados: carregando, vazio, erro, acesso não permitido e dados desatualizados, como em toda tela do sistema.</p>
+    </aside>
+  </div>
+</main>
+
+<script>
+(function () {
+  const rows = document.querySelectorAll('.row[data-p]');
+  function toggle(r) {
+    const d = document.querySelector('.detail[data-d="' + r.dataset.p + '"]');
+    const open = r.getAttribute('aria-expanded') === 'true';
+    rows.forEach((x) => { x.setAttribute('aria-expanded', 'false'); const dd = document.querySelector('.detail[data-d="' + x.dataset.p + '"]'); if (dd) dd.hidden = true; });
+    if (!open && d) { r.setAttribute('aria-expanded', 'true'); d.hidden = false; }
+  }
+  rows.forEach((r) => {
+    r.addEventListener('click', () => toggle(r));
+    r.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(r); } });
+  });
+  const f = document.getElementById('filtro'), ft = document.getElementById('filtro-t');
+  document.querySelectorAll('.kpi').forEach((k) => k.addEventListener('click', () => {
+    const on = k.getAttribute('aria-pressed') === 'true';
+    document.querySelectorAll('.kpi').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+    if (on) { f.hidden = true; return; }
+    k.setAttribute('aria-pressed', 'true'); f.hidden = false; ft.textContent = 'Filtro: ' + k.querySelector('.l').textContent + ' (exemplo)';
+  }));
+  document.getElementById('limpar').addEventListener('click', () => { document.querySelectorAll('.kpi').forEach((x) => x.setAttribute('aria-pressed', 'false')); f.hidden = true; });
+})();
+</script>

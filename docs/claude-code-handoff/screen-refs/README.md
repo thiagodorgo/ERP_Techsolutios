@@ -27,6 +27,8 @@ filtram a lista, linhas de uma linha, detalhe que abre embaixo da linha. É a re
 `financeiro.png`. A seção escura no rodapé ("camada de revisão") é nota para o dono, não faz parte da tela, e os
 números são de exemplo. A página carrega as fontes do Google Fonts; sem rede, cai na fonte do sistema.
 
+**Tela de uma opção só, aprovada em lote:** `painel-do-grupo.reference.html` — Painel do grupo (B-GRUPO-GESTOR-1b, maquete do Claude; lote aprovado pelo dono com os 8 itens ajustados e a resposta "tudo já", Emenda 2 do plano): blocos clicáveis que ordenam a lista de pátios, 6 meses de recebido × pago, comparação entre pátios e a linha que abre o detalhe do pátio. Onde a maquete diverge, valem as emendas: sem o seletor de mês (Emenda 1 §5.1), com o tempo de chegada e os funcionários na 1ª entrega (Emenda 2 §2.4); o quadro de itens à direita é nota para o dono e os números são de exemplo.
+
 **Toda tela passa por 3 opções (`D-TELAS-TRES-OPCOES`, CLAUDE.md §4 item 7):** antes do dev, uma maquete com as opções A, B e C no padrão do sistema; a escolhida pelo dono entra nesta pasta como referência da tela.
 
 **As 3 opções ficam todas, como aparências por usuário (`D-APARENCIA-POR-USUARIO`, 2026-10-14):** o dono aprovou as 3 opções de cada tela; cada usuário vai escolher a sua em Configurações, e desde 2026-10-14 toda tela implementada sai com as 3 (`D-TELAS-SAEM-COM-TRES`). Referências com as 3 aprovadas (maquetes feitas pelo Claude, `D-DESIGN-SO-CLAUDE`; troque a opção no seletor do topo; o quadro de notas no rodapé não faz parte da tela, e os números são de exemplo):
