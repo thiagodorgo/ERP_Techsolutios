@@ -15,7 +15,7 @@ import { resetNotificationRuntimeForTests } from "../src/modules/impound/impound
 import { getMemoryImpoundRepositoryForTests, resetImpoundRuntimeForTests } from "../src/modules/impound/impound.service.js";
 import { getMemoryReleaseRepositoryForTests, resetReleaseRuntimeForTests } from "../src/modules/release/release.service.js";
 
-// B-PATIO-LEILAO-DIARIAS, fatia F1, casos P1 a P6 da E7.3 (resgate depois da lista com a permissão `auction:reclaim`).
+// B-PATIO-LEILAO-DIARIAS, fatias F1 e F1b, casos P1 a P6 da E7.3 e P2b da E9.3 (resgate depois da lista com a permissão `auction:reclaim`).
 // Pelo HTTP, no app real (rotas, `requirePermission`, contexto de organização), no molde de
 // `tests/rec-01-routes-permissions.test.ts`. O ator sem `auction:reclaim` é montado com o cabeçalho de dev
 // `x-permissions`, que RESTRINGE as permissões do perfil ao que vier na lista (tenant-context.middleware.ts).
@@ -166,6 +166,18 @@ test("P2 · o administrador da organização (tenant_admin) resgata com motivo: 
       { http: 200, estado: "ACTIVE_CUSTODY", codigoNaCadeia: true },
       JSON.stringify(response.body),
     );
+  });
+});
+
+// F1b, E9.3: `platform_admin` é pseudo-perfil resolvido pela sessão (nunca tem linha no banco); com o perfil na sessão, o
+// resgate pelo HTTP passa. Controle (verde antes e depois): hoje o catálogo inteiro vale para ele.
+test("P2b · controle: ator com o perfil platform_admin na sessão resgata pelo HTTP, com motivo: 200; ACTIVE_CUSTODY", async () => {
+  resetAll();
+  const tenantId = randomUUID();
+  const processId = await processAt(tenantId, "LOTTED");
+  await withApp(async (baseUrl) => {
+    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "platform_admin"), body: { reason: "Dono apresentou a documentação" } });
+    assert.deepEqual({ http: response.status, estado: await statusOf(tenantId, processId) }, { http: 200, estado: "ACTIVE_CUSTODY" }, JSON.stringify(response.body));
   });
 });
 

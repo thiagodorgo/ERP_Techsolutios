@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import test, { after, afterEach } from "node:test";
 
-// B-PATIO-LEILAO-DIARIAS, fatia F1 (suíte PostgreSQL, plano §5.1, §5.2 e Emendas 1 a 7). Cadeia REAL: os serviços de
+// B-PATIO-LEILAO-DIARIAS, fatias F1 e F1b (suíte PostgreSQL, plano §5.1, §5.2 e Emendas 1 a 10). Cadeia REAL: os serviços de
 // leilão, liquidação e cobrança com CORE_SAAS_PERSISTENCE=prisma, organização nova por caso, cadeia de custódia válida
 // desde a gênese, e limpeza só do que o caso criou. O bloco "sob a trava" chama os repositórios Prisma sem o serviço.
 // Escrita ANTES do conserto: na `main` os casos VERMELHO do plano falham pela asserção (com o valor que veio) ou porque a
@@ -42,7 +42,7 @@ if (!connectionString) {
   const auctionRepo = new RlsPrismaAuctionRepository(client);
   const settlementRepo = new RlsPrismaAuctionSettlementRepository(client);
 
-  type Status = "ACTIVE_CUSTODY" | "AUCTION_ELIGIBLE" | "AUCTION_PREP" | "LOTTED" | "AUCTIONED" | "AUCTION_CLOSED" | "DIRECT_RECYCLING";
+  type Status = "ACTIVE_CUSTODY" | "AUCTION_ELIGIBLE" | "AUCTION_PREP" | "LOTTED" | "AUCTIONED" | "AUCTION_CLOSED" | "DIRECT_RECYCLING" | "RELEASE_IN_PROGRESS";
   type Ctx = { tenantId: string; processId: string; profileId: string; userId: string; yardId: string | null; enteredAt: Date; frozenAt: Date | null };
   type SeedOptions = {
     status?: Status;
@@ -178,6 +178,93 @@ if (!connectionString) {
     if (options.removal !== false) await addRemoval(ctx, options.removal === "settled");
     if (options.trail !== false) await completeTrail(ctx);
     return ctx;
+  }
+
+  // F1b (W7, L11f): outro processo na MESMA organização de `base` (mesmo perfil e usuário), com a cadeia válida desde a
+  // gênese. Não cria pátio, vistoria, remoção nem trilha.
+  async function addProcess(base: Ctx, options: { status: Status; enteredAt?: Date; frozenAt?: Date | null }): Promise<Ctx> {
+    const enteredAt = options.enteredAt ?? ago(10);
+    const frozenAt = options.frozenAt ?? null;
+    const processId = await withTenantRls(client, base.tenantId, async (tx) => {
+      const [process] = await tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO impound_processes (tenant_id, profile_id, origin_authority, vehicle_unidentified, unidentified_reason, status, entered_at, frozen_at, custody_seq_head, custody_hash_head)
+        VALUES (${base.tenantId}::uuid, ${base.profileId}::uuid, 'Autoridade', true, 'Placa adulterada', ${options.status}, ${enteredAt}, ${frozenAt}, 0, NULL)
+        RETURNING id`;
+      const payload = { from: null, to: "IN_REMOVAL" };
+      const prevHash = genesisHash(base.tenantId, process.id);
+      const hash = computeEventHash({ prevHash, seq: 1, type: "STATUS_CHANGE", payload, occurredAt: enteredAt, actorId: null });
+      await tx.$queryRaw`
+        INSERT INTO custody_events (tenant_id, process_id, seq, type, payload, occurred_at, prev_hash, hash)
+        VALUES (${base.tenantId}::uuid, ${process.id}::uuid, 1, 'STATUS_CHANGE', ${JSON.stringify(payload)}::jsonb, ${enteredAt}, ${prevHash}, ${hash})
+        RETURNING id`;
+      await tx.$executeRaw`UPDATE impound_processes SET custody_seq_head = 1, custody_hash_head = ${hash} WHERE id = ${process.id}::uuid`;
+      return process.id;
+    });
+    return { ...base, processId, yardId: null, enteredAt, frozenAt };
+  }
+
+  // F1b: liberação EM CURSO semeada (o estado que a liberação deixa), sem passar pelo serviço de liberação.
+  async function seedActiveRelease(ctx: Ctx): Promise<void> {
+    await withTenantRls(client, ctx.tenantId, (tx) =>
+      tx.$executeRaw`INSERT INTO impound_releases (tenant_id, process_id, kind, status) VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'STANDARD', 'IN_PROGRESS')`,
+    );
+  }
+
+  // F1b: edital COMPLETO semeado inteiro por SQL, no estado pedido (molde de tests/auction-sale-concurrency.test.ts), sem
+  // registerEdict nem setAppraisal (E10.2).
+  async function seedEdictSql(ctx: Ctx, round: number, status: "LOTTED" | "CLOSED"): Promise<void> {
+    await withTenantRls(client, ctx.tenantId, (tx) =>
+      tx.$executeRaw`
+        INSERT INTO auction_edicts (tenant_id, process_id, round_number, classification, appraisal_amount, min_bid_amount, edict_reference, published_at, business_days, status)
+        VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, ${round}, 'CONSERVED', 10000.00, 5000.00, ${`EDITAL-${round}/2026`}, ${new Date(Date.now() - 30 * MS_PER_DAY)}, 15, ${status})`,
+    );
+  }
+
+  async function seedNoPaymentAttempt(ctx: Ctx, round: number, defaultedSaleRound: number): Promise<void> {
+    await withTenantRls(client, ctx.tenantId, (tx) =>
+      tx.$executeRaw`
+        INSERT INTO auction_attempts (tenant_id, process_id, round_number, outcome, defaulted_sale_round)
+        VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, ${round}, 'NO_PAYMENT', ${defaultedSaleRound})`,
+    );
+  }
+
+  // F1b: o legado que o código antigo deixava — entrada há 10 dias e 2 h, `frozen_at` de 5 dias atrás, e o livro com
+  // as diárias até o congelamento (o motor de hoje lança até o `frozen_at`: 5 de 40,00).
+  const LEGACY_FROZEN_DAYS = 5;
+  async function seedLegacyFrozen(label: string, status: Status, options: SeedOptions = {}): Promise<Ctx> {
+    const frozenAt = new Date(Date.now() - LEGACY_FROZEN_DAYS * MS_PER_DAY);
+    const ctx = await seed(label, { status, enteredAt: ago(10), frozenAt, ...options });
+    await (await createDefaultChargeService()).accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    return ctx;
+  }
+
+  async function dailySeqs(ctx: Ctx): Promise<number[]> {
+    const rows = await withTenantRls(client, ctx.tenantId, (tx) =>
+      tx.$queryRaw<Array<{ period_seq: number }>>`SELECT period_seq FROM process_charges WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid AND kind = 'DAILY' ORDER BY period_seq`,
+    );
+    return rows.map((item) => Number(item.period_seq));
+  }
+
+  async function dailyTotal(ctx: Ctx): Promise<string> {
+    const rows = await withTenantRls(client, ctx.tenantId, (tx) =>
+      tx.$queryRaw<Array<{ total: string | null }>>`SELECT COALESCE(sum(total_amount), 0)::text AS total FROM process_charges WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid AND kind = 'DAILY'`,
+    );
+    return Number(rows[0]?.total ?? 0).toFixed(2);
+  }
+
+  // O instante gravado no último evento do tipo (e, se dado, com o motivo) — é o "instante do ato".
+  async function lastEventAt(ctx: Ctx, type: string, reason?: string): Promise<number | undefined> {
+    const rows = await withTenantRls(client, ctx.tenantId, (tx) =>
+      tx.$queryRaw<Array<{ occurred_at: Date; payload: Record<string, unknown> }>>`
+        SELECT occurred_at, payload FROM custody_events WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid AND type = ${type} ORDER BY seq DESC`,
+    );
+    const hit = rows.find((item) => reason === undefined || item.payload?.reason === reason);
+    return hit ? new Date(hit.occurred_at).getTime() : undefined;
+  }
+
+  async function frozenMs(ctx: Ctx): Promise<number | null> {
+    const frozen = (await row(ctx)).frozen_at;
+    return frozen === null ? null : new Date(frozen).getTime();
   }
 
   // Limpeza só do que o caso criou: toda tabela com tenant_id, pela organização criada, em modo réplica (a cadeia é
@@ -549,31 +636,40 @@ if (!connectionString) {
     assert.deepEqual({ diarias: await count(ctx, "DAILY"), ...cascadeOf(dist) }, { diarias: 30, creditoDoPatio: "1350.00", saldoDoExDono: "6650.00", somaDoRateioIgualAoLance: true });
   });
 
-  test("L8 · arremate, inadimplência, novo arremate e encerramento: frozen_at nulo até o encerramento, candidato da varredura o tempo todo, livro com as diárias devidas", async () => {
-    const ctx = await seed("L8", { status: "AUCTION_ELIGIBLE" });
+  // E10.2: o L8 se divide. O L8a anda só pelo serviço; o L8b semeia a revenda (o produto não tem caminho para pôr em
+  // lote a rodada nova depois da inadimplência — pendência P-LEILAO-REVENDA-SEM-CAMINHO).
+  test("L8a · arremate e inadimplência pelo serviço: depois de cada um, frozen_at nulo e candidato da varredura; a varredura em seguida lança as diárias até agora (90)", async () => {
+    const ctx = await seed("L8a", { status: "AUCTION_ELIGIBLE" });
     const auction = await createDefaultAuctionService();
     await lotViaService(ctx);
     await auction.recordSale(actor(ctx), ctx.processId, saleBody());
     const afterSale = { congelado: (await row(ctx)).frozen_at !== null, candidato: await isSweepCandidate(ctx) };
     await auction.defaultAuction(actor(ctx), ctx.processId, { round_number: 2 });
-    const afterDefault = { congelado: (await row(ctx)).frozen_at !== null, candidato: await isSweepCandidate(ctx) };
-    assert.deepEqual({ afterSale, afterDefault }, { afterSale: { congelado: false, candidato: true }, afterDefault: { congelado: false, candidato: true } });
-    // A revenda: o produto de hoje não tem caminho para lotear a rodada nova (o lote só sai de AUCTION_PREP). O edital
-    // da rodada 3 é registrado pelo serviço e posto em lote por SQL (declarado no diário da F1).
-    await auction.registerEdict(actor(ctx), ctx.processId, edictBody(3));
-    await auction.setAppraisal(actor(ctx), ctx.processId, { round_number: 3, appraisal_amount: "10000.00", min_bid_amount: "5000.00" });
-    await withTenantRls(client, ctx.tenantId, async (tx) => {
-      await tx.$executeRaw`UPDATE auction_edicts SET status = 'CLOSED' WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid AND round_number = 1`;
-      await tx.$executeRaw`UPDATE auction_edicts SET status = 'LOTTED' WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid AND round_number = 3`;
-    });
+    const afterDefault = { congelado: (await row(ctx)).frozen_at !== null, candidato: await isSweepCandidate(ctx), estado: (await row(ctx)).status };
+    await (await createDefaultChargeService()).accrueTenantScan(ctx.tenantId, new Date());
+    assert.deepEqual(
+      { afterSale, afterDefault, diariasDepoisDaVarredura: await count(ctx, "DAILY") },
+      { afterSale: { congelado: false, candidato: true }, afterDefault: { congelado: false, candidato: true, estado: "LOTTED" }, diariasDepoisDaVarredura: 90 },
+    );
+  });
+
+  test("L8b · ESTADO SEMEADO (P-LEILAO-REVENDA-SEM-CAMINHO): revenda com o edital da rodada 3 semeado por SQL já em lote; o 2º arremate passa; frozen_at nulo até o encerramento; 90 diárias, nenhuma faltando", async () => {
+    const ctx = await seed("L8b", { status: "AUCTION_ELIGIBLE" });
+    const auction = await createDefaultAuctionService();
+    await lotViaService(ctx);
+    await auction.recordSale(actor(ctx), ctx.processId, saleBody());
+    await auction.defaultAuction(actor(ctx), ctx.processId, { round_number: 2 });
+    await withTenantRls(client, ctx.tenantId, (tx) =>
+      tx.$executeRaw`UPDATE auction_edicts SET status = 'CLOSED' WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid AND status = 'LOTTED'`,
+    );
+    await seedEdictSql(ctx, 3, "LOTTED");
     const resale = await auction.recordSale(actor(ctx), ctx.processId, saleBody("8000.00", 3));
-    assert.equal(resale.created, true, "o 2º arremate passa na primeira chamada");
-    assert.equal((await row(ctx)).frozen_at, null, "a revenda também não congela");
+    const afterResale = { criado: resale.created, congelado: (await row(ctx)).frozen_at !== null };
     await auction.closeAuction(actor(ctx), ctx.processId, { round_number: 3, payment_confirmed: true });
     const state = await (await createDefaultChargeService()).getReleaseChargeState(ctx.tenantId, ctx.processId);
     assert.deepEqual(
-      { congelado: (await row(ctx)).frozen_at !== null, diarias: await count(ctx, "DAILY"), devidas: state?.nAccrueAtFreeze, faltando: state?.dailyShortfall },
-      { congelado: true, diarias: 90, devidas: 90, faltando: 0 },
+      { afterResale, congeladoNoEncerramento: (await row(ctx)).frozen_at !== null, diarias: await count(ctx, "DAILY"), devidas: state?.nAccrueAtFreeze, faltando: state?.dailyShortfall },
+      { afterResale: { criado: true, congelado: false }, congeladoNoEncerramento: true, diarias: 90, devidas: 90, faltando: 0 },
     );
   });
 
@@ -905,8 +1001,17 @@ if (!connectionString) {
 
   // ────────────────────────────── E1.4/E2.2 o script de cura da reciclagem ──────────────────────────────
 
-  function runCure(apply: boolean): { code: number | null; out: string } {
-    const args = ["--import", "tsx", "scripts/patio-fechar-diarias-congelados.ts", ...(apply ? ["--aplicar"] : [])];
+  // E10.3: o script trabalha em UMA organização por execução (`--organizacao <id>` obrigatório); `--descongelar-legado` é
+  // o modo da E9.1 (item 7). `organizacao: null` chama o script SEM o argumento (L11g).
+  function runCure(apply: boolean, organizacao: string | null, mode: "cura" | "descongelar" = "cura"): { code: number | null; out: string } {
+    const args = [
+      "--import",
+      "tsx",
+      "scripts/patio-fechar-diarias-congelados.ts",
+      ...(organizacao === null ? [] : ["--organizacao", organizacao]),
+      ...(mode === "descongelar" ? ["--descongelar-legado"] : []),
+      ...(apply ? ["--aplicar"] : []),
+    ];
     const result = spawnSync(process.execPath, args, { env: process.env, encoding: "utf8", timeout: 300_000 });
     return { code: result.status, out: `${result.stdout ?? ""}${result.stderr ?? ""}` };
   }
@@ -924,17 +1029,26 @@ if (!connectionString) {
     );
   }
 
-  test("L11a · duas reciclagens congeladas com 90 devidas e 0 no livro (uma com tarifa, outra sem): sem --aplicar nada é gravado; com --aplicar 90 na primeira (3750.00), a segunda listada como não lançável e saída ≠ 0", async () => {
+  test("L11a · duas reciclagens congeladas com 90 devidas e 0 no livro (uma com tarifa, outra sem, cada uma na sua organização): sem --aplicar nada é gravado; com --aplicar 90 na primeira (3750.00, seção curáveis), a segunda listada como não lançável e saída ≠ 0", async () => {
     const withTariff = await frozenRecycling("L11a-t", true);
     const withoutTariff = await frozenRecycling("L11a-s", false);
-    const dry = runCure(false);
-    const afterDry = { comTarifa: await count(withTariff, "DAILY"), semTarifa: await count(withoutTariff, "DAILY"), listaOsDois: dry.out.includes(withTariff.processId) && dry.out.includes(withoutTariff.processId) };
-    const applied = runCure(true);
+    const dryWith = runCure(false, withTariff.tenantId);
+    const dryWithout = runCure(false, withoutTariff.tenantId);
+    const afterDry = { comTarifa: await count(withTariff, "DAILY"), semTarifa: await count(withoutTariff, "DAILY"), listaOsDois: dryWith.out.includes(withTariff.processId) && dryWithout.out.includes(withoutTariff.processId) };
+    const applied = runCure(true, withTariff.tenantId);
+    const appliedWithout = runCure(true, withoutTariff.tenantId);
     const statement = await (await createDefaultChargeService()).getStatement(actor(withTariff), withTariff.processId);
     assert.deepEqual(
-      { afterDry, diariasComTarifa: await count(withTariff, "DAILY"), total: statement.total, semTarifaListado: applied.out.includes(withoutTariff.processId), saidaNaoZero: applied.code !== 0 && applied.code !== null },
-      { afterDry: { comTarifa: 0, semTarifa: 0, listaOsDois: true }, diariasComTarifa: 90, total: "3750.00", semTarifaListado: true, saidaNaoZero: true },
-      `saída do script: código ${applied.code}; ${applied.out.slice(0, 300)}`,
+      {
+        afterDry,
+        diariasComTarifa: await count(withTariff, "DAILY"),
+        total: statement.total,
+        secaoCuraveis: applied.out.includes("curáveis") && applied.out.includes(withTariff.processId),
+        semTarifaListado: appliedWithout.out.includes(withoutTariff.processId),
+        saidaNaoZero: appliedWithout.code !== 0 && appliedWithout.code !== null,
+      },
+      { afterDry: { comTarifa: 0, semTarifa: 0, listaOsDois: true }, diariasComTarifa: 90, total: "3750.00", secaoCuraveis: true, semTarifaListado: true, saidaNaoZero: true },
+      `saída do script: código ${appliedWithout.code}; ${appliedWithout.out.slice(0, 300)}`,
     );
   });
 
@@ -943,7 +1057,7 @@ if (!connectionString) {
     const ctx = await seed("L11b", { status: "AUCTION_CLOSED", enteredAt: new Date(frozenAt.getTime() - 90 * MS_PER_DAY - 2 * HOUR), frozenAt });
     await seedSoldAttempt(ctx);
     await seedSettlementRow(ctx);
-    const applied = runCure(true);
+    const applied = runCure(true, ctx.tenantId);
     assert.deepEqual(
       { diarias: await count(ctx, "DAILY"), chargeAccrual: await eventCount(ctx, "CHARGE_ACCRUAL"), listado: applied.out.includes(ctx.processId) && applied.out.includes("liquidados com livro incompleto") && applied.out.includes("3600.00"), saidaNaoZero: applied.code !== 0 && applied.code !== null },
       { diarias: 0, chargeAccrual: 0, listado: true, saidaNaoZero: true },
@@ -954,7 +1068,7 @@ if (!connectionString) {
   test("L11c · leilão AUCTIONED congelado, sem liquidação: com --aplicar nenhuma linha nova; listado em 'serão fechados na liquidação'", async () => {
     const frozenAt = new Date(Date.now() - HOUR);
     const ctx = await seed("L11c", { status: "AUCTIONED", enteredAt: new Date(frozenAt.getTime() - 90 * MS_PER_DAY - 2 * HOUR), frozenAt });
-    const applied = runCure(true);
+    const applied = runCure(true, ctx.tenantId);
     assert.deepEqual(
       { diarias: await count(ctx, "DAILY"), listado: applied.out.includes(ctx.processId) && applied.out.includes("serão fechados na liquidação") },
       { diarias: 0, listado: true },
@@ -964,17 +1078,103 @@ if (!connectionString) {
 
   test("L11d · --aplicar duas vezes: a segunda não cria linha nenhuma", async () => {
     const ctx = await frozenRecycling("L11d", true);
-    runCure(true);
+    runCure(true, ctx.tenantId);
     const afterFirst = await count(ctx, "LINES");
-    const second = runCure(true);
+    const second = runCure(true, ctx.tenantId);
     assert.deepEqual({ diariasDepoisDa1a: await count(ctx, "DAILY"), linhasIguais: (await count(ctx, "LINES")) === afterFirst }, { diariasDepoisDa1a: 90, linhasIguais: true }, `saída: código ${second.code}; ${second.out.slice(0, 300)}`);
   });
 
   test("L11e · DIRECT_RECYCLING com uma liquidação semeada à mão (estado que o produto não gera): --aplicar não lança nada", async () => {
     const ctx = await frozenRecycling("L11e", true);
     await seedSettlementRow(ctx);
-    const applied = runCure(true);
+    const applied = runCure(true, ctx.tenantId);
     assert.deepEqual({ diarias: await count(ctx, "DAILY"), scriptExiste: !applied.out.includes("Cannot find module") }, { diarias: 0, scriptExiste: true }, `saída: código ${applied.code}; ${applied.out.slice(0, 300)}`);
+  });
+
+  // ────────────────────────────── F1b: E10.3 uma organização por execução; E9.1 item 7 o modo de descongelar ──────────────────────────────
+
+  // Uma organização com um processo curável (reciclagem congelada, 90 devidas e 0 no livro, com tarifa) e um processo
+  // descongelável (em lote, congelado há 5 dias, sem liquidação nem liberação em curso).
+  async function orgWithCurableAndThawable(label: string): Promise<{ curable: Ctx; thawable: Ctx }> {
+    const curable = await frozenRecycling(`${label}-c`, true);
+    const thawable = await addProcess(curable, { status: "LOTTED", enteredAt: ago(10), frozenAt: new Date(Date.now() - LEGACY_FROZEN_DAYS * MS_PER_DAY) });
+    return { curable, thawable };
+  }
+
+  async function snapshotOf(ctx: Ctx): Promise<{ linhas: number; eventos: number; congelado: number | null }> {
+    return { linhas: await count(ctx, "LINES"), eventos: (await events(ctx)).length, congelado: await frozenMs(ctx) };
+  }
+
+  test("L11f · duas organizações; o script com --organizacao A --aplicar nos dois modos: A é curada e descongelada; em B nenhuma linha nova, nenhum evento novo, frozen_at intocado; o relatório não cita nenhum id de B", async () => {
+    const a = await orgWithCurableAndThawable("L11f-A");
+    const b = await orgWithCurableAndThawable("L11f-B");
+    const beforeB = { curavel: await snapshotOf(b.curable), descongelavel: await snapshotOf(b.thawable) };
+    const cure = runCure(true, a.curable.tenantId, "cura");
+    const thaw = runCure(true, a.curable.tenantId, "descongelar");
+    const out = `${cure.out}
+${thaw.out}`;
+    assert.deepEqual(
+      {
+        diariasCuradasEmA: await count(a.curable, "DAILY"),
+        descongeladoEmA: (await row(a.thawable)).frozen_at === null,
+        organizacaoNoRelatorio: cure.out.includes(a.curable.tenantId) && thaw.out.includes(a.curable.tenantId),
+        b: { curavel: await snapshotOf(b.curable), descongelavel: await snapshotOf(b.thawable) },
+        relatorioCitaB: out.includes(b.curable.processId) || out.includes(b.thawable.processId) || out.includes(b.curable.tenantId),
+      },
+      { diariasCuradasEmA: 90, descongeladoEmA: true, organizacaoNoRelatorio: true, b: beforeB, relatorioCitaB: false },
+      `cura: código ${cure.code}; descongelar: código ${thaw.code}; ${out.slice(0, 300)}`,
+    );
+  });
+
+  test("L11g · sem --organizacao: código de saída 2, a mensagem 'informe --organizacao', e nenhuma gravação em nenhuma das duas organizações", async () => {
+    const a = await orgWithCurableAndThawable("L11g-A");
+    const b = await orgWithCurableAndThawable("L11g-B");
+    const before = { a: [await snapshotOf(a.curable), await snapshotOf(a.thawable)], b: [await snapshotOf(b.curable), await snapshotOf(b.thawable)] };
+    const cure = runCure(true, null, "cura");
+    const thaw = runCure(true, null, "descongelar");
+    assert.deepEqual(
+      {
+        codigoCura: cure.code,
+        codigoDescongelar: thaw.code,
+        mensagem: cure.out.includes("informe --organizacao") && thaw.out.includes("informe --organizacao"),
+        depois: { a: [await snapshotOf(a.curable), await snapshotOf(a.thawable)], b: [await snapshotOf(b.curable), await snapshotOf(b.thawable)] },
+      },
+      { codigoCura: 2, codigoDescongelar: 2, mensagem: true, depois: before },
+      `${cure.out.slice(0, 200)} | ${thaw.out.slice(0, 200)}`,
+    );
+  });
+
+  test("W7 · --descongelar-legado --aplicar numa organização: os cinco estados congelados (custódia, elegível, preparação, lote, arrematado) ficam com frozen_at nulo; o RELEASE_IN_PROGRESS e o LOTTED com liberação em curso ficam intocados e listados; nenhuma diária lançada; a 2ª execução não altera nada", async () => {
+    const legacy = new Date(Date.now() - LEGACY_FROZEN_DAYS * MS_PER_DAY);
+    const first = await seed("W7", { status: "ACTIVE_CUSTODY", enteredAt: ago(10), frozenAt: legacy });
+    const thawable = [first];
+    for (const status of ["AUCTION_ELIGIBLE", "AUCTION_PREP", "LOTTED", "AUCTIONED"] as const) {
+      thawable.push(await addProcess(first, { status, frozenAt: legacy }));
+    }
+    const inRelease = await addProcess(first, { status: "RELEASE_IN_PROGRESS", frozenAt: legacy });
+    await seedActiveRelease(inRelease);
+    const lottedWithRelease = await addProcess(first, { status: "LOTTED", frozenAt: legacy });
+    await seedActiveRelease(lottedWithRelease);
+    const run1 = runCure(true, first.tenantId, "descongelar");
+    const afterFirst = {
+      cincoDescongelados: await Promise.all(thawable.map(async (ctx) => (await row(ctx)).frozen_at === null)),
+      liberacaoIntocada: (await frozenMs(inRelease)) === legacy.getTime(),
+      loteComLiberacaoIntocado: (await frozenMs(lottedWithRelease)) === legacy.getTime(),
+      listados: run1.out.includes(inRelease.processId) && run1.out.includes(lottedWithRelease.processId),
+      secaoDescongelaveis: run1.out.includes("descongeláveis") && thawable.every((ctx) => run1.out.includes(ctx.processId)),
+      diarias: (await Promise.all([...thawable, inRelease, lottedWithRelease].map((ctx) => count(ctx, "DAILY")))).reduce((acc, n) => acc + n, 0),
+    };
+    const snapshot = async () => Promise.all([...thawable, inRelease, lottedWithRelease].map((ctx) => snapshotOf(ctx)));
+    const beforeSecond = await snapshot();
+    const run2 = runCure(true, first.tenantId, "descongelar");
+    assert.deepEqual(
+      { afterFirst, segundaIgual: JSON.stringify(await snapshot()) === JSON.stringify(beforeSecond) },
+      {
+        afterFirst: { cincoDescongelados: [true, true, true, true, true], liberacaoIntocada: true, loteComLiberacaoIntocado: true, listados: true, secaoDescongelaveis: true, diarias: 0 },
+        segundaIgual: true,
+      },
+      `1ª: código ${run1.code}; 2ª: código ${run2.code}; ${run1.out.slice(0, 300)}`,
+    );
   });
 
   // ────────────────────────────── E3.3 elegibilidade e E6.1 custódia documentada ──────────────────────────────
@@ -1094,17 +1294,23 @@ if (!connectionString) {
     assert.deepEqual(results, { AUCTIONED: "409 settle_after_auction_list", AUCTION_CLOSED: "409 settle_after_auction_list" });
   });
 
-  test("Q2c · em lote: a criação de cobrança on-line recusa 409 settle_after_auction_list; nenhuma cobrança criada", async () => {
-    const ctx = await seed("Q2c", { status: "AUCTION_ELIGIBLE" });
-    await prepViaRepository(ctx, "LOTTED");
-    const service = new ImpoundPaymentService(
-      await createPrismaImpoundPaymentRepository(),
-      { resolve: async (tenantId: string) => ({ ok: true, account: { scope: "organization", connectionId: randomUUID(), ownerTenantId: tenantId }, provider: "asaas", methods: PAYMENT_METHODS }) } as never,
-      { isEnabled: async () => true },
-    );
-    const result = await outcome(() => service.create({ tenantId: ctx.tenantId, userId: ctx.userId, roles: ["manager"], permissions: [] } as never, ctx.processId, { payerName: "Maria da Silva", payerDocument: "529.982.247-25" }));
-    const intents = await withTenantRls(client, ctx.tenantId, (tx) => tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM impound_payment_intents WHERE tenant_id = ${ctx.tenantId}::uuid`);
-    assert.deepEqual({ resultado: result, cobrancas: intents[0]?.n ?? 0 }, { resultado: "409 settle_after_auction_list", cobrancas: 0 });
+  // E10.1: Q2c é CONTROLE (verde antes e depois). A cobrança on-line só nasce em liberação; em lote, arrematado e
+  // encerrado o portão que existe já recusa com 422 release_not_started, e nenhuma cobrança é criada.
+  test("Q2c · controle: em LOTTED, AUCTIONED e AUCTION_CLOSED a criação de cobrança on-line recusa 422 release_not_started; nenhuma cobrança criada", async () => {
+    const observed: Record<string, unknown> = {};
+    for (const status of ["LOTTED", "AUCTIONED", "AUCTION_CLOSED"] as const) {
+      const ctx = await seed(`Q2c-${status}`, { status, frozenAt: status === "AUCTION_CLOSED" ? new Date() : null });
+      const service = new ImpoundPaymentService(
+        await createPrismaImpoundPaymentRepository(),
+        { resolve: async (tenantId: string) => ({ ok: true, account: { scope: "organization", connectionId: randomUUID(), ownerTenantId: tenantId }, provider: "asaas", methods: PAYMENT_METHODS }) } as never,
+        { isEnabled: async () => true },
+      );
+      const result = await outcome(() => service.create({ tenantId: ctx.tenantId, userId: ctx.userId, roles: ["manager"], permissions: [] } as never, ctx.processId, { payerName: "Maria da Silva", payerDocument: "529.982.247-25" }));
+      const intents = await withTenantRls(client, ctx.tenantId, (tx) => tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM impound_payment_intents WHERE tenant_id = ${ctx.tenantId}::uuid`);
+      observed[status] = { resultado: result, cobrancas: intents[0]?.n ?? 0 };
+    }
+    const expected = { resultado: "422 release_not_started", cobrancas: 0 };
+    assert.deepEqual(observed, { LOTTED: expected, AUCTIONED: expected, AUCTION_CLOSED: expected });
   });
 
   test("Q3 · controle: elegível e em preparação, a quitação é aceita", async () => {
@@ -1177,5 +1383,175 @@ if (!connectionString) {
     });
     const result = await outcome(async () => (await createDefaultAuctionService()).lotForAuction(actor(ctx), ctx.processId, { round_number: 1 }));
     assert.deepEqual({ resultado: result, estado: (await row(ctx)).status }, { resultado: "409 lot_payment_pending", estado: "AUCTION_PREP" });
+  });
+
+  // ────────────────────────────── F1b: E8.3 o resgate e a inadimplência desfazem o congelamento legado ──────────────────────────────
+
+  const reclaimBody = { reason: "Dono apresentou a documentação" };
+
+  test("V1 · (C2-07) resgate de processo em lote congelado há 5 dias (entrada há 10 dias e 2 h, 5 diárias no livro): frozen_at nulo e candidato logo depois do resgate; a liberação lança até 10 diárias, total 400.00", async () => {
+    const ctx = await seedLegacyFrozen("V1", "LOTTED");
+    assert.equal(await count(ctx, "DAILY"), 5, "pré-condição: o legado tem as 5 diárias até o congelamento");
+    await (await createDefaultAuctionService()).reclaim(actor(ctx), ctx.processId, reclaimBody);
+    const afterReclaim = { estado: (await row(ctx)).status, congelado: (await row(ctx)).frozen_at !== null, candidato: await isSweepCandidate(ctx) };
+    const start = await outcome(async () => (await createDefaultReleaseService()).start(actor(ctx) as never, ctx.processId, { recipient_name: "Dono" }));
+    assert.deepEqual(
+      { afterReclaim, liberacao: start, diarias: await count(ctx, "DAILY"), totalDiarias: await dailyTotal(ctx) },
+      { afterReclaim: { estado: "ACTIVE_CUSTODY", congelado: false, candidato: true }, liberacao: "aceito", diarias: 10, totalDiarias: "400.00" },
+    );
+    await assertChainValid(ctx);
+  });
+
+  test("V2 · controle: resgate de processo em lote SEM congelamento: frozen_at segue nulo; a mesma resposta de hoje (ACTIVE_CUSTODY)", async () => {
+    const ctx = await seed("V2", { status: "LOTTED", enteredAt: ago(10) });
+    const view = await (await createDefaultAuctionService()).reclaim(actor(ctx), ctx.processId, reclaimBody);
+    assert.deepEqual({ resposta: view.status, estado: (await row(ctx)).status, congelado: (await row(ctx)).frozen_at !== null }, { resposta: "ACTIVE_CUSTODY", estado: "ACTIVE_CUSTODY", congelado: false });
+  });
+
+  test("V3 · inadimplência de processo arrematado e congelado há 5 dias: volta ao lote com frozen_at nulo e candidato da varredura", async () => {
+    const ctx = await seedLegacyFrozen("V3", "AUCTIONED");
+    await seedSoldAttempt(ctx);
+    const result = await (await createDefaultAuctionService()).defaultAuction(actor(ctx), ctx.processId, { round_number: 2 });
+    assert.deepEqual(
+      { resposta: result.status, criado: result.created, estado: (await row(ctx)).status, congelado: (await row(ctx)).frozen_at !== null, candidato: await isSweepCandidate(ctx) },
+      { resposta: "LOTTED", criado: true, estado: "LOTTED", congelado: false, candidato: true },
+    );
+  });
+
+  test("V4 · resgate × varredura em paralelo (6 rodadas) sobre o legado congelado: nenhum period_seq repetido; cadeia válida; ao fim, 10 diárias", async () => {
+    const observed: string[] = [];
+    for (let round = 0; round < 6; round += 1) {
+      const ctx = await seedLegacyFrozen(`V4-${round}`, "LOTTED");
+      const auction = await createDefaultAuctionService();
+      const charge = await createDefaultChargeService();
+      const [reclaim] = await Promise.allSettled([auction.reclaim(actor(ctx), ctx.processId, reclaimBody), charge.accrueTenantScan(ctx.tenantId, new Date())]);
+      await charge.accrueTenantScan(ctx.tenantId, new Date());
+      const seqs = await dailySeqs(ctx);
+      const line = `rodada ${round}: resgate ${reclaim.status === "fulfilled" ? "aceito" : reasonOf(reclaim.reason)}, diarias ${seqs.length}, unicas ${new Set(seqs).size}`;
+      if (reclaim.status !== "fulfilled" || seqs.length !== 10 || new Set(seqs).size !== 10) observed.push(line);
+      await assertChainValid(ctx);
+    }
+    assert.deepEqual(observed, []);
+  });
+
+  // ────────────────────────────── F1b: E9.4 os congelamentos legados convergem para a P7 ──────────────────────────────
+
+  test("W1 · legado AUCTIONED congelado há 5 dias (venda de 8000.00, 5 diárias), pagamento confirmado agora: frozen_at = instante do encerramento; 10 diárias, period_seq 1 a 10; crédito 550.00, saldo 7450.00", async () => {
+    const ctx = await seedLegacyFrozen("W1", "AUCTIONED");
+    await seedSoldAttempt(ctx);
+    assert.equal(await count(ctx, "DAILY"), 5, "pré-condição: 5 diárias no livro");
+    await (await createDefaultAuctionService()).closeAuction(actor(ctx), ctx.processId, { round_number: 1, payment_confirmed: true });
+    const frozenAtClose = (await frozenMs(ctx)) === (await lastEventAt(ctx, "AUCTION_CLOSED"));
+    const seqs = await dailySeqs(ctx);
+    const dist = await (await createDefaultAuctionSettlementService()).distribute(actor(ctx), ctx.processId, {});
+    assert.deepEqual(
+      { congelamentoNoEncerramento: frozenAtClose, seqs, ...cascadeOf(dist) },
+      { congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], creditoDoPatio: "550.00", saldoDoExDono: "7450.00", somaDoRateioIgualAoLance: true },
+    );
+  });
+
+  test("W2 · ESTADO SEMEADO (P-LEILAO-REVENDA-SEM-CAMINHO): legado LOTTED congelado há 5 dias com a venda antiga e a inadimplência gravadas e a rodada 3 em lote: o recordSale descongela e lança 10; o encerramento congela no instante dele; 10 sem repetição; crédito 550.00", async () => {
+    const ctx = await seedLegacyFrozen("W2", "LOTTED");
+    await seedSoldAttempt(ctx);
+    await seedNoPaymentAttempt(ctx, 2, 1);
+    await seedEdictSql(ctx, 1, "CLOSED");
+    await seedEdictSql(ctx, 3, "LOTTED");
+    assert.equal(await count(ctx, "DAILY"), 5, "pré-condição: 5 diárias no livro");
+    const auction = await createDefaultAuctionService();
+    const sale = await outcome(() => auction.recordSale(actor(ctx), ctx.processId, saleBody("8000.00", 3)));
+    const afterSale = { arremate: sale, congelado: (await row(ctx)).frozen_at !== null, diarias: await count(ctx, "DAILY") };
+    await auction.closeAuction(actor(ctx), ctx.processId, { round_number: 3, payment_confirmed: true });
+    const frozenAtClose = (await frozenMs(ctx)) === (await lastEventAt(ctx, "AUCTION_CLOSED"));
+    const seqs = await dailySeqs(ctx);
+    const dist = await (await createDefaultAuctionSettlementService()).distribute(actor(ctx), ctx.processId, {});
+    assert.deepEqual(
+      { afterSale, congelamentoNoEncerramento: frozenAtClose, seqs, ...cascadeOf(dist) },
+      { afterSale: { arremate: "aceito", congelado: false, diarias: 10 }, congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], creditoDoPatio: "550.00", saldoDoExDono: "7450.00", somaDoRateioIgualAoLance: true },
+    );
+  });
+
+  for (const [id, missing, reason] of [
+    ["W3-D", "inspection", "auction_custody_inspection_incomplete"],
+    ["W3-E", "yard", "auction_custody_yard_missing"],
+    ["W3-G", "removal", "auction_custody_removal_charge_missing"],
+  ] as const) {
+    test(`${id} · legado LOTTED com tarifa e diárias em dia, sem ${missing}: o arremate recusa 409 ${reason}; segue LOTTED; nenhum SOLD; cadeia igual; completa e tenta de novo: vende`, async () => {
+      const ctx = await seed(id, { status: "LOTTED", [missing]: false });
+      await seedEdictSql(ctx, 1, "LOTTED");
+      await (await createDefaultChargeService()).accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+      const eventsBefore = (await events(ctx)).length;
+      const auction = await createDefaultAuctionService();
+      const first = await outcome(() => auction.recordSale(actor(ctx), ctx.processId, saleBody()));
+      const afterFirst = { resultado: first, estado: (await row(ctx)).status, vendas: await count(ctx, "SOLD"), eventosNovos: (await events(ctx)).length - eventsBefore };
+      if (missing === "inspection") await completeInspection(ctx);
+      if (missing === "yard") await assignYard(ctx);
+      if (missing === "removal") await addRemoval(ctx);
+      const retry = await outcome(() => auction.recordSale(actor(ctx), ctx.processId, saleBody()));
+      assert.deepEqual(
+        { afterFirst, depoisDeCompletar: retry, estadoFinal: (await row(ctx)).status },
+        { afterFirst: { resultado: `409 ${reason}`, estado: "LOTTED", vendas: 0, eventosNovos: 0 }, depoisDeCompletar: "aceito", estadoFinal: "AUCTIONED" },
+      );
+    });
+  }
+
+  test("W4 · legado AUCTION_ELIGIBLE congelado há 5 dias (2 leilões desertos, 5 diárias): a reciclagem congela no instante do ato; 10 diárias; total do livro 550.00", async () => {
+    const ctx = await seedLegacyFrozen("W4", "AUCTION_ELIGIBLE");
+    await twoDesertedRounds(ctx);
+    const view = await (await createDefaultAuctionService()).reclassifyScrap(actor(ctx), ctx.processId);
+    const statement = await (await createDefaultChargeService()).getStatement(actor(ctx), ctx.processId);
+    assert.deepEqual(
+      { estado: view.status, congelamentoNoAto: (await frozenMs(ctx)) === (await lastEventAt(ctx, "STATUS_CHANGE")), diarias: await count(ctx, "DAILY"), total: statement.total },
+      { estado: "DIRECT_RECYCLING", congelamentoNoAto: true, diarias: 10, total: "550.00" },
+    );
+  });
+
+  test("W4b · legado ACTIVE_CUSTODY congelado há 5 dias (5 diárias): a reciclagem por inservibilidade congela no instante do ato; 10 diárias; total do livro 550.00", async () => {
+    const ctx = await seedLegacyFrozen("W4b", "ACTIVE_CUSTODY");
+    const view = await (await createDefaultAuctionService()).reclassifyUnrecoverable(actor(ctx), ctx.processId, { classification: "UNRECOVERABLE", reason: "Carcaça queimada, sem condição de circular" });
+    const statement = await (await createDefaultChargeService()).getStatement(actor(ctx), ctx.processId);
+    assert.deepEqual(
+      { estado: view.status, congelamentoNoAto: (await frozenMs(ctx)) === (await lastEventAt(ctx, "STATUS_CHANGE")), diarias: await count(ctx, "DAILY"), total: statement.total },
+      { estado: "DIRECT_RECYCLING", congelamentoNoAto: true, diarias: 10, total: "550.00" },
+    );
+  });
+
+  type ThawCapable = { thawLegacyFreezeAtomic: (tenantId: string, processId: string) => Promise<boolean> };
+
+  async function valueOrReason(run: () => Promise<unknown>): Promise<unknown> {
+    try {
+      return await run();
+    } catch (error) {
+      return reasonOf(error);
+    }
+  }
+
+  test("W5 · controle do descongelamento: thawLegacyFreezeAtomic direto num RELEASE_IN_PROGRESS congelado e num AUCTION_CLOSED congelado devolve false; frozen_at intocado nos dois", async () => {
+    const legacy = new Date(Date.now() - LEGACY_FROZEN_DAYS * MS_PER_DAY);
+    const inRelease = await seed("W5-r", { status: "RELEASE_IN_PROGRESS", enteredAt: ago(10), frozenAt: legacy });
+    await seedActiveRelease(inRelease);
+    const closed = await seed("W5-c", { status: "AUCTION_CLOSED", enteredAt: ago(10), frozenAt: legacy });
+    await seedSoldAttempt(closed);
+    const repo = auctionRepo as unknown as ThawCapable;
+    const observed = {
+      liberacao: await valueOrReason(() => repo.thawLegacyFreezeAtomic(inRelease.tenantId, inRelease.processId)),
+      encerrado: await valueOrReason(() => repo.thawLegacyFreezeAtomic(closed.tenantId, closed.processId)),
+      liberacaoIntocada: (await frozenMs(inRelease)) === legacy.getTime(),
+      encerradoIntocado: (await frozenMs(closed)) === legacy.getTime(),
+    };
+    assert.deepEqual(observed, { liberacao: false, encerrado: false, liberacaoIntocada: true, encerradoIntocado: true });
+  });
+
+  test("W6 · closeAuctionAtomic direto com o processo AUCTIONED ainda congelado (livro completo, 10 diárias): 409 concurrent_custody_append; segue AUCTIONED; frozen_at intocado", async () => {
+    const ctx = await seed("W6", { status: "AUCTIONED", enteredAt: ago(10) });
+    await seedSoldAttempt(ctx);
+    await (await createDefaultChargeService()).accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    const legacy = new Date(Date.now() - LEGACY_FROZEN_DAYS * MS_PER_DAY);
+    await client.$executeRawUnsafe("UPDATE impound_processes SET frozen_at = $1 WHERE tenant_id = $2::uuid AND id = $3::uuid", legacy, ctx.tenantId, ctx.processId);
+    const occurredAt = new Date();
+    const result = await outcome(() => atomicFor("close", ctx, { expectedDailyCount: 10, enteredAt: ctx.enteredAt, frozenAt: occurredAt }, occurredAt));
+    assert.deepEqual(
+      { diariasNoLivro: await count(ctx, "DAILY"), resultado: result, estado: (await row(ctx)).status, congelamentoIntocado: (await frozenMs(ctx)) === legacy.getTime() },
+      { diariasNoLivro: 10, resultado: "409 concurrent_custody_append", estado: "AUCTIONED", congelamentoIntocado: true },
+    );
   });
 }

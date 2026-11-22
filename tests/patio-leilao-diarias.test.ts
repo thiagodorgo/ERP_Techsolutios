@@ -25,7 +25,7 @@ import { createMemoryReleaseService, getMemoryReleaseRepositoryForTests, resetRe
 import { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests } from "../src/modules/tariffs/tariff.service.js";
 import { getMemoryYardRepositoryForTests, resetYardRuntimeForTests } from "../src/modules/yard/yard.service.js";
 
-// B-PATIO-LEILAO-DIARIAS, fatia F1 (suíte em memória, plano §5.3 e Emendas 1 a 7). Cada caso chama o SERVIÇO de leilão,
+// B-PATIO-LEILAO-DIARIAS, fatias F1 e F1b (suíte em memória, plano §5.3 e Emendas 1 a 10). Cada caso chama o SERVIÇO de leilão,
 // da liquidação, da cobrança ou o repositório em memória de verdade e afirma o comportamento que o plano pede. Escrita
 // ANTES do conserto: na `main` os casos marcados VERMELHO no plano falham pela asserção (o valor que veio) ou porque a
 // API que o plano cria ainda não existe (método, módulo ou porta). Nenhum caso é um `assert.fail` fixo.
@@ -557,25 +557,7 @@ test("U-3 · a base passada a closeAuctionAtomic tem expectedDailyCount = 90, o 
   );
 });
 
-test("U-3b · processo já congelado (legado): a base passada a closeAuctionAtomic tem frozenAt = frozen_at do processo", async () => {
-  const ctx = await scenario({ status: "AUCTION_ELIGIBLE" });
-  await driveViaRepository(ctx, "LOTTED");
-  const legacyFrozenAt = new Date(Date.now() - 5 * MS_PER_DAY);
-  // O legado: AUCTIONED congelado 5 dias atrás (o código antigo congelava no arremate).
-  await getMemoryImpoundRepositoryForTests().applyTransition({
-    tenantId: ctx.tenantId,
-    processId: ctx.processId,
-    expectedFrom: "LOTTED",
-    to: "AUCTIONED",
-    setEnteredAt: false,
-    setFrozenAt: true,
-    event: { type: "STATUS_CHANGE", payload: { from: "LOTTED", to: "AUCTIONED", reason: "legado" }, occurredAt: legacyFrozenAt, actorId: undefined },
-  });
-  const captured: Record<string, unknown>[] = [];
-  await auctionServiceWith({ repository: captureRepository(captured) }).closeAuction(who(ctx), ctx.processId, { round_number: 1, payment_confirmed: true });
-  const input = captured[0] as { chargeBasis?: { frozenAt?: Date } } | undefined;
-  assert.deepEqual({ chamado: captured.length, congelamentoDaBase: input?.chargeBasis?.frozenAt?.getTime() }, { chamado: 1, congelamentoDaBase: legacyFrozenAt.getTime() });
-});
+// U-3b saiu (E9.1): o legado congelado não guarda mais o `frozen_at` antigo; o caso que o substitui é o W1.
 
 test("U-4 · liquidação com a porta chargeState devolvendo undefined: 409 settlement_gate_unresolved; nada gravado", async () => {
   const ctx = await scenario({ status: "AUCTION_ELIGIBLE" });
@@ -730,13 +712,29 @@ test("Q2b · em AUCTIONED e em AUCTION_CLOSED: a quitação recusa 409 settle_af
   assert.deepEqual(results, { AUCTIONED: "409 settle_after_auction_list", AUCTION_CLOSED: "409 settle_after_auction_list" });
 });
 
-test("Q2c · em lote: a criação de cobrança on-line recusa 409 settle_after_auction_list", async () => {
+// E10.1: Q2c é CONTROLE (verde antes e depois). A cobrança on-line só nasce em liberação; nos três estados o portão de
+// hoje já recusa com 422 release_not_started. Os estados são gravados pela transição da custódia (o serviço de cobrança
+// on-line só lê o estado do processo e a liberação ativa).
+test("Q2c · controle: em LOTTED, AUCTIONED e AUCTION_CLOSED a criação de cobrança on-line recusa 422 release_not_started", async () => {
   const ctx = await scenario({ status: "AUCTION_ELIGIBLE" });
-  await driveViaRepository(ctx, "LOTTED");
   const port: PaymentConnectionPort = { resolve: async (tenantId) => ({ ok: true, account: { scope: "organization", connectionId: randomUUID(), ownerTenantId: tenantId }, provider: "asaas", methods: PAYMENT_METHODS }) };
   const payments = createMemoryImpoundPaymentService({ connections: port, gate: { isEnabled: async () => true } });
-  const result = await outcome(payments.create({ tenantId: ctx.tenantId, userId: ctx.userId, roles: ["manager"], permissions: [] }, ctx.processId, { payerName: "Maria da Silva", payerDocument: "529.982.247-25" }));
-  assert.equal(result, "409 settle_after_auction_list");
+  const observed: Record<string, string> = {};
+  let from = "AUCTION_ELIGIBLE";
+  for (const to of ["LOTTED", "AUCTIONED", "AUCTION_CLOSED"] as const) {
+    await getMemoryImpoundRepositoryForTests().applyTransition({
+      tenantId: ctx.tenantId,
+      processId: ctx.processId,
+      expectedFrom: from,
+      to,
+      setEnteredAt: false,
+      setFrozenAt: to === "AUCTION_CLOSED",
+      event: { type: "STATUS_CHANGE", payload: { from, to, reason: "controle" }, occurredAt: new Date(), actorId: undefined },
+    } as never);
+    from = to;
+    observed[to] = await outcome(payments.create({ tenantId: ctx.tenantId, userId: ctx.userId, roles: ["manager"], permissions: [] }, ctx.processId, { payerName: "Maria da Silva", payerDocument: "529.982.247-25" }));
+  }
+  assert.deepEqual(observed, { LOTTED: "422 release_not_started", AUCTIONED: "422 release_not_started", AUCTION_CLOSED: "422 release_not_started" });
 });
 
 test("Q3 · controle: elegível e em preparação, a quitação é aceita", async () => {
@@ -790,3 +788,187 @@ test("Q7 · withdraw-settled a partir de LOTTED: 409 invalid_transition; segue L
   const result = await outcome((createMemoryAuctionService() as unknown as WithdrawCapable).withdrawSettled(who(ctx), ctx.processId, {}));
   assert.deepEqual({ resultado: result, estado: (await processOf(ctx)).status }, { resultado: "409 invalid_transition", estado: "LOTTED" });
 });
+
+// ─────────────────────────────────────────────── F1b: o congelamento legado (Emendas 8 e 9) ───────────────────────────────────────────────
+
+// O legado que o código antigo deixava, SEMEADO sem os atômicos do leilão (como o SQL do `-db`): as linhas de leilão vão
+// direto às listas do repositório em memória e o congelamento é gravado pela transição do repositório de custódia com o
+// instante antigo (`setFrozenAt`, o mesmo campo que o código antigo usava). Entrada há 10 dias e 2 h, `frozen_at` de
+// 5 dias atrás e as 5 diárias que o motor de hoje lança até o congelamento.
+const LEGACY_FROZEN_DAYS = 5;
+
+type MemoryAuctionLists = { attempts: Array<Record<string, unknown>>; edicts: Array<Record<string, unknown>> };
+
+function memoryLists(): MemoryAuctionLists {
+  return getMemoryAuctionRepositoryForTests() as unknown as MemoryAuctionLists;
+}
+
+function pushAttempt(ctx: Ctx, round: number, outcome: "SOLD" | "NO_PAYMENT", defaultedSaleRound?: number): void {
+  const now = new Date();
+  memoryLists().attempts.push({
+    id: randomUUID(),
+    tenantId: ctx.tenantId,
+    processId: ctx.processId,
+    roundNumber: round,
+    outcome,
+    ...(outcome === "SOLD" ? { winnerRef: `Arrematante ${round}`, soldAmount: "8000.00", saleNoteReference: `NOTA-${round}` } : { defaultedSaleRound }),
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
+function pushLottedEdict(ctx: Ctx, round: number): void {
+  const now = new Date();
+  memoryLists().edicts.push({
+    id: randomUUID(),
+    tenantId: ctx.tenantId,
+    processId: ctx.processId,
+    roundNumber: round,
+    classification: "CONSERVED",
+    appraisalAmount: "10000.00",
+    minBidAmount: "5000.00",
+    edictReference: `EDITAL-${round}/2026`,
+    publishedAt: new Date(Date.now() - 30 * MS_PER_DAY),
+    businessDays: 15,
+    status: "LOTTED",
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
+// Grava o congelamento antigo com uma transição do repositório de custódia (de `from` para `to`; pode ser o mesmo estado).
+async function freezeLegacy(ctx: Ctx, from: string, to: string): Promise<Date> {
+  const legacy = new Date(Date.now() - LEGACY_FROZEN_DAYS * MS_PER_DAY);
+  await getMemoryImpoundRepositoryForTests().applyTransition({
+    tenantId: ctx.tenantId,
+    processId: ctx.processId,
+    expectedFrom: from,
+    to,
+    setEnteredAt: false,
+    setFrozenAt: true,
+    event: { type: "STATUS_CHANGE", payload: { from, to, reason: "legado" }, occurredAt: legacy, actorId: undefined },
+  } as never);
+  await createMemoryChargeService().accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  return legacy;
+}
+
+async function lastEventAt(ctx: Ctx, type: string): Promise<number | undefined> {
+  const events = await getMemoryImpoundRepositoryForTests().listEvents(ctx.tenantId, ctx.processId);
+  return events.filter((event) => event.type === type).at(-1)?.occurredAt.getTime();
+}
+
+async function dailySeqs(ctx: Ctx): Promise<number[]> {
+  return (await lines(ctx))
+    .filter((line) => line.kind === "DAILY")
+    .map((line) => line.periodSeq ?? -1)
+    .sort((a, b) => a - b);
+}
+
+async function dailyTotal(ctx: Ctx): Promise<string> {
+  const cents = (await lines(ctx)).filter((line) => line.kind === "DAILY").reduce((acc, line) => acc + Math.round(Number(line.totalAmount) * 100), 0);
+  return (cents / 100).toFixed(2);
+}
+
+test("V1 · (C2-07) resgate de processo em lote congelado há 5 dias (5 diárias): frozen_at nulo logo depois do resgate; a liberação lança até 10 diárias, total 400.00", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 10 });
+  await driveViaRepository(ctx, "LOTTED");
+  await freezeLegacy(ctx, "LOTTED", "LOTTED");
+  assert.equal(await dailyCount(ctx), 5, "pré-condição: 5 diárias até o congelamento");
+  await createMemoryAuctionService().reclaim(who(ctx), ctx.processId, { reason: "Dono apresentou a documentação" });
+  const afterReclaim = { estado: (await processOf(ctx)).status, congelado: (await processOf(ctx)).frozenAt !== undefined };
+  const start = await outcome(createMemoryReleaseService().start(who(ctx) as never, ctx.processId, { recipient_name: "Dono" }));
+  assert.deepEqual(
+    { afterReclaim, liberacao: start, diarias: await dailyCount(ctx), totalDiarias: await dailyTotal(ctx) },
+    { afterReclaim: { estado: "ACTIVE_CUSTODY", congelado: false }, liberacao: "aceito", diarias: 10, totalDiarias: "400.00" },
+  );
+});
+
+test("V3 · inadimplência de processo arrematado e congelado há 5 dias: volta ao lote com frozen_at nulo", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 10 });
+  await driveViaRepository(ctx, "LOTTED");
+  pushAttempt(ctx, 1, "SOLD");
+  await freezeLegacy(ctx, "LOTTED", "AUCTIONED");
+  const result = await createMemoryAuctionService().defaultAuction(who(ctx), ctx.processId, { round_number: 2 });
+  assert.deepEqual(
+    { resposta: result.status, criado: result.created, estado: (await processOf(ctx)).status, congelado: (await processOf(ctx)).frozenAt !== undefined },
+    { resposta: "LOTTED", criado: true, estado: "LOTTED", congelado: false },
+  );
+});
+
+test("W1 · legado AUCTIONED congelado há 5 dias (venda de 8000.00, 5 diárias), pagamento confirmado agora: frozen_at = instante do encerramento; 10 diárias, period_seq 1 a 10; crédito 550.00, saldo 7450.00", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 10 });
+  await driveViaRepository(ctx, "LOTTED");
+  pushAttempt(ctx, 1, "SOLD");
+  await freezeLegacy(ctx, "LOTTED", "AUCTIONED");
+  assert.equal(await dailyCount(ctx), 5, "pré-condição: 5 diárias no livro");
+  await createMemoryAuctionService().closeAuction(who(ctx), ctx.processId, { round_number: 1, payment_confirmed: true });
+  const frozenAtClose = (await processOf(ctx)).frozenAt?.getTime() === (await lastEventAt(ctx, "AUCTION_CLOSED"));
+  const seqs = await dailySeqs(ctx);
+  const dist = await createMemoryAuctionSettlementService().distribute(who(ctx), ctx.processId, {});
+  assert.deepEqual(
+    { congelamentoNoEncerramento: frozenAtClose, seqs, ...cascadeOf(dist) },
+    { congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], creditoDoPatio: "550.00", saldoDoExDono: "7450.00", somaDoRateioIgualAoLance: true },
+  );
+});
+
+test("W2 · ESTADO SEMEADO (P-LEILAO-REVENDA-SEM-CAMINHO): legado LOTTED congelado há 5 dias, venda antiga e inadimplência gravadas, rodada 3 em lote: o recordSale descongela e lança 10; o encerramento congela no instante dele; crédito 550.00", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 10 });
+  await driveViaRepository(ctx, "LOTTED");
+  pushAttempt(ctx, 1, "SOLD");
+  pushAttempt(ctx, 2, "NO_PAYMENT", 1);
+  getMemoryAuctionRepositoryForTests().mutateEdictForTests(ctx.tenantId, ctx.processId, 1, { status: "CLOSED" } as never);
+  pushLottedEdict(ctx, 3);
+  await freezeLegacy(ctx, "LOTTED", "LOTTED");
+  assert.equal(await dailyCount(ctx), 5, "pré-condição: 5 diárias no livro");
+  const auction = createMemoryAuctionService();
+  const sale = await outcome(auction.recordSale(who(ctx), ctx.processId, saleBody("8000.00", 3)));
+  const afterSale = { arremate: sale, congelado: (await processOf(ctx)).frozenAt !== undefined, diarias: await dailyCount(ctx) };
+  await auction.closeAuction(who(ctx), ctx.processId, { round_number: 3, payment_confirmed: true });
+  const frozenAtClose = (await processOf(ctx)).frozenAt?.getTime() === (await lastEventAt(ctx, "AUCTION_CLOSED"));
+  const seqs = await dailySeqs(ctx);
+  const dist = await createMemoryAuctionSettlementService().distribute(who(ctx), ctx.processId, {});
+  assert.deepEqual(
+    { afterSale, congelamentoNoEncerramento: frozenAtClose, seqs, ...cascadeOf(dist) },
+    { afterSale: { arremate: "aceito", congelado: false, diarias: 10 }, congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], creditoDoPatio: "550.00", saldoDoExDono: "7450.00", somaDoRateioIgualAoLance: true },
+  );
+});
+
+for (const [id, missing, reason] of [
+  ["W3-D", "inspection", "auction_custody_inspection_incomplete"],
+  ["W3-E", "yard", "auction_custody_yard_missing"],
+  ["W3-G", "removal", "auction_custody_removal_charge_missing"],
+] as const) {
+  test(`${id} · legado LOTTED com tarifa e diárias em dia, sem ${missing}: o arremate recusa 409 ${reason}; segue LOTTED; nenhum SOLD; cadeia igual; completa e tenta de novo: vende`, async () => {
+    const ctx = await scenario({ status: "AUCTION_ELIGIBLE", [missing]: false });
+    // O lote SEMEADO (sem os portões do lote): edital e avaliação pelo repositório, a rodada marcada em lote e a
+    // transição gravada na custódia.
+    const repo = getMemoryAuctionRepositoryForTests();
+    const base = { tenantId: ctx.tenantId, processId: ctx.processId, actorId: ctx.userId };
+    await repo.registerEdictAtomic({ ...base, roundNumber: 1, classification: "CONSERVED", edictReference: "EDITAL-1/2026", publishedAt: new Date(Date.now() - 30 * MS_PER_DAY), businessDays: 15, occurredAt: new Date() } as never);
+    await repo.setAppraisalAtomic({ ...base, roundNumber: 1, appraisalAmount: "10000.00", minBidAmount: "5000.00" } as never);
+    repo.mutateEdictForTests(ctx.tenantId, ctx.processId, 1, { status: "LOTTED" } as never);
+    await getMemoryImpoundRepositoryForTests().applyTransition({
+      tenantId: ctx.tenantId,
+      processId: ctx.processId,
+      expectedFrom: "AUCTION_ELIGIBLE",
+      to: "LOTTED",
+      setEnteredAt: false,
+      setFrozenAt: false,
+      event: { type: "STATUS_CHANGE", payload: { from: "AUCTION_ELIGIBLE", to: "LOTTED", reason: "legado" }, occurredAt: new Date(), actorId: undefined },
+    });
+    await createMemoryChargeService().accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    const eventsBefore = (await eventTypes(ctx)).length;
+    const auction = createMemoryAuctionService();
+    const first = await outcome(auction.recordSale(who(ctx), ctx.processId, saleBody()));
+    const sold = ((await repo.getState(ctx.tenantId, ctx.processId))?.attempts ?? []).filter((attempt) => attempt.outcome === "SOLD").length;
+    const afterFirst = { resultado: first, estado: (await processOf(ctx)).status, vendas: sold, eventosNovos: (await eventTypes(ctx)).length - eventsBefore };
+    if (missing === "inspection") await completeInspection(ctx);
+    if (missing === "yard") await assignYard(ctx);
+    if (missing === "removal") await addRemoval(ctx);
+    const retry = await outcome(auction.recordSale(who(ctx), ctx.processId, saleBody()));
+    assert.deepEqual(
+      { afterFirst, depoisDeCompletar: retry, estadoFinal: (await processOf(ctx)).status },
+      { afterFirst: { resultado: `409 ${reason}`, estado: "LOTTED", vendas: 0, eventosNovos: 0 }, depoisDeCompletar: "aceito", estadoFinal: "AUCTIONED" },
+    );
+  });
+}
