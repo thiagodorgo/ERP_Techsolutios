@@ -89,7 +89,13 @@ async function bootstrap(connection: string) {
   const admin = new PrismaClient({ adapter: pg.createPgAdapter(connection) });
   const role = await helper.createEphemeralRole(admin, connection);
   const suffix = randomUUID().slice(0, 8);
-  const platform = (await admin.tenant.create({ data: { name: `Platform ${suffix}`, slug: "platform" } })).id;
+  const existingPlatform = await admin.tenant.findUnique({ where: { slug: "platform" }, select: { id: true } });
+  const platform = (await admin.tenant.upsert({
+    where: { slug: "platform" },
+    update: {},
+    create: { name: `Platform ${suffix}`, slug: "platform" },
+    select: { id: true },
+  })).id;
   const tenantA = (await admin.tenant.create({ data: { name: `Pátio A ${suffix}`, slug: `fm-a-${suffix}` } })).id;
   const tenantB = (await admin.tenant.create({ data: { name: `Pátio B ${suffix}`, slug: `fm-b-${suffix}` } })).id;
   const group = (await admin.economicGroup.create({ data: { name: `Grupo FM ${suffix}` } })).id;
@@ -129,7 +135,7 @@ async function bootstrap(connection: string) {
     await admin.user.deleteMany({ where: { tenant_id: { in: [tenantA, tenantB] } } });
     await admin.authIdentity.deleteMany({ where: { id: { in: [identityX, identityY] } } });
     await admin.economicGroup.delete({ where: { id: group } });
-    await admin.tenant.deleteMany({ where: { id: { in: [platform, tenantA, tenantB] } } });
+    await admin.tenant.deleteMany({ where: { id: { in: existingPlatform ? [tenantA, tenantB] : [platform, tenantA, tenantB] } } });
     await role.drop(); await admin.$disconnect();
   } };
 }
