@@ -88,15 +88,18 @@ export function computeOperations(rows: readonly GroupPanelWorkOrderRow[], now: 
     if ((row.status === "completed" || row.completedAt !== null) && row.arrivedAt === null) arrivalMissingCount += 1;
     if (row.status === "cancelled" || row.status === "rejected") continue;
 
+    // âncora (MUT-17, atualizada pela decisão direta do dono): SLA começa sempre na abertura.
+    const startedAt = row.createdAt;
+
     if (row.arrivedAt !== null) {
-      const arrivalMinutes = elapsedMinutes(row.createdAt, row.arrivedAt);
+      const arrivalMinutes = elapsedMinutes(startedAt, row.arrivedAt);
       if (arrivalMinutes !== null) {
         arrivalTotalMinutes += arrivalMinutes;
         arrivalCount += 1;
       }
     }
     if (row.completedAt !== null) {
-      const completionMinutes = elapsedMinutes(row.createdAt, row.completedAt);
+      const completionMinutes = elapsedMinutes(startedAt, row.completedAt);
       if (completionMinutes !== null) {
         completionTotalMinutes += completionMinutes;
         completionCount += 1;

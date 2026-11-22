@@ -27,6 +27,8 @@ import {
 
 /** A permissão do bloco de chamados (a mesma do Dashboard). */
 export const OPERATIONS_PERMISSION = "dashboard:read";
+export const STAFF_USERS_PERMISSION = "users.read";
+export const STAFF_WORK_ORDERS_PERMISSION = "work_orders:read";
 
 /** Passo 0 falhou: sem marca de gestor no grupo vigente da organização ativa (P-F). Nada mais é lido. */
 export class GroupPanelAccessError extends CoreSaasError {
@@ -137,6 +139,15 @@ export function decideFinanceAccess(authorization: PairAuthorization, financeMod
 /** Passo 7, bloco de chamados: `dashboard:read` e não ser papel de campo com recorte (o mesmo do serviço do Dashboard). */
 export function canReadOperations(authorization: PairAuthorization): boolean {
   if (!authorization.permissions.includes(OPERATIONS_PERMISSION)) return false;
+  return !actorReadsAssignedOnly({ tenantId: "", userId: "", roles: authorization.roles as readonly Role[], permissions: [] });
+}
+
+/** Funcionários: exige ler usuários e OS, sem recorte de campo que revelaria uma visão parcial como total do pátio. */
+export function canReadStaff(authorization: PairAuthorization): boolean {
+  const hasPermissions =
+    authorization.permissions.includes(STAFF_USERS_PERMISSION) &&
+    authorization.permissions.includes(STAFF_WORK_ORDERS_PERMISSION);
+  if (!hasPermissions) return false;
   return !actorReadsAssignedOnly({ tenantId: "", userId: "", roles: authorization.roles as readonly Role[], permissions: [] });
 }
 

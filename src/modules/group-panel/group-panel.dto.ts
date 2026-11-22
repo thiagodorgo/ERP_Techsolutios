@@ -12,6 +12,7 @@ export function toGroupPanelScopeDto(scope: GroupPanelScope) {
       name: organization.name,
       finance: organization.finance,
       operations: organization.operations,
+      staff: organization.staff,
     })),
   };
 }
@@ -54,6 +55,12 @@ export function toGroupPanelSummaryDto(summary: GroupPanelSummary) {
               receivedVariationPct: consolidated.finance.receivedVariationPct,
               paidVariationPct: consolidated.finance.paidVariationPct,
             },
+            operations: { ...consolidated.operations },
+            staff: {
+              activeUsers: consolidated.staff.activeUsers,
+              byProfile: consolidated.staff.byProfile.map((item) => ({ profile: item.profile, count: item.count })),
+              inServiceNow: consolidated.staff.inServiceNow,
+            },
           },
     organizations: summary.organizations.map((organization) => ({
       id: organization.id,
@@ -63,6 +70,21 @@ export function toGroupPanelSummaryDto(summary: GroupPanelSummary) {
         summary: organization.finance.summary === null ? null : toFinancialSummaryDto(organization.finance.summary),
         receivedVariationPct: organization.finance.receivedVariationPct,
         paidVariationPct: organization.finance.paidVariationPct,
+      },
+      operations: {
+        status: organization.operations.status,
+        summary: organization.operations.summary === null ? null : { ...organization.operations.summary },
+      },
+      staff: {
+        status: organization.staff.status,
+        summary:
+          organization.staff.summary === null
+            ? null
+            : {
+                activeUsers: organization.staff.summary.activeUsers,
+                byProfile: organization.staff.summary.byProfile.map((item) => ({ profile: item.profile, count: item.count })),
+                inServiceNow: organization.staff.summary.inServiceNow,
+              },
       },
     })),
   };

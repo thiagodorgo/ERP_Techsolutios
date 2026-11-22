@@ -22,6 +22,9 @@ import type {
   GroupPanelActor,
   GroupPanelReaders,
 } from "./group-panel.types.js";
+import { getMemoryWorkOrderRepositoryForTests } from "../work-orders/work-order.service.js";
+import type { GroupPanelWorkOrderRow } from "./group-panel.sla.js";
+import type { GroupPanelStaffRow } from "./group-panel.staff.js";
 
 /** A tabela que o canário do passo 4 nomeia. */
 export const GROUP_MEMBERS_TABLE = "economic_group_members";
@@ -117,6 +120,8 @@ export type MemoryGroupPanelReadersOptions = {
   readonly groups?: () => GroupMembershipSource;
   readonly finance?: FinancialSummaryRepository;
   readonly recordView?: GroupPanelReaders["recordView"];
+  readonly workOrders?: GroupPanelReaders["workOrders"];
+  readonly staffRows?: GroupPanelReaders["staffRows"];
 };
 
 /** A composição em memória: o núcleo em memória, os vínculos de grupo do B-ASS-09 e o resumo financeiro em memória. */
@@ -160,6 +165,39 @@ export function createMemoryGroupPanelReaders(core: ICoreSaasService, options: M
     financeSummary({ tenantId, now }) {
       return finance.getSummary({ tenantId, now });
     },
+
+    workOrders:
+      options.workOrders ??
+      (async ({ tenantId }): Promise<readonly GroupPanelWorkOrderRow[]> => {
+        const result = await getMemoryWorkOrderRepositoryForTests().list({
+          tenantId,
+          limit: Number.MAX_SAFE_INTEGER,
+          offset: 0,
+        });
+        return result.items.map((row) => ({
+          status: row.status,
+          createdAt: row.createdAt,
+          scheduledFor: row.scheduledFor ?? null,
+          arrivedAt: row.arrivedAt ?? null,
+          completedAt: row.completedAt ?? null,
+          assignedUserId: row.assignedUserId ?? null,
+        }));
+      }),
+
+    staffRows:
+      options.staffRows ??
+      (async ({ tenantId }): Promise<readonly GroupPanelStaffRow[]> => {
+        const users = await core.listUsersForTenant(tenantId);
+        return Promise.all(
+          users.map(async (user) => ({
+            userId: user.id,
+            identityId: await core.resolveIdentityForUser({ tenantId, userId: user.id }),
+            localKey: `${tenantId}:${user.id}`,
+            active: user.status === "active",
+            profiles: [...user.roles],
+          })),
+        );
+      }),
 
     recordView:
       options.recordView ??
