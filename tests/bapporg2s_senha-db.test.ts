@@ -706,4 +706,38 @@ if (!connectionString) {
     assert.equal((await login(h, w.tenantId, f.email, nova)).status, 200, "G9c: a senha nova entra em W");
   });
 
+  // ---------------------------------------------------------------------------------------------
+  // P2 — as 24 h valem também para a provisória da CRIAÇÃO (`D-DONO-2111-P2-LEITURA2`; Emenda 1.8.3.17, Adendo 1,
+  // I10). Mutação MI10.
+  // ---------------------------------------------------------------------------------------------
+
+  test("GP1-CRIACAO — a provisória da criação entra com 23h59; com 24h00m01s dá 401, com e sem organização, sem contar tentativa", async () => {
+    const h = await harness();
+    const f = await novaFamilia(h, "gp1c", { pairs: 1 });
+    const [x] = f.orgs;
+    const admin = await administradorDe(h, x.tenantId);
+    const email = `s2p-gp1c-novo-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+    const created = await call(h, "/api/v1/users", {
+      method: "POST",
+      headers: admin.headers,
+      body: { name: "Criado GP1-CRIACAO", email, roles: ["field_technician"] },
+    });
+
+    assert.equal(created.status, 201, "fixture: a criação dá 201");
+
+    const temp = String(created.body.data.temporaryPassword);
+
+    await comRelogio(23 * HOUR + 59 * 60_000, async () => {
+      assert.equal((await login(h, x.tenantId, email, temp)).status, 200, "GP1-CRIACAO: com 23h59 a provisória da criação entra");
+    });
+
+    await comRelogio(24 * HOUR + 1_000, async () => {
+      assert.equal((await login(h, x.tenantId, email, temp)).status, 401, "GP1-CRIACAO: vencida, com organização, 401");
+      assert.equal((await login(h, null, email, temp)).status, 401, "GP1-CRIACAO: vencida, sem organização, 401");
+    });
+
+    const credential = await h.admin.localAuthCredential.findFirst({ where: { tenant_id: x.tenantId, email }, select: { failed_attempts: true } });
+
+    assert.equal(credential?.failed_attempts, 0, "GP1-CRIACAO: a provisória vencida não conta como tentativa errada");
+  });
 }
