@@ -104,9 +104,6 @@ const SUMIDAS: ReadonlyMap<string, string> = new Map([
   [
     k("L2", "src/modules/cloud-usage/cloud-usage-prisma.repository.ts", "new RlsPrismaCloudUsageRepository(prisma)", "CRU", "×1"),
     "consequência dos sítios 1–2: o envoltório de uso não repassa mais o client raiz a construtor de classe injetada (só a withTenantRls/forEachTenantRls e a `tenant`, sem FORCE), logo deixou de ser classe injetada.",
-  ],  [
-    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.assertNotLinkedElsewhere", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×2"),
-    "IS2C/T13: sumida legítima da revisão 5 (identity-link refatorado).",
   ],
   [
     k("L2", "src/modules/auth/services/identity-link.service.ts", "new AuthSessionRepository(tx)", "PARAMETRO(tx)", "×1"),
@@ -789,6 +786,9 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
 
     for (const [key, motivo] of [...SUMIDAS, ...NOVAS]) {
       assert.ok(motivo.trim().length > 0, `chave sem motivo: ${key}`);
+    }
+    for (const key of SUMIDAS.keys()) {
+      assert.ok(ORIGIN_MAIN.includes(key), `"sumida" que não existia no origin/main: ${key}`);
     }
     for (const key of NOVAS.keys()) {
       assert.ok(!ORIGIN_MAIN.includes(key), `"nova" que já existia no origin/main: ${key}`);
