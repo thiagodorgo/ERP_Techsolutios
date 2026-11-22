@@ -6,6 +6,6 @@
 - **CI do objeto:** Flutter `+2069 ~238`, sem falha; `backend-postgres` 1252/1252/0/0.
 - **Ensaio:** 11 de 11 passos concluídos na `main`, usando a concessão real. Nenhuma captura com senha provisória entra no repositório.
 - **Achados:** sete não graves. A1/A2 tocam a borda do item 70; A3 e A5 foram apensados a pendências existentes; A4, A6 e A7 receberam pendências próprias.
-- **Registro obrigatório:** substituir o texto antigo das linhas 177–178 do `PLANO_SAN3.md`, fechar as duas pendências antigas e recalcular o portão de 65/71 para 67/71.
+- **Registro obrigatório:** manter o texto antigo das linhas 177–178 do `PLANO_SAN3.md`, marcá-lo como critério substituído, acrescentar o critério vigente ao lado, fechar as duas pendências antigas e recalcular o portão de 65/71 para 67/71.
 
 **Veredito: ITENS 69 E 70 FECHADOS COM RESSALVA.**

@@ -6533,3 +6533,13 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** *"escolho a"*.
 - **Efeito:** o menu do Painel entra no PR de integração; a janela Gestores do grupo fica em PR próprio (`B-GRUPO-GESTOR-1c`), com servidor S1/S2 e junta completa. O esboço A foi aprovado sem nota de mudança.
+
+## D-DONO-2211-ARGON-ANTIGRAVITY (2026-11-22 19:06 SP) — usar o Argon pelo Antigravity
+
+- **Fato (palavras do dono):** *"usar o argon pelo antigravity"*.
+- **Efeito:** o Argon usa a cota da assinatura pelo Antigravity, separado do teto da API. Continua valendo `D-GEMINI-SEGUNDO-REVISOR`: entra somente como segundo revisor e todo achado precisa ser conferido por outro modelo.
+
+## D-DONO-2211-AVISAR-ARTEFATO-REGISTRO (2026-11-22 19:26 SP) — evento relevante é avisado e publicado no mesmo passo
+
+- **Fato (palavras do dono):** *"avise e ja ponha no artefato, documente e publicite isso"*.
+- **Leitura do orquestrador, declarada (§A6):** todo evento relevante — merge, veredito de porteiro, conferência ou resposta do dono — entra no mesmo passo em um aviso curto no chat, no artefato de estado republicado, no painel inteiro e no registro pendente que alimenta o PR de registro.

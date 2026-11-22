@@ -12732,6 +12732,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **apenso (2026-11-15, `B-APP-APARENCIA` F1):** também "Sessao expirada" no `_ExpiredSessionView` do Perfil (`profile_screen.dart`), fora do PERMITIDO da F1 (plano §4).
 - **apenso (2026-11-16, `B-APP-APARENCIA` F2, Emenda 5 `E-APARAPP-ACENTOS`):** os passos da OS passam a "Início" e "Conclusão" (`work_order_steps.dart`), nas 3 aparências da execução; o `b116_execution_stepper_test.dart` mudou só esses literais. O resto desta lista continua aqui.
 - **apenso (2026-11-15, `B-SAN3-16`):** os 5 motivos do "não consegui iniciar" e o rótulo "Solicitar aprovacao" do detalhe seguem sem acento no app; o servidor rotula os motivos em PT-BR correto no evento e no aviso (B2b). A tela de atendimento já diz "Solicitar aprovação".
+- **apenso 2026-11-22 (ensaio E-69/E-70, A5):** o ensaio mediu mais três ocorrências preexistentes em `work_order_list_screen.dart`: linha 69, "Concluidas"; linha 529, "endereco"; e linha 968, "Ordens de Servico". O dono e o critério de encerramento permanecem os mesmos.
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -14317,6 +14318,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 - **origem:** R2-08 da crítica r2, decidido pela pendência (e não pela classe qualquer-de): `POST /mobile/telemetry` fica `{telemetry}`, porque organização sem Telemetria não acumula ponto de telemetria.
 - **prova:** `buildFeatureFlags` (`src/modules/mobile/mobile.routes.ts`) não tem capacidade de telemetria; o app envia sem olhar (`telemetry_api.dart`) e o buffer descarta depois do teto de tentativas (`telemetry_sync_service.dart:120-147`). Organização com Operação de Campo e sem Telemetria leva 403 em todo lote; não há consumidor desses pontos em OS ou financeiro (medido pela crítica r2).
 - **teste de encerramento:** o bootstrap tem a capacidade de telemetria, e o app não envia sem ela.
+- **apenso 2026-11-22 (ensaio E-69/E-70, A3):** depois da troca de pátio e do login, `POST /mobile/telemetry` respondeu 403 porque `src/modules/navigation/route-modules.ts:157` liga a rota ao módulo `telemetry`, ausente na organização do ensaio. O caso confirma a classe já registrada; o dono e o teste de encerramento permanecem os mesmos.
 
 ## P-SAN3-18-PLANOS-SEM-CHAVES-NOVAS (2026-11-11) — versões de plano gravadas antes do bloco não têm as chaves novas — MÉDIA
 
@@ -17951,27 +17953,51 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 ## P-PATIO-HELPERS-CADEIA-RASOS (2026-11-22) — helpers não provam toda a cadeia de custódia — MÉDIA
 
 - **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-PATIO-LIBERACAO-ENDURECIMENTO` · **bloqueia:** não.
-- **critério de encerramento:** helpers exercitam a cadeia completa e ficam vermelhos ao retirar qualquer elo exigido.
+- **critério de encerramento:** helper semeia um gênesis real, recompõe os hashes da cadeia, confere o evento `CHARGE_ACCRUAL` e a soma do livro, e fica vermelho ao retirar qualquer elo exigido.
 
 ## P-RELEASE-SETTLEDTOTAL-SOB-TRAVA (2026-11-22) — total quitado precisa ser lido sob trava — ALTA
 
 - **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** `B-PATIO-LIBERACAO-ENDURECIMENTO` · **bloqueia:** o fechamento desse bloco.
-- **critério de encerramento:** total quitado é calculado sob a mesma transação/trava da liberação, com corrida reproduzida.
+- **critério de encerramento:** primeiro, teste determinístico chama `consumeReleaseAtomic` com o livro quitado e um total de entrada diferente da soma; depois, o total gravado é recomposto sob a mesma transação e trava da liberação.
 
 ## P-PATIO-F3-SEM-CORRIDA (2026-11-22) — F3 sem teste concorrente — MÉDIA
 
 - **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-PATIO-LIBERACAO-ENDURECIMENTO` · **bloqueia:** não.
-- **critério de encerramento:** teste de corrida prende a propriedade da F3 e fica vermelho sem o conserto.
+- **critério de encerramento:** F3 usa a barreira da sonda `f3b`, chega à trava nos dois caminhos concorrentes e fica vermelho quando um adicional posterior ao `COMMIT` deixa cobrança aberta num processo liberado.
 
 ## P-PATIO-FUSO-NO-REGIME (2026-11-22) — regime de diária sem fuso explícito — MÉDIA
 
 - **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-PATIO-FUSO-NO-REGIME` · **bloqueia:** não.
-- **critério de encerramento:** data de negócio usa o fuso aprovado e os limites de dia são testados.
+- **critério de encerramento:** o regime do processo fotografa o fuso aplicável; mudar o fuso do pátio depois do `start` não muda o devido no `consume`, com limites de dia testados.
 
 ## P-LEILAO-VOLTA-COM-FROZEN (2026-11-22) — resgate do lote preserva estado congelado — ALTA
 
 - **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** `B-PATIO-LEILAO-DIARIAS` · **bloqueia:** esse bloco.
-- **critério de encerramento:** `LOTTED → ACTIVE_CUSTODY` recompõe o estado correto sem reaproveitar valor congelado indevido, com teste de regressão.
+- **critério de encerramento:** `LOTTED → ACTIVE_CUSTODY` limpa o `frozen_at` do arremate sob a trava; o cenário de dez diárias volta a cobrar dez, e não cinco, com teste de regressão.
+
+## P-LEILAO-FECHAMENTO-DIARIAS (2026-11-22) — leilão e reciclagem congelam antes de fechar as diárias — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** `B-PATIO-LEILAO-DIARIAS` · **bloqueia:** o fechamento desse bloco.
+- **origem:** §10 do plano do #624 e C3-11 da J-624; o crédito da cascata pode sair menor quando o congelamento ocorre antes de lançar todas as diárias devidas.
+- **critério de encerramento:** antes de congelar no arremate ou na reciclagem, o produto lança todas as diárias devidas e a cascata credita exatamente o valor do livro, com teste de produto sobre os dois caminhos.
+
+## P-RELEASE-GATE-CONC-FORA-DO-GUARD (2026-11-22) — teste concorrente fora da lista com guarda de zero pulos — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de teste · **dono:** `B-PATIO-LIBERACAO-ENDURECIMENTO` · **bloqueia:** não.
+- **origem:** §10 do plano do #624 e C3-11 da J-624; `tests/release-gate-concurrency.test.ts` não integra a lista do `backend-postgres` protegida pelo guarda de zero pulos.
+- **critério de encerramento:** a suíte concorrente entra na lista do `backend-postgres`, sob o guarda de zero pulos, e o TAP confirma todos os casos executados, sem `skip`.
+
+## P-PATIO-LIBERACOES-ANTIGAS (2026-11-22) — liberações antigas podem ter diária devida não lançada — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** `B-PATIO-LIBERACAO-ENDURECIMENTO` · **bloqueia:** não enquanto não houver base de produção.
+- **origem:** §10 do plano do #624 e C3-11 da J-624; o alcance é somente leitura quando existir base de produção.
+- **critério de encerramento:** consulta de leitura na base de produção mede todas as liberações anteriores ao #624, registra N e forma das divergências e deixa zero liberação com diária devida não lançada, após remediação aprovada quando houver ocorrência.
+
+## P-PATIO-ISENCAO-REGISTRADA (2026-11-22) — isenção precisa ficar registrada no livro — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro e auditoria · **dono:** `B-PATIO-ISENCAO-REGISTRADA` · **bloqueia:** o PR próprio da isenção.
+- **origem:** §10 do plano do #624, C3-11 da J-624 e decisão P3 = (i).
+- **critério de encerramento:** toda isenção grava as diárias a 0,00 no próprio livro, com motivo e autor, e teste de produto prova que não existe dispensa fora dessa trilha.
 
 ## P-PATIO-LIVRO-VAZIO-LIBERA (2026-11-22) — livro vazio liberava sem pagamento — ALTA/GRAVE
 
