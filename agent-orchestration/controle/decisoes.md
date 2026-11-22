@@ -6543,3 +6543,9 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** *"avise e ja ponha no artefato, documente e publicite isso"*.
 - **Leitura do orquestrador, declarada (§A6):** todo evento relevante — merge, veredito de porteiro, conferência ou resposta do dono — entra no mesmo passo em um aviso curto no chat, no artefato de estado republicado, no painel inteiro e no registro pendente que alimenta o PR de registro.
+
+## C-1B-PERMISSAO-JANELA (registro de CONFLITO, §A2, 2026-11-22) — quem pode abrir a janela Gestores do grupo
+
+- **Os dois lados:** o mandato da Emenda 1b dizia *"quem pode abrir: a permissão das rotas, `platform:users:create_admin`"*. A `main` lista com `platform:billing:read` e marca e desmarca com `platform:users:create_admin` (`RBAC_MATRIX.md` l.160-163, arquivo-base, fonte 2 do §A1), e a Emenda 3 §1 já decidira que a janela abre em modo de leitura com `platform:billing:read`.
+- **Como foi tratado:** o planejador seguiu a `main` e a Emenda 3 (Emenda 1b §3.2) e registrou a divergência sem consolidar. A janela ficou para o `B-GRUPO-GESTOR-1c` (`D-DONO-2211-GRUPO-JANELA-A`); o 1b não a entrega.
+- **Dono:** o orquestrador, no plano do `B-GRUPO-GESTOR-1c`. Fechar a janela só para quem tem `create_admin` é uma linha no front e não fere o servidor, que segue como autoridade. Origem do registro: achado A1 do `porteiro-627`; registrado por `dev-628-fix2-cl` (Claude Opus).

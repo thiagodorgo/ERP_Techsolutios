@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1415** |
-| IDs distintos | 1400 |
-| **ABERTAS** | **1084** |
+| Cabecalhos `## P-` | **1417** |
+| IDs distintos | 1402 |
+| **ABERTAS** | **1085** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **1023** |
+| — das quais **ativas nesta rodada** | **1024** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 327 |
+| FECHADAS | 328 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1415 cabecalhos para 1400 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1417 cabecalhos para 1402 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -455,40 +455,40 @@
 | `P-08C3-TESTES-DB-DE-VERDADE` | 17421 | MÉDIA | sim | P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda  |
 | `P-T13-INJETADO-PONTO-CEGO` | 17429 | MÉDIA | sim | P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em mé |
 | `P-AWS-ROTEIRO-TRACCAR-DIVERGE` | 17480 | ALTA | sim | P-AWS-ROTEIRO-TRACCAR-DIVERGE (2026-11-20) — o roteiro da AWS para o Traccar (fases 3c e |
-| `P-GRUPO-GESTOR-PAINEL` | 17552 | ALTA | sim | P-GRUPO-GESTOR-PAINEL (2026-11-20) — falta o painel do gestor do grupo, com o financeiro |
-| `P-GRUPO-PROVEDOR-COMPARTILHADO` | 17559 | ALTA | sim | P-GRUPO-PROVEDOR-COMPARTILHADO (2026-11-20) — a configuração de pagamento e de nota é gl |
-| `P-PATIO-LIBERA-COM-LIVRO-VAZIO` | 17566 | ALTA | sim | P-PATIO-LIBERA-COM-LIVRO-VAZIO (2026-11-21) — com o livro de cobranças vazio, o servidor |
-| `P-612-ACEITE-FORMA-REAL` | 17573 | ALTA | sim | P-612-ACEITE-FORMA-REAL (2026-11-21) — o aceite na forma real da tela de operação da cob |
-| `P-ASS10C-RESUMO-ENTRE-ORGANIZACOES` | 17594 | MÉDIA | sim | P-ASS10C-RESUMO-ENTRE-ORGANIZACOES (2026-11-21) — a tela de operação da cobrança lê orga |
-| `P-COMISSAO-LIQUIDACAO-CENTAVO` | 17622 | ALTA | sim | P-COMISSAO-LIQUIDACAO-CENTAVO (2026-11-21; apelido `P-COMISSAO-LIQUIDACAO-ARREDONDA-EM-D |
-| `P-APP-T13-DADOS-INTERMITENTE` | 17643 | MÉDIA | sim | P-APP-T13-DADOS-INTERMITENTE (2026-11-21) — o `[T13-dados]` falha 1 vez em 5 por prazo d |
-| `P-APP-SAIR-LIMPEZA-QUE-LANCA` | 17678 | MÉDIA | sim | P-APP-SAIR-LIMPEZA-QUE-LANCA (2026-11-21) — se o `repo.logout()` lançar no fim do Sair,  |
-| `P-GRUPO-VOLTA-TODAS-AS-ORGS` | 17685 | MÉDIA | sim | P-GRUPO-VOLTA-TODAS-AS-ORGS (2026-11-21) — a procura dos pátios do grupo lê todas as org |
-| `P-ENV-REDIS-PADRAO-LOCALHOST` | 17764 | ALTA | sim | P-ENV-REDIS-PADRAO-LOCALHOST (2026-11-22) — teste sem `REDIS_URL` escreve no Redis vivo  |
-| `P-ARNES-APAGA-REDIS-URL` | 17770 | ALTA | sim | P-ARNES-APAGA-REDIS-URL (2026-11-22) — geradores removem `REDIS_URL` do terreno — ALTA |
-| `P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO` | 17782 | MÉDIA | sim | P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO (2026-11-22) — concessão passa do orçamento ao es |
-| `P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE` | 17788 | MÉDIA | sim | P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE (2026-11-22) — prazo esgotado depende do idioma do |
-| `P-J622-C1-NOTAS` | 17800 | MÉDIA | **a atribuir** | P-J622-C1-NOTAS (2026-11-22) — oito notas da cadeira C1 — BAIXA/MÉDIA |
-| `P-J622-C2-NOTAS` | 17806 | MÉDIA | sim | P-J622-C2-NOTAS (2026-11-22) — seis notas da cadeira C2 — BAIXA/MÉDIA |
-| `P-J622-C3-NOTAS` | 17812 | MÉDIA | sim | P-J622-C3-NOTAS (2026-11-22) — nove notas da cadeira C3 — BAIXA/MÉDIA |
-| `P-GRUPO-FKS-SEM-RELATION` | 17835 | ALTA | sim | P-GRUPO-FKS-SEM-RELATION (2026-11-22) — FKs novas não têm `@relation` — ALTA |
-| `P-GRUPO-SUMMARY-ORCAMENTO-TEMPO` | 17840 | MÉDIA | sim | P-GRUPO-SUMMARY-ORCAMENTO-TEMPO (2026-11-22) — `/summary` sem orçamento para muitos páti |
-| `P-GRUPO-SLA-CUSTO-POR-LINHA` | 17845 | MÉDIA | sim | P-GRUPO-SLA-CUSTO-POR-LINHA (2026-11-22) — conversão de data custa CPU por linha — MÉDIA |
-| `P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA` | 17855 | ALTA | sim | P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA (2026-11-22) — exclusão corre com abertura de vínculo —  |
-| `P-GRUPO-ESCALA-100` | 17865 | MÉDIA | sim | P-GRUPO-ESCALA-100 (2026-11-22) — painel com 100 pátios — MÉDIA |
-| `P-6970-ABRIR-OUTRO-PATIO-2-TOQUES` | 17923 | MÉDIA | sim | P-6970-ABRIR-OUTRO-PATIO-2-TOQUES (2026-11-22) — chamado de outro pátio abre só no segun |
-| `P-6970-COMISSAO-VALOR-PONTA-A-PONTA` | 17938 | MÉDIA | sim | P-6970-COMISSAO-VALOR-PONTA-A-PONTA (2026-11-22) — ensaio não teve comissão real calcula |
-| `P-6970-WEB-NOVO-USUARIO-SEM-TECNICO` | 17943 | MÉDIA | sim | P-6970-WEB-NOVO-USUARIO-SEM-TECNICO (2026-11-22) — formulário não oferece Técnico de Cam |
-| `P-PATIO-HELPERS-CADEIA-RASOS` | 17953 | MÉDIA | sim | P-PATIO-HELPERS-CADEIA-RASOS (2026-11-22) — helpers não provam toda a cadeia de custódia |
-| `P-RELEASE-SETTLEDTOTAL-SOB-TRAVA` | 17958 | ALTA | sim | P-RELEASE-SETTLEDTOTAL-SOB-TRAVA (2026-11-22) — total quitado precisa ser lido sob trava |
-| `P-PATIO-F3-SEM-CORRIDA` | 17963 | MÉDIA | sim | P-PATIO-F3-SEM-CORRIDA (2026-11-22) — F3 sem teste concorrente — MÉDIA |
-| `P-PATIO-FUSO-NO-REGIME` | 17968 | MÉDIA | sim | P-PATIO-FUSO-NO-REGIME (2026-11-22) — regime de diária sem fuso explícito — MÉDIA |
-| `P-LEILAO-VOLTA-COM-FROZEN` | 17973 | ALTA | sim | P-LEILAO-VOLTA-COM-FROZEN (2026-11-22) — resgate do lote preserva estado congelado — ALT |
-| `P-LEILAO-FECHAMENTO-DIARIAS` | 17978 | ALTA | sim | P-LEILAO-FECHAMENTO-DIARIAS (2026-11-22) — leilão e reciclagem congelam antes de fechar  |
-| `P-PATIO-LIBERACOES-ANTIGAS` | 17990 | ALTA | sim | P-PATIO-LIBERACOES-ANTIGAS (2026-11-22) — liberações antigas podem ter diária devida não |
-| `P-PATIO-ISENCAO-REGISTRADA` | 17996 | ALTA | sim | P-PATIO-ISENCAO-REGISTRADA (2026-11-22) — isenção precisa ficar registrada no livro — AL |
+| `P-GRUPO-JANELA-GESTORES` | 17561 | ALTA | sim | P-GRUPO-JANELA-GESTORES (2026-11-22) — falta a janela Gestores do grupo, para a platafor |
+| `P-GRUPO-PROVEDOR-COMPARTILHADO` | 17575 | ALTA | sim | P-GRUPO-PROVEDOR-COMPARTILHADO (2026-11-20) — a configuração de pagamento e de nota é gl |
+| `P-PATIO-LIBERA-COM-LIVRO-VAZIO` | 17582 | ALTA | sim | P-PATIO-LIBERA-COM-LIVRO-VAZIO (2026-11-21) — com o livro de cobranças vazio, o servidor |
+| `P-612-ACEITE-FORMA-REAL` | 17589 | ALTA | sim | P-612-ACEITE-FORMA-REAL (2026-11-21) — o aceite na forma real da tela de operação da cob |
+| `P-ASS10C-RESUMO-ENTRE-ORGANIZACOES` | 17610 | MÉDIA | sim | P-ASS10C-RESUMO-ENTRE-ORGANIZACOES (2026-11-21) — a tela de operação da cobrança lê orga |
+| `P-COMISSAO-LIQUIDACAO-CENTAVO` | 17638 | ALTA | sim | P-COMISSAO-LIQUIDACAO-CENTAVO (2026-11-21; apelido `P-COMISSAO-LIQUIDACAO-ARREDONDA-EM-D |
+| `P-APP-T13-DADOS-INTERMITENTE` | 17659 | MÉDIA | sim | P-APP-T13-DADOS-INTERMITENTE (2026-11-21) — o `[T13-dados]` falha 1 vez em 5 por prazo d |
+| `P-APP-SAIR-LIMPEZA-QUE-LANCA` | 17694 | MÉDIA | sim | P-APP-SAIR-LIMPEZA-QUE-LANCA (2026-11-21) — se o `repo.logout()` lançar no fim do Sair,  |
+| `P-GRUPO-VOLTA-TODAS-AS-ORGS` | 17701 | MÉDIA | sim | P-GRUPO-VOLTA-TODAS-AS-ORGS (2026-11-21) — a procura dos pátios do grupo lê todas as org |
+| `P-ENV-REDIS-PADRAO-LOCALHOST` | 17780 | ALTA | sim | P-ENV-REDIS-PADRAO-LOCALHOST (2026-11-22) — teste sem `REDIS_URL` escreve no Redis vivo  |
+| `P-ARNES-APAGA-REDIS-URL` | 17786 | ALTA | sim | P-ARNES-APAGA-REDIS-URL (2026-11-22) — geradores removem `REDIS_URL` do terreno — ALTA |
+| `P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO` | 17798 | MÉDIA | sim | P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO (2026-11-22) — concessão passa do orçamento ao es |
+| `P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE` | 17804 | MÉDIA | sim | P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE (2026-11-22) — prazo esgotado depende do idioma do |
+| `P-J622-C1-NOTAS` | 17816 | MÉDIA | **a atribuir** | P-J622-C1-NOTAS (2026-11-22) — oito notas da cadeira C1 — BAIXA/MÉDIA |
+| `P-J622-C2-NOTAS` | 17822 | MÉDIA | sim | P-J622-C2-NOTAS (2026-11-22) — seis notas da cadeira C2 — BAIXA/MÉDIA |
+| `P-J622-C3-NOTAS` | 17828 | MÉDIA | sim | P-J622-C3-NOTAS (2026-11-22) — nove notas da cadeira C3 — BAIXA/MÉDIA |
+| `P-GRUPO-FKS-SEM-RELATION` | 17851 | ALTA | sim | P-GRUPO-FKS-SEM-RELATION (2026-11-22) — FKs novas não têm `@relation` — ALTA |
+| `P-GRUPO-SUMMARY-ORCAMENTO-TEMPO` | 17856 | MÉDIA | sim | P-GRUPO-SUMMARY-ORCAMENTO-TEMPO (2026-11-22) — `/summary` sem orçamento para muitos páti |
+| `P-GRUPO-SLA-CUSTO-POR-LINHA` | 17861 | MÉDIA | sim | P-GRUPO-SLA-CUSTO-POR-LINHA (2026-11-22) — conversão de data custa CPU por linha — MÉDIA |
+| `P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA` | 17871 | ALTA | sim | P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA (2026-11-22) — exclusão corre com abertura de vínculo —  |
+| `P-GRUPO-ESCALA-100` | 17881 | MÉDIA | sim | P-GRUPO-ESCALA-100 (2026-11-22) — painel com 100 pátios — MÉDIA |
+| `P-6970-ABRIR-OUTRO-PATIO-2-TOQUES` | 17939 | MÉDIA | sim | P-6970-ABRIR-OUTRO-PATIO-2-TOQUES (2026-11-22) — chamado de outro pátio abre só no segun |
+| `P-6970-COMISSAO-VALOR-PONTA-A-PONTA` | 17954 | MÉDIA | sim | P-6970-COMISSAO-VALOR-PONTA-A-PONTA (2026-11-22) — ensaio não teve comissão real calcula |
+| `P-6970-WEB-NOVO-USUARIO-SEM-TECNICO` | 17959 | MÉDIA | sim | P-6970-WEB-NOVO-USUARIO-SEM-TECNICO (2026-11-22) — formulário não oferece Técnico de Cam |
+| `P-PATIO-HELPERS-CADEIA-RASOS` | 17969 | MÉDIA | sim | P-PATIO-HELPERS-CADEIA-RASOS (2026-11-22) — helpers não provam toda a cadeia de custódia |
+| `P-RELEASE-SETTLEDTOTAL-SOB-TRAVA` | 17974 | ALTA | sim | P-RELEASE-SETTLEDTOTAL-SOB-TRAVA (2026-11-22) — total quitado precisa ser lido sob trava |
+| `P-PATIO-F3-SEM-CORRIDA` | 17979 | MÉDIA | sim | P-PATIO-F3-SEM-CORRIDA (2026-11-22) — F3 sem teste concorrente — MÉDIA |
+| `P-PATIO-FUSO-NO-REGIME` | 17984 | MÉDIA | sim | P-PATIO-FUSO-NO-REGIME (2026-11-22) — regime de diária sem fuso explícito — MÉDIA |
+| `P-LEILAO-VOLTA-COM-FROZEN` | 17989 | ALTA | sim | P-LEILAO-VOLTA-COM-FROZEN (2026-11-22) — resgate do lote preserva estado congelado — ALT |
+| `P-LEILAO-FECHAMENTO-DIARIAS` | 17994 | ALTA | sim | P-LEILAO-FECHAMENTO-DIARIAS (2026-11-22) — leilão e reciclagem congelam antes de fechar  |
+| `P-PATIO-LIBERACOES-ANTIGAS` | 18006 | ALTA | sim | P-PATIO-LIBERACOES-ANTIGAS (2026-11-22) — liberações antigas podem ter diária devida não |
+| `P-PATIO-ISENCAO-REGISTRADA` | 18012 | ALTA | sim | P-PATIO-ISENCAO-REGISTRADA (2026-11-22) — isenção precisa ficar registrada no livro — AL |
 
-## ABERTAS · balde B — processo/registro — 610
+## ABERTAS · balde B — processo/registro — 611
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1062,46 +1062,47 @@
 | `P-API-CLIENT-DETAILS-DESCARTADO` | 17516 | — | sim | P-API-CLIENT-DETAILS-DESCARTADO (2026-11-20) — o cliente de API da web descarta o `detai |
 | `P-ASS10C-FORMA-DA-COBRANCA` | 17523 | — | sim | P-ASS10C-FORMA-DA-COBRANCA (2026-11-20) — a forma de cada cobrança não vem nas respostas |
 | `P-USRCON-R11-R12-SEM-CASO-DB` | 17530 | BAIXA | sim | P-USRCON-R11-R12-SEM-CASO-DB (2026-11-20) — no banco, as leituras R11 e R12 do despachan |
-| `P-612-RAMO-ORIGINAL-ABSORCAO` | 17580 | BAIXA | sim | P-612-RAMO-ORIGINAL-ABSORCAO (2026-11-21) — o ramo original `feat/cobranca-operacao` fic |
-| `P-612-COMENTARIO-MAQUETE` | 17587 | BAIXA | sim | P-612-COMENTARIO-MAQUETE (2026-11-21) — 3 comentários citam uma maquete que não existe — |
-| `P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA` | 17601 | BAIXA | sim | P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA (2026-11-21) — o detalhe da cobrança na plataforma n |
-| `P-ASS10C-MENU-SERVIDOR` | 17608 | BAIXA | sim | P-ASS10C-MENU-SERVIDOR (2026-11-21) — o item "Cobrança" não está no menu do servidor — B |
-| `P-GINVOICE-COMENTARIO-POR-REGEX` | 17615 | BAIXA | sim | P-GINVOICE-COMENTARIO-POR-REGEX (2026-11-21) — o guarda G-INVOICE tira comentário por re |
-| `P-COMISSAO-WEB-EM-NUMBER` | 17629 | BAIXA | sim | P-COMISSAO-WEB-EM-NUMBER (2026-11-21) — a web mostra o total da comissão em `number` — B |
-| `P-COMISSAO-LEITOR-GENERICO` | 17636 | BAIXA | sim | P-COMISSAO-LEITOR-GENERICO (2026-11-21) — leitor de dinheiro montado por nome fora de `m |
-| `P-APP-T9O-SOB-CARGA` | 17650 | BAIXA | sim | P-APP-T9O-SOB-CARGA (2026-11-21) — o T9o estoura o tempo sob carga — BAIXA |
-| `P-APP-OSCARD-TRANSBORDA-390` | 17657 | BAIXA | sim | P-APP-OSCARD-TRANSBORDA-390 (2026-11-21) — o `MobileOsCard` transborda 23 px no aparelho |
-| `P-APP-COMISSOES-SKELETON-DO-KIT` | 17664 | BAIXA | sim | P-APP-COMISSOES-SKELETON-DO-KIT (2026-11-21) — a aba Comissões usa um esqueleto próprio, |
-| `P-APP-SERIAL-LOCK-UNICO` | 17671 | BAIXA | sim | P-APP-SERIAL-LOCK-UNICO (2026-11-21) — duas cópias da trava serial no app — BAIXA |
-| `P-SC-TESTES-SAIDA-PELO-VALID-TO` | 17699 | BAIXA | sim | P-SC-TESTES-SAIDA-PELO-VALID-TO (2026-11-21) — os testes da saída do grupo simulam a saí |
-| `P-AUDITORIA-EMAIL-NO-METADADO` | 17706 | BAIXA | sim | P-AUDITORIA-EMAIL-NO-METADADO (2026-11-21) — o e-mail vai no metadado de `user.access_gr |
-| `P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE` | 17713 | BAIXA | sim | P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE (2026-11-21) — o smoke do compose falha às vezes n |
-| `P-DIARIO-AZURE-POWERSHELL-ESCAPE` | 17720 | BAIXA | sim | P-DIARIO-AZURE-POWERSHELL-ESCAPE (2026-11-21) — o braço do Azure grava o diário por um c |
-| `P-APP-OS-LISTA-ACENTO` | 17727 | BAIXA | sim | P-APP-OS-LISTA-ACENTO (2026-11-21) — "Ordens de Servico" sem acento na lista de OS do ap |
-| `P-TESTE-STUB-APROVACOES-FRAGIL` | 17734 | BAIXA | sim | P-TESTE-STUB-APROVACOES-FRAGIL (2026-11-21) — o teste do consentimento usa uma página fa |
-| `P-APP-ORG-SESSAO-DE-ESCUTA-ORFA` | 17741 | BAIXA | sim | P-APP-ORG-SESSAO-DE-ESCUTA-ORFA (2026-11-21) — app morto ou dados apagados deixam até 1  |
-| `P-APP-ORG-COMISSAO-A-RECEBER` | 17748 | BAIXA | sim | P-APP-ORG-COMISSAO-A-RECEBER (2026-11-21) — a aba Comissões do app não mostra "a receber |
-| `P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO` | 17755 | BAIXA | sim | P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO (2026-11-21) — a linha da comissão no app não most |
-| `P-S2P-HC1B-OSCILA-NO-CI` | 17776 | BAIXA | sim | P-S2P-HC1B-OSCILA-NO-CI (2026-11-22) — HC1b ultrapassou 300 ms numa tentativa — BAIXA |
-| `P-J622-CONTROLE-SERIAL-C5` | 17794 | BAIXA | sim | P-J622-CONTROLE-SERIAL-C5 (2026-11-22) — sonda espera 403 e o produto dá 401 — BAIXA |
-| `P-J622-C4-NOTAS` | 17818 | BAIXA | sim | P-J622-C4-NOTAS (2026-11-22) — quatro notas da cadeira C4 — BAIXA |
-| `P-J622-C5-NOTAS` | 17824 | BAIXA | sim | P-J622-C5-NOTAS (2026-11-22) — três notas da cadeira C5 — BAIXA |
-| `P-GRUPO-TRILHA-COMPLETE-FINAL` | 17830 | BAIXA | sim | P-GRUPO-TRILHA-COMPLETE-FINAL (2026-11-22) — `complete` registra o estado anterior às gr |
-| `P-GRUPO-REVOKE-400-INTERMITENTE` | 17850 | BAIXA | sim | P-GRUPO-REVOKE-400-INTERMITENTE (2026-11-22) — retirar gestor deu 400 uma vez — BAIXA |
-| `P-GRUPO-TOTAL-DE-PATIOS` | 17860 | BAIXA | sim | P-GRUPO-TOTAL-DE-PATIOS (2026-11-22) — total do grupo pendente — BAIXA |
-| `P-GRUPO-SLA-PRAZO` | 17870 | BAIXA | sim | P-GRUPO-SLA-PRAZO (2026-11-22) — prazo do SLA a definir — BAIXA |
-| `P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL` | 17875 | BAIXA | sim | P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL (2026-11-22) — presença depende do sinal de camp |
-| `P-GRUPO-TICKET-MEDIO` | 17880 | BAIXA | sim | P-GRUPO-TICKET-MEDIO (2026-11-22) — definição de ticket médio pendente — BAIXA |
-| `P-GRUPO-HISTORICO-DE-POSICAO` | 17885 | BAIXA | sim | P-GRUPO-HISTORICO-DE-POSICAO (2026-11-22) — histórico de posição pendente — BAIXA |
-| `P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO` | 17894 | BAIXA | sim | P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO (2026-11-22) — lista ainda mostra pátio cujo acesso c |
-| `P-SC-ARNES-ENTRAR-SEM-GUARDA` | 17899 | BAIXA | sim | P-SC-ARNES-ENTRAR-SEM-GUARDA (2026-11-22) — arnês substitui o Entrar por leitura adminis |
-| `P-SC-GR6-503-INTERMITENTE` | 17904 | BAIXA | sim | P-SC-GR6-503-INTERMITENTE (2026-11-22) — GR6 teve 503 isolado — BAIXA |
-| `P-REG-CONFIRMA-CRIACAO-SEM-COUNT` | 17909 | BAIXA | sim | P-REG-CONFIRMA-CRIACAO-SEM-COUNT (2026-11-22) — confirmação não verifica linha alterada  |
-| `P-SC-VINCULO-SEM-ORIGEM` | 17914 | BAIXA | sim | P-SC-VINCULO-SEM-ORIGEM (2026-11-22) — concessão sem origem falha fechado — BAIXA |
-| `P-6970-DETALHE-SEM-PATIO` | 17928 | BAIXA | sim | P-6970-DETALHE-SEM-PATIO (2026-11-22) — detalhe da OS não mostra o pátio — BAIXA |
-| `P-6970-INICIO-SO-PATIO-ATIVO` | 17933 | BAIXA | sim | P-6970-INICIO-SO-PATIO-ATIVO (2026-11-22) — Início não mostra outros pátios — BAIXA |
-| `P-RELEASE-GATE-CONC-FORA-DO-GUARD` | 17984 | BAIXA | sim | P-RELEASE-GATE-CONC-FORA-DO-GUARD (2026-11-22) — teste concorrente fora da lista com gua |
-| `P-S2P-REDEFINICAO-TRES-VIAS` | 18007 | BAIXA | sim | P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e  |
+| `P-GRUPO-PALETA` | 17568 | BAIXA | sim | P-GRUPO-PALETA (2026-11-22) — o Painel do grupo não aparece na paleta de comandos (Ctrl+ |
+| `P-612-RAMO-ORIGINAL-ABSORCAO` | 17596 | BAIXA | sim | P-612-RAMO-ORIGINAL-ABSORCAO (2026-11-21) — o ramo original `feat/cobranca-operacao` fic |
+| `P-612-COMENTARIO-MAQUETE` | 17603 | BAIXA | sim | P-612-COMENTARIO-MAQUETE (2026-11-21) — 3 comentários citam uma maquete que não existe — |
+| `P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA` | 17617 | BAIXA | sim | P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA (2026-11-21) — o detalhe da cobrança na plataforma n |
+| `P-ASS10C-MENU-SERVIDOR` | 17624 | BAIXA | sim | P-ASS10C-MENU-SERVIDOR (2026-11-21) — o item "Cobrança" não está no menu do servidor — B |
+| `P-GINVOICE-COMENTARIO-POR-REGEX` | 17631 | BAIXA | sim | P-GINVOICE-COMENTARIO-POR-REGEX (2026-11-21) — o guarda G-INVOICE tira comentário por re |
+| `P-COMISSAO-WEB-EM-NUMBER` | 17645 | BAIXA | sim | P-COMISSAO-WEB-EM-NUMBER (2026-11-21) — a web mostra o total da comissão em `number` — B |
+| `P-COMISSAO-LEITOR-GENERICO` | 17652 | BAIXA | sim | P-COMISSAO-LEITOR-GENERICO (2026-11-21) — leitor de dinheiro montado por nome fora de `m |
+| `P-APP-T9O-SOB-CARGA` | 17666 | BAIXA | sim | P-APP-T9O-SOB-CARGA (2026-11-21) — o T9o estoura o tempo sob carga — BAIXA |
+| `P-APP-OSCARD-TRANSBORDA-390` | 17673 | BAIXA | sim | P-APP-OSCARD-TRANSBORDA-390 (2026-11-21) — o `MobileOsCard` transborda 23 px no aparelho |
+| `P-APP-COMISSOES-SKELETON-DO-KIT` | 17680 | BAIXA | sim | P-APP-COMISSOES-SKELETON-DO-KIT (2026-11-21) — a aba Comissões usa um esqueleto próprio, |
+| `P-APP-SERIAL-LOCK-UNICO` | 17687 | BAIXA | sim | P-APP-SERIAL-LOCK-UNICO (2026-11-21) — duas cópias da trava serial no app — BAIXA |
+| `P-SC-TESTES-SAIDA-PELO-VALID-TO` | 17715 | BAIXA | sim | P-SC-TESTES-SAIDA-PELO-VALID-TO (2026-11-21) — os testes da saída do grupo simulam a saí |
+| `P-AUDITORIA-EMAIL-NO-METADADO` | 17722 | BAIXA | sim | P-AUDITORIA-EMAIL-NO-METADADO (2026-11-21) — o e-mail vai no metadado de `user.access_gr |
+| `P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE` | 17729 | BAIXA | sim | P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE (2026-11-21) — o smoke do compose falha às vezes n |
+| `P-DIARIO-AZURE-POWERSHELL-ESCAPE` | 17736 | BAIXA | sim | P-DIARIO-AZURE-POWERSHELL-ESCAPE (2026-11-21) — o braço do Azure grava o diário por um c |
+| `P-APP-OS-LISTA-ACENTO` | 17743 | BAIXA | sim | P-APP-OS-LISTA-ACENTO (2026-11-21) — "Ordens de Servico" sem acento na lista de OS do ap |
+| `P-TESTE-STUB-APROVACOES-FRAGIL` | 17750 | BAIXA | sim | P-TESTE-STUB-APROVACOES-FRAGIL (2026-11-21) — o teste do consentimento usa uma página fa |
+| `P-APP-ORG-SESSAO-DE-ESCUTA-ORFA` | 17757 | BAIXA | sim | P-APP-ORG-SESSAO-DE-ESCUTA-ORFA (2026-11-21) — app morto ou dados apagados deixam até 1  |
+| `P-APP-ORG-COMISSAO-A-RECEBER` | 17764 | BAIXA | sim | P-APP-ORG-COMISSAO-A-RECEBER (2026-11-21) — a aba Comissões do app não mostra "a receber |
+| `P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO` | 17771 | BAIXA | sim | P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO (2026-11-21) — a linha da comissão no app não most |
+| `P-S2P-HC1B-OSCILA-NO-CI` | 17792 | BAIXA | sim | P-S2P-HC1B-OSCILA-NO-CI (2026-11-22) — HC1b ultrapassou 300 ms numa tentativa — BAIXA |
+| `P-J622-CONTROLE-SERIAL-C5` | 17810 | BAIXA | sim | P-J622-CONTROLE-SERIAL-C5 (2026-11-22) — sonda espera 403 e o produto dá 401 — BAIXA |
+| `P-J622-C4-NOTAS` | 17834 | BAIXA | sim | P-J622-C4-NOTAS (2026-11-22) — quatro notas da cadeira C4 — BAIXA |
+| `P-J622-C5-NOTAS` | 17840 | BAIXA | sim | P-J622-C5-NOTAS (2026-11-22) — três notas da cadeira C5 — BAIXA |
+| `P-GRUPO-TRILHA-COMPLETE-FINAL` | 17846 | BAIXA | sim | P-GRUPO-TRILHA-COMPLETE-FINAL (2026-11-22) — `complete` registra o estado anterior às gr |
+| `P-GRUPO-REVOKE-400-INTERMITENTE` | 17866 | BAIXA | sim | P-GRUPO-REVOKE-400-INTERMITENTE (2026-11-22) — retirar gestor deu 400 uma vez — BAIXA |
+| `P-GRUPO-TOTAL-DE-PATIOS` | 17876 | BAIXA | sim | P-GRUPO-TOTAL-DE-PATIOS (2026-11-22) — total do grupo pendente — BAIXA |
+| `P-GRUPO-SLA-PRAZO` | 17886 | BAIXA | sim | P-GRUPO-SLA-PRAZO (2026-11-22) — prazo do SLA a definir — BAIXA |
+| `P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL` | 17891 | BAIXA | sim | P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL (2026-11-22) — presença depende do sinal de camp |
+| `P-GRUPO-TICKET-MEDIO` | 17896 | BAIXA | sim | P-GRUPO-TICKET-MEDIO (2026-11-22) — definição de ticket médio pendente — BAIXA |
+| `P-GRUPO-HISTORICO-DE-POSICAO` | 17901 | BAIXA | sim | P-GRUPO-HISTORICO-DE-POSICAO (2026-11-22) — histórico de posição pendente — BAIXA |
+| `P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO` | 17910 | BAIXA | sim | P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO (2026-11-22) — lista ainda mostra pátio cujo acesso c |
+| `P-SC-ARNES-ENTRAR-SEM-GUARDA` | 17915 | BAIXA | sim | P-SC-ARNES-ENTRAR-SEM-GUARDA (2026-11-22) — arnês substitui o Entrar por leitura adminis |
+| `P-SC-GR6-503-INTERMITENTE` | 17920 | BAIXA | sim | P-SC-GR6-503-INTERMITENTE (2026-11-22) — GR6 teve 503 isolado — BAIXA |
+| `P-REG-CONFIRMA-CRIACAO-SEM-COUNT` | 17925 | BAIXA | sim | P-REG-CONFIRMA-CRIACAO-SEM-COUNT (2026-11-22) — confirmação não verifica linha alterada  |
+| `P-SC-VINCULO-SEM-ORIGEM` | 17930 | BAIXA | sim | P-SC-VINCULO-SEM-ORIGEM (2026-11-22) — concessão sem origem falha fechado — BAIXA |
+| `P-6970-DETALHE-SEM-PATIO` | 17944 | BAIXA | sim | P-6970-DETALHE-SEM-PATIO (2026-11-22) — detalhe da OS não mostra o pátio — BAIXA |
+| `P-6970-INICIO-SO-PATIO-ATIVO` | 17949 | BAIXA | sim | P-6970-INICIO-SO-PATIO-ATIVO (2026-11-22) — Início não mostra outros pátios — BAIXA |
+| `P-RELEASE-GATE-CONC-FORA-DO-GUARD` | 18000 | BAIXA | sim | P-RELEASE-GATE-CONC-FORA-DO-GUARD (2026-11-22) — teste concorrente fora da lista com gua |
+| `P-S2P-REDEFINICAO-TRES-VIAS` | 18023 | BAIXA | sim | P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -1169,7 +1170,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3754 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3798 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 327
+## FECHADAS — 328
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1495,8 +1496,9 @@
 | `P-SAN305-T10-VIRADA-DA-MEIA-NOITE` | 17230 | BAIXA | sim | P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia- |
 | `P-PLATAFORMA-PERMISSAO-IGNORADA` | 17238 | ALTA | sim | P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma fal |
 | `P-APP-ORG-ESCOLHA-SAI` | 17537 | ALTA | sim | P-APP-ORG-ESCOLHA-SAI (2026-11-20) — a tela Seleção de organização e o "Trocar de organi |
-| `P-GRUPO-EMAIL-MAIUSCULA` | 17692 | BAIXA | **a atribuir** | P-GRUPO-EMAIL-MAIUSCULA (2026-11-21) — a trava do e-mail único no grupo diferencia maiús |
-| `P-GRUPO-COMENTARIO-SLA` | 17890 | BAIXA | sim | P-GRUPO-COMENTARIO-SLA (2026-11-22) — comentário dizia o oposto do código — FECHADA |
-| `P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES` | 17919 | ALTA | **a atribuir** | P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES (2026-11-22) — acessos concedidos caem na saída — FE |
-| `P-6970-PORTAO-CRITERIO-NOVO` | 17948 | ALTA | sim | P-6970-PORTAO-CRITERIO-NOVO (2026-11-22) — portão ainda trazia o critério antigo — FECHA |
-| `P-PATIO-LIVRO-VAZIO-LIBERA` | 18002 | ALTA | sim | P-PATIO-LIVRO-VAZIO-LIBERA (2026-11-22) — livro vazio liberava sem pagamento — ALTA/GRAV |
+| `P-GRUPO-GESTOR-PAINEL` | 17553 | ALTA | sim | P-GRUPO-GESTOR-PAINEL (2026-11-20) — falta o painel do gestor do grupo, com o financeiro |
+| `P-GRUPO-EMAIL-MAIUSCULA` | 17708 | BAIXA | **a atribuir** | P-GRUPO-EMAIL-MAIUSCULA (2026-11-21) — a trava do e-mail único no grupo diferencia maiús |
+| `P-GRUPO-COMENTARIO-SLA` | 17906 | BAIXA | sim | P-GRUPO-COMENTARIO-SLA (2026-11-22) — comentário dizia o oposto do código — FECHADA |
+| `P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES` | 17935 | ALTA | **a atribuir** | P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES (2026-11-22) — acessos concedidos caem na saída — FE |
+| `P-6970-PORTAO-CRITERIO-NOVO` | 17964 | ALTA | sim | P-6970-PORTAO-CRITERIO-NOVO (2026-11-22) — portão ainda trazia o critério antigo — FECHA |
+| `P-PATIO-LIVRO-VAZIO-LIBERA` | 18018 | ALTA | sim | P-PATIO-LIVRO-VAZIO-LIBERA (2026-11-22) — livro vazio liberava sem pagamento — ALTA/GRAV |

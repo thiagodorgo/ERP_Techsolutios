@@ -17549,12 +17549,28 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
   - os chamados dos outros pátios entram na lista de chamados (A2, T1 a T6 do mesmo arquivo), e tocar num deles troca, sem tela de escolha.
 - **o que NÃO fecha aqui, declarado (§A6):** a escolha no Entrar, quando o servidor de hoje responde 409 com mais de uma organização, continua no app (`test/features/bapporg_entrar_escolha_test.dart:283`, L1), porque a parte do servidor (`B-APP-ORG-2S`) não está na `main`. Ela segue nas pendências dos itens 69 e 70 (`P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA` e `P-APP-TROCA-ORG-NAO-TROCA`), que continuam ABERTAS; o `porteiro-619` mediu que nada na `main` declara o 69 ou o 70 fechado.
 
+- **apenso 2026-11-22 (`dev-628-fix2-cl`, Claude Opus, pela 2ª leitura `gem-628-argon` conferida pelo orquestrador) — a frase acima está SUPERADA, sem reescrever:** o parágrafo "o que NÃO fecha aqui" diz que `P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA` e `P-APP-TROCA-ORG-NAO-TROCA` "continuam ABERTAS". Isso valia em 21/11. Desde 22/11 as duas estão FECHADAS (PRs #619, #622 e #625 na `main`; itens 69 e 70 fechados com ressalva pelo `porteiro-6970`), e a parte do servidor (`B-APP-ORG-2S`) está na `main` (squash `c572a937` do #622).
 ## P-GRUPO-GESTOR-PAINEL (2026-11-20) — falta o painel do gestor do grupo, com o financeiro do grupo e de cada pátio — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA (prioridade "altíssima" do dono) · **escopo:** bloco novo · **dono:** `B-GRUPO-GESTOR` · **bloqueia:** não o portão; a `D-DONO-2111-BLOQUEANTES-PRIMEIRO` pôs os itens 69 e 70 antes dele.
+- **status:** FECHADA (2026-11-22, PRs #623 e #627) · antes: ABERTA · **gravidade:** ALTA (prioridade "altíssima" do dono) · **escopo:** bloco novo · **dono:** `B-GRUPO-GESTOR` · **bloqueia:** não o portão; a `D-DONO-2111-BLOQUEANTES-PRIMEIRO` pôs os itens 69 e 70 antes dele.
 - **origem:** `D-DONO-2011-GESTOR-DO-GRUPO` e `D-DONO-2011-GESTOR-GRUPO-PRIORIDADE` (20/11 ~23:10 e ~23:14 SP).
 - **fato:** não existe tela nem papel para o gestor dos pátios de um mesmo grupo ver o financeiro do grupo e de cada pátio. O plano `B-GRUPO-GESTOR` (Fable, com as Emendas 1, 2, 3 e 3.1, fora do repositório) está pronto para o dev: a 1ª entrega traz a marca de gestor, o financeiro, os chamados, o SLA (tempo de chegada, média do mês) e os funcionários, com as 2 tabelas autorizadas pela `D-DONO-2111-RESPOSTAS-13` (item 2).
 - **critério de encerramento:** a 1ª entrega do `B-GRUPO-GESTOR` na `main`, com junta completa.
+- **fechamento (2026-11-22, `dev-628-fix2-cl`, pelo achado A2 do `porteiro-627`):** a 1ª entrega do `B-GRUPO-GESTOR` está na `main`, com junta completa. O servidor (`B-GRUPO-GESTOR-1a`, #623, squash `c8fbd91a`) passou pela junta J-GRP e pela conferência, e a tela com o menu (`B-GRUPO-GESTOR-1b`, #627, squash `afe3106a`) passou pela revisão `rev-627-cx6` (Codex conta 6, GPT-5.6 Sol), que APROVA em `9aec26eb2` e é o verificador do #627 (achado N1 do `porteiro-627`). O `porteiro-623` e o `porteiro-627` deram LIBERADO COM RESSALVA. O que falta, a janela Gestores do grupo, segue na `P-GRUPO-JANELA-GESTORES`, abaixo.
+
+## P-GRUPO-JANELA-GESTORES (2026-11-22) — falta a janela Gestores do grupo, para a plataforma marcar quem é gestor — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** bloco novo · **dono:** `B-GRUPO-GESTOR-1c` · **bloqueia:** não o portão.
+- **origem:** Emenda 1b §5 do plano `B-GRUPO-GESTOR` (Fable, fora do repositório) e a resposta (A) do dono (`D-DONO-2211-GRUPO-JANELA-A`); achado A1 do `porteiro-627`. Registrada por `dev-628-fix2-cl`.
+- **fato:** a `main` tem o painel e o menu, mas ninguém marca um gestor pela tela. A janela, mais as mudanças S1 e S2 do servidor (Emenda 1b §3.3), ficaram para PR próprio, com junta completa.
+- **critério de encerramento:** o `B-GRUPO-GESTOR-1c` na `main`: a janela lista os gestores do grupo e deixa marcar e desmarcar quem tem a permissão, e o servidor S1/S2 está provado por teste, com junta completa.
+
+## P-GRUPO-PALETA (2026-11-22) — o Painel do grupo não aparece na paleta de comandos (Ctrl+K) — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** bloco novo · **dono:** `B-GRUPO-GESTOR-1c` · **bloqueia:** não.
+- **origem:** Emenda 1b §2.3 item 7 e §5; achado A1 do `porteiro-627`. Registrada por `dev-628-fix2-cl`.
+- **fato:** a paleta chama `buildSidebarNav(roles)` sem o 3º parâmetro (o número de pátios do grupo), e o item fica escondido. Levar o número à paleta mexe em `frontend/src/components/**`.
+- **critério de encerramento:** o gestor marcado acha o Painel do grupo pela paleta, provado por teste; quem não é gestor não acha.
 
 ## P-GRUPO-PROVEDOR-COMPARTILHADO (2026-11-20) — a configuração de pagamento e de nota é global da plataforma, não do grupo — ALTA
 
