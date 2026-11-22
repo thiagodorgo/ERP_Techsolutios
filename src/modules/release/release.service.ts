@@ -173,15 +173,15 @@ export class ReleaseService {
       );
     }
     const chargeState = await this.chargeState(actor.tenantId, normalizedId, occurredAt);
-    if (!chargeState) {
+    const consumeChargeState = chargeState;
+    if (!consumeChargeState) {
       throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_gate_unresolved", "Release gate state could not be resolved.");
     }
 
-    const consumeChargeState = chargeState;
     const chargesMissing = consumeChargeState.dailyShortfall > 0;
     const noChargesPosted = consumeChargeState.exigibleCount === 0;
-    const debtsUnsettled = !chargeState.debtsSettled;
-    const reconciliationPending = !chargeState.reconciliationConsistent;
+    const debtsUnsettled = !consumeChargeState.debtsSettled;
+    const reconciliationPending = !consumeChargeState.reconciliationConsistent;
     const requirementUnmet = view.checks.some((check) => check.required && !check.satisfied);
     const authorityMissing = view.release.authorityApprovedAt === undefined;
     const recipientMissing = !view.release.recipientName;
@@ -191,7 +191,7 @@ export class ReleaseService {
       releaseGate: { reconciliationPending, chargesMissing, noChargesPosted, debtsUnsettled, requirementUnmet, authorityMissing, recipientMissing },
     });
 
-    const settledTotal = chargeState.settledTotal;
+    const settledTotal = consumeChargeState.settledTotal;
     // Snapshot RELEASE §2.8: só refs/hashes/valores-string. ZERO CPF/nome/token do proprietário.
     const eventPayload: CanonicalValue = {
       event: "RELEASE",
