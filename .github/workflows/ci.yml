@@ -414,6 +414,10 @@ jobs:
           SUITES="$SUITES tests/bapporg2s_senha-corrida-db.test.ts"
           SUITES="$SUITES tests/bapporg2s_concessao-origem-db.test.ts"
           SUITES="$SUITES tests/bapporg2s_2s-migration-drill-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_centavos-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_k_tests-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_trava-rotas-s1-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_login-conexao-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       - name: Route HC1b latency suite alone
