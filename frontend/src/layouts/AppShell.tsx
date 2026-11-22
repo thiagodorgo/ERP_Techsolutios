@@ -4,6 +4,7 @@ import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-route
 
 import { CommandPalette, useCommandPalette } from "../components/command-palette";
 import { AppearanceMenu } from "../modules/appearance";
+import { useGroupPanelMenuScope } from "../modules/group-panel/useGroupPanelMenuScope";
 import { useNavigationMenu } from "../modules/navigation/useNavigationMenu";
 import { getUnreadNotificationCount } from "../modules/notifications/notification.service";
 import { listAllPendingApprovals } from "../modules/work-orders/approval.service";
@@ -41,11 +42,24 @@ export function AppShell() {
   // Navegação vem de GET /api/v1/navigation/menu (mock atrás do flag; fallback local),
   // usada para ocultar itens marcados "planned"; a allowlist MVP garante o escopo (§4.3).
   const menu = useNavigationMenu();
+  // B-GRUPO-GESTOR-1b (Emenda 1b §2.3) — o Painel do grupo só entra no menu com 2 ou mais pátios no /group-panel/scope.
+  // Mesmo molde do `approvalContext`: sem `financial_entries:read` na organização ativa, nem lê. O servidor é a autoridade.
+  const groupPanelContext = useMemo(() => {
+    if (!activeContext || !permissions.includes("financial_entries:read")) return null;
+    return {
+      token: session?.accessToken,
+      tenantId: activeContext.tenantId,
+      branchId: activeContext.branchId,
+      role: activeContext.role,
+      permissions: activeContext.permissions,
+    };
+  }, [activeContext, permissions, session?.accessToken]);
+  const groupPanelOrganizations = useGroupPanelMenuScope(groupPanelContext);
   const nav = useMemo(() => {
     // Ω-ACESSO — esconde "planned" + gating dinâmico por provisionamento (governedPaths não visíveis).
     const hidden = computeHiddenNavPaths(menu.items, menu.governedPaths);
-    return buildSidebarNav(session?.user?.roles ?? [], hidden);
-  }, [session?.user?.roles, menu.items, menu.governedPaths]);
+    return buildSidebarNav(session?.user?.roles ?? [], hidden, groupPanelOrganizations);
+  }, [session?.user?.roles, menu.items, menu.governedPaths, groupPanelOrganizations]);
 
   const notificationContext = useMemo(() => {
     if (!activeContext || !permissions.includes("notifications:read")) return null;

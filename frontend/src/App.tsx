@@ -107,6 +107,8 @@ const RastreamentoPage = lazy(() => import("./modules/telemetry/pages/Rastreamen
 const FieldOperatorsPage = lazy(() => import("./modules/dispatch/pages/FieldOperatorsPage").then((m) => ({ default: m.FieldOperatorsPage })));
 const DispatchConsolePage = lazy(() => import("./modules/dispatch/pages/DispatchConsolePage").then((m) => ({ default: m.DispatchConsolePage })));
 const FinanceiroPage = lazy(() => import("./modules/finance/pages/FinanceiroPage").then((m) => ({ default: m.FinanceiroPage })));
+// B-GRUPO-GESTOR-1b — o Painel do gestor do grupo (`/group`), só de leitura; a porta real é a marca de gestor, no servidor.
+const GroupPanelPage = lazy(() => import("./modules/group-panel/pages/GroupPanelPage").then((m) => ({ default: m.GroupPanelPage })));
 const InvoicesPage = lazy(() => import("./modules/finance/pages/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
 const RemuneracoesPage = lazy(() => import("./modules/finance/commissions/pages/RemuneracoesPage").then((m) => ({ default: m.RemuneracoesPage })));
 const ChequesPage = lazy(() => import("./modules/finance/cheques/ChequesPage").then((m) => ({ default: m.ChequesPage })));
@@ -658,6 +660,16 @@ export function App() {
                 // finance:read fica como fallback de compat (permissão só-de-UI/demo; era órfã p/ não-admins).
                 <PermissionGuard permissions={["financial_entries:read", "finance:read"]}>
                   <FinanceiroPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/group"
+              element={
+                // B-GRUPO-GESTOR-1b — mesma permissão do item do menu (`group.panel`, financial_entries:read). O servidor é a
+                // autoridade: sem a marca de gestor do grupo, o `/group-panel/*` responde 403 e a tela mostra "acesso não permitido".
+                <PermissionGuard permissions={["financial_entries:read"]}>
+                  <GroupPanelPage />
                 </PermissionGuard>
               }
             />

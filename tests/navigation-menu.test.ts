@@ -158,6 +158,23 @@ test("B-SAN3-24: finance.period_closes é implementado e só aparece com financi
   assert.equal(without.find((entry) => entry.id === "finance.period_closes"), undefined);
 });
 
+// B-GRUPO-GESTOR-1b — Painel do grupo governado por `financial_entries:read` e pelo módulo `finance` (o mesmo gate do
+// PermissionGuard de /group no App.tsx). A porta real (a marca de gestor do grupo) é do servidor, no /group-panel/*.
+test("B-GRUPO-GESTOR-1b: group.panel é implementado, só aparece com financial_entries:read e com o módulo finance", () => {
+  const actor = { userId: "usr-manager", tenantId: "ten-a", roles: ["manager"], scope: "finance" } as const;
+  const item = getMenuForCurrentUser({ ...actor, permissions: ["financial_entries:read"], enabledModules: ["finance"] }).find((entry) => entry.id === "group.panel");
+  assert.equal(item?.status, "implemented");
+  assert.equal(item?.path, "/group");
+  assert.equal(item?.label, "Painel do grupo");
+  assert.deepEqual(item?.requiredPermissions, ["financial_entries:read"]);
+  assert.deepEqual(item?.requiredModules, ["finance"]);
+  assert.equal(item?.tenantOnly, true);
+  const semPermissao = getMenuForCurrentUser({ ...actor, permissions: ["financial_titles:read", "cheques:read"], enabledModules: ["finance"] });
+  assert.equal(semPermissao.find((entry) => entry.id === "group.panel"), undefined);
+  const semModulo = getMenuForCurrentUser({ ...actor, permissions: ["financial_entries:read"], enabledModules: ["field_operations"] });
+  assert.equal(semModulo.find((entry) => entry.id === "group.panel"), undefined);
+});
+
 test("Cloud Billing aparece com cost allocation read", () => {
   const menu = getMenuForCurrentUser({
     userId: "usr-platform",
