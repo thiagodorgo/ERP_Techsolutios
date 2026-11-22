@@ -2,6 +2,9 @@
 -- Migração aditiva e atômica. Runbook manual de volta:
 --   DROP TABLE IF EXISTS "user_deactivation_requests";
 --   DROP TABLE IF EXISTS "economic_group_managers";
+--   DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20260906000000_group_managers';
+-- Sem o último passo, o `prisma migrate deploy` seguinte diz "No pending migrations" e não recria as tabelas
+-- (drill da F0, C2.4). `prisma migrate resolve --rolled-back` não serve aqui: só aceita migração em estado de falha.
 BEGIN;
 
 CREATE TABLE "economic_group_managers" (
