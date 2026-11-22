@@ -93,7 +93,11 @@ export class GroupPanelService {
     const okBlocks = reads.filter((read) => read.status === "ok" && read.summary !== null).map((read) => read.summary!);
     const operationsBlocks = reads.filter((read) => read.operationsStatus === "ok" && read.operations !== null).map((read) => read.operations!);
     const staffBlocks = reads.filter((read) => read.staffStatus === "ok" && read.staff !== null).map((read) => read.staff!);
-    const staffRows = staffBlocks.flatMap((block) => block.people.map((person) => ({ identityId: person.key, localKey: person.key })));
+    const staffRows = reads.flatMap((read) =>
+      read.staff === null
+        ? []
+        : read.staff.people.map((person) => ({ identityId: person.key, localKey: `${read.organization.tenantId}:${person.key}` })),
+    );
     // âncora (MUT-19): a mesma pessoa em vários pátios conta uma vez no grupo.
     const distinctPeople = new Set(staffRows.map((row) => row.identityId ?? row.localKey)).size;
     // âncora (MUT-6)
