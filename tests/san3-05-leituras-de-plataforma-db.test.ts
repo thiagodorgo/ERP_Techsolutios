@@ -230,6 +230,7 @@ if (!connectionString) {
       grupoT: "",
     };
     let server: Server | undefined;
+    let managerIdentityId: string | undefined;
 
     try {
       const postura = await efemera.client.$queryRawUnsafe<Array<{ rolsuper: boolean; rolbypassrls: boolean }>>(
@@ -347,6 +348,11 @@ if (!connectionString) {
       const atorPlataforma = await admin.user.create({
         data: { tenant_id: cenario.tenantA, name: "Ator de plataforma", email: `plataforma-${suffix}@san3-05.test` },
       });
+      managerIdentityId = randomUUID();
+      await admin.authIdentity.create({ data: { id: managerIdentityId } });
+      await admin.authIdentityLink.create({
+        data: { identity_id: managerIdentityId, tenant_id: cenario.tenantA, user_id: atorPlataforma.id, attached_via: "backfill" },
+      });
       const token = await signAccessToken({
         user_id: atorPlataforma.id,
         tenant_id: cenario.tenantA,
@@ -458,6 +464,57 @@ if (!connectionString) {
         const historico = await http("GET", `${P}/billing/economic-groups/${cenario.grupoS}/history`);
         assert.equal(historico.status, 200, JSON.stringify(historico.body));
         registrarRota(`GET ${P}/billing/economic-groups/:groupId/history`, recortarMembros(historico.body.data, cenario));
+
+        // B-GRUPO-GESTOR — as 3 rotas novas também atravessam o diferencial super × NOBYPASSRLS.
+        // IDs e relógio são próprios de cada volta; a projeção compara a conta de negócio que precisa ser igual.
+        const platformMarker = `SAN3-05 Platform ${papel} ${suffix}`;
+        const platformTenant = await admin.tenant.upsert({
+          where: { slug: "platform" },
+          create: { name: platformMarker, slug: "platform" },
+          update: {},
+          select: { id: true, name: true },
+        });
+        const platformPropria = platformTenant.name === platformMarker;
+        const gestorCriado = await http("POST", `${P}/billing/economic-groups/${cenario.grupoS}/managers`, {
+          organizationId: cenario.tenantA,
+          userId: atorPlataforma.id,
+        });
+        assert.equal(gestorCriado.status, 201, JSON.stringify(gestorCriado.body));
+        const gestorData = gestorCriado.body.data as {
+          managerId: string;
+          accounts: Array<{ organizationName: string; userName: string }>;
+        };
+        const projetarGestores = (rows: Array<{ accounts: Array<{ organizationName: string; userName: string }> }>) =>
+          rows.map((row) => row.accounts.map(({ organizationName, userName }) => ({ organizationName, userName })));
+        registrarRota(`POST ${P}/billing/economic-groups/:groupId/managers`, projetarGestores([gestorData]));
+
+        const gestores = await http("GET", `${P}/billing/economic-groups/${cenario.grupoS}/managers`);
+        assert.equal(gestores.status, 200, JSON.stringify(gestores.body));
+        registrarRota(
+          `GET ${P}/billing/economic-groups/:groupId/managers`,
+          projetarGestores(gestores.body.data as Array<{ accounts: Array<{ organizationName: string; userName: string }> }>),
+        );
+
+        const gestorRemovido = await fetch(
+          `${baseUrl}${P}/billing/economic-groups/${cenario.grupoS}/managers/${gestorData.managerId}`,
+          { method: "DELETE", headers: { authorization: `Bearer ${token}` } },
+        );
+        assert.equal(gestorRemovido.status, 204);
+        registrarRota(`DELETE ${P}/billing/economic-groups/:groupId/managers/:managerId`, { status: gestorRemovido.status });
+        await admin.platformAuditLog.deleteMany({
+          where: { entity: "economic_group_manager", entity_id: gestorData.managerId },
+        });
+        await admin.$executeRawUnsafe(`DELETE FROM economic_group_managers WHERE id = $1::uuid`, gestorData.managerId);
+        await admin.auditLog.deleteMany({
+          where: {
+            tenant_id: cenario.tenantA,
+            entity: "economic_group",
+            entity_id: cenario.grupoS,
+            action: { in: ["economic_group.manager_granted", "economic_group.manager_revoked"] },
+          },
+        });
+        if (platformPropria) await admin.tenant.delete({ where: { id: platformTenant.id } });
+
         const membros = await http("PUT", `${P}/billing/economic-groups/${cenario.grupoT}/members`, { tenantIds: [cenario.tenantB] });
         assert.equal(membros.status, 200, JSON.stringify(membros.body));
         registrarRota(`PUT ${P}/billing/economic-groups/:groupId/members`, recortarGrupo(membros.body.data, cenario));
@@ -1392,7 +1449,19 @@ if (!connectionString) {
     } finally {
       if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
       // B-USERS-SEG-DESATIVADO (E1.6) — o ator de plataforma criado para o portão sai antes da organização.
+      if (managerIdentityId) {
+        const managerIds = (await admin.economicGroupManager.findMany({
+          where: { identity_id: managerIdentityId },
+          select: { id: true },
+        })).map(({ id }) => id);
+        if (managerIds.length > 0) {
+          await admin.platformAuditLog.deleteMany({ where: { entity: "economic_group_manager", entity_id: { in: managerIds } } });
+        }
+        await admin.$executeRawUnsafe(`DELETE FROM economic_group_managers WHERE identity_id = $1::uuid`, managerIdentityId);
+        await admin.authIdentityLink.deleteMany({ where: { identity_id: managerIdentityId } });
+      }
       await admin.user.deleteMany({ where: { tenant_id: cenario.tenantA, email: `plataforma-${suffix}@san3-05.test` } });
+      if (managerIdentityId) await admin.authIdentity.deleteMany({ where: { id: managerIdentityId } });
       await limpar(admin, cenario);
       await efemera.drop();
       await admin.$disconnect();
