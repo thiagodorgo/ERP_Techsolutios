@@ -217,3 +217,27 @@ ALTER INDEX "tenant_cloud_cost_allocations_run_tenant_service_usage_category" RE
 
 -- RenameIndex
 ALTER INDEX "tenant_cloud_cost_allocations_tenant_idx" RENAME TO "tenant_cloud_cost_allocations_tenant_id_idx";
+-- DropForeignKey
+ALTER TABLE "economic_group_managers" DROP CONSTRAINT "economic_group_managers_group_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "economic_group_managers" DROP CONSTRAINT "economic_group_managers_identity_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "economic_group_managers" DROP CONSTRAINT "economic_group_managers_tenant_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "user_deactivation_requests" DROP CONSTRAINT "user_deactivation_requests_decided_by_fkey";
+
+-- DropForeignKey
+ALTER TABLE "user_deactivation_requests" DROP CONSTRAINT "user_deactivation_requests_group_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "user_deactivation_requests" DROP CONSTRAINT "user_deactivation_requests_requested_by_fkey";
+
+-- DropForeignKey
+ALTER TABLE "user_deactivation_requests" DROP CONSTRAINT "user_deactivation_requests_target_user_fkey";
+
+-- DropForeignKey
+ALTER TABLE "user_deactivation_requests" DROP CONSTRAINT "user_deactivation_requests_tenant_id_fkey";
+
