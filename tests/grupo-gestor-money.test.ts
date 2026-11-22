@@ -4,6 +4,8 @@ import test from "node:test";
 
 import type { FinancialSummary } from "../src/modules/financial-summary/financial-summary.types.js";
 import { consolidate, fromCents, sumMoney, toCents, variationPct } from "../src/modules/group-panel/group-panel.money.js";
+import { GroupPanelService } from "../src/modules/group-panel/group-panel.service.js";
+import type { GroupPanelReaders } from "../src/modules/group-panel/group-panel.types.js";
 
 type Parts = {
   readonly receivable?: number;
@@ -119,4 +121,91 @@ test("VAR-2: mês anterior zero dá variação nula (nunca infinito nem NaN)", (
   assert.equal(grupo.receivedVariationPct, null);
   assert.equal(grupo.paidVariationPct, null);
   assert.equal(consolidate([summaryOf({ flow: [["2026-11", 10, 5]] })]).receivedVariationPct, null, "um mês só: nulo");
+});
+
+// ------------------------------------------------------------------------------------- MON-3 a MON-5 (o serviço)
+
+type FakeOrg = {
+  readonly id: string;
+  readonly summary?: FinancialSummary;
+  readonly failFinance?: boolean;
+};
+
+function fakeService(orgs: readonly FakeOrg[]) {
+  const readers: GroupPanelReaders = {
+    async identityMemberships() {
+      return orgs.map((org) => ({ tenantId: org.id, tenantName: `Pátio ${org.id}`, userId: `u-${org.id}` }));
+    },
+    async groupMemberships(tenantIds) {
+      return tenantIds.map((tenantId) => ({ tenantId, groupId: "g", validFrom: "2026-01-01", validTo: null }));
+    },
+    async managerMarks() {
+      return [{ groupId: "g", revokedAt: null }];
+    },
+    async authorization() {
+      return { roles: ["finance"], permissions: ["financial_entries:read"] };
+    },
+    async modules() {
+      return ["finance"];
+    },
+    async financeSummary({ tenantId }) {
+      const org = orgs.find((candidate) => candidate.id === tenantId)!;
+      if (org.failFinance) throw new Error("leitura caiu");
+      return org.summary ?? summaryOf({ receivable: 1 });
+    },
+    async recordView() {},
+  };
+  return new GroupPanelService(readers, () => new Date("2026-11-22T15:00:00Z"));
+}
+
+const ACTOR = { userId: "u-p01", tenantId: "p01", email: "gestor@example.com", roles: ["finance"], authType: "jwt" as const };
+
+test("MON-3: um pátio falha na leitura — consolidado nulo, cobertura incompleta, os outros pátios aparecem", async () => {
+  const result = await fakeService([{ id: "p01" }, { id: "p02", failFinance: true }, { id: "p03" }]).getSummary(ACTOR);
+  assert.equal(result.consolidated, null);
+  assert.equal(result.coverage.complete, false);
+  assert.equal(result.coverage.reason, "erro_de_leitura");
+  assert.deepEqual(result.coverage.failed, ["p02"]);
+  assert.deepEqual(
+    result.organizations.map((org) => [org.id, org.finance.status]),
+    [
+      ["p01", "ok"],
+      ["p02", "erro"],
+      ["p03", "ok"],
+    ],
+  );
+  assert.equal(result.organizations[1]?.finance.summary, null, "o pátio que falhou não tem número");
+});
+
+test("MON-4: 31 pátios — o teto lê 30, sem total, e diz qual faltou", async () => {
+  const orgs = Array.from({ length: 31 }, (_, index) => ({ id: `p${String(index + 1).padStart(2, "0")}` }));
+  const result = await fakeService(orgs).getSummary(ACTOR);
+  assert.equal(result.consolidated, null);
+  assert.equal(result.coverage.complete, false);
+  assert.equal(result.coverage.reason, "teto");
+  assert.equal(result.organizations.length, 30);
+  assert.deepEqual(result.coverage.failed, ["p31"]);
+});
+
+test("MON-5: moedas diferentes não se somam — consolidado nulo, moedas_diferentes", async () => {
+  const result = await fakeService([
+    { id: "p01", summary: summaryOf({ receivable: 10, currency: "BRL" }) },
+    { id: "p02", summary: summaryOf({ receivable: 10, currency: "USD" }) },
+  ]).getSummary(ACTOR);
+  assert.equal(result.consolidated, null);
+  assert.equal(result.coverage.complete, false);
+  assert.equal(result.coverage.reason, "moedas_diferentes");
+  assert.equal(result.coverage.included, 2);
+});
+
+test("MON-7: tudo certo — o consolidado sai e é a soma dos pátios, com a moeda", async () => {
+  const result = await fakeService([
+    { id: "p01", summary: summaryOf({ receivable: 1.15, cash: 0.1 }) },
+    { id: "p02", summary: summaryOf({ receivable: 0.29, cash: 0.2 }) },
+  ]).getSummary(ACTOR);
+  assert.equal(result.coverage.complete, true);
+  assert.equal(result.coverage.reason, null);
+  assert.equal(result.consolidated?.currency, "BRL");
+  assert.equal(result.consolidated?.finance.receivableOpen, 1.44);
+  assert.equal(result.consolidated?.finance.cashBalance, 0.3);
 });
