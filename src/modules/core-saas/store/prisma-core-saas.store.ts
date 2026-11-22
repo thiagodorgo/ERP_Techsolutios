@@ -271,9 +271,14 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       try {
         await setTenantRlsContext(tx, originTenantId);
         origin = await credentials.findForShareByEmailForTenant(input.email, originTenantId);
-      } finally {
-        await setTenantRlsContext(tx, input.tenantId);
+      } catch (error) {
+        // A reposicao do GUC nunca toma o lugar do erro que ja esta subindo (1.8.3.17, I1): o prazo esgotado na
+        // leitura da origem chega inteiro a quem responde 503. So a falha da reposicao e engolida.
+        await setTenantRlsContext(tx, input.tenantId).catch(() => undefined);
+        throw error;
       }
+
+      await setTenantRlsContext(tx, input.tenantId);
 
       if (!origin) throw new LoginNotFoundInGroupError();
 

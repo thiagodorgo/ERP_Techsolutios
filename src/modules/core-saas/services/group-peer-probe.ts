@@ -182,10 +182,15 @@ export async function probeGroupPeers(
         }
       }
     }
-  } finally {
-    // Devolve o contexto da organizacao de origem: quem chamou continua a criar o usuario NELA.
-    await setTenantRlsContext(tx, ownTenantId);
+  } catch (error) {
+    // A reposicao do GUC nunca toma o lugar do erro que ja esta subindo (1.8.3.17, I1): com a transacao abortada pelo
+    // prazo, o set_config falharia com 25P02 e esconderia o 55P03/57014 que vira 503. So a falha da reposicao e engolida.
+    await setTenantRlsContext(tx, ownTenantId).catch(() => undefined);
+    throw error;
   }
+
+  // Devolve o contexto da organizacao de origem: quem chamou continua a criar o usuario NELA.
+  await setTenantRlsContext(tx, ownTenantId);
 
   return { users, identityIds: [...identityIds], origins };
 }
