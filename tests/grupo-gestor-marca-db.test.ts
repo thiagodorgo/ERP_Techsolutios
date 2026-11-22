@@ -32,9 +32,17 @@ if (!connectionString) {
     assert.equal(manager.tenantId, ctx.platform);
     const physical = (await ctx.admin.$queryRawUnsafe(`SELECT tenant_id::text AS tenant_id FROM economic_group_managers WHERE id = $1::uuid`, manager.id)) as any[];
     assert.deepEqual(physical, [{ tenant_id: ctx.platform }]);
+    assert.deepEqual(await ctx.auditTrail(manager.id), {
+      organization: ["economic_group.manager_granted"],
+      platform: ["economic_group.manager_granted"],
+    });
     assert.equal((await ctx.repository.list(ctx.group, input.today))?.length, 1);
     await assert.rejects(ctx.repository.grant(input), (error: any) => error?.reason === "already_group_manager");
     assert.equal(await ctx.repository.revoke(ctx.group, manager.id, ctx.userA), true);
+    assert.deepEqual(await ctx.auditTrail(manager.id), {
+      organization: ["economic_group.manager_granted", "economic_group.manager_revoked"],
+      platform: ["economic_group.manager_granted", "economic_group.manager_revoked"],
+    });
   });
 
   test("RLS-2/RLS-3 · identidade X lê só a própria marca; pátios e ausência de contexto leem zero", async () => {
@@ -107,7 +115,14 @@ async function bootstrap(connection: string) {
     created.push(row.id);
     return row;
   }
-  return { admin, role, repository, platform, tenantA, tenantB, group, userA, identityX, identityY, ensureActiveMark, async close() {
+  async function auditTrail(managerId: string) {
+    const organization = await admin.auditLog.findMany({ where: { tenant_id: tenantA, entity_id: group }, orderBy: { created_at: "asc" }, select: { action: true } });
+    const platformRows = await admin.platformAuditLog.findMany({ where: { entity_id: managerId }, orderBy: { created_at: "asc" }, select: { action: true } });
+    return { organization: organization.map((row: any) => row.action), platform: platformRows.map((row: any) => row.action) };
+  }
+  return { admin, role, repository, platform, tenantA, tenantB, group, userA, identityX, identityY, ensureActiveMark, auditTrail, async close() {
+    await admin.auditLog.deleteMany({ where: { tenant_id: tenantA, entity_id: group } });
+    await admin.platformAuditLog.deleteMany({ where: { entity: "economic_group_manager", metadata: { path: ["group_id"], equals: group } } });
     await admin.$executeRawUnsafe(`DELETE FROM economic_group_managers WHERE group_id = $1::uuid`, group);
     await admin.economicGroupMember.deleteMany({ where: { group_id: group } });
     await admin.authIdentityLink.deleteMany({ where: { identity_id: { in: [identityX, identityY] } } });

@@ -634,6 +634,11 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/vault/vault.prisma-runtime.ts", "PrismaProviderConfigRepository.enableLocked", "tx", "RAW-SQL($queryRaw) OPACO", "?", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
     "B-ASS-08c3, F-A2 (plano §4.3, [ENABLE-TX]): `SELECT provider, kind, … FROM billing_provider_configs WHERE provider = ${provider} FOR UPDATE` dentro do `$transaction` do `enable`, antes de o serviço avaliar as precondições ([ENABLE-GATE]) e de gravar `enabled` no MESMO tx; a tabela é GLOBAL da plataforma, sem tenant_id e sem RLS (migração 20260899000000_ass05_billing_vault: \"SEM política de RLS, exceção declarada\"; plano §7 item 6), sob `platform:billing-providers:manage`, então não há GUC a fixar e nenhuma tabela FORCE é tocada — a MESMA classe da chave irmã `PrismaCredentialRepository.replaceActive` (B-ASS-05) já congelada acima. Provado em tests/ass-08c3-provider-routes-db.test.ts (EN1 a EN5, EN8) e no cenário `providerConfig.enableLocked` do T-LOCK-2.",
   ],
+  // B-GRUPO-GESTOR, Emenda 3 §2.3/§2.4: a trilha do pátio é gravada dentro da transação de duas voltas da marca.
+  [
+    k("L2", "src/modules/subscription-billing/economic-groups/economic-group-managers.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-GRUPO-GESTOR, Emenda 3: o AuditLogRepository recebe o tx da transação única de grant/revoke; antes da trilha o repositório fixa o GUC do pátio com setTenantRlsContext, e só depois troca para a organização platform para gravar a marca e a trilha global. Provado em tests/grupo-gestor-marca-db.test.ts (RLS-1/T-ORG-SIS) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

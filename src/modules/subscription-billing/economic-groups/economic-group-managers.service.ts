@@ -22,7 +22,7 @@ export class EconomicGroupManagersService {
   private async run<T>(work: () => Promise<T>): Promise<T> {
     try { return await work(); } catch (cause) {
       if (!(cause instanceof GroupManagerRepositoryError)) throw cause;
-      const status = cause.reason === "platform_organization_missing" ? 503 : cause.reason === "already_group_manager" ? 409 : cause.reason === "organization_not_in_group" || cause.reason === "user_inactive" ? 422 : 404;
+      const status = cause.reason === "platform_organization_missing" ? 503 : cause.reason === "manager_origin_missing" ? 500 : cause.reason === "already_group_manager" ? 409 : cause.reason === "organization_not_in_group" || cause.reason === "user_inactive" ? 422 : 404;
       throw error(status, cause.reason);
     }
   }

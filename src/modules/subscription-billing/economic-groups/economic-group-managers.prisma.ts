@@ -38,8 +38,11 @@ export class PrismaEconomicGroupManagersRepository implements EconomicGroupManag
         if (user.status !== "active") throw new GroupManagerRepositoryError("user_inactive");
         const link = await tx.authIdentityLink.findFirst({ where: { tenant_id: input.organizationId, user_id: input.userId } });
         if (!link) throw new GroupManagerRepositoryError("identity_link_missing");
+        await writeOrganizationAudit(tx, { tenantId: input.organizationId, action: "economic_group.manager_granted", groupId: input.groupId });
         await setTenantRlsContext(tx, platformTenantId);
-        return tx.economicGroupManager.create({ data: { tenant_id: platformTenantId, group_id: input.groupId, identity_id: link.identity_id, granted_by: uuidOrNull(input.actorUserId) } });
+        const manager = await tx.economicGroupManager.create({ data: { tenant_id: platformTenantId, group_id: input.groupId, identity_id: link.identity_id, granted_by: uuidOrNull(input.actorUserId) } });
+        await writePlatformAudit(tx, { action: "economic_group.manager_granted", managerId: manager.id, groupId: input.groupId, originTenantId: input.organizationId, actorUserId: input.actorUserId });
+        return manager;
       });
       return mapManager(row, await this.accountsForIdentity(input.groupId, row.identity_id, input.today));
     } catch (error) {
@@ -51,8 +54,17 @@ export class PrismaEconomicGroupManagersRepository implements EconomicGroupManag
 
   async revoke(groupId: string, managerId: string, actorUserId: string | null): Promise<boolean> {
     const platformTenantId = await this.resolvePlatformTenantId();
-    return withTenantRls(this.client, platformTenantId, async (tx) => {
+    return this.client.$transaction(async (tx) => {
+      await setTenantRlsContext(tx, platformTenantId);
+      const manager = await tx.economicGroupManager.findFirst({ where: { id: managerId, group_id: groupId, revoked_at: null }, select: { id: true } });
+      if (!manager) return false;
+      const grantAudit = await tx.platformAuditLog.findFirst({ where: { action: "economic_group.manager_granted", entity: "economic_group_manager", entity_id: managerId }, orderBy: { created_at: "asc" }, select: { tenant_id: true } });
+      if (!grantAudit?.tenant_id) throw new GroupManagerRepositoryError("manager_origin_missing");
+      await setTenantRlsContext(tx, grantAudit.tenant_id);
+      await writeOrganizationAudit(tx, { tenantId: grantAudit.tenant_id, action: "economic_group.manager_revoked", groupId });
+      await setTenantRlsContext(tx, platformTenantId);
       const updated = await tx.economicGroupManager.updateMany({ where: { id: managerId, group_id: groupId, revoked_at: null }, data: { revoked_at: new Date(), revoked_by: uuidOrNull(actorUserId) } });
+      await writePlatformAudit(tx, { action: "economic_group.manager_revoked", managerId, groupId, originTenantId: grantAudit.tenant_id, actorUserId });
       return updated.count === 1;
     });
   }
@@ -80,6 +92,24 @@ export class PrismaEconomicGroupManagersRepository implements EconomicGroupManag
       return [{ organizationId: tenantId, organizationName: link.tenant.name, userId: link.user_id, userName: link.user.name }];
     });
   }
+}
+
+async function writeOrganizationAudit(tx: Prisma.TransactionClient, input: { tenantId: string; action: string; groupId: string }): Promise<void> {
+  const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
+    import("../../core-saas/audit/audit-log.service.js"),
+    import("../../core-saas/repositories/audit-log.repository.js"),
+  ]);
+  await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+    tenantId: input.tenantId, actorId: null, actorType: "system", action: input.action,
+    resourceType: "economic_group", resourceId: input.groupId, metadata: { origin: "platform" },
+  });
+}
+
+async function writePlatformAudit(tx: Prisma.TransactionClient, input: { action: string; managerId: string; groupId: string; originTenantId: string; actorUserId: string | null }): Promise<void> {
+  await tx.platformAuditLog.create({ data: {
+    actor_user_id: uuidOrNull(input.actorUserId), action: input.action, entity: "economic_group_manager",
+    entity_id: input.managerId, tenant_id: input.originTenantId, metadata: { group_id: input.groupId },
+  } });
 }
 
 function mapManager(row: ManagerRow, accounts: readonly GroupManagerAccount[]): GroupManager {

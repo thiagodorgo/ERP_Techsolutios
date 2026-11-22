@@ -100,7 +100,7 @@ export class InMemoryEconomicGroupManagersRepository implements EconomicGroupMan
 }
 
 export class GroupManagerRepositoryError extends Error {
-  constructor(readonly reason: "platform_organization_missing" | "group_not_found" | "user_not_found" | "organization_not_in_group" | "user_inactive" | "identity_link_missing" | "already_group_manager") {
+  constructor(readonly reason: "platform_organization_missing" | "group_not_found" | "user_not_found" | "organization_not_in_group" | "user_inactive" | "identity_link_missing" | "already_group_manager" | "manager_origin_missing") {
     super(reason);
     this.name = "GroupManagerRepositoryError";
   }
