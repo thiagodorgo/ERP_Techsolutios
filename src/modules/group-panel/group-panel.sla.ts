@@ -1,7 +1,7 @@
 // B-GRUPO-GESTOR (1a, F3) — chamados do mês e tempo de chegada, em funções puras.
 //
-// Decisão direta do dono (mandato F3): o tempo de chegada começa na ABERTURA (`createdAt`) e termina em `arrivedAt`
-// (No local). `scheduledFor` não desloca o início. O mês é sempre o mês de negócio de São Paulo.
+// O tempo de chegada começa em `scheduledFor` quando o chamado é agendado e termina em `arrivedAt` (No local).
+// Sem `scheduledFor`, ele começa na abertura (`createdAt`). O mês é sempre o mês de negócio de São Paulo.
 
 import { deriveBusinessDate, deriveCompetencia, parseBusinessDate } from "../../config/business-time.js";
 import { DASHBOARD_TERMINAL_STATUSES } from "../dashboard/dashboard.types.js";
