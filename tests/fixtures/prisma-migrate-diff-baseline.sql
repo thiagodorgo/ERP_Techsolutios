@@ -240,4 +240,3 @@ ALTER TABLE "user_deactivation_requests" DROP CONSTRAINT "user_deactivation_requ
 
 -- DropForeignKey
 ALTER TABLE "user_deactivation_requests" DROP CONSTRAINT "user_deactivation_requests_tenant_id_fkey";
-
