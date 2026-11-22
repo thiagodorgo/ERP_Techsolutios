@@ -157,9 +157,9 @@ if (!connectionString) {
       const group = (await client.economicGroup.create({ data: { name: `Grupo ORG503 ${randomUUID()}` } })).id;
       const repository = new module.PrismaEconomicGroupManagersRepository(client);
       const calls = [
-        repository.list(group, "2026-11-22"),
-        repository.grant({ groupId: group, organizationId: randomUUID(), userId: randomUUID(), actorTenantId: randomUUID(), actorUserId: null, today: "2026-11-22" }),
-        repository.revoke(group, randomUUID(), null),
+        () => repository.list(group, "2026-11-22"),
+        () => repository.grant({ groupId: group, organizationId: randomUUID(), userId: randomUUID(), actorTenantId: randomUUID(), actorUserId: null, today: "2026-11-22" }),
+        () => repository.revoke(group, randomUUID(), null),
       ];
       for (const call of calls) await assert.rejects(call, (error: any) => error?.reason === "platform_organization_missing");
       assert.equal(await client.economicGroupManager.count(), 0);
