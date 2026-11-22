@@ -323,6 +323,91 @@ void main() {
       ]);
     });
 
+    test('CM10 (C4-05): o bloco de cada pátio traz só os lançamentos e o total '
+        'daquele pátio, com a identidade do pátio em todo desfecho', () async {
+      final tokens = _Tokens({
+        'patio-x': 'tok-x',
+        'patio-y': 'tok-y',
+        'patio-z': 'tok-z',
+        'patio-w': 'tok-w',
+        'patio-v': 'tok-v',
+        'patio-u': null,
+      });
+      Map<String, Object?> lancamentos(List<(String, String)> itens) => {
+        'items': [
+          for (final (id, cents) in itens)
+            {
+              'id': id,
+              'amountCents': cents,
+              'status': 'pending',
+              'createdAt': '2026-11-21T12:00:00.000Z',
+              'settledAt': null,
+            },
+        ],
+      };
+      final server = _Server((options) {
+        final token = _token(options);
+        if (token == 'tok-y') {
+          return _json(500, {
+            'error': {'reason': 'internal'},
+          });
+        }
+        if (token == 'tok-w' || token == 'tok-v') {
+          return _json(403, {
+            'error': {
+              'reason': token == 'tok-v' ? 'module_not_enabled' : 'forbidden',
+            },
+          });
+        }
+        if (options.path == commissionCalculationsMinePath) {
+          return _json(
+            200,
+            token == 'tok-x'
+                ? lancamentos([('x-1', '300'), ('x-2', '700')])
+                : lancamentos([('z-1', '4500')]),
+          );
+        }
+        return _json(
+          200,
+          _summary(totalCents: token == 'tok-x' ? '1000' : '4500'),
+        );
+      });
+      const patios = [
+        CommissionPatio(id: 'patio-x', name: 'Pátio X'),
+        CommissionPatio(id: 'patio-y', name: 'Pátio Y'),
+        CommissionPatio(id: 'patio-z', name: 'Pátio Z'),
+        CommissionPatio(id: 'patio-w', name: 'Pátio W'),
+        CommissionPatio(id: 'patio-v', name: 'Pátio V'),
+        CommissionPatio(id: 'patio-u', name: 'Pátio U'),
+      ];
+
+      final blocks = await _repository(
+        tokens: tokens,
+        server: server,
+      ).load(patios);
+
+      expect(
+        [for (final b in blocks) '${b.patio.id}|${b.patio.name}'],
+        [for (final p in patios) '${p.id}|${p.name}'],
+        reason: 'cada bloco carrega o pátio que foi lido, em todo desfecho',
+      );
+      expect(blocks.map((b) => b.status), [
+        CommissionPatioBlockStatus.loaded,
+        CommissionPatioBlockStatus.failed,
+        CommissionPatioBlockStatus.loaded,
+        CommissionPatioBlockStatus.forbidden,
+        CommissionPatioBlockStatus.moduleNotEnabled,
+        CommissionPatioBlockStatus.failed,
+      ]);
+      expect(blocks[0].data!.calculations.map((c) => c.id), ['x-1', 'x-2']);
+      expect(blocks[0].data!.totalCents, 1000);
+      expect(blocks[2].data!.calculations.map((c) => c.id), ['z-1']);
+      expect(blocks[2].data!.totalCents, 4500);
+      for (final i in [1, 3, 4, 5]) {
+        expect(blocks[i].data, isNull, reason: blocks[i].patio.id);
+      }
+    });
+
     test('CM8 e CM9: módulo desligado difere de falta de permissão', () async {
       final tokens = _Tokens({'patio-y': 'tok-y', 'patio-z': 'tok-z'});
       final server = _Server((options) {
