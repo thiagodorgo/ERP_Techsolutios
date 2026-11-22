@@ -183,26 +183,44 @@ export class ChargeService {
     const lines = await this.repository.listCharges({ tenantId, processId });
     const exigible = lines.filter((line) => line.kind !== "ADJUSTMENT");
     const debtsSettled = exigible.every((line) => line.settledAt !== undefined);
+    const exigibleCount = exigible.length;
     const dailies = lines.filter((line) => line.kind === "DAILY").sort((left, right) => (left.periodSeq ?? 0) - (right.periodSeq ?? 0));
     const persistedDailyCount = dailies.length;
     let overAccruedDailyIds: string[] = [];
     let nDueNow = 0;
+    let nAccrueAtFreezeValue = 0;
     if (ctx.enteredAt) {
       // freeze-retroactive (salto A): nDue (uncapped, time-based) AT now. Se < persistedDailyCount, congelar em now
       // estranharia DAILYs já acumuladas (period termina depois de now) — MODEL-CORRECT p/ ROLLING e CALENDAR.
       nDueNow = summarizeAccrual({ t0: ctx.enteredAt, asOf: now, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap }).nDue;
       // over-accrual (reconciliação): DAILYs além do teto AT asOf=min(now, frozen_at). frozen ⇒ estável.
-      const asOf = ctx.frozenAt ? new Date(Math.min(now.getTime(), ctx.frozenAt.getTime())) : now;
-      const nAccrue = summarizeAccrual({ t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap }).nAccrue;
-      overAccruedDailyIds = dailies.slice(nAccrue).map((daily) => daily.id);
+      const freezeAsOf = ctx.frozenAt ? new Date(Math.min(now.getTime(), ctx.frozenAt.getTime())) : now;
+      const freezeSummary = summarizeAccrual({ t0: ctx.enteredAt, asOf: freezeAsOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap });
+      const nAccrueAtFreeze = freezeSummary.nAccrue;
+      overAccruedDailyIds = dailies.slice(nAccrueAtFreeze).map((daily) => daily.id);
+      nAccrueAtFreezeValue = nAccrueAtFreeze;
     }
+    const nAccrueAtFreeze = nAccrueAtFreezeValue;
+    const dailyShortfall = Math.max(0, nAccrueAtFreeze - persistedDailyCount);
     // M1 (invariante financeiro) — consistente ⟺ o LÍQUIDO de TODA DAILY sobre-acumulada é 0 (centavo EXATO):
     // total_da_DAILY + Σ(ADJUSTMENTs que a apontam) == 0. Um ADJUSTMENT PARCIAL pré-existente (ex. −0,01 postado por
     // um insider com charging:create) deixa líquido≠0 → NÃO consistente → 409 na consumação. Fecha o furo do gate
     // por-existência (que liberaria o cidadão cobrado acima do teto CTB §10, imutável na cadeia).
     const reconciliationConsistent = overAccruedDailyIds.every((id) => dailyNetCents(id, lines) === 0);
     const settledTotal = sumMoney(lines.map((line) => line.totalAmount));
-    return { debtsSettled, reconciliationConsistent, settledTotal, overAccruedDailyIds, persistedDailyCount, nDueNow };
+    return {
+      debtsSettled,
+      reconciliationConsistent,
+      settledTotal,
+      overAccruedDailyIds,
+      persistedDailyCount,
+      nDueNow,
+      nAccrueAtFreeze,
+      dailyShortfall,
+      exigibleCount,
+      enteredAt: ctx.enteredAt,
+      frozenAt: ctx.frozenAt,
+    };
   }
 
   // Ω5P PR-16 — READ-PORT do owner-portal (BFF público). RESUMO MINIMIZADO §2.8: só o TOTAL DEVIDO (memória

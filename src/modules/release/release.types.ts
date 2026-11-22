@@ -77,6 +77,12 @@ export type RequirementSnapshot = {
   readonly required: boolean;
 };
 
+export type ReleaseChargeBasis = {
+  readonly expectedDailyCount: number;
+  readonly enteredAt: Date | null;
+  readonly frozenAt: Date | null;
+};
+
 // ── Inputs de repositório ─────────────────────────────────────────────────────────────────────────────────────
 export type StartReleaseInput = {
   readonly tenantId: string;
@@ -89,6 +95,7 @@ export type StartReleaseInput = {
   readonly recipientRelationship?: RecipientRelationship;
   readonly actorId?: string;
   readonly occurredAt: Date;
+  readonly chargeBasis: ReleaseChargeBasis;
 };
 
 // Ω5P PR-10b — cria o dossiê FOR_REPAIR (IN_PROGRESS) SEM transicionar o processo (montar). Sem checklist (o
@@ -167,6 +174,7 @@ export type ConsumeReleaseInput = {
   readonly eventPayload: CanonicalValue; // snapshot RELEASE (§2.8: só refs/hashes/valores-string — construído no serviço)
   readonly actorId?: string;
   readonly occurredAt: Date;
+  readonly chargeBasis: ReleaseChargeBasis;
 };
 
 export class ReleaseError extends Error {

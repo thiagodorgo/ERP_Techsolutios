@@ -88,8 +88,10 @@ export type ReleaseStartGateInput = {
 // Salto B (RELEASE_IN_PROGRESS→RELEASED): consumar (I5 real). Cada flag = uma pré-condição do art. 271 §1º /
 // Res. 1025 art. 24, com reason 409 DISTINTO.
 export type ReleaseConsumeGateInput = {
-  readonly debtsUnsettled: boolean;
   readonly reconciliationPending: boolean;
+  readonly chargesMissing: boolean;
+  readonly noChargesPosted: boolean;
+  readonly debtsUnsettled: boolean;
   readonly requirementUnmet: boolean;
   readonly authorityMissing: boolean;
   readonly recipientMissing: boolean;
@@ -276,6 +278,12 @@ function guardReleaseGate(_process: ImpoundProcess, inputs: TransitionInputs): v
   // autoridade e quem-retira. Cada reason é DISTINTO (o adversarial ataca a confusão entre eles).
   if (gate.reconciliationPending) {
     throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_reconciliation_pending", "Over-accrued daily charges must be reconciled before release.");
+  }
+  if (gate.chargesMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_daily_charges_missing", "Required daily charges are still missing from the ledger.");
+  }
+  if (gate.noChargesPosted) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_no_charges_posted", "At least one charge must be posted before releasing the vehicle.");
   }
   if (gate.debtsUnsettled) {
     throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_debts_unsettled", "All chargeable debts must be settled (or waived) before release.");

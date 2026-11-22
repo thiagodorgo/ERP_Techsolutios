@@ -13,12 +13,14 @@ import {
 } from "../src/modules/charging/charge.service.js";
 import { verifyChain } from "../src/modules/impound/impound.hashchain.js";
 import { getMemoryImpoundRepositoryForTests, resetImpoundRuntimeForTests } from "../src/modules/impound/impound.service.js";
+import { getMemoryPriceTableRepositoryForTests, resetPriceTableRuntimeForTests } from "../src/modules/price-tables/price-table.service.js";
 import {
   createMemoryReleaseService,
   getMemoryReleaseRepositoryForTests,
   resetReleaseRuntimeForTests,
 } from "../src/modules/release/release.service.js";
 import type { ReleaseActorContext } from "../src/modules/release/release.types.js";
+import { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests } from "../src/modules/tariffs/tariff.service.js";
 import type { TariffResolver } from "../src/modules/tariffs/tariff-resolution.js";
 import type { Tariff } from "../src/modules/tariffs/tariff.types.js";
 import { getMemoryYardRepositoryForTests } from "../src/modules/yard/yard.service.js";
@@ -26,7 +28,7 @@ import type { DailyCap, DailyModel, ProfileScope } from "../src/modules/jurisdic
 
 const MS_PER_DAY = 86_400_000;
 
-type Ctx = { tenantId: string; processId: string; profileId: string; spotId?: string };
+type Ctx = { tenantId: string; processId: string; profileId: string; dailyServiceCatalogId: string; spotId?: string };
 
 function actor(tenantId: string): ReleaseActorContext {
   return {
@@ -41,6 +43,8 @@ async function reset(): Promise<string> {
   resetImpoundRuntimeForTests();
   resetChargeRuntimeForTests();
   resetReleaseRuntimeForTests();
+  resetPriceTableRuntimeForTests();
+  resetTariffRuntimeForTests();
   return randomUUID();
 }
 
@@ -59,6 +63,7 @@ async function makeActiveProcess(
 ): Promise<Ctx> {
   const impound = getMemoryImpoundRepositoryForTests();
   const profileId = randomUUID();
+  const dailyServiceCatalogId = randomUUID();
   const process = await impound.openFromRemovalAtomic({
     tenantId,
     serviceOrderId: randomUUID(),
@@ -81,7 +86,7 @@ async function makeActiveProcess(
     scope: options.scope ?? "PUBLIC_AGREEMENT",
     model: options.model ?? "ROLLING_24H",
     cap: options.cap ?? "SIX_MONTHS",
-    dailyServiceCatalogId: randomUUID(),
+    dailyServiceCatalogId,
   });
   getMemoryReleaseRepositoryForTests().setProfileRequirementsForTests(tenantId, profileId, options.requirements ?? []);
 
@@ -94,7 +99,27 @@ async function makeActiveProcess(
     await impound.assignSpotAtomic({ tenantId, processId: process.id, spotId: spot.id, occurredAt: new Date() });
     spotId = spot.id;
   }
-  return { tenantId, processId: process.id, profileId, spotId };
+  return { tenantId, processId: process.id, profileId, dailyServiceCatalogId, spotId };
+}
+
+async function seedMemoryTariff(tenantId: string, serviceCatalogId: string, unitPrice: number): Promise<void> {
+  const priceTable = await getMemoryPriceTableRepositoryForTests().create({
+    tenantId,
+    name: `Tabela ${randomUUID().slice(0, 6)}`,
+    currency: "BRL",
+    version: 1,
+    status: "published",
+  });
+  await getMemoryTariffRepositoryForTests().create({
+    tenantId,
+    priceTableId: priceTable.id,
+    serviceCatalogId,
+    name: "Diária",
+    unitPrice,
+    currency: "BRL",
+    origin: "test",
+    status: "active",
+  });
 }
 
 async function addRemoval(tenantId: string, processId: string, amount = "150.00"): Promise<void> {
@@ -244,6 +269,7 @@ test("(iii) retorno: dossiê RETURNED + partial-unique liberado (start padrão a
   const impound = getMemoryImpoundRepositoryForTests();
   const yard = getMemoryYardRepositoryForTests();
   const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY), withSpot: true });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   const release = createMemoryReleaseService();
   const who = actor(tenantId);
 
@@ -279,7 +305,8 @@ test("(iii) retorno: dossiê RETURNED + partial-unique liberado (start padrão a
 // ── (iv) DÉBITOS DIFERIDOS: saída SUCEDE com débito ABERTO; a restituição definitiva BLOQUEIA até quitar ───────────
 test("(iv) débitos diferidos: saída p/ reparo SUCEDE com débito EM ABERTO (≠ quitação); restituição definitiva BLOQUEIA enquanto o débito segue aberto", async () => {
   const tenantId = await reset();
-  const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 3_600_000) });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId, "150.00"); // débito EM ABERTO (não quitado)
   const release = createMemoryReleaseService();
   const charge = createMemoryChargeService();
@@ -311,6 +338,7 @@ test("(v) frozen_at NULL durante todo o reparo (saída + retorno); só o caminho
   const tenantId = await reset();
   const impound = getMemoryImpoundRepositoryForTests();
   const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   const release = createMemoryReleaseService();
   const who = actor(tenantId);
 
@@ -333,6 +361,7 @@ test("(vi) restituição definitiva aplica o gate COMPLETO: consumar sem aprova�
     requirements: [{ code: "AUTHORITY_RELEASE", label: "Autorização do órgão", required: true }],
     withSpot: true,
   });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId, "150.00");
   const release = createMemoryReleaseService();
   const charge = createMemoryChargeService();
@@ -361,6 +390,7 @@ test("(vi) restituição definitiva aplica o gate COMPLETO: consumar sem aprova�
 test("(vii) verify: cadeia permanece valid após saída p/ reparo + retorno + restituição definitiva", async () => {
   const tenantId = await reset();
   const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId, "150.00");
   const release = createMemoryReleaseService();
   const charge = createMemoryChargeService();

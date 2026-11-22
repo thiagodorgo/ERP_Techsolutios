@@ -90,7 +90,7 @@ async function processInRelease(tenantId: string): Promise<string> {
     profileId,
     originAuthority: "Autoridade solicitante",
     unidentifiedReason: "Aguardando vistoria de recepção",
-    completedAt: new Date(Date.now() - 2 * 86_400_000),
+    completedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
     actorId: undefined,
   });
   await impound.applyTransition({
