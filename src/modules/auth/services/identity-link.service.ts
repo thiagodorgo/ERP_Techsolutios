@@ -254,7 +254,10 @@ export class IdentityLinkService {
         // 3b. B-USERS-ACESSO-SEG (P-SEG-2, Emenda 1) — a sessão da senha provisória não liga conta. T2: a
         // trava FOR SHARE do vínculo do par do ATOR, que o reset por administrador trava com FOR UPDATE (T1);
         // T3: a marca é lida DEPOIS dela — a religação que chega depois de um reset vê a marca ligada.
+        // B-APP-ORG-2S (1.8.3.17 §2.1, C5-02): desde a S2p qualquer pátio do grupo redefine, então a T2 pega TODOS os
+        // vínculos da identidade do ator, em todos os pátios: a redefinição por outro par trava o dela com FOR UPDATE.
         await this.selectLinkOfPairForShare(tx, actor.tenantId, actor.userId);
+        await this.lockOtherLinksOfIdentityForShare(tx, actor.tenantId, actorIdentityId);
 
         if (await this.mustChangePassword(tx, actor.tenantId, actor.userId)) {
           throw passwordChangeRequiredError();
@@ -1153,6 +1156,30 @@ export class IdentityLinkService {
     const identityId = rows[0]?.identityId ?? null;
 
     return identityId;
+  }
+
+  private async lockOtherLinksOfIdentityForShare(
+    tx: Prisma.TransactionClient,
+    activeTenantId: string,
+    identityId: string,
+  ): Promise<void> {
+    const others = await tx.tenant.findMany({ where: { id: { not: activeTenantId } }, select: { id: true }, orderBy: { id: "asc" } });
+
+    try {
+      for (const other of others) {
+        await setTenantRlsContext(tx, other.id);
+
+        const rows = await tx.$queryRaw<Array<{ tenantId: string }>>`
+          SELECT tenant_id::text AS "tenantId" FROM auth_identity_links
+          WHERE tenant_id = ${other.id}::uuid AND identity_id = ${identityId}::uuid
+          FOR SHARE
+        `;
+
+        assertRowsBelongToTenant(rows, other.id, "auth_identity_links");
+      }
+    } finally {
+      await setTenantRlsContext(tx, activeTenantId);
+    }
   }
 
   private async lockEarlierLinksOfIdentity(
