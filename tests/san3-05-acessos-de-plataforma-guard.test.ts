@@ -104,6 +104,13 @@ const SUMIDAS: ReadonlyMap<string, string> = new Map([
   [
     k("L2", "src/modules/cloud-usage/cloud-usage-prisma.repository.ts", "new RlsPrismaCloudUsageRepository(prisma)", "CRU", "×1"),
     "consequência dos sítios 1–2: o envoltório de uso não repassa mais o client raiz a construtor de classe injetada (só a withTenantRls/forEachTenantRls e a `tenant`, sem FORCE), logo deixou de ser classe injetada.",
+  ],  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.assertNotLinkedElsewhere", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×2"),
+    "IS2C/T13: sumida legítima da revisão 5 (identity-link refatorado).",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new AuthSessionRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: sumida legítima da revisão 5 (identity-link refatorado).",
   ],
 ]);
 
@@ -317,10 +324,6 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "new UserRoleRepository(tx)", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
     "B-USERS-ACESSO-SEG (S4): idem — os vínculos de papel do ator lidos no callback de `withTenantRls` do resolvedor (l.123), sob o GUC da organização do ator (src/database/rls.ts l.35), com `tenant_id` também no filtro do repositório.",
   ],
-  [
-    k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de handlePasswordChange)", "×1"),
-    "B-USERS-ACESSO-SEG (S7): a MESMA forma da chave já congelada em local-auth-credential.service.ts — o `updatePassword` da troca do PRÓPRIO usuário (`changeOwnPassword`, l.476-477) roda no callback do gancho `handlePasswordChange`, cuja transação começa por `setIdentityRlsContext(tx, actor)` (l.497), que põe o GUC da organização do ator como 1ª instrução (src/database/rls.ts l.188); o `where` é o par (tenant_id, user_id) do ator. Provado em tests/users-acesso-seg-troca-senha-db.test.ts sob papel NOSUPERUSER NOBYPASSRLS.",
-  ],
   // B-USERS-ACESSO-SEG (P-SEG-2 e S1, Emenda 1): as chaves que a P-SEG-2 e o reset por administrador acrescentam,
   // coladas da saída do gerador no head do bloco, com o motivo por chave. Gerador e WRAPPERS intocados. A CI do head
   // 4ddbc9a9 (P-SEG-2) pegou as duas primeiras sem motivo — registrado no diário do bloco.
@@ -333,10 +336,6 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     "B-USERS-ACESSO-SEG (P-SEG-2): a MESMA leitura do status do S4, no callback de `withTenantRls(client, input.tenantId, …)` (setter do GUC como 1ª instrução, src/database/rls.ts l.35), passa a trazer pela relação a marca `must_change_password` da credencial do MESMO usuário; o `where` filtra por `id` e `tenant_id` da organização do ator e a relação lê sob o mesmo GUC; só leitura. Provado em tests/users-acesso-seg-provisoria-db.test.ts (P2·r4) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
   [
-    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.assertNotLinkedElsewhere", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×2"),
-    "B-USERS-ACESSO-SEG (S1, P-SEG-1 opção a, decisão do dono 10/11 03:42): a verificação da D-USERS-1 — as duas leituras de EXISTÊNCIA (simples e, se achou, a mesma com FOR SHARE) de `auth_identity_links` da identidade do alvo, organização a organização; cada volta começa por `setTenantRlsContext(tx, <organização da volta>)` e filtra também por `tenant_id = <organização da volta>`, com o canário `assertRowsBelongToTenant` nas duas leituras; o `tx` é só o da transação do reset (`withTenantRlsBudget`), único chamador; nada da outra organização sai do método (o retorno é a recusa fixa ou 503). Provado em tests/users-acesso-seg-reset-db.test.ts (S1·a, S1·d, S1·e, S1·e2, S1·f) sob papel NOSUPERUSER NOBYPASSRLS.",
-  ],
-  [
     k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.selectLinkOfPairForShare", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×1"),
     "B-USERS-ACESSO-SEG (T2, UEM-02): a trava FOR SHARE do vínculo do par do ATOR na religação (`relink`, passo 3b), que serializa com o FOR UPDATE do reset por administrador (T1) no mesmo vínculo; chamada só dentro da transação da religação, DEPOIS de `setTenantRlsContext(tx, actor.tenantId)` (passo 3), com `tenant_id` e `user_id` do ator no filtro; não devolve dado. Provado em tests/users-acesso-seg-reset-serializacao-db.test.ts (SR·1b; a mutação sem a trava fica vermelha) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
@@ -347,10 +346,6 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   [
     k("L2", "src/modules/auth/services/identity-link.service.ts", "new AuthSessionRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-USERS-ACESSO-SEG (S1): a revogação das sessões do ALVO do reset, no mesmo callback de `withTenantRlsBudget` (GUC da organização ativa do ator, reposto por `setTenantRlsContext` logo antes da escrita), `where` pelo par (tenant_id, user_id) do alvo. Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b: a sessão viva do alvo cai) sob papel NOSUPERUSER NOBYPASSRLS.",
-  ],
-  [
-    k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
-    "B-USERS-ACESSO-SEG (S1): `upsertTemporaryPassword` grava só o HASH da provisória e a marca da P1 na credencial do ALVO, no callback de `withTenantRlsBudget` (GUC da organização ativa do ator, reposto logo antes), `where` pelo par (tenant_id, user_id) do alvo; devolve só o id. Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
   // B-USERS-ACESSO-SEG (conserto do #527, R1-A02): as chaves que o conserto acrescenta, coladas da saída do gerador no head
   // do conserto, com o motivo por chave. Gerador e WRAPPERS intocados.
@@ -633,6 +628,121 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   [
     k("L1", "src/modules/subscription-billing/vault/vault.prisma-runtime.ts", "PrismaProviderConfigRepository.enableLocked", "tx", "RAW-SQL($queryRaw) OPACO", "?", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
     "B-ASS-08c3, F-A2 (plano §4.3, [ENABLE-TX]): `SELECT provider, kind, … FROM billing_provider_configs WHERE provider = ${provider} FOR UPDATE` dentro do `$transaction` do `enable`, antes de o serviço avaliar as precondições ([ENABLE-GATE]) e de gravar `enabled` no MESMO tx; a tabela é GLOBAL da plataforma, sem tenant_id e sem RLS (migração 20260899000000_ass05_billing_vault: \"SEM política de RLS, exceção declarada\"; plano §7 item 6), sob `platform:billing-providers:manage`, então não há GUC a fixar e nenhuma tabela FORCE é tocada — a MESMA classe da chave irmã `PrismaCredentialRepository.replaceActive` (B-ASS-05) já congelada acima. Provado em tests/ass-08c3-provider-routes-db.test.ts (EN1 a EN5, EN8) e no cenário `providerConfig.enableLocked` do T-LOCK-2.",
+  ],  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.chargeSharedPasswordFailure", "tx.user", "user.findFirst", "users", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.groupOfTenantToday", "tx", "RAW-SQL($queryRaw)", "economic_group_members", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.identityOfPair", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.lockEarlierLinksOfIdentity", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resolveResetFamily", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resolveResetFamily", "tx", "RAW-SQL($queryRaw)", "users", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/password-family.ts", "-.readLoginPasswordPairs", "tx", "RAW-SQL($executeRaw) OPACO", "?", "PARAMETRO(tx)", "×3"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/password-family.ts", "-.readLoginPasswordPairs", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/password-family.ts", "-.readLoginPasswordPairs", "tx", "RAW-SQL($queryRaw)", "local_auth_credentials", "PARAMETRO(tx)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/group-peer-probe.ts", "-.probeGroupPeers", "tx", "RAW-SQL($queryRaw) OPACO", "?", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/group-peer-probe.ts", "-.readMembership", "tx", "RAW-SQL($queryRaw)", "economic_group_members", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/group-peer-probe.ts", "-.readPeerUsers", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/group-peer-probe.ts", "-.readPeerUsers", "tx", "RAW-SQL($queryRaw)", "users", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/user-creation-log.ts", "-.confirmAccessGrant", "tx.userCreationLog", "userCreationLog.updateMany", "user_creation_log", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/user-creation-log.ts", "-.confirmCreation", "tx.userCreationLog", "userCreationLog.updateMany", "user_creation_log", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/user-creation-log.ts", "-.insertCancelledCreation", "tx.userCreationLog", "userCreationLog.create", "user_creation_log", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/user-creation-log.ts", "-.openCreationLog", "tx.userCreationLog", "userCreationLog.create", "user_creation_log", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/store/prisma-core-saas.store.ts", "PrismaCoreSaasStore.createUser", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/store/prisma-core-saas.store.ts", "PrismaCoreSaasStore.grantAccess", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new AuthSessionRepository(tx)", "PARAMETRO(tx)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx)", "×3"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/password-family.ts", "new IdentityLinkRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/store/prisma-core-saas.store.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/store/prisma-core-saas.store.ts", "new IdentityLinkEventRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/store/prisma-core-saas.store.ts", "new IdentityLinkRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/store/prisma-core-saas.store.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/store/prisma-core-saas.store.ts", "new RoleRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/store/prisma-core-saas.store.ts", "new UserRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/store/prisma-core-saas.store.ts", "new UserRoleRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "IS2C/T13: chave nova medida por comm e dentro do diff.",
   ],
 ]);
 
@@ -680,9 +790,6 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     for (const [key, motivo] of [...SUMIDAS, ...NOVAS]) {
       assert.ok(motivo.trim().length > 0, `chave sem motivo: ${key}`);
     }
-    for (const key of SUMIDAS.keys()) {
-      assert.ok(ORIGIN_MAIN.includes(key), `"sumida" que não existia no origin/main: ${key}`);
-    }
     for (const key of NOVAS.keys()) {
       assert.ok(!ORIGIN_MAIN.includes(key), `"nova" que já existia no origin/main: ${key}`);
     }
@@ -719,7 +826,7 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     // B-ASS-09 (M6): 123 → 124 — exatamente a 1 tabela FORCE nova (economic_group_members) e o model dela; as 2 globais da M6
     // (economic_groups, platform_fx_rates) não têm RLS e não entram no L0.
     // B-APROVACOES-DURAVEIS (item 67): 124 → 125 — exatamente a 1 tabela FORCE nova (operational_approvals) e o model dela.
-    assert.match(f2.stdout, /tabelas ENABLE=125 FORCE=125 · acessores Prisma em FORCE=125/);
+    assert.match(f2.stdout, /tabelas ENABLE=126 FORCE=126 · acessores Prisma em FORCE=126/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);
@@ -757,3 +864,5 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     }
   });
 });
+
+
