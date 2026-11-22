@@ -116,6 +116,15 @@ async function tenantCount(db: any): Promise<number> {
   return rows[0]!.n;
 }
 
+async function dropLaterGroupManagerTables(db: any): Promise<void> {
+  // O drill mede a M6 no seu limite histórico. Migrações posteriores do B-GRUPO-GESTOR
+  // acrescentam FKs para economic_groups e precisam sair antes do runbook down da M6.
+  await db.$transaction([
+    db.$executeRawUnsafe(`DROP TABLE IF EXISTS user_deactivation_requests`),
+    db.$executeRawUnsafe(`DROP TABLE IF EXISTS economic_group_managers`),
+  ]);
+}
+
 if (!connectionString) {
   test("B-ASS-09 · drill da M6 exige DATABASE_URL e CREATE DATABASE", {
     skip: "Defina DATABASE_URL para executar o drill da migração.",
@@ -168,6 +177,7 @@ if (!connectionString) {
 
   test("M6 drill: down em transação única tira as 3 tabelas e deixa a extensão; o corpo reaplica e converge", async () => {
     assert.ok(db, "depende do deploy");
+    await dropLaterGroupManagerTables(db);
     const down = downStatements();
     assert.equal(down.length, 3, "o runbook down tem os 3 DROP TABLE");
     const tenantsBefore = await tenantCount(db);
