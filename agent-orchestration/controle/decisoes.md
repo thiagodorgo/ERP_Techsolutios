@@ -5930,7 +5930,7 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 ## D-DONO-1811-APP-ORG-Q1-Q4 (2026-11-18 10:29 SP) — as respostas Q1 a Q4 do plano B-APP-ORG (itens 69 e 70)
 
 - **Fato (decisão do dono, respostas por seletor):** Q1 **avisa e deixa trocar** com ações pendentes (ficam na organização certa e saem quando ele volta); Q2 **dados já enviados ficam, separados** por organização e pessoa; Q3 **lista completa** de organizações no login, sem busca; Q4 **"Entrar em outra organização"** para a não vinculada (nada religado sozinho).
-- **Efeito:** todas as recomendações do plano `B-APP-ORG` (itens 69 e 70) foram aceitas. *(A Q3 foi refeita em 18/11 10:46: com mais de 3 organizações, o servidor responde sem lista, de propósito, contra enumeração; a pergunta "Manter a segurança" — até 3 organizações o app mostra a lista e, com mais, pede o código — volta ao dono.)*
+- **Efeito:** todas as recomendações do plano `B-APP-ORG` (itens 69 e 70) foram aceitas. *(A Q3 foi refeita em 18/11 10:46: com mais de 3 organizações, o servidor responde sem lista, de propósito, contra enumeração; a pergunta "Manter a segurança" — até 3 organizações o app mostra a lista e, com mais, pede o código — volta ao dono.)* *(Superada em 20/11 pela `D-DONO-2011-APP-ORG-ATIVA-NA-WEB`: o guincheiro não escolhe a organização no app. Ver `C-APP-ORG-69-70-SENTIDO-MUDOU`.)*
 
 ## D-DONO-1811-CLAUDE-UMA-TAREFA (2026-11-18 10:29 SP) — o Claude faz a orquestração e uma tarefa de cada vez até sexta
 
@@ -6109,7 +6109,7 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
 
 - **Fato (palavras do dono, no chat):** *"1 esta ox, mas desde que so apareca a tela com varias organizacoes se tiver mais de uma cadastrada e com acesso, se tiver somente uma pula essa tela. 2 a visao ja pedi conserto e ja esta no padrao. 3 completo. 4 vou contigo. siga"*.
 - **Leitura do orquestrador, declarada (§A6), casando a lista das 3 maquetes com o item 4:**
-  1. As 3 opções das telas Entrar e Seleção de organização (`B-APP-ORG`) estão APROVADAS, com uma condição: a Seleção só aparece se a pessoa tem MAIS DE UMA organização cadastrada e com acesso. Com uma só, a tela é pulada.
+  1. As 3 opções das telas Entrar e Seleção de organização (`B-APP-ORG`) estão APROVADAS, com uma condição: a Seleção só aparece se a pessoa tem MAIS DE UMA organização cadastrada e com acesso. Com uma só, a tela é pulada. *(Superada em 20/11 pela `D-DONO-2011-APP-ORG-ATIVA-NA-WEB`; ver `C-APP-ORG-69-70-SENTIDO-MUDOU`.)*
   2. As 3 opções da Visão da organização estão APROVADAS. O mecanismo por módulo segue no `B-USERS-ACESSO-POR-MODULO`.
   3. As 3 opções da tela de operação da cobrança estão APROVADAS.
   4. Todas as perguntas menores seguem a recomendação:
@@ -6117,7 +6117,7 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
      - `dusers-q1` = (a): não precisa entrar de novo;
      - `dusers-q2` = (a): a matriz diz que o Suporte vê o painel;
      - `dusers-q3` = (a): as 3 aparências da tela inteira num bloco próprio;
-     - `dmod-q1` = (a): ver primeiro;
+     - `dmod-q1` = (a): ver primeiro; *(substituída em 20/11 ~22:55 por (b), ver e alterar de uma vez, confirmada pela `D-DONO-2111-RESPOSTAS-13` item 3)*
      - `dmod-q2` = (a): o gestor liga para si com motivo, e tudo fica registrado. Soma-se a pendência do bloco que avisa ou impede a mesma pessoa nas duas etapas;
      - `dmod-q3` = (a): fica ligado até desligar;
      - `dmod-q4` = (a): a migração da chave "conceder acesso por módulo" está AUTORIZADA.
@@ -6244,3 +6244,217 @@ Decisões declaradas pelo orquestrador (§A6) no diário fora do repositório; o
   - Telas que já têm 3 aparências aprovadas ficam como estão, com seletor de aparência por usuário.
   - "Tem que deixar na ordem" é leitura declarada do orquestrador para manter a tela arrumada no padrão do sistema; a ordem dos lotes é do orquestrador; lote e tela seguem `D-DESIGN-SO-CLAUDE`.
 - **Atualização de decisões:** atualiza `D-TELAS-TRES-OPCOES`, `D-APARENCIA-POR-USUARIO` e `D-TELAS-SAEM-COM-TRES` só para as telas novas.
+
+## Registro de 20/11 (fim da noite) e 21/11 — redator `reg-2111-cl` (Claude Opus, nível menor, declarado)
+
+As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp-pausa-2026-10-03/REGISTRO-PENDENTE.md`), das emendas do `B-APP-ORG` e do `B-GRUPO-GESTOR` (`~/erp-pausa-2026-10-03/planos/`) e das verificações em `~/erp-pausa-2026-10-03/revisoes/`. As horas são de São Paulo. Onde o redator deu um ID que o registro não trazia, ele diz isso na entrada.
+
+## D-APP-ORG-A8A (2026-11-20 ~21:55 SP) — o B-APP-ORG entrega a opção padrão de Entrar e de Seleção de organização
+
+- **Fato:** a Emenda 1 §A8 do plano `B-APP-ORG` mandava gravar esta linha em `decisoes.md` antes do merge: *"B-APP-ORG entrega a opção padrão de Entrar e Seleção de organização; a B e a C vão para o AP-5 (Emenda 1 §4.2)"*. A Emenda 1.6.1 (orquestrador) mudou o caminho: a linha entra pelo PR de registro, e não pelo ramo do bloco, para não conflitar com o #615, que estava aberto.
+- **Efeito:** a linha fica registrada aqui. A falta dela no head do #613 não bloqueou a junta J-613 (C3.F3 da Emenda 1.6.1).
+- **Nota do redator:** a tela Seleção de organização sai do app no `B-APP-ORG-2` (ver `C-APP-ORG-69-70-SENTIDO-MUDOU`, abaixo). O AP-5 só vale para o que restar dela.
+
+## D-DONO-2011-TRACCAR-MVP-DEZ (2026-11-20 ~22:05 SP) — o Traccar de ponta a ponta com prioridade alta, no início de dezembro
+
+- **Fato (palavras do dono):** *"Claude também cria um artefato para o tracar, para a gente terminar a configuração do tracar de ponta a ponta e isso tem uma alta prioridade. Esse sistema tem que ficar pronto no início de dezembro. O MVP tem que estar pronto no início de dezembro. Isso tem uma importância alta."*
+- **Efeito:** o plano comprimido `plano-TRACCAR-MVP-DEZ` (Fable, fora do repositório) foi escrito às 22:35, com 6 perguntas ao dono no seletor. Ele depende de a conta AWS sair da verificação.
+- **Depois:** a `D-DONO-2111-RESPOSTAS-13` (itens 11 e 12) respondeu duas dessas perguntas, e a `D-DONO-2111-RECORTE-MVP` tirou o Traccar do MVP mínimo: ele vem logo depois.
+
+## D-DONO-2011-ROTAS-NO-MAPA (2026-11-20 ~22:40 SP) — distância e tempo do técnico até o chamado no mapa operacional
+
+- **ID dado pelo redator:** o registro traz o pedido sem ID.
+- **Fato (palavras do dono):** *"um artefato com sua análise para fazer a distância e o tempo de deslocamento do técnico até o chamado na página do mapa operacional. Colocar algum API paga ou um modelo open source que funcione com um padrão bem elevado ... Usar serviço da AWS, pegar um SDK privado para tentar fazer acontecer esse negócio."*
+- **Efeito:** a pesquisa (agente-pesquisador-web) recomendou o Amazon Location Routes, que exige o mapa base da AWS e não se mistura com dado ODbL. As 4 perguntas foram ao seletor. Por ser serviço pago, ele precisa de PD e de junta unânime de 5 antes de ligar (§C7.1).
+- **Depois:** a Q7 do recorte do MVP (`D-DONO-2111-RECORTE-MVP-RESPOSTAS`) pôs a rota de rua no MVP.
+
+## C-APP-ORG-69-70-SENTIDO-MUDOU (registro de CONFLITO, §A2, 2026-11-20 ~22:55 SP; no chat, `C-APP-ORG-SEM-ESCOLHA`) — o guincheiro não escolhe a organização no app
+
+- **Os dois lados:**
+  - a decisão F (a) de 17/11, a `D-DONO-1811-APP-ORG-Q1-Q4` e a `D-DONO-2011-RESPOSTAS` (item 1: *"1 esta ox, mas desde que so apareca a tela com varias organizacoes se tiver mais de uma cadastrada e com acesso"*) pediam que o guincheiro escolhesse e trocasse de organização no app. É o que o #613 entregou;
+  - às 22:55 de 20/11 o dono disse: *"o guicheiro, ele, quando for fazer login no app de campo, ele não vai escolher a organização. A organização quem vai escolher é o operador da web, quem deu acesso para ele. Isso vem do back-end. Isso ele não escolhe."*
+- **Como foi tratado:** o orquestrador registrou o conflito sem consolidar, segurou o merge do #613 e perguntou ao dono. A resposta está na `D-DONO-2011-APP-ORG-ATIVA-NA-WEB`.
+- **Resolução:** vale a mais nova, porque é decisão explícita do dono (§A1). As anteriores ficam no registro, marcadas como superadas, sem apagar (Emenda 1.7 §6). O código do #613 fica como base, e os itens 69 e 70 mudam de critério e não fecham com ele.
+
+## D-DONO-2011-APP-ORG-ATIVA-NA-WEB (2026-11-20 ~22:58 e ~23:01 SP) — o app entra direto nas organizações que a web ativou
+
+- **Fato (palavras do dono):** às 22:58, *"A"* (uma organização ativa por vez, escolhida na web). Às 23:01: *"Só um detalhe, o operador da web pode selecionar mais de uma organização para o guincheiro, para ele receber o chamado de mais de uma organização. Chamados e comissões, né?"*
+- **Efeito:** o guincheiro pode estar ativo em várias organizações ao mesmo tempo, escolhidas na web, e recebe os chamados e as comissões de todas. O app não escolhe: entra direto. Resolve o `C-APP-ORG-69-70-SENTIDO-MUDOU`.
+- **Leitura do orquestrador, declarada (§A6):** a forma das 23:01 é a opção C (todas juntas), não a A pura. Ela vale com esta forma.
+- **Como entra:** Emenda 1.7 do plano `B-APP-ORG` (Fable): o #613 mergeia como base, e o `B-APP-ORG-2` (app) e o `B-APP-ORG-2S` (servidor) entregam os itens 69 e 70 com o critério novo. A tela Seleção de organização sai do app (`P-APP-ORG-ESCOLHA-SAI`).
+- **Acesso por módulo:** na mesma conversa, a resposta `dmod-q1 = b` (ver e alterar de uma vez) substituiu a leitura anterior ("ver" primeiro). A `D-DONO-2111-RESPOSTAS-13` (item 3) a confirmou.
+
+## D-DONO-2011-GESTOR-DO-GRUPO (2026-11-20 ~23:10 a ~23:35 SP) — o gestor dos pátios de um grupo, com um painel próprio e prioridade altíssima
+
+- **Fato (palavras do dono, 23:10; íntegra em `~/erp-pausa-2026-10-03/planos/req-B-GRUPO-GESTOR.md`):** *"o gestor da organização é um gestor global de todos os pátios. Ele é um sócio majoritário de todos os pátios ... pode dar permissão a quem for, é tipo o usuário master ... Cada organização tem suas contas. E isso vai no caixa de cada organização. E o gestor vê os dados financeiros só daquela organização e vê de todas ... Vamos ter que criar uma tela para o gestor, para ele ver todas as organizações ... e pode selecionar uma e ver essas coisas só de uma. Documento que vamos precisar dessa tela para o gestor dos pátios. Não tem nada a ver com o gestor da plataforma, no caso eu, o dono."*
+- **Prioridade (`D-DONO-2011-GESTOR-GRUPO-PRIORIDADE`, 23:14):** *"E as telas que eu falei do gestor, da plataforma, que ele pode ver os dados financeiros do grupo e individualmente de cada pátio, elas têm a prioridade altíssima. Tem que sair antes de tudo."* **Leitura do orquestrador, declarada (§A6):** "do gestor" é o gestor do grupo das 23:10, e a 1ª entrega é o painel só de leitura com o financeiro.
+- **APIs do grupo (23:16):** *"Mais uma coisa, a API de pagamento e a API de nota fiscal do grupo é uma só. E vai ser compartilhada com todos os pátios daquele grupo."* Confirma a `D-CNPJ-UNICO-FILIAIS-DOIS-MODOS` (02/11). Hoje a configuração do provedor é global da plataforma, o que vira a `P-GRUPO-PROVEDOR-COMPARTILHADO`.
+- **Resposta `dgrp-q4` (23:35):** *"o gestor do grupo ele vai gerir os patos. O gestor da plataforma, o Cloud billing, vai gerir a plataforma"*. **Leitura do orquestrador, declarada (§A6):** são dois papéis separados; o gestor do grupo não vê a cobrança da plataforma. A `D-DONO-2111-RESPOSTAS-13` (item 7) confirmou que o grupo é o mesmo cadastro (`EconomicGroup`).
+- **Como entra:** plano `B-GRUPO-GESTOR` (Fable) com as Emendas 1, 2, 3 e 3.1, fora do repositório. É junta completa e não cria papel novo no catálogo. Pendência `P-GRUPO-GESTOR-PAINEL`.
+- **Depois:** a `D-DONO-2111-BLOQUEANTES-PRIMEIRO` pôs os itens 69 e 70 na frente do painel.
+
+## D-DONO-2011-GUINCHEIRO-UM-LOGIN (2026-11-20 ~23:35 SP) — o guincheiro tem um login só
+
+- **Fato (palavras do dono, resposta `dapp17-q2`):** *"nao vai ser possivel um guincheiro com varios logins juntar todos, ele vai ter que escolher um e a operacao lhe dar acesso aos chamados dos patios por esse login"*.
+- **Efeito:** a operação de cada pátio dá a esse mesmo login o acesso aos chamados do pátio. Não existe juntar contas no app. Substitui a recomendação "Adicionar organização" da Emenda 1.7 (Q2).
+
+## D-DONO-2011-EMAIL-UNICO-NO-GRUPO (2026-11-20 ~23:38 SP) — dentro de um grupo, um e-mail é um usuário só
+
+- **Fato (palavras do dono):** *"No mesmo grupo não vai ser possível criar mais de um usuário com o mesmo e-mail. Tipo assim, eu vou criar login para e técnico de campo. Eu crio o login se ele tiver o login com o mesmo e-mail em outro pátio do mesmo grupo, não vai ser possível criar esse login."*
+- **Efeito:** a criação é recusada quando o e-mail já tem login noutro pátio do mesmo grupo; o caminho é dar acesso ao login que existe.
+- **Leitura do orquestrador, declarada (§A6):** fora do grupo, a regra de hoje continua. A recusa não revela dado do outro pátio além de "este e-mail já tem acesso no grupo".
+- **Depois:** a `D-DONO-2111-TRAVA-EMAIL-ANTES` pôs a trava antes dos itens 69 e 70.
+
+## D-DONO-2011-CRIACAO-CANCELA-O-MAIS-NOVO (2026-11-20 ~23:42 e ~23:46 SP) — na corrida de criação com o mesmo e-mail, a mais nova é cancelada
+
+- **Fato (palavras do dono):** às 23:42, *"Na hora da criação de um usuário, vai gerar um log. Esse log vai gerar um ID. Esse ID é único. Mediante esse ID, quem tiver o ID mais moderno ele é cancelado. Entendeu minha ideia?"* O orquestrador propôs uma trava por chave no banco; às 23:46 o dono escolheu: *"Cancela o mais novo."*
+- **Efeito:** as duas criações ficam registradas com ID único e ordenado, e a mais nova é cancelada. O desenho tem de fechar a janela em que os dois logins existem: o login recém-criado só fica utilizável depois da conferência, e a senha do cancelado nunca é entregue. Substitui a proposta da trava do orquestrador.
+- **Como entra:** a tabela do registro de criações (Emenda 1.7.2), autorizada pela `D-DONO-2111-RESPOSTAS-13` (item 1).
+
+## D-DONO-2011-LOGIN-DO-GRUPO (2026-11-20 ~23:52 SP; corrigida em 21/11 ~00:05; SUBSTITUÍDA em 21/11 ~11:05) — quem decide desativar o técnico de mais de um pátio
+
+- **Fato (palavras do dono, 23:52):** *"A senha figa com o gestor, o patio vai pedir para desativar o tecnico, como ele esta em mais de um patio a decisao vai para o gestor. se so tiver em um patio, o patio que decide. isso gera mais alguns componentes na pagina do gestor"*.
+- **Correção (21/11 ~00:05):** *"Eu não estou gostando desse texto com a senha com o gestor do grupo, que na verdade não é a senha, o poder de decisão fica com o gestor do grupo, né? Ele que decide se faz ou se não faz a desvinculação do técnico."* A senha e o login continuam do técnico; o que ficava com o gestor do grupo era o poder de decisão sobre a desvinculação.
+- **Substituída** pela `D-DONO-2111-PATIO-COMANDA-O-SEU` (D1): cada pátio ativa e desativa só para si. As pendências do #613 que citam esta decisão (`pendencias.md`, apensos de 20/11) leem-se com a D1.
+
+## D-DONO-2111-RESPOSTAS-13 (2026-11-21 ~00:30 SP) — as 13 perguntas da noite
+
+- **Fato (palavras do dono):** *"1ok; 2 ok; 3 b; 4 b; 5a; 6b; 7a; 8a, 9a; 10a; 11b; 12a; 13 ainda esperando"*.
+- **Efeito, item a item:**
+  1. autorizada a migração do `B-APP-ORG-2S`: o modo de vínculo "concessão" e a tabela do registro de criações (Emenda 1.7.2);
+  2. autorizada a migração da 2ª entrega do `B-GRUPO-GESTOR`: as tabelas do gestor do grupo e dos pedidos de desativação. Os pátios de cada grupo continuam cadastrados pela plataforma;
+  3. acesso por módulo: (b) ver e alterar de uma vez. O que "alterar" quer dizer em Cadastros e Pátios é pergunta ao dono antes do dev;
+  4. Painel do Grupo: (b) só com o papel "Gestor do grupo", e a 1ª entrega passa a incluir o papel (Emenda 2);
+  5. (a) quem marca o "Gestor do grupo" é a plataforma;
+  6. (b) tudo já, inclusive o SLA e os funcionários;
+  7. (a) o grupo do painel é o mesmo cadastro (`EconomicGroup`), com papéis e telas separados da plataforma;
+  8. (a) o lote do Painel do Grupo aprovado (8 itens, ajustados ao que o servidor tem);
+  9. (a) guincheiro em várias organizações: dentro do grupo no MVP; fora do grupo, depois;
+  10. (a) "ativo no pátio" é o usuário ativo de hoje;
+  11. Traccar P2: (b) a porta abre antes, só com os 2 aparelhos cadastrados à mão;
+  12. Traccar P3: (a) a frota sempre visível vem como 2ª entrega, logo depois do MVP;
+  13. AWS: ainda em verificação.
+
+## D-DONO-2111-RECORTE-MVP (2026-11-21 ~00:21 e ~00:45 SP) — o mínimo do MVP
+
+- **Fato (palavras do dono):** *"vamos terminar os bloqueantes configurar a AWS aí você vai priorizar o que eu pedi primeiro, o painel do gestor ... e a gente vai fazer um recorte do sistema para o MVP ... Mas o app de campo, o mapa de chamado, e o pátio tem que estar 100%, tem que estar funcionando. Esse é o mínimo do MVP"* e *"[o Traccar] não vai estar no MVP mínimo, mas o painel de alocação de chamado, o mapa operacional, vai ter que estar conversando com o celular e com as rotas tracejadas, tudo no padrão. A rota tracejada somente na parte web. O app de campo eu estou pensando como é que nós vamos fazer, que tem que aprontar ele e ele está 100% com a estrada que nós temos hoje."* E às 00:21: *"Documenta essa conversa. Amanhã de manhã, a primeira coisa que vamos fazer é planejar isso, beleza?"*
+- **Leitura do orquestrador, declarada (§A6):** a ordem é os bloqueantes do portão, a AWS, o Painel do gestor do grupo e o recorte. O MVP mínimo é: (1) o app de campo funcionando 100% com a estrutura de hoje; (2) o mapa operacional e o painel de alocação conversando com o celular do guincheiro, com a rota tracejada e o tempo, só na web; (3) o pátio 100%. O Traccar sai do MVP mínimo. Até a conta AWS, a linha reta tracejada de hoje é o plano B das rotas.
+- **Depois:** as respostas das 12:31 (`D-DONO-2111-RECORTE-MVP-RESPOSTAS`).
+
+## D-DONO-2111-BLOQUEANTES-PRIMEIRO (2026-11-21 ~10:00 SP) — os itens 69 e 70 antes de tudo
+
+- **Fato (palavras do dono):** *"e os bloqueantes que a gente vinha matando? O número 60, já foi feito. Tá faltando só o os 69 e o 70. Como é que tá? Eu quero concluir os bloqueantes primeiro. Vamos nessa."* E às ~11:07: *"vamos fechar os bloqueantes do portao, ALTA PRIORIDADE"*.
+- **Leitura do orquestrador, declarada (§A6):** os braços vão primeiro para o 69 e o 70 (`B-APP-ORG-2` e `B-APP-ORG-2S`). O Painel do gestor do grupo segue com a capacidade que sobrar, e o recorte do MVP vale depois dos bloqueantes.
+
+## D-DONO-2111-COMISSAO-NO-70 (2026-11-21 ~10:55 SP; pergunta D7) — a comissão entra no item 70
+
+- **Fato (palavras do dono):** *"a comissão saiu do critério do 70. Sem eu decidir, pode [botar] ela. Comissão entra no 70. A aba comissões no app com um bloco por pátio. Sobre rotas que já existem."*
+- **Efeito:** o critério do 70 mantém "cada chamado, envio e comissão aparece com a organização dele" (Emenda 1.7 §6). A aba Comissões entra no `B-APP-ORG-2`, com um bloco por pátio, sobre as rotas que já existem (`GET /commissions/calculations/mine` e `/statements/my-summary`). Fecha o achado CA18-01 da crítica da Emenda 1.8.
+
+## D-DONO-2111-TRAVA-EMAIL-ANTES (2026-11-21 ~10:56 SP; pergunta D5) — a trava do e-mail único entra antes, já valendo
+
+- **Fato (palavras do dono):** *"No CA18-02, a trava entra antes. Tem que entrar já valendo essa trava."*
+- **Efeito:** o registro de criações e o e-mail único no grupo (Emenda 1.7.2, desenho do dono de 20/11) entram antes do 69 e do 70, já valendo no merge. Os achados CA17-03 e CA17-04 voltam ao caminho crítico. A Emenda 1.8.1 (Fable) foi escrita com a D5 e a D7.
+
+## D-DONO-2111-DECISAO-E-LIMITE (2026-11-21 ~10:57 SP) — a decisão do dono é LIMITE do plano
+
+- **Fato (palavras do dono):** *"O que é que está acontecendo que eu falo uma coisa e você decide por outro caminho? Como aconteceu aí no CA18."*
+- **Causa, declarada pelo orquestrador:** a Emenda 1.8 (Fable) cortou a comissão do critério do 70 e adiou a trava do e-mail único, duas regras do dono, com "sem resposta, vale a recomendação". O orquestrador repassou e recomendou adiar. Minutos depois repetiu o padrão no pedido da Emenda 1.8.1 ("valem as recomendações"): esse trabalho foi parado antes de escrever qualquer coisa e relançado com a regra no prompt.
+- **Regra:** a decisão do dono é LIMITE do plano. Nenhum plano corta, adia ou relaxa uma decisão dele para caber em data. Se a regra custa caro, pergunta-se ANTES, com o custo, e até a resposta vale a regra dele. Recomendação nunca vira padrão sobre decisão do dono. Pergunta aberta fica parada, e o código que depende dela espera.
+- **Como entra:** no contrato, §A2 do `CLAUDE.md` e o espelho no `AGENTS.md`, neste PR de registro. Fora do repositório, na memória do orquestrador e nas lições injetadas nos lançadores dos braços.
+
+## D-DONO-2111-PATIO-COMANDA-O-SEU (2026-11-21 ~11:05 SP; perguntas D1, D3-1, D3-2 e D6) — cada pátio ativa e desativa só para si
+
+- **Fato (palavras do dono):** *"d1 = Vamos fazer o seguinte, cada pátio pode ativar ou desativar aquele usuário. Só vai ser possível fazer login no pátio que for ativado. Se o usuário tiver mais de um pátio, cada pátio só comanda as ações dele. Por exemplo, se o pátio norte desativar o técnico, Ele ainda fica habilitado no pátio centro. d3-1 a; d3-2 a; d6 a"*.
+- **Efeito:**
+  - **D1** substitui a `D-DONO-2011-LOGIN-DO-GRUPO` (e a correção das 00:05). Desativar no pátio que criou o login não derruba os outros, então o login tem de sobreviver à desativação do pátio de origem. Entra no 69 e no 70, e o dono foi avisado do custo;
+  - **D3-1 = a:** os e-mails do pátio que sai do grupo param de contar na hora;
+  - **D3-2 = a:** os acessos entre o pátio que sai e os que ficaram caem na hora (vira a fatia `B-APP-ORG-2S-c`);
+  - **D6 = a:** o e-mail do desativado não fica livre; reativa-se o login.
+- **Como entra:** Emenda 1.8.1 (Fable). A D1 sai pela cópia da credencial na concessão, sem migração além das duas autorizadas, medida em Postgres. O orquestrador conferiu contra o registro que nenhuma regra do dono foi cortada.
+
+## D-DONO-2111-P1-P2-P3-SENHA (2026-11-21 ~12:31 e ~12:33 SP) — a senha do técnico de mais de um pátio
+
+- **ID do conjunto dado pelo redator;** os três IDs abaixo são do registro.
+- **Fato (palavras do dono, 12:31):** *"p3 sim; p2 [v]ale nos dois, mas tem que ter os criterios para senha provisoria como tempo de validade e etc; ; p1 a"*. E às 12:33, sobre os critérios propostos: *"1 ok; 2 ok o resto ok"*.
+- **`D-DONO-2111-P3-UMA-SENHA`:** um login e uma senha em todos os pátios. O pátio que desativou continua mandando, e o técnico, ao voltar, entra com a senha atual.
+- **`D-DONO-2111-P2-PROVISORIA-VALE-NOS-DOIS`:** dar acesso a um login com senha provisória é permitido, e ela vale nos dois pátios, com critérios. Os critérios aprovados às 12:33: validade de 24 h; serve só para trocar a senha; invalida quando o técnico troca; gerada pelo sistema e mostrada uma vez; 5 tentativas; auditoria sem o valor.
+- **`D-DONO-2111-P1-QUALQUER-PATIO-REDEFINE`:** qualquer pátio em que o técnico está ativo redefine a senha, e a provisória vale em todos. O dono foi avisado de que isso desfaz a `D-USERS-1` para esse técnico (a proteção contra tomada de conta entre organizações). A mitigação são os critérios da P2 e a auditoria.
+- **Como entra:** Emenda 1.8.3 (Fable), sem migração nova (as 24 h saem do `password_updated_at`). As 4 leituras que o planejador levou ao dono estão nas `D-DONO-2111-P2-LEITURA1` a `LEITURA4`.
+
+## D-DONO-2111-RECORTE-MVP-RESPOSTAS (2026-11-21 ~12:31 a ~12:35 SP) — as respostas Q1 a Q8 do recorte do MVP e o SLA
+
+- **ID dado pelo redator;** `D-DONO-2111-Q5-PATIO-LIBERA` é do registro.
+- **Fato (palavras do dono, 12:31):** *"sla ok. Recorte do MVP na recomendacao, q3 ja entra; q4 ja [n]o mvp; q5 o gestor pode ate fazer alguma coisa, dando o acesso a ele ou a outro ususario, mas no padrao ele nao entra em operacao.; q6 web; q7 rota de rua"*. E às 12:35: *"o pátio libera o veículo. Lembrando que o gestor tem controle total da plataforma, ele pode dar acesso a quem ele quiser ou a ele mesmo para liberar um veículo."* (a transcrição chegou como "ou pato libera"; leitura do orquestrador, declarada: "o pátio").
+- **Efeito:**
+  - **SLA do Painel do Grupo:** tempo de chegada, da abertura ao "No local", com a média do mês. Fecha a pergunta do `B-GRUPO-GESTOR`;
+  - **Q1 e Q8:** já respondidas pelo 69 e pelo 70;
+  - **Q2:** devolve ao despacho (a recomendação);
+  - **Q3:** o push entra já no MVP;
+  - **Q4:** o pagamento on-line pelo gateway entra já no MVP. É serviço externo pago: PD e junta unânime de 5 (§C7.1);
+  - **Q5 (`D-DONO-2111-Q5-PATIO-LIBERA`):** liberar o veículo é ação do pátio. No padrão, quem tem é o operador. O gestor tem controle total e pode dar a permissão de liberar a qualquer usuário, inclusive a si; no padrão, ele não entra na operação. A permissão de liberar é atribuível pelo gestor, e não fixa num papel. A divisão recomendada vale: o operador recebe, faz a vistoria e a vaga; o financeiro dá a baixa;
+  - **Q6:** pela web;
+  - **Q7:** rota de rua (Amazon Location; depende da AWS; serviço pago, PD e junta de 5).
+- **"o resto ok" (12:33):** a PD e a junta de 5 para o gateway (Q4) e para o Amazon Location (Q7), e o MVP mínimo para cerca da metade de dezembro, a replanejar depois dos bloqueantes.
+
+## D-DONO-2111-BRACOS-DO-DIA (2026-11-21 ~12:38 a ~18:24 SP) — os braços liberados em 21/11
+
+- **Fato (palavras do dono):** às 12:38, *"Hoje você está liberado para usar o Azure, o Codex Conta4 você pode usar até às 22h10. O DeepSeek pode usar, eu vou colocar mais saldo. O Argon, vamos deixar desligado hoje. E Claude, você mesmo, eu vou colocar crédito agora no DeepSeek."* Às 12:39: *"O codex eu pedi para usar a conta 4 para deixar mais ou menos do mesmo limite das outras contas até a conta 1 voltar. Não use as outras contas nem com moderação. Use somente a conta 4 do codex."* Às 12:42: *"O DeepSeek tem mais limite hoje. Pode usar ele com tarefas mais pesadas e tal."*
+- **Mudanças ao longo do dia:**
+  - 13:32: *"aumenta o ritmo. Eu quero que você entre na jogada programando orquestrando, cobrindo quem cair. Eu quero 69 e o 70 o mais rápido possível."* O Claude entrou no dev em ramos próprios;
+  - 13:33: *"aumentar o ritmo ate onde pc aguentar, pode usar o braco que tiver limite e botar pra moer"*. **Leitura do orquestrador, declarada (§A6):** isto libera também as contas 2 e 3 do Codex, o que muda a regra das 12:39; o dono foi avisado e pode desfazer;
+  - 14:29: *"usar antigravity argon"*, o que desfaz o "Argon desligado hoje". Pela `D-GEMINI-SEGUNDO-REVISOR`, o Argon entra só como segundo revisor, com o achado conferido antes de valer;
+  - 16:11: o Azure liberado sem freio, com o teto em dólar e a trava no lançador mantidos (`D-DONO-1811-AZURE-TETO-180`);
+  - 18:24: o DeepSeek recarregado.
+- **Vale só para 21/11.**
+- **Fato medido no dia, não decisão:** o modelo `gpt-5.3-codex` não roda nas contas ChatGPT do Codex; só pela API (o braço do Azure).
+
+## D-DONO-2111-RITMO-69-70 (2026-11-21 ~14:08 SP) — mais ritmo e mais segurança no 69 e no 70
+
+- **ID dado pelo redator.**
+- **Fato (palavras do dono):** *"não estou sentindo firmeza … Bote para moer. Pode usar tudo … quantos agentes o computador permitir … O que é que pode ser adiantado? Os prazos … não estão legais. Quero mais proatividade, rapidez, e segurança em tudo que foi entregue."*
+- **Efeito (leitura do orquestrador, declarada, §A6):** as fatias que não dependiam umas das outras abriram em paralelo. A meta passou a ser todo o dev até domingo 22/11 à noite, as juntas na segunda 23, o conserto na terça 24, e os merges e as provas E-69 e E-70 na quarta 25: o 69 e o 70 em 25 e 26/11 (antes, 29/11). Com a CPU em 100%, os devs rodam só os testes da fatia, e a suíte inteira no fim.
+
+## D-DONO-2111-TELA-COMISSOES (2026-11-21 ~14:06 SP) — a aba Comissões do app, pela recomendação
+
+- **Fato (palavras do dono):** *"Claude, as perguntas que fizeste sobre o app do guincheiro, eu estou de acordo com tudo que você recomendou."*
+- **Efeito (as 4 recomendações da proposta da tela):**
+  1. a aba fica em Finanças, com a troca Despesas | Comissões;
+  2. "A receber" e "Pago no mês" ficam fora agora, com o lugar reservado;
+  3. o total do mês NÃO conta comissão recusada nem estornada;
+  4. 3 últimos lançamentos e "Ver todos", com o filtro pelo indicador e pela barra.
+- **Como entra:** Emenda 1.8.3.5 (orquestrador, medida em `commission-prisma.repository.ts:381-387` e `commission.types.ts:11-18`): o resumo exclui `rejected` e `reversed`. **Leitura declarada:** vale também para o resumo da web, porque é a mesma função. A tela segue `D-DONO-2011-UMA-TELA-POR-LOTE` (uma tela, no padrão; tela-modelo `expense_list_screen.dart`).
+
+## D-DONO-2111-E1 (2026-11-21 ~18:41 SP) — como criar os 2 pátios da prova E-69/E-70
+
+- **Fato:** resposta do dono no chat: **(a)**.
+- **Efeito:** para a prova E-69/E-70, um script do ensaio cria SÓ os 2 pátios, num banco descartável. Todo o resto (o grupo, os usuários, o acesso dado pela web, os chamados e as comissões) vai pela API e pelas telas de verdade.
+- **Por quê a pergunta:** não há caminho de produto para criar 2 organizações no mesmo banco. `POST /api/v1/platform/tenants` grava num repositório em memória, e o único caminho que grava no banco recusa base que não esteja virgem (medido pelos ensaios do dia). O defeito antigo vira um bloco próprio, depois (apenso de 21/11 em `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA`).
+
+## D-DONO-2111-P2-LEITURA1 a LEITURA4 (2026-11-21 ~18:42 a ~18:45 SP) — as 4 leituras da Emenda 1.8.3 §2.4, confirmadas
+
+- **Fato:** respostas do dono no chat, uma por vez: **(a), (a), (a), (a)**.
+- **`D-DONO-2111-P2-LEITURA1` (18:42):** 5 tentativas erradas bloqueiam por 15 min, o bloqueio que já existe (`LOGIN_LOCKOUT_MINUTES`).
+- **`D-DONO-2111-P2-LEITURA2` (18:43):** os critérios da provisória (24 h, só para trocar, gerada pelo sistema, 5 tentativas) valem para TODA provisória, na criação e na redefinição.
+- **`D-DONO-2111-P2-LEITURA3` (18:45):** a P1 (a), qualquer pátio redefine, vale só dentro do grupo. A conta `religacao` de outra empresa fica de fora e mantém a própria senha.
+- **`D-DONO-2111-P2-LEITURA4` (18:45):** nos outros pátios, a auditoria da redefinição mostra o NOME DO PÁTIO que redefiniu, não a pessoa. O registro completo, com o ator, fica no pátio que redefiniu.
+- **Leitura do orquestrador, declarada (Emenda 1.8.3.2):** as 5 tentativas contam por pessoa, somando todos os pátios.
+
+## D-DONO-2111-1813-LEITURAS (2026-11-21 ~19:20 SP) — as 2 leituras da Emenda 1.8.3.13 §8, confirmadas
+
+- **Fato:** resposta do dono no chat: **(a)**.
+- **Efeito:**
+  1. a provisória vencida grava `temporary_credential_pending: true`, e a concessão leva a marca;
+  2. o vínculo `desvinculo` conta como nascimento do login, para a origem.
+
+## D-DONO-2111-BOTAO-38 (2026-11-21 ~19:22 SP) — o "Redefinir senha" do diálogo da web tem 38 px
+
+- **Fato:** resposta do dono no chat: **(a)**.
+- **Efeito:** o botão "Redefinir senha" do diálogo "Editar usuário" (web, tela Usuários) usa 38 px, a altura do `.ui-button` dos outros botões do diálogo, pela `D-TELAS-SEGUEM-O-PADRAO`. Os 44 px ficam para o alvo de toque do app. O estilo do botão perde o `minHeight: 44`, e o teste W-BTN passa a afirmar 38. Entra na integração do servidor (`B-APP-ORG-2S`).
+- **De onde veio:** a verificação da fatia S3 pôs o botão em 44 px e deixou a ressalva (os outros botões do modal têm 38 px).
+
+## C-612-MAQUETE-Q1B (registro de CONFLITO, §A2, 2026-11-20 ~22:50 SP; resolvido) — a frase da maquete da cobrança × a Q1 (b) do item 60
+
+- **ID dado pelo redator;** o conflito está na Emenda 2 item 6 do plano `B-ASS-10c-OPERACAO` (fora do repositório) e na nota C3-03 da junta J-612.
+- **Os dois lados:** a maquete aprovada da tela de operação da cobrança dizia que a nota emitida sem pagamento *"precisa ser cancelada"*, frase da época da Q1 (a). O item 60 vale com a Q1 (b): a nota fica e o contador é avisado.
+- **Resolução:** vale a Q1 (b), que é a regra do dono, sobre o texto da maquete (§A1: regra de negócio vence o protótipo). A tela segue a Q1 (b) (testes T-R5-1 e T-R5-2), e o conserto da junta (`80b883cd`) alinhou a frase da referência versionada `platform-cobranca-3opcoes.reference.html`. Ata: `omega/juntas/J-612-b-ass-10c-operacao.md`.

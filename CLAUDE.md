@@ -66,6 +66,16 @@ validação**. Conflitos já resolvidos (não reabrir):
 - **Backend C (memória antiga) × Node.js + TypeScript (repo):** vale **Node.js + TypeScript**.
 - **Rótulo de UI × nome técnico:** são **camadas**, não conflito (Parte B §3).
 
+**Decisão do dono é LIMITE do plano (decisão do dono, 2026-11-21, `D-DONO-2111-DECISAO-E-LIMITE`).** Nas palavras do dono:
+*"O que é que está acontecendo que eu falo uma coisa e você decide por outro caminho? Como aconteceu aí no CA18."*
+
+- Nenhum plano, emenda ou recomendação corta, adia ou relaxa uma decisão do dono para caber em data.
+- Se a regra do dono custa caro, pergunta-se ANTES, com o custo; até a resposta, vale a regra dele.
+- Recomendação nunca vira padrão sobre decisão do dono: "sem resposta, vale a recomendação" não alcança uma decisão dele.
+- Pergunta aberta fica parada, e o código que depende dela espera a resposta.
+- Por quê: a Emenda 1.8 do `B-APP-ORG` tirou a comissão do critério do item 70 e adiou a trava do e-mail único no grupo,
+  duas regras do dono, com "sem resposta, vale a recomendação"; a crítica pegou as duas como graves (CA18-01 e CA18-02).
+
 ## A3. Estrutura obrigatória (não remover, não esconder)
 
 Preserve na raiz: os cinco arquivos-base, `AGENTS.md`, `docs/`, `agent-orchestration/`, `Kpis/`.
