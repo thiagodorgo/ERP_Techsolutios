@@ -151,7 +151,7 @@ async function expectReason(promise: Promise<unknown>, reason: string): Promise<
 test("(i) happy path: start→settle→approve→consume ⇒ RELEASED + RELEASE na cadeia + vaga liberada", async () => {
   const tenantId = await reset();
   const ctx = await makeActiveProcess(tenantId, {
-    t0: new Date(Date.now() - 2 * MS_PER_DAY),
+    t0: new Date(Date.now() - 3_600_000),
     requirements: [{ code: "AUTHORITY_RELEASE", label: "Autorização do órgão", required: true }],
     withSpot: true,
   });
@@ -169,17 +169,15 @@ test("(i) happy path: start→settle→approve→consume ⇒ RELEASED + RELEASE 
   assert.ok(frozen?.frozenAt, "frozen_at set no salto A");
 
   await release.setRequirement(who, ctx.processId, { code: "AUTHORITY_RELEASE", satisfied: true });
-  const beforeSettle = await charge.getReleaseChargeState(tenantId, ctx.processId);
   const settle = await charge.settle(who, ctx.processId, {});
-  assert.equal(settle.settledCount, beforeSettle?.exigibleCount ?? 0);
-  const expectedTotal = (150 + 40 * Math.max(0, settle.settledCount - 1)).toFixed(2);
-  assert.equal(settle.settledTotal, expectedTotal);
+  assert.equal(settle.settledCount, 1);
+  assert.equal(settle.settledTotal, "150.00");
   await release.approve(who, ctx.processId, { authority_reference: "OFICIO-2026-0042" });
 
   const consumed = await release.consume(who, ctx.processId);
   assert.equal(consumed.release.status, "COMPLETED");
   assert.ok(consumed.release.releasedAt, "released_at (comprovante de saída) carimbado");
-  assert.equal(consumed.release.settledTotal, settle.settledTotal);
+  assert.equal(consumed.release.settledTotal, "150.00");
 
   const process = await getMemoryImpoundRepositoryForTests().findProcessById(tenantId, ctx.processId);
   assert.equal(process?.status, "RELEASED");

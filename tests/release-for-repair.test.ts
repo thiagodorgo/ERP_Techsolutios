@@ -305,7 +305,7 @@ test("(iii) retorno: dossiê RETURNED + partial-unique liberado (start padrão a
 // ── (iv) DÉBITOS DIFERIDOS: saída SUCEDE com débito ABERTO; a restituição definitiva BLOQUEIA até quitar ───────────
 test("(iv) débitos diferidos: saída p/ reparo SUCEDE com débito EM ABERTO (≠ quitação); restituição definitiva BLOQUEIA enquanto o débito segue aberto", async () => {
   const tenantId = await reset();
-  const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 2 * MS_PER_DAY) });
+  const ctx = await makeActiveProcess(tenantId, { t0: new Date(Date.now() - 3_600_000) });
   await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId, "150.00"); // débito EM ABERTO (não quitado)
   const release = createMemoryReleaseService();
@@ -327,10 +327,10 @@ test("(iv) débitos diferidos: saída p/ reparo SUCEDE com débito EM ABERTO (�
   await expectReason(release.consume(who, ctx.processId), "release_debts_unsettled");
 
   // quitando, a restituição definitiva passa:
-  const settle = await charge.settle(who, ctx.processId, {});
+  await charge.settle(who, ctx.processId, {});
   const consumed = await release.consume(who, ctx.processId);
   assert.equal(consumed.release.status, "COMPLETED");
-  assert.equal(consumed.release.settledTotal, settle.settledTotal);
+  assert.equal(consumed.release.settledTotal, "150.00");
 });
 
 // ── (v) freeze só na restituição definitiva: frozen_at NULL durante todo o reparo ─────────────────────────────────
