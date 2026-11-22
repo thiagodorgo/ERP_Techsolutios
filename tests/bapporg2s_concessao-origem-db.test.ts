@@ -231,3 +231,19 @@ test("GO6 — par de RELIGAÇÃO da mesma identidade no grupo, de id menor e com
   assert.equal(oz, x.tenantId, "GO6: a origem é X, não a conta religada");
   assert.notEqual(credZ?.password_hash, outra.password_hash, "GO6: Z não recebe a senha da conta religada");
 });
+
+// B-APP-ORG-2S (Emenda 1.8.3.17, Adendo 1, I4; C1-05; `D-DONO-2111-1813-LEITURAS`, item 2): o vínculo de origem
+// `desvinculo` continua sendo origem (ele não é concessão nem religação). Mutação MO-DESV.
+test("GO7 — o vínculo de X é `desvinculo`: a concessão a Y dá 201 e a origem gravada de Y é X", async () => {
+  const h = await harness();
+  const f = await novaFamilia(h, "go7", { pairs: 1 });
+  const x = f.orgs[0]!;
+  await h.admin.$executeRaw`UPDATE auth_identity_links SET attached_via = 'desvinculo' WHERE tenant_id = ${x.tenantId}::uuid AND user_id = ${x.userId}::uuid`;
+  const y = await patioNoGrupo(h, f.groupId, idMenor());
+  const g = await conceder(h, y, f.email);
+  const oy = await origemGravada(h, y);
+
+  console.log(`# SONDA GO7: concessão ${g.status} ${g.body.error?.reason ?? ""} · origem = ${oy === x.tenantId ? "X" : "outra"}`);
+  assert.equal(g.status, 201, "GO7: a concessão passa");
+  assert.equal(oy, x.tenantId, "GO7: a origem gravada é X, o vínculo `desvinculo`");
+});
