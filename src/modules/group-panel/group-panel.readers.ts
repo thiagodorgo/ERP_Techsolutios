@@ -14,7 +14,6 @@ import { resolvePermissionsForRoles, type Role } from "../core-saas/permissions/
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { InMemoryFinancialSummaryRepository, type FinancialSummaryRepository } from "../financial-summary/financial-summary.repository.js";
 import { normalizeModuleKeys } from "../platform/platform-modules.service.js";
-import { getMemoryOverviewEconomicGroupsForTests } from "../subscription-billing/overview/overview.factory.js";
 import type {
   GroupManagerMark,
   GroupManagerMarksReader,
@@ -114,7 +113,7 @@ export function resetGroupPanelMemoryForTests(): void {
 
 export type MemoryGroupPanelReadersOptions = {
   readonly marks?: GroupManagerMarksReader;
-  readonly groups?: () => GroupMembershipSource;
+  readonly groups?: () => GroupMembershipSource | Promise<GroupMembershipSource>;
   readonly finance?: FinancialSummaryRepository;
   readonly recordView?: GroupPanelReaders["recordView"];
 };
@@ -122,7 +121,11 @@ export type MemoryGroupPanelReadersOptions = {
 /** A composição em memória: o núcleo em memória, os vínculos de grupo do B-ASS-09 e o resumo financeiro em memória. */
 export function createMemoryGroupPanelReaders(core: ICoreSaasService, options: MemoryGroupPanelReadersOptions = {}): GroupPanelReaders {
   const marks = options.marks ?? getMemoryGroupManagerMarksForTests(core);
-  const groups = options.groups ?? (() => getMemoryOverviewEconomicGroupsForTests());
+  // Import preguiçoso: a fábrica da visão de cobrança puxa o Prisma no carregamento, e o app em memória não pode abri-lo
+  // (tests/persistent-rbac-middleware.test.ts). O repositório em memória é o mesmo que as rotas de grupos usam.
+  const groups =
+    options.groups ??
+    (async () => (await import("../subscription-billing/overview/overview.factory.js")).getMemoryOverviewEconomicGroupsForTests());
   const finance = options.finance ?? new InMemoryFinancialSummaryRepository();
 
   return {
@@ -136,7 +139,7 @@ export function createMemoryGroupPanelReaders(core: ICoreSaasService, options: M
     },
 
     async groupMemberships(tenantIds) {
-      const rows = await groups().listMembershipsOfTenants(tenantIds);
+      const rows = await (await groups()).listMembershipsOfTenants(tenantIds);
       // âncora (MUT-10)
       assertMembershipsWithinRequested(rows, tenantIds);
       return rows.map((row) => ({ tenantId: row.tenantId, groupId: row.groupId, validFrom: row.validFrom, validTo: row.validTo }));

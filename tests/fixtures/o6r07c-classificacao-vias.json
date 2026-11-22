@@ -25,7 +25,7 @@
  },
  "MIDDLEWARE /api/v1 · (anônima)": {
   "classe": "MIDDLEWARE",
-  "n": 118
+  "n": 119
  },
  "MIDDLEWARE /api/v1 · moduleGate": {
   "classe": "MIDDLEWARE",
@@ -52,6 +52,10 @@
   "n": 1
  },
  "MIDDLEWARE /api/v1/billing/subscription · tenantContextMiddleware": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/group-panel · tenantContextMiddleware": {
   "classe": "MIDDLEWARE",
   "n": 1
  },
@@ -396,6 +400,14 @@
   "n": 1
  },
  "ROTA GET /api/v1/fuel-logs/:id/payable": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/group-panel/scope": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/group-panel/summary": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1961,7 +1973,7 @@
  },
  "ROTEADOR /api/v1": {
   "classe": "ROTEADOR",
-  "n": 61
+  "n": 62
  },
  "ROTEADOR /api/v1/audit-events": {
   "classe": "ROTEADOR",

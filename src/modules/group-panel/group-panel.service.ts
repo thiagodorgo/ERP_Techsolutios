@@ -45,7 +45,7 @@ export class GroupPanelService {
     const scope = await this.resolveScope(actor, this.clock());
     const organizations = [];
     for (const organization of scope.organizations) {
-      const access = await this.accessOf(organization);
+      const access = await this.accessOf(actor, organization);
       organizations.push({
         id: organization.tenantId,
         name: organization.name,
@@ -63,7 +63,7 @@ export class GroupPanelService {
 
     const reads: OrganizationRead[] = [];
     for (const organization of scope.processed) {
-      reads.push(await this.readOrganization(organization, now));
+      reads.push(await this.readOrganization(actor, organization, now));
     }
 
     let coverage = coverageOf(reads, scope);
@@ -105,7 +105,9 @@ export class GroupPanelService {
     return resolveGroupScope({ activeGroupId, memberships, groupRows, today });
   }
 
-  private async accessOf(organization: ScopedOrganization): Promise<{ readonly finance: BlockStatus; readonly operations: boolean }> {
+  // O ator está à mão de propósito: a permissão e o módulo são os do PAR daquela organização (o usuário local dela),
+  // nunca os do ator (MUT-12). O mesmo vale para a leitura do resumo (MUT-5).
+  private async accessOf(actor: GroupPanelActor, organization: ScopedOrganization): Promise<{ readonly finance: BlockStatus; readonly operations: boolean }> {
     try {
       // âncora (MUT-12)
       const authorization = await this.readers.authorization({ tenantId: organization.tenantId, userId: organization.userId });
@@ -119,8 +121,8 @@ export class GroupPanelService {
     }
   }
 
-  private async readOrganization(organization: ScopedOrganization, now: Date): Promise<OrganizationRead> {
-    const access = await this.accessOf(organization);
+  private async readOrganization(actor: GroupPanelActor, organization: ScopedOrganization, now: Date): Promise<OrganizationRead> {
+    const access = await this.accessOf(actor, organization);
     if (access.finance !== "ok") return { organization, status: access.finance, summary: null };
     try {
       // âncora (MUT-5)

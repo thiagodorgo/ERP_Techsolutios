@@ -78,6 +78,8 @@
  "GET /api/v1/fuel-logs": "{vehicles}",
  "GET /api/v1/fuel-logs/:fuelLogId": "{vehicles}",
  "GET /api/v1/fuel-logs/:id/payable": "{finance}",
+ "GET /api/v1/group-panel/scope": "{finance}",
+ "GET /api/v1/group-panel/summary": "{finance}",
  "GET /api/v1/health": "NUCLEO",
  "GET /api/v1/health/ready": "NUCLEO",
  "GET /api/v1/health/worker": "NUCLEO",
