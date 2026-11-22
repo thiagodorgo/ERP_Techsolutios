@@ -12,13 +12,13 @@ if (!connectionString) {
 } else {
   process.env.CORE_SAAS_PERSISTENCE = "prisma";
 
-  const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
+  const [{ createPrismaClient }] = await Promise.all([import("../src/database/pg-connection.js")]);
   const { withTenantRls } = await import("../src/database/rls.js");
   const { RlsPrismaReleaseRepository } = await import("../src/modules/release/release-prisma.repository.js");
   const { createDefaultReleaseService } = await import("../src/modules/release/release.service.js");
   const { createDefaultChargeService } = await import("../src/modules/charging/charge.service.js");
 
-  const client = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const client = createPrismaClient(connectionString);
   const releaseRepo = new RlsPrismaReleaseRepository(client);
 
   type ProcCtx = {
