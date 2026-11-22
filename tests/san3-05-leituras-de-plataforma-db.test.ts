@@ -1808,7 +1808,6 @@ async function limpar(admin: PrismaClient, cenario: Cenario): Promise<void> {
   await admin.cloudUsageDailyAggregate.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.cloudUsageEvent.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenantSubscriptionAddon.deleteMany({ where: { tenant_id: { in: tenantIds } } });
-  await admin.tenantSubscription.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenantUsageDaily.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   // B-ASS-08b — se o cenário do canal falhar no meio, as linhas dele (FK Restrict para tenants) não podem travar a limpeza.
   await admin.billingOutbox.deleteMany({ where: { tenant_id: { in: tenantIds } } });
@@ -1817,6 +1816,7 @@ async function limpar(admin: PrismaClient, cenario: Cenario): Promise<void> {
   await admin.subscriptionCredit.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.subscriptionStatementPayment.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.subscriptionStatement.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.tenantSubscription.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   // B-ASS-09 — os vínculos (FK RESTRICT para tenants), a trilha deles e os 2 grupos do seed.
   await admin.economicGroupMember.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = ANY($1::uuid[]) AND action LIKE 'economic_group.%'`, tenantIds);
