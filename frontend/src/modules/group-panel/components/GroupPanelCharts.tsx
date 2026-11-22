@@ -12,16 +12,16 @@ const OUTFLOW = "var(--color-chart-outflow, #DC2626)";
 const BAR = "#2563EB";
 const BAR_SELECTED = "#1D4ED8";
 
-export function CashFlowChart({ points, scopeLabel }: { readonly points: readonly GroupPanelCashFlowPoint[]; readonly scopeLabel: string }) {
+export function CashFlowChart({ points, scopeLabel, emptyLabel }: { readonly points: readonly GroupPanelCashFlowPoint[]; readonly scopeLabel: string; readonly emptyLabel: string }) {
   if (points.length === 0) {
-    return <p className="pat-cell-muted" style={{ fontSize: 12, margin: "28px 0", textAlign: "center" }}>Sem lançamentos no período.</p>;
+    return <p className="pat-cell-muted" style={{ fontSize: 12, margin: "28px 0", textAlign: "center" }}>{emptyLabel}</p>;
   }
-  const width = 420;
-  const height = 150;
-  const left = 30;
-  const right = 410;
-  const top = 16;
-  const bottom = 124;
+  const width = 640;
+  const height = 180;
+  const left = 24;
+  const right = 616;
+  const top = 14;
+  const bottom = 150;
   const max = Math.max(1, ...points.map((point) => Math.max(point.inflow, point.outflow)));
   const x = (index: number) => (points.length === 1 ? (left + right) / 2 : left + 10 + (index * (right - left - 20)) / (points.length - 1));
   const y = (value: number) => bottom - (Math.max(0, value) / max) * (bottom - top);
@@ -38,7 +38,8 @@ export function CashFlowChart({ points, scopeLabel }: { readonly points: readonl
           ))}
         </g>
         <polyline points={line((point) => point.inflow)} fill="none" stroke={INFLOW} strokeWidth={2.5} strokeLinejoin="round" />
-        <polyline points={line((point) => point.outflow)} fill="none" stroke={OUTFLOW} strokeWidth={2.5} strokeLinejoin="round" />
+        {/* Tracejada: as duas séries se distinguem também sem a cor (daltonismo). */}
+        <polyline points={line((point) => point.outflow)} fill="none" stroke={OUTFLOW} strokeWidth={2.5} strokeDasharray="6 4" strokeLinejoin="round" />
         {points.map((point, index) => (
           <g key={point.competencia}>
             <circle cx={x(index)} cy={y(point.inflow)} r={index === points.length - 1 ? 4 : 2.5} fill={INFLOW}>
@@ -47,7 +48,7 @@ export function CashFlowChart({ points, scopeLabel }: { readonly points: readonl
             <circle cx={x(index)} cy={y(point.outflow)} r={index === points.length - 1 ? 4 : 2.5} fill={OUTFLOW}>
               <title>{`${monthName(point.competencia)}: pago ${formatMoney(point.outflow)}`}</title>
             </circle>
-            <text x={x(index)} y={height - 6} textAnchor="middle" fontSize={10} fill="#94A3B8">
+            <text x={x(index)} y={height - 8} textAnchor="middle" fontSize={11} fill="#94A3B8">
               {monthShort(point.competencia)}
             </text>
           </g>
@@ -58,7 +59,7 @@ export function CashFlowChart({ points, scopeLabel }: { readonly points: readonl
           <span aria-hidden="true" style={{ width: 10, height: 3, borderRadius: 2, background: INFLOW, display: "inline-block" }} /> Recebido
         </div>
         <div>
-          <span aria-hidden="true" style={{ width: 10, height: 3, borderRadius: 2, background: OUTFLOW, display: "inline-block" }} /> Pago
+          <span aria-hidden="true" style={{ width: 12, height: 0, borderTop: `3px dashed ${OUTFLOW}`, display: "inline-block" }} /> Pago
         </div>
       </div>
     </>
@@ -80,10 +81,10 @@ export function ComparisonChart({
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const rows = summary.organizations.map((organization) => ({ organization, value: organizationValue(organization, summary.coverage, indicator) }));
   const max = Math.max(1, ...rows.map((row) => Math.abs(row.value ?? 0)));
-  const rowHeight = 30;
-  const width = 300;
-  const labelWidth = 92;
-  const barMax = 128;
+  const rowHeight = 34;
+  const width = 460;
+  const labelWidth = 120;
+  const barMax = 200;
   const label = GROUP_PANEL_INDICATORS.find((item) => item.key === indicator)?.label ?? "";
 
   const onKey = (event: KeyboardEvent<SVGGElement>, organization: GroupPanelOrganization) => {
@@ -114,12 +115,12 @@ export function ComparisonChart({
             onKeyDown={(event) => onKey(event, organization)}
           >
             <rect x={0} y={yTop + 2} width={width} height={rowHeight - 4} rx={6} fill={selected ? "#EFF6FF" : "transparent"} stroke={focusedId === organization.id ? "#2563EB" : "none"} strokeWidth={2} />
-            <text x={6} y={yTop + 19} fontSize={11} fill="#0F172A" fontWeight={selected ? 700 : 500}>
-              {organization.name.length > 14 ? `${organization.name.slice(0, 13)}…` : organization.name}
+            <text x={6} y={yTop + 21} fontSize={12} fill="#0F172A" fontWeight={selected ? 700 : 500}>
+              {organization.name.length > 17 ? `${organization.name.slice(0, 16)}…` : organization.name}
               <title>{organization.name}</title>
             </text>
-            {value !== null ? <rect x={labelWidth} y={yTop + 8} width={barWidth} height={14} rx={3} fill={value < 0 ? OUTFLOW : selected ? BAR_SELECTED : BAR} /> : null}
-            <text x={labelWidth + barWidth + 6} y={yTop + 19} fontSize={10.5} fill={value === null ? "#94A3B8" : "#475569"} fontStyle={value === null ? "italic" : undefined}>
+            {value !== null ? <rect x={labelWidth} y={yTop + 10} width={barWidth} height={14} rx={3} fill={value < 0 ? OUTFLOW : selected ? BAR_SELECTED : BAR} /> : null}
+            <text x={labelWidth + barWidth + 6} y={yTop + 21} fontSize={11.5} fill={value === null ? "#94A3B8" : "#475569"} fontStyle={value === null ? "italic" : undefined}>
               {valueText}
             </text>
           </g>

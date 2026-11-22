@@ -246,7 +246,11 @@ function ReadyView({
             <span>Recebido × pago, últimos 6 meses</span>
             <small>{selected ? selected.name : "grupo"}</small>
           </div>
-          <CashFlowChart points={cashFlowFor(summary, effectiveSelection)} scopeLabel={scopeLabel} />
+          <CashFlowChart
+            points={cashFlowFor(summary, effectiveSelection)}
+            scopeLabel={scopeLabel}
+            emptyLabel={!selected && summary.consolidated === null ? "O total do grupo não foi somado nesta leitura. Escolha um pátio para ver os 6 meses dele." : "Sem lançamentos no período."}
+          />
         </article>
         <article className="pat-an-card">
           <div className="pat-an-card__title">
@@ -368,9 +372,11 @@ function Indicators({
   return (
     <div className="pat-kpi-row pat-kpi-row--4" data-scope={selected ? "patio" : "grupo"}>
       {INDICATOR_STYLE.map((spec) => {
-        const label = spec.key === "recebido" ? `Recebido em ${mes}` : spec.key === "pago" ? `Pago em ${mes}` : labelOf(spec.key);
+        const label = spec.key === "recebido" && competencia ? `Recebido em ${mes}` : spec.key === "pago" && competencia ? `Pago em ${mes}` : labelOf(spec.key);
         const value = indicatorValue(summary, selection, spec.key);
-        const shown = value === null ? "—" : formatIndicator(spec.key, value);
+        // Lote item 7: sem total publicado, o grupo diz "incompleto" em vez de mostrar um número errado.
+        const shown = value === null ? (selected ? "—" : "Incompleto") : formatIndicator(spec.key, value);
+        const shownNode = value === null ? <span style={{ color: "#94A3B8", fontSize: 20 }}>{shown}</span> : shown;
         const hint = hintFor(spec.key);
         return (
           <KpiStatCard
@@ -378,10 +384,10 @@ function Indicators({
             icon={spec.icon}
             iconColor={spec.iconColor}
             iconBg={spec.iconBg}
-            value={shown}
+            value={shownNode}
             label={label}
             hint={hint}
-            border={spec.key === "receber" && value !== null && (selected ? (finance?.receivable.overdueAmount ?? 0) > 0 : (consolidated?.finance.receivableOverdue ?? 0) > 0) ? "#FCA5A5" : undefined}
+            border={spec.key === "receber" && sortKey !== spec.key && value !== null && (selected ? (finance?.receivable.overdueAmount ?? 0) > 0 : (consolidated?.finance.receivableOverdue ?? 0) > 0) ? "#FCA5A5" : undefined}
             pressed={sortKey === spec.key}
             onClick={() => onToggle(spec.key)}
             ariaLabel={`${label}: ${value === null ? "sem número" : shown} — ordenar a lista de pátios por este indicador`}

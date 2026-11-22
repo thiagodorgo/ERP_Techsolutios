@@ -214,12 +214,13 @@ export function coverageNotices(summary: GroupPanelSummary, scope: GroupPanelSco
   const notices: CoverageNotice[] = [];
   const total = summary.organizations.length;
   const { coverage } = summary;
-  notices.push({ tone: "info", text: `Mostrando ${total === 1 ? "o pátio" : `os ${total} pátios`} em que você tem acesso.` });
-  if (coverage.withoutAccess.length > 0) {
+  const shown = `Mostrando ${total === 1 ? "o pátio" : `os ${total} pátios`} em que você tem acesso.`;
+  if (coverage.withoutAccess.length === 0) notices.push({ tone: "info", text: shown });
+  else {
     const names = coverage.withoutAccess.map((organization) => organization.name).join(", ");
     notices.push({
       tone: "info",
-      text: `${coverage.withoutAccess.length === 1 ? "1 pátio está" : `${coverage.withoutAccess.length} pátios estão`} sem acesso ao Financeiro e não entra${coverage.withoutAccess.length === 1 ? "" : "m"} na soma: ${names}. A soma é de ${coverage.included} ${coverage.included === 1 ? "pátio" : "pátios"}.`,
+      text: `${shown} ${coverage.withoutAccess.length === 1 ? "1 pátio está" : `${coverage.withoutAccess.length} pátios estão`} sem acesso ao Financeiro e não entra${coverage.withoutAccess.length === 1 ? "" : "m"} na soma: ${names}. A soma é de ${coverage.included} ${coverage.included === 1 ? "pátio" : "pátios"}.`,
     });
   }
   if (!coverage.complete) {
