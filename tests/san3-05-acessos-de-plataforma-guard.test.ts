@@ -109,6 +109,10 @@ const SUMIDAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/auth/services/identity-link.service.ts", "new AuthSessionRepository(tx)", "PARAMETRO(tx)", "×1"),
     "IS2C/T13: sumida legítima da revisão 5 (identity-link refatorado).",
   ],
+  [
+    k("L2", "src/modules/auth/auth-runtime.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-APP-ORG-2S, Emenda 1.8.3.17 §2.2 (C2-04): a contagem desta chave do origin/main passa de ×1 a ×2 (a de ×2 está em NOVAS, com o motivo); a ocorrência do `buildService` não mudou.",
+  ],
 ]);
 
 // O que este bloco ACRESCENTOU ao inventário, com o motivo (nenhuma é acesso a tabela FORCE sem contexto).
@@ -740,6 +744,15 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   [
     k("L2", "src/modules/core-saas/store/prisma-core-saas.store.ts", "new UserRoleRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
     "IS2C/T13: chave nova medida por comm e dentro do diff.",
+  ],
+  // B-APP-ORG-2S, Emenda 1.8.3.17 (C5-02 e C2-04; o censo do A8): as 2 chaves deste conserto, com motivo próprio.
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.lockOtherLinksOfIdentityForShare", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×1"),
+    "B-APP-ORG-2S, Emenda 1.8.3.17 §2.1 (C5-02): `SELECT tenant_id FROM auth_identity_links WHERE tenant_id = <outro pátio> AND identity_id = <identidade do ator> FOR SHARE`, organização a organização, com `setTenantRlsContext(tx, <outro pátio>)` antes de cada leitura e o GUC do pátio ativo reposto no `finally`; o `tx` é o da transação da religação, e o resultado só passa por `assertRowsBelongToTenant` (a leitura trava e não devolve dado a ninguém). Provado em tests/bapporg2s_senha-corrida-db.test.ts (GR8-LV e GR8-RV, nas 2 ordens de id, pelo app real sob papel NOSUPERUSER NOBYPASSRLS).",
+  ],
+  [
+    k("L2", "src/modules/auth/auth-runtime.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx)", "×2"),
+    "B-APP-ORG-2S, Emenda 1.8.3.17 §2.2 (C2-04): a 2ª ocorrência é a volta de `clearAcrossPairs` em `acrossPairsInTx`, com a `tx` da transação do login (`withTenantRls` do pátio do login), o GUC de cada par posto antes da escrita e o do pátio do login reposto no `finally`; substitui o espelho que abria transação própria no cliente global. Provado em tests/bapporg2s_login-conexao-db.test.ts (GL-POOL1, o app com 1 conexão) e tests/bapporg2s_login-pares-db.test.ts (GL2 e GL5, sob papel NOSUPERUSER NOBYPASSRLS).",
   ],
 ]);
 
