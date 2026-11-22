@@ -83,11 +83,14 @@ const forbidden: Reply = { status: 403, body: { error: { code: "FORBIDDEN", reas
 const serverError: Reply = { status: 500, body: { error: { code: "INTERNAL", reason: "erro", message: "falha" } } };
 const invalid: Reply = { status: 200, body: { data: { inGroup: true, organizations: [{ id: "a" }, { id: "b" }] } } };
 
-// O hook montado num componente de sonda: o valor devolvido vai para `seen` a cada render.
+// O hook montado num componente de sonda: o valor devolvido vai para `seen` a cada render. O disjuntor de 200 renders
+// transforma um laço de render sem fim (efeito sem dependências) em falha do teste, em vez de travar a suíte.
+const MAX_RENDERS = 200;
 let seen: (number | null)[] = [];
 function Probe(props: { readonly context: ApiContext | null; readonly tick: number }) {
   const value = useGroupPanelMenuScope(props.context);
   seen.push(value);
+  if (seen.length > MAX_RENDERS) throw new Error(`render sem fim: mais de ${MAX_RENDERS} renders`);
   return React.createElement("span", { "data-tick": props.tick }, String(value));
 }
 const ctx = (tenantId: string): ApiContext => ({ token: "tok", tenantId, role: "tenant_admin", permissions: ["financial_entries:read"] });
