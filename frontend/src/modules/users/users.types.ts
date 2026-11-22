@@ -70,3 +70,23 @@ export type UserFieldError = {
   readonly field: UserField;
   readonly message: string;
 };
+
+// B-APP-ORG-2S (S3) — dar acesso a um login do grupo (`POST /users/access-grants`, plano 1.8 §3.1). O perfil é fixo
+// no servidor (`field_technician`) e a organização vem do ator: o corpo leva só o e-mail e o nome.
+export type UserAccessGrantPayload = {
+  readonly email: string;
+  readonly name: string;
+};
+
+// A criação devolve a senha provisória UMA vez, no 201 (`temporaryPassword`). Ela nunca entra na lista de usuários: o
+// chamador a entrega ao diálogo da provisória e a descarta ao fechar.
+export type CreatedUserResult = {
+  readonly user: User | null;
+  readonly temporaryPassword: string | null;
+};
+
+// `POST /auth/users/:userId/reset-password` (plano 1.8.3 §2.3): a provisória, uma vez, e quantos pátios ela atinge.
+export type PasswordResetResult = {
+  readonly temporaryPassword: string;
+  readonly affectedPatios: number;
+};

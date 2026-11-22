@@ -23,15 +23,19 @@ import {
 // NOBYPASSRLS (atributos conferidos no S1·0):
 //   S1·a — identidade em 2 organizações → 409 `identity_linked_elsewhere`, mensagem fixa, nada muda;
 //   S1·b — identidade só na organização do admin → 200 `{user_id, temporary_password,
-//          must_change_password: true, revoked_sessions}`; a provisória entra, a antiga não; as sessões
+//          must_change_password: true, revoked_sessions, affected_patios: 1}`; a provisória entra, a antiga não; as sessões
 //          do alvo caem; auditoria `user.password_reset` sem a provisória, sem hash, sem outra organização;
 //   S1·c — os códigos fixados (400 ×2, 401, 403, 404 ×2, 409 `cannot_reset_self`, 409 `user_inactive`);
 //   S1·d — a outra organização SUSPENSA ainda conta (falha fechada) → 409, nada muda;
 //   S1·e — vínculo da outra organização com mudança EM VOO durante a verificação (trava segurada além
 //          do lock_timeout) → 503 `reset_unavailable`, nada muda;
 //   S1·e2 — o vínculo da outra organização é REMOVIDO no meio da verificação (desvínculo confirmado com
-//          o reset bloqueado na trava — barreira determinística) → 503 `reset_unavailable`, nada muda; com
-//          o estado firme, o reset passa;
+//          o reset bloqueado na trava — barreira determinística). O reset nunca decide sobre o vínculo em
+//          movimento; a resposta depende de ONDE ele espera, e a ordem dos ids é forçada (1.8.3.16 §2.3):
+//          S1·e2-A, outra depois da casa: espera na volta (`FOR SHARE OF l`) → 503 `reset_unavailable`,
+//          nada muda nas duas; com o estado firme, o reset passa;
+//          S1·e2-B, outra antes da casa: espera na pré-trava (`FOR SHARE`, sem `OF l`) → 200 sobre o
+//          estado confirmado, `affected_patios` 1, só a casa muda e a outra fica intocada;
 //   S1·f — a transação expira durante a verificação (prazo vence antes da trava soltar; lock_timeout
 //          alto) → 503 `reset_unavailable`, nada muda;
 //   S1·g — nenhuma resposta (corpo e cabeçalhos) nem auditoria do reset carrega id ou nome de outra
@@ -341,9 +345,17 @@ if (!connectionString) {
       temporary_password: string;
       must_change_password: boolean;
       revoked_sessions: number;
+      affected_patios: number;
     };
 
-    assert.deepEqual(Object.keys(data).sort(), ["must_change_password", "revoked_sessions", "temporary_password", "user_id"]);
+    assert.deepEqual(Object.keys(data).sort(), [
+      "affected_patios",
+      "must_change_password",
+      "revoked_sessions",
+      "temporary_password",
+      "user_id",
+    ]);
+    assert.equal(data.affected_patios, 1, "a identidade está só nesta organização");
     assert.equal(data.user_id, home.userId);
     assert.equal(data.must_change_password, true);
     assert.equal(data.revoked_sessions, 1, "a sessão viva do alvo caiu");
@@ -499,18 +511,23 @@ if (!connectionString) {
   }
 
   // Barreira determinística: espera a leitura FOR SHARE do reset (papel efêmero desta suíte) ficar
-  // BLOQUEADA na trava. Escopada pelo nome do papel, que é único por execução.
-  async function waitForResetBlocked(h: Harness): Promise<void> {
+  // BLOQUEADA na trava. Escopada pelo nome do papel, que é único por execução. `seen` (opcional,
+  // 1.8.3.16 §2.3) recebe o texto da instrução bloqueada, para a asserção de coreografia.
+  async function waitForResetBlocked(h: Harness, seen?: { query?: string }): Promise<void> {
     const deadline = Date.now() + 15_000;
 
     for (;;) {
-      const [row] = await h.admin.$queryRaw<Array<{ waiting: number }>>`
-        SELECT count(*)::int AS waiting FROM pg_stat_activity
+      const rows = await h.admin.$queryRaw<Array<{ query: string }>>`
+        SELECT query FROM pg_stat_activity
         WHERE usename = ${h.role.roleName} AND wait_event_type = 'Lock' AND state = 'active'
           AND query ILIKE '%FOR SHARE%'
       `;
 
-      if ((row?.waiting ?? 0) >= 1) {
+      if (rows.length >= 1) {
+        if (seen) {
+          seen.query = rows[0]?.query;
+        }
+
         return;
       }
 
@@ -551,27 +568,40 @@ if (!connectionString) {
     await assertNothingChanged(h, home, email, before);
   });
 
-  test("S1·e2 — o vínculo da outra organização é REMOVIDO no meio da verificação (barreira determinística): 503 reset_unavailable e nada muda; com o estado firme, o reset passa", async () => {
-    const h = await harness();
-    const email = `s1e2-${Date.now()}@example.com`;
-    const home = await newOrg(h, "e2-casa", email, "SenhaCasaS1e2!");
-    const other = await newOrg(h, "e2-outra", email, "SenhaOutraS1e2!");
+  // 1.8.3.16 §2.3 — as duas organizações do S1·e2 com a ORDEM dos ids forçada: casa e outra saem da
+  // comparação dos ids como texto em minúsculas (a mesma ordem do `id: { lt }` da pré-trava e do
+  // `byResetPair`). `otherAfterHome` põe a outra depois da casa (S1·e2-A); senão, antes (S1·e2-B).
+  async function orderedPair(h: Harness, tag: string, email: string, otherAfterHome: boolean) {
+    const first = await newOrg(h, `${tag}-1`, email, `Senha1${tag}!`);
+    const second = await newOrg(h, `${tag}-2`, email, `Senha2${tag}!`);
+    const [low, high] = first.tenantId.toLowerCase() < second.tenantId.toLowerCase() ? [first, second] : [second, first];
 
+    return otherAfterHome ? { home: low, other: high } : { home: high, other: low };
+  }
+
+  test("S1·e2-A — outra organização DEPOIS da casa: o vínculo dela é REMOVIDO com o reset esperando na volta: 503 reset_unavailable e nada muda nas duas; com o estado firme, o reset passa", async () => {
+    const h = await harness();
+    const email = `s1e2a-${Date.now()}@example.com`;
+    const { home, other } = await orderedPair(h, "e2a", email, true);
+
+    assert.ok(other.tenantId.toLowerCase() > home.tenantId.toLowerCase(), "a ordem forçada: outra > casa");
     await linkElsewhere(h, home, other, email);
 
     const admin = await adminOf(h, home);
     const before = await credentialOf(h, home);
+    const otherBefore = await credentialOf(h, other);
     // O desvínculo em voo: o vínculo da outra organização já foi movido para uma identidade nova, sem
-    // confirmar. O reset vê o vínculo na leitura simples e fica bloqueado na leitura FOR SHARE.
+    // confirmar. O reset vê o vínculo na leitura simples da volta e fica bloqueado no FOR SHARE OF l.
     const unlock = await holdOtherLink(h, other, { detach: true });
     const pending = call(h, `/api/v1/auth/users/${home.userId}/reset-password`, {
       method: "POST",
       headers: admin.headers,
       body: {},
     });
+    const seen: { query?: string } = {};
 
     try {
-      await waitForResetBlocked(h);
+      await waitForResetBlocked(h, seen);
     } finally {
       // Confirma o desvínculo com o reset bloqueado na trava.
       await unlock();
@@ -579,9 +609,11 @@ if (!connectionString) {
 
     const response = await pending;
 
+    assert.match(seen.query ?? "", /FOR SHARE OF l\b/, "S1·e2-A esperou na volta (resolveResetFamily)");
     assert.equal(response.status, 503, "o vínculo sumiu durante a verificação: o reset não decide sobre estado em movimento");
     assert.equal(response.body.error?.reason, "reset_unavailable");
     await assertNothingChanged(h, home, email, before);
+    await assertNothingChanged(h, other, email, otherBefore);
 
     const retry = await call(h, `/api/v1/auth/users/${home.userId}/reset-password`, {
       method: "POST",
@@ -590,6 +622,61 @@ if (!connectionString) {
     });
 
     assert.equal(retry.status, 200, "com a identidade só nesta organização, o reset passa");
+  });
+
+  test("S1·e2-B — outra organização ANTES da casa: o vínculo dela é REMOVIDO com o reset esperando na pré-trava: 200 sobre o estado confirmado, só a casa muda, a outra fica intocada", async () => {
+    const h = await harness();
+    const email = `s1e2b-${Date.now()}@example.com`;
+    const { home, other } = await orderedPair(h, "e2b", email, false);
+
+    assert.ok(other.tenantId.toLowerCase() < home.tenantId.toLowerCase(), "a ordem forçada: outra < casa");
+    await linkElsewhere(h, home, other, email);
+
+    const admin = await adminOf(h, home);
+    const before = await credentialOf(h, home);
+    const otherBefore = await credentialOf(h, other);
+    // O mesmo desvínculo em voo. Agora a pré-trava (âncora MR8) pede FOR SHARE no vínculo da outra
+    // organização antes de qualquer leitura da volta, e é ali que o reset espera.
+    const unlock = await holdOtherLink(h, other, { detach: true });
+    const pending = call(h, `/api/v1/auth/users/${home.userId}/reset-password`, {
+      method: "POST",
+      headers: admin.headers,
+      body: {},
+    });
+    const seen: { query?: string } = {};
+
+    try {
+      await waitForResetBlocked(h, seen);
+    } finally {
+      await unlock();
+    }
+
+    const response = await pending;
+
+    assert.match(seen.query ?? "", /FOR SHARE/, "S1·e2-B esperou num FOR SHARE");
+    assert.doesNotMatch(seen.query ?? "", /\bOF l\b/, "S1·e2-B não bloqueou na volta: esperou na pré-trava");
+    assert.equal(response.status, 200, "a volta roda sobre o estado confirmado, em que a identidade está só na casa");
+    assert.equal(response.body.data?.affected_patios, 1, "só a casa");
+
+    const temporary = response.body.data?.temporary_password as string;
+    const after = await credentialOf(h, home);
+
+    assert.notEqual(after?.password_hash, before?.password_hash, "o hash da casa mudou");
+    assert.equal(after?.must_change_password, true, "a marca da casa está ligada");
+    assert.equal(await resetAudits(h, home.tenantId), 1, "a casa tem a auditoria user.password_reset");
+
+    const otherAfter = await credentialOf(h, other);
+
+    assert.equal(otherAfter?.password_hash, otherBefore?.password_hash, "o hash da outra não mudou");
+    assert.equal(otherAfter?.must_change_password, false, "a marca da outra não foi ligada");
+    assert.equal(
+      await h.admin.authSession.count({ where: { tenant_id: other.tenantId, user_id: other.userId, revoked_at: { not: null } } }),
+      0,
+      "nenhuma sessão da outra foi revogada",
+    );
+    assert.equal(await resetAudits(h, other.tenantId), 0, "nenhuma auditoria de reset na outra");
+    assert.equal((await login(h, other.tenantId, email, other.password)).status, 200, "a senha antiga da outra entra");
+    assert.equal((await login(h, other.tenantId, email, temporary)).status, 401, "a provisória não entra na outra");
   });
 
   test("S1·f — a transação expira durante a verificação: 503 reset_unavailable e nada muda", async () => {

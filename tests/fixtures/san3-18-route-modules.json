@@ -441,6 +441,7 @@
  "POST /api/v1/tenant/checklists": "{tenant_checklist}",
  "POST /api/v1/tenant/checklists/:checklistId/publish": "{tenant_checklist}",
  "POST /api/v1/users": "NUCLEO",
+ "POST /api/v1/users/access-grants": "NUCLEO",
  "POST /api/v1/vehicle-identities": "{patios}",
  "POST /api/v1/vehicle-identities/:identityId/unmerge-admin": "{patios}",
  "POST /api/v1/vehicle-identities/:targetId/merge": "{patios}",

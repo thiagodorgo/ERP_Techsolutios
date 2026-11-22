@@ -1851,6 +1851,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/users/access-grants": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/vehicle-identities": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1

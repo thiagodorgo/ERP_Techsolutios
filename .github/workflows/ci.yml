@@ -404,7 +404,29 @@ jobs:
           # concedidas só ao `super_admin`, medido na receita v3 em 19/11 no head integrado: 3× com
           # denominador constante (# tests 16, # pass 16, # fail 0, # skipped 0).
           SUITES="$SUITES tests/plat-perm-migration-drill-db.test.ts"
+          # B-APP-ORG-2S (Emenda 1.8.3.13) — suíte do bloco no backend-postgres: concessão/origem/senha/trava
+          # pelas rotas reais sob Postgres, sem incluir a HC1b (latência), que roda sozinha no passo seguinte.
+          SUITES="$SUITES tests/bapporg2s_concessao-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_trava-rotas-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_senha-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_login-pares-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_senha-concessao-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_senha-corrida-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_concessao-origem-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_2s-migration-drill-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_centavos-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_k_tests-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_trava-rotas-s1-db.test.ts"
+          SUITES="$SUITES tests/bapporg2s_login-conexao-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
+
+      - name: Route HC1b latency suite alone
+        run: |
+          set -o pipefail
+          node --test --test-concurrency=1 --import tsx tests/bapporg2s_latencia-db.test.ts 2>&1 | tee bapporg2s-latencia.tap
+          skipped=$(grep -E '^# skipped ' bapporg2s-latencia.tap | awk '{print $3}')
+          test -n "$skipped" || { echo "não consegui ler a contagem de pulos da HC1b"; exit 1; }
+          test "$skipped" -eq 0 || { echo "HC1b pulou ${skipped} teste(s)"; exit 1; }
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
       # aqui significaria "verde" sem ter exercido nada — o exato modo de falha que deixou os três bugs

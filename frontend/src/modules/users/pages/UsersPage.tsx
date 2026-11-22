@@ -1,4 +1,4 @@
-import { AlertTriangle, Ban, Pencil, Plus, RotateCcw, ScrollText, Search, ShieldCheck, UserCheck, Users, UserX } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Pencil, Plus, RotateCcw, ScrollText, Search, ShieldCheck, UserCheck, Users, UserX } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -9,6 +9,8 @@ import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
+import { AccessGrantDialog } from "../components/AccessGrantDialog";
+import { TemporaryPasswordDialog } from "../components/TemporaryPasswordDialog";
 import { UserFormModal } from "../components/UserFormModal";
 import { filterUsers, formatUserDate, getUserStatusLabel, interpretUserSubmitError, roleLabel } from "../users.adapter";
 import { updateUser } from "../users.service";
@@ -99,6 +101,11 @@ export function UsersPage() {
   const [pendingToggle, setPendingToggle] = useState<User | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // B-APP-ORG-2S (S3) — a provisória da criação vive SÓ aqui, até o diálogo fechar (plano 1.8.3 §2.3).
+  const [revealed, setRevealed] = useState<{ readonly userName: string; readonly temporaryPassword: string } | null>(null);
+  // B-APP-ORG-2S (S3) — "Dar acesso a este login neste pátio", aberto pela recusa `email_in_group` da criação.
+  const [grantDraft, setGrantDraft] = useState<{ readonly email: string; readonly name: string } | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const canManage = can("users.manage");
   // Trilha de auditoria visível para quem enxerga auditoria (auditor/tenant_admin/manager/support).
@@ -116,6 +123,7 @@ export function UsersPage() {
   );
 
   function openCreate() {
+    setNotice(null);
     setEditing(null);
     setModalOpen(true);
   }
@@ -324,6 +332,15 @@ export function UsersPage() {
         </div>
       ) : null}
 
+      <div role="status" aria-live="polite">
+        {notice ? (
+          <div className="pat-banner pat-banner--info">
+            <CheckCircle2 size={14} aria-hidden="true" />
+            <span>{notice}</span>
+          </div>
+        ) : null}
+      </div>
+
       {actionError ? (
         <div role="alert" className="pat-banner pat-banner--error">
           <AlertTriangle size={14} aria-hidden="true" />
@@ -470,10 +487,37 @@ export function UsersPage() {
           user={editing}
           context={context}
           onClose={closeModal}
-          onSaved={() => {
+          onSaved={(saved, temporaryPassword) => {
             closeModal();
+            if (saved && temporaryPassword) setRevealed({ userName: saved.name, temporaryPassword });
             void refresh();
           }}
+          onRequestAccessGrant={(draft) => {
+            closeModal();
+            setGrantDraft(draft);
+          }}
+        />
+      ) : null}
+
+      {grantDraft ? (
+        <AccessGrantDialog
+          email={grantDraft.email}
+          initialName={grantDraft.name}
+          context={context}
+          onClose={() => setGrantDraft(null)}
+          onGranted={(granted) => {
+            setGrantDraft(null);
+            setNotice(`${granted?.name ?? "O login"} agora tem acesso a este pátio, com a senha que já usa.`);
+            void refresh();
+          }}
+        />
+      ) : null}
+
+      {revealed ? (
+        <TemporaryPasswordDialog
+          userName={revealed.userName}
+          temporaryPassword={revealed.temporaryPassword}
+          onClose={() => setRevealed(null)}
         />
       ) : null}
 
