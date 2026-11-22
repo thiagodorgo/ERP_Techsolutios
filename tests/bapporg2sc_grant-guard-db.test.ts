@@ -669,4 +669,197 @@ if (!connectionString) {
     const zUser = await h.admin.user.findFirst({ where: { id: fx.zUserId, tenant_id: fx.zTenantId }, select: { status: true } });
     assert.equal(zUser?.status, "active", "X7 caso 2: o usuário de Z segue ativo");
   });
+
+  // ---------------------------------------------------------------------------------------------
+  // Emenda 2Sc-J625 (o conserto único da J-625): X2-dir (C1-01), X8 (C1-03), X9 e X9b (C1-04) e
+  // X10 (C2-04). Mesmo padrão do X1: papel efêmero do harness(), seedConcessaoPair, leaveGroup e
+  // toda leitura de verificação pelo h.admin.
+  // ---------------------------------------------------------------------------------------------
+
+  async function groupExitAudits(h: Harness, tenantId: string, userId: string): Promise<number> {
+    return h.admin.auditLog.count({
+      where: { tenant_id: tenantId, action: "user.access_ended_group_exit", entity: "user", entity_id: userId },
+    });
+  }
+
+  async function setKnownPassword(h: Harness, tenantId: string, userId: string, password: string): Promise<void> {
+    const { hashPassword } = await import("../src/modules/auth/services/password.service.js");
+    const hashed = await hashPassword(password);
+    await h.admin.localAuthCredential.updateMany({
+      where: { tenant_id: tenantId, user_id: userId },
+      data: { password_hash: hashed.password_hash, password_algorithm: hashed.password_algorithm },
+    });
+  }
+
+  test("X2-dir — login direcionado a Y depois da saída: o token sai (a lei aceita), a 1ª requisição com ele dá 401, o refresh dá 401 e o 2º login dá 401", async () => {
+    const h = await harness();
+    const fx = await seedConcessaoPair(h, "x2d");
+    const service = await coreSaasService(h);
+    const [{ createApp }, { getBaseUrl, closeServer, requestJson }] = await Promise.all([
+      import("../src/app.js"),
+      import("./helpers/auth-identity-fixture.js"),
+    ]);
+
+    const password = `Sc-${randomHex(8)}-senha`;
+    await setKnownPassword(h, fx.originTenantId, fx.originUserId, password);
+    await setKnownPassword(h, fx.destTenantId, fx.destUserId, password);
+
+    const server = createApp(service).listen(0);
+
+    try {
+      const baseUrl = await getBaseUrl(server);
+
+      await leaveGroup(h, fx.originTenantId);
+
+      const login = await requestJson(baseUrl, "/api/v1/auth/login", {
+        method: "POST",
+        body: { email: fx.email, password, tenantId: fx.destTenantId },
+      });
+      assert.equal(login.status, 200, "X2-dir: o token do login direcionado sai (1.8.2 §4.2)");
+
+      const tokens = login.body.data as { access_token: string; refresh_token: string };
+
+      const me = await requestJson(baseUrl, "/api/v1/me", {
+        headers: { authorization: `Bearer ${tokens.access_token}` },
+      });
+      assert.equal(me.status, 401, "X2-dir: a 1ª requisição com o token de Y dá 401");
+
+      const refresh = await requestJson(baseUrl, "/api/v1/auth/refresh", {
+        method: "POST",
+        body: { refreshToken: tokens.refresh_token },
+      });
+      assert.equal(refresh.status, 401, "X2-dir: a renovação de Y dá 401");
+
+      const secondLogin = await requestJson(baseUrl, "/api/v1/auth/login", {
+        method: "POST",
+        body: { email: fx.email, password, tenantId: fx.destTenantId },
+      });
+      assert.equal(secondLogin.status, 401, "X2-dir: o 2º login direcionado a Y dá 401");
+
+      const destUser = await h.admin.user.findFirst({
+        where: { id: fx.destUserId, tenant_id: fx.destTenantId },
+        select: { status: true },
+      });
+      assert.equal(destUser?.status, "inactive");
+
+      assert.equal(await groupExitAudits(h, fx.destTenantId, fx.destUserId), 1, "X2-dir: uma queda, uma auditoria");
+    } finally {
+      await closeServer(server);
+    }
+  });
+
+  test("X8 — P e Y os dois sem grupo (o grupo se desfaz): o acesso que Y recebeu de P cai", async () => {
+    const h = await harness();
+    const fx = await seedConcessaoPair(h, "x8");
+    const { sessionLiveness } = await import("../src/modules/auth/services/session-liveness.service.js");
+
+    await leaveGroup(h, fx.originTenantId);
+    await leaveGroup(h, fx.destTenantId);
+
+    const destVerdict = await sessionLiveness.check({
+      userId: fx.destUserId,
+      tenantId: fx.destTenantId,
+      sessionId: fx.destSessionId,
+    });
+    assert.equal(destVerdict, "inactive", "X8: sem grupo dos dois lados, o par concessao cai (null nunca é o mesmo grupo)");
+
+    const destUser = await h.admin.user.findFirst({
+      where: { id: fx.destUserId, tenant_id: fx.destTenantId },
+      select: { status: true },
+    });
+    assert.equal(destUser?.status, "inactive");
+
+    assert.equal(await groupExitAudits(h, fx.destTenantId, fx.destUserId), 1);
+
+    const originVerdict = await sessionLiveness.check({
+      userId: fx.originUserId,
+      tenantId: fx.originTenantId,
+      sessionId: fx.originSessionId,
+    });
+    assert.equal(originVerdict, "alive");
+  });
+
+  test("X9 — uma queda, uma auditoria: 5 conferências depois da saída gravam 1 linha user.access_ended_group_exit em Y", async () => {
+    const h = await harness();
+    const fx = await seedConcessaoPair(h, "x9");
+    const { sessionLiveness } = await import("../src/modules/auth/services/session-liveness.service.js");
+
+    await leaveGroup(h, fx.originTenantId);
+
+    const verdicts: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      verdicts.push(
+        await sessionLiveness.check({ userId: fx.destUserId, tenantId: fx.destTenantId, sessionId: fx.destSessionId }),
+      );
+    }
+    assert.deepEqual(verdicts, ["inactive", "inactive", "inactive", "inactive", "inactive"]);
+
+    const destSession = await h.admin.authSession.findFirst({
+      where: { id: fx.destSessionId, tenant_id: fx.destTenantId },
+      select: { revoked_at: true },
+    });
+    assert.notEqual(destSession?.revoked_at, null, "a sessão de Y cai");
+
+    assert.equal(
+      await groupExitAudits(h, fx.destTenantId, fx.destUserId),
+      1,
+      "X9: a queda grava 1 auditoria, não 1 por requisição",
+    );
+  });
+
+  test("X9b — duas conferências em paralelo depois da saída gravam 1 auditoria", async () => {
+    const h = await harness();
+    const fx = await seedConcessaoPair(h, "x9b");
+    const { sessionLiveness } = await import("../src/modules/auth/services/session-liveness.service.js");
+
+    await leaveGroup(h, fx.originTenantId);
+
+    const input = { userId: fx.destUserId, tenantId: fx.destTenantId, sessionId: fx.destSessionId };
+    const verdicts = await Promise.all([sessionLiveness.check(input), sessionLiveness.check(input)]);
+    assert.deepEqual(verdicts, ["inactive", "inactive"]);
+
+    assert.equal(
+      await groupExitAudits(h, fx.destTenantId, fx.destUserId),
+      1,
+      "X9b: na corrida, só quem tirou o usuário de ativo audita",
+    );
+  });
+
+  test("X10 — confirmAccessGrant sem a linha em_curso falha fechado (CreationLogNotConfirmedError) e não grava nada", async () => {
+    const h = await harness();
+    const fx = await seedConcessaoPair(h, "x10");
+    const { withTenantRls } = await import("../src/database/rls.js");
+    const { confirmAccessGrant } = await import("../src/modules/core-saas/services/user-creation-log.js");
+
+    const rowsOf = () =>
+      h.admin.userCreationLog.findMany({
+        where: { tenant_id: fx.destTenantId, user_id: fx.destUserId },
+        select: { seq: true, state: true },
+        orderBy: { seq: "asc" },
+      });
+
+    const before = await rowsOf();
+    const concessao = await h.admin.userCreationLog.findFirst({
+      where: { tenant_id: fx.destTenantId, user_id: fx.destUserId, state: "concessao" },
+      select: { seq: true },
+    });
+    assert.ok(concessao, "X10 (fixture): a linha concessao do seedConcessaoPair existe");
+
+    // (a) um seq que não existe; (b) o seq da linha concessao, que já não está em_curso.
+    for (const seq of [-1n, concessao.seq]) {
+      await assert.rejects(
+        withTenantRls(h.role.client, fx.destTenantId, (tx) =>
+          confirmAccessGrant(tx, { tenantId: fx.destTenantId, email: fx.email }, seq, fx.destUserId, fx.originTenantId),
+        ),
+        { name: "CreationLogNotConfirmedError" },
+        "X10: a concessão que não confirma a linha falha fechado",
+      );
+    }
+
+    const after = await rowsOf();
+    assert.deepEqual(
+      after.map((row) => [row.seq.toString(), row.state]),
+      before.map((row) => [row.seq.toString(), row.state]),
+    );
+  });
 }
