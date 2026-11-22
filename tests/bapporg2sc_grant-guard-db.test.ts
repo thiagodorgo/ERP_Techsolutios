@@ -548,4 +548,125 @@ if (!connectionString) {
       "reativar par fora do grupo recusa com 409 access_outside_group",
     );
   });
+
+  // B-APP-ORG-2S-c (SC) · X7 (Emenda 1.8.3.13 §5.5) — a origem gravada pela concessão REAL (o
+  // `grantUserAccess` do S2a, o mesmo que a rota `POST /api/v1/users/access-grants` chama), com Y de id
+  // MENOR que X: Y e depois Z recebem o login de X. Caso 1: X sai do grupo e os acessos de Y e de Z caem.
+  // Caso 2: Y sai do grupo, o de Y cai e o de Z continua (a origem de Z é X, nunca Y). Mutação: MO1.
+  async function newTenantWithId(h: Harness, id: string, tag: string): Promise<{ readonly id: string }> {
+    const suffix = `${tag}-${Date.now()}-${randomHex(4)}`;
+    const tenant = await h.admin.tenant.create({
+      data: { id, name: `SC ${suffix}`, slug: `sc-${suffix.toLowerCase()}` },
+    });
+    h.tenantIds.push(tenant.id);
+    return tenant;
+  }
+
+  type X7Scenario = {
+    readonly xTenantId: string;
+    readonly yTenantId: string;
+    readonly zTenantId: string;
+    readonly xUserId: string;
+    readonly yUserId: string;
+    readonly zUserId: string;
+    readonly xSessionId: string;
+    readonly ySessionId: string;
+    readonly zSessionId: string;
+  };
+
+  async function grantByRealConcession(h: Harness, tag: string): Promise<X7Scenario> {
+    const service = await coreSaasService(h);
+    const group = await newGroup(h, tag);
+    const x = await newTenant(h, `${tag}x`);
+    const y = await newTenantWithId(h, `00000000-0000-4000-8000-${randomHex(6)}`, `${tag}y`);
+    const z = await newTenantWithId(h, `ffffffff-ffff-4fff-8fff-${randomHex(6)}`, `${tag}z`);
+    assert.ok(y.id < x.id, "X7 (fixture): o id de Y é menor que o de X");
+
+    for (const tenantId of [x.id, y.id, z.id]) {
+      await insertMembership(h, tenantId, group.id, "2026-11-01", null);
+    }
+
+    const email = `sc-${tag}-${Date.now()}-${randomHex(4)}@example.com`;
+    const xUser = await newUser(h, x.id, email);
+    const identity = await h.admin.authIdentity.create({ data: { id: randomUUID() } });
+    await linkUser(h, identity.id, x.id, xUser.id, "backfill");
+    await newCredential(h, x.id, xUser.id, email);
+
+    const grant = async (tenantId: string, label: string) => {
+      const actor = await newUser(h, tenantId, `sc-${tag}-adm-${randomHex(4)}@example.com`);
+      const outcome = await service
+        .grantUserAccess(
+          { tenantId, name: "Técnico do grupo", email },
+          { tenantId, userId: actor.id, roles: [], permissions: [], explicitPermissions: false },
+        )
+        .then(
+          (granted) => ({ granted, reason: null as string | null }),
+          (error: unknown) => ({ granted: null, reason: (error as { reason?: string }).reason ?? String(error) }),
+        );
+      assert.equal(outcome.reason, null, `X7: a concessão real a ${label} é aceita (o login nasceu em X; a origem é X)`);
+      return outcome.granted!;
+    };
+
+    const grantedY = await grant(y.id, "Y");
+    const grantedZ = await grant(z.id, "Z");
+
+    const origins = await h.admin.userCreationLog.findMany({
+      where: { tenant_id: { in: [y.id, z.id] }, state: "concessao" },
+      select: { tenant_id: true, origin_tenant_id: true },
+    });
+    assert.deepEqual(
+      origins.map((row) => [row.tenant_id === y.id ? "Y" : "Z", row.origin_tenant_id === x.id ? "X" : "outro"]).sort(),
+      [["Y", "X"], ["Z", "X"]],
+      "X7: a concessão real grava X como origem de Y e de Z",
+    );
+
+    const xSession = await newSession(h, x.id, xUser.id);
+    const ySession = await newSession(h, y.id, grantedY.user.id);
+    const zSession = await newSession(h, z.id, grantedZ.user.id);
+
+    return {
+      xTenantId: x.id,
+      yTenantId: y.id,
+      zTenantId: z.id,
+      xUserId: xUser.id,
+      yUserId: grantedY.user.id,
+      zUserId: grantedZ.user.id,
+      xSessionId: xSession.id,
+      ySessionId: ySession.id,
+      zSessionId: zSession.id,
+    };
+  }
+
+  test("X7 (caso 1) — origem pela concessão real, Y de id menor que X: X sai do grupo e os acessos de Y e de Z caem", async () => {
+    const h = await harness();
+    const fx = await grantByRealConcession(h, "x7a");
+    const { sessionLiveness } = await import("../src/modules/auth/services/session-liveness.service.js");
+
+    await leaveGroup(h, fx.xTenantId);
+
+    const yVerdict = await sessionLiveness.check({ userId: fx.yUserId, tenantId: fx.yTenantId, sessionId: fx.ySessionId });
+    const zVerdict = await sessionLiveness.check({ userId: fx.zUserId, tenantId: fx.zTenantId, sessionId: fx.zSessionId });
+    const xVerdict = await sessionLiveness.check({ userId: fx.xUserId, tenantId: fx.xTenantId, sessionId: fx.xSessionId });
+
+    assert.equal(yVerdict, "inactive", "X7 caso 1: o acesso de Y (origem X) cai");
+    assert.equal(zVerdict, "inactive", "X7 caso 1: o acesso de Z (origem X) cai");
+    assert.equal(xVerdict, "alive", "X7 caso 1: o login de X, onde ele nasceu, segue entrando");
+  });
+
+  test("X7 (caso 2) — origem pela concessão real, Y de id menor que X: Y sai do grupo, o acesso de Y cai e o de Z continua", async () => {
+    const h = await harness();
+    const fx = await grantByRealConcession(h, "x7b");
+    const { sessionLiveness } = await import("../src/modules/auth/services/session-liveness.service.js");
+
+    await leaveGroup(h, fx.yTenantId);
+
+    const yVerdict = await sessionLiveness.check({ userId: fx.yUserId, tenantId: fx.yTenantId, sessionId: fx.ySessionId });
+    const zVerdict = await sessionLiveness.check({ userId: fx.zUserId, tenantId: fx.zTenantId, sessionId: fx.zSessionId });
+
+    assert.equal(yVerdict, "inactive", "X7 caso 2: o acesso de Y, que saiu do grupo, cai");
+    assert.equal(zVerdict, "alive", "X7 caso 2: o acesso de Z continua (a origem de Z é X, não Y)");
+
+    const zUser = await h.admin.user.findFirst({ where: { id: fx.zUserId, tenant_id: fx.zTenantId }, select: { status: true } });
+    assert.equal(zUser?.status, "active", "X7 caso 2: o usuário de Z segue ativo");
+  });
 }
