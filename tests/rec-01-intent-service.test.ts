@@ -248,7 +248,7 @@ test("T-DOM-12b · (d) nada devido → 422 nothing_due", async () => {
 test("T-DOM-12c · (g)/(h) com o runtime de memória: intenção pending no valor devido, referência open e linha de fila patio:<id> sem split", async () => {
   resetAll();
   const tenantId = randomUUID();
-  const processId = await activeProcess(tenantId, new Date(Date.now() - 10 * MS_PER_DAY), "SIX_MONTHS");
+  const processId = await activeProcess(tenantId, new Date(Date.now() - (5 * MS_PER_DAY + 60 * 60 * 1000)), "SIX_MONTHS");
   await addRemoval(tenantId, processId, "150.00");
   await accrueDailies(tenantId, processId, 5, "10.00");
   await createMemoryReleaseService().start(actor(tenantId), processId, { recipient_name: "R" });

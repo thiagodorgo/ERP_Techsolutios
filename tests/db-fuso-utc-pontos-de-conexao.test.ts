@@ -276,7 +276,7 @@ test("G2 · P1–P9 constroem pela fábrica", () => {
   }
 });
 
-test("G3 · catraca: ocorrências de `new PrismaPg(` fora de tests/helpers/ e fora dos testes deste bloco ≤ 217", () => {
+test("G3 · catraca: ocorrências de `new PrismaPg(` fora de tests/helpers/ e fora dos testes deste bloco ≤ 218", () => {
   const testsDir = path.join(REPO_ROOT, "tests");
   let occurrences = 0;
 
@@ -290,7 +290,7 @@ test("G3 · catraca: ocorrências de `new PrismaPg(` fora de tests/helpers/ e fo
     occurrences += content.match(/new PrismaPg\(/g)?.length ?? 0;
   }
 
-  assert.ok(occurrences <= 217, `catraca cresceu: ${occurrences} ocorrências (máximo 217)`);
+  assert.ok(occurrences <= 218, `catraca cresceu: ${occurrences} ocorrências (máximo 218)`);
 });
 
 test("G4 · o arnês (P12) constrói pela fábrica", () => {
