@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 
+import type { PrismaClient } from "@prisma/client";
+
 import {
   administradorDe,
   desmontarSessaoReal,
@@ -45,8 +47,12 @@ function nextLoopback(): string {
   return `127.0.${Math.floor(n / 250) + 1}.${(n % 250) + 2}`;
 }
 
-export async function montarArnes(connectionString: string): Promise<Arnes> {
-  const h = await montarSessaoReal(connectionString, { candidatosPeloAdministrador: true });
+// `options.criarCliente` (Emenda 1.8.3.17 §2.3 (b)): repassado ao `montarSessaoReal`; quem não passa nada não muda.
+export async function montarArnes(
+  connectionString: string,
+  options?: { readonly criarCliente?: (url: string) => PrismaClient },
+): Promise<Arnes> {
+  const h = await montarSessaoReal(connectionString, { candidatosPeloAdministrador: true, criarCliente: options?.criarCliente });
 
   try {
     const { env } = await import("../src/config/env.js");
