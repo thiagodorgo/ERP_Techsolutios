@@ -30,6 +30,7 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 type LockedProcessRow = {
   readonly status: string;
   readonly yard_id: string | null;
+  readonly entered_at: Date | null;
   readonly frozen_at: Date | null;
   readonly custody_seq_head: number;
   readonly custody_hash_head: string | null;
@@ -85,6 +86,21 @@ export class PrismaReleaseRepository implements ReleaseRepository {
     }
     if (locked.status !== input.expectedFrom) {
       throw new ReleaseError(409, "RELEASE_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    const startEffectiveFrozenAt = locked.frozen_at ?? input.occurredAt;
+    if (!sameChargeBasis(locked, startEffectiveFrozenAt, input.chargeBasis)) {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    const startDailyCountRows = await this.client.$queryRaw<Array<{ n: number }>>`
+      SELECT count(*)::int AS n
+      FROM process_charges
+      WHERE tenant_id = ${input.tenantId}::uuid
+        AND process_id = ${input.processId}::uuid
+        AND kind = 'DAILY'
+    `;
+    const startDailyCount = startDailyCountRows[0]?.n ?? 0;
+    if (startDailyCount < input.chargeBasis.expectedDailyCount) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_daily_charges_missing", "Required daily charges are still missing from the ledger.");
     }
     let releaseRow;
     try {
@@ -211,6 +227,13 @@ export class PrismaReleaseRepository implements ReleaseRepository {
     if (locked.status !== input.expectedFrom) {
       throw new ReleaseError(409, "RELEASE_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const consumeFrozenAt = locked.frozen_at;
+    if (!consumeFrozenAt) {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    if (!sameChargeBasis(locked, consumeFrozenAt, input.chargeBasis)) {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
     // RE-VERIFICAÇÃO ATÔMICA do gate I5 sob o lock (fecha TOCTOU — invariante financeiro/probatório).
     const releaseRows = await this.client.$queryRaw<Array<{ status: string; recipient_name: string | null; authority_approved_at: Date | null }>>`
       SELECT status, recipient_name, authority_approved_at FROM impound_releases
@@ -234,11 +257,24 @@ export class PrismaReleaseRepository implements ReleaseRepository {
     if ((unmet[0]?.n ?? 0) > 0) {
       throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_requirement_unmet", "All required release checklist items must be satisfied.");
     }
-    const unsettled = await this.client.$queryRaw<Array<{ n: number }>>`
-      SELECT count(*)::int AS n FROM process_charges
-      WHERE tenant_id = ${input.tenantId}::uuid AND process_id = ${input.processId}::uuid AND kind <> 'ADJUSTMENT' AND settled_at IS NULL
+    const counters = await this.client.$queryRaw<Array<{ daily_n: number; exigible_n: number; unsettled_n: number }>>`
+      SELECT
+        count(*) FILTER (WHERE kind = 'DAILY')::int AS daily_n,
+        count(*) FILTER (WHERE kind <> 'ADJUSTMENT')::int AS exigible_n,
+        count(*) FILTER (WHERE kind <> 'ADJUSTMENT' AND settled_at IS NULL)::int AS unsettled_n
+      FROM process_charges
+      WHERE tenant_id = ${input.tenantId}::uuid AND process_id = ${input.processId}::uuid
     `;
-    if ((unsettled[0]?.n ?? 0) > 0) {
+    const consumeDailyCount = counters[0]?.daily_n ?? 0;
+    const consumeExigibleCount = counters[0]?.exigible_n ?? 0;
+    const unsettledCount = counters[0]?.unsettled_n ?? 0;
+    if (consumeDailyCount < input.chargeBasis.expectedDailyCount) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_daily_charges_missing", "Required daily charges are still missing from the ledger.");
+    }
+    if (consumeExigibleCount === 0) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_no_charges_posted", "At least one charge must be posted before releasing the vehicle.");
+    }
+    if (unsettledCount > 0) {
       throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_debts_unsettled", "All chargeable debts must be settled before release.");
     }
     for (const dailyId of input.overAccruedDailyIds) {
@@ -415,7 +451,7 @@ export class PrismaReleaseRepository implements ReleaseRepository {
   // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────────
   private async lockProcess(tenantId: string, processId: string): Promise<LockedProcessRow | undefined> {
     const rows = await this.client.$queryRaw<LockedProcessRow[]>`
-      SELECT status, yard_id, frozen_at, custody_seq_head, custody_hash_head
+      SELECT status, yard_id, entered_at, frozen_at, custody_seq_head, custody_hash_head
       FROM impound_processes
       WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
       FOR UPDATE
@@ -639,6 +675,17 @@ function mapCheck(record: CheckRecord): ReleaseRequirementCheck {
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
+}
+
+function sameChargeBasis(
+  locked: Pick<LockedProcessRow, "entered_at">,
+  effectiveFrozenAt: Date,
+  basis: { readonly enteredAt: Date | null; readonly frozenAt: Date | null },
+): boolean {
+  const lockedEntered = locked.entered_at ? locked.entered_at.getTime() : null;
+  const basisEntered = basis.enteredAt ? basis.enteredAt.getTime() : null;
+  const basisFrozen = basis.frozenAt ? basis.frozenAt.getTime() : null;
+  return lockedEntered === basisEntered && effectiveFrozenAt.getTime() === basisFrozen;
 }
 
 // JurisdictionProfile.release_requirements (Json) → RequirementSnapshot[] (só entradas bem-formadas; vazio se null).

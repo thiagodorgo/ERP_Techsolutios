@@ -173,6 +173,11 @@ export type ReleaseChargeState = {
   readonly overAccruedDailyIds: readonly string[]; // DAILYs além do teto (asOf=min(now,frozen_at)) que EXIGEM estorno
   readonly persistedDailyCount: number; // nº de DAILY no ledger
   readonly nDueNow: number; // nDue (uncapped, time-based) AT now — freeze-retroactive se < persistedDailyCount
+  readonly nAccrueAtFreeze: number; // nAccrue (capado) em asOf=min(now,frozen_at)
+  readonly dailyShortfall: number; // max(0, nAccrueAtFreeze - persistedDailyCount)
+  readonly exigibleCount: number; // nº de linhas exigíveis (kind <> ADJUSTMENT)
+  readonly enteredAt?: Date;
+  readonly frozenAt?: Date;
 };
 
 export class ChargeError extends Error {

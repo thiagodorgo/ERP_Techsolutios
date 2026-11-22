@@ -65,6 +65,10 @@ export function releaseActionErrorMessage(reason: string | null | undefined, sta
     // Gate de consumação (salto B) — 5 reasons DISTINTOS (ordem de guardReleaseGate)
     case "release_reconciliation_pending":
       return "Reconcilie as diárias acumuladas além do congelamento antes de consumar a liberação.";
+    case "release_daily_charges_missing":
+      return "Há diárias obrigatórias ainda não lançadas no livro. Feche o lançamento antes de consumar a liberação.";
+    case "release_no_charges_posted":
+      return "Nenhuma cobrança foi lançada para este processo. Registre as cobranças antes de consumar a liberação.";
     case "release_debts_unsettled":
       return "Registre a quitação de todos os débitos exigíveis antes de consumar a liberação.";
     case "release_requirement_unmet":
@@ -73,6 +77,8 @@ export function releaseActionErrorMessage(reason: string | null | undefined, sta
       return "Registre a autorização da autoridade solicitante antes de consumar a liberação.";
     case "release_recipient_missing":
       return "Identifique quem retira o veículo antes de consumar a liberação.";
+    case "release_daily_charges_unpostable":
+      return "Não foi possível lançar as diárias obrigatórias (serviço/tarifa ausente). Ajuste o cadastro e tente novamente.";
     // Saída para reparo (art. 271 §2º)
     case "repair_deadline_invalid":
       return "Informe um prazo de reparo válido (até 60 dias, art. 23 §1º).";

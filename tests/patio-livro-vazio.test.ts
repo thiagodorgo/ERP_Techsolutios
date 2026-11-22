@@ -5,18 +5,18 @@ import test from "node:test";
 process.env.CORE_SAAS_PERSISTENCE = "memory";
 process.env.LOG_LEVEL = "silent";
 
-import { createChargeServiceWithResolver, createMemoryChargeService, getMemoryChargeRepositoryForTests, resetChargeRuntimeForTests } from "../src/modules/charging/charge.service.js";
+import { createMemoryChargeService, getMemoryChargeRepositoryForTests, resetChargeRuntimeForTests } from "../src/modules/charging/charge.service.js";
 import { getMemoryImpoundRepositoryForTests, resetImpoundRuntimeForTests } from "../src/modules/impound/impound.service.js";
 import { resolveTransition } from "../src/modules/impound/impound.transitions.js";
+import { getMemoryPriceTableRepositoryForTests, resetPriceTableRuntimeForTests } from "../src/modules/price-tables/price-table.service.js";
 import { createMemoryReleaseService, getMemoryReleaseRepositoryForTests, resetReleaseRuntimeForTests } from "../src/modules/release/release.service.js";
 import type { ReleaseActorContext } from "../src/modules/release/release.types.js";
-import type { TariffResolver } from "../src/modules/tariffs/tariff-resolution.js";
-import type { Tariff } from "../src/modules/tariffs/tariff.types.js";
+import { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests } from "../src/modules/tariffs/tariff.service.js";
 import type { DailyCap } from "../src/modules/jurisdiction/jurisdiction.types.js";
 
 const MS_PER_DAY = 86_400_000;
 
-type Ctx = { tenantId: string; processId: string; profileId: string };
+type Ctx = { tenantId: string; processId: string; profileId: string; dailyServiceCatalogId: string };
 
 function actor(tenantId: string): ReleaseActorContext {
   return {
@@ -31,12 +31,15 @@ async function reset(): Promise<string> {
   resetImpoundRuntimeForTests();
   resetChargeRuntimeForTests();
   resetReleaseRuntimeForTests();
+  resetPriceTableRuntimeForTests();
+  resetTariffRuntimeForTests();
   return randomUUID();
 }
 
 async function makeActiveProcess(tenantId: string, t0: Date, cap: DailyCap = "SIX_MONTHS"): Promise<Ctx> {
   const impound = getMemoryImpoundRepositoryForTests();
   const profileId = randomUUID();
+  const dailyServiceCatalogId = randomUUID();
   const process = await impound.openFromRemovalAtomic({
     tenantId,
     serviceOrderId: randomUUID(),
@@ -59,10 +62,10 @@ async function makeActiveProcess(tenantId: string, t0: Date, cap: DailyCap = "SI
     scope: "PUBLIC_AGREEMENT",
     model: "ROLLING_24H",
     cap,
-    dailyServiceCatalogId: randomUUID(),
+    dailyServiceCatalogId,
   });
   getMemoryReleaseRepositoryForTests().setProfileRequirementsForTests(tenantId, profileId, []);
-  return { tenantId, processId: process.id, profileId };
+  return { tenantId, processId: process.id, profileId, dailyServiceCatalogId };
 }
 
 async function addRemoval(tenantId: string, processId: string, amount = "150.00"): Promise<void> {
@@ -82,24 +85,25 @@ async function expectReason(promise: Promise<unknown>, reason: string): Promise<
   await assert.rejects(promise, (error: unknown) => (error as { reason?: string }).reason === reason, `expected reason ${reason}`);
 }
 
-function makeTariff(unitPrice: number): Tariff {
-  const now = new Date();
-  return {
-    id: randomUUID(),
-    tenantId: "tenant",
-    priceTableId: randomUUID(),
+async function seedMemoryTariff(tenantId: string, serviceCatalogId: string, unitPrice: number): Promise<void> {
+  const priceTable = await getMemoryPriceTableRepositoryForTests().create({
+    tenantId,
+    name: `Tabela ${randomUUID().slice(0, 6)}`,
+    currency: "BRL",
+    version: 1,
+    status: "published",
+  });
+  await getMemoryTariffRepositoryForTests().create({
+    tenantId,
+    priceTableId: priceTable.id,
+    serviceCatalogId,
     name: "Diária",
     unitPrice,
     currency: "BRL",
     origin: "test",
     status: "active",
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-  };
+  });
 }
-
-const fixedResolver = (unitPrice: number): TariffResolver => async () => makeTariff(unitPrice);
 
 test("A: livro vazio sem serviço diário -> start recusa release_daily_charges_unpostable", async () => {
   const tenantId = await reset();
@@ -120,35 +124,59 @@ test("A2: livro vazio com tarifa T -> start lança 3 DAILY e consume bloqueia d�
   const t0 = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
   const ctx = await makeActiveProcess(tenantId, t0);
   const release = createMemoryReleaseService();
-  createChargeServiceWithResolver(fixedResolver(40));
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await release.start(actor(tenantId), ctx.processId, { recipient_name: "R" });
   const dailies = (await getMemoryChargeRepositoryForTests().listCharges({ tenantId, processId: ctx.processId })).filter((line) => line.kind === "DAILY");
   assert.equal(dailies.length, 3, "start deve lançar 3 diárias");
   await expectReason(release.consume(actor(tenantId), ctx.processId), "release_debts_unsettled");
 });
 
-test("A3: legado congelado e livro vazio com tarifa -> consume bloqueia release_daily_charges_missing", async () => {
+test("A3: legado congelado e livro vazio com tarifa -> consume bloqueia release_debts_unsettled", async () => {
   const tenantId = await reset();
-  const t0 = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
+  const t0 = new Date(Date.now() - (5 * MS_PER_DAY + 2 * 3_600_000));
+  const frozenAt = new Date(Date.now() - (2 * MS_PER_DAY + 30 * 60 * 1000));
   const ctx = await makeActiveProcess(tenantId, t0);
   const release = createMemoryReleaseService();
-  createChargeServiceWithResolver(fixedResolver(40));
-  await release.start(actor(tenantId), ctx.processId, { recipient_name: "R" });
-  await expectReason(release.consume(actor(tenantId), ctx.processId), "release_daily_charges_missing");
+  const releaseRepo = getMemoryReleaseRepositoryForTests();
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
+  await releaseRepo.startReleaseAtomic({
+    tenantId,
+    processId: ctx.processId,
+    expectedFrom: "ACTIVE_CUSTODY",
+    kind: "STANDARD",
+    requirements: [],
+    recipientName: "R",
+    occurredAt: frozenAt,
+    chargeBasis: { expectedDailyCount: 0, enteredAt: t0, frozenAt },
+  });
+  await release.approve(actor(tenantId), ctx.processId, { authority_reference: "AUT" });
+  await expectReason(release.consume(actor(tenantId), ctx.processId), "release_debts_unsettled");
 });
 
 test("A3b: legado congelado sem tarifa -> consume bloqueia release_daily_charges_unpostable", async () => {
   const tenantId = await reset();
-  const t0 = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
+  const t0 = new Date(Date.now() - (5 * MS_PER_DAY + 2 * 3_600_000));
+  const frozenAt = new Date(Date.now() - (2 * MS_PER_DAY + 30 * 60 * 1000));
   const ctx = await makeActiveProcess(tenantId, t0);
   const release = createMemoryReleaseService();
+  const releaseRepo = getMemoryReleaseRepositoryForTests();
   getMemoryChargeRepositoryForTests().setProfileForTests(tenantId, ctx.profileId, {
     scope: "PUBLIC_AGREEMENT",
     model: "ROLLING_24H",
     cap: "SIX_MONTHS",
     dailyServiceCatalogId: undefined,
   });
-  await release.start(actor(tenantId), ctx.processId, { recipient_name: "R" });
+  await releaseRepo.startReleaseAtomic({
+    tenantId,
+    processId: ctx.processId,
+    expectedFrom: "ACTIVE_CUSTODY",
+    kind: "STANDARD",
+    requirements: [],
+    recipientName: "R",
+    occurredAt: frozenAt,
+    chargeBasis: { expectedDailyCount: 0, enteredAt: t0, frozenAt },
+  });
+  await release.approve(actor(tenantId), ctx.processId, { authority_reference: "AUT" });
   await expectReason(release.consume(actor(tenantId), ctx.processId), "release_daily_charges_unpostable");
 });
 
@@ -157,6 +185,7 @@ test("B: controle (REMOVAL não quitada) -> permanece release_debts_unsettled", 
   const t0 = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
   const ctx = await makeActiveProcess(tenantId, t0);
   const release = createMemoryReleaseService();
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId, "150.00");
   await release.start(actor(tenantId), ctx.processId, { recipient_name: "R" });
   await expectReason(release.consume(actor(tenantId), ctx.processId), "release_debts_unsettled");
@@ -168,7 +197,7 @@ test("C: REMOVAL quitada antes do start -> consume bloqueia até quitar diárias
   const ctx = await makeActiveProcess(tenantId, t0);
   const release = createMemoryReleaseService();
   const charge = createMemoryChargeService();
-  createChargeServiceWithResolver(fixedResolver(40));
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId, "150.00");
   await charge.settle(actor(tenantId), ctx.processId, {});
   await release.start(actor(tenantId), ctx.processId, { recipient_name: "R" });
@@ -189,10 +218,29 @@ test("E: teto de 30 diárias -> start lança exatamente 30", async () => {
   const t0 = new Date(Date.now() - 40 * MS_PER_DAY);
   const ctx = await makeActiveProcess(tenantId, t0, "THIRTY_DAYS_LEGACY");
   const release = createMemoryReleaseService();
-  createChargeServiceWithResolver(fixedResolver(40));
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await release.start(actor(tenantId), ctx.processId, { recipient_name: "R" });
   const dailies = (await getMemoryChargeRepositoryForTests().listCharges({ tenantId, processId: ctx.processId })).filter((line) => line.kind === "DAILY");
   assert.equal(dailies.length, 30);
+});
+
+test("E2: no teto de 30 diárias, consume libera sem shortfall residual", async () => {
+  const tenantId = await reset();
+  const t0 = new Date(Date.now() - 40 * MS_PER_DAY);
+  const ctx = await makeActiveProcess(tenantId, t0, "THIRTY_DAYS_LEGACY");
+  const release = createMemoryReleaseService();
+  const charge = createMemoryChargeService();
+  const who = actor(tenantId);
+
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
+  await addRemoval(tenantId, ctx.processId, "150.00");
+  await release.start(who, ctx.processId, { recipient_name: "R" });
+  await charge.settle(who, ctx.processId, {});
+  await release.approve(who, ctx.processId, { authority_reference: "AUT-E2" });
+
+  const consumed = await release.consume(who, ctx.processId);
+  assert.equal(consumed.release.status, "COMPLETED");
+  assert.equal(consumed.release.settledTotal, "1350.00");
 });
 
 test("G: congelado há 2 dias com livro completo e quitado -> consume libera", async () => {
@@ -203,7 +251,7 @@ test("G: congelado há 2 dias com livro completo e quitado -> consume libera", a
   const release = createMemoryReleaseService();
   const releaseRepo = getMemoryReleaseRepositoryForTests();
   const charge = createMemoryChargeService();
-  createChargeServiceWithResolver(fixedResolver(40));
+  await seedMemoryTariff(tenantId, ctx.dailyServiceCatalogId, 40);
   await addRemoval(tenantId, ctx.processId, "150.00");
 
   const frozenAt = new Date(Date.now() - (2 * MS_PER_DAY + 30 * 60 * 1000));
@@ -270,4 +318,81 @@ test("U-3: getReleaseChargeState expõe dailyShortfall e exigibleCount", async (
   const state = await charge.getReleaseChargeState(tenantId, ctx.processId);
   assert.equal((state as unknown as { dailyShortfall?: number }).dailyShortfall, 3);
   assert.equal((state as unknown as { exigibleCount?: number }).exigibleCount, 0);
+});
+
+test("U-4: consume prioriza release_daily_charges_missing quando shortfall>0 e há cobrança lançada", async () => {
+  const tenantId = await reset();
+  const t0 = new Date(Date.now() - (5 * MS_PER_DAY + 2 * 3_600_000));
+  const frozenAt = new Date(Date.now() - (2 * MS_PER_DAY + 30 * 60 * 1000));
+  const ctx = await makeActiveProcess(tenantId, t0);
+  const releaseRepo = getMemoryReleaseRepositoryForTests();
+  const release = createMemoryReleaseService() as unknown as {
+    chargeState: (tenantId: string, processId: string, now: Date) => Promise<{
+      nDueNow: number;
+      nAccrueAtFreeze: number;
+      persistedDailyCount: number;
+      dailyShortfall: number;
+      exigibleCount: number;
+      debtsSettled: boolean;
+      reconciliationConsistent: boolean;
+    }>;
+    closeDailies: (tenantId: string, processId: string, now: Date, actorId?: string) => Promise<{ examined: boolean; accrued: number; errors: number }>;
+    consume: (actor: ReleaseActorContext, processId: string) => Promise<unknown>;
+    approve: (actor: ReleaseActorContext, processId: string, body: Record<string, unknown>) => Promise<unknown>;
+  };
+
+  await releaseRepo.startReleaseAtomic({
+    tenantId,
+    processId: ctx.processId,
+    expectedFrom: "ACTIVE_CUSTODY",
+    kind: "STANDARD",
+    requirements: [],
+    recipientName: "R",
+    occurredAt: frozenAt,
+    chargeBasis: { expectedDailyCount: 0, enteredAt: t0, frozenAt },
+  });
+
+  release.closeDailies = async () => ({ examined: true, accrued: 0, errors: 0 });
+  release.chargeState = async () => ({
+    nDueNow: 3,
+    nAccrueAtFreeze: 3,
+    persistedDailyCount: 0,
+    dailyShortfall: 3,
+    exigibleCount: 1,
+    debtsSettled: true,
+    reconciliationConsistent: true,
+  });
+
+  await release.approve(actor(tenantId), ctx.processId, { authority_reference: "AUT" });
+  await expectReason(release.consume(actor(tenantId), ctx.processId), "release_daily_charges_missing");
+});
+
+test("U-5: consume falha com release_gate_unresolved quando chargeState retorna undefined", async () => {
+  const tenantId = await reset();
+  const t0 = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
+  const ctx = await makeActiveProcess(tenantId, t0);
+  const releaseRepo = getMemoryReleaseRepositoryForTests();
+  const release = createMemoryReleaseService() as unknown as {
+    chargeState: (tenantId: string, processId: string, now: Date) => Promise<undefined>;
+    closeDailies: (tenantId: string, processId: string, now: Date, actorId?: string) => Promise<{ examined: boolean; accrued: number; errors: number }>;
+    consume: (actor: ReleaseActorContext, processId: string) => Promise<unknown>;
+    approve: (actor: ReleaseActorContext, processId: string, body: Record<string, unknown>) => Promise<unknown>;
+  };
+
+  await releaseRepo.startReleaseAtomic({
+    tenantId,
+    processId: ctx.processId,
+    expectedFrom: "ACTIVE_CUSTODY",
+    kind: "STANDARD",
+    requirements: [],
+    recipientName: "R",
+    occurredAt: new Date(),
+    chargeBasis: { expectedDailyCount: 0, enteredAt: t0, frozenAt: null },
+  });
+
+  release.closeDailies = async () => ({ examined: true, accrued: 0, errors: 0 });
+  release.chargeState = async () => undefined;
+
+  await release.approve(actor(tenantId), ctx.processId, { authority_reference: "AUT" });
+  await expectReason(release.consume(actor(tenantId), ctx.processId), "release_gate_unresolved");
 });

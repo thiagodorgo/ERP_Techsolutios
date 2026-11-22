@@ -25,6 +25,7 @@ if (!connectionString) {
     tenantId: string;
     profileId: string;
     processId: string;
+    userId: string;
     enteredAt: Date;
     frozenAt: Date | null;
     releaseId?: string;
@@ -32,9 +33,10 @@ if (!connectionString) {
 
   type Actor = { tenantId: string; userId?: string; roles: readonly string[]; permissions: readonly string[] };
 
-  function actor(tenantId: string): Actor {
+  function actor(tenantId: string, userId?: string): Actor {
     return {
       tenantId,
+      userId,
       roles: ["manager"],
       permissions: ["impound:read", "impound:transition", "release:process", "release:approve", "charging:settle"],
     };
@@ -59,9 +61,14 @@ if (!connectionString) {
         INSERT INTO custody_events (tenant_id, process_id, seq, type, payload, occurred_at, prev_hash, hash)
         VALUES (${tenant.id}::uuid, ${process.id}::uuid, 1, 'STATUS_CHANGE', ${'{"from":null,"to":"IN_REMOVAL"}'}::jsonb, now(), ${custodyPrev}, ${custodyHash})
       `;
-      return { profileId: profile.id, processId: process.id };
+      const [user] = await tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO users (tenant_id, name, email, status)
+        VALUES (${tenant.id}::uuid, 'Operador Pátio', ${`patio-${suffix.toLowerCase()}@example.com`}, 'active')
+        RETURNING id
+      `;
+      return { profileId: profile.id, processId: process.id, userId: user.id };
     });
-    return { tenantId: tenant.id, profileId: seeded.profileId, processId: seeded.processId, enteredAt, frozenAt: null };
+    return { tenantId: tenant.id, profileId: seeded.profileId, processId: seeded.processId, userId: seeded.userId, enteredAt, frozenAt: null };
   }
 
   async function seedReleaseInProgress(suffix: string, enteredAt: Date, frozenAt: Date): Promise<ProcCtx> {
@@ -83,17 +90,23 @@ if (!connectionString) {
         INSERT INTO custody_events (tenant_id, process_id, seq, type, payload, occurred_at, prev_hash, hash)
         VALUES (${tenant.id}::uuid, ${process.id}::uuid, 1, 'STATUS_CHANGE', ${'{"from":null,"to":"IN_REMOVAL"}'}::jsonb, now(), ${custodyPrev}, ${custodyHash})
       `;
-      const [release] = await tx.$queryRaw<Array<{ id: string }>>`
-        INSERT INTO impound_releases (tenant_id, process_id, kind, status, recipient_name, authority_approved_by, authority_approved_at)
-        VALUES (${tenant.id}::uuid, ${process.id}::uuid, 'STANDARD', 'AUTHORIZED', 'Quem Retira', gen_random_uuid(), now())
+      const [user] = await tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO users (tenant_id, name, email, status)
+        VALUES (${tenant.id}::uuid, 'Operador Legado', ${`legacy-${suffix.toLowerCase()}@example.com`}, 'active')
         RETURNING id
       `;
-      return { profileId: profile.id, processId: process.id, releaseId: release.id };
+      const [release] = await tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO impound_releases (tenant_id, process_id, kind, status, recipient_name, authority_approved_by, authority_approved_at)
+        VALUES (${tenant.id}::uuid, ${process.id}::uuid, 'STANDARD', 'AUTHORIZED', 'Quem Retira', ${user.id}::uuid, now())
+        RETURNING id
+      `;
+      return { profileId: profile.id, processId: process.id, releaseId: release.id, userId: user.id };
     });
     return {
       tenantId: tenant.id,
       profileId: seeded.profileId,
       processId: seeded.processId,
+      userId: seeded.userId,
       releaseId: seeded.releaseId,
       enteredAt,
       frozenAt,
@@ -188,6 +201,7 @@ if (!connectionString) {
       await tx.$executeRawUnsafe(`DELETE FROM tariffs WHERE tenant_id = '${tenantId}'::uuid`);
       await tx.$executeRawUnsafe(`DELETE FROM price_tables WHERE tenant_id = '${tenantId}'::uuid`);
       await tx.$executeRawUnsafe(`DELETE FROM service_catalog WHERE tenant_id = '${tenantId}'::uuid`);
+      await tx.$executeRawUnsafe(`DELETE FROM users WHERE tenant_id = '${tenantId}'::uuid`);
       await tx.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = '${tenantId}'::uuid`);
     });
     await client.tenant.deleteMany({ where: { id: tenantId } });
@@ -208,7 +222,7 @@ if (!connectionString) {
     const release = await createDefaultReleaseService();
     try {
       await assert.rejects(
-        () => release.start(actor(ctx.tenantId), ctx.processId, { recipient_name: "R" }),
+        () => release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" }),
         (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_unpostable",
       );
     } finally {
@@ -222,15 +236,15 @@ if (!connectionString) {
     const charge = await createDefaultChargeService();
     try {
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
-      await release.start(actor(ctx.tenantId), ctx.processId, { recipient_name: "R" });
+      await release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" });
       assert.equal(await countCharges(ctx.tenantId, ctx.processId, "DAILY"), 3);
-      await release.approve(actor(ctx.tenantId), ctx.processId, { authority_reference: "AUT" });
+      await release.approve(actor(ctx.tenantId, ctx.userId), ctx.processId, { authority_reference: "AUT" });
       await assert.rejects(
-        () => release.consume(actor(ctx.tenantId), ctx.processId),
+        () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_debts_unsettled",
       );
-      await charge.settle(actor(ctx.tenantId), ctx.processId, {});
-      const view = await release.consume(actor(ctx.tenantId), ctx.processId);
+      await charge.settle(actor(ctx.tenantId, ctx.userId), ctx.processId, {});
+      const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
       assert.equal(view.release.status, "COMPLETED");
       assert.equal(view.release.settledTotal, "120.00");
     } finally {
@@ -246,7 +260,7 @@ if (!connectionString) {
     try {
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
       await assert.rejects(
-        () => release.consume(actor(ctx.tenantId), ctx.processId),
+        () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_debts_unsettled",
       );
     } finally {
@@ -261,7 +275,7 @@ if (!connectionString) {
     const release = await createDefaultReleaseService();
     try {
       await assert.rejects(
-        () => release.consume(actor(ctx.tenantId), ctx.processId),
+        () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_unpostable",
       );
     } finally {
@@ -275,10 +289,10 @@ if (!connectionString) {
     try {
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
       await addRemoval(ctx.tenantId, ctx.processId, false);
-      await release.start(actor(ctx.tenantId), ctx.processId, { recipient_name: "R" });
-      await release.approve(actor(ctx.tenantId), ctx.processId, { authority_reference: "AUT" });
+      await release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" });
+      await release.approve(actor(ctx.tenantId, ctx.userId), ctx.processId, { authority_reference: "AUT" });
       await assert.rejects(
-        () => release.consume(actor(ctx.tenantId), ctx.processId),
+        () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_debts_unsettled",
       );
     } finally {
@@ -293,15 +307,15 @@ if (!connectionString) {
     try {
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
       await addRemoval(ctx.tenantId, ctx.processId, true);
-      await release.start(actor(ctx.tenantId), ctx.processId, { recipient_name: "R" });
+      await release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" });
       assert.equal(await countCharges(ctx.tenantId, ctx.processId), 4);
-      await release.approve(actor(ctx.tenantId), ctx.processId, { authority_reference: "AUT" });
+      await release.approve(actor(ctx.tenantId, ctx.userId), ctx.processId, { authority_reference: "AUT" });
       await assert.rejects(
-        () => release.consume(actor(ctx.tenantId), ctx.processId),
+        () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_debts_unsettled",
       );
-      await charge.settle(actor(ctx.tenantId), ctx.processId, {});
-      const view = await release.consume(actor(ctx.tenantId), ctx.processId);
+      await charge.settle(actor(ctx.tenantId, ctx.userId), ctx.processId, {});
+      const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
       assert.equal(view.release.settledTotal, "270.00");
     } finally {
       await teardownTenant(ctx.tenantId);
@@ -312,10 +326,10 @@ if (!connectionString) {
     const ctx = await seedActiveCustody(`D-${Date.now()}`, new Date(Date.now() - 3_600_000));
     const release = await createDefaultReleaseService();
     try {
-      await release.start(actor(ctx.tenantId), ctx.processId, { recipient_name: "R" });
-      await release.approve(actor(ctx.tenantId), ctx.processId, { authority_reference: "AUT" });
+      await release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" });
+      await release.approve(actor(ctx.tenantId, ctx.userId), ctx.processId, { authority_reference: "AUT" });
       await assert.rejects(
-        () => release.consume(actor(ctx.tenantId), ctx.processId),
+        () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_no_charges_posted",
       );
     } finally {
@@ -328,7 +342,7 @@ if (!connectionString) {
     const release = await createDefaultReleaseService();
     try {
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
-      await release.start(actor(ctx.tenantId), ctx.processId, { recipient_name: "R" });
+      await release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" });
       assert.equal(await countCharges(ctx.tenantId, ctx.processId, "DAILY"), 30);
     } finally {
       await teardownTenant(ctx.tenantId);
@@ -345,8 +359,8 @@ if (!connectionString) {
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
       await addRemoval(ctx.tenantId, ctx.processId, true);
       await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), undefined);
-      await charge.settle(actor(ctx.tenantId), ctx.processId, {});
-      const view = await release.consume(actor(ctx.tenantId), ctx.processId);
+      await charge.settle(actor(ctx.tenantId, ctx.userId), ctx.processId, {});
+      const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
       assert.equal(view.release.status, "COMPLETED");
     } finally {
       await teardownTenant(ctx.tenantId);
@@ -365,8 +379,8 @@ if (!connectionString) {
       );
       await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), undefined);
       await addRemoval(ctx.tenantId, ctx.processId, true);
-      await charge.settle(actor(ctx.tenantId), ctx.processId, {});
-      await release.start(actor(ctx.tenantId), ctx.processId, { recipient_name: "R" });
+      await charge.settle(actor(ctx.tenantId, ctx.userId), ctx.processId, {});
+      await release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" });
       assert.equal((await latestFrozenAt(ctx.tenantId, ctx.processId))?.getTime(), frozenAt.getTime());
     } finally {
       await teardownTenant(ctx.tenantId);
@@ -527,7 +541,7 @@ if (!connectionString) {
       try {
         await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
         await Promise.allSettled([
-          release.start(actor(ctx.tenantId), ctx.processId, { recipient_name: "R" }),
+          release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" }),
           charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), undefined),
         ]);
         const rows = await withTenantRls(client, ctx.tenantId, (tx) =>
@@ -544,7 +558,7 @@ if (!connectionString) {
     }
   });
 
-  test("F2: diária lançada com asOf depois do frozen_at mantém release_reconciliation_pending", async () => {
+  test("F2: diária lançada com asOf depois do frozen_at mantém release_daily_charges_missing", async () => {
     const ctx = await seedReleaseInProgress(`f2-${Date.now()}`, new Date(Date.now() - (5 * MS_PER_DAY + 2 * 3_600_000)), new Date(Date.now() - 2 * MS_PER_DAY));
     const release = await createDefaultReleaseService();
     try {
@@ -560,8 +574,8 @@ if (!connectionString) {
         `;
       });
       await assert.rejects(
-        () => release.consume(actor(ctx.tenantId), ctx.processId),
-        (error: unknown) => (error as { reason?: string }).reason === "release_reconciliation_pending",
+        () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
+        (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_missing",
       );
     } finally {
       await teardownTenant(ctx.tenantId);
@@ -580,7 +594,7 @@ if (!connectionString) {
           `;
         });
         const results = await Promise.allSettled([
-          release.consume(actor(ctx.tenantId), ctx.processId),
+          release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
           withTenantRls(client, ctx.tenantId, (tx) =>
             tx.$queryRaw`
               INSERT INTO process_charges (tenant_id, process_id, kind, quantity, unit_amount, total_amount)
@@ -611,4 +625,3 @@ if (!connectionString) {
     }
   });
 }
-
