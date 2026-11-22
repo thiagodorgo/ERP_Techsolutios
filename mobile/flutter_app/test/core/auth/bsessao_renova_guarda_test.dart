@@ -31,9 +31,13 @@ void main() {
     () {
       // A palavra inteira, com ou sem `(`: também pega a fábrica passada como
       // valor (um cliente sem renovação entregue por parâmetro).
+      // B-APP-ORG-2 (A1; Emenda 1.8.3.6): o único cliente autenticado sem
+      // renovação é o de escuta, só GET na lista fechada de caminhos, por
+      // pátio; o G-ESCUTA o vigia (`bapporg2_escuta_test.dart`).
       expect(contarEmLib(RegExp(r'\bcreateExpenseHttpClient\b')), {
         'http_client.dart': 2,
         'auth_notifier.dart': 1,
+        'listen_http_client.dart': 1,
       });
     },
   );

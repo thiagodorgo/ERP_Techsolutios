@@ -52,6 +52,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   /// Acesso não permitido (403): só "Sair" continua ativo.
   bool _locked = false;
+  bool _temporaryExpired = false;
   bool _currentInvalid = false;
   String? _error;
 
@@ -72,7 +73,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     final email = authState?.session?.user.email ?? '';
     final isOffline = ref.watch(networkStatusProvider) == NetworkStatus.offline;
 
-    final banner = isOffline
+    final exitOnly = _temporaryExpired;
+    // Senha vencida: a frase de saída fica na tela mesmo sem conexão (C4-01).
+    final banner = exitOnly && _error != null
+        ? _Banner(text: _error!)
+        : isOffline
         ? const _Banner(
             text: kPasswordChangeOfflineMessage,
             icon: Icons.wifi_off,
@@ -105,11 +110,15 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Senha vencida (C4-04): o título e o subtítulo
+                          // dizem o mesmo que a frase de saída.
                           Semantics(
                             header: true,
-                            child: const Text(
-                              'Crie sua nova senha',
-                              style: TextStyle(
+                            child: Text(
+                              exitOnly
+                                  ? 'Senha provisória vencida'
+                                  : 'Crie sua nova senha',
+                              style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
                                 color: ErpMobileTheme.ink,
@@ -118,9 +127,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            'Por segurança, troque a senha provisória antes de continuar.',
-                            style: TextStyle(
+                          Text(
+                            exitOnly
+                                ? 'Para continuar, saia e entre com a nova senha provisória.'
+                                : 'Por segurança, troque a senha provisória antes de continuar.',
+                            style: const TextStyle(
                               fontSize: 13,
                               color: ErpMobileTheme.inkMuted,
                               height: 1.35,
@@ -146,84 +157,86 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             banner,
                             const SizedBox(height: 14),
                           ],
-                          const _FieldLabel('Senha provisória'),
-                          _PasswordField(
-                            fieldKey: ChangePasswordScreen.currentFieldKey,
-                            controller: _currentController,
-                            focusNode: _currentFocus,
-                            semanticLabel: 'Senha provisória',
-                            revealLabel: 'Mostrar senha provisória',
-                            hideLabel: 'Ocultar senha provisória',
-                            autofillHint: AutofillHints.password,
-                            enabled: fieldsEnabled,
-                            invalid: _currentInvalid,
-                            textInputAction: TextInputAction.next,
-                            onSubmitted: (_) => _newFocus.requestFocus(),
-                            onChanged: (_) {
-                              if (_currentInvalid) {
-                                setState(() => _currentInvalid = false);
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          const _FieldLabel('Nova senha'),
-                          _PasswordField(
-                            fieldKey: ChangePasswordScreen.newFieldKey,
-                            controller: _newController,
-                            focusNode: _newFocus,
-                            semanticLabel: 'Nova senha',
-                            revealLabel: 'Mostrar nova senha',
-                            hideLabel: 'Ocultar nova senha',
-                            autofillHint: AutofillHints.newPassword,
-                            enabled: fieldsEnabled,
-                            textInputAction: TextInputAction.next,
-                            onSubmitted: (_) => _confirmFocus.requestFocus(),
-                          ),
-                          const SizedBox(height: 12),
-                          const _FieldLabel('Confirme a nova senha'),
-                          _PasswordField(
-                            fieldKey: ChangePasswordScreen.confirmFieldKey,
-                            controller: _confirmController,
-                            focusNode: _confirmFocus,
-                            semanticLabel: 'Confirme a nova senha',
-                            revealLabel: 'Mostrar confirmação da nova senha',
-                            hideLabel: 'Ocultar confirmação da nova senha',
-                            autofillHint: AutofillHints.newPassword,
-                            enabled: fieldsEnabled,
-                            textInputAction: TextInputAction.done,
-                            onSubmitted: canSubmit ? (_) => _submit() : null,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Use pelo menos 8 caracteres, diferente do seu e-mail e da senha provisória.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: ErpMobileTheme.inkMuted,
-                              height: 1.35,
+                          if (!exitOnly) ...[
+                            const _FieldLabel('Senha provisória'),
+                            _PasswordField(
+                              fieldKey: ChangePasswordScreen.currentFieldKey,
+                              controller: _currentController,
+                              focusNode: _currentFocus,
+                              semanticLabel: 'Senha provisória',
+                              revealLabel: 'Mostrar senha provisória',
+                              hideLabel: 'Ocultar senha provisória',
+                              autofillHint: AutofillHints.password,
+                              enabled: fieldsEnabled,
+                              invalid: _currentInvalid,
+                              textInputAction: TextInputAction.next,
+                              onSubmitted: (_) => _newFocus.requestFocus(),
+                              onChanged: (_) {
+                                if (_currentInvalid) {
+                                  setState(() => _currentInvalid = false);
+                                }
+                              },
                             ),
-                          ),
-                          const SizedBox(height: 18),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton(
-                              key: ChangePasswordScreen.saveButtonKey,
-                              onPressed: canSubmit ? _submit : null,
-                              child: _submitting
-                                  ? Semantics(
-                                      label: 'Salvando…',
-                                      child: const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child:
-                                            CircularProgressIndicator.adaptive(
-                                              strokeWidth: 2,
-                                            ),
-                                      ),
-                                    )
-                                  : const Text('Salvar nova senha'),
+                            const SizedBox(height: 12),
+                            const _FieldLabel('Nova senha'),
+                            _PasswordField(
+                              fieldKey: ChangePasswordScreen.newFieldKey,
+                              controller: _newController,
+                              focusNode: _newFocus,
+                              semanticLabel: 'Nova senha',
+                              revealLabel: 'Mostrar nova senha',
+                              hideLabel: 'Ocultar nova senha',
+                              autofillHint: AutofillHints.newPassword,
+                              enabled: fieldsEnabled,
+                              textInputAction: TextInputAction.next,
+                              onSubmitted: (_) => _confirmFocus.requestFocus(),
                             ),
-                          ),
-                          const SizedBox(height: 4),
+                            const SizedBox(height: 12),
+                            const _FieldLabel('Confirme a nova senha'),
+                            _PasswordField(
+                              fieldKey: ChangePasswordScreen.confirmFieldKey,
+                              controller: _confirmController,
+                              focusNode: _confirmFocus,
+                              semanticLabel: 'Confirme a nova senha',
+                              revealLabel: 'Mostrar confirmação da nova senha',
+                              hideLabel: 'Ocultar confirmação da nova senha',
+                              autofillHint: AutofillHints.newPassword,
+                              enabled: fieldsEnabled,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: canSubmit ? (_) => _submit() : null,
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Use pelo menos 8 caracteres, diferente do seu e-mail e da senha provisória.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: ErpMobileTheme.inkMuted,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                key: ChangePasswordScreen.saveButtonKey,
+                                onPressed: canSubmit ? _submit : null,
+                                child: _submitting
+                                    ? Semantics(
+                                        label: 'Salvando…',
+                                        child: const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child:
+                                              CircularProgressIndicator.adaptive(
+                                                strokeWidth: 2,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text('Salvar nova senha'),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                          ],
                           Center(
                             child: TextButton(
                               key: ChangePasswordScreen.exitButtonKey,
@@ -279,6 +292,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       _submitting = true;
       _error = null;
       _currentInvalid = false;
+      _temporaryExpired = false;
     });
 
     try {
@@ -296,6 +310,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         _submitting = false;
         _error = e.safeMessage;
         _locked = e.locksForm;
+        _temporaryExpired = e.failure == PasswordChangeFailure.temporaryExpired;
         if (e.failure == PasswordChangeFailure.wrongCurrentPassword) {
           _currentInvalid = true;
           _currentController.clear();

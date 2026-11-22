@@ -85,6 +85,19 @@ Dio createAuthenticatedHttpClient(
 
 String? _noLiveSessionKey() => null;
 
+/// B-APP-ORG-2 (CA182-09): o `reason` do envelope `{error:{code, reason}}` de um
+/// 403, só se for um identificador curto (nunca texto livre do servidor).
+String? _forbiddenReason(Object? data) {
+  if (data is! Map) return null;
+  final error = data['error'];
+  if (error is! Map) return null;
+  final reason = error['reason'];
+  if (reason is! String) return null;
+  return _kReasonShape.hasMatch(reason) ? reason : null;
+}
+
+final _kReasonShape = RegExp(r'^[a-z][a-z0-9_]{0,63}$');
+
 // Converts a DioException to a typed ApiError.
 // Never includes response body, URLs with private parameters, or tokens.
 ApiError mapDioError(DioException e) {
@@ -100,7 +113,7 @@ ApiError mapDioError(DioException e) {
     DioExceptionType.connectionError => const ApiNetworkError(),
     DioExceptionType.badResponse => switch (status) {
       401 => const ApiSessionExpiredError(),
-      403 => const ApiForbiddenError(),
+      403 => ApiForbiddenError(reason: _forbiddenReason(e.response?.data)),
       409 => const ApiConflictError(),
       _ when status != null && status >= 500 => ApiServerError(
         statusCode: status,

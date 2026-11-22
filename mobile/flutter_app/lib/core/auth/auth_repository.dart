@@ -57,6 +57,12 @@ abstract class AuthRepository {
   /// login.
   Future<void> commitSwitched(AuthSession session);
 
+  Future<AuthSession> acquireListenSession({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  });
+
   /// O único `POST /auth/logout` do app: entrega ao servidor o token de
   /// renovação que deve morrer (o servidor revoga a sessão inteira). Nunca
   /// lança: devolve [RevocationOutcome] (D11).
@@ -76,6 +82,14 @@ abstract class AuthRepository {
     required String currentPassword,
     required String newPassword,
   });
+}
+
+class _ListenSessionResult {
+  const _ListenSessionResult(this.session);
+
+  final AuthSession session;
+  String get tenantId => session.user.tenantId;
+  String get refreshToken => session.tokens.refreshToken ?? '';
 }
 
 // ── B-USERS-ACESSO-SEG (T2): textos e mapa fixo da troca de senha ──────────────
@@ -110,6 +124,9 @@ enum PasswordChangeFailure {
   /// 403 `credential_unavailable`.
   credentialUnavailable,
 
+  /// 409 `temporary_password_expired`.
+  temporaryExpired,
+
   /// 423 `account_locked`.
   accountLocked,
 
@@ -130,6 +147,8 @@ String passwordChangeMessage(PasswordChangeFailure failure) {
       'Seu acesso está desativado. Fale com o administrador da sua organização.',
     PasswordChangeFailure.credentialUnavailable =>
       'Não foi possível trocar a senha por aqui. Fale com o administrador da sua organização.',
+    PasswordChangeFailure.temporaryExpired =>
+      'Sua senha provisória venceu. Peça uma nova ao seu pátio.',
     PasswordChangeFailure.accountLocked =>
       'Conta bloqueada por tentativas. Fale com o administrador da sua organização.',
     PasswordChangeFailure.unavailable =>
@@ -149,10 +168,17 @@ class PasswordChangeError implements Exception {
   /// formulário e deixa só "Sair".
   bool get locksForm =>
       failure == PasswordChangeFailure.accessDisabled ||
-      failure == PasswordChangeFailure.credentialUnavailable;
+      failure == PasswordChangeFailure.credentialUnavailable ||
+      failure == PasswordChangeFailure.temporaryExpired;
 
   @override
   String toString() => 'PasswordChangeError(${failure.name})';
+}
+
+class ListenTenantMismatchError implements Exception {
+  const ListenTenantMismatchError(this.refreshToken);
+
+  final String refreshToken;
 }
 
 /// Mapeia a resposta de `POST /api/v1/auth/password` por `status` e `reason`
@@ -180,6 +206,8 @@ PasswordChangeError mapPasswordChangeError(DioException e) {
     403 when reason == 'user_inactive' => PasswordChangeFailure.accessDisabled,
     403 when reason == 'credential_unavailable' =>
       PasswordChangeFailure.credentialUnavailable,
+    409 when reason == 'temporary_password_expired' =>
+      PasswordChangeFailure.temporaryExpired,
     423 when reason == 'account_locked' => PasswordChangeFailure.accountLocked,
     _ => PasswordChangeFailure.unavailable,
   };
@@ -238,6 +266,20 @@ class LocalDevAuthRepository implements AuthRepository {
   Future<void> commitRefreshed(AuthSession session) async {
     _current = session;
     await _storage.saveSession(session);
+  }
+
+  @override
+  Future<AuthSession> acquireListenSession({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  }) async {
+    // Sem servidor: a escuta só vale para as organizações da lista.
+    final known = devBootstrapSession.availableTenants.any(
+      (t) => t.tenantId == tenantId,
+    );
+    if (!known) throw const TenantSwitchRefusedError();
+    return _buildDevSession(email: current.user.email, tenantId: tenantId);
   }
 
   /// B-APP-ORG (70): no modo de desenvolvimento, a troca só vale para as
@@ -648,6 +690,24 @@ class DioAuthRepository implements AuthRepository {
     await _storage.saveSession(session);
   }
 
+  @override
+  Future<AuthSession> acquireListenSession({
+    required AuthSession current,
+    required String tenantId,
+    required Dio client,
+  }) async {
+    final Response<dynamic> response;
+    try {
+      response = await client.post(
+        kActiveTenantPath,
+        data: {'tenantId': tenantId},
+      );
+    } on DioException catch (e) {
+      throw _switchFailure(e);
+    }
+    return _listenSessionFromActiveTenantJson(response.data, tenantId);
+  }
+
   /// O 403 é a recusa do vínculo; sem rede, a mensagem da troca; o resto, como
   /// em qualquer pedido (inclusive o [ApiSessionChangedError] da T-b).
   ApiError _switchFailure(DioException e) {
@@ -662,7 +722,7 @@ class DioAuthRepository implements AuthRepository {
   /// O corpo do 200 do `/auth/active-tenant` (`auth.routes.ts`): `tenant`,
   /// `user` (sem `tenant_id`), `roles` em texto, `permissions`, os tokens e
   /// `must_change_password`. Cada troca é uma sessão nova (`sessionNonce`).
-  AuthSession _sessionFromActiveTenantJson(Object? data, AuthSession current) {
+  AuthSession _sessionFromActiveTenantJson(Object? data, AuthSession? current) {
     final json = data as Map<String, dynamic>;
     final envelopeData = json['data'];
     final body = envelopeData is Map<String, dynamic> ? envelopeData : json;
@@ -682,7 +742,7 @@ class DioAuthRepository implements AuthRepository {
       ),
       user: AuthUser(
         sub: userJson['id'] as String,
-        email: userJson['email'] as String? ?? current.user.email,
+        email: userJson['email'] as String? ?? current?.user.email ?? '',
         tenantId: tenantJson['id'] as String,
         tenantRole: roles.isNotEmpty ? roles.first : 'tenant_member',
         tenantRoles: roles,
@@ -696,6 +756,21 @@ class DioAuthRepository implements AuthRepository {
       sessionNonce: const Uuid().v4(), // cada troca é uma sessão nova
       // dart format on
     );
+  }
+
+  /// B-APP-ORG-2 (A1): a resposta de outro pátio não vira sessão de escuta; o
+  /// token de renovação recebido sai no erro, para ser revogado (L9).
+  AuthSession _listenSessionFromActiveTenantJson(
+    Object? data,
+    String tenantId,
+  ) {
+    final parsed = _ListenSessionResult(
+      _sessionFromActiveTenantJson(data, null),
+    );
+    // dart format off
+    if (parsed.tenantId != tenantId) throw ListenTenantMismatchError(parsed.refreshToken);
+    // dart format on
+    return parsed.session;
   }
 
   @override
