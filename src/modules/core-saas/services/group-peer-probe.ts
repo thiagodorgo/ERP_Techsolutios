@@ -133,7 +133,7 @@ async function readPeerUsers(
 
 // A volta patio a patio: le a vigencia NA HORA, pelo dia de negocio de Sao Paulo, e conta os
 // usuarios com o e-mail nos outros patios do grupo vigente — ativos ou nao (D6). Leitura de
-// usuario so em patio do MESMO grupo (nunca auth_login_candidates; censo G-VOLTA = 0).
+// usuario so em patio do MESMO grupo (nunca a funcao de candidatos do login; censo G-VOLTA = 0).
 export async function probeGroupPeers(
   tx: Prisma.TransactionClient,
   input: GroupPeerProbeInput,
