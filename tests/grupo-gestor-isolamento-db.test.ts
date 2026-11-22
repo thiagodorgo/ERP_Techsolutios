@@ -10,9 +10,8 @@
 //
 // Casos: LMK-1 a LMK-4 (a leitura das marcas da própria pessoa); GM-1 a GM-5 (a porta da marca); ISO-1 a ISO-17; RLS-1
 // (cada leitura no GUC da própria organização); PAR-2 (Prisma); AUD-5 (uma linha de trilha em cada organização lida).
-// Os testes ISO-14, ISO-15 e ISO-17 provam aqui o que a base desta fatia (F1) serve: o corte por par do bloco de chamados
-// no `/scope` e os leitores Prisma de OS e de funcionários no contexto de cada pátio. A asserção sobre os blocos
-// `operations` e `staff` do `/summary` entra na F4, com a F3 integrada (declarado no diário da F2).
+// Os testes ISO-14, ISO-15 e ISO-17 provam o corte por par no `/scope`, os leitores Prisma no contexto de cada pátio e,
+// depois da integração F4, os blocos `operations` e `staff` do `/summary`.
 import "dotenv/config";
 
 import assert from "node:assert/strict";
@@ -388,6 +387,13 @@ if (!connectionString) {
     assert.deepEqual(operations, { [a1.id]: true, [a2.id]: false }, "papel de campo com recorte em A2: sem bloco de chamados");
     assert.equal((await ctx.mod.prisma.readGroupPanelWorkOrderRows(ctx.role.client, { tenantId: a1.id })).length, 1, "A1 lê só a dela");
     assert.equal((await ctx.mod.prisma.readGroupPanelWorkOrderRows(ctx.role.client, { tenantId: a2.id })).length, 2, "A2 lê só as dela");
+    const summary = await ctx.call(SUMMARY, { token: await p.token(a1.id) });
+    assert.equal(summary.status, 200);
+    const operationViews = Object.fromEntries(summary.body.data.organizations.map((org: any) => [org.id, org.operations]));
+    assert.equal(operationViews[a1.id].status, "ok");
+    assert.equal(operationViews[a1.id].summary.openedThisMonth, 1, "A1 entra no bloco de chamados");
+    assert.deepEqual(operationViews[a2.id], { status: "sem_permissao", summary: null }, "A2 não vaza chamados no summary");
+    assert.equal(summary.body.data.consolidated.operations.openedThisMonth, 1, "o consolidado soma somente A1");
   });
 
   caso("ISO-15: dashboard:read em A1 e não em A2 — A2 sem bloco de chamados; o financeiro de A2 não muda", async () => {
@@ -403,8 +409,10 @@ if (!connectionString) {
     const flags = Object.fromEntries(scope.body.data.organizations.map((org: any) => [org.id, [org.finance, org.operations]]));
     assert.deepEqual(flags, { [a1.id]: [true, true], [a2.id]: [true, false] });
     const summary = await ctx.call(SUMMARY, { token: await p.token(a1.id) });
+    assert.equal(summary.status, 200);
     const a2View = summary.body.data.organizations.find((org: any) => org.id === a2.id);
     assert.equal(a2View.finance.status, "ok");
+    assert.deepEqual(a2View.operations, { status: "sem_permissao", summary: null }, "A2 fica fora do bloco de chamados no summary");
     const direto = await ctx.call("/api/v1/financial-summary", { token: await p.token(a2.id) });
     assert.equal(direto.status, 200);
     assert.deepEqual(a2View.finance.summary, direto.body.data, "o financeiro de A2 é o do Financeiro de A2");
@@ -444,6 +452,14 @@ if (!connectionString) {
     }
     const b1Rows = await ctx.mod.prisma.readGroupPanelStaffRows(ctx.role.client, { tenantId: b1.id });
     assert.equal(b1Rows.length, 2, "controle: B1 tem 2 usuários, lidos só no contexto de B1");
+    const summary = await ctx.call(SUMMARY, { token: await p.token(a1.id) });
+    assert.equal(summary.status, 200);
+    const summaryText = JSON.stringify(summary.body);
+    assert.ok(!summaryText.includes(b1.id), "B1 não sai no bloco staff do summary");
+    assert.ok(!summaryText.includes(funcionarioB1), "o funcionário de B1 não sai no summary");
+    assert.deepEqual(summary.body.data.organizations.map((org: any) => org.id).sort(), [a1.id, a2.id].sort());
+    assert.equal(summary.body.data.organizations.find((org: any) => org.id === a1.id).staff.status, "ok");
+    assert.equal(summary.body.data.consolidated.staff.activeUsers, 1, "a identidade do gestor conta uma vez no grupo; B1 não entra");
   });
 
   // ------------------------------------------------------------------------------------- RLS-1, PAR-2, AUD-5

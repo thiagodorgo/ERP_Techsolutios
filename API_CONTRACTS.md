@@ -877,10 +877,19 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
 | POST | `/cheques/:id/unlink-title` | `cheques:unlink_title` | B-SAN3-12a: troca a vinculação do cheque ao título (privilégio alto + justificativa; auditoria Crítica). |
 | POST | `/cheques/:id/deposit` · `/clear` · `/bounce` · `/cancel` | `cheques:update` (+ `financial_entries:create` em `/clear`) | Ciclo do cheque. Cheque vinculado: o `/clear` posta UM lançamento (`check`/`cheque_clearing`) com `titleId` e liquida o título por CAS na mesma transação — título que não comporta → `404 title_not_found` / `422 title_cancelled` / `title_already_paid` / `overpayment`, com o cheque intacto em `deposited` e zero lançamento; o `/bounce` (cleared→bounced) posta o contra-lançamento (sem `titleId`) e restaura o título na mesma transação (`422 title_restore_conflict` fail-closed → nada persiste). |
 | GET | `/financial-summary` | `financial_entries:read` | Agregado financeiro do dashboard (somas no backend). |
+| GET | `/group-panel/scope` | marca `Gestor do grupo`; permissões conferidas por organização | Alcance leve do painel: `organizations[{id,name,finance,operations,staff}]`; não grava trilha e não aceita organização por parâmetro, corpo ou cabeçalho. |
+| GET | `/group-panel/summary` | marca `Gestor do grupo`; `financial_entries:read`, `dashboard:read` e `users.read` por organização | Consolidado e blocos por organização de financeiro, chamados/SLA e funcionários; cada leitura e trilha roda no contexto RLS da organização correspondente. |
 | GET/POST | `/commissions/policies` · `/basis-events` · `/calculations` · `/statements` (+ `/summary`, `/mine`, `/my-summary`) · `/settlements` | `commissions:read`/`read_own`/`manage_policy`/`calculate`/`settle` | Políticas, base, cálculo, extratos e liquidação de comissões. |
 | GET/POST/PATCH | `/expense-reports` (+ `/:id`, `/:id/items`, `/:id/submit`) · `/expense-policies` · `/expense-categories` | `expense_report:read`/`create`/`update`/`submit`, `expense_policy:read` | Relatórios de despesa (RDV). |
 | POST | `/mobile/sync/expense-actions` | `expense_sync:write` | Replay offline de ações de despesa (mobile) — atômico por ação, conflito por ação (contrato abaixo). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/professional-statements` | `professional_statements:read`/`create`/`update` | Remunerações/demonstrativos profissionais (liquidação em lote → crédito no extrato). |
+
+**Painel do grupo — `group_panel@2026-11.b-grupo-gestor-1a`.** As duas rotas são somente leitura e só abrem para a
+identidade com marca ativa no grupo vigente da organização ativa. A marca não concede acesso aos dados: em cada
+organização do alcance, o backend exige conta ativa, módulo ligado e a permissão do bloco. O `/summary` devolve
+`generatedAt`, `coverage`, `consolidated` (nulo em teto, erro de leitura ou moedas diferentes) e `organizations`; cada
+organização contém `finance`, `operations` e `staff`, cada qual com `status` e resumo allowlisted. A resposta nunca leva
+identificador de grupo, identidade interna, e-mail, token, caminho ou valor de outra organização fora do alcance.
 - `POST`/`PATCH` `/financial-titles` com `due_date` ausente ou fora de data ISO → `400 FINANCIAL_TITLE_INVALID` `due_date_required` (`financial-title.validators.ts`, `parseDueDate`).
 
 **Web financeiro — baixa, conta com extrato e conciliação (`financeiro_baixa_conta_conciliacao@2026-10-24.b-san3-12`, B-SAN3-12a, plano v3 §4):**

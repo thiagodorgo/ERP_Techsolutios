@@ -452,6 +452,13 @@ const SUMMARY_FINANCIAL_KEYS = [
   "recentTitles[].dueDate", "recentTitles[].status", "recentTitles[].overdue",
 ];
 
+const OPERATIONS_KEYS = [
+  "openedToday", "openedThisWeek", "inProgress", "overdue", "openedThisMonth", "completedThisMonth",
+  "openedPreviousMonth", "completionRatePct", "arrivalAvgMinutes", "arrivalCount", "arrivalMissingCount", "completionAvgMinutes",
+];
+
+const STAFF_KEYS = ["activeUsers", "byProfile[].profile", "byProfile[].count", "inServiceNow"];
+
 test("PAY-1: as duas respostas só têm as chaves do contrato (lista fechada)", async () => {
   const c = await cenario();
   const { a1, a2, p } = await gestorDeTres(c);
@@ -473,12 +480,18 @@ test("PAY-1: as duas respostas só têm as chaves do contrato (lista fechada)", 
     "data.organizations[].id", "data.organizations[].name", "data.organizations[].finance.status",
     ...SUMMARY_FINANCIAL_KEYS.map((key) => `data.organizations[].finance.summary.${key}`),
     "data.organizations[].finance.receivedVariationPct", "data.organizations[].finance.paidVariationPct",
+    ...OPERATIONS_KEYS.map((key) => `data.consolidated.operations.${key}`),
+    ...STAFF_KEYS.map((key) => `data.consolidated.staff.${key}`),
+    "data.organizations[].operations.status",
+    ...OPERATIONS_KEYS.map((key) => `data.organizations[].operations.summary.${key}`),
+    "data.organizations[].staff.status",
+    ...STAFF_KEYS.map((key) => `data.organizations[].staff.summary.${key}`),
   ];
   assert.deepEqual([...new Set(keyPaths(summary.body))].sort(), [...expected].sort());
   const scope = await h.chamar("GET", SCOPE, { token });
   assert.deepEqual(
     [...new Set(keyPaths(scope.body))].sort(),
-    ["data.inGroup", "data.organizations[].finance", "data.organizations[].id", "data.organizations[].name", "data.organizations[].operations"].sort(),
+    ["data.inGroup", "data.organizations[].finance", "data.organizations[].id", "data.organizations[].name", "data.organizations[].operations", "data.organizations[].staff"].sort(),
   );
 });
 
@@ -548,6 +561,6 @@ test("ROT-3: o /scope lista os pátios do alcance com o que a pessoa pode ver em
   assert.equal(response.status, 200);
   assert.equal(response.body.data.inGroup, true);
   const byId = Object.fromEntries(response.body.data.organizations.map((org: any) => [org.id, org]));
-  assert.deepEqual(byId[a1.id], { id: a1.id, name: a1.name, finance: true, operations: true });
-  assert.deepEqual(byId[a2.id], { id: a2.id, name: a2.name, finance: false, operations: false });
+  assert.deepEqual(byId[a1.id], { id: a1.id, name: a1.name, finance: true, operations: true, staff: true });
+  assert.deepEqual(byId[a2.id], { id: a2.id, name: a2.name, finance: false, operations: false, staff: false });
 });
