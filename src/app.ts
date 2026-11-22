@@ -69,6 +69,7 @@ import { createFinancialEntryRouter } from "./modules/financial-entries/index.js
 import { createFinancialPeriodCloseRouter } from "./modules/financial-period-closes/index.js";
 import { createChequeRouter } from "./modules/cheques/index.js";
 import { createFinancialSummaryRouter } from "./modules/financial-summary/index.js";
+import { createGroupPanelRouter } from "./modules/group-panel/index.js";
 import { createTagRouter } from "./modules/tags/index.js";
 import { createPoiRouter } from "./modules/pois/index.js";
 import { createOperatorProfileRouter } from "./modules/operator-profiles/index.js";
@@ -258,6 +259,10 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   // Ω4-8 — Agregado financeiro (dashboard). GET /financial-summary: somas/contagens de título/lançamento/conta/
   // cheque computadas NO BACKEND (o front nunca soma; resolve P-Ω4-2B-KPI-AGREGADO). Read-only, vem DEPOIS.
   app.use("/api/v1", attachAuthenticatedActor(), createFinancialSummaryRouter());
+  // B-GRUPO-GESTOR (1a) — Painel do grupo, só leitura. GET /group-panel/scope e /group-panel/summary: a porta é a marca de
+  // gestor do grupo (passo 0, no serviço); cada pátio é lido no contexto dele, com a permissão do usuário local dali.
+  // Nenhuma entrada do cliente escolhe organização. git add src/app.ts, senão CI route_not_found.
+  app.use("/api/v1", attachAuthenticatedActor(), createGroupPanelRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createPoiRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createOperatorProfileRouter());

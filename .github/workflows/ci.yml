@@ -405,6 +405,11 @@ jobs:
           # concedidas só ao `super_admin`, medido na receita v3 em 19/11 no head integrado: 3× com
           # denominador constante (# tests 16, # pass 16, # fail 0, # skipped 0).
           SUITES="$SUITES tests/plat-perm-migration-drill-db.test.ts"
+          # B-GRUPO-GESTOR-1a — marca do gestor, drill da migração e isolamento do Painel do grupo sob papel efêmero
+          # NOSUPERUSER NOBYPASSRLS. As suítes auto-pulam fora do Postgres; aqui o guard de zero pulos torna a prova obrigatória.
+          SUITES="$SUITES tests/grupo-gestor-marca-db.test.ts"
+          SUITES="$SUITES tests/grupo-gestor-migration-drill-db.test.ts"
+          SUITES="$SUITES tests/grupo-gestor-isolamento-db.test.ts"
           # B-APP-ORG-2S (Emenda 1.8.3.13) — suíte do bloco no backend-postgres: concessão/origem/senha/trava
           # pelas rotas reais sob Postgres, sem incluir a HC1b (latência), que roda sozinha no passo seguinte.
           SUITES="$SUITES tests/bapporg2s_concessao-db.test.ts"

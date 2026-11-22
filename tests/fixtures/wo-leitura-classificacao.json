@@ -176,6 +176,12 @@
   "GET /api/v1/fuel-logs/:id/payable": {
     "classe": "NAO-ALCANCADA"
   },
+  "GET /api/v1/group-panel/scope": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/group-panel/summary": {
+    "classe": "NAO-ALCANCADA"
+  },
   "GET /api/v1/health": {
     "classe": "SEM-DADO-DE-OS"
   },
@@ -365,6 +371,9 @@
     "classe": "NAO-ALCANCADA"
   },
   "GET /api/v1/platform/billing/economic-groups/:groupId/history": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/platform/billing/economic-groups/:groupId/managers": {
     "classe": "NAO-ALCANCADA"
   },
   "GET /api/v1/platform/billing/fx-rates": {
@@ -675,6 +684,10 @@
     "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
   },
   "MIDDLEWARE /api/v1/billing/subscription · tenantContextMiddleware": {
+    "classe": "CAMADA-COM-CAMINHO",
+    "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
+  },
+  "MIDDLEWARE /api/v1/group-panel · tenantContextMiddleware": {
     "classe": "CAMADA-COM-CAMINHO",
     "nota": "camada sem rota própria; a resposta vem da rota de mesmo caminho ou do 404"
   },

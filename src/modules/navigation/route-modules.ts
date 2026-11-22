@@ -79,6 +79,7 @@ export const ROUTE_MODULE_PREFIXES: Readonly<Record<string, readonly string[]>> 
   "financial-entries": ["finance"],
   "financial-periods": ["finance"],
   "financial-summary": ["finance"],
+  "group-panel": ["finance"],
   "cheques": ["finance"],
   "commissions": ["finance"],
   "professional-statements": ["finance"],
