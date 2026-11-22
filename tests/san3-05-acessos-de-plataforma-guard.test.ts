@@ -764,6 +764,31 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/group-panel/group-panel.prisma.ts", "PrismaGroupManagerMarksReader.listMarksForActor", "tx.economicGroupManager", "economicGroupManager.findMany", "economic_group_managers", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
     "B-GRUPO-GESTOR, Emenda 3 §2.3 (passo 0 do Painel): a 1ª instrução do `$transaction` é `setIdentityRlsContext(tx, actor)` — o setter de `src/database/rls.ts` que o gerador não reconhece como setter —, que fixa o GUC de organização no pátio ATIVO do token e o GUC de identidade pelo par re-resolvido; a leitura filtra por `identity_id` e passa pelo canário `assertMarksOfIdentity`. Provado em tests/grupo-gestor-isolamento-db.test.ts (LMK-1 a LMK-4, GM-1 a GM-5) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  // B-APP-ORG-2S-c (SC): as 6 chaves da guarda de saída de grupo, com motivo próprio.
+  [
+    k("L1", "src/modules/core-saas/services/grant-group-guard.ts", "-.endGrant", "tx.authSession", "authSession.updateMany", "auth_sessions", "PARAMETRO(tx)", "×1"),
+    "B-APP-ORG-2S-c (SC, D3-2): a queda do acesso por saída de grupo revoga as sessões do par `(Y, usuário)` com `where` em `tenant_id` e `user_id`; o `tx` é sempre o de uma transação que já pôs o GUC do pátio Y do par na 1ª instrução: `withTenantRlsBudget` da sessão viva, `runWithTenantContext` da renovação, `setTenantRlsContext(tx, requestedTenantId)` da troca de organização, `withTenantRls` do candidato do Entrar e do `isGrantOutsideGroup` do store. Provado em tests/bapporg2sc_grant-guard-db.test.ts (X1 e a renovação do X2, sob papel NOSUPERUSER NOBYPASSRLS).",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/grant-group-guard.ts", "-.endGrant", "tx.user", "user.updateMany", "users", "PARAMETRO(tx)", "×1"),
+    "B-APP-ORG-2S-c (SC, D3-2): a queda inativa o usuário de Y (`where` em `id`, `tenant_id` e `status: active`; idempotente); o `tx` é sempre o de uma transação que já pôs o GUC do pátio Y do par na 1ª instrução: `withTenantRlsBudget` da sessão viva, `runWithTenantContext` da renovação, `setTenantRlsContext(tx, requestedTenantId)` da troca de organização, `withTenantRls` do candidato do Entrar e do `isGrantOutsideGroup` do store. Provado em tests/bapporg2sc_grant-guard-db.test.ts (X1 e X4, sob papel NOSUPERUSER NOBYPASSRLS).",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/grant-group-guard.ts", "-.isGrantOutsideGroup", "tx.authIdentityLink", "authIdentityLink.findFirst", "auth_identity_links", "PARAMETRO(tx)", "×1"),
+    "B-APP-ORG-2S-c (SC, X5): a única leitura do par que não é `concessao` — o modo do vínculo `(Y, usuário)`, `where` em `tenant_id` e `user_id`; o `tx` é sempre o de uma transação que já pôs o GUC do pátio Y do par na 1ª instrução: `withTenantRlsBudget` da sessão viva, `runWithTenantContext` da renovação, `setTenantRlsContext(tx, requestedTenantId)` da troca de organização, `withTenantRls` do candidato do Entrar e do `isGrantOutsideGroup` do store. Provado em tests/bapporg2sc_grant-guard-db.test.ts (X5) e no custo da HD1 (tests/bapporg2sc_custo-db.test.ts).",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/grant-group-guard.ts", "-.readGrantOrigin", "tx.userCreationLog", "userCreationLog.findFirst", "user_creation_log", "PARAMETRO(tx)", "×1"),
+    "B-APP-ORG-2S-c (SC, D3-2): a origem do acesso é a linha `concessao` do registro de criações de `(Y, usuário)` (o `origin_tenant_id` gravado pela S2a), `where` em `tenant_id` e `user_id`; o `tx` é sempre o de uma transação que já pôs o GUC do pátio Y do par na 1ª instrução: `withTenantRlsBudget` da sessão viva, `runWithTenantContext` da renovação, `setTenantRlsContext(tx, requestedTenantId)` da troca de organização, `withTenantRls` do candidato do Entrar e do `isGrantOutsideGroup` do store. Provado em tests/bapporg2sc_grant-guard-db.test.ts (X1–X6).",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/grant-group-guard.ts", "-.readMembershipRows", "tx", "RAW-SQL($queryRaw)", "economic_group_members", "PARAMETRO(tx)", "×1"),
+    "B-APP-ORG-2S-c (SC, D3-2): `SELECT … FROM economic_group_members WHERE tenant_id = <pátio>`, com o resultado passado por `assertRowsBelongToTenant`; para Y, sob o GUC de Y; para o pátio de origem, com `setTenantRlsContext(tx, <origem>)` antes e o GUC de Y reposto no `finally` (o mesmo desenho de `group-peer-probe.readMembership`); o `tx` é sempre o de uma transação que já pôs o GUC do pátio Y do par na 1ª instrução: `withTenantRlsBudget` da sessão viva, `runWithTenantContext` da renovação, `setTenantRlsContext(tx, requestedTenantId)` da troca de organização, `withTenantRls` do candidato do Entrar e do `isGrantOutsideGroup` do store. Provado em tests/bapporg2sc_grant-guard-db.test.ts (X1–X4, a virada do dia em São Paulo).",
+  ],
+  [
+    k("L2", "src/modules/core-saas/services/grant-group-guard.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-APP-ORG-2S-c (SC, D3-2): a auditoria `user.access_ended_group_exit` gravada em Y, na mesma transação da queda e sob o GUC de Y, sem dado de outro pátio; o `tx` é sempre o de uma transação que já pôs o GUC do pátio Y do par na 1ª instrução: `withTenantRlsBudget` da sessão viva, `runWithTenantContext` da renovação, `setTenantRlsContext(tx, requestedTenantId)` da troca de organização, `withTenantRls` do candidato do Entrar e do `isGrantOutsideGroup` do store. Provado em tests/bapporg2sc_grant-guard-db.test.ts (X1).",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
