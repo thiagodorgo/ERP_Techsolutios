@@ -73,13 +73,16 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     final email = authState?.session?.user.email ?? '';
     final isOffline = ref.watch(networkStatusProvider) == NetworkStatus.offline;
 
-    final banner = isOffline
+    final exitOnly = _temporaryExpired;
+    // Senha vencida: a frase de saída fica na tela mesmo sem conexão (C4-01).
+    final banner = exitOnly && _error != null
+        ? _Banner(text: _error!)
+        : isOffline
         ? const _Banner(
             text: kPasswordChangeOfflineMessage,
             icon: Icons.wifi_off,
           )
         : (_error != null ? _Banner(text: _error!) : null);
-    final exitOnly = _temporaryExpired;
 
     final fieldsEnabled = !_submitting && !_locked;
     final canSubmit = fieldsEnabled && !isOffline;

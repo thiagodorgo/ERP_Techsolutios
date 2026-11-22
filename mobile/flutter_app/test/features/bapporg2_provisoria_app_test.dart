@@ -6,6 +6,7 @@ import 'package:erp_techsolutions_mobile/app/router.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_repository.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
+import 'package:erp_techsolutions_mobile/core/network/connectivity_repository.dart';
 import 'package:erp_techsolutions_mobile/features/auth/change_password_screen.dart';
 import 'package:erp_techsolutions_mobile/features/auth/login_screen.dart';
 import 'package:erp_techsolutions_mobile/shared/theme/erp_mobile_theme.dart';
@@ -178,6 +179,39 @@ void main() {
       expect(find.byKey(ChangePasswordScreen.exitButtonKey), findsOneWidget);
       expect(find.byKey(ChangePasswordScreen.saveButtonKey), findsNothing);
       expect(find.byType(TextField), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'TP3 — a frase da senha vencida continua na tela depois que a rede cai',
+    (tester) async {
+      final h = await _pumpApp(tester, {
+        _loginPath: _Reply(200, _loginJson(mustChange: true)),
+        _passwordPath: _Reply(
+          409,
+          _erro('CONFLICT', reason: 'temporary_password_expired'),
+        ),
+      });
+
+      await _loginPelaTela(tester);
+      await _preencherTroca(tester);
+      await tester.tap(find.byKey(ChangePasswordScreen.saveButtonKey));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Sua senha provisória venceu. Peça uma nova ao seu pátio.'),
+        findsOneWidget,
+      );
+
+      h.container.read(networkStatusProvider.notifier).setOffline();
+      await tester.pumpAndSettle();
+
+      expect(h.path, '/change-password');
+      expect(
+        find.text('Sua senha provisória venceu. Peça uma nova ao seu pátio.'),
+        findsOneWidget,
+        reason: 'a queda da rede não esconde a instrução de saída',
+      );
+      expect(find.byKey(ChangePasswordScreen.exitButtonKey), findsOneWidget);
     },
   );
 
