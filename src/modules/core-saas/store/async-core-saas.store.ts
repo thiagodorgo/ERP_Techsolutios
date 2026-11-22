@@ -34,6 +34,8 @@ export type AsyncCoreSaasStore = {
   createUser(input: CreateUserInput, credential?: InitialCredentialInput): Promise<User>;
   grantAccess(input: GrantUserAccessInput): Promise<GrantedUserAccess>;
   recordCancelledCreation(tenantId: string, email: string, actorUserId?: string): Promise<void>;
+  // B-APP-ORG-2S-c (SC) — o par `concessao` cuja origem saiu do grupo (X6, reativar = 409).
+  isGrantOutsideGroup(tenantId: string, userId: string): Promise<boolean>;
   updateUser(input: UpdateUserPersistenceInput): Promise<User>;
   findUserByIdForTenant(userId: string, tenantId: string): Promise<User | undefined>;
   listUsersByTenant(tenantId: string): Promise<User[]>;

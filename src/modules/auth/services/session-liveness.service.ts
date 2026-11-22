@@ -51,12 +51,14 @@ async function check(input: SessionLivenessInput): Promise<SessionLivenessVerdic
     return "inactive";
   }
 
-  const [{ prisma }, { withTenantRlsBudget }] = await Promise.all([
+  const [{ prisma }, { withTenantRlsBudget }, { grantEndedByGroupExit }] = await Promise.all([
     import("../../../database/prisma.js"),
     import("../../../database/rls.js"),
+    import("../../core-saas/services/grant-group-guard.js"),
   ]);
 
   return withTenantRlsBudget(prisma, tenantId, SESSION_LIVENESS_BUDGET, async (tx): Promise<SessionLivenessVerdict> => {
+    if (await grantEndedByGroupExit(tx, { tenantId, userId })) return "inactive";
     if (sessionId !== undefined) {
       // A sessão DO TOKEN (`s.id`), do MESMO par, viva, e o usuário ativo. Uma linha por condição: cada uma é
       // âncora de mutação. O filtro por organização é redundante com a RLS (o GUC é o mesmo valor): defesa em

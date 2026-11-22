@@ -39,6 +39,7 @@ import {
   loginOriginsOf,
   probeGroupPeers,
 } from "../services/group-peer-probe.js";
+import { isGrantOutsideGroup as checkGrantOutsideGroup } from "../services/grant-group-guard.js";
 import {
   CoreSaasError,
   type AuditEvent,
@@ -369,6 +370,14 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         severity: "warning",
         metadata: { email },
       });
+    });
+  }
+
+  // B-APP-ORG-2S-c (SC, X6) — o par `concessao` cuja origem saiu do grupo, lido sob o contexto do
+  // próprio pátio. Só leitura: o desfecho (inativar, revogar, auditar) acontece na guarda, no uso.
+  async isGrantOutsideGroup(tenantId: string, userId: string): Promise<boolean> {
+    return withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      return checkGrantOutsideGroup(tx, tenantId, userId);
     });
   }
 

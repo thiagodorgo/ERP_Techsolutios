@@ -193,7 +193,7 @@ test("evento: o segredo do forward nunca vai para o traccar.xml nem para literal
   }
 });
 
-test("evento: o GRANT EXECUTE em auth_login_candidates existe só no passo nomeado do demo --with-web", { timeout: 60_000 }, () => {
+test("evento: o GRANT EXECUTE em auth_login_candidates vive só no demo --with-web e no helper nomeado da SC", { timeout: 60_000 }, () => {
   const needle = /GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.auth_login_candidates/gi;
   const scanned = [
     ...walk(path.join(ROOT, "prisma", "migrations")),
@@ -207,7 +207,11 @@ test("evento: o GRANT EXECUTE em auth_login_candidates existe só no passo nomea
     ...walk(TESTS_DIR),
   ].filter((file) => path.resolve(file) !== path.resolve(SELF));
   const hits = scanned.filter((file) => new RegExp(needle.source, "i").test(readFileSync(file, "utf8"))).map(rel).sort();
-  assert.deepEqual(hits, ["scripts/traccar-dev-demo.mjs"], "o GRANT do demo vive em exatamente um arquivo");
+  assert.deepEqual(
+    hits,
+    ["scripts/traccar-dev-demo.mjs", "tests/helpers/auth-login-candidates-grant.ts"],
+    "o GRANT de auth_login_candidates vive só no demo e no helper nomeado",
+  );
   const demo = read(DEMO_SCRIPT);
   const occurrences = [...demo.matchAll(needle)];
   assert.equal(occurrences.length, 1, "uma ocorrência só no demo");
