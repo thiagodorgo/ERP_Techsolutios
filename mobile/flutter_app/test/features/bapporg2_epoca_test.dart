@@ -1,5 +1,9 @@
 // PROTOTIPO do plan-1839-fable: os testes EP da Emenda 1.8.3.9.
+import 'dart:io';
+
 import 'package:erp_techsolutions_mobile/core/auth/session_renewal.dart';
+import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/other_patios_calls.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'bapporg2_epoca_fakes.dart';
@@ -147,5 +151,80 @@ void main() {
     expect(m.e.sessions.sessions.map((s) => s.tokens.accessToken), [
       deB!.tokens.accessToken,
     ]);
+  });
+
+  // C1-01 (junta J-APP): a sonda `bapporg2_c1_retain_sonda_test.dart` da C1,
+  // permanente. A pessoa A tinha a escuta de Y; entrou a pessoa B, que pediu
+  // a escuta de Z. A instância de A que ficou para trás (órfã) não tira nem
+  // revoga a escuta de B — nem chamando direto, nem pelo ciclo de "Outros
+  // pátios" de A.
+  test('EP10 — a instancia orfa de A nao tira a escuta de B', () async {
+    final m = monta();
+    final a = liveSession();
+    await m.e.sessions.acquire('Y', a);
+    final b = pessoa('u-b', 'C');
+    m.e.liveKey = sessionKeyOf(b);
+    final deB = await m.e.sessions.acquire('Z', b);
+    expect(deB!.tokens.accessToken, 'tok-Z-2');
+    final antes = List.of(m.server.events);
+
+    await m.e.sessions.retainTenants({'Y'}, current: a);
+    final blocosDeA = await OtherPatiosCalls(listen: m.e.sessions).load(
+      current: a,
+      tenants: const [
+        TenantContext(tenantId: 'X', displayName: 'Pátio X'),
+        TenantContext(tenantId: 'Y', displayName: 'Pátio Y'),
+      ],
+    );
+
+    expect(m.server.events, antes, reason: 'nenhuma revogação nem pedido');
+    expect(m.server.liveOf('Z'), 1);
+    expect(m.e.sessions.sessions.map((s) => s.tokens.accessToken), ['tok-Z-2']);
+    expect(
+      m.e.sessions.clientFor('Z').options.headers['Authorization'],
+      'Bearer tok-Z-2',
+    );
+    expect((await m.e.journal.all())['Z'], 'ref-Z-2');
+    expect(blocosDeA.map((bloco) => bloco.state), [OtherPatioState.stale]);
+    expect(blocosDeA.single.orders, isEmpty);
+  });
+
+  test('EP11 — a epoca muda no meio do retain: a escuta de B fica', () async {
+    final m = monta();
+    final a = liveSession();
+    await m.e.sessions.acquire('Y', a);
+    final h = m.server.hold(kLogout);
+    final r = m.e.sessions.retainTenants(const {}, current: a);
+    await h.arrived.future;
+    final b = pessoa('u-b', 'C');
+    m.e.liveKey = sessionKeyOf(b);
+    final deB = await m.e.sessions.acquire('Z', b);
+    h.release.complete();
+    await r;
+
+    expect(m.e.sessions.sessions.map((s) => s.tokens.accessToken), [
+      deB!.tokens.accessToken,
+    ]);
+    expect(m.server.events.where((e) => e == 'revoke:ref-Z-2'), isEmpty);
+    expect((await m.e.journal.all())['Z'], deB.tokens.refreshToken);
+  });
+
+  // C1-01: a guarda só vale se quem chama manda a sessão dele. Todo chamador
+  // do app manda `current:`.
+  test('EP12 — todo retainTenants do app leva a sessao de quem chama', () {
+    final chamadas = <String>[];
+    for (final file in Directory('lib').listSync(recursive: true)) {
+      if (file is! File || !file.path.endsWith('.dart')) continue;
+      final source = file.readAsStringSync();
+      for (final match in RegExp(
+        r'\.retainTenants\(([^;]*)\);',
+      ).allMatches(source)) {
+        chamadas.add(match.group(1)!);
+      }
+    }
+    expect(chamadas, isNotEmpty);
+    for (final chamada in chamadas) {
+      expect(chamada, contains('current: '), reason: chamada);
+    }
   });
 }

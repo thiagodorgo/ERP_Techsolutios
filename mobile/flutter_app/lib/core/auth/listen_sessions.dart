@@ -214,17 +214,29 @@ class ListenSessions {
     _inFlight.clear();
   }
 
-  Future<void> retainTenants(Set<String> tenantIds) async {
+  /// Com [current], a mesma guarda de época do [acquire]: a instância que
+  /// ficou da sessão que saiu não revoga nem tira a escuta de quem entrou
+  /// (C1-01).
+  Future<void> retainTenants(
+    Set<String> tenantIds, {
+    AuthSession? current,
+  }) async {
+    final generation = _generation;
+    bool alive() =>
+        current == null ||
+        (generation == _generation && _keyFor(current) != null);
     try {
       final journal = await _journal.all();
       for (final entry in journal.entries) {
         if (tenantIds.contains(entry.key)) continue;
+        if (!alive()) return;
         await _revocations.revokeOrQueue(entry.value);
         await _journal.removeIfSame(entry.key, entry.value);
       }
     } catch (error) {
       _report(error.runtimeType.toString());
     }
+    if (!alive()) return;
     for (final tenantId in _sessions.keys.toList()) {
       if (!tenantIds.contains(tenantId)) await _drop(tenantId);
     }

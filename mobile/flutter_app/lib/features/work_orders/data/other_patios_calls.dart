@@ -67,7 +67,7 @@ class OtherPatiosCalls {
     final names = {
       for (final tenant in others) tenant.tenantId: tenant.displayName,
     };
-    await _listen.retainTenants(names.keys.toSet());
+    await _listen.retainTenants(names.keys.toSet(), current: current);
     _last.removeWhere((tenantId, _) => !names.containsKey(tenantId));
     final blocks = <String, OtherPatioBlock>{};
     final sessions = <AuthSession>[];
