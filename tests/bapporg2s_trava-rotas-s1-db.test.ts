@@ -117,6 +117,30 @@ if (!connectionString) {
         assert.equal(response.body.error?.reason, "email_in_group");
       });
 
+      // B-APP-ORG-2S (Emenda 1.8.3.17, Adendo 1, I3; C1-03, `P-GRUPO-EMAIL-MAIUSCULA`): a trava do e-mail único no grupo
+      // não depende de maiúsculas. O e-mail antigo está gravado em MAIÚSCULAS em A, direto no banco, com identidade.
+      await t.test("K0-MAIUSCULA: e-mail antigo em MAIÚSCULAS em outro pátio do grupo; POST /users em minúsculas → 409 email_in_group", async () => {
+        const email = `hk1-k0m-${suffix}@example.com`.toLowerCase();
+        const existente = await admin.user.create({ data: { tenant_id: A, name: "existente", email: email.toUpperCase(), status: "active" } });
+        const [identity] = await admin.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO auth_identities (id, created_at) VALUES (gen_random_uuid(), now()) RETURNING id::text AS id
+        `;
+        await admin.$executeRaw`
+          INSERT INTO auth_identity_links (identity_id, tenant_id, user_id, attached_via)
+          VALUES (${identity!.id}::uuid, ${A}::uuid, ${existente.id}::uuid, 'backfill')
+        `;
+        const response = await postUser(tokenB, email);
+        assert.equal(response.status, 409, "K0-MAIUSCULA: a criação é recusada");
+        assert.equal(response.body.error?.reason, "email_in_group", "K0-MAIUSCULA: o motivo é o e-mail no grupo");
+        const [row] = await admin.$queryRaw<Array<{ users_b: number; identidades: number }>>`
+          SELECT
+            (SELECT count(*)::int FROM users WHERE tenant_id = ${B}::uuid AND lower(email) = ${email}) AS users_b,
+            (SELECT count(DISTINCT l.identity_id)::int FROM auth_identity_links l JOIN users u ON u.id = l.user_id AND u.tenant_id = l.tenant_id
+              WHERE lower(u.email) = ${email} AND u.tenant_id IN (${A}::uuid, ${B}::uuid)) AS identidades
+        `;
+        assert.deepEqual(row, { users_b: 0, identidades: 1 }, "K0-MAIUSCULA: nasce 0 usuário no pátio e continua 1 identidade");
+      });
+
       await t.test("K1 (rotas, 50): sempre 201 e 409, 1 usuário, 1 identidade, cancelado maior", async () => {
         const { creationEmailKey } = await import("../src/modules/core-saas/services/user-creation-log.js");
         const statuses: number[] = [];
