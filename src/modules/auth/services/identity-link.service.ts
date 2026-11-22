@@ -715,11 +715,10 @@ export class IdentityLinkService {
           // identidade dele: a religação que move esse vínculo (o alvo como conta provada) trava a mesma linha
           // com FOR UPDATE, e a do próprio alvo (o alvo como ator) com FOR SHARE (T2). Quem chega depois espera
           // o outro confirmar e lê o estado novo: a identidade vem da linha TRAVADA (a versão confirmada).
-          // B-APP-ORG-2S (GR5) — antes, a FILA da identidade: duas redefinições da MESMA identidade, por pátios
-          // diferentes, travariam cada uma o vínculo do próprio par e esperariam o da outra na volta (FOR SHARE);
-          // o PostgreSQL derrubava uma por impasse (medido: `deadlock detected`, 503). A trava consultiva é da
-          // transação e respeita o `lock_timeout` do orçamento. Se a religação mover a identidade no meio, a
-          // conferência logo abaixo sai 503 e nada muda.
+          // B-APP-ORG-2S (GR5) — a identidade lida como pista ordena as travas dos vínculos: primeiro os pares
+          // de pátios menores recebem FOR SHARE, em ordem de id; depois o próprio par recebe FOR UPDATE. Duas
+          // redefinições da mesma identidade seguem a mesma ordem e não formam o ciclo que causava impasse.
+          // Se a religação mover a identidade no meio, a conferência logo abaixo sai 503 e nada muda.
           const hintedIdentityId = await this.identityOfPair(tx, actor.tenantId, target.id);
           if (hintedIdentityId !== null) await this.lockEarlierLinksOfIdentity(tx, actor.tenantId, hintedIdentityId, deadline);
           let pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
@@ -738,10 +737,10 @@ export class IdentityLinkService {
             throw resetUnavailableError();
           }
 
-          // B-APP-ORG-2S (1.8.3 §2.3, P1 (a)) — grava PRIMEIRO a provisória no par do próprio pátio e só depois
-          // descobre os outros pares (a ordem que fecha a corrida com uma concessão em voo). Os pares do grupo
-          // recebem a MESMA provisória (mesmo hash, marca ligada, mesma hora, contador zerado), ativo ou não
-          // o técnico lá, e as sessões dele caem em todos.
+          // B-APP-ORG-2S (1.8.3 §2.3, P1 (a)) — descobre e grava os pares pendentes em ordem de pátio; depois da
+          // última escrita, repete a descoberta até uma volta não achar par novo. Assim, concessão em voo também
+          // recebe a MESMA provisória (mesmo hash, marca ligada, mesma hora, contador zerado), e as sessões do
+          // técnico caem em todos os pares alcançados.
           const actorTenant = await tx.tenant.findUnique({ where: { id: actor.tenantId }, select: { name: true } });
           const actorTenantName = actorTenant?.name ?? "";
 
@@ -1137,8 +1136,8 @@ export class IdentityLinkService {
     return family;
   }
 
-  // B-APP-ORG-2S (GR5) — a fila das redefinições de uma identidade: lê a identidade do par (sem trava) e toma
-  // a trava consultiva da transação por ela. Par sem vínculo ainda não tem família: sem fila.
+  // B-APP-ORG-2S (GR5) — lê sem trava a identidade do par como pista para ordenar as travas anteriores. A
+  // identidade definitiva vem da linha do próprio par sob FOR UPDATE; par sem vínculo ainda devolve null.
   private async identityOfPair(
     tx: Prisma.TransactionClient,
     tenantId: string,
