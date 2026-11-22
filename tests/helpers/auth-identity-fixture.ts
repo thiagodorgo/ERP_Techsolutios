@@ -639,6 +639,7 @@ export async function cleanupIdentityFixture(
 
   await adminClient.userRoleAssignment.deleteMany({ where: { tenant_id: { in: [...tenantIds] } } });
   await adminClient.role.deleteMany({ where: { tenant_id: { in: [...tenantIds] } } });
+  await adminClient.userCreationLog.deleteMany({ where: { tenant_id: { in: [...tenantIds] } } });
   await adminClient.user.deleteMany({ where: { tenant_id: { in: [...tenantIds] } } });
   await adminClient.tenant.deleteMany({ where: { id: { in: [...tenantIds] } } });
 }

@@ -236,6 +236,7 @@ if (!connectionString) {
       // assignments antes de users/roles; roles antes do tenant). Nunca curinga em base viva.
       if (tenantId) {
         await client.auditLog.deleteMany({ where: { tenant_id: tenantId } });
+        await client.userCreationLog.deleteMany({ where: { tenant_id: tenantId } });
         await client.userRoleAssignment.deleteMany({ where: { tenant_id: tenantId } });
         await client.$executeRawUnsafe(
           "delete from role_permissions where role_id in (select id from roles where tenant_id = $1::uuid)",

@@ -32,7 +32,9 @@ import { buildApplicationName, withApplicationName } from "./helpers/pg-barrier.
 //           outra organização) e nada muda na credencial do alvo;
 //   SR·1b — o reset vence: a religação do alvo responde 403 password_change_required e o vínculo não move;
 //   SR·2a — o alvo é a conta PROVADA de uma religação que vence: o reset responde 409 e nada muda;
-//   SR·2b — o reset vence: a religação que prova o alvo responde 403 e o vínculo não move.
+//   SR·2b — o reset vence: a religação que prova o alvo responde 403 e o vínculo não move;
+//   SR·2c — o vínculo do alvo passa, na espera, para identidade sem vínculo ativo noutra organização: o
+//           reset classifica, não acha o que recusar, e responde 503 `reset_unavailable` sem gravar.
 // Vermelho-controle (UEM-02): o estágio intermediário — o reset já com a verificação da P-SEG-1, sem T1,
 // T2 e T3 — com o desfecho duplo registrado no diário.
 // -----------------------------------------------------------------------------------------------
@@ -276,7 +278,12 @@ if (!connectionString) {
 
   // Barreira: a instrução do PRODUTO (papel efêmero) bloqueada numa trava de linha, ou o produto já
   // respondeu (o que a trava ausente produz). Devolve qual dos dois — o teste não depende de relógio.
-  async function blockedOrSettled(h: Harness, pending: Promise<unknown>): Promise<"bloqueado" | "respondeu"> {
+  // `seen` (opcional, 1.8.3.16 R1.3) recebe o texto da instrução bloqueada, para a asserção de coreografia.
+  async function blockedOrSettled(
+    h: Harness,
+    pending: Promise<unknown>,
+    seen?: { query?: string },
+  ): Promise<"bloqueado" | "respondeu"> {
     let settled = false;
 
     void pending.then(
@@ -302,6 +309,17 @@ if (!connectionString) {
       `;
 
       if ((row?.waiting ?? 0) >= 1) {
+        if (seen) {
+          const [blocked] = await h.admin.$queryRaw<Array<{ query: string }>>`
+            SELECT query FROM pg_stat_activity
+            WHERE (usename = ${h.role.roleName} OR application_name = ${productApplicationName})
+              AND wait_event_type = 'Lock' AND state = 'active'
+            LIMIT 1
+          `;
+
+          seen.query = blocked?.query;
+        }
+
         return "bloqueado";
       }
 
@@ -312,9 +330,14 @@ if (!connectionString) {
 
   // A barreira e, aconteça o que acontecer, a confirmação do lado controlado (um teste que falha não deixa
   // trava presa para o seguinte).
-  async function barrierThenCommit(h: Harness, pending: Promise<unknown>, commit: () => Promise<void>) {
+  async function barrierThenCommit(
+    h: Harness,
+    pending: Promise<unknown>,
+    commit: () => Promise<void>,
+    seen?: { query?: string },
+  ) {
     try {
-      return await blockedOrSettled(h, pending);
+      return await blockedOrSettled(h, pending, seen);
     } finally {
       await commit();
     }
@@ -476,6 +499,62 @@ if (!connectionString) {
     );
     assert.equal(relink.body.error?.reason, "password_change_required");
     assert.equal(unmoved.identity_id, homeLink.identity_id, "o vínculo do alvo não moveu");
+  });
+
+  test("SR·2c — o vínculo do ALVO passa, na espera, para uma identidade sem vínculo ATIVO noutra organização: o reset classifica, não acha o que recusar, responde 503 reset_unavailable e nada muda", async () => {
+    const h = await harness();
+    const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const home = await newOrg(h, "2c-casa", `sr2c-casa-${stamp}@example.com`, "SenhaCasaSR2c!");
+    const elsewhere = await newOrg(h, "2c-ator", `sr2c-ator-${stamp}@example.com`, "SenhaAtorSR2c!");
+
+    await sessionOf(h, home);
+    await sessionOf(h, elsewhere);
+    // A outra organização da identidade de destino tem o usuário INATIVO, e nenhum vínculo chegou por
+    // religação: a classificação do reset não acha o que recusar com 409 (a D-USERS-1 recusa vínculo ATIVO
+    // fora do grupo). A identidade divergiu da pista, então o reset não grava: 503.
+    await h.admin.user.update({ where: { id: elsewhere.userId }, data: { status: "inactive" } });
+
+    const homeLink = await linkOf(h, home);
+    const actorLink = await linkOf(h, elsewhere);
+    const headers = await adminOf(h, home);
+    const before = await credentialOf(h, home);
+    const commit = await controlledSide(h, async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auth_identity_links WHERE id = ${actorLink.id}::uuid FOR SHARE`;
+      await tx.$queryRaw`SELECT id FROM auth_identity_links WHERE id = ${homeLink.id}::uuid FOR UPDATE`;
+      await tx.$executeRaw`UPDATE auth_identity_links SET identity_id = ${actorLink.identity_id}::uuid WHERE id = ${homeLink.id}::uuid`;
+    });
+    const pending = call(h, `/api/v1/auth/users/${home.userId}/reset-password`, { headers });
+    const seen: { query?: string } = {};
+    const barrier = await barrierThenCommit(h, pending, commit, seen);
+
+    const reset = await pending;
+    const moved = await linkOf(h, home);
+    const after = await credentialOf(h, home);
+
+    // Coreografia (R1.3): o reset esperou no FOR UPDATE do vínculo do par, não noutra trava.
+    assert.equal(barrier, "bloqueado", `o reset esperou a mudança confirmar (o reset respondeu ${reset.status})`);
+    assert.match(seen.query ?? "", /FROM auth_identity_links[\s\S]*FOR UPDATE/, "a instrução bloqueada é o FOR UPDATE do vínculo do par");
+    assert.doesNotMatch(seen.query ?? "", /FOR SHARE/, "a instrução bloqueada não é uma trava compartilhada");
+    assert.equal(moved.identity_id, actorLink.identity_id, "a mudança confirmou: o vínculo do alvo é da outra identidade");
+    assert.equal(reset.status, 503, `a identidade divergiu da pista e nada há a recusar: 503 (o reset respondeu ${reset.status})`);
+    assert.equal(reset.body.error?.reason, "reset_unavailable");
+    assert.equal(after?.password_hash, before?.password_hash, "a senha do alvo não mudou");
+    assert.equal(after?.must_change_password, false, "a marca não foi ligada");
+    assert.equal(
+      await h.admin.auditLog.count({ where: { tenant_id: home.tenantId, action: "user.password_reset" } }),
+      0,
+      "nenhuma auditoria de reset",
+    );
+    assert.equal(
+      await h.admin.authSession.count({ where: { tenant_id: home.tenantId, user_id: home.userId, revoked_at: { not: null } } }),
+      0,
+      "nenhuma sessão do alvo foi revogada",
+    );
+    assert.equal(
+      await h.admin.authSession.count({ where: { tenant_id: home.tenantId, user_id: home.userId, revoked_at: null } }),
+      1,
+      "a sessão viva do alvo segue viva",
+    );
   });
 
 }

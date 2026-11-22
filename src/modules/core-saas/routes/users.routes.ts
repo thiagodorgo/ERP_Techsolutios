@@ -50,6 +50,25 @@ export function createUsersRouter(service: ICoreSaasService): Router {
     }),
   );
 
+  router.post(
+    "/access-grants",
+    requirePermission("users.manage"),
+    handleAsyncRoute(async (request, response) => {
+      const actor = requireTenantContext(request);
+      const body = request.body as Record<string, unknown>;
+      const result = await service.grantUserAccess(
+        {
+          tenantId: actor.tenantId,
+          name: readString(body.name),
+          email: readString(body.email),
+        },
+        actor,
+      );
+
+      response.status(201).json({ data: { user: result.user } });
+    }),
+  );
+
   router.patch(
     "/:userId",
     requirePermission("users.manage"),

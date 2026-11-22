@@ -15,6 +15,8 @@ import {
   type AuthenticatedActor,
   type CreateTenantInput,
   type CreateUserInput,
+  type GrantedUserAccess,
+  type GrantUserAccessInput,
   type ListTenantOptions,
   type LoginCandidate,
   type Tenant,
@@ -242,6 +244,19 @@ export class CoreSaasRegistry {
     });
 
     return savedUser;
+  }
+
+  grantUserAccess(
+    input: GrantUserAccessInput,
+    actor: AuthenticatedActor,
+  ): GrantedUserAccess {
+    if (input.tenantId !== actor.tenantId) throw accessDeniedAcrossTenants();
+    throw new CoreSaasError(
+      404,
+      "NOT_FOUND",
+      "login_not_found_in_group",
+      "Não há login com este e-mail no grupo.",
+    );
   }
 
   updateUser(input: UpdateUserInput, actor?: AuthenticatedActor): User {
