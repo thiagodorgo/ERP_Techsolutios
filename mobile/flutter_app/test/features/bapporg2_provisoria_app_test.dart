@@ -192,6 +192,38 @@ void main() {
       expect(find.byKey(ChangePasswordScreen.exitButtonKey), findsOneWidget);
       expect(find.byKey(ChangePasswordScreen.saveButtonKey), findsNothing);
       expect(find.byType(TextField), findsNothing);
+
+      // C4-02: "Sair" é a ÚNICA ação da tela — conta todo botão, todo alvo de
+      // toque e todo campo, com ou sem a key canônica.
+      Finder naTela(bool Function(Widget w) p) => find.descendant(
+        of: find.byType(ChangePasswordScreen),
+        matching: find.byWidgetPredicate(p),
+      );
+      final botoes = naTela(
+        (w) =>
+            w is ButtonStyleButton ||
+            w is IconButton ||
+            w is FloatingActionButton,
+      );
+      expect(botoes, findsOneWidget, reason: 'só o botão de sair');
+      expect(
+        tester.widget(botoes),
+        isA<TextButton>().having(
+          (b) => b.key,
+          'key',
+          ChangePasswordScreen.exitButtonKey,
+        ),
+      );
+      expect(
+        find.descendant(of: botoes, matching: find.text('Sair')),
+        findsOneWidget,
+      );
+      expect(
+        naTela((w) => w is InkWell && w.onTap != null),
+        findsOneWidget,
+        reason: 'nenhum outro alvo de toque além do Sair',
+      );
+      expect(naTela((w) => w is EditableText), findsNothing);
     },
   );
 
