@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test, { after } from "node:test";
 
+import { createOrgWithUser } from "./helpers/auth-identity-fixture.js";
 import { dropHarnessObjects, runHarnessDdl } from "./helpers/pg-barrier.js";
 import { administradorDe, papelGlobal } from "./helpers/users-seg-desativado-sessao.js";
-import { call, desmontarArnes, login, montarArnes, novaFamilia, trocarSenha, type Arnes, type Familia } from "./bapporg2s_familia-helper.js";
+import { bearer, call, desmontarArnes, login, montarArnes, novaFamilia, trocarSenha, type Arnes, type Familia } from "./bapporg2s_familia-helper.js";
 
 // SONDA do planejador (plan-18313-fable): a ORDEM das escritas nas credenciais da família, DETERMINÍSTICA.
 // A conta da senha grava os pares em ordem de pátio (menor, meio, maior). O administrador do teste segura a credencial
@@ -285,5 +286,142 @@ for (const pares of [1, 2] as const) {
     assert.equal(copiaDeAntes, true, "GP-ATOM-TARDIA: o par novo guarda a senha de antes, igual aos outros");
     assert.equal(novaEmX, 401, "GP-ATOM-TARDIA: a senha nova não entra em pátio nenhum");
     assert.equal(velhaEmZ, 200, "GP-ATOM-TARDIA: a senha de antes segue valendo em todos");
+  });
+}
+
+// B-APP-ORG-2S (Emenda 1.8.3.17 §2.3 (a), C5-02) — a redefinição por um pátio do grupo e a religação feita pelo técnico
+// num PAR do grupo se serializam. T tem a identidade em X e H (mesmo grupo); W é outra empresa, fora do grupo, com conta e
+// senha próprias de T e vínculo próprio. O ATOR da religação é T logado em X; quem redefine é o administrador de H. Cada
+// teste roda nas duas ordens de id (X menor que H e X maior que H). A barreira lê o `pg_stat_activity` do papel efêmero:
+// ou o pedido bloqueou numa trava cujo texto casa com o padrão, ou respondeu. Sem relógio.
+type ParGr8 = { tenantId: string; userId: string };
+type RespGr8 = { status: number; body: Record<string, any> };
+
+async function cenarioGr8(h: Arnes, tag: string, ordem: "x<h" | "x>h") {
+  const f = await novaFamilia(h, tag, { pairs: 2 });
+  const sorted = [...(f.orgs as unknown as ParGr8[])].sort((a, b) => (a.tenantId.toLowerCase() < b.tenantId.toLowerCase() ? -1 : 1));
+  const [x, home] = ordem === "x<h" ? [sorted[0]!, sorted[1]!] : [sorted[1]!, sorted[0]!];
+  const suffix = `${tag}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const wPassword = "SenhaPropriaW!2026";
+  const w = await createOrgWithUser(h.admin, { name: `S2P W ${suffix}`, slug: `s2p-w-${suffix}`, email: f.email, password: wPassword });
+  h.tenantIds.push(w.tenantId);
+  const [idw] = await h.admin.$queryRaw<Array<{ id: string }>>`
+    INSERT INTO auth_identities (id, created_at) VALUES (gen_random_uuid(), now()) RETURNING id::text AS id
+  `;
+  await h.admin.$executeRaw`
+    INSERT INTO auth_identity_links (identity_id, tenant_id, user_id, attached_via)
+    VALUES (${idw!.id}::uuid, ${w.tenantId}::uuid, ${w.userId}::uuid, 'backfill')
+  `;
+  const sx = await login(h, x.tenantId, f.email, f.password);
+  assert.equal(sx.status, 200, "fixture: o técnico entra em X");
+  const adminH = await administradorDe(h, home.tenantId);
+  return { f, x, home, w, wPassword, token: String(sx.body?.data?.access_token ?? ""), adminH };
+}
+
+type CenarioGr8 = Awaited<ReturnType<typeof cenarioGr8>>;
+
+async function wNaIdentidade(h: Arnes, c: CenarioGr8): Promise<boolean> {
+  const [row] = await h.admin.$queryRaw<Array<{ identity_id: string }>>`
+    SELECT identity_id::text FROM auth_identity_links WHERE tenant_id = ${c.w.tenantId}::uuid AND user_id = ${c.w.userId}::uuid
+  `;
+  return row?.identity_id === c.f.identityId;
+}
+
+async function credenciaisXH(h: Arnes, c: CenarioGr8) {
+  return h.admin.localAuthCredential.findMany({
+    where: { tenant_id: { in: [c.x.tenantId, c.home.tenantId] } },
+    select: { tenant_id: true, password_hash: true, must_change_password: true },
+    orderBy: { tenant_id: "asc" },
+  });
+}
+
+async function bloqueadoOuRespondeu(h: Arnes, pending: Promise<unknown>, pattern: RegExp): Promise<"bloqueado" | "respondeu"> {
+  let settled = false;
+  void pending.then(() => { settled = true; }, () => { settled = true; });
+  const deadline = Date.now() + 15_000;
+  for (;;) {
+    if (settled) return "respondeu";
+    const rows = await h.admin.$queryRaw<Array<{ query: string }>>`
+      SELECT query FROM pg_stat_activity WHERE usename = ${h.role.roleName} AND wait_event_type = 'Lock' AND state = 'active'
+    `;
+    if (rows.some((row) => pattern.test(row.query))) return "bloqueado";
+    assert.ok(Date.now() < deadline, "coreografia: o pedido nem bloqueou nem respondeu");
+    await new Promise((resolve) => setTimeout(resolve, 15));
+  }
+}
+
+function portaoGr8() {
+  let abrir!: () => void;
+  let avisar!: () => void;
+  const aberto = new Promise<void>((resolve) => { abrir = resolve; });
+  const pronto = new Promise<void>((resolve) => { avisar = resolve; });
+  return { abrir, avisar, aberto, pronto };
+}
+
+for (const ordem of ["x<h", "x>h"] as const) {
+  test(`GR8-LV (${ordem}) — a religação por um PAR do grupo está em voo (já moveu o vínculo, não confirmou): a redefinição por H ESPERA e responde 409`, { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const c = await cenarioGr8(h, `gr8lv${ordem === "x<h" ? "a" : "b"}`, ordem);
+    const antes = await credenciaisXH(h, c);
+    const p = portaoGr8();
+    const trava = h.admin.$transaction(async (tx) => {
+      await tx.$executeRaw`LOCK TABLE auth_identity_link_events IN SHARE MODE`;
+      p.avisar();
+      await p.aberto;
+    }, { maxWait: 10_000, timeout: 60_000 });
+    await p.pronto;
+    let religacao: RespGr8 | undefined;
+    let reset: RespGr8 | undefined;
+    try {
+      const relP = call(h, "/api/v1/auth/identity-links", { method: "POST", headers: bearer(c.token), body: { tenantId: c.w.tenantId, email: c.f.email, password: c.wPassword } });
+      assert.equal(await bloqueadoOuRespondeu(h, relP, /auth_identity_link_events/), "bloqueado", "coreografia: a religação parou depois de mover o vínculo");
+      const resetP = call(h, `/api/v1/auth/users/${c.home.userId}/reset-password`, { method: "POST", headers: c.adminH.headers, body: {} });
+      const barreira = await bloqueadoOuRespondeu(h, resetP, /FROM auth_identity_links[\s\S]*FOR UPDATE/);
+      console.log(`# GR8-LV ${ordem} barreira da redefinição: ${barreira}`);
+      assert.equal(barreira, "bloqueado", "GR8-LV: a redefinição espera a religação em voo (não decide sobre vínculo não confirmado)");
+      p.abrir();
+      await trava;
+      religacao = await relP;
+      reset = await resetP;
+    } finally {
+      p.abrir();
+      await trava.catch(() => undefined);
+    }
+    console.log(`# GR8-LV ${ordem} ${JSON.stringify({ religacao: religacao.status, reset: reset.status, reason: reset.body?.error?.reason ?? null })}`);
+    assert.equal(religacao.status, 201, "GR8-LV: a religação confirma");
+    assert.equal(reset.status, 409, "GR8-LV: a redefinição recusa");
+    assert.equal(reset.body?.error?.reason, "identity_linked_elsewhere", "GR8-LV: o motivo é o vínculo em outra organização");
+    assert.deepEqual(await credenciaisXH(h, c), antes, "GR8-LV: nenhum par muda de senha nem de marca");
+  });
+
+  test(`GR8-RV (${ordem}) — a redefinição por H está em voo (travou o vínculo do próprio par): a religação por um PAR do grupo ESPERA e responde 403`, { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const c = await cenarioGr8(h, `gr8rv${ordem === "x<h" ? "a" : "b"}`, ordem);
+    const p = portaoGr8();
+    // O lado controlado faz o que a redefinição por H faz: FOR UPDATE no vínculo do PRÓPRIO par e a marca nos 2 pares.
+    const lado = h.admin.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auth_identity_links WHERE tenant_id = ${c.home.tenantId}::uuid AND user_id = ${c.home.userId}::uuid FOR UPDATE`;
+      await tx.$executeRaw`UPDATE local_auth_credentials SET must_change_password = true WHERE tenant_id IN (${c.x.tenantId}::uuid, ${c.home.tenantId}::uuid) AND email = ${c.f.email}`;
+      p.avisar();
+      await p.aberto;
+    }, { maxWait: 10_000, timeout: 60_000 });
+    await p.pronto;
+    let religacao: RespGr8 | undefined;
+    try {
+      const relP = call(h, "/api/v1/auth/identity-links", { method: "POST", headers: bearer(c.token), body: { tenantId: c.w.tenantId, email: c.f.email, password: c.wPassword } });
+      const barreira = await bloqueadoOuRespondeu(h, relP, /FROM auth_identity_links[\s\S]*FOR SHARE/);
+      console.log(`# GR8-RV ${ordem} barreira da religação: ${barreira}`);
+      assert.equal(barreira, "bloqueado", "GR8-RV: a religação espera a redefinição em voo");
+      p.abrir();
+      await lado;
+      religacao = await relP;
+    } finally {
+      p.abrir();
+      await lado.catch(() => undefined);
+    }
+    console.log(`# GR8-RV ${ordem} ${JSON.stringify({ religacao: religacao.status, reason: religacao.body?.error?.reason ?? null, wNaIdentidade: await wNaIdentidade(h, c) })}`);
+    assert.equal(religacao.status, 403, "GR8-RV: a religação recusa");
+    assert.equal(religacao.body?.error?.reason, "password_change_required", "GR8-RV: o motivo é a provisória");
+    assert.equal(await wNaIdentidade(h, c), false, "GR8-RV: o vínculo de W não entra na identidade do técnico");
   });
 }
