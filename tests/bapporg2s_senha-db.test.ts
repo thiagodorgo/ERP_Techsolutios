@@ -642,4 +642,68 @@ if (!connectionString) {
       assert.equal((await login(h, org.tenantId, f.email, last!.loser)).status, 401, "GR5: a outra em nenhum");
     }
   });
+
+  // ---------------------------------------------------------------------------------------------
+  // D-USERS-1 e LEITURA3 na troca de senha (G9, G9c; 1.8.3 l.129-130, l.242 e l.321; Emenda 1.8.3.17, Adendo 1, I5).
+  // Família de 2 pares (X e Y) mais W, outra organização, ligada à MESMA identidade por `religacao`. Mutações MD4 e MD8.
+  // ---------------------------------------------------------------------------------------------
+
+  async function comParReligado(h: Arnes, f: Familia) {
+    const { createOrgWithUser } = await import("./helpers/auth-identity-fixture.js");
+    const suffix = `g9w-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const w = await createOrgWithUser(h.admin, { name: `S2P W ${suffix}`, slug: `s2p-w-${suffix}`, email: f.email, password: f.password });
+
+    h.tenantIds.push(w.tenantId);
+    await h.admin.$executeRaw`
+      INSERT INTO auth_identity_links (identity_id, tenant_id, user_id, attached_via)
+      VALUES (${f.identityId}::uuid, ${w.tenantId}::uuid, ${w.userId}::uuid, 'religacao')
+    `;
+
+    return w;
+  }
+
+  async function hashDe(h: Arnes, tenantId: string): Promise<string> {
+    return (await h.admin.localAuthCredential.findFirst({ where: { tenant_id: tenantId }, select: { password_hash: true } }))!.password_hash;
+  }
+
+  test("G9 — a troca feita em X grava X e Y com um hash só; o par religacao W não muda e a senha de antes segue em W", async () => {
+    const h = await harness();
+    const f = await novaFamilia(h, "g9", { pairs: 2 });
+    const [x, y] = f.orgs;
+    const w = await comParReligado(h, f);
+    const wAntes = await hashDe(h, w.tenantId);
+    const session = await login(h, x.tenantId, f.email, f.password);
+
+    assert.equal(session.status, 200, "fixture: o técnico entra em X");
+
+    const nova = "SenhaNova!2026-G9-Aa";
+    const troca = await trocarSenha(h, String(session.body.data.access_token), f.password, nova);
+
+    assert.equal(troca.status, 200, "G9: a troca em X dá 200");
+    assert.equal(new Set(await hashes(h, f)).size, 1, "G9: X e Y com um hash só");
+    assert.equal(await hashDe(h, w.tenantId), wAntes, "G9: o par religacao W não recebe o hash");
+    assert.equal((await login(h, y.tenantId, f.email, nova)).status, 200, "G9: a senha nova entra em Y");
+    assert.equal((await login(h, w.tenantId, f.email, f.password)).status, 200, "G9: a senha de antes segue entrando em W");
+    assert.equal((await login(h, w.tenantId, f.email, nova)).status, 401, "G9: a senha nova não entra em W");
+  });
+
+  test("G9c — a troca feita a partir do par religacao W não muda X nem Y; a nova entra em W", async () => {
+    const h = await harness();
+    const f = await novaFamilia(h, "g9c", { pairs: 2 });
+    const [x] = f.orgs;
+    const w = await comParReligado(h, f);
+    const antes = await hashes(h, f);
+    const session = await login(h, w.tenantId, f.email, f.password);
+
+    assert.equal(session.status, 200, "fixture: o técnico entra em W");
+
+    const nova = "SenhaNova!2026-G9c-Aa";
+    const troca = await trocarSenha(h, String(session.body.data.access_token), f.password, nova);
+
+    assert.equal(troca.status, 200, "G9c: a troca a partir de W dá 200");
+    assert.deepEqual(await hashes(h, f), antes, "G9c: X e Y não mudam");
+    assert.equal((await login(h, x.tenantId, f.email, f.password)).status, 200, "G9c: a senha de antes segue entrando em X");
+    assert.equal((await login(h, w.tenantId, f.email, nova)).status, 200, "G9c: a senha nova entra em W");
+  });
+
 }
