@@ -115,6 +115,30 @@ if (!connectionString) {
     assert.equal(patioUpdate.count, 0);
   });
 
+  test("RLS-5-CHECK · com a identidade do dono ainda no contexto, a plataforma não move a marca de organização", async () => {
+    const manager = await ctx.ensureActiveMark();
+    const { setIdentityRlsContext, setTenantRlsContext } = await import("../src/database/rls.js");
+    const message = "RLS-5-CHECK: a marca não sai da organização platform";
+    await assert.rejects(
+      ctx.role.client.$transaction(async (tx: any) => {
+        await setIdentityRlsContext(tx, { tenantId: ctx.tenantA, userId: ctx.userA, email: "x@example.invalid", roles: ["tenant_admin"], authType: "jwt" });
+        await setTenantRlsContext(tx, ctx.platform);
+        const settings = (await tx.$queryRawUnsafe(
+          "SELECT current_setting('app.current_tenant_id', true) AS tenant_id, current_setting('app.current_identity_id', true) AS identity_id",
+        )) as Array<{ tenant_id: string; identity_id: string }>;
+        assert.deepEqual(settings, [{ tenant_id: ctx.platform, identity_id: ctx.identityX }]);
+        await tx.economicGroupManager.updateMany({ where: { id: manager.id }, data: { tenant_id: ctx.tenantA } });
+      }),
+      /row-level security policy/i,
+      message,
+    );
+    const physical = (await ctx.admin.$queryRawUnsafe(
+      "SELECT tenant_id::text AS tenant_id FROM economic_group_managers WHERE id = $1::uuid",
+      manager.id,
+    )) as Array<{ tenant_id: string }>;
+    assert.deepEqual(physical, [{ tenant_id: ctx.platform }], message);
+  });
+
   test("GM-9: retirada grava trilha somente quando muda a marca, inclusive em corrida", async () => {
     await ctx.resetMarksAndAudit();
     const input = { groupId: ctx.group, organizationId: ctx.tenantA, userId: ctx.userA, actorTenantId: ctx.tenantA, actorUserId: ctx.userA, today: "2026-11-22" };
