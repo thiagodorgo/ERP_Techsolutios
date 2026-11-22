@@ -9,4 +9,4 @@
 - **Conferência independente:** CONFERIDO; chamadas recusadas não escrevem no livro, contrato e código coincidem, as mutações previstas ficam vermelhas sem o conserto e os totais da liberação, do evento e do livro são iguais.
 - **CI do objeto final:** `backend` 7631 pass/0 fail; `backend-postgres` 1271 pass/0 fail.
 
-**Resultado: APROVADO por unanimidade de 3, com ressalvas não graves registradas.**
+**Resultado: merge pelo fluxo rápido (§C7 item 10(3)), sem unanimidade no voto.** Na votação, C1 e C2 deram APROVADO e a C3 deu REPROVADO, só pelo C3-01, não grave. Nenhuma cadeira achou defeito grave. O C3-01 foi para a triagem e entrou no conserto único (o `API_CONTRACTS.md` §3.12 passou a dizer só as razões que o código emite). A conferência independente deu CONFERIDO, e nenhuma cadeira foi refeita, porque o conserto não mudou regra de dinheiro fora do que os achados apontavam (§C7 item 10(4)). *(Correção de `dev-628-fix3-cl`, Claude Opus: a versão anterior desta linha dizia "APROVADO por unanimidade de 3", o que contradiz a linha Votos; achado A1 de `rev-628b-cl`.)*
