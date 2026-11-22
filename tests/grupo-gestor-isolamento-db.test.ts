@@ -87,8 +87,8 @@ if (!connectionString) {
     assert.ok(Array.isArray(marks), `a leitura falhou: ${JSON.stringify(marks)}`);
     const byGroup = Object.fromEntries((marks as any[]).map((mark) => [mark.groupId, mark.revokedAt === null ? "viva" : "retirada"]));
     assert.deepEqual(byGroup, { [c.gA]: "viva", [c.gB]: "retirada" });
-    assert.ok((marks as any[]).find((mark) => mark.groupId === c.gB).revokedAt instanceof Date);
-    assert.ok(viva.length > 0);
+    assert.ok((marks as any[]).find((mark) => mark.groupId === c.gB).revokedAt instanceof Date, "a marca retirada traz revokedAt");
+    assert.ok(viva.length > 0, "a marca viva foi gravada");
   });
 
   caso("LMK-2: a marca de OUTRA identidade não volta (a pessoa Y, no mesmo pátio, não lê a marca de X)", async () => {
@@ -161,7 +161,7 @@ if (!connectionString) {
     const response = await ctx.call(SCOPE, { token: await p.token(a1.id) });
     assert.equal(response.status, 200);
     assert.deepEqual(response.body.data.organizations.map((org: any) => org.id).sort(), [a1.id, a2.id].sort());
-    assert.ok(!JSON.stringify(response.body).includes(a3.id));
+    assert.ok(!JSON.stringify(response.body).includes(a3.id), "A3 (sem conta) não sai na resposta");
   });
 
   caso("GM-5: a organização ativa saiu do grupo — 403", async () => {
@@ -203,7 +203,7 @@ if (!connectionString) {
     assert.equal(response.status, 200);
     assert.deepEqual(response.body.data.organizations.map((org: any) => org.id), [b1.id]);
     const text = JSON.stringify(response.body);
-    assert.ok(!text.includes(a1.id) && !text.includes(a2.id));
+    assert.ok(!text.includes(a1.id) && !text.includes(a2.id), "A1 e A2 não saem na resposta da ativa B1");
   });
 
   caso("ISO-3: usuário comum com conta e Financeiro em A1 e A2, sem marca — 403 not_group_manager", async () => {
@@ -243,7 +243,7 @@ if (!connectionString) {
     const response = await ctx.call(SUMMARY, { token: await p.token(a1.id) });
     assert.equal(response.status, 200);
     assert.deepEqual(response.body.data.organizations.map((org: any) => org.id), [a1.id]);
-    assert.ok(!JSON.stringify(response.body).includes(a2.id));
+    assert.ok(!JSON.stringify(response.body).includes(a2.id), "A2 (fora do grupo hoje) não sai na resposta");
   });
 
   caso("ISO-6: A2 entra no grupo amanhã (valid_from = amanhã) — A2 não aparece", async () => {
@@ -255,7 +255,7 @@ if (!connectionString) {
     const response = await ctx.call(SUMMARY, { token: await p.token(a1.id) });
     assert.equal(response.status, 200);
     assert.deepEqual(response.body.data.organizations.map((org: any) => org.id), [a1.id]);
-    assert.ok(!JSON.stringify(response.body).includes(a2.id));
+    assert.ok(!JSON.stringify(response.body).includes(a2.id), "A2 (entra amanhã) não sai na resposta");
   });
 
   caso("ISO-7: conta da pessoa em A2 desativada, ou A2 suspensa — A2 não aparece", async () => {
@@ -300,7 +300,7 @@ if (!connectionString) {
     assert.equal(limpo.status, 200);
     assert.equal(forjado.status, 200);
     assert.deepEqual(semHora(forjado.body), semHora(limpo.body));
-    assert.ok(!JSON.stringify(forjado.body).includes(b1.id));
+    assert.ok(!JSON.stringify(forjado.body).includes(b1.id), "B1 não sai na resposta forjada");
   });
 
   caso("ISO-10: gestor marcado sem Financeiro na ativa — 200, com a ativa em sem_permissao; sem marca, 403", async () => {
@@ -336,7 +336,7 @@ if (!connectionString) {
     const response = await ctx.call(SUMMARY, { token: await p.token(a1.id) });
     assert.equal(response.status, 200);
     assert.deepEqual(response.body.data.organizations.map((org: any) => org.id), [a1.id]);
-    assert.ok(!JSON.stringify(response.body).includes(a2.id));
+    assert.ok(!JSON.stringify(response.body).includes(a2.id), "A2 (sem vínculo) não sai na resposta");
   });
 
   caso("ISO-13: canário — o repositório devolve vínculo de outra organização na volta de A2: TenantRowsLeakError, 500, nenhum número", async () => {
@@ -435,11 +435,11 @@ if (!connectionString) {
     const funcionarioB1 = await c.usuarioAvulso(b1.id, `func-b1-${randomUUID()}@example.com`, "operator");
     const scope = await ctx.call(SCOPE, { token: await p.token(a1.id) });
     assert.equal(scope.status, 200);
-    assert.ok(!JSON.stringify(scope.body).includes(b1.id));
+    assert.ok(!JSON.stringify(scope.body).includes(b1.id), "B1 não sai no alcance");
     for (const tenantId of [a1.id, a2.id]) {
       const rows = await ctx.mod.prisma.readGroupPanelStaffRows(ctx.role.client, { tenantId });
       assert.deepEqual(rows.map((row) => row.userId), [p.users.get(tenantId)], `pátio ${tenantId}: só o próprio usuário`);
-      assert.ok(!rows.some((row) => row.userId === funcionarioB1 || row.localKey.startsWith(`${b1.id}:`)));
+      assert.ok(!rows.some((row) => row.userId === funcionarioB1 || row.localKey.startsWith(`${b1.id}:`)), "nenhum funcionário de B1 na leitura do pátio");
       assert.equal(rows[0]!.identityId, p.identity, "a chave interna da pessoa é a identidade (nunca o e-mail)");
     }
     const b1Rows = await ctx.mod.prisma.readGroupPanelStaffRows(ctx.role.client, { tenantId: b1.id });
