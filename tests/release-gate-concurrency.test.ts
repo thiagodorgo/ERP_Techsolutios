@@ -175,8 +175,8 @@ async function bootstrap(connection: string) {
 type SeedOpts = { unsettledRemoval?: boolean; unmetRequirement?: boolean; overAccruedDaily?: boolean };
 
 // Semeia um processo pronto p/ consumar: RELEASE_IN_PROGRESS (frozen) + release AUTHORIZED (recipiente + aprovação).
-// Sem opts, o cenário nasce com livro completo e quitado e o consume pode passar; a corrida aqui testa só o
-// anti-dupla-liberação. Com opts, injeta UMA violação p/ o teste da
+// Sem opts, o cenário semeia uma REMOVAL QUITADA e a base com expectedDailyCount 0 (livro completo e quitado): o consume
+// pode passar, e a corrida aqui testa só o anti-dupla-liberação. Com opts, injeta UMA violação p/ o teste da
 // defesa sob lock (BAIXO-3): unsettledRemoval (débito não-quitado) / unmetRequirement (requisito required aberto) /
 // overAccruedDaily (DAILY QUITADA com líquido≠0 sem estorno → reconciliação por-valor pendente).
 async function seedReadyRelease(client: BootstrapClient, suffix: string, opts: SeedOpts = {}) {

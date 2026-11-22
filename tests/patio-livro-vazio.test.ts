@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 process.env.CORE_SAAS_PERSISTENCE = "memory";
@@ -293,6 +294,15 @@ test("U-1: gate sem estado resolve release_gate_unresolved em start e consume", 
 
 test("U-2: ordem da guarda pura prioriza reconciliação -> diárias faltando -> sem cobrança -> débito", () => {
   const process = { id: randomUUID(), tenantId: randomUUID(), status: "RELEASE_IN_PROGRESS" } as const;
+  const gate = {
+    reconciliationPending: false,
+    chargesMissing: false,
+    noChargesPosted: false,
+    debtsUnsettled: false,
+    requirementUnmet: false,
+    authorityMissing: false,
+    recipientMissing: false,
+  };
   assert.throws(
     () =>
       resolveTransition(process as never, "RELEASED", {
@@ -307,6 +317,27 @@ test("U-2: ordem da guarda pura prioriza reconciliação -> diárias faltando ->
         } as never,
       }),
     (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_missing",
+  );
+  assert.throws(
+    () =>
+      resolveTransition(process as never, "RELEASED", {
+        releaseGate: { ...gate, reconciliationPending: true, chargesMissing: true },
+      }),
+    (error: unknown) => (error as { reason?: string }).reason === "release_reconciliation_pending",
+  );
+  assert.throws(
+    () =>
+      resolveTransition(process as never, "RELEASED", {
+        releaseGate: { ...gate, chargesMissing: true, noChargesPosted: true },
+      }),
+    (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_missing",
+  );
+  assert.throws(
+    () =>
+      resolveTransition(process as never, "RELEASED", {
+        releaseGate: { ...gate, noChargesPosted: true, debtsUnsettled: true },
+      }),
+    (error: unknown) => (error as { reason?: string }).reason === "release_no_charges_posted",
   );
 });
 
@@ -395,4 +426,161 @@ test("U-5: consume falha com release_gate_unresolved quando chargeState retorna 
 
   await release.approve(actor(tenantId), ctx.processId, { authority_reference: "AUT" });
   await expectReason(release.consume(actor(tenantId), ctx.processId), "release_gate_unresolved");
+});
+
+test("U-6: start fora de ACTIVE_CUSTODY recusa pela legalidade antes de fechar diárias (J-624 C1-01)", async () => {
+  const tenantId = await reset();
+  const t0 = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
+  const ctx = await makeActiveProcess(tenantId, t0);
+  await getMemoryImpoundRepositoryForTests().applyTransition({
+    tenantId,
+    processId: ctx.processId,
+    expectedFrom: "ACTIVE_CUSTODY",
+    to: "DIRECT_RECYCLING",
+    setEnteredAt: false,
+    setFrozenAt: true,
+    event: {
+      type: "STATUS_CHANGE",
+      payload: { from: "ACTIVE_CUSTODY", to: "DIRECT_RECYCLING", reason: null },
+      occurredAt: new Date(),
+      actorId: undefined,
+    },
+  });
+  let closeCalls = 0;
+  const release = createMemoryReleaseService() as unknown as {
+    chargeState: () => Promise<{
+      nDueNow: number;
+      nAccrueAtFreeze: number;
+      persistedDailyCount: number;
+      dailyShortfall: number;
+      exigibleCount: number;
+      debtsSettled: boolean;
+      reconciliationConsistent: boolean;
+    }>;
+    closeDailies: () => Promise<{ examined: boolean; accrued: number; errors: number }>;
+    start: (actor: ReleaseActorContext, processId: string, body: Record<string, unknown>) => Promise<unknown>;
+  };
+  release.closeDailies = async () => {
+    closeCalls += 1;
+    return { examined: true, accrued: 0, errors: 0 };
+  };
+  release.chargeState = async () => ({
+    nDueNow: 3,
+    nAccrueAtFreeze: 3,
+    persistedDailyCount: 3,
+    dailyShortfall: 0,
+    exigibleCount: 1,
+    debtsSettled: true,
+    reconciliationConsistent: true,
+  });
+
+  await expectReason(release.start(actor(tenantId), ctx.processId, { recipient_name: "R" }), "invalid_transition");
+  assert.equal(closeCalls, 0, "start recusado pela legalidade não fecha diárias");
+});
+
+test("U-7: consume em estado sem aresta habilitada recusa pela legalidade antes de fechar diárias (J-624 C1-01)", async () => {
+  const tenantId = await reset();
+  const t0 = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
+  const ctx = await makeActiveProcess(tenantId, t0);
+  await getMemoryReleaseRepositoryForTests().startReleaseAtomic({
+    tenantId,
+    processId: ctx.processId,
+    expectedFrom: "ACTIVE_CUSTODY",
+    kind: "STANDARD",
+    requirements: [],
+    recipientName: "R",
+    occurredAt: new Date(),
+    chargeBasis: { expectedDailyCount: 0, enteredAt: t0, frozenAt: null },
+  });
+  await getMemoryImpoundRepositoryForTests().applyTransition({
+    tenantId,
+    processId: ctx.processId,
+    expectedFrom: "RELEASE_IN_PROGRESS",
+    to: "RELEASED_FOR_REPAIR",
+    setEnteredAt: false,
+    setFrozenAt: false,
+    event: {
+      type: "STATUS_CHANGE",
+      payload: { from: "RELEASE_IN_PROGRESS", to: "RELEASED_FOR_REPAIR", reason: null },
+      occurredAt: new Date(),
+      actorId: undefined,
+    },
+  });
+  let closeCalls = 0;
+  const release = createMemoryReleaseService() as unknown as {
+    chargeState: () => Promise<{
+      nDueNow: number;
+      nAccrueAtFreeze: number;
+      persistedDailyCount: number;
+      dailyShortfall: number;
+      exigibleCount: number;
+      debtsSettled: boolean;
+      reconciliationConsistent: boolean;
+    }>;
+    closeDailies: () => Promise<{ examined: boolean; accrued: number; errors: number }>;
+    consume: (actor: ReleaseActorContext, processId: string) => Promise<unknown>;
+  };
+  release.closeDailies = async () => {
+    closeCalls += 1;
+    return { examined: true, accrued: 0, errors: 0 };
+  };
+  release.chargeState = async () => ({
+    nDueNow: 3,
+    nAccrueAtFreeze: 3,
+    persistedDailyCount: 3,
+    dailyShortfall: 0,
+    exigibleCount: 1,
+    debtsSettled: true,
+    reconciliationConsistent: true,
+  });
+
+  await expectReason(release.consume(actor(tenantId), ctx.processId), "transition_not_enabled_yet");
+  assert.equal(closeCalls, 0, "consume recusado pela legalidade não fecha diárias");
+});
+
+test("U-8: start falha com release_gate_unresolved quando chargeState retorna undefined (J-624 C3-02)", async () => {
+  const tenantId = await reset();
+  const t0 = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
+  const ctx = await makeActiveProcess(tenantId, t0);
+  const release = createMemoryReleaseService() as unknown as {
+    chargeState: () => Promise<undefined>;
+    closeDailies: () => Promise<{ examined: boolean; accrued: number; errors: number }>;
+    start: (actor: ReleaseActorContext, processId: string, body: Record<string, unknown>) => Promise<unknown>;
+  };
+  release.closeDailies = async () => ({ examined: true, accrued: 0, errors: 0 });
+  release.chargeState = async () => undefined;
+
+  await expectReason(release.start(actor(tenantId), ctx.processId, { recipient_name: "R" }), "release_gate_unresolved");
+});
+
+test("K-1: o API_CONTRACTS.md §3.12 atribui a cada rota só as razões que ela emite (J-624 C3-01)", () => {
+  const doc = readFileSync(new URL("../API_CONTRACTS.md", import.meta.url), "utf8").replace(/\r/g, "");
+  const from = doc.indexOf("**B-PATIO-LIVRO-VAZIO — reasons de guard da liberação (por rota e camada):**");
+  const to = doc.indexOf("### 3.13", from);
+  assert.ok(from >= 0 && to > from, "bloco do B-PATIO-LIVRO-VAZIO no §3.12");
+  const triples = doc
+    .slice(from, to)
+    .split("\n")
+    .filter((line) => line.startsWith("| `POST /impound-processes/:id/release/"))
+    .map((line) => {
+      const cells = line.split("|").map((cell) => cell.trim());
+      const route = /release\/(start|consume)`/.exec(cells[1])?.[1];
+      const code = /409 ([A-Z_]+)/.exec(cells[3])?.[1];
+      const reason = /^`([a-z_]+)`$/.exec(cells[4])?.[1];
+      return `${route} ${code} ${reason}`;
+    })
+    .sort();
+  assert.deepEqual(triples, [
+    "consume IMPOUND_GUARD_FAILED release_daily_charges_missing",
+    "consume IMPOUND_GUARD_FAILED release_no_charges_posted",
+    "consume RELEASE_CONFLICT concurrent_custody_append",
+    "consume RELEASE_GUARD_FAILED release_daily_charges_missing",
+    "consume RELEASE_GUARD_FAILED release_daily_charges_unpostable",
+    "consume RELEASE_GUARD_FAILED release_gate_unresolved",
+    "consume RELEASE_GUARD_FAILED release_no_charges_posted",
+    "start RELEASE_CONFLICT concurrent_custody_append",
+    "start RELEASE_GUARD_FAILED release_daily_charges_missing",
+    "start RELEASE_GUARD_FAILED release_daily_charges_unpostable",
+    "start RELEASE_GUARD_FAILED release_gate_unresolved",
+  ]);
 });

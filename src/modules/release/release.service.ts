@@ -33,6 +33,18 @@ type RawRecord = Record<string, unknown>;
 export type ReleaseChargeStatePort = (tenantId: string, processId: string, now: Date) => Promise<ReleaseChargeState | undefined>;
 export type ReleaseCloseDailiesPort = (tenantId: string, processId: string, now: Date, actorId?: string) => Promise<AccrueProcessResult>;
 
+// J-624 C1-01: só o portão 1 (legalidade) de resolveTransition, com o portão 2 neutro. Roda ANTES do fechamento
+// das diárias, para que uma chamada recusada pelo estado do processo não escreva no livro.
+const LEGALITY_ONLY_CONSUME_GATE = {
+  reconciliationPending: false,
+  chargesMissing: false,
+  noChargesPosted: false,
+  debtsUnsettled: false,
+  requirementUnmet: false,
+  authorityMissing: false,
+  recipientMissing: false,
+} as const;
+
 export class ReleaseService {
   constructor(
     private readonly repository: ReleaseRepository,
@@ -67,6 +79,7 @@ export class ReleaseService {
     if (alreadyInProgress) {
       throw new ReleaseError(409, "RELEASE_CONFLICT", "release_already_in_progress", "A release is already in progress for this process.");
     }
+    resolveTransition(process, "RELEASE_IN_PROGRESS", { releaseStart: { alreadyInProgress, freezeRetroactive: false } });
     const startClosing = await this.closeDailies(actor.tenantId, normalizedId, occurredAt, actor.userId);
     if (startClosing.errors > 0) {
       throw new ReleaseError(
@@ -163,6 +176,7 @@ export class ReleaseService {
     if (!view) {
       throw new ReleaseError(404, "RELEASE_NOT_FOUND", "release_not_found", "No release in progress for this process.");
     }
+    resolveTransition(process, "RELEASED", { releaseGate: LEGALITY_ONLY_CONSUME_GATE });
     const consumeClosing = await this.closeDailies(actor.tenantId, normalizedId, occurredAt, actor.userId);
     if (consumeClosing.errors > 0) {
       throw new ReleaseError(

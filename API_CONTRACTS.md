@@ -1110,9 +1110,21 @@ o estado atual não permite o salto.
 
 **B-PATIO-LIVRO-VAZIO — reasons de guard da liberação (por rota e camada):**
 
-- `POST /impound-processes/:id/release/start` e `POST /impound-processes/:id/release/consume` na camada de transição (`src/modules/impound/impound.transitions.ts`): `409 IMPOUND_GUARD_FAILED` com `release_daily_charges_missing` e `release_no_charges_posted` quando o gate puro detecta diárias faltando ou ausência de cobranças no livro.
-- `POST /impound-processes/:id/release/start` e `POST /impound-processes/:id/release/consume` no repositório sob trava (`src/modules/release/release-prisma.repository.ts`): `409 RELEASE_GUARD_FAILED` com `release_daily_charges_missing` e `release_no_charges_posted` quando a verificação atômica detecta os mesmos cenários no ledger persistido.
-- `POST /impound-processes/:id/release/start` e `POST /impound-processes/:id/release/consume` no serviço de fechamento de diárias (`src/modules/release/release.service.ts`): `409 RELEASE_GUARD_FAILED` com `release_daily_charges_unpostable` quando as diárias devidas não podem ser lançadas (serviço/tarifa ausente).
+Só as razões que este bloco criou ou cuja causa mudou; as demais razões das duas rotas seguem como antes. A legalidade do estado (`409 IMPOUND_TRANSITION_INVALID` `invalid_transition` e `409 IMPOUND_TRANSITION_DEFERRED` `transition_not_enabled_yet`) é conferida antes do fechamento das diárias: uma chamada recusada pelo estado não lança diária.
+
+| Rota | Camada | Resposta | Razão | Quando |
+|---|---|---|---|---|
+| `POST /impound-processes/:id/release/start` | serviço (`release.service.ts`) | `409 RELEASE_GUARD_FAILED` | `release_daily_charges_unpostable` | o motor não conseguiu lançar as diárias devidas (sem serviço de diária ou sem tarifa vigente); nada é congelado |
+| `POST /impound-processes/:id/release/start` | serviço (`release.service.ts`) | `409 RELEASE_GUARD_FAILED` | `release_gate_unresolved` | o estado de cobrança do processo não pôde ser lido |
+| `POST /impound-processes/:id/release/start` | sob a trava (`release-prisma.repository.ts`) | `409 RELEASE_GUARD_FAILED` | `release_daily_charges_missing` | no início da liberação, faltam no livro diárias devidas até o congelamento (corrida); nada é congelado |
+| `POST /impound-processes/:id/release/start` | sob a trava (`release-prisma.repository.ts`) | `409 RELEASE_CONFLICT` | `concurrent_custody_append` | o estado, a entrada ou o congelamento do processo mudaram entre a leitura e a trava; tente de novo |
+| `POST /impound-processes/:id/release/consume` | serviço (`release.service.ts`) | `409 RELEASE_GUARD_FAILED` | `release_daily_charges_unpostable` | o motor não conseguiu lançar as diárias devidas até o congelamento (processo antigo sem serviço de diária ou sem tarifa) |
+| `POST /impound-processes/:id/release/consume` | serviço (`release.service.ts`) | `409 RELEASE_GUARD_FAILED` | `release_gate_unresolved` | o estado de cobrança do processo não pôde ser lido |
+| `POST /impound-processes/:id/release/consume` | transição (`impound.transitions.ts`) | `409 IMPOUND_GUARD_FAILED` | `release_daily_charges_missing` | o livro tem menos diárias que as devidas até o congelamento |
+| `POST /impound-processes/:id/release/consume` | transição (`impound.transitions.ts`) | `409 IMPOUND_GUARD_FAILED` | `release_no_charges_posted` | não há nenhuma cobrança exigível lançada (a isenção registrada é de outro bloco) |
+| `POST /impound-processes/:id/release/consume` | sob a trava (`release-prisma.repository.ts`) | `409 RELEASE_GUARD_FAILED` | `release_daily_charges_missing` | a recontagem sob a trava acha menos diárias que as devidas |
+| `POST /impound-processes/:id/release/consume` | sob a trava (`release-prisma.repository.ts`) | `409 RELEASE_GUARD_FAILED` | `release_no_charges_posted` | a recontagem sob a trava não acha cobrança exigível |
+| `POST /impound-processes/:id/release/consume` | sob a trava (`release-prisma.repository.ts`) | `409 RELEASE_CONFLICT` | `concurrent_custody_append` | o processo não está congelado, ou o estado, a entrada ou o congelamento diferem da leitura; tente de novo |
 
 ### 3.13 Telemetria
 

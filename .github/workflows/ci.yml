@@ -338,6 +338,7 @@ jobs:
           SUITES="$SUITES tests/b-o6r-09-harness-ddl-db.test.ts"
           SUITES="$SUITES tests/b-o6r-12-regime-snapshot-db.test.ts"
           SUITES="$SUITES tests/b-o6r-12-regime-migration-drill-db.test.ts"
+          # B-PATIO-LIVRO-VAZIO (PR #624): a suíte -db do bloco. Medida 3× nesta forma antes de entrar (2026-11-22 SP): 19 casos, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/patio-livro-vazio-db.test.ts"
           # B-MATERIAL-REENVIO (item 63 do portão; R-C21-01, autorizado pelo dono como no 15a) — a suíte `-db` do material da
           # OS: baixa durável por origem depois de reinício e sob corrida com payloads diferentes, organização separada, estorno

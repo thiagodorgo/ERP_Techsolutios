@@ -188,6 +188,26 @@ if (!connectionString) {
     return rows[0]?.frozen_at ?? null;
   }
 
+  async function processStatus(tenantId: string, processId: string): Promise<string | undefined> {
+    const rows = await withTenantRls(client, tenantId, (tx) =>
+      tx.$queryRaw<Array<{ status: string }>>`
+        SELECT status FROM impound_processes WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
+      `,
+    );
+    return rows[0]?.status;
+  }
+
+  async function completedReleaseCount(tenantId: string, processId: string): Promise<number> {
+    const rows = await withTenantRls(client, tenantId, (tx) =>
+      tx.$queryRaw<Array<{ n: number }>>`
+        SELECT count(*)::int AS n
+        FROM impound_releases
+        WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid AND status = 'COMPLETED'
+      `,
+    );
+    return rows[0]?.n ?? 0;
+  }
+
   async function assertChainValid(tenantId: string, processId: string): Promise<void> {
     const headRows = await withTenantRls(client, tenantId, (tx) =>
       tx.$queryRaw<Array<{ custody_seq_head: number; custody_hash_head: string | null }>>`
@@ -293,6 +313,10 @@ if (!connectionString) {
         () => release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" }),
         (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_unpostable",
       );
+      assert.equal(await processStatus(ctx.tenantId, ctx.processId), "ACTIVE_CUSTODY");
+      assert.equal(await latestFrozenAt(ctx.tenantId, ctx.processId), null);
+      assert.equal(await releaseCount(ctx.tenantId, ctx.processId), 0);
+      assert.equal(await countCharges(ctx.tenantId, ctx.processId), 0);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -324,7 +348,7 @@ if (!connectionString) {
 
   test("A3: legado congelado e livro vazio com tarifa -> consume recusa debts_unsettled", async () => {
     const frozenAt = new Date(Date.now() - 2 * MS_PER_DAY);
-    const enteredAt = new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000));
+    const enteredAt = new Date(Date.now() - (5 * MS_PER_DAY + 2 * 3_600_000));
     const ctx = await seedReleaseInProgress(`A3-${Date.now()}`, enteredAt, frozenAt);
     const release = await createDefaultReleaseService();
     try {
@@ -333,6 +357,17 @@ if (!connectionString) {
         () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_debts_unsettled",
       );
+      assert.equal(await countCharges(ctx.tenantId, ctx.processId, "DAILY"), 3);
+      const unsettledDailies = await withTenantRls(client, ctx.tenantId, (tx) =>
+        tx.$queryRaw<Array<{ n: number }>>`
+          SELECT count(*)::int AS n
+          FROM process_charges
+          WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid
+            AND kind = 'DAILY' AND settled_at IS NULL
+        `,
+      );
+      assert.equal(unsettledDailies[0]?.n ?? 0, 3);
+      assert.equal(await processStatus(ctx.tenantId, ctx.processId), "RELEASE_IN_PROGRESS");
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -348,6 +383,8 @@ if (!connectionString) {
         () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_unpostable",
       );
+      assert.equal(await processStatus(ctx.tenantId, ctx.processId), "RELEASE_IN_PROGRESS");
+      assert.equal(await countCharges(ctx.tenantId, ctx.processId), 0);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -365,6 +402,7 @@ if (!connectionString) {
         () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_debts_unsettled",
       );
+      assert.equal(await processStatus(ctx.tenantId, ctx.processId), "RELEASE_IN_PROGRESS");
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -590,8 +628,50 @@ if (!connectionString) {
     }
   });
 
-  test("DB-4b: consume com base divergente -> concurrent_custody_append", async () => {
+  test("DB-4b: consume com só o frozenAt divergente -> concurrent_custody_append", async () => {
     const ctx = await seedReleaseInProgress(`db4b-${Date.now()}`, new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000)), new Date());
+    try {
+      await withTenantRls(client, ctx.tenantId, async (tx) => {
+        await tx.$queryRaw`
+          INSERT INTO process_charges (tenant_id, process_id, kind, quantity, unit_amount, total_amount, settled_at)
+          VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'REMOVAL', 1, 150.00, 150.00, now())
+        `;
+        for (let seq = 1; seq <= 3; seq += 1) {
+          await tx.$queryRaw`
+            INSERT INTO process_charges (tenant_id, process_id, kind, period_seq, ref_date, quantity, unit_amount, total_amount, settled_at)
+            VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'DAILY', ${seq}, CURRENT_DATE, 1, 40.00, 40.00, now())
+          `;
+        }
+      });
+      await assert.rejects(
+        () =>
+          releaseRepo.consumeReleaseAtomic({
+            tenantId: ctx.tenantId,
+            processId: ctx.processId,
+            releaseId: ctx.releaseId!,
+            expectedFrom: "RELEASE_IN_PROGRESS",
+            settledTotal: "270.00",
+            overAccruedDailyIds: [],
+            eventPayload: { ...payload, releaseId: ctx.releaseId! },
+            actorId: undefined,
+            occurredAt: new Date(),
+            chargeBasis: {
+              expectedDailyCount: 3,
+              enteredAt: ctx.enteredAt,
+              frozenAt: new Date(ctx.frozenAt!.getTime() - MS_PER_DAY),
+            },
+          } as never),
+        (error: unknown) => (error as { reason?: string }).reason === "concurrent_custody_append",
+      );
+      assert.equal(await processStatus(ctx.tenantId, ctx.processId), "RELEASE_IN_PROGRESS");
+      assert.equal(await completedReleaseCount(ctx.tenantId, ctx.processId), 0);
+    } finally {
+      await teardownTenant(ctx.tenantId);
+    }
+  });
+
+  test("DB-4c: consume com só o enteredAt divergente -> concurrent_custody_append", async () => {
+    const ctx = await seedReleaseInProgress(`db4c-${Date.now()}`, new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000)), new Date());
     try {
       await withTenantRls(client, ctx.tenantId, async (tx) => {
         await tx.$queryRaw`
@@ -625,6 +705,8 @@ if (!connectionString) {
           } as never),
         (error: unknown) => (error as { reason?: string }).reason === "concurrent_custody_append",
       );
+      assert.equal(await processStatus(ctx.tenantId, ctx.processId), "RELEASE_IN_PROGRESS");
+      assert.equal(await completedReleaseCount(ctx.tenantId, ctx.processId), 0);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
@@ -637,10 +719,13 @@ if (!connectionString) {
       const ctx = await seedActiveCustody(`f1-${Date.now()}-${round}`, new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000)));
       try {
         await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
-        await Promise.allSettled([
+        const [startOutcome] = await Promise.allSettled([
           release.start(actor(ctx.tenantId, ctx.userId), ctx.processId, { recipient_name: "R" }),
           charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), undefined),
         ]);
+        assert.equal(startOutcome.status, "fulfilled", "F1: o start passa na corrida");
+        assert.notEqual(await latestFrozenAt(ctx.tenantId, ctx.processId), null, "F1: o start congela");
+        assert.equal(await processStatus(ctx.tenantId, ctx.processId), "RELEASE_IN_PROGRESS");
         const rows = await withTenantRls(client, ctx.tenantId, (tx) =>
           tx.$queryRaw<Array<{ period_seq: number }>>`
             SELECT period_seq FROM process_charges
@@ -657,19 +742,22 @@ if (!connectionString) {
     }
   });
 
-  test("F2: diária sobre-acumulada sem estorno integral mantém release_reconciliation_pending", async () => {
+  test("F2: diária acumulada a mais -> release_reconciliation_pending até o settle; depois libera pelo devido", async () => {
     const ctx = await seedReleaseInProgress(`f2-${Date.now()}`, new Date(Date.now() - (MS_PER_DAY + 2 * 3_600_000)), new Date());
     const release = await createDefaultReleaseService();
+    const charge = await createDefaultChargeService();
     try {
       await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
       await withTenantRls(client, ctx.tenantId, async (tx) => {
-        const [overAccruedDaily] = await tx.$queryRaw<Array<{ id: string }>>`
+        const dailies = await tx.$queryRaw<Array<{ id: string; period_seq: number }>>`
           INSERT INTO process_charges (tenant_id, process_id, kind, period_seq, ref_date, quantity, unit_amount, total_amount, settled_at)
           VALUES
             (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'DAILY', 1, CURRENT_DATE, 1, 40.00, 40.00, now()),
-            (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'DAILY', 2, CURRENT_DATE, 1, 40.00, 40.00, now())
-          RETURNING id
+            (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'DAILY', 2, CURRENT_DATE, 1, 40.00, 40.00, NULL)
+          RETURNING id, period_seq
         `;
+        const overAccruedDaily = dailies.find((daily) => daily.period_seq === 2);
+        assert.ok(overAccruedDaily, "F2: a diária acumulada a mais é a seq 2");
         await tx.$queryRaw`
           INSERT INTO process_charges (tenant_id, process_id, kind, quantity, unit_amount, total_amount, adjustment_of_charge_id)
           VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'ADJUSTMENT', 1, 20.00, -20.00, ${overAccruedDaily.id}::uuid)
@@ -679,6 +767,12 @@ if (!connectionString) {
         () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
         (error: unknown) => (error as { reason?: string }).reason === "release_reconciliation_pending",
       );
+      await charge.settle(actor(ctx.tenantId, ctx.userId), ctx.processId, {});
+      const view = await release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId);
+      assert.equal(view.release.status, "COMPLETED");
+      assert.equal(view.release.settledTotal, "40.00");
+      await assertChainValid(ctx.tenantId, ctx.processId);
+      await assertReleaseSettledTotalMatchesEvent(ctx.tenantId, ctx.processId);
     } finally {
       await teardownTenant(ctx.tenantId);
     }
