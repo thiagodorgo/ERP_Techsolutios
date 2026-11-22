@@ -1091,11 +1091,11 @@ o estado atual não permite o salto.
 | GET/POST | `/impound-processes/:id/release` (+ `/start`, `/consume`, `/recipient`, `/checks`, `/approve`, `/for-repair/start`, `/for-repair/return`) | `impound:read`/`transition`, `release:process`/`approve` | Liberação do veículo (I5). |
 | GET/POST | `/impound-processes/:id/auction` (+ `/eligibility`, `/attempts`, `/edicts`, `/appraisal`, `/lot`, `/sale`, `/settlement`, …) | `impound:read`/`transition`, `auction:appraise` | Funil de leilão / elegibilidade (2-strikes, I8) e liquidação em cascata. |
 
-**B-PATIO-LIVRO-VAZIO — reasons de guard da liberação (`409 IMPOUND_GUARD_FAILED`):**
+**B-PATIO-LIVRO-VAZIO — reasons de guard da liberação (por rota e camada):**
 
-- `release_daily_charges_unpostable`: vale no `start` e no `consume` quando as diárias devidas não podem ser lançadas (serviço/tarifa ausente).
-- `release_daily_charges_missing`: vale no `start` e no `consume` quando há diárias devidas ainda não lançadas no livro.
-- `release_no_charges_posted`: vale no `start` e no `consume` quando o livro não tem nenhuma cobrança lançada para o processo.
+- `POST /impound-processes/:id/release/start` e `POST /impound-processes/:id/release/consume` na camada de transição (`src/modules/impound/impound.transitions.ts`): `409 IMPOUND_GUARD_FAILED` com `release_daily_charges_missing` e `release_no_charges_posted` quando o gate puro detecta diárias faltando ou ausência de cobranças no livro.
+- `POST /impound-processes/:id/release/start` e `POST /impound-processes/:id/release/consume` no repositório sob trava (`src/modules/release/release-prisma.repository.ts`): `409 RELEASE_GUARD_FAILED` com `release_daily_charges_missing` e `release_no_charges_posted` quando a verificação atômica detecta os mesmos cenários no ledger persistido.
+- `POST /impound-processes/:id/release/start` e `POST /impound-processes/:id/release/consume` no serviço de fechamento de diárias (`src/modules/release/release.service.ts`): `409 RELEASE_GUARD_FAILED` com `release_daily_charges_unpostable` quando as diárias devidas não podem ser lançadas (serviço/tarifa ausente).
 
 ### 3.13 Telemetria
 
