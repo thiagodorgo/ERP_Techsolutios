@@ -452,7 +452,8 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
   // B-GRUPO-GESTOR-1b — Painel do grupo (`/group`), só de leitura. A porta REAL é a marca de gestor do grupo, conferida
   // no servidor pelo `/group-panel/*` (403 `not_group_manager` sem ela); aqui o item usa o mesmo gate do `PermissionGuard`
   // da rota no App.tsx (`financial_entries:read`) e o módulo da classe do Painel em `route-modules.ts` (`finance`). SEM
-  // permissão nova. O registro não expressa "2 ou mais pátios no /scope" (H2 da F0 caiu): o esconde fino fica para emenda.
+  // permissão nova. O registro não expressa "2 ou mais pátios no /scope" (H2 da F0 caiu): essa condição fica no front, em
+  // `groupPanelNavVisible` (frontend/src/layouts/appSidebarNav.ts), com a leitura guardada no AppShell (Emenda 1b §2.3).
   {
     id: "group.panel",
     label: "Painel do grupo",

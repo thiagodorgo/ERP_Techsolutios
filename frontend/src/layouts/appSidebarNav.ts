@@ -27,6 +27,7 @@ import {
   LogIn,
   MapPin,
   MonitorSmartphone,
+  Network,
   Package,
   Receipt,
   Route,
@@ -58,6 +59,10 @@ export type RoleKind = "finance" | "dispatcher" | "admin" | "gestor" | "support"
 
 // ── Itens canônicos (rótulo → rota) — F11 sidebar-ia.md (IA aprovada) ──
 const DASHBOARD: NavItem = { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard };
+// B-GRUPO-GESTOR-1b (Emenda 1b §2.3) — Painel do grupo. O item só aparece com 2 ou mais pátios no `GET /group-panel/scope`
+// (ver `groupPanelNavVisible`); a porta real é o servidor (403 `not_group_manager`) e o `PermissionGuard` da rota.
+export const GROUP_PANEL_PATH = "/group";
+const PAINEL_GRUPO: NavItem = { label: "Painel do grupo", path: GROUP_PANEL_PATH, icon: Network };
 
 const OS: NavItem = { label: "Ordens de Serviço", path: "/work-orders", icon: ClipboardList };
 const DESPACHOS: NavItem = { label: "Despachos", path: "/operations/dispatches", icon: Send };
@@ -141,6 +146,8 @@ const TABELA_VALORES_PATIO: NavItem = { label: "Tabela de Valores", path: "/pati
 const PAINEL_PATIOS: NavItem = { label: "Painel", path: "/patios/painel", icon: LayoutPanelTop };
 
 const G_VISAO_GERAL: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD] };
+// Só nos perfis de menu que têm o Financeiro (admin, gestor, finance): o Painel é uma visão do grupo (Emenda 1b §2.3 item 1).
+const G_VISAO_GERAL_GRUPO: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD, PAINEL_GRUPO] };
 
 // Grupos completos (gestor/admin) — os demais papéis recebem subconjuntos.
 const G_OPERACAO_FULL: NavGroup = { label: "OPERAÇÃO", items: [OS, DESPACHOS, MAPA, ORCAMENTOS, APROVACOES, CHECKLISTS] };
@@ -179,9 +186,9 @@ const G_PATIOS: NavGroup = { label: "PÁTIOS", items: [PAINEL_PATIOS, PATIOS, PR
 // esta camada apenas molda o menu visível.
 export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
   // tenant_admin — menu completo.
-  admin: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_PATIOS, G_TELEMETRIA, G_ADMIN_FULL],
+  admin: [G_VISAO_GERAL_GRUPO, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_PATIOS, G_TELEMETRIA, G_ADMIN_FULL],
   // manager (+ fallback: platform_admin/auditor operam com leitura ampla).
-  gestor: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_PATIOS, G_TELEMETRIA, G_ADMIN_FULL],
+  gestor: [G_VISAO_GERAL_GRUPO, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_PATIOS, G_TELEMETRIA, G_ADMIN_FULL],
   // operator / field_technician / field_dispatcher — operação + frota + cadastros (sem administração).
   // TELEMETRIA para o field_dispatcher (tem telemetry:read); field_technician cai no 403 do backend.
   // PÁTIOS: papéis de campo têm yard/jurisdiction/price_tables:read → veem a leitura; ações gated na tela.
@@ -196,7 +203,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
   ],
   // finance — recupera o grupo (multas/seguros/remunerações/financeiro/relatórios/aprovações).
   finance: [
-    G_VISAO_GERAL,
+    G_VISAO_GERAL_GRUPO,
     // Ω3-a — finance tem service_quotes:read/create/update (matriz RBAC): vê "Orçamentos" (veto V2).
     // B-SAN3-04a (P1/P2 + item 15 — D-SAN3-PLANO-OPCAO-B): o Financeiro lê OS (work_orders:read), Clientes e Serviços
     // (customers:read / service_catalog:read — monta orçamento) e Checklists (checklist_runs:read / tenant_checklists:read).
@@ -236,6 +243,7 @@ export const ROLE_SUBTITLE: Record<RoleKind, string> = {
 // renderizam. B-SAN3-06a: Pedidos e Relatórios saíram (sem tela real).
 export const MVP_NAV_PATHS = new Set<string>([
   "/dashboard",
+  "/group",
   "/work-orders",
   "/operations/dispatches",
   "/operations/map",
@@ -302,16 +310,28 @@ export function roleKindFor(roles: readonly string[]): RoleKind {
   return "gestor";
 }
 
+/**
+ * B-GRUPO-GESTOR-1b (Emenda 1b §2.3) — o item Painel do grupo só aparece quando o `GET /group-panel/scope` respondeu com
+ * sucesso e 2 ou mais pátios. `null` (sem resposta ainda, erro, 403, resposta inválida) esconde: fail-closed.
+ */
+export function groupPanelNavVisible(organizationsInScope: number | null): boolean {
+  return organizationsInScope !== null && organizationsInScope >= 2;
+}
+
 // Monta a navegação visível (grupos não vazios) para um conjunto de papéis,
 // aplicando a allowlist MVP e escondendo itens marcados "planned" no menu backend.
+// `groupPanelOrganizations` é o número de pátios do `/group-panel/scope` (o AppShell guarda a leitura); ausente = escondido,
+// por isso a paleta de comandos, que não recebe o número, nunca mostra o Painel do grupo.
 export function buildSidebarNav(
   roles: readonly string[],
   plannedPaths: ReadonlySet<string> = new Set<string>(),
+  groupPanelOrganizations: number | null = null,
 ): NavGroup[] {
+  const hidden = groupPanelNavVisible(groupPanelOrganizations) ? plannedPaths : new Set([...plannedPaths, GROUP_PANEL_PATH]);
   return NAV_BY_ROLE[roleKindFor(roles)]
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => MVP_NAV_PATHS.has(item.path) && !plannedPaths.has(item.path)),
+      items: group.items.filter((item) => MVP_NAV_PATHS.has(item.path) && !hidden.has(item.path)),
     }))
     .filter((group) => group.items.length > 0);
 }
