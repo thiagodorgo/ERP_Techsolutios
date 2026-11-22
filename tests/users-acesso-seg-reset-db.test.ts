@@ -23,7 +23,7 @@ import {
 // NOBYPASSRLS (atributos conferidos no S1·0):
 //   S1·a — identidade em 2 organizações → 409 `identity_linked_elsewhere`, mensagem fixa, nada muda;
 //   S1·b — identidade só na organização do admin → 200 `{user_id, temporary_password,
-//          must_change_password: true, revoked_sessions}`; a provisória entra, a antiga não; as sessões
+//          must_change_password: true, revoked_sessions, affected_patios: 1}`; a provisória entra, a antiga não; as sessões
 //          do alvo caem; auditoria `user.password_reset` sem a provisória, sem hash, sem outra organização;
 //   S1·c — os códigos fixados (400 ×2, 401, 403, 404 ×2, 409 `cannot_reset_self`, 409 `user_inactive`);
 //   S1·d — a outra organização SUSPENSA ainda conta (falha fechada) → 409, nada muda;
@@ -341,9 +341,17 @@ if (!connectionString) {
       temporary_password: string;
       must_change_password: boolean;
       revoked_sessions: number;
+      affected_patios: number;
     };
 
-    assert.deepEqual(Object.keys(data).sort(), ["must_change_password", "revoked_sessions", "temporary_password", "user_id"]);
+    assert.deepEqual(Object.keys(data).sort(), [
+      "affected_patios",
+      "must_change_password",
+      "revoked_sessions",
+      "temporary_password",
+      "user_id",
+    ]);
+    assert.equal(data.affected_patios, 1, "a identidade está só nesta organização");
     assert.equal(data.user_id, home.userId);
     assert.equal(data.must_change_password, true);
     assert.equal(data.revoked_sessions, 1, "a sessão viva do alvo caiu");
