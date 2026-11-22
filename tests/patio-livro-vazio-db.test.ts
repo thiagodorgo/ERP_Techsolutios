@@ -188,6 +188,38 @@ if (!connectionString) {
     return rows[0]?.frozen_at ?? null;
   }
 
+  async function assertChainValid(tenantId: string, processId: string): Promise<void> {
+    const headRows = await withTenantRls(client, tenantId, (tx) =>
+      tx.$queryRaw<Array<{ custody_seq_head: number; custody_hash_head: string | null }>>`
+        SELECT custody_seq_head, custody_hash_head
+        FROM impound_processes
+        WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
+      `,
+    );
+    const eventRows = await withTenantRls(client, tenantId, (tx) =>
+      tx.$queryRaw<Array<{ seq: number; type: string; payload: unknown; occurred_at: Date; actor_id: string | null; prev_hash: string; hash: string }>>`
+        SELECT seq, type, payload, occurred_at, actor_id, prev_hash, hash
+        FROM custody_events
+        WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid
+        ORDER BY seq ASC
+      `,
+    );
+    const head = headRows[0];
+    assert.ok(head, "head da cadeia deve existir");
+    assert.ok(eventRows.length > 0, "cadeia deve ter eventos");
+    for (let index = 0; index < eventRows.length; index += 1) {
+      const event = eventRows[index];
+      assert.equal(event.seq, index + 1, "cadeia com seq contínuo");
+      if (index > 0) {
+        const prev = eventRows[index - 1];
+        assert.equal(event.prev_hash, prev.hash, "cadeia com elo íntegro");
+      }
+    }
+    const tip = eventRows[eventRows.length - 1];
+    assert.equal(head.custody_seq_head, tip.seq, "head.seq igual ao último evento");
+    assert.equal(head.custody_hash_head, tip.hash, "head.hash igual ao último evento");
+  }
+
   async function teardownTenant(tenantId: string): Promise<void> {
     await client.$transaction(async (tx) => {
       await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
@@ -551,31 +583,36 @@ if (!connectionString) {
           `,
         );
         const uniq = new Set(rows.map((row) => row.period_seq));
+        assert.equal(rows.length, 3, "F1: D=3 diárias no livro");
         assert.equal(rows.length, uniq.size);
+        await assertChainValid(ctx.tenantId, ctx.processId);
       } finally {
         await teardownTenant(ctx.tenantId);
       }
     }
   });
 
-  test("F2: diária lançada com asOf depois do frozen_at mantém release_daily_charges_missing", async () => {
-    const ctx = await seedReleaseInProgress(`f2-${Date.now()}`, new Date(Date.now() - (5 * MS_PER_DAY + 2 * 3_600_000)), new Date(Date.now() - 2 * MS_PER_DAY));
+  test("F2: diária sobre-acumulada sem estorno integral mantém release_reconciliation_pending", async () => {
+    const ctx = await seedReleaseInProgress(`f2-${Date.now()}`, new Date(Date.now() - (MS_PER_DAY + 2 * 3_600_000)), new Date());
     const release = await createDefaultReleaseService();
     try {
+      await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
       await withTenantRls(client, ctx.tenantId, async (tx) => {
-        const [daily] = await tx.$queryRaw<Array<{ id: string }>>`
+        const [overAccruedDaily] = await tx.$queryRaw<Array<{ id: string }>>`
           INSERT INTO process_charges (tenant_id, process_id, kind, period_seq, ref_date, quantity, unit_amount, total_amount, settled_at)
-          VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'DAILY', 99, CURRENT_DATE, 1, 40.00, 40.00, now())
+          VALUES
+            (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'DAILY', 1, CURRENT_DATE, 1, 40.00, 40.00, now()),
+            (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'DAILY', 2, CURRENT_DATE, 1, 40.00, 40.00, now())
           RETURNING id
         `;
         await tx.$queryRaw`
           INSERT INTO process_charges (tenant_id, process_id, kind, quantity, unit_amount, total_amount, adjustment_of_charge_id)
-          VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'ADJUSTMENT', 1, 20.00, -20.00, ${daily.id}::uuid)
+          VALUES (${ctx.tenantId}::uuid, ${ctx.processId}::uuid, 'ADJUSTMENT', 1, 20.00, -20.00, ${overAccruedDaily.id}::uuid)
         `;
       });
       await assert.rejects(
         () => release.consume(actor(ctx.tenantId, ctx.userId), ctx.processId),
-        (error: unknown) => (error as { reason?: string }).reason === "release_daily_charges_missing",
+        (error: unknown) => (error as { reason?: string }).reason === "release_reconciliation_pending",
       );
     } finally {
       await teardownTenant(ctx.tenantId);
@@ -587,6 +624,7 @@ if (!connectionString) {
     for (let round = 0; round < 6; round += 1) {
       const ctx = await seedReleaseInProgress(`f3-${Date.now()}-${round}`, new Date(Date.now() - (3 * MS_PER_DAY + 2 * 3_600_000)), new Date());
       try {
+        await seedDailyPricing(ctx.tenantId, ctx.profileId, "40.00");
         await withTenantRls(client, ctx.tenantId, async (tx) => {
           await tx.$queryRaw`
             INSERT INTO process_charges (tenant_id, process_id, kind, quantity, unit_amount, total_amount, settled_at)
