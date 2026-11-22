@@ -50,7 +50,7 @@ if (!connectionString) {
       stdio: "pipe",
     });
 
-    const [{ createPrismaClient }, { createApp }, { PrismaCoreSaasService }, { PrismaCoreSaasStore }, { hashPassword }] =
+    const [{ createPrismaClient }, { createApp }, { PrismaCoreSaasService }, { PrismaCoreSaasStore, USER_CREATION_BUDGET }, { hashPassword }] =
       await Promise.all([
         import("../src/database/pg-connection.js"),
         import("../src/app.js"),
@@ -672,10 +672,23 @@ if (!connectionString) {
           const B = await patio(via === "criação" ? "PZCC2" : "PZCG2");
           await group([{ tenantId: A.tenantId }, { tenantId: B.tenantId }]);
           const tech = await technician(A, emailOf(via === "criação" ? "pzcc" : "pzcg"));
-          const response = await segurarAteResponder(
-            (tx) => tx.$executeRawUnsafe("LOCK TABLE auth_identity_links IN ACCESS EXCLUSIVE MODE"),
-            () => (via === "criação" ? createUser(B, tech.email) : grant(B, tech.email)),
-          );
+          // A trava é de TABELA, e o banco é o mesmo das outras suítes que rodam em paralelo (`npm test`, a lista do
+          // `backend-postgres`): se ela durasse o prazo do produto (2 s), toda criação ou concessão ao lado que chegasse
+          // nessa janela também estouraria o prazo dela e responderia 503 (o K1, o K4 e o GO2 da run 45012235702). O prazo
+          // de trava do pedido-alvo encolhe só neste processo e só durante o caso; a regra medida é a mesma (o prazo esgota
+          // DENTRO da volta, e a resposta é 503), e a trava dura o mínimo.
+          const orcamento = USER_CREATION_BUDGET as { lockTimeoutMs: number };
+          const prazoDoProduto = orcamento.lockTimeoutMs;
+          let response: Awaited<ReturnType<typeof grant>>;
+          orcamento.lockTimeoutMs = 250;
+          try {
+            response = await segurarAteResponder(
+              (tx) => tx.$executeRawUnsafe("LOCK TABLE auth_identity_links IN ACCESS EXCLUSIVE MODE"),
+              () => (via === "criação" ? createUser(B, tech.email) : grant(B, tech.email)),
+            );
+          } finally {
+            orcamento.lockTimeoutMs = prazoDoProduto;
+          }
           assert.equal(response.status, 503, `GT-PRAZO-C (${via}): responde 503`);
           assert.equal(errorOf(response).reason, "creation_unavailable", `GT-PRAZO-C (${via}): o motivo é o prazo`);
           assert.deepEqual(await nadaCriado(B.tenantId, tech.email), { users: 0, creds: 0, links: 0, em_curso: 0 }, `GT-PRAZO-C (${via}): nada nasce no pátio`);
