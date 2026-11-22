@@ -195,6 +195,37 @@ test("E: teto de 30 diárias -> start lança exatamente 30", async () => {
   assert.equal(dailies.length, 30);
 });
 
+test("G: congelado há 2 dias com livro completo e quitado -> consume libera", async () => {
+  const tenantId = await reset();
+  const t0 = new Date(Date.now() - (5 * MS_PER_DAY + 2 * 3_600_000));
+  const ctx = await makeActiveProcess(tenantId, t0);
+  const who = actor(tenantId);
+  const release = createMemoryReleaseService();
+  const releaseRepo = getMemoryReleaseRepositoryForTests();
+  const charge = createMemoryChargeService();
+  createChargeServiceWithResolver(fixedResolver(40));
+  await addRemoval(tenantId, ctx.processId, "150.00");
+
+  const frozenAt = new Date(Date.now() - (2 * MS_PER_DAY + 30 * 60 * 1000));
+  await releaseRepo.startReleaseAtomic({
+    tenantId,
+    processId: ctx.processId,
+    expectedFrom: "ACTIVE_CUSTODY",
+    kind: "STANDARD",
+    requirements: [],
+    recipientName: "R",
+    actorId: who.userId,
+    occurredAt: frozenAt,
+  } as never);
+  await charge.accrueProcess(tenantId, ctx.processId, new Date(), who.userId);
+  await charge.settle(who, ctx.processId, {});
+  await release.approve(who, ctx.processId, { authority_reference: "AUT-1" });
+
+  const consumed = await release.consume(who, ctx.processId);
+  assert.equal(consumed.release.status, "COMPLETED");
+  assert.equal(consumed.release.settledTotal, "270.00");
+});
+
 test("U-1: gate sem estado resolve release_gate_unresolved em start e consume", async () => {
   const process = {
     id: randomUUID(),
