@@ -23,7 +23,7 @@ class FinanceSectionSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: ErpMobileTheme.surface,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: SegmentedButton<FinanceSection>(
         segments: const [
@@ -48,7 +48,7 @@ class FinanceSectionSwitch extends StatelessWidget {
           tapTargetSize: MaterialTapTargetSize.padded,
           backgroundColor: WidgetStateProperty.resolveWith(
             (states) => states.contains(WidgetState.selected)
-                ? Colors.white
+                ? ErpMobileTheme.surface
                 : ErpMobileTheme.pageBg,
           ),
           foregroundColor: WidgetStateProperty.resolveWith(

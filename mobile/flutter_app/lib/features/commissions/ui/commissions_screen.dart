@@ -330,7 +330,7 @@ class _CommissionPatioBlockState extends ConsumerState<CommissionPatioBlock> {
     return Container(
       key: ValueKey('commission-block-$_patioId'),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ErpMobileTheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: ErpMobileTheme.cardBorder),
       ),
