@@ -359,6 +359,29 @@ test("summary rejects an inverted date range with 400", async () => {
   });
 });
 
+// B-APP-ORG-2S (Emenda 1.8.3.17, Adendo 1, I11; C4-01): o dublê em memória aplica a MESMA regra do Prisma — o resumo não
+// conta cálculo recusado nem estornado. Mutação MI11.
+test("summary skips rejected and reversed calculations of the same payee (total and count)", async () => {
+  await withSummaryApi(async ({ baseUrl, ids, repo }) => {
+    seed(repo, ids.tenantA.id, ids.operatorA, 100, "2026-06-05T10:00:00.000Z");
+    repo.seedCalculationForTests({ tenantId: ids.tenantA.id, payeeId: ids.operatorA, amount: 40, status: "rejected", createdAt: new Date("2026-06-06T10:00:00.000Z") });
+    repo.seedCalculationForTests({ tenantId: ids.tenantA.id, payeeId: ids.operatorA, amount: 25, status: "reversed", createdAt: new Date("2026-06-07T10:00:00.000Z") });
+
+    const response = await fetch(`${baseUrl}/api/v1/commissions/statements/summary`, {
+      headers: authHeaders(ids.tenantA.id, randomUUID(), "tenant_admin"),
+    });
+    const body = await readJson(response);
+
+    assert.equal(response.status, 200);
+    const items = summaryItems(body);
+    assert.equal(items.length, 1);
+    assert.equal(items[0]?.payeeId, ids.operatorA);
+    assert.equal(items[0]?.total, 100, "rejected and reversed do not enter the payee total");
+    assert.equal(items[0]?.count, 1, "rejected and reversed do not enter the payee count");
+    assert.equal(dataOf(body).total, 100, "rejected and reversed do not enter the summary total");
+  });
+});
+
 type SummaryIds = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;

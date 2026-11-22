@@ -61,6 +61,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const TEST_SUFFIX = ".test.ts";
+const EXCLUDED_FROM_DEFAULT_PARALLEL = new Set(["bapporg2s_latencia-db.test.ts"]);
 
 const PERSISTENCE_VAR = "CORE_SAAS_PERSISTENCE";
 
@@ -302,7 +303,17 @@ export function parseTapSummary(tapOutput) {
  */
 export function resolveTestTargets(targets, defaultDirectory) {
   if (targets.length === 0) {
-    return expandTestFiles(defaultDirectory);
+    const files = expandTestFiles(defaultDirectory).filter(
+      (file) => !EXCLUDED_FROM_DEFAULT_PARALLEL.has(path.basename(file)),
+    );
+
+    if (files.length === 0) {
+      throw new Error(
+        "[run-backend-tests] filtro de exclusão removeu todos os arquivos da suíte padrão.",
+      );
+    }
+
+    return files;
   }
 
   const files = [];

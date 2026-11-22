@@ -225,7 +225,11 @@ export class AnonymousLoginService {
       return this.settle(startMs, { kind: "invalid" });
     }
 
-    if (successes.length > 1) {
+    const sameIdentity = collapsesToOneIdentity(
+      successes.map((success) => success.result.identityId ?? null),
+    );
+
+    if (successes.length > 1 && !sameIdentity) {
       return this.settle(startMs, {
         kind: "selection_required",
         tenants: successes.map((success) => ({
@@ -277,4 +281,8 @@ export class AnonymousLoginService {
 
     return this.dummyHashPromise;
   }
+}
+
+export function collapsesToOneIdentity(identityIds: readonly (string | null)[]): boolean {
+  return identityIds.length > 1 && identityIds.every((id) => id !== null && id === identityIds[0]);
 }

@@ -1009,7 +1009,8 @@ test(
         // billing_invoice_sequences) recebem DML pelo DEFAULT PRIVILEGES do script; posse_force e views_sobre_force seguem 0.
         // B-ASS-09 (M6) 139 → 142 — exatamente as 3 tabelas da M6 (economic_groups, economic_group_members, platform_fx_rates).
         // B-APROVACOES-DURAVEIS (item 67) 142 → 143 — exatamente a tabela nova do bloco (operational_approvals).
-        assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|143$`, "m"));
+        // B-APP-ORG-2S (S1) 143 → 144 — exatamente a tabela nova do bloco (user_creation_log).
+        assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|144$`, "m"));
         const firstPassword = await admin.$queryRawUnsafe<Array<{ rolpassword: string | null }>>(
           `SELECT rolpassword FROM pg_authid WHERE rolname = ${literal(runtime)}`,
         );

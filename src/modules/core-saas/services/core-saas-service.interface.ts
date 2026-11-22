@@ -5,6 +5,8 @@ import type {
   CreateTenantInput,
   CreateUserInput,
   CreatedUser,
+  GrantedUserAccess,
+  GrantUserAccessInput,
   ListTenantOptions,
   LoginCandidate,
   Tenant,
@@ -25,6 +27,7 @@ export type ICoreSaasService = {
   // B-USERS-ACESSO-SEG (S2, UEM-01) — no modo Prisma, a criação devolve a senha PROVISÓRIA uma vez
   // (`temporaryPassword`); nenhuma leitura a devolve.
   createUser(input: CreateUserInput, actor?: AuthenticatedActor): Promise<CreatedUser>;
+  grantUserAccess(input: GrantUserAccessInput, actor: AuthenticatedActor): Promise<GrantedUserAccess>;
   updateUser(input: UpdateUserInput, actor?: AuthenticatedActor): Promise<User>;
   listUsersForTenant(tenantId: string): Promise<User[]>;
   getUserForTenant(userId: string, tenantId: string): Promise<User>;
