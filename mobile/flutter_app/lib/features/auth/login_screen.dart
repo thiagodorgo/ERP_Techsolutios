@@ -7,8 +7,8 @@ import '../../core/network/api_error.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../shared/theme/erp_mobile_theme.dart';
 import '../../shared/ui/mobile_kit.dart';
+import '../../shared/ui/organization_avatar.dart';
 import 'auth_models.dart';
-import 'tenant_selector_screen.dart' show OrganizationAvatar;
 
 /// B-APP-ORG (Q4): o e-mail que "Entrar em outra organização" deixa
 /// preenchido no Entrar. Só em memória; a tela de entrada o lê uma vez.

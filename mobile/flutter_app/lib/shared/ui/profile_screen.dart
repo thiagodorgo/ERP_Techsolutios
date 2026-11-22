@@ -157,13 +157,10 @@ class ProfileScreen extends ConsumerWidget {
                         children: [
                           _InfoRow(label: 'Organização', value: orgName),
                           _InfoRow(label: 'Papel', value: rotuloDoPapel),
-                          // B-APP-ORG (70): com uma organização só, a troca
-                          // nem aparece (decisão do dono, 20/11).
-                          if (session.availableTenants.length > 1)
-                            _NavRow(
-                              label: 'Trocar de organização',
-                              onTap: () => context.go('/tenant-select'),
-                            ),
+                          // B-APP-ORG-2 (A2; Emenda 1.8 §3.3): sai a entrada
+                          // "Trocar de organização". Os chamados dos outros
+                          // pátios ficam na lista de chamados, e tocar num
+                          // deles troca.
                         ],
                       ),
                       const SizedBox(height: 16),

@@ -13,6 +13,7 @@ class _K {
   static const bootstrapJson = 'erp.bootstrap_json';
   static const sessionNonce = 'erp.session_nonce';
   static const pendingRevocations = 'erp.pending_revocations';
+  static const listenTokens = 'erp.listen_tokens';
 }
 
 /// B-APP-SESSAO-RENOVA (D11): um token do "Sair" que o servidor ainda não
@@ -47,6 +48,8 @@ abstract class AuthTokenStorage {
   /// A fila do "Sair" sem servidor (D11). O `clearSession()` não a apaga.
   Future<List<PendingRevocation>> loadPendingRevocations();
   Future<void> savePendingRevocations(List<PendingRevocation> entries);
+  Future<Map<String, String>> loadListenTokens();
+  Future<void> saveListenTokens(Map<String, String> tokensByTenant);
 }
 
 class SecureAuthTokenStorage implements AuthTokenStorage {
@@ -157,6 +160,18 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
     // dart format on
   }
 
+  @override
+  Future<Map<String, String>> loadListenTokens() async {
+    final raw = await _storage.read(key: _K.listenTokens);
+    if (raw == null) return const {};
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    return decoded.map((key, value) => MapEntry(key, value as String));
+  }
+
+  @override
+  Future<void> saveListenTokens(Map<String, String> tokensByTenant) =>
+      _storage.write(key: _K.listenTokens, value: jsonEncode(tokensByTenant));
+
   Map<String, Object?> _userToSafeJson(AuthUser user) => {
     'sub': user.sub,
     'email': user.email,
@@ -202,6 +217,7 @@ class InMemoryAuthTokenStorage implements AuthTokenStorage {
   Future<void> clearBootstrap() async => _bootstrapJson = null;
 
   List<PendingRevocation> _pendingRevocations = const [];
+  Map<String, String> _listenTokens = const {};
 
   @override
   Future<List<PendingRevocation>> loadPendingRevocations() async =>
@@ -210,4 +226,11 @@ class InMemoryAuthTokenStorage implements AuthTokenStorage {
   @override
   Future<void> savePendingRevocations(List<PendingRevocation> entries) async =>
       _pendingRevocations = List.of(entries);
+
+  @override
+  Future<Map<String, String>> loadListenTokens() async => Map.of(_listenTokens);
+
+  @override
+  Future<void> saveListenTokens(Map<String, String> tokensByTenant) async =>
+      _listenTokens = Map.of(tokensByTenant);
 }
