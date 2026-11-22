@@ -23,6 +23,7 @@ import type {
 } from "./group-panel.types.js";
 import { getMemoryWorkOrderRepositoryForTests } from "../work-orders/work-order.service.js";
 import type { GroupPanelWorkOrderRow } from "./group-panel.sla.js";
+import { groupPanelWorkOrderWindowStart, isInGroupPanelWorkOrderWindow } from "./group-panel.sla.js";
 import type { GroupPanelStaffRow } from "./group-panel.staff.js";
 
 /** A tabela que o canário do passo 4 nomeia. */
@@ -48,6 +49,7 @@ export function assertMembershipsWithinRequested(
 /** O que a composição lê dos vínculos de grupo (a porta do repositório do B-ASS-09, só leitura). */
 export type GroupMembershipSource = {
   listMembershipsOfTenants(tenantIds: readonly string[]): Promise<readonly GroupMembershipRow[]>;
+  getGroup?(id: string): Promise<{ readonly deletedAt: Date | null } | null>;
 };
 
 /** Uma linha da trilha em memória (para o teste ler). Só os campos da allowlist do Painel. */
@@ -134,6 +136,10 @@ export function createMemoryGroupPanelReaders(core: ICoreSaasService, options: M
   const finance = options.finance ?? new InMemoryFinancialSummaryRepository();
 
   return {
+    async activeGroupLive({ groupId }) {
+      const group = await (await groups()).getGroup?.(groupId);
+      return group !== undefined && group !== null && group.deletedAt === null;
+    },
     async identityMemberships(actor) {
       const memberships = await core.listTenantsForIdentity(actor);
       return memberships.map((membership) => ({
@@ -171,13 +177,13 @@ export function createMemoryGroupPanelReaders(core: ICoreSaasService, options: M
 
     workOrders:
       options.workOrders ??
-      (async ({ tenantId }): Promise<readonly GroupPanelWorkOrderRow[]> => {
+      (async ({ tenantId, now }): Promise<readonly GroupPanelWorkOrderRow[]> => {
         const result = await getMemoryWorkOrderRepositoryForTests().list({
           tenantId,
           limit: Number.MAX_SAFE_INTEGER,
           offset: 0,
         });
-        return result.items.map((row) => ({
+        const rows = result.items.map((row) => ({
           status: row.status,
           createdAt: row.createdAt,
           scheduledFor: row.scheduledFor ?? null,
@@ -185,6 +191,8 @@ export function createMemoryGroupPanelReaders(core: ICoreSaasService, options: M
           completedAt: row.completedAt ?? null,
           assignedUserId: row.assignedUserId ?? null,
         }));
+        const windowStart = groupPanelWorkOrderWindowStart(now);
+        return rows.filter((row) => isInGroupPanelWorkOrderWindow(row, windowStart));
       }),
 
     staffRows:

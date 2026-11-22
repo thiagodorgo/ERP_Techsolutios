@@ -7,6 +7,8 @@ import type { GroupPanelScope, GroupPanelSummary } from "./group-panel.types.js"
 export function toGroupPanelScopeDto(scope: GroupPanelScope) {
   return {
     inGroup: scope.inGroup,
+    overLimit: scope.overLimit,
+    omittedCount: scope.omittedCount,
     organizations: scope.organizations.map((organization) => ({
       id: organization.id,
       name: organization.name,

@@ -3,9 +3,9 @@
 // Decisão direta do dono (mandato F3): o tempo de chegada começa na ABERTURA (`createdAt`) e termina em `arrivedAt`
 // (No local). `scheduledFor` não desloca o início. O mês é sempre o mês de negócio de São Paulo.
 
-import { deriveBusinessDate, deriveCompetencia } from "../../config/business-time.js";
+import { deriveBusinessDate, deriveCompetencia, parseBusinessDate } from "../../config/business-time.js";
 import { DASHBOARD_TERMINAL_STATUSES } from "../dashboard/dashboard.types.js";
-import type { WorkOrderStatus } from "../work-orders/work-order.types.js";
+import { WORK_ORDER_STATUSES, type WorkOrderStatus } from "../work-orders/work-order.types.js";
 
 const MINUTE_MS = 60_000;
 const WEEK_MS = 7 * 24 * 60 * MINUTE_MS;
@@ -16,6 +16,16 @@ export const GROUP_PANEL_IN_PROGRESS_STATUSES: readonly WorkOrderStatus[] = [
   "in_progress",
   "paused",
 ];
+
+export const GROUP_PANEL_OPEN_STATUSES: readonly WorkOrderStatus[] = WORK_ORDER_STATUSES.filter((status) => !DASHBOARD_TERMINAL_STATUSES.includes(status));
+
+export function groupPanelWorkOrderWindowStart(now: Date): Date {
+  return parseBusinessDate(`${previousCompetencia(deriveCompetencia(now))}-01`);
+}
+
+export function isInGroupPanelWorkOrderWindow(row: Pick<GroupPanelWorkOrderRow, "createdAt" | "status">, windowStart: Date): boolean {
+  return row.createdAt.getTime() >= windowStart.getTime() || GROUP_PANEL_OPEN_STATUSES.includes(row.status);
+}
 
 export type GroupPanelWorkOrderRow = {
   readonly status: WorkOrderStatus;
@@ -88,8 +98,8 @@ export function computeOperations(rows: readonly GroupPanelWorkOrderRow[], now: 
     if ((row.status === "completed" || row.completedAt !== null) && row.arrivedAt === null) arrivalMissingCount += 1;
     if (row.status === "cancelled" || row.status === "rejected") continue;
 
-    // âncora (MUT-17, atualizada pela decisão direta do dono): SLA começa sempre na abertura.
-    const startedAt = row.createdAt;
+    // Chamado agendado começa a contar na hora agendada quando ela é posterior à abertura.
+    const startedAt = row.scheduledFor !== null && row.scheduledFor > row.createdAt ? row.scheduledFor : row.createdAt;
 
     if (row.arrivedAt !== null) {
       const arrivalMinutes = elapsedMinutes(startedAt, row.arrivedAt);

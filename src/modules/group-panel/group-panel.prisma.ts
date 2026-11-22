@@ -28,6 +28,7 @@ import type { FinancialSummaryRepository } from "../financial-summary/financial-
 import { normalizeModuleKeys } from "../platform/platform-modules.service.js";
 import { PrismaEconomicGroupsRepository } from "../subscription-billing/economic-groups/economic-groups.prisma.js";
 import type { WorkOrderStatus } from "../work-orders/work-order.types.js";
+import { GROUP_PANEL_OPEN_STATUSES, groupPanelWorkOrderWindowStart } from "./group-panel.sla.js";
 import { assertMembershipsWithinRequested, GROUP_PANEL_VIEW_ACTION, type GroupMembershipSource } from "./group-panel.readers.js";
 import type { GroupManagerMark, GroupManagerMarksReader, GroupPanelActor, GroupPanelReaders } from "./group-panel.types.js";
 
@@ -83,6 +84,10 @@ export function createPrismaGroupPanelReaders(
   const resolveAuthorization = createPersistentAuthorizationResolver(client);
 
   return {
+    async activeGroupLive(input) {
+      const liveGroup = await client.economicGroup.findFirst({ where: { id: input.groupId, deleted_at: null }, select: { id: true } });
+      return liveGroup !== null;
+    },
     async identityMemberships(actor) {
       const memberships = await core.listTenantsForIdentity(actor);
       return memberships.map((membership) => ({
@@ -117,8 +122,8 @@ export function createPrismaGroupPanelReaders(
       return finance.getSummary({ tenantId, now });
     },
 
-    workOrders({ tenantId }) {
-      return readGroupPanelWorkOrderRows(client, { tenantId });
+    workOrders({ tenantId, now }) {
+      return readGroupPanelWorkOrderRows(client, { tenantId, now });
     },
 
     staffRows({ tenantId }) {
@@ -172,10 +177,11 @@ export type PrismaGroupPanelStaffRow = {
 };
 
 /** As OS daquela organização, no contexto dela; linha de outra organização derruba a leitura. */
-export function readGroupPanelWorkOrderRows(client: PrismaClient, input: { readonly tenantId: string }): Promise<readonly PrismaGroupPanelWorkOrderRow[]> {
+export function readGroupPanelWorkOrderRows(client: PrismaClient, input: { readonly tenantId: string; readonly now: Date }): Promise<readonly PrismaGroupPanelWorkOrderRow[]> {
+  const windowStart = groupPanelWorkOrderWindowStart(input.now);
   return withTenantRls(client, input.tenantId, async (tx) => {
     const rows = await tx.workOrder.findMany({
-      where: { tenant_id: input.tenantId },
+      where: { tenant_id: input.tenantId, OR: [{ created_at: { gte: windowStart } }, { status: { in: [...GROUP_PANEL_OPEN_STATUSES] } }] },
       select: { tenant_id: true, status: true, created_at: true, scheduled_for: true, arrived_at: true, completed_at: true, assigned_user_id: true },
     });
     assertRowsBelongToTenant(rows.map((row) => ({ tenantId: row.tenant_id })), input.tenantId, "work_orders");

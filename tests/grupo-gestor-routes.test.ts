@@ -356,6 +356,7 @@ test("ISO-13 (memória): o canário — vínculo de outra organização na volta
   const estranha = await c.org("Pátio de fora", c.gA);
   const honest = overview.getMemoryOverviewEconomicGroupsForTests();
   const leaky = {
+    async getGroup() { return { deletedAt: null }; },
     async listMembershipsOfTenants(tenantIds: readonly string[]) {
       const rows = await honest.listMembershipsOfTenants(tenantIds);
       if (!tenantIds.includes(a2.id)) return rows;
@@ -586,6 +587,7 @@ test("ROT-4: o /scope respeita o teto de 30 e usa os mesmos pátios processados 
   const moduleCalls: string[] = [];
   const tenantIds = Array.from({ length: 31 }, (_, index) => `p${String(index + 1).padStart(2, "0")}`);
   const readers: import("../src/modules/group-panel/group-panel.types.js").GroupPanelReaders = {
+    async activeGroupLive() { return true; },
     async identityMemberships() { return tenantIds.map((tenantId) => ({ tenantId, tenantName: tenantId, userId: `u-${tenantId}` })); },
     async groupMemberships(ids) { return ids.map((tenantId) => ({ tenantId, groupId: "g", validFrom: "2026-01-01", validTo: null })); },
     async managerMarks() { return [{ groupId: "g", revokedAt: null }]; },

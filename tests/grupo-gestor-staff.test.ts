@@ -69,6 +69,7 @@ test("STF-6: fallback local não une contas sem identidade entre pátios", () =>
 
 test("STF-7: serviço deduplica a mesma pessoa nos pátios e no atendimento do grupo", async () => {
   const readers: GroupPanelReaders = {
+    async activeGroupLive() { return true; },
     async identityMemberships() {
       return [
         { tenantId: "a", tenantName: "Pátio A", userId: "gestor-a" },
@@ -111,6 +112,7 @@ test("STF-8: pátio sem users.read fica sem_permissao e não entra no consolidad
     ["b", [staff({ userId: "tech-b", identityId: "p-b", localKey: "b:tech" })]],
   ]);
   const readers: GroupPanelReaders = {
+    async activeGroupLive() { return true; },
     async identityMemberships() {
       return [...base.keys()].map((tenantId) => ({ tenantId, tenantName: `Pátio ${tenantId}`, userId: `gestor-${tenantId}` }));
     },

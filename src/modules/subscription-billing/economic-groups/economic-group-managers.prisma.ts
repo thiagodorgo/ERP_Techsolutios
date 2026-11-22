@@ -56,16 +56,15 @@ export class PrismaEconomicGroupManagersRepository implements EconomicGroupManag
     const platformTenantId = await this.resolvePlatformTenantId();
     return this.client.$transaction(async (tx) => {
       await setTenantRlsContext(tx, platformTenantId);
-      const manager = await tx.economicGroupManager.findFirst({ where: { id: managerId, group_id: groupId, revoked_at: null }, select: { id: true } });
-      if (!manager) return false;
+      const updated = await tx.economicGroupManager.updateMany({ where: { id: managerId, group_id: groupId, revoked_at: null }, data: { revoked_at: new Date(), revoked_by: uuidOrNull(actorUserId) } });
+      if (updated.count !== 1) return false;
       const grantAudit = await tx.platformAuditLog.findFirst({ where: { action: "economic_group.manager_granted", entity: "economic_group_manager", entity_id: managerId }, orderBy: { created_at: "asc" }, select: { tenant_id: true } });
       if (!grantAudit?.tenant_id) throw new GroupManagerRepositoryError("manager_origin_missing");
       await setTenantRlsContext(tx, grantAudit.tenant_id);
       await writeOrganizationAudit(tx, { tenantId: grantAudit.tenant_id, action: "economic_group.manager_revoked", groupId });
       await setTenantRlsContext(tx, platformTenantId);
-      const updated = await tx.economicGroupManager.updateMany({ where: { id: managerId, group_id: groupId, revoked_at: null }, data: { revoked_at: new Date(), revoked_by: uuidOrNull(actorUserId) } });
       await writePlatformAudit(tx, { action: "economic_group.manager_revoked", managerId, groupId, originTenantId: grantAudit.tenant_id, actorUserId });
-      return updated.count === 1;
+      return true;
     });
   }
 

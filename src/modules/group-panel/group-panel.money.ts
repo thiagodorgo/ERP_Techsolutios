@@ -55,7 +55,7 @@ export function currenciesOf(summaries: readonly FinancialSummary[]): readonly s
 }
 
 /** A soma do grupo dos pátios com o financeiro `ok`. A lista vazia dá zeros (o serviço decide se publica). */
-export function consolidate(okBlocks: readonly FinancialSummary[]): ConsolidatedFinance {
+export function consolidate(okBlocks: readonly FinancialSummary[], currentCompetencia: string): ConsolidatedFinance {
   const sum = (pick: (summary: FinancialSummary) => number) => sumMoney(okBlocks.map(pick));
   const count = (pick: (summary: FinancialSummary) => number) => okBlocks.reduce((total, summary) => total + pick(summary), 0);
 
@@ -93,7 +93,7 @@ export function consolidate(okBlocks: readonly FinancialSummary[]): Consolidated
     payableOverdueCount: count((s) => s.payable.overdueCount),
     receivedThisMonth: sum((s) => s.settledThisMonth.inflow),
     paidThisMonth: sum((s) => s.settledThisMonth.outflow),
-    competencia: okBlocks[0]?.settledThisMonth.competencia ?? "",
+    competencia: currentCompetencia,
     cashBalance: sum((s) => s.cash.totalBalance),
     accountCount: count((s) => s.cash.accountCount),
     cashFlow,

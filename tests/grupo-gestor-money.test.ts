@@ -50,7 +50,7 @@ test("MON-1: a conversão dá centavos INTEIROS mesmo onde valor × 100 não é 
   }
   assert.equal(fromCents(115 + 29), 1.44);
   assert.equal(sumMoney([0.1, 0.2, 0.7]), 1, "0,10 + 0,20 + 0,70 = 1,00, sem resto de ponto flutuante");
-  const grupo = consolidate([summaryOf({ receivable: 1.15 }), summaryOf({ receivable: 0.29 })]);
+  const grupo = consolidate([summaryOf({ receivable: 1.15 }), summaryOf({ receivable: 0.29 })], "2026-11");
   assert.equal(grupo.receivableOpen, 1.44);
 });
 
@@ -66,7 +66,7 @@ test("MON-2: propriedade — 200 sorteios de 3 a 10 pátios: o total do grupo é
     const summaries = cents.map((value) =>
       summaryOf({ receivable: value / 100, payable: value / 200, cash: value / 100, inflow: Math.abs(value) / 100, outflow: Math.abs(value) / 300 }),
     );
-    const grupo = consolidate(summaries);
+    const grupo = consolidate(summaries, "2026-11");
     const expected = (pick: (s: FinancialSummary) => number) => summaries.reduce((total, s) => total + toCents(pick(s)), 0);
     assert.equal(toCents(grupo.receivableOpen), expected((s) => s.receivable.openAmount), `sorteio ${draw}: a receber`);
     assert.equal(toCents(grupo.payableOpen), expected((s) => s.payable.openAmount), `sorteio ${draw}: a pagar`);
@@ -86,7 +86,7 @@ test("MON-6: contagens e fluxo de 6 meses somados por competência", () => {
     ["2026-10", 100, 50],
     ["2026-11", 1.15, 0.7],
   ];
-  const grupo = consolidate([summaryOf({ receivable: 10, overdue: 5, flow }), summaryOf({ receivable: 20, flow })]);
+  const grupo = consolidate([summaryOf({ receivable: 10, overdue: 5, flow }), summaryOf({ receivable: 20, flow })], "2026-11");
   assert.equal(grupo.receivableOpenCount, 2);
   assert.equal(grupo.receivableOverdue, 5);
   assert.equal(grupo.receivableOverdueCount, 1);
@@ -111,17 +111,17 @@ test("VAR-1: a variação de recebido e de pago sai do cashFlow (mês corrente s
   const grupo = consolidate([
     summaryOf({ flow: [["2026-10", 100, 40], ["2026-11", 120, 30]] }),
     summaryOf({ flow: [["2026-10", 100, 60], ["2026-11", 80, 90]] }),
-  ]);
+  ], "2026-11");
   assert.equal(grupo.receivedVariationPct, 0, "(200 − 200) / 200");
   assert.equal(grupo.paidVariationPct, 20, "(120 − 100) / 100");
 });
 
 test("VAR-2: mês anterior zero dá variação nula (nunca infinito nem NaN)", () => {
   assert.equal(variationPct(10, 0), null);
-  const grupo = consolidate([summaryOf({ flow: [["2026-10", 0, 0], ["2026-11", 10, 5]] })]);
+  const grupo = consolidate([summaryOf({ flow: [["2026-10", 0, 0], ["2026-11", 10, 5]] })], "2026-11");
   assert.equal(grupo.receivedVariationPct, null);
   assert.equal(grupo.paidVariationPct, null);
-  assert.equal(consolidate([summaryOf({ flow: [["2026-11", 10, 5]] })]).receivedVariationPct, null, "um mês só: nulo");
+  assert.equal(consolidate([summaryOf({ flow: [["2026-11", 10, 5]] })], "2026-11").receivedVariationPct, null, "um mês só: nulo");
 });
 
 // ------------------------------------------------------------------------------------- MON-3 a MON-5 (o serviço)
@@ -134,6 +134,7 @@ type FakeOrg = {
 
 function fakeService(orgs: readonly FakeOrg[]) {
   const readers: GroupPanelReaders = {
+    async activeGroupLive() { return true; },
     async identityMemberships() {
       return orgs.map((org) => ({ tenantId: org.id, tenantName: `Pátio ${org.id}`, userId: `u-${org.id}` }));
     },

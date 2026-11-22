@@ -75,6 +75,7 @@ export type ScopedOrganization = {
  * pelo canário `assertMembershipsWithinRequested`.
  */
 export interface GroupPanelReaders {
+  activeGroupLive(input: { readonly groupId: string }): Promise<boolean>;
   /** Passo 3: as organizações da identidade do ator (o mesmo predicado do `GET /me/tenants`). */
   identityMemberships(actor: GroupPanelActor): Promise<readonly IdentityMembershipRow[]>;
   /** Passo 4: os vínculos de grupo das organizações pedidas, lidos no contexto de cada uma. */
@@ -163,7 +164,7 @@ export type GroupPanelSummary = {
   readonly consolidated: {
     readonly currency: string;
     readonly finance: ConsolidatedFinance;
-    readonly operations: GroupPanelOperations;
+    readonly operations: GroupPanelOperations & { readonly included: number };
     readonly staff: GroupPanelStaff;
   } | null;
   readonly organizations: readonly GroupPanelOrganization[];
@@ -186,4 +187,6 @@ export type GroupPanelInternalBlocks = {
 export type GroupPanelScope = {
   readonly inGroup: boolean;
   readonly organizations: readonly GroupPanelScopeOrganization[];
+  readonly overLimit: boolean;
+  readonly omittedCount: number;
 };

@@ -217,6 +217,7 @@ const ACTOR = { userId: "u-a", tenantId: "a", email: "gestor@example.com", roles
 function serviceReaders(workOrdersByTenant: Readonly<Record<string, readonly GroupPanelWorkOrderRow[]>>): GroupPanelReaders {
   const tenantIds = Object.keys(workOrdersByTenant);
   return {
+    async activeGroupLive() { return true; },
     async identityMemberships() {
       return tenantIds.map((tenantId) => ({ tenantId, tenantName: `Pátio ${tenantId}`, userId: `u-${tenantId}` }));
     },

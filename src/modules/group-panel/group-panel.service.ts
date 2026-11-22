@@ -14,7 +14,8 @@
 import { TenantRowsLeakError } from "../../database/rls.js";
 import type { FinancialSummary } from "../financial-summary/financial-summary.types.js";
 import { MembershipOverlapError, todayBusinessDate } from "../subscription-billing/economic-groups/membership.rules.js";
-import { canReadOperations, canReadStaff, decideFinanceAccess, resolveActiveGroup, resolveGroupScope, type GroupScopeResult } from "./group-scope.js";
+import { canReadOperations, canReadStaff, decideFinanceAccess, GroupPanelAccessError, resolveActiveGroup, resolveGroupScope, type GroupScopeResult } from "./group-scope.js";
+import { deriveCompetencia } from "../../config/business-time.js";
 import { cashFlowVariations, consolidate, currenciesOf } from "./group-panel.money.js";
 import { computeOperations, consolidateOperations, publicOperations, type GroupPanelOperationsComputed } from "./group-panel.sla.js";
 import { computeStaff, consolidateStaff, publicStaff, STAFF_IN_SERVICE_STATUSES, type GroupPanelStaffComputed } from "./group-panel.staff.js";
@@ -50,7 +51,8 @@ export class GroupPanelService {
   async getScope(actor: GroupPanelActor): Promise<GroupPanelScope> {
     const scope = await this.resolveScope(actor, this.clock());
     const organizations = [];
-    for (const organization of scope.organizations) {
+    const listedOrganizations = scope.processed;
+    for (const organization of listedOrganizations) {
       const access = await this.accessOf(actor, organization);
       organizations.push({
         id: organization.tenantId,
@@ -60,7 +62,7 @@ export class GroupPanelService {
         staff: access.staff,
       });
     }
-    return { inGroup: true, organizations };
+    return { inGroup: true, organizations, overLimit: scope.overLimit, omittedCount: scope.omitted.length };
   }
 
   /** `GET /group-panel/summary`: o financeiro somado do grupo e o de cada pátio. */
@@ -83,6 +85,7 @@ export class GroupPanelService {
         rethrowIntegrityError(error);
         read.status = "erro";
         read.summary = null;
+        clearBlocksWithoutTrail(read);
       }
     }
     coverage = coverageOf(reads, scope);
@@ -94,7 +97,8 @@ export class GroupPanelService {
     // âncora (MUT-19): a mesma pessoa em vários pátios conta uma vez no grupo.
     const distinctPeople = new Set(staffRows.map((row) => row.identityId ?? row.localKey)).size;
     // âncora (MUT-6)
-    const consolidated = coverage.complete ? consolidate(okBlocks) : null;
+    const consolidated = coverage.complete ? consolidate(okBlocks, deriveCompetencia(now)) : null;
+    const operationsIncluded = operationsBlocks.length;
 
     return {
       generatedAt: now,
@@ -105,7 +109,7 @@ export class GroupPanelService {
           : {
               currency: okBlocks[0]?.cash.currency ?? "BRL",
               finance: consolidated,
-              operations: publicOperations(consolidateOperations(operationsBlocks)),
+              operations: { ...publicOperations(consolidateOperations(operationsBlocks)), included: operationsIncluded },
               staff: { ...publicStaff(consolidateStaff(staffBlocks)), activeUsers: distinctPeople },
             },
       organizations: reads.map(organizationView),
@@ -118,6 +122,8 @@ export class GroupPanelService {
     const managerMarks = await this.readers.managerMarks(actor);
     const activeGroupRows = await this.readers.groupMemberships([actor.tenantId]);
     const activeGroupId = resolveActiveGroup({ activeTenantId: actor.tenantId, activeGroupRows, managerMarks, today });
+    const activeGroupLive = await this.readers.activeGroupLive({ groupId: activeGroupId });
+    if (!activeGroupLive) throw new GroupPanelAccessError();
     // Passos 3 e 4: as organizações da identidade e o vínculo de grupo de cada uma.
     const memberships = await this.readers.identityMemberships(actor);
     const tenantIds = uniqueSorted(memberships.map((membership) => membership.tenantId));
@@ -192,6 +198,13 @@ export class GroupPanelService {
 
     return { organization, status, summary, operationsStatus, operations, staffStatus, staff };
   }
+}
+
+function clearBlocksWithoutTrail(read: OrganizationRead): void {
+  read.operationsStatus = "erro";
+  read.operations = null;
+  read.staffStatus = "erro";
+  read.staff = null;
 }
 
 /** Erro de integridade (canário de RLS, vínculo duplicado) derruba o pedido: nunca vira "erro" de um pátio. */
