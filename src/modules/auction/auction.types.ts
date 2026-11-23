@@ -249,7 +249,7 @@ export type RecordSaleResult = {
   readonly status: ImpoundStatus;
 };
 
-// closeAuctionAtomic: AUCTIONED→AUCTION_CLOSED (já frozen). Guarda: pagamento confirmado (consumação ≤3d + nota).
+// closeAuctionAtomic: AUCTIONED→AUCTION_CLOSED (congela no encerramento). Guarda: pagamento confirmado (consumação ≤3d + nota).
 // AUCTION_CLOSED na cadeia (payload {event,round,outcome:"SOLD"}).
 export type CloseAuctionInput = {
   readonly tenantId: string;
@@ -261,7 +261,7 @@ export type CloseAuctionInput = {
   readonly occurredAt: Date;
 };
 
-// defaultAuctionAtomic: AUCTIONED→LOTTED (inadimplência art. 42). NÃO descongela (set-only; PD-Ω5P-AUC-FROZEN — a
+// defaultAuctionAtomic: AUCTIONED→LOTTED (inadimplência art. 42). Descongela o legado congelado (frozen_at vira período — a
 // diária permanece congelada; a penalidade recai sobre o arrematante). REGISTRA NO_PAYMENT (linha append-only nova
 // p/ a rodada de reintegração; a linha SOLD original permanece imutável I2) + STATUS_CHANGE default_reintegrated.
 export type DefaultAuctionInput = {

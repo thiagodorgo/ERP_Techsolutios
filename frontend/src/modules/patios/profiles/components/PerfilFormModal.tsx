@@ -28,9 +28,9 @@ const DAILY_MODEL_OPTIONS: readonly { value: DailyModel; label: string }[] = [
 ];
 
 const DAILY_CAP_OPTIONS: readonly { value: DailyCap; label: string }[] = [
-  { value: "SIX_MONTHS", label: "6 meses (art. 271 §10)" },
+  { value: "SIX_MONTHS", label: "180 diárias (art. 271 §10)" },
   { value: "THIRTY_DAYS_LEGACY", label: "30 diárias (Tema 124)" },
-  { value: "UNLIMITED", label: "Ilimitado (contratual)" },
+  { value: "UNLIMITED", label: "180 diárias (contrato particular)" },
 ];
 
 const gridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--space-12)" };

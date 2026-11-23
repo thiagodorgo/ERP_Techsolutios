@@ -541,7 +541,7 @@ if (!connectionString) {
 
   test("L4 · arremate sem serviço de diária: 409 auction_daily_charges_unpostable; segue LOTTED, sem congelar, sem SOLD, sem AUCTION_SOLD", async () => {
     const ctx = await seed("L4", { status: "AUCTION_ELIGIBLE" });
-    await lotViaService(ctx);
+    await prepViaRepository(ctx, "LOTTED");
     await removeDailyService(ctx);
     const result = await outcome(async () => (await createDefaultAuctionService()).recordSale(actor(ctx), ctx.processId, saleBody()));
     const process = await row(ctx);
@@ -915,8 +915,8 @@ if (!connectionString) {
     const frozenAt = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - MS_PER_DAY + HOUR);
     const t0 = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - 11 * MS_PER_DAY + 12 * HOUR);
     const fusoA = "America/Sao_Paulo";
-    const owedInA = summarizeAccrual({ t0, asOf: frozenAt, timezone: fusoA, model: "CALENDAR", cap: "SIX_MONTHS" }).nAccrue;
-    const owedInB = summarizeAccrual({ t0, asOf: frozenAt, timezone: "UTC", model: "CALENDAR", cap: "SIX_MONTHS" }).nAccrue;
+    const owedInA = summarizeAccrual({ t0, asOf: frozenAt, timezone: fusoA, model: "CALENDAR", cap: "SIX_MONTHS", suspensions: [] }).nAccrue;
+    const owedInB = summarizeAccrual({ t0, asOf: frozenAt, timezone: "UTC", model: "CALENDAR", cap: "SIX_MONTHS", suspensions: [] }).nAccrue;
     assert.equal(owedInB, owedInA + 1, "pré-condição do cenário: o fuso B deve uma diária a mais");
     const ctx = await seed("K6", { status: "AUCTION_CLOSED", model: "CALENDAR", enteredAt: t0, frozenAt, yardTimezone: fusoA });
     await seedSoldAttempt(ctx);
@@ -953,7 +953,7 @@ if (!connectionString) {
     const today = new Date();
     const occurredAt = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - MS_PER_DAY + HOUR);
     const t0 = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - 11 * MS_PER_DAY + 12 * HOUR);
-    const owedInA = summarizeAccrual({ t0, asOf: occurredAt, timezone: "America/Sao_Paulo", model: "CALENDAR", cap: "SIX_MONTHS" }).nAccrue;
+    const owedInA = summarizeAccrual({ t0, asOf: occurredAt, timezone: "America/Sao_Paulo", model: "CALENDAR", cap: "SIX_MONTHS", suspensions: [] }).nAccrue;
     const ctx = await seed("K7", { status: "AUCTIONED", model: "CALENDAR", enteredAt: t0, yardTimezone: "America/Sao_Paulo" });
     await seedDailies(ctx, owedInA);
     const holder = holdYardTimezone(ctx.yardId as string, "UTC");
@@ -1389,7 +1389,7 @@ ${thaw.out}`;
 
   const reclaimBody = { reason: "Dono apresentou a documentação" };
 
-  test("V1 · (C2-07) resgate de processo em lote congelado há 5 dias (entrada há 10 dias e 2 h, 5 diárias no livro): frozen_at nulo e candidato logo depois do resgate; a liberação lança até 10 diárias, total 400.00", async () => {
+  test("V1 · (C2-07) resgate de processo em lote congelado há 5 dias (entrada há 10 dias e 2 h, 5 diárias no livro): frozen_at nulo e candidato logo depois do resgate; a liberação cobra 5 diárias, total 200.00", async () => {
     const ctx = await seedLegacyFrozen("V1", "LOTTED");
     assert.equal(await count(ctx, "DAILY"), 5, "pré-condição: o legado tem as 5 diárias até o congelamento");
     await (await createDefaultAuctionService()).reclaim(actor(ctx), ctx.processId, reclaimBody);
@@ -1397,7 +1397,7 @@ ${thaw.out}`;
     const start = await outcome(async () => (await createDefaultReleaseService()).start(actor(ctx) as never, ctx.processId, { recipient_name: "Dono" }));
     assert.deepEqual(
       { afterReclaim, liberacao: start, diarias: await count(ctx, "DAILY"), totalDiarias: await dailyTotal(ctx) },
-      { afterReclaim: { estado: "ACTIVE_CUSTODY", congelado: false, candidato: true }, liberacao: "aceito", diarias: 10, totalDiarias: "400.00" },
+      { afterReclaim: { estado: "ACTIVE_CUSTODY", congelado: false, candidato: true }, liberacao: "aceito", diarias: 5, totalDiarias: "200.00" },
     );
     await assertChainValid(ctx);
   });
@@ -1418,7 +1418,7 @@ ${thaw.out}`;
     );
   });
 
-  test("V4 · resgate × varredura em paralelo (6 rodadas) sobre o legado congelado: nenhum period_seq repetido; cadeia válida; ao fim, 10 diárias", async () => {
+  test("V4 · resgate × varredura em paralelo (6 rodadas) sobre o legado congelado: nenhum period_seq repetido; cadeia válida; ao fim, 5 diárias", async () => {
     const observed: string[] = [];
     for (let round = 0; round < 6; round += 1) {
       const ctx = await seedLegacyFrozen(`V4-${round}`, "LOTTED");
@@ -1428,7 +1428,7 @@ ${thaw.out}`;
       await charge.accrueTenantScan(ctx.tenantId, new Date());
       const seqs = await dailySeqs(ctx);
       const line = `rodada ${round}: resgate ${reclaim.status === "fulfilled" ? "aceito" : reasonOf(reclaim.reason)}, diarias ${seqs.length}, unicas ${new Set(seqs).size}`;
-      if (reclaim.status !== "fulfilled" || seqs.length !== 10 || new Set(seqs).size !== 10) observed.push(line);
+      if (reclaim.status !== "fulfilled" || seqs.length !== 5 || new Set(seqs).size !== 5) observed.push(line);
       await assertChainValid(ctx);
     }
     assert.deepEqual(observed, []);
@@ -1436,7 +1436,7 @@ ${thaw.out}`;
 
   // ────────────────────────────── F1b: E9.4 os congelamentos legados convergem para a P7 ──────────────────────────────
 
-  test("W1 · legado AUCTIONED congelado há 5 dias (venda de 8000.00, 5 diárias), pagamento confirmado agora: frozen_at = instante do encerramento; 10 diárias, period_seq 1 a 10; crédito 550.00, saldo 7450.00", async () => {
+  test("W1 · legado AUCTIONED congelado há 5 dias (venda de 8000.00, 5 diárias), pagamento confirmado agora: frozen_at = instante do encerramento; 5 diárias, period_seq 1 a 5; crédito 350.00, saldo 7650.00", async () => {
     const ctx = await seedLegacyFrozen("W1", "AUCTIONED");
     await seedSoldAttempt(ctx);
     assert.equal(await count(ctx, "DAILY"), 5, "pré-condição: 5 diárias no livro");
@@ -1446,11 +1446,11 @@ ${thaw.out}`;
     const dist = await (await createDefaultAuctionSettlementService()).distribute(actor(ctx), ctx.processId, {});
     assert.deepEqual(
       { congelamentoNoEncerramento: frozenAtClose, seqs, ...cascadeOf(dist) },
-      { congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], creditoDoPatio: "550.00", saldoDoExDono: "7450.00", somaDoRateioIgualAoLance: true },
+      { congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5], creditoDoPatio: "350.00", saldoDoExDono: "7650.00", somaDoRateioIgualAoLance: true },
     );
   });
 
-  test("W2 · ESTADO SEMEADO (P-LEILAO-REVENDA-SEM-CAMINHO): legado LOTTED congelado há 5 dias com a venda antiga e a inadimplência gravadas e a rodada 3 em lote: o recordSale descongela e lança 10; o encerramento congela no instante dele; 10 sem repetição; crédito 550.00", async () => {
+  test("W2 · ESTADO SEMEADO (P-LEILAO-REVENDA-SEM-CAMINHO): legado LOTTED congelado há 5 dias com a venda antiga e a inadimplência gravadas e a rodada 3 em lote: o recordSale descongela e mantém 5; o encerramento congela no instante dele; 5 sem repetição; crédito 350.00, saldo 7650.00", async () => {
     const ctx = await seedLegacyFrozen("W2", "LOTTED");
     await seedSoldAttempt(ctx);
     await seedNoPaymentAttempt(ctx, 2, 1);
@@ -1466,7 +1466,7 @@ ${thaw.out}`;
     const dist = await (await createDefaultAuctionSettlementService()).distribute(actor(ctx), ctx.processId, {});
     assert.deepEqual(
       { afterSale, congelamentoNoEncerramento: frozenAtClose, seqs, ...cascadeOf(dist) },
-      { afterSale: { arremate: "aceito", congelado: false, diarias: 10 }, congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], creditoDoPatio: "550.00", saldoDoExDono: "7450.00", somaDoRateioIgualAoLance: true },
+      { afterSale: { arremate: "aceito", congelado: false, diarias: 5 }, congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5], creditoDoPatio: "350.00", saldoDoExDono: "7650.00", somaDoRateioIgualAoLance: true },
     );
   });
 

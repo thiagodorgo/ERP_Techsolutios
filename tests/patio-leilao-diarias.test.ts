@@ -837,19 +837,23 @@ function pushLottedEdict(ctx: Ctx, round: number): void {
 }
 
 // Grava o congelamento antigo com uma transição do repositório de custódia (de `from` para `to`; pode ser o mesmo estado).
-async function freezeLegacy(ctx: Ctx, from: string, to: string): Promise<Date> {
+async function legacyFrozen(ctx: Ctx, to: string): Promise<Date> {
   const legacy = new Date(Date.now() - LEGACY_FROZEN_DAYS * MS_PER_DAY);
   await getMemoryImpoundRepositoryForTests().applyTransition({
     tenantId: ctx.tenantId,
     processId: ctx.processId,
-    expectedFrom: from,
+    expectedFrom: "ACTIVE_CUSTODY",
     to,
     setEnteredAt: false,
     setFrozenAt: true,
-    event: { type: "STATUS_CHANGE", payload: { from, to, reason: "legado" }, occurredAt: legacy, actorId: undefined },
+    event: { type: "STATUS_CHANGE", payload: { from: "ACTIVE_CUSTODY", to, reason: "legado" }, occurredAt: legacy, actorId: undefined },
   } as never);
   await createMemoryChargeService().accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
   return legacy;
+}
+
+async function suspensionsOf(ctx: Ctx) {
+  return getMemoryImpoundRepositoryForTests().listDailySuspensions(ctx.tenantId, ctx.processId);
 }
 
 async function lastEventAt(ctx: Ctx, type: string): Promise<number | undefined> {
@@ -869,67 +873,66 @@ async function dailyTotal(ctx: Ctx): Promise<string> {
   return (cents / 100).toFixed(2);
 }
 
-test("V1 · (C2-07) resgate de processo em lote congelado há 5 dias (5 diárias): frozen_at nulo logo depois do resgate; a liberação lança até 10 diárias, total 400.00", async () => {
-  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 10 });
-  await driveViaRepository(ctx, "LOTTED");
-  await freezeLegacy(ctx, "LOTTED", "LOTTED");
+test("V1 · (E8.3) resgate de processo em lote congelado há 5 dias: frozen_at nulo; período LEGACY_FREEZE fechado; a liberação cobra 5 diárias, total 200.00", async () => {
+  const ctx = await scenario({ days: 10 });
+  await legacyFrozen(ctx, "LOTTED");
   assert.equal(await dailyCount(ctx), 5, "pré-condição: 5 diárias até o congelamento");
   await createMemoryAuctionService().reclaim(who(ctx), ctx.processId, { reason: "Dono apresentou a documentação" });
   const afterReclaim = { estado: (await processOf(ctx)).status, congelado: (await processOf(ctx)).frozenAt !== undefined };
+  const periodos = await suspensionsOf(ctx);
   const start = await outcome(createMemoryReleaseService().start(who(ctx) as never, ctx.processId, { recipient_name: "Dono" }));
   assert.deepEqual(
-    { afterReclaim, liberacao: start, diarias: await dailyCount(ctx), totalDiarias: await dailyTotal(ctx) },
-    { afterReclaim: { estado: "ACTIVE_CUSTODY", congelado: false }, liberacao: "aceito", diarias: 10, totalDiarias: "400.00" },
+    { afterReclaim, periodos: periodos.map((suspensao) => ({ aberto: suspensao.to === undefined })), liberacao: start, diarias: await dailyCount(ctx), totalDiarias: await dailyTotal(ctx) },
+    { afterReclaim: { estado: "ACTIVE_CUSTODY", congelado: false }, periodos: [{ aberto: false }], liberacao: "aceito", diarias: 5, totalDiarias: "200.00" },
   );
 });
 
-test("V3 · inadimplência de processo arrematado e congelado há 5 dias: volta ao lote com frozen_at nulo", async () => {
-  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 10 });
-  await driveViaRepository(ctx, "LOTTED");
+test("V3 · (E8.3) inadimplência de processo arrematado e congelado há 5 dias: volta ao lote com frozen_at nulo e período LEGACY_FREEZE aberto", async () => {
+  const ctx = await scenario({ days: 10 });
   pushAttempt(ctx, 1, "SOLD");
-  await freezeLegacy(ctx, "LOTTED", "AUCTIONED");
+  await legacyFrozen(ctx, "AUCTIONED");
   const result = await createMemoryAuctionService().defaultAuction(who(ctx), ctx.processId, { round_number: 2 });
+  const periodos = await suspensionsOf(ctx);
   assert.deepEqual(
-    { resposta: result.status, criado: result.created, estado: (await processOf(ctx)).status, congelado: (await processOf(ctx)).frozenAt !== undefined },
-    { resposta: "LOTTED", criado: true, estado: "LOTTED", congelado: false },
+    { resposta: result.status, criado: result.created, estado: (await processOf(ctx)).status, congelado: (await processOf(ctx)).frozenAt !== undefined, periodosAbertos: periodos.filter((suspensao) => suspensao.to === undefined).length },
+    { resposta: "LOTTED", criado: true, estado: "LOTTED", congelado: false, periodosAbertos: 1 },
   );
 });
 
-test("W1 · legado AUCTIONED congelado há 5 dias (venda de 8000.00, 5 diárias), pagamento confirmado agora: frozen_at = instante do encerramento; 10 diárias, period_seq 1 a 10; crédito 550.00, saldo 7450.00", async () => {
-  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 10 });
-  await driveViaRepository(ctx, "LOTTED");
+test("S6 · legado AUCTIONED congelado há 5 dias: 5 diárias; período LEGACY_FREEZE do congelamento ao encerramento; crédito 350.00, saldo 7650.00", async () => {
+  const ctx = await scenario({ days: 10 });
   pushAttempt(ctx, 1, "SOLD");
-  await freezeLegacy(ctx, "LOTTED", "AUCTIONED");
+  const legacy = await legacyFrozen(ctx, "AUCTIONED");
   assert.equal(await dailyCount(ctx), 5, "pré-condição: 5 diárias no livro");
   await createMemoryAuctionService().closeAuction(who(ctx), ctx.processId, { round_number: 1, payment_confirmed: true });
   const frozenAtClose = (await processOf(ctx)).frozenAt?.getTime() === (await lastEventAt(ctx, "AUCTION_CLOSED"));
   const seqs = await dailySeqs(ctx);
+  const periodos = await suspensionsOf(ctx);
   const dist = await createMemoryAuctionSettlementService().distribute(who(ctx), ctx.processId, {});
   assert.deepEqual(
-    { congelamentoNoEncerramento: frozenAtClose, seqs, ...cascadeOf(dist) },
-    { congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], creditoDoPatio: "550.00", saldoDoExDono: "7450.00", somaDoRateioIgualAoLance: true },
+    { congelamentoNoEncerramento: frozenAtClose, seqs, periodos, ...cascadeOf(dist) },
+    { congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5], periodos: [{ from: legacy, to: (await processOf(ctx)).frozenAt }], creditoDoPatio: "350.00", saldoDoExDono: "7650.00", somaDoRateioIgualAoLance: true },
   );
 });
 
-test("W2 · ESTADO SEMEADO (P-LEILAO-REVENDA-SEM-CAMINHO): legado LOTTED congelado há 5 dias, venda antiga e inadimplência gravadas, rodada 3 em lote: o recordSale descongela e lança 10; o encerramento congela no instante dele; crédito 550.00", async () => {
-  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 10 });
-  await driveViaRepository(ctx, "LOTTED");
+test("S7 · legado LOTTED congelado há 5 dias: arremate descongela e mantém 5 diárias com LEGACY_FREEZE aberto; encerramento fecha; crédito 350.00, saldo 7650.00", async () => {
+  const ctx = await scenario({ days: 10 });
   pushAttempt(ctx, 1, "SOLD");
   pushAttempt(ctx, 2, "NO_PAYMENT", 1);
   getMemoryAuctionRepositoryForTests().mutateEdictForTests(ctx.tenantId, ctx.processId, 1, { status: "CLOSED" } as never);
   pushLottedEdict(ctx, 3);
-  await freezeLegacy(ctx, "LOTTED", "LOTTED");
+  await legacyFrozen(ctx, "LOTTED");
   assert.equal(await dailyCount(ctx), 5, "pré-condição: 5 diárias no livro");
   const auction = createMemoryAuctionService();
   const sale = await outcome(auction.recordSale(who(ctx), ctx.processId, saleBody("8000.00", 3)));
-  const afterSale = { arremate: sale, congelado: (await processOf(ctx)).frozenAt !== undefined, diarias: await dailyCount(ctx) };
+  const afterSale = { arremate: sale, congelado: (await processOf(ctx)).frozenAt !== undefined, diarias: await dailyCount(ctx), periodosAbertos: (await suspensionsOf(ctx)).filter((suspensao) => suspensao.to === undefined).length };
   await auction.closeAuction(who(ctx), ctx.processId, { round_number: 3, payment_confirmed: true });
   const frozenAtClose = (await processOf(ctx)).frozenAt?.getTime() === (await lastEventAt(ctx, "AUCTION_CLOSED"));
   const seqs = await dailySeqs(ctx);
   const dist = await createMemoryAuctionSettlementService().distribute(who(ctx), ctx.processId, {});
   assert.deepEqual(
     { afterSale, congelamentoNoEncerramento: frozenAtClose, seqs, ...cascadeOf(dist) },
-    { afterSale: { arremate: "aceito", congelado: false, diarias: 10 }, congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], creditoDoPatio: "550.00", saldoDoExDono: "7450.00", somaDoRateioIgualAoLance: true },
+    { afterSale: { arremate: "aceito", congelado: false, diarias: 5, periodosAbertos: 1 }, congelamentoNoEncerramento: true, seqs: [1, 2, 3, 4, 5], creditoDoPatio: "350.00", saldoDoExDono: "7650.00", somaDoRateioIgualAoLance: true },
   );
 });
 

@@ -45,7 +45,13 @@ if (!connectionString) {
         auction.recordAttemptAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: 3, notes: undefined, actorId: undefined, occurredAt }),
       ]);
       const rejected = results.filter((r) => r.status === "rejected");
-      assert.equal(rejected.length <= 1, true, "na corrida de 2 operações, no máximo 1 deve rejeitar");
+      // A reciclagem SEMPRE vence a lógica (2 strikes edict-backed presentes de saída); o recordAttempt pode ter
+      // vencido o lock (criou o strike da rodada 3) OU chegado depois da reciclagem (409 auction_not_eligible/concurrent).
+      for (const r of rejected) {
+        const error = (r as PromiseRejectedResult).reason as { statusCode?: number; reason?: string };
+        assert.equal(error.statusCode, 409);
+        assert.ok(["auction_not_eligible", "concurrent_custody_append"].includes(error.reason ?? ""), `reason inesperado: ${error.reason}`);
+      }
       assert.equal((await selectProcess(client, ctx.tenantId, ctx.processId)).status, "DIRECT_RECYCLING", "estado final = sucata");
       assert.equal(await countScrapEvents(client, ctx.tenantId, ctx.processId), 1, "EXATAMENTE 1 STATUS_CHANGE two_strikes_scrap (nunca dupla-reciclagem)");
     } finally {

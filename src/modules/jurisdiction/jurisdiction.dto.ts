@@ -19,9 +19,9 @@ const DAILY_MODEL_LABELS: Record<DailyModel, string> = {
 };
 
 const DAILY_CAP_LABELS: Record<DailyCap, string> = {
-  SIX_MONTHS: "6 meses (art. 271 §10)",
+  SIX_MONTHS: "180 diárias (art. 271 §10)",
   THIRTY_DAYS_LEGACY: "30 diárias (Tema 124)",
-  UNLIMITED: "Ilimitado (contratual)",
+  UNLIMITED: "180 diárias (contrato particular)",
 };
 
 // §allowlist: tenant_id NUNCA é exposto (resolvido pelo ator autenticado).

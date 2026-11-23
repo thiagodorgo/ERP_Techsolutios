@@ -48,4 +48,3 @@ test("migration drill :: 20261123000000_grant_auction_reclaim_permission provisi
     `${MIGRATION_NAME}: concessões persistidas divergentes`,
   );
 });
-

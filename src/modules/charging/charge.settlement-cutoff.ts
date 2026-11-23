@@ -8,4 +8,3 @@ export function assertSettlementBeforeAuctionList(status: string): void {
   }
   throw new ChargeError(409, "CHARGE_INVALID", "settle_after_auction_list", "Cannot settle charges after auction listing.");
 }
-

@@ -178,7 +178,7 @@ export class AuctionController {
     return { body: toAuctionViewDto(view, canAppraise) };
   }
 
-  // Ω5P PR-13b — INADIMPLÊNCIA (impound:transition, art. 42). AUCTIONED→LOTTED (reintegração; NÃO descongela).
+  // Ω5P PR-13b — INADIMPLÊNCIA (impound:transition, art. 42). AUCTIONED→LOTTED (reintegração; descongela o legado congelado).
   async defaultAuction(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const result = await service.defaultAuction(actor, readRouteParam(request.params.processId), request.body ?? {});

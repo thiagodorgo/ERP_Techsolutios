@@ -415,9 +415,6 @@ export class AuctionService {
     if (!saleChargeState) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_gate_unresolved", "Charge state could not be resolved for this process; retry.");
     }
-    if (!saleChargeState.dailyServiceConfigured) {
-      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_unpostable", "Daily charges could not be posted for this process.");
-    }
     if (saleChargeState.dailyShortfall > 0) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_missing", "Daily charges are still missing for this process; retry.");
     }
