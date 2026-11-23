@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { ImpoundRepository } from "../impound/impound.repository.js";
+import type { ImpoundRepository, MemoryImpoundAuctionDep } from "../impound/impound.repository.js";
 import { FEDERAL_DEFAULTS } from "../jurisdiction/jurisdiction.defaults.js";
 import type { ImpoundStatus } from "../impound/impound.types.js";
 import {
@@ -99,7 +99,7 @@ export function evaluateScrapEdictGate(
 // Deps compostas (auction DEPENDE de impound; jamais o contrário). Só os métodos usados — sem acoplar o resto. O
 // auction encadeia o CustodyEvent na cadeia EXISTENTE via impound.appendEvent/applyTransition (reusa o código
 // probatório mergeado — NÃO duplica a lógica de hash).
-export type AuctionImpoundDep = Pick<ImpoundRepository, "findProcessById" | "applyTransition" | "appendEvent" | "clearLegacyFreeze">;
+export type AuctionImpoundDep = Pick<ImpoundRepository, "findProcessById" | "applyTransition" | "appendEvent"> & MemoryImpoundAuctionDep;
 
 // Port da checagem de liberação em curso (dono = release), re-verificada sob o lock em markEligibleAtomic (anti-TOCTOU
 // do for-repair-montar, que cria dossiê SEM transicionar o processo). Injetado por DI (testável).
@@ -527,6 +527,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (!isPositiveMoney(edict.appraisalAmount)) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_appraisal_missing", "Auction preparation requires the confidential appraisal amount (> 0, art. 28).");
     }
+    await this.impound.openDailySuspension(input.tenantId, input.processId, input.occurredAt, "AUCTION");
     await this.impound.applyTransition({
       tenantId: input.tenantId,
       processId: input.processId,
@@ -651,6 +652,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     }
     // O certame consuma: a rodada LOTADA passa a CLOSED (status honesto — AUCTION_CLOSED é terminal).
     this.closeLottedEdicts(input.tenantId, input.processId);
+    await this.impound.closeDailySuspension(input.tenantId, input.processId, input.occurredAt);
     await this.impound.applyTransition({
       tenantId: input.tenantId,
       processId: input.processId,
@@ -665,8 +667,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
 
   // INADIMPLÊNCIA (AUCTIONED→LOTTED, art. 42): idempotente por round_number (NO_PAYMENT da rodada de reintegração).
   // Re-verifica a existência de um arremate SOLD (belt-and-suspenders) + REGISTRA NO_PAYMENT (a linha SOLD original
-  // permanece imutável — I2/append-only) + STATUS_CHANGE default_reintegrated. NÃO descongela (setFrozenAt=false; a
-  // diária permanece congelada da arrematação — PD-Ω5P-AUC-FROZEN).
+  // permanece imutável — I2/append-only) + STATUS_CHANGE default_reintegrated. Descongela o legado congelado (frozen_at
+  // vira período LEGACY_FREEZE; a diária volta a contar no resgate).
   async defaultAuctionAtomic(input: DefaultAuctionInput): Promise<DefaultAuctionResult> {
     const process = await this.impound.findProcessById(input.tenantId, input.processId);
     if (!process) {
@@ -726,6 +728,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     // O certame é cancelado (reclamado): a rodada LOTADA passa a CLOSED (mantém no máx. 1 LOTTED/processo).
     this.closeLottedEdicts(input.tenantId, input.processId);
     await this.impound.clearLegacyFreeze(input.tenantId, input.processId);
+    await this.impound.closeDailySuspension(input.tenantId, input.processId, input.occurredAt);
     await this.impound.applyTransition({
       tenantId: input.tenantId,
       processId: input.processId,
@@ -747,7 +750,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (process.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
-    await this.impound.clearLegacyFreeze(input.tenantId, input.processId);
+    await this.impound.closeDailySuspension(input.tenantId, input.processId, input.occurredAt);
     await this.impound.applyTransition({
       tenantId: input.tenantId,
       processId: input.processId,

@@ -373,6 +373,8 @@ export class PrismaAuctionRepository implements AuctionRepository {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_appraisal_missing", "Auction preparation requires the confidential appraisal amount (> 0, art. 28).");
     }
     await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "AUCTION_PREP" } });
+    const prepSuspensionOpened = await this.openDailySuspensionTx(input.tenantId, input.processId, input.occurredAt, "AUCTION");
+    void prepSuspensionOpened;
     await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "AUCTION_PREP",
       payload: buildAuctionPrepEventPayload(input.roundNumber),
@@ -517,6 +519,8 @@ export class PrismaAuctionRepository implements AuctionRepository {
     }
     const closeFrozenAt = input.occurredAt;
     await this.assertDailiesClosedTx(input.tenantId, input.processId, locked, closeFrozenAt, input.chargeBasis);
+    const closeSuspensionClosed = await this.closeDailySuspensionTx(input.tenantId, input.processId, closeFrozenAt);
+    void closeSuspensionClosed;
     await this.closeLottedEdicts(input.tenantId, input.processId);
     await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "AUCTION_CLOSED", frozen_at: closeFrozenAt } });
     await this.appendEventTx(input.tenantId, input.processId, locked, {
@@ -571,6 +575,7 @@ export class PrismaAuctionRepository implements AuctionRepository {
       throw error;
     }
     const attempt = mapAttempt(attemptRow);
+    await this.convertLegacyFreezeTx(input.tenantId, input.processId, locked.status, locked.frozen_at);
     await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "LOTTED", frozen_at: null } });
     await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "STATUS_CHANGE",
@@ -592,6 +597,9 @@ export class PrismaAuctionRepository implements AuctionRepository {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
     await this.closeLottedEdicts(input.tenantId, input.processId);
+    await this.convertLegacyFreezeTx(input.tenantId, input.processId, locked.status, locked.frozen_at);
+    const reclaimSuspensionClosed = await this.closeDailySuspensionTx(input.tenantId, input.processId, input.occurredAt);
+    void reclaimSuspensionClosed;
     await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "ACTIVE_CUSTODY", frozen_at: null } });
     await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "STATUS_CHANGE",
@@ -617,7 +625,9 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (!(await this.areDebtsSettled(input.tenantId, input.processId))) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_withdraw_not_settled", "Auction withdrawal requires all custody debts settled.");
     }
-    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "ACTIVE_CUSTODY", frozen_at: null } });
+    const withdrawSuspensionClosed = await this.closeDailySuspensionTx(input.tenantId, input.processId, input.occurredAt);
+    void withdrawSuspensionClosed;
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "ACTIVE_CUSTODY" } });
     await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "STATUS_CHANGE",
       payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "settled_before_auction" },
@@ -638,11 +648,50 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (!thawable || locked.frozen_at === null) {
       return false;
     }
+    await this.convertLegacyFreezeTx(tenantId, processId, locked.status, locked.frozen_at);
     await this.client.impoundProcess.update({
       where: { id: processId },
       data: { frozen_at: null },
     });
     return true;
+  }
+
+  // Abre um período sem diária sob o FOR UPDATE do processo (não abre um segundo se já há um aberto).
+  private async openDailySuspensionTx(tenantId: string, processId: string, startedAt: Date, reason: string): Promise<boolean> {
+    const rows = await this.client.$queryRaw<Array<{ one: number }>>`
+      SELECT 1 AS one FROM impound_daily_suspensions
+      WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid AND ended_at IS NULL
+      LIMIT 1
+    `;
+    if (rows.length > 0) return false;
+    await this.client.impoundDailySuspension.create({
+      data: { tenant_id: tenantId, process_id: processId, started_at: startedAt, reason },
+    });
+    return true;
+  }
+
+  // Fecha o período aberto (se houver) e devolve true. O CHECK (ended_at >= started_at) é do banco.
+  private async closeDailySuspensionTx(tenantId: string, processId: string, endedAt: Date): Promise<boolean> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM impound_daily_suspensions
+      WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid AND ended_at IS NULL
+      LIMIT 1
+    `;
+    if (rows.length === 0) return false;
+    await this.client.impoundDailySuspension.update({
+      where: { id: rows[0].id },
+      data: { ended_at: endedAt },
+    });
+    return true;
+  }
+
+  // Converte um congelamento legado (frozen_at antigo) em período LEGACY_FREEZE antes de descongelar, nos estados
+  // de leilão. É a única forma de não cobrar o tempo de leilão sem mexer no que já foi lançado.
+  private async convertLegacyFreezeTx(tenantId: string, processId: string, status: string, legacyFrozenAt: Date | null): Promise<void> {
+    if (legacyFrozenAt === null) return;
+    if (!["AUCTION_PREP", "LOTTED", "AUCTIONED"].includes(status)) return;
+    const legacySuspensionOpened = await this.openDailySuspensionTx(tenantId, processId, legacyFrozenAt, "LEGACY_FREEZE");
+    void legacySuspensionOpened;
   }
 
 
