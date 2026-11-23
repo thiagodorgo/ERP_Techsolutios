@@ -5,6 +5,7 @@ import { computeEventHash, genesisHash } from "../impound/impound.hashchain.js";
 import type { CanonicalValue, CustodyEventType } from "../impound/impound.types.js";
 import type { DailyCap, DailyModel, ProfileScope } from "../jurisdiction/jurisdiction.types.js";
 import { assertSettlementBeforeAuctionList } from "./charge.settlement-cutoff.js";
+import { summarizeAccrual, type AccrualSuspension } from "./charge.accrual.js";
 import { centsToMoney, moneyToCents, toMoneyString } from "./charge.validators.js";
 import {
   buildChargeEventPayload,
@@ -34,6 +35,10 @@ type LockedProcessRow = {
   readonly custody_seq_head: number;
   readonly custody_hash_head: string | null;
 };
+
+function toAccrualSuspension(row: { started_at: Date; ended_at: Date | null }): AccrualSuspension {
+  return { from: row.started_at, to: row.ended_at ?? undefined };
+}
 
 // Repositório de baixo nível sobre um executor de tx. As acumulações/lançamentos rodam FOR UPDATE do processo +
 // INSERT do encargo + append do CustodyEvent (REPLICA FIEL de insertEventTx reusando só as PURAS computeEventHash/
@@ -188,6 +193,22 @@ export class PrismaChargeRepository implements ChargeRepository {
     `;
     if (existing.length > 0) return { created: false };
 
+    const lockedCtx = await this.loadAccrualContext(input.tenantId, input.processId);
+    if (lockedCtx?.enteredAt) {
+      const lockedAsOf = lockedCtx.frozenAt ? new Date(Math.min(input.occurredAt.getTime(), lockedCtx.frozenAt.getTime())) : input.occurredAt;
+      const lockedDueCount = summarizeAccrual({
+        t0: lockedCtx.enteredAt,
+        asOf: lockedAsOf,
+        timezone: lockedCtx.timezone,
+        model: lockedCtx.model,
+        cap: lockedCtx.cap,
+        suspensions: lockedCtx.suspensions,
+      }).nAccrue;
+      if (input.periodSeq > lockedDueCount) {
+        throw new ChargeError(409, "CHARGE_CONFLICT", "daily_not_due_under_lock", "The daily charge is not due under the process lock (auction period open).");
+      }
+    }
+
     const chargeRow = await this.client.processCharge.create({
       data: {
         tenant_id: input.tenantId,
@@ -236,6 +257,12 @@ export class PrismaChargeRepository implements ChargeRepository {
     `;
     const row = rows[0];
     if (!row) return undefined;
+    const suspensionRows = await this.client.$queryRaw<Array<{ started_at: Date; ended_at: Date | null }>>`
+      SELECT started_at, ended_at
+      FROM impound_daily_suspensions
+      WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid
+      ORDER BY started_at ASC
+    `;
     return {
       tenantId,
       processId,
@@ -246,6 +273,7 @@ export class PrismaChargeRepository implements ChargeRepository {
       model: row.daily_model as DailyModel,
       cap: row.daily_cap as DailyCap,
       dailyServiceCatalogId: row.daily_service_catalog_id ?? undefined,
+      suspensions: suspensionRows.map(toAccrualSuspension),
     };
   }
 

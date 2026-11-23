@@ -1,5 +1,6 @@
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
 import type { DailyCap, DailyModel, ProfileScope } from "../jurisdiction/jurisdiction.types.js";
+import type { AccrualSuspension } from "./charge.accrual.js";
 
 export type ChargeActorContext = {
   readonly tenantId: string;
@@ -106,6 +107,7 @@ export type AccrualContext = {
   readonly model: DailyModel;
   readonly cap: DailyCap;
   readonly dailyServiceCatalogId?: string;
+  readonly suspensions: readonly AccrualSuspension[];
 };
 
 export type AccrueProcessResult = {
@@ -167,7 +169,6 @@ export type SettleResult = {
 // pelo release.service. debtsSettled/reconciliationConsistent alimentam as guardas I5; overAccruedDailyIds guia o
 // estorno do settle; persistedDailyCount/nDueNow alimentam o freeze-retroactive do salto A.
 export type ReleaseChargeState = {
-  readonly dailyServiceConfigured: boolean;
   readonly debtsSettled: boolean; // nenhuma linha exigível (REMOVAL/DAILY/ADDITIONAL) com settled_at NULL
   readonly reconciliationConsistent: boolean; // toda DAILY sobre-acumulada tem estorno ADJUSTMENT
   readonly settledTotal: string; // Σ net do ledger (canônico "0.00")

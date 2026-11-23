@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { CanonicalValue, CustodyEventType } from "../impound/impound.types.js";
-import type { ImpoundRepository } from "../impound/impound.repository.js";
+import type { ImpoundRepository, MemoryImpoundAuctionDep } from "../impound/impound.repository.js";
 import type { DailyCap, DailyModel, ProfileScope } from "../jurisdiction/jurisdiction.types.js";
 import {
   ChargeError,
@@ -17,6 +17,7 @@ import {
   type SettleResult,
 } from "./charge.types.js";
 import { assertSettlementBeforeAuctionList } from "./charge.settlement-cutoff.js";
+import { summarizeAccrual } from "./charge.accrual.js";
 import { centsToMoney, moneyToCents, toMoneyString } from "./charge.validators.js";
 
 export type StartRunInput = {
@@ -124,7 +125,9 @@ export class InMemoryChargeRepository implements ChargeRepository {
   private readonly regimeByProcess = new Map<string, StoredProfile>();
   private readonly timezones = new Map<string, string>();
 
-  constructor(private readonly impound: Pick<ImpoundRepository, "appendEvent" | "findProcessById">) {}
+  constructor(
+    private readonly impound: Pick<ImpoundRepository, "appendEvent" | "findProcessById"> & Pick<MemoryImpoundAuctionDep, "listDailySuspensions">,
+  ) {}
 
   async listCharges(input: ListChargesInput): Promise<readonly ProcessCharge[]> {
     return this.charges
@@ -251,6 +254,21 @@ export class InMemoryChargeRepository implements ChargeRepository {
       (c) => c.tenantId === input.tenantId && c.processId === input.processId && c.kind === "DAILY" && c.periodSeq === input.periodSeq,
     );
     if (exists) return { created: false };
+    const memoryCtx = await this.loadAccrualContext(input.tenantId, input.processId);
+    if (memoryCtx?.enteredAt) {
+      const memoryAsOf = memoryCtx.frozenAt ? new Date(Math.min(input.occurredAt.getTime(), memoryCtx.frozenAt.getTime())) : input.occurredAt;
+      const memoryDueCount = summarizeAccrual({
+        t0: memoryCtx.enteredAt,
+        asOf: memoryAsOf,
+        timezone: memoryCtx.timezone,
+        model: memoryCtx.model,
+        cap: memoryCtx.cap,
+        suspensions: memoryCtx.suspensions,
+      }).nAccrue;
+      if (input.periodSeq > memoryDueCount) {
+        throw new ChargeError(409, "CHARGE_CONFLICT", "daily_not_due_under_lock", "The daily charge is not due under the process lock (auction period open).");
+      }
+    }
     const now = new Date();
     const charge: ProcessCharge = {
       id: randomUUID(),
@@ -297,6 +315,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
       model: regime.model,
       cap: regime.cap,
       dailyServiceCatalogId: regime.dailyServiceCatalogId,
+      suspensions: await this.impound.listDailySuspensions(tenantId, processId),
     };
   }
 

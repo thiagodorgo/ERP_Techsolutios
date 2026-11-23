@@ -59,6 +59,7 @@ model Tenant {
   release_requirement_checks    ReleaseRequirementCheck[]
   auction_attempts              AuctionAttempt[]
   auction_edicts                AuctionEdict[]
+  impound_daily_suspensions     ImpoundDailySuspension[]
   settlements                   Settlement[]
   settlement_allocations        SettlementAllocation[]
   portal_access_logs            PortalAccessLog[]
@@ -3373,6 +3374,7 @@ model ImpoundProcess {
   releases               ImpoundRelease[]    // Ω5P PR-10a — liberações do veículo (I5)
   auction_attempts       AuctionAttempt[]    // Ω5P PR-12 — contador append-only de rodadas de leilão desertas (I8)
   auction_edicts         AuctionEdict[]      // Ω5P PR-13a — designação de leilão por rodada (projeção mutável; a prova vive na cadeia)
+  impound_daily_suspensions ImpoundDailySuspension[] // E11.2 — períodos sem diária (leilão/legado congelado)
   settlements            Settlement[]        // Ω5P PR-14a — liquidação em cascata §6º (1 por processo; I7)
   settlement_allocations SettlementAllocation[] // Ω5P PR-14a — rateio append-only por beneficiário na ordem §6º
   portal_access_logs     PortalAccessLog[]   // Ω5P PR-16 — acessos do owner-portal que RESOLVERAM neste processo (I10)
@@ -3950,6 +3952,27 @@ model AuctionEdict {
   @@index([tenant_id, process_id])
   @@index([tenant_id, process_id, round_number])
   @@map("auction_edicts")
+}
+
+// E11.2 — PERÍODO SEM DIÁRIA (leilão/legado congelado). Registro aditivo, sem exclusão: a linha nasce quando a
+// diária para (AUCTION na preparação; LEGACY_FREEZE na conversão do congelamento antigo) e só se fecha quando o
+// processo sai do leilão. Idempotência de "um período aberto por processo" = índice PARCIAL único raw-only na
+// migração (Prisma não modela índice parcial). CHECK ended_at >= started_at também na migração. reason
+// AUCTION|LEGACY_FREEZE validado na aplicação (sem enum no banco).
+model ImpoundDailySuspension {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String    @db.Uuid
+  process_id  String    @db.Uuid
+  started_at  DateTime  @db.Timestamptz(6)
+  ended_at    DateTime? @db.Timestamptz(6)
+  reason      String
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  tenant      Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process     ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id, started_at])
+  @@map("impound_daily_suspensions")
 }
 
 // Ω5P PR-14a — LIQUIDAÇÃO em cascata §6º (núcleo I7): distribuição do PRODUTO do leilão (hammer_amount = base
