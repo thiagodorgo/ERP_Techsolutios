@@ -251,6 +251,11 @@ test("ACTIVE_CUSTODY→DIRECT_RECYCLING (inservível) com CADEIA QUEBRADA ⇒ 40
     (t, p) => getMemoryNotificationRepositoryForTests().listNotifications({ tenantId: t, processId: p }),
     async () => ({ processId: ctx.processId, valid: false, eventCount: 0, headHash: null, brokenAt: { seq: 1, reason: "hash_mismatch" as const }, checkedAt: new Date().toISOString() }),
     (t, p) => getMemoryReleaseRepositoryForTests().hasActiveRelease(t, p),
+    async () => ({ examined: true, accrued: 0, errors: 0 }),
+    async () => ({ dailyServiceConfigured: true, debtsSettled: false, reconciliationConsistent: true, settledTotal: "0.00", overAccruedDailyIds: [], persistedDailyCount: 0, nDueNow: 0, nAccrueAtFreeze: 0, dailyShortfall: 0, exigibleCount: 0 }),
+    async () => true,
+    async () => true,
+    async () => true,
   );
   await assert.rejects(
     () => broken.reclassifyUnrecoverable(actor(tenantId), ctx.processId, { classification: "UNRECOVERABLE", reason: "Estrutura comprometida" }),
