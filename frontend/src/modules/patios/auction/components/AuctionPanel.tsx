@@ -20,6 +20,7 @@ import {
   recordSale,
   registerEdict,
   setAppraisal,
+  withdrawSettled,
 } from "../auction.service";
 import type { AppraisalInput, AuctionApiContext, DesertedAttemptInput, EdictInput, SaleInput, UnrecoverableInput } from "../auction.types";
 import { useAuction } from "../useAuction";
@@ -54,6 +55,7 @@ export function AuctionPanel({
   const { auction, loading, error, denied, loaded, reload } = useAuction(process.id);
 
   const canTransition = can("impound:transition");
+  const canReclaim = can("auction:reclaim");
   const canAppraise = can("auction:appraise");
 
   const [busy, setBusy] = useState(false);
@@ -106,6 +108,7 @@ export function AuctionPanel({
     setReclaimOpen(false);
     setReclaimReason("");
   });
+  const handleWithdrawSettled = () => void run(() => withdrawSettled(context, process.id));
 
   if (denied) {
     return (
@@ -187,6 +190,9 @@ export function AuctionPanel({
                 <Button type="button" onClick={handlePrepare} disabled={busy} aria-label="Preparar para leilão">
                   <PackageCheck size={15} aria-hidden /> {busy ? "Processando…" : "Preparar para leilão"}
                 </Button>
+                <Button type="button" variant="secondary" onClick={handleWithdrawSettled} disabled={busy} aria-label="Retirar do leilão (quitado)">
+                  <Undo2 size={15} aria-hidden /> Retirar do leilão (quitado)
+                </Button>
               </div>
             ) : (
               <EmptyState title="Somente leitura" detail="Você não tem permissão para conduzir o leilão deste processo." />
@@ -228,6 +234,9 @@ export function AuctionPanel({
               <Button type="button" onClick={handleLot} disabled={busy} aria-label="Lotear">
                 <Boxes size={15} aria-hidden /> {busy ? "Loteando…" : "Lotear"}
               </Button>
+              <Button type="button" variant="secondary" onClick={handleWithdrawSettled} disabled={busy} aria-label="Retirar do leilão (quitado)">
+                <Undo2 size={15} aria-hidden /> Retirar do leilão (quitado)
+              </Button>
             </div>
           ) : (
             <EmptyState title="Somente leitura" detail="Você não tem permissão para lotear este processo." />
@@ -244,7 +253,7 @@ export function AuctionPanel({
               <EmptyState title="Somente leitura" detail="Você não tem permissão para registrar o arremate deste processo." />
             </Card>
           )}
-          {canTransition ? (
+          {canReclaim ? (
             <Card title="Reclamado antes da venda">
               <p style={introStyle}>O proprietário pode reclamar o veículo antes da consumação da venda (art. 26 §1º). Reabre a liberação.</p>
               <div style={{ display: "flex", justifyContent: "flex-start" }}>
@@ -253,7 +262,11 @@ export function AuctionPanel({
                 </Button>
               </div>
             </Card>
-          ) : null}
+          ) : (
+            <Card title="Reclamado antes da venda">
+              <EmptyState title="Somente leitura" detail="Você não tem permissão para resgatar o veículo antes da venda." />
+            </Card>
+          )}
         </>
       ) : null}
 

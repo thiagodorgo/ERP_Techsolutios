@@ -126,6 +126,12 @@ export function auctionActionErrorMessage(reason: string | null | undefined, sta
       return "A reintegração por inadimplência exige um arremate registrado para inadimplir (art. 42).";
     case "reason_required":
       return "Informe o fundamento do ato para concluir esta ação.";
+    case "settle_after_auction_list":
+      return "Depois de lotado, arrematado ou encerrado, a quitação segue bloqueada e o retorno ao fluxo ocorre por retirada de quitado.";
+    case "auction_debts_settled":
+      return "O processo já está quitado para leilão; use ‘Retirar do leilão (quitado)’ para voltar à custódia ativa.";
+    case "auction_withdraw_not_settled":
+      return "A retirada do leilão exige livro quitado e reconciliação consistente para este processo.";
     // AuctionError do serviço.
     case "auction_not_eligible":
       return "Só um processo elegível a leilão pode registrar uma rodada do certame.";
