@@ -18039,6 +18039,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 - **status:** ABERTA · **gravidade:** ALTA de produto e dinheiro · **dono:** `B-LEILAO-REVENDA` · **bloqueia:** o fechamento desse bloco do MVP.
 - **origem:** Emenda 10.2 do plano `B-PATIO-LEILAO-DIARIAS`; entrou no MVP por `D-DONO-2311-REVENDA-NO-MVP`.
+- **nota (E11.10 do plano B-PATIO-LEILAO-DIARIAS):** a revenda mantém o **mesmo** período aberto do leilão.
 - **critério de encerramento:** após inadimplência, um ato autorizado cria nova rodada em lote e permite nova venda sem reabrir a quitação antiga, sem congelar diárias antes do pagamento e sem dois sucessos concorrentes de resgate e relote.
 
 ## P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão deserto — MÉDIA
@@ -18058,3 +18059,57 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** BAIXA, não grave e pré-existente · **dono:** `scripts/kpi-history-append.mjs` · **bloqueia:** não.
 - **origem:** achado A3 da revisão do PR #629: o extrator reconhece somente ID isolado entre parênteses e substitui por rótulo de PR quando o título traz texto junto.
 - **critério de encerramento:** o extrator identifica o ID de bloco também quando ele compartilha os parênteses com outro texto, por teste que cobre os títulos dos PRs #622 e #625, sem edição manual da referência.
+
+## P-AWS-ROTEIRO-NAT-SWAP (2026-11-23) — user-data da NAT instala antes da swap — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de documentação e infra · **dono:** o orquestrador, no próximo PR de documentação · **bloqueia:** não.
+- **origem:** defeito do roteiro medido em 23/11 às 16:00 SP: o user-data do passo 1.5 instala dependências antes de criar a swap, e a instalação foi morta por falta de memória. O conserto ao vivo (swap criada e instalação refeita) foi aplicado e conferido.
+- **critério de encerramento:** o user-data do passo 1.5 cria a swap antes da instalação (ou usa instância com mais memória), e o roteiro é atualizado no próximo PR de documentação.
+
+## P-AWS-TOKEN-GHCR-TROCAR (2026-11-23) — trocar o token do GitHub do cofre — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de segurança · **dono:** o dono · **bloqueia:** não; antes do go-live.
+- **origem:** o token de leitura de pacotes do GitHub foi colado no chat antes de ser guardado no cofre local; o escopo dele é só leitura de pacotes.
+- **critério de encerramento:** um token novo no cofre local e o antigo revogado no GitHub, antes do go-live.
+
+## P-PATIO-ROTULO-FALLBACK-TETO (2026-11-23) — fallback local ainda diz "6 meses" e "Ilimitado" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA, não grave e pré-existente · **dono:** bloco de tela do pátio (o mesmo de `P-EXTRATO-MOSTRAR-PERIODO-LEILAO`) · **bloqueia:** não.
+- **origem:** achado C3-02 da J-631: `frontend/src/modules/patios/profiles/profiles.service.ts:31` e `:50` ainda dizem "6 meses (art. 271 §10)" e "Ilimitado (contratual)", rótulos antigos do teto.
+- **critério de encerramento:** o fallback local de mock/erro passa a refletir o teto de 180 diárias, em PT-BR e sem termo técnico.
+
+## P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO (2026-11-23) — legado em lote/arrematado sem período aberto — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** `B-PATIO-LEILAO-DIARIAS`, fatia G8 (script `--abrir-periodo-leilao`), depois da P14 · **bloqueia:** não o merge do bloco; fecha quando a G8 rodar em cada organização.
+- **origem:** E11.5 item 2 do plano `B-PATIO-LEILAO-DIARIAS`: processos em lote ou arrematados, sem congelamento, com diária lançada durante o leilão, seguem cobrando até o script abrir o período.
+- **critério de encerramento:** o modo `--abrir-periodo-leilao` do script roda, por organização, e abre o período de cada processo em `AUCTION_PREP`, `LOTTED` ou `AUCTIONED` sem período (início no último evento `AUCTION_PREP` da cadeia); sem evento na cadeia, o processo é listado e não alterado.
+
+## P-TETO-180-PAGAS-ACIMA (2026-11-23) — diárias acima de 180 já pagas — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** o dono decide caso a caso, pela lista do script · **bloqueia:** não.
+- **origem:** P15 do plano `B-PATIO-LEILAO-DIARIAS`: o bloco só lista os casos de diária acima de 180 já paga; linha paga nunca é estornada sozinha. O ato de devolução virou `P-TETO-180-ATO-DE-DEVOLUCAO`, bloco próprio.
+- **critério de encerramento:** a lista dos casos acima de 180 já pagos é produzida pelo script (modo `--listar-pagas-acima-do-teto`), e o dono decide um a um; o ato de devolução fica no bloco próprio `P-TETO-180-ATO-DE-DEVOLUCAO`.
+
+## P-TETO-RENOMEAR-IDENTIFICADOR (2026-11-23) — renomear o identificador técnico do teto — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA, não segura nada · **dono:** bloco próprio de saneamento; o orquestrador registra · **bloqueia:** não.
+- **origem:** E11.10 do plano `B-PATIO-LEILAO-DIARIAS` (l.1804): `SIX_MONTHS` fica como nome técnico, nunca exibido; trocar o nome exigiria reescrever o regime gravado de todo processo, sem ganho para o produto.
+- **critério de encerramento:** o identificador técnico do teto é renomeado (ou a decisão de mantê-lo é registrada) sem exibir termo técnico na interface.
+
+## P-EXTRATO-MOSTRAR-PERIODO-LEILAO (2026-11-23) — extrato e guia dizerem "em leilão, sem diária" — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de tela e fluxo · **dono:** bloco de tela do pátio, com as regras do §4 do plano · **bloqueia:** não.
+- **origem:** E11.10 do plano `B-PATIO-LEILAO-DIARIAS`: o extrato e a guia precisam dizer "em leilão, sem diária".
+- **critério de encerramento:** o extrato e a guia do pátio mostram "em leilão, sem diária" no período aberto, com as regras do §4 do plano.
+
+## P-CLAMAV-BASE-VELHA-NA-SUBIDA (2026-11-23) — antivírus subia com a base velha — FECHADA
+
+- **status:** FECHADA · **gravidade:** ALTA para operar (não para dado) · **dono:** `B-AV-BASE-SUBIDA` · **bloqueia:** não mais.
+- **origem:** AWS 3b.6 de 23/11: o `clamd` só inicia depois da atualização, e a base da imagem ficava mais velha a cada subida; com o desligamento diário, toda manhã repetiria a corrida.
+- **fechamento:** PR #633 (`ba99eb41`), que faz o `clamd` só começar com a base em dia; na AWS, fechou com a receita `erp-clamav:3` (imagem 1.4.7, base do dia sem recarga manual).
+
+## P-CLAMAV-IMAGEM-1-4-7 (2026-11-23) — subir a imagem 1.4.7 do antivírus — FECHADA
+
+- **status:** FECHADA · **gravidade:** MÉDIA de infra · **dono:** `B-AV-BASE-SUBIDA` · **bloqueia:** não mais.
+- **origem:** o log do antivírus recomendava a 1.4.7; a troca do digest ia por PR em `infra/clamav` e na receita.
+- **fechamento:** PR #633 (`ba99eb41`), que fixou a imagem 1.4.7 por digest e atualizou a receita e as topologias.
