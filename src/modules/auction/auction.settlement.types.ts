@@ -1,4 +1,5 @@
 import type { ImpoundStatus } from "../impound/impound.types.js";
+import type { ReleaseChargeBasis } from "../release/release.types.js";
 
 // Ω5P PR-14a — LIQUIDAÇÃO em cascata §6º (núcleo I7). Enums em INGLÊS validados na APP (SEM CHECK de enum no banco);
 // labels PT-BR no DTO. Dinheiro em CENTAVOS INTEIROS EXATOS no motor (nunca float); string Decimal(12,2) na fronteira.
@@ -138,6 +139,7 @@ export type DistributeSettlementInput = {
   readonly allocations: readonly CascadeAllocation[]; // tiers (ordem §6º)
   readonly ownerBalanceCents: number;
   readonly shortfallCents: number;
+  readonly chargeBasis: ReleaseChargeBasis;
   readonly auctionCostCents: number;      // resumo (tier topo) p/ a coluna settlements.auction_cost_amount
   readonly removalStorageCents: number;   // resumo (item I computado) p/ settlements.removal_storage_claim
   readonly currency: string;
