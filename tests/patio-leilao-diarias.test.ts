@@ -278,6 +278,7 @@ type ClosingPort = (tenantId: string, processId: string, now: Date, actorId?: st
 type AuctionPorts = {
   closeDailies?: ClosingPort;
   chargeState?: (tenantId: string, processId: string, now: Date) => Promise<unknown>;
+  currentDailyService?: (tenantId: string, processId: string) => Promise<boolean | undefined>;
   inspectionComplete?: (tenantId: string, processId: string) => Promise<boolean>;
   removalPosted?: (tenantId: string, processId: string) => Promise<boolean>;
   repository?: unknown;
@@ -298,6 +299,7 @@ function auctionServiceWith(ports: AuctionPorts): AuctionService {
     (tenantId: string, processId: string) => getMemoryReleaseRepositoryForTests().hasActiveRelease(tenantId, processId),
     ports.closeDailies ?? ((tenantId: string, processId: string, now: Date, actorId?: string) => charge.accrueProcess(tenantId, processId, now, actorId)),
     ports.chargeState ?? ((tenantId: string, processId: string, now: Date) => charge.getReleaseChargeState(tenantId, processId, now)),
+    ports.currentDailyService ?? ((tenantId: string, processId: string) => charge.hasCurrentDailyServiceCatalog(tenantId, processId)),
     ports.inspectionComplete ?? (async () => true),
     ports.removalPosted ?? (async () => true),
   );
@@ -313,6 +315,7 @@ function settlementServiceWith(ports: Pick<AuctionPorts, "closeDailies" | "charg
     (tenantId: string, processId: string) => createMemoryChargeService().getCascadeExpenseClaim(tenantId, processId),
     ports.closeDailies ?? ((tenantId: string, processId: string, now: Date, actorId?: string) => charge.accrueProcess(tenantId, processId, now, actorId)),
     ports.chargeState ?? ((tenantId: string, processId: string, now: Date) => charge.getReleaseChargeState(tenantId, processId, now)),
+    ports.currentDailyService ?? ((tenantId: string, processId: string) => charge.hasCurrentDailyServiceCatalog(tenantId, processId)),
   );
 }
 
