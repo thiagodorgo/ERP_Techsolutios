@@ -296,11 +296,10 @@ export class ChargeService {
     const lines = await this.repository.listCharges({ tenantId, processId });
     // Moeda do claim = a das linhas EXIGÍVEIS (REMOVAL/DAILY/ADDITIONAL); fallback à 1ª linha ou BRL (ledger vazio).
     const currency = lines.find((line) => line.kind !== "ADJUSTMENT")?.currency ?? lines[0]?.currency ?? "BRL";
-    // Σ líquido das sobre-acumuladas (cada dailyNetCents já soma os ADJUSTMENTs que a apontam; sem settle, = a própria
-    // DAILY). Subtrai do total → o ledger CAPADO ao teto. Math.max(0,·) defensivo (nunca negativo por construção).
-    const overAccruedCents = state.overAccruedDailyIds.reduce((acc, id) => acc + dailyNetCents(id, lines), 0);
-    const claimCents = Math.max(0, moneyToCents(state.settledTotal) - overAccruedCents);
-    return { claimCents, currency };
+    const cascadeOverAccrued = new Set(state.overAccruedDailyIds);
+    const cascadeOpenLines = lines.filter((line) => line.kind !== "ADJUSTMENT" && !line.settledAt && !cascadeOverAccrued.has(line.id));
+    const cascadeOpenCents = cascadeOpenLines.reduce((acc, line) => acc + dailyNetCents(line.id, lines), 0);
+    return { claimCents: Math.max(0, cascadeOpenCents), currency };
   }
 
   // B-PATIO-REC-01 (plano v3 §5.1; achado N8) — o DEVIDO CAPADO ao teto, para a cobrança on-line da taxa de pátio. READ-ONLY:
