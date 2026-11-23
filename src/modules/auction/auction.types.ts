@@ -1,5 +1,6 @@
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
 import type { ImpoundStatus } from "../impound/impound.types.js";
+import type { ReleaseChargeBasis } from "../release/release.types.js";
 import type { ProfileScope } from "../jurisdiction/jurisdiction.types.js";
 
 export type AuctionActorContext = {
@@ -168,6 +169,7 @@ export type ReclassifyScrapInput = {
   readonly processId: string;
   readonly expectedFrom: ImpoundStatus; // AUCTION_ELIGIBLE
   readonly maxAttempts: number;
+  readonly chargeBasis: ReleaseChargeBasis;
   readonly actorId?: string;
   readonly occurredAt: Date;
 };
@@ -179,6 +181,7 @@ export type ReclassifyUnrecoverableInput = {
   readonly tenantId: string;
   readonly processId: string;
   readonly expectedFrom: ImpoundStatus; // ACTIVE_CUSTODY
+  readonly chargeBasis: ReleaseChargeBasis;
   readonly actorId?: string;
   readonly occurredAt: Date;
 };
@@ -253,6 +256,7 @@ export type CloseAuctionInput = {
   readonly processId: string;
   readonly expectedFrom: ImpoundStatus; // AUCTIONED
   readonly roundNumber: number;
+  readonly chargeBasis: ReleaseChargeBasis;
   readonly actorId?: string;
   readonly occurredAt: Date;
 };

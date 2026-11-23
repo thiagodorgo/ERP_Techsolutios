@@ -557,9 +557,9 @@ const GUARDS: Readonly<Record<string, GuardSpec>> = {
   // LOTE (edital completo da rodada + min_bid): NÃO congela.
   [edgeKey("AUCTION_PREP", "LOTTED")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionLot },
   // ARREMATE (winner + sold>=min_bid + nota): setFrozenAt=TRUE EXPLÍCITO (T_stop §5 — a arrematação encerra a diária).
-  [edgeKey("LOTTED", "AUCTIONED")]: { kind: "enabled", setFrozenAt: true, guard: guardAuctionSale },
+  [edgeKey("LOTTED", "AUCTIONED")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionSale },
   // CONSUMAÇÃO (pagamento + nota): já frozen (setFrozenAt não seta ⇒ mantém).
-  [edgeKey("AUCTIONED", "AUCTION_CLOSED")]: { kind: "enabled", guard: guardAuctionClose },
+  [edgeKey("AUCTIONED", "AUCTION_CLOSED")]: { kind: "enabled", setFrozenAt: true, guard: guardAuctionClose },
   // INADIMPLÊNCIA (art. 42 → reintegra o lote): setFrozenAt=false EXPLÍCITO — NÃO descongela (set-only; PD-Ω5P-AUC-
   // FROZEN: a diária permanece congelada; a penalidade recai sobre o arrematante inadimplente).
   [edgeKey("AUCTIONED", "LOTTED")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionDefault },

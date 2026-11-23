@@ -631,7 +631,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
       expectedFrom: input.expectedFrom,
       to: "AUCTIONED",
       setEnteredAt: false,
-      setFrozenAt: true,
+      setFrozenAt: false,
       event: { type: "AUCTION_SOLD", payload: buildAuctionSoldEventPayload(attempt, soldAmount, maskEdictReference(input.saleNoteReference)), occurredAt: input.occurredAt, actorId: input.actorId },
     });
     return { attempt, created: true, status: "AUCTIONED" };
@@ -655,7 +655,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
       expectedFrom: input.expectedFrom,
       to: "AUCTION_CLOSED",
       setEnteredAt: false,
-      setFrozenAt: false,
+      setFrozenAt: true,
       event: { type: "AUCTION_CLOSED", payload: buildAuctionSaleClosedEventPayload(input.roundNumber), occurredAt: input.occurredAt, actorId: input.actorId },
     });
     return { status: "AUCTION_CLOSED", attempts: this.attemptsFor(input.tenantId, input.processId), edicts: this.edictsFor(input.tenantId, input.processId) };

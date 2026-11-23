@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import { createLockedChargeReader } from "../charging/charge-locked-reader.js";
 import { computeEventHash, genesisHash, verifyChain, type VerifyChainResult } from "../impound/impound.hashchain.js";
 import { appendOutboxEventTx, buildOutboxPayloadFromCustodyEvent } from "../impound/impound.outbox.repository.js";
 import type { CanonicalValue, CustodyEventType, ImpoundStatus } from "../impound/impound.types.js";
@@ -57,7 +58,9 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 type LockedProcessRow = {
   readonly status: string;
+  readonly entered_at: Date | null;
   readonly frozen_at: Date | null;
+  readonly yard_id: string | null;
   readonly custody_seq_head: number;
   readonly custody_hash_head: string | null;
 };
@@ -277,9 +280,11 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (gate.edictIncompleteForRound) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "scrap_edict_incomplete_for_round", "Every edict backing the scrap must be complete (reference + published_at + business_days >= 15).");
     }
+    const scrapFrozenAt = locked.frozen_at ?? input.occurredAt;
+    await this.assertDailiesClosedTx(input.tenantId, input.processId, locked, scrapFrozenAt, input.chargeBasis);
     await this.client.impoundProcess.update({
       where: { id: input.processId },
-      data: { status: "DIRECT_RECYCLING", frozen_at: locked.frozen_at ?? input.occurredAt },
+      data: { status: "DIRECT_RECYCLING", frozen_at: scrapFrozenAt },
     });
     await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "STATUS_CHANGE",
@@ -308,9 +313,11 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if ((activeRelease[0]?.n ?? 0) > 0) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "recycling_release_in_progress", "A release is in progress; the vehicle cannot be sent to direct recycling.");
     }
+    const unrecoverableFrozenAt = locked.frozen_at ?? input.occurredAt;
+    await this.assertDailiesClosedTx(input.tenantId, input.processId, locked, unrecoverableFrozenAt, input.chargeBasis);
     await this.client.impoundProcess.update({
       where: { id: input.processId },
-      data: { status: "DIRECT_RECYCLING", frozen_at: locked.frozen_at ?? input.occurredAt },
+      data: { status: "DIRECT_RECYCLING", frozen_at: unrecoverableFrozenAt },
     });
     await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "STATUS_CHANGE",
@@ -472,7 +479,7 @@ export class PrismaAuctionRepository implements AuctionRepository {
     const attempt = mapAttempt(attemptRow);
     await this.client.impoundProcess.update({
       where: { id: input.processId },
-      data: { status: "AUCTIONED", frozen_at: locked.frozen_at ?? input.occurredAt },
+      data: { status: "AUCTIONED" },
     });
     const appended = await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "AUCTION_SOLD",
@@ -501,8 +508,10 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (locked.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const closeFrozenAt = locked.frozen_at ?? input.occurredAt;
+    await this.assertDailiesClosedTx(input.tenantId, input.processId, locked, closeFrozenAt, input.chargeBasis);
     await this.closeLottedEdicts(input.tenantId, input.processId);
-    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "AUCTION_CLOSED" } });
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "AUCTION_CLOSED", frozen_at: closeFrozenAt } });
     await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "AUCTION_CLOSED",
       payload: buildAuctionSaleClosedEventPayload(input.roundNumber),
@@ -586,6 +595,39 @@ export class PrismaAuctionRepository implements AuctionRepository {
     return { status: "ACTIVE_CUSTODY", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
   }
 
+  private async lockYardTimezoneTx(tenantId: string, processId: string): Promise<void> {
+    await this.client.$queryRaw`
+      SELECT y.id
+      FROM yards y
+      JOIN impound_processes ip ON ip.tenant_id = y.tenant_id AND ip.yard_id = y.id
+      WHERE ip.tenant_id = ${tenantId}::uuid AND ip.id = ${processId}::uuid
+      FOR SHARE OF y
+    `;
+  }
+
+  private async assertDailiesClosedTx(
+    tenantId: string,
+    processId: string,
+    locked: LockedProcessRow,
+    effectiveFrozenAt: Date,
+    basis: CloseAuctionInput["chargeBasis"],
+  ): Promise<void> {
+    await this.lockYardTimezoneTx(tenantId, processId);
+    const lockedState = await createLockedChargeReader(this.client).getReleaseChargeState(tenantId, processId, effectiveFrozenAt);
+    if (!lockedState) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "auction_gate_unresolved", "Charge state could not be resolved for this process; retry.");
+    }
+    if (!auctionChargeBasisMatches(locked, effectiveFrozenAt, basis)) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The charge basis changed concurrently; retry.");
+    }
+    if (lockedState.nAccrueAtFreeze !== basis.expectedDailyCount) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The expected daily count changed concurrently; retry.");
+    }
+    if (lockedState.dailyShortfall > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_missing", "Daily charges are still missing for this process; retry.");
+    }
+  }
+
   // Encerra a(s) rodada(s) LOTADA(s) do processo (consumação / reclamado) — status honesto, no máx. 1 LOTTED/processo.
   private async closeLottedEdicts(tenantId: string, processId: string): Promise<void> {
     await this.client.$executeRaw`
@@ -632,7 +674,7 @@ export class PrismaAuctionRepository implements AuctionRepository {
 
   private async lockProcess(tenantId: string, processId: string): Promise<LockedProcessRow | undefined> {
     const rows = await this.client.$queryRaw<LockedProcessRow[]>`
-      SELECT status, frozen_at, custody_seq_head, custody_hash_head
+      SELECT status, entered_at, frozen_at, yard_id, custody_seq_head, custody_hash_head
       FROM impound_processes
       WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
       FOR UPDATE
@@ -895,6 +937,20 @@ function mapEdict(record: EdictRecord): AuctionEdict {
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
+}
+
+function sameInstant(left: Date | null, right: Date | null): boolean {
+  if (left === null && right === null) return true;
+  if (left === null || right === null) return false;
+  return left.getTime() === right.getTime();
+}
+
+function auctionChargeBasisMatches(
+  locked: Pick<LockedProcessRow, "entered_at" | "frozen_at">,
+  effectiveFrozenAt: Date,
+  basis: CloseAuctionInput["chargeBasis"],
+): boolean {
+  return sameInstant(locked.entered_at, basis.enteredAt) && sameInstant(locked.frozen_at ?? effectiveFrozenAt, basis.frozenAt);
 }
 
 function isUniqueViolation(error: unknown): boolean {
