@@ -156,6 +156,10 @@ export class ChargeService {
     if (!state) {
       throw new ChargeError(404, "CHARGE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
+    const context = await this.repository.loadAccrualContext(actor.tenantId, normalizedId);
+    if (["LOTTED", "AUCTIONED", "AUCTION_CLOSED"].includes(context?.status ?? "")) {
+      throw new ChargeError(409, "CHARGE_INVALID", "settle_after_auction_list", "Cannot settle charges after auction listing.");
+    }
     const lines = await this.repository.listCharges({ tenantId: actor.tenantId, processId: normalizedId });
     const byId = new Map(lines.map((line) => [line.id, line]));
     // Reconcilia EXATAMENTE as DAILYs sobre-acumuladas (M1: o repo posta o RESÍDUO que zera o líquido, computado
@@ -177,6 +181,10 @@ export class ChargeService {
 
   // Estado do ledger para o GATE DE LIBERAÇÃO (I5) — consumido pelo release.service. Computa débitos quitados,
   // reconciliação (estorno das sobre-acumuladas), total quitado, e os sinais do freeze-retroactive (salto A).
+  async hasCurrentDailyServiceCatalog(tenantId: string, processId: string): Promise<boolean | undefined> {
+    return this.repository.hasCurrentDailyServiceCatalog(tenantId, processId);
+  }
+
   async getReleaseChargeState(tenantId: string, processId: string, now: Date = new Date()): Promise<ReleaseChargeState | undefined> {
     const ctx = await this.repository.loadAccrualContext(tenantId, processId);
     if (!ctx) return undefined;
@@ -209,6 +217,7 @@ export class ChargeService {
     const reconciliationConsistent = overAccruedDailyIds.every((id) => dailyNetCents(id, lines) === 0);
     const settledTotal = sumMoney(lines.map((line) => line.totalAmount));
     return {
+      dailyServiceConfigured: ctx.dailyServiceCatalogId !== undefined,
       debtsSettled,
       reconciliationConsistent,
       settledTotal,

@@ -47,6 +47,7 @@ export interface ChargeRepository {
   accrueDailyCharge(input: AccrueDailyChargeInput): Promise<AccrueDailyChargeResult>;
   // Contexto de acumulação (impound_processes + jurisdiction_profiles + yards.timezone). undefined = processo inexistente.
   loadAccrualContext(tenantId: string, processId: string): Promise<AccrualContext | undefined>;
+  hasCurrentDailyServiceCatalog(tenantId: string, processId: string): Promise<boolean | undefined>;
   // Candidatos do SWEEP: processos com t0 (entered_at) e AINDA acumulando (frozen_at NULL). Prisma-only (o sweep
   // é gated por persistence=prisma); o InMemory devolve [] (os testes InMemory chamam accrueProcess direto).
   listAccrualCandidates(tenantId: string, limit: number): Promise<readonly string[]>;
@@ -288,6 +289,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
     return {
       tenantId,
       processId,
+      status: process.status,
       enteredAt: process.enteredAt,
       frozenAt: process.frozenAt,
       timezone: this.timezones.get(`${tenantId}:${processId}`) ?? "America/Sao_Paulo",
@@ -308,6 +310,16 @@ export class InMemoryChargeRepository implements ChargeRepository {
     return profile;
   }
 
+  async hasCurrentDailyServiceCatalog(tenantId: string, processId: string): Promise<boolean | undefined> {
+    const process = await this.impound.findProcessById(tenantId, processId);
+    if (!process) return undefined;
+    const profile = this.profiles.get(`${tenantId}:${process.profileId}`) ?? {
+      scope: "PUBLIC_AGREEMENT" as ProfileScope,
+      model: "ROLLING_24H" as DailyModel,
+      cap: "SIX_MONTHS" as DailyCap,
+    };
+    return profile.dailyServiceCatalogId !== undefined;
+  }
   async listAccrualCandidates(): Promise<readonly string[]> {
     // O sweep é PRISMA-only (gated por persistence=prisma); os testes InMemory exercitam accrueProcess direto.
     return [];

@@ -29,6 +29,7 @@ import {
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 type LockedProcessRow = {
+  readonly status: string;
   readonly custody_seq_head: number;
   readonly custody_hash_head: string | null;
 };
@@ -106,6 +107,9 @@ export class PrismaChargeRepository implements ChargeRepository {
     const locked = await this.lockProcess(input.tenantId, input.processId);
     if (!locked) {
       throw new ChargeError(404, "CHARGE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (["LOTTED", "AUCTIONED", "AUCTION_CLOSED"].includes(locked.status)) {
+      throw new ChargeError(409, "CHARGE_INVALID", "settle_after_auction_list", "Cannot settle charges after auction listing.");
     }
     let estornoCount = 0;
     for (const estorno of input.estornos) {
@@ -214,6 +218,7 @@ export class PrismaChargeRepository implements ChargeRepository {
   async loadAccrualContext(tenantId: string, processId: string): Promise<AccrualContext | undefined> {
     const rows = await this.client.$queryRaw<
       Array<{
+        status: string;
         entered_at: Date | null;
         frozen_at: Date | null;
         timezone: string;
@@ -223,7 +228,7 @@ export class PrismaChargeRepository implements ChargeRepository {
         daily_service_catalog_id: string | null;
       }>
     >`
-      SELECT ip.entered_at, ip.frozen_at, COALESCE(y.timezone, 'America/Sao_Paulo') AS timezone,
+      SELECT ip.status, ip.entered_at, ip.frozen_at, COALESCE(y.timezone, 'America/Sao_Paulo') AS timezone,
              ip.regime_scope AS scope, ip.regime_daily_model AS daily_model, ip.regime_daily_cap AS daily_cap,
              COALESCE(ip.regime_daily_service_catalog_id, jp.daily_service_catalog_id) AS daily_service_catalog_id
       FROM impound_processes ip
@@ -236,6 +241,7 @@ export class PrismaChargeRepository implements ChargeRepository {
     return {
       tenantId,
       processId,
+      status: row.status,
       enteredAt: row.entered_at ?? undefined,
       frozenAt: row.frozen_at ?? undefined,
       timezone: row.timezone,
@@ -246,6 +252,17 @@ export class PrismaChargeRepository implements ChargeRepository {
     };
   }
 
+  async hasCurrentDailyServiceCatalog(tenantId: string, processId: string): Promise<boolean | undefined> {
+    const rows = await this.client.$queryRaw<Array<{ has_daily_service: boolean }>>`
+      SELECT (jp.daily_service_catalog_id IS NOT NULL) AS has_daily_service
+      FROM impound_processes ip
+      JOIN jurisdiction_profiles jp ON jp.tenant_id = ip.tenant_id AND jp.id = ip.profile_id
+      WHERE ip.tenant_id = ${tenantId}::uuid AND ip.id = ${processId}::uuid
+    `;
+    const row = rows[0];
+    if (!row) return undefined;
+    return row.has_daily_service;
+  }
   async listAccrualCandidates(tenantId: string, limit: number): Promise<readonly string[]> {
     // Processos com t0 (entered_at) e AINDA acumulando (frozen_at NULL). Status-agnóstico: uma vez congelado
     // (liberação/arrematação/reciclagem), frozen_at é setado ⇒ sai do sweep (o fechamento do período final é
@@ -282,7 +299,7 @@ export class PrismaChargeRepository implements ChargeRepository {
   // SELECT ... FOR UPDATE do processo — serializa appends concorrentes no MESMO processo (anti-corrida da cadeia).
   private async lockProcess(tenantId: string, processId: string): Promise<LockedProcessRow | undefined> {
     const rows = await this.client.$queryRaw<LockedProcessRow[]>`
-      SELECT custody_seq_head, custody_hash_head
+      SELECT status, custody_seq_head, custody_hash_head
       FROM impound_processes
       WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
       FOR UPDATE
@@ -366,6 +383,10 @@ export class RlsPrismaChargeRepository implements ChargeRepository {
 
   loadAccrualContext(tenantId: string, processId: string): Promise<AccrualContext | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChargeRepository(tx).loadAccrualContext(tenantId, processId));
+  }
+
+  hasCurrentDailyServiceCatalog(tenantId: string, processId: string): Promise<boolean | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChargeRepository(tx).hasCurrentDailyServiceCatalog(tenantId, processId));
   }
 
   listAccrualCandidates(tenantId: string, limit: number): Promise<readonly string[]> {

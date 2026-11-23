@@ -99,6 +99,7 @@ export type AccrueDailyChargeResult = {
 export type AccrualContext = {
   readonly tenantId: string;
   readonly processId: string;
+  readonly status: string;
   readonly enteredAt?: Date;
   readonly frozenAt?: Date;
   readonly timezone: string;
@@ -167,6 +168,7 @@ export type SettleResult = {
 // pelo release.service. debtsSettled/reconciliationConsistent alimentam as guardas I5; overAccruedDailyIds guia o
 // estorno do settle; persistedDailyCount/nDueNow alimentam o freeze-retroactive do salto A.
 export type ReleaseChargeState = {
+  readonly dailyServiceConfigured?: boolean; // false quando o processo não tem serviço de diária configurado
   readonly debtsSettled: boolean; // nenhuma linha exigível (REMOVAL/DAILY/ADDITIONAL) com settled_at NULL
   readonly reconciliationConsistent: boolean; // toda DAILY sobre-acumulada tem estorno ADJUSTMENT
   readonly settledTotal: string; // Σ net do ledger (canônico "0.00")
