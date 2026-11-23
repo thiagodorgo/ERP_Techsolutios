@@ -169,7 +169,7 @@ export class AuctionService {
     };
     const now = new Date();
     const decision = resolveTransition(process, "DIRECT_RECYCLING", { auctionReclassify: gate });
-    const scrapChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, process.frozenAt, now, actor.userId);
+    const scrapChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, process.frozenAt ?? null, now, actor.userId);
     const snapshot = await this.repository.reclassifyScrapAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
@@ -212,7 +212,7 @@ export class AuctionService {
     };
     const now = new Date();
     const decision = resolveTransition(process, "DIRECT_RECYCLING", { unrecoverable: gate, reason });
-    const unrecoverableChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, process.frozenAt, now, actor.userId);
+    const unrecoverableChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, process.frozenAt ?? null, now, actor.userId);
     const snapshot = await this.repository.reclassifyUnrecoverableAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
@@ -407,7 +407,7 @@ export class AuctionService {
     const paymentConfirmed = body.payment_confirmed === true || body.paymentConfirmed === true;
     const closeOccurredAt = new Date();
     const decision = resolveTransition(process, "AUCTION_CLOSED", { auctionClose: { paymentUnconfirmed: !paymentConfirmed } });
-    const closeChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, process.frozenAt, closeOccurredAt, actor.userId);
+    const closeChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, process.frozenAt ?? null, closeOccurredAt, actor.userId);
     const snapshot = await this.repository.closeAuctionAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
