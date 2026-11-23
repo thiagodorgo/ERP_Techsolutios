@@ -16,6 +16,7 @@ import {
   type SettleProcessInput,
   type SettleResult,
 } from "./charge.types.js";
+import { assertSettlementBeforeAuctionList } from "./charge.settlement-cutoff.js";
 import { centsToMoney, moneyToCents, toMoneyString } from "./charge.validators.js";
 
 export type StartRunInput = {
@@ -47,7 +48,6 @@ export interface ChargeRepository {
   accrueDailyCharge(input: AccrueDailyChargeInput): Promise<AccrueDailyChargeResult>;
   // Contexto de acumulação (impound_processes + jurisdiction_profiles + yards.timezone). undefined = processo inexistente.
   loadAccrualContext(tenantId: string, processId: string): Promise<AccrualContext | undefined>;
-  hasCurrentDailyServiceCatalog(tenantId: string, processId: string): Promise<boolean | undefined>;
   // Candidatos do SWEEP: processos com t0 (entered_at) e AINDA acumulando (frozen_at NULL). Prisma-only (o sweep
   // é gated por persistence=prisma); o InMemory devolve [] (os testes InMemory chamam accrueProcess direto).
   listAccrualCandidates(tenantId: string, limit: number): Promise<readonly string[]>;
@@ -182,6 +182,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
     if (!process) {
       throw new ChargeError(404, "CHARGE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
+    assertSettlementBeforeAuctionList(process.status);
     // (1) RECONCILIAÇÃO POR VALOR (M1): p/ cada DAILY sobre-acumulada posta o RESÍDUO que zera o LÍQUIDO
     // (=−líquido, computado do ledger ATUAL). Idempotente POR VALOR: líquido já 0 ⇒ nada a postar (nunca estorna
     // 2×); um −0,01 pré-existente ⇒ posta só o que falta; nunca sobre/sub-estorna. Estorna só as sobre-acumuladas.
@@ -289,15 +290,13 @@ export class InMemoryChargeRepository implements ChargeRepository {
     return {
       tenantId,
       processId,
-      status: process.status,
       enteredAt: process.enteredAt,
       frozenAt: process.frozenAt,
       timezone: this.timezones.get(`${tenantId}:${processId}`) ?? "America/Sao_Paulo",
       scope: regime.scope,
       model: regime.model,
       cap: regime.cap,
-      // B-O6R-12 (A1): ponteiro ausente no retrato cai no ponteiro atual do perfil (catch-up); cópia não nula vence.
-      dailyServiceCatalogId: regime.dailyServiceCatalogId ?? profile.dailyServiceCatalogId,
+      dailyServiceCatalogId: profile.dailyServiceCatalogId,
     };
   }
 
@@ -310,16 +309,6 @@ export class InMemoryChargeRepository implements ChargeRepository {
     return profile;
   }
 
-  async hasCurrentDailyServiceCatalog(tenantId: string, processId: string): Promise<boolean | undefined> {
-    const process = await this.impound.findProcessById(tenantId, processId);
-    if (!process) return undefined;
-    const profile = this.profiles.get(`${tenantId}:${process.profileId}`) ?? {
-      scope: "PUBLIC_AGREEMENT" as ProfileScope,
-      model: "ROLLING_24H" as DailyModel,
-      cap: "SIX_MONTHS" as DailyCap,
-    };
-    return profile.dailyServiceCatalogId !== undefined;
-  }
   async listAccrualCandidates(): Promise<readonly string[]> {
     // O sweep é PRISMA-only (gated por persistence=prisma); os testes InMemory exercitam accrueProcess direto.
     return [];
