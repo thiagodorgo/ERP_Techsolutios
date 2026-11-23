@@ -6554,7 +6554,7 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 ## D-DONO-2211-COMISSAO-NO-MVP (2026-11-22 21:45 SP) — motor de comissões no MVP
 
-- **Fato (palavras do dono):** *"o motor de comissoes nao pode ficar fora do mvp, como os guincheiros vao trabalhar?"*.
+- **Fato (palavras do dono):** *"claude o motor de comissoes nao pode ficar fora do mvp, como os guincheiros vao trabalhar?"*.
 - **Efeito:** `B-COMISSAO-MOTOR`, `B-COMISSAO-SALDO` e a página web de Comissões entram no MVP mínimo. Às 21:46, o dono disse *"calma"*; o desenvolvimento foi interrompido antes de criar ramo ou código, sem revogar a entrada no MVP.
 
 ## D-DONO-2211-LEILAO-RAPIDO (2026-11-22 21:49 SP) — leilão entra rápido
