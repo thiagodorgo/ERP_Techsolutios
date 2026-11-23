@@ -24,6 +24,8 @@ Confirmado na documentação oficial: o CloudShell existe em `us-east-1` (Norte 
 
 **Marcação "só no console (ato do dono)":** o que a AWS (ou o registrador do domínio, ou o GitHub) só permite pela tela. Tudo o mais é linha de comando.
 
+**Rodando de um PC Windows (Git Bash), no lugar do CloudShell (medido em 23/11):** `export MSYS_NO_PATHCONV=1` antes dos comandos (sem isso, nomes que começam com `/`, como `/aws/service/...`, viram caminho do Windows); o `psql` do Windows quer as opções ANTES do endereço de conexão; o banco e o Valkey, que não têm endereço público, são alcançados por um túnel do Session Manager pela instância NAT (`aws ssm start-session --document-name AWS-StartPortForwardingSessionToRemoteHost`, com o complemento `session-manager-plugin` e o `erp-sg-ops` na NAT), no lugar do CloudShell em VPC; e o `scripts/db-runtime-role.sh`, que exige `setsid`, roda num contêiner `postgres:16` que alcança o túnel por `host.docker.internal`.
+
 **Convenções:**
 - Nomes de recursos começam com `erp-`. Placeholders: `<CONTA>` (número da conta), `<DOMINIO>` (o seu domínio, sem `www`), `<GH_DONO>/<GH_REPO>` (dono e nome do repositório no GitHub), `<EMAIL_ALERTA>`.
 - Nenhum segredo entra no histórico do terminal: senha nova sai de `openssl rand`, vai para um arquivo temporário com `umask 077` e o arquivo é destruído com `shred -u` depois do `aws … --secret-string file://…`. Senha digitada entra por `read -rs`.
@@ -527,26 +529,27 @@ DB_RUNTIME_ROLE=erp_runtime DB_RUNTIME_PASSWORD="$(cat "$TMP/runtime.pw")" bash 
 ```bash
 aws elasticache create-cache-subnet-group --cache-subnet-group-name erp-cache-subnets --cache-subnet-group-description "ERP: subnets privadas" --subnet-ids "$SUB_PRIV_A" "$SUB_PRIV_B"
 VALKEY_VERSAO=$(aws elasticache describe-cache-engine-versions --engine valkey --query 'CacheEngineVersions[-1].EngineVersion' --output text)
-aws elasticache create-cache-cluster --cache-cluster-id erp-prod-valkey --engine valkey --engine-version "$VALKEY_VERSAO" --cache-node-type cache.t4g.micro --num-cache-nodes 1 --cache-subnet-group-name erp-cache-subnets --security-group-ids "$SG_VALKEY" --tags Key=app,Value=erp --query 'CacheCluster.CacheClusterStatus' --output text
-aws elasticache wait cache-cluster-available --cache-cluster-id erp-prod-valkey
-VALKEY_HOST=$(aws elasticache describe-cache-clusters --cache-cluster-id erp-prod-valkey --show-cache-node-info --query 'CacheClusters[0].CacheNodes[0].Endpoint.Address' --output text)
+# o Valkey só nasce por grupo de replicação (medido em 23/11: o create-cache-cluster recusa "This API doesn't support Valkey engine")
+aws elasticache create-replication-group --replication-group-id erp-prod-valkey --replication-group-description "ERP: Valkey de producao, 1 no, rede privada" --engine valkey --engine-version "$VALKEY_VERSAO" --cache-node-type cache.t4g.micro --num-cache-clusters 1 --no-automatic-failover-enabled --cache-subnet-group-name erp-cache-subnets --security-group-ids "$SG_VALKEY" --at-rest-encryption-enabled --no-transit-encryption-enabled --tags Key=app,Value=erp --query 'ReplicationGroup.Status' --output text
+aws elasticache wait replication-group-available --replication-group-id erp-prod-valkey
+VALKEY_HOST=$(aws elasticache describe-replication-groups --replication-group-id erp-prod-valkey --query 'ReplicationGroups[0].NodeGroups[0].PrimaryEndpoint.Address' --output text)
 echo "VALKEY_HOST=$VALKEY_HOST" >> ~/erp-ids.env
 ```
 **Conferência (CloudShell em VPC, só com o bash):** `exec 3<>"/dev/tcp/${VALKEY_HOST}/6379"; printf 'PING\r\n' >&3; head -c 7 <&3; exec 3>&-` → `+PONG`.
-**Custo:** US$ 17,5/mês. **Desfazer:** `aws elasticache delete-cache-cluster --cache-cluster-id erp-prod-valkey` e, depois que ele sumir, `aws elasticache delete-cache-subnet-group --cache-subnet-group-name erp-cache-subnets`.
+**Custo:** ~US$ 9,34/mês (US$ 0,0128/h, Pricing API, medido em 23/11). **Desfazer:** `aws elasticache delete-replication-group --replication-group-id erp-prod-valkey` e, depois que ele sumir, `aws elasticache delete-cache-subnet-group --cache-subnet-group-name erp-cache-subnets`.
 
 ### 2.10 Preencher `DATABASE_URL` e `REDIS_URL` no segredo da API
 **Objetivo:** a API conecta como `erp_runtime` (não como `erp_admin`) e com TLS; o `REDIS_URL` aponta para o Valkey (fora de localhost, como o portão G5 exige). Lê o segredo, troca duas chaves com `jq`, grava de volta; nada no histórico.
 ```bash
 umask 077; TMP=$(mktemp -d)
 aws secretsmanager get-secret-value --secret-id erp/prod/api --query SecretString --output text \
- | jq --arg db "postgresql://erp_runtime:$(cat "$TMP/runtime.pw" 2>/dev/null || cat ~/runtime.pw)@${RDS_HOST}:5432/${DB_NOME}?schema=public&sslmode=require" \
+ | jq --arg db "postgresql://erp_runtime:$(cat "$TMP/runtime.pw" 2>/dev/null || cat ~/runtime.pw)@${RDS_HOST}:5432/${DB_NOME}?schema=public&sslmode=verify-full" \
       --arg redis "redis://${VALKEY_HOST}:6379" '.DATABASE_URL=$db | .REDIS_URL=$redis' > "$TMP/api.json"
 aws secretsmanager put-secret-value --secret-id erp/prod/api --secret-string "file://$TMP/api.json"
 shred -u "$TMP/api.json" "$TMP/runtime.pw"
 ```
-(Se o `runtime.pw` do passo 2.8 já foi destruído, gere outra senha e rode o `db-runtime-role.sh` de novo: ele converge e troca a senha.) **Não** use `options=-c role=…` na URL (a trava julga o login); o `-c TimeZone=UTC` o app põe sozinho.
-**Conferência:** `aws secretsmanager get-secret-value --secret-id erp/prod/api --query SecretString --output text | jq -r '.DATABASE_URL | sub("://[^@]*@"; "://<credencial>@")'` → `postgresql://<credencial>@<host>:5432/erp?schema=public&sslmode=require` (a credencial é mascarada pela própria conferência).
+(Se o `runtime.pw` do passo 2.8 já foi destruído, gere outra senha e rode o `db-runtime-role.sh` de novo: ele converge e troca a senha.) **`sslmode=verify-full`, não `require` (medido em 23/11, `B-INFRA-RDS-CA`):** o driver `pg` já trata `require` como `verify-full`, e o Node não conhece a autoridade do RDS; a imagem da API traz o pacote público do RDS (`docker/certs/rds-global-bundle.pem`, `NODE_EXTRA_CA_CERTS`), e com o host real do RDS a conexão confere o certificado e o nome. **Não** use `options=-c role=…` na URL (a trava julga o login); o `-c TimeZone=UTC` o app põe sozinho.
+**Conferência:** `aws secretsmanager get-secret-value --secret-id erp/prod/api --query SecretString --output text | jq -r '.DATABASE_URL | sub("://[^@]*@"; "://<credencial>@")'` → `postgresql://<credencial>@<host>:5432/erp?schema=public&sslmode=verify-full` (a credencial é mascarada pela própria conferência).
 **Desfazer:** o Secrets Manager guarda a versão anterior com o rótulo `AWSPREVIOUS`; para voltar a ela: `umask 077; TMP=$(mktemp -d); aws secretsmanager get-secret-value --secret-id erp/prod/api --version-stage AWSPREVIOUS --query SecretString --output text > "$TMP/api.json"; aws secretsmanager put-secret-value --secret-id erp/prod/api --secret-string "file://$TMP/api.json"; shred -u "$TMP/api.json"`.
 
 ### 2.11 Drill de restore cronometrado (R1/R2 do go-live)
@@ -567,7 +570,7 @@ Anote o RTO medido e o RPO (`LatestRestorableTime` − agora) na ata de go-live 
 **Desfazer:** o próprio passo apaga o clone (as duas últimas linhas). Se a sessão cair no meio, rode só essas duas linhas: o clone esquecido custa como um segundo banco.
 **Custo:** só as horas do clone. **O que pode dar errado:** `--use-latest-restorable-time` recusar porque o banco tem menos de ~5 min de vida (espere); o drill ficar de pé esquecido (US$ 54/mês — a conferência da fase é `describe-db-instances` sem `erp-prod-drill`).
 
-**Conferência da fase inteira:** `aws rds describe-db-instances --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text` → só `erp-prod-pg available`; `aws elasticache describe-cache-clusters --cache-cluster-id erp-prod-valkey --query 'CacheClusters[0].CacheClusterStatus' --output text` → `available`; a linha `erp_runtime|f|f|f|f|0|0|<n>` guardada; `jq -r 'keys[]'` do segredo sem `pendente` em `DATABASE_URL`/`REDIS_URL`. **Itens do portão:** o 9 fica *criado* aqui e *fechado* quando a trava passar no boot (3.8); o 10 é conferido na 6.3.
+**Conferência da fase inteira:** `aws rds describe-db-instances --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text` → só `erp-prod-pg available`; `aws elasticache describe-replication-groups --replication-group-id erp-prod-valkey --query 'ReplicationGroups[0].Status' --output text` → `available`; a linha `erp_runtime|f|f|f|f|0|0|<n>` guardada; `jq -r 'keys[]'` do segredo sem `pendente` em `DATABASE_URL`/`REDIS_URL`. **Itens do portão:** o 9 fica *criado* aqui e *fechado* quando a trava passar no boot (3.8); o 10 é conferido na 6.3.
 
 ---
 
