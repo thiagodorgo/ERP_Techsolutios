@@ -35,7 +35,7 @@ function mulberry32(seed: number): () => number {
 }
 
 function params(over: Partial<AccrualParams> & Pick<AccrualParams, "t0" | "asOf">): AccrualParams {
-  return { timezone: SP, model: "ROLLING_24H", cap: "UNLIMITED", ...over };
+  return { timezone: SP, model: "ROLLING_24H", cap: "UNLIMITED", suspensions: [], ...over };
 }
 
 function makeTariff(unitPrice: number, currency = "BRL"): Tariff {
@@ -94,8 +94,9 @@ test("ROLLING: nDue = floor(Δ/24h) para 200 pares (t0, Δ) gerados; period_seq 
     const t0 = new Date(Date.UTC(2020, 0, 1) + Math.floor(rng() * 3 * 365 * MS_PER_DAY));
     const deltaMs = Math.floor(rng() * 400 * MS_PER_DAY);
     const asOf = new Date(t0.getTime() + deltaMs);
+    const summary = summarizeAccrual(params({ t0, asOf }));
+    assert.equal(summary.nDue, Math.floor(deltaMs / MS_PER_DAY), `Δ=${deltaMs}ms`);
     const periods = computeDuePeriods(params({ t0, asOf }));
-    assert.equal(periods.length, Math.floor(deltaMs / MS_PER_DAY), `Δ=${deltaMs}ms`);
     periods.forEach((p, idx) => assert.equal(p.periodSeq, idx + 1));
   }
 });
@@ -164,25 +165,94 @@ test("THIRTY_DAYS_LEGACY: para em 30 diárias (Tema 124/STJ)", () => {
   assert.equal(computeDuePeriods(params({ t0, asOf, cap: "THIRTY_DAYS_LEGACY" })).length, 30);
 });
 
-test("SIX_MONTHS: teto = 6 MESES DE CALENDÁRIO (≠ 180 dias) pela data de entrada; acumulação PARA", () => {
-  // t0 = 2024-01-01 09:00 local SP (12:00Z). capDate = 2024-07-01 → 182 dias (Jan+Fev(29)+Mar+Abr+Mai+Jun).
+test('SIX_MONTHS: teto passa a 180 diárias (D-DONO-2311-DIARIA-AUDIO, P13 "para tudo"); acumulação PARA', () => {
   const t0 = new Date("2024-01-01T12:00:00.000Z");
   const summaryAt300 = summarizeAccrual(params({ t0, asOf: new Date(t0.getTime() + 300 * MS_PER_DAY), cap: "SIX_MONTHS" }));
-  assert.equal(summaryAt300.capCount, 182, "6 meses de calendário de 2024-01-01 = 182 dias (não 180)");
-  assert.equal(summaryAt300.nAccrue, 182);
+  assert.equal(summaryAt300.capCount, 180);
+  assert.equal(summaryAt300.nAccrue, 180);
   assert.equal(summaryAt300.capReached, true);
-  // Constância além do teto: aumentar o asOf NÃO cria diária > cap.
   const summaryAt400 = summarizeAccrual(params({ t0, asOf: new Date(t0.getTime() + 400 * MS_PER_DAY), cap: "SIX_MONTHS" }));
-  assert.equal(summaryAt400.nAccrue, 182, "acumulação PARA no teto");
+  assert.equal(summaryAt400.nAccrue, 180, "acumulação PARA no teto");
 });
 
-test("UNLIMITED (privado): nunca para; capCount null", () => {
+test('UNLIMITED (privado): passa a 180 diárias (P13 "para tudo"); acumulação PARA', () => {
   const t0 = new Date("2024-01-01T12:00:00.000Z");
   const asOf = new Date(t0.getTime() + 500 * MS_PER_DAY);
   const summary = summarizeAccrual(params({ t0, asOf, cap: "UNLIMITED" }));
-  assert.equal(summary.capCount, null);
-  assert.equal(summary.nAccrue, 500);
+  assert.equal(summary.capCount, 180);
+  assert.equal(summary.nAccrue, 180);
+  assert.equal(summary.capReached, true);
+});
+
+// ── E11.7 / E11.1-E — casos T1 a T6 do motor (vermelho na base 5f57bff07 por asserção de produto) ──────────
+test("T1: 200 dias sem leilão → vencidas 200, cobradas 180 (teto)", () => {
+  const t0 = new Date("2026-01-10T15:00:00.000Z");
+  const summary = summarizeAccrual(params({ t0, asOf: new Date(t0.getTime() + 200 * MS_PER_DAY), cap: "SIX_MONTHS" }));
+  assert.equal(summary.nDue, 200);
+  assert.equal(summary.capCount, 180);
+  assert.equal(summary.nAccrue, 180);
+  assert.equal(summary.capReached, true);
+});
+
+test("T2: 30 dias em leilão a partir do 200º dia → vencidas 230, cobradas 180", () => {
+  const t0 = new Date("2026-01-10T15:00:00.000Z");
+  const summary = summarizeAccrual(params({
+    t0,
+    asOf: new Date(t0.getTime() + 260 * MS_PER_DAY),
+    cap: "SIX_MONTHS",
+    suspensions: [{ from: new Date(t0.getTime() + 200 * MS_PER_DAY), to: new Date(t0.getTime() + 230 * MS_PER_DAY) }],
+  }));
+  assert.equal(summary.nDue, 230);
+  assert.equal(summary.nAccrue, 180);
+  assert.equal(summary.capReached, true);
+});
+
+test("T3: período fechado de 30 dias empurra os instantes das diárias 101 e 120", () => {
+  const t0 = new Date("2026-01-10T15:00:00.000Z");
+  const suspension = { from: new Date(t0.getTime() + 100 * MS_PER_DAY), to: new Date(t0.getTime() + 130 * MS_PER_DAY) };
+  const at125 = summarizeAccrual(params({ t0, asOf: new Date(t0.getTime() + 125 * MS_PER_DAY), cap: "SIX_MONTHS", suspensions: [suspension] }));
+  assert.equal(at125.nDue, 100);
+  assert.equal(at125.nAccrue, 100);
+  const at150 = summarizeAccrual(params({ t0, asOf: new Date(t0.getTime() + 150 * MS_PER_DAY), cap: "SIX_MONTHS", suspensions: [suspension] }));
+  assert.equal(at150.nDue, 120);
+  assert.equal(at150.nAccrue, 120);
+  const at400 = summarizeAccrual(params({ t0, asOf: new Date(t0.getTime() + 400 * MS_PER_DAY), cap: "SIX_MONTHS", suspensions: [suspension] }));
+  assert.equal(at400.nDue, 370);
+  assert.equal(at400.nAccrue, 180);
+  const periods = computeDuePeriods(params({ t0, asOf: new Date(t0.getTime() + 400 * MS_PER_DAY), cap: "SIX_MONTHS", suspensions: [suspension] }));
+  assert.equal(periods[100].refInstant.getTime(), new Date(t0.getTime() + 130 * MS_PER_DAY).getTime());
+  assert.equal(periods[119].refInstant.getTime(), new Date(t0.getTime() + 149 * MS_PER_DAY).getTime());
+});
+
+test("T4: período aberto desde o 100º dia → 100 diárias devidas", () => {
+  const t0 = new Date("2026-01-10T15:00:00.000Z");
+  const summary = summarizeAccrual(params({
+    t0,
+    asOf: new Date(t0.getTime() + 300 * MS_PER_DAY),
+    cap: "SIX_MONTHS",
+    suspensions: [{ from: new Date(t0.getTime() + 100 * MS_PER_DAY) }],
+  }));
+  assert.equal(summary.nDue, 100);
+  assert.equal(summary.nAccrue, 100);
   assert.equal(summary.capReached, false);
+});
+
+test("T5: CALENDAR desconta as datas inteiramente em leilão (a 10ª é 10/03 e a 11ª é 20/03)", () => {
+  const t0 = new Date("2026-03-01T13:00:00.000Z"); // 01/03 10:00 SP (UTC-3)
+  const from = new Date("2026-03-10T18:00:00.000Z"); // 10/03 15:00 SP
+  const to = new Date("2026-03-20T12:00:00.000Z"); // 20/03 09:00 SP
+  const asOf = new Date("2026-03-25T15:00:00.000Z"); // 25/03 12:00 SP
+  const periods = computeDuePeriods(params({ t0, asOf, model: "CALENDAR", cap: "SIX_MONTHS", suspensions: [{ from, to }] }));
+  assert.equal(periods.length, 16);
+  assert.equal(periods[9].refDate, "2026-03-10");
+  assert.equal(periods[10].refDate, "2026-03-20");
+});
+
+test("T6: UNLIMITED com 200 dias → 180; THIRTY_DAYS_LEGACY segue 30", () => {
+  const t0 = new Date("2026-01-10T15:00:00.000Z");
+  const asOf = new Date(t0.getTime() + 200 * MS_PER_DAY);
+  assert.equal(summarizeAccrual(params({ t0, asOf, cap: "UNLIMITED" })).nAccrue, 180);
+  assert.equal(summarizeAccrual(params({ t0, asOf, cap: "THIRTY_DAYS_LEGACY" })).nAccrue, 30);
 });
 
 // ── 4. Determinismo (re-run mesma data = mesmo resultado) ────────────────────────────────────────────────────

@@ -109,6 +109,19 @@ function stubAuction(status: ImpoundStatus, attempts: readonly AuctionAttempt[])
 }
 
 const zeroClaim: SettlementCascadeClaimPort = async () => ({ claimCents: 0, currency: "BRL" });
+const closeDailiesOk = async () => ({ examined: 0, accrued: 0, errors: 0 });
+const chargeStateReady = async () => ({
+  dailyServiceConfigured: true,
+  debtsSettled: false,
+  reconciliationConsistent: true,
+  settledTotal: "0.00",
+  overAccruedDailyIds: [],
+  persistedDailyCount: 0,
+  nDueNow: 0,
+  nAccrueAtFreeze: 0,
+  dailyShortfall: 0,
+  exigibleCount: 1,
+});
 
 // Serviço com portas controladas (attempts do leilão + claim item I), sobre o repo de settlement + impound de MEMÓRIA
 // REAIS (a cadeia hash é real). Isola a LÓGICA da distribuição; a corrida/atomicidade REAL = teste DB-gated.
@@ -118,6 +131,8 @@ function makeService(status: ImpoundStatus, attempts: readonly AuctionAttempt[],
     getMemoryImpoundRepositoryForTests(),
     stubAuction(status, attempts),
     cascadeClaim,
+    closeDailiesOk,
+    chargeStateReady,
   );
 }
 
@@ -225,11 +240,21 @@ test("(5) item I capado ao teto I4: over-accrued NÃO infla o claim; process_cha
     tenantId: actor.tenantId, processId, kind: "REMOVAL", description: "Remoção",
     quantity: "1.00", unitAmount: "150.00", totalAmount: "150.00", currency: "BRL", actorId: undefined, occurredAt: new Date(),
   });
+  const accrualContext = await chargeRepo.loadAccrualContext(actor.tenantId, processId);
+  const capCount = accrualContext?.cap === "THIRTY_DAYS_LEGACY" ? 30 : 180;
   for (let period = 1; period <= 40; period += 1) {
-    await chargeRepo.accrueDailyCharge({
-      tenantId: actor.tenantId, processId, periodSeq: period, refDate: "2026-01-01",
-      unitAmount: "50.00", currency: "BRL", actorId: undefined, occurredAt: new Date(),
-    });
+    if (period <= capCount) {
+      await chargeRepo.accrueDailyCharge({
+        tenantId: actor.tenantId, processId, periodSeq: period, refDate: "2026-01-01",
+        unitAmount: "50.00", currency: "BRL", actorId: undefined, occurredAt: new Date(),
+      });
+    } else {
+      (chargeRepo as unknown as { charges: Array<Record<string, unknown>> }).charges.push({
+        id: randomUUID(), tenantId: actor.tenantId, processId, kind: "DAILY", periodSeq: period,
+        refDate: "2026-01-01", quantity: "1.00", unitAmount: "50.00", totalAmount: "50.00",
+        currency: "BRL", createdAt: new Date(), updatedAt: new Date(),
+      });
+    }
   }
   const before = await chargeRepo.listCharges({ tenantId: actor.tenantId, processId });
 

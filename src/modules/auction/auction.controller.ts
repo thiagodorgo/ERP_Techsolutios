@@ -178,7 +178,7 @@ export class AuctionController {
     return { body: toAuctionViewDto(view, canAppraise) };
   }
 
-  // Ω5P PR-13b — INADIMPLÊNCIA (impound:transition, art. 42). AUCTIONED→LOTTED (reintegração; NÃO descongela).
+  // Ω5P PR-13b — INADIMPLÊNCIA (impound:transition, art. 42). AUCTIONED→LOTTED (reintegração; descongela o legado congelado).
   async defaultAuction(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const result = await service.defaultAuction(actor, readRouteParam(request.params.processId), request.body ?? {});
@@ -205,6 +205,21 @@ export class AuctionController {
       outcome: "success",
       severity: "warning",
       metadata: { status: view.status, reason: readAuditReason(request.body) },
+    });
+    return { body: toAuctionViewDto(view, canAppraise) };
+  }
+
+
+  async withdrawSettled(request: Request) {
+    const [service, actor, canAppraise] = await this.resolveServiceWithActor(request);
+    const view = await service.withdrawSettled(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: "auction.withdraw_settled",
+      resourceType: "impound_process",
+      resourceId: readRouteParam(request.params.processId),
+      outcome: "success",
+      severity: "warning",
+      metadata: { status: view.status },
     });
     return { body: toAuctionViewDto(view, canAppraise) };
   }

@@ -34,6 +34,13 @@ export type AccrualParams = {
   readonly timezone: string; // yard.timezone
   readonly model: DailyModel;
   readonly cap: DailyCap;
+  readonly suspensions: readonly AccrualSuspension[];
+};
+
+// Um intervalo em que a diária NÃO corre (leilão / legado congelado). `to` ausente = aberto até agora.
+export type AccrualSuspension = {
+  readonly from: Date;
+  readonly to?: Date;
 };
 
 // Um período de diária DEVIDO: ordinal (chave de idempotência DST-imune) + legenda de data local + o instante
@@ -105,18 +112,6 @@ function zonedWallToUtc(w: LocalWallClock, timeZone: string): Date {
   return new Date(utc);
 }
 
-function daysInMonth(year: number, month1: number): number {
-  return new Date(Date.UTC(year, month1, 0)).getUTCDate();
-}
-
-// t0 + N meses de CALENDÁRIO (clamp do dia p/ meses curtos). 6 meses ≠ 180 dias.
-function addMonthsLocal(w: LocalWallClock, months: number): LocalWallClock {
-  const totalMonths = w.year * 12 + (w.month - 1) + months;
-  const year = Math.floor(totalMonths / 12);
-  const month = (totalMonths % 12) + 1;
-  return { year, month, day: Math.min(w.day, daysInMonth(year, month)), hour: w.hour, minute: w.minute, second: w.second };
-}
-
 // ── Aritmética de DATA-ONLY (proléptica, TZ-independente — sem DST) ─────────────────────────────────────────
 function dateStrToUtcMidnight(dateStr: string): number {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -137,43 +132,110 @@ function daysBetweenDateStr(from: string, to: string): number {
 }
 
 // ── Contagem por modelo ─────────────────────────────────────────────────────────────────────────────────────
-function rollingCount(t0: Date, asOf: Date): number {
-  const delta = asOf.getTime() - t0.getTime();
-  return delta <= 0 ? 0 : Math.floor(delta / MS_PER_DAY);
+// Soma da interseção de cada intervalo de suspensão com [t0, asOf] (ms). Intervalo aberto usa asOf como fim.
+function suspendedOverlapMs(suspensions: readonly AccrualSuspension[], t0: Date, asOf: Date): number {
+  let total = 0;
+  const start = t0.getTime();
+  const end = asOf.getTime();
+  for (const suspension of suspensions) {
+    const from = Math.max(suspension.from.getTime(), start);
+    const to = Math.min(suspension.to?.getTime() ?? end, end);
+    if (to > from) total += to - from;
+  }
+  return total;
 }
 
-function calendarCount(t0: Date, asOf: Date, timeZone: string): number {
-  if (asOf.getTime() <= t0.getTime()) return 0;
-  const start = localDateStr(t0, timeZone);
-  const end = localDateStr(asOf, timeZone);
-  return daysBetweenDateStr(start, end) + 1; // datas locais distintas em [t0, asOf], inclusivo
+function rollingCount(params: AccrualParams): number {
+  const delta = params.asOf.getTime() - params.t0.getTime();
+  if (delta <= 0) return 0;
+  const suspendedMs = suspendedOverlapMs(params.suspensions, params.t0, params.asOf);
+  const effective = delta - suspendedMs;
+  return effective <= 0 ? 0 : Math.floor(effective / MS_PER_DAY);
+}
+
+// Datas locais inteiramente suspensas (fechadas: estritamente entre from e to; abertas: todas depois de from).
+function suspendedLocalDates(params: AccrualParams): Set<string> {
+  const { suspensions, asOf, timezone } = params;
+  const start = localDateStr(params.t0, timezone);
+  const end = localDateStr(asOf, timezone);
+  const suspended = new Set<string>();
+  for (const suspension of suspensions) {
+    let fromDate = localDateStr(suspension.from, timezone);
+    if (fromDate < start) fromDate = start;
+    if (suspension.to) {
+      let toDate = localDateStr(suspension.to, timezone);
+      if (toDate > end) toDate = end;
+      const between = daysBetweenDateStr(fromDate, toDate) - 1; // estritamente entre: os dias de ida e volta cobram
+      for (let d = 1; d <= between; d += 1) suspended.add(addDaysToDateStr(fromDate, d));
+    } else {
+      const after = daysBetweenDateStr(fromDate, end); // todas depois do dia de ida (inclusive o fim do período)
+      for (let d = 1; d <= after; d += 1) suspended.add(addDaysToDateStr(fromDate, d));
+    }
+  }
+  return suspended;
+}
+
+function fullySuspendedDates(params: AccrualParams): number {
+  return suspendedLocalDates(params).size;
+}
+
+function calendarCount(params: AccrualParams): number {
+  if (params.asOf.getTime() <= params.t0.getTime()) return 0;
+  const start = localDateStr(params.t0, params.timezone);
+  const end = localDateStr(params.asOf, params.timezone);
+  const totalDates = daysBetweenDateStr(start, end) + 1; // datas locais distintas em [t0, asOf], inclusivo
+  const chargedDates = totalDates - fullySuspendedDates(params);
+  return chargedDates;
 }
 
 function countDue(params: AccrualParams): number {
   return params.model === "ROLLING_24H"
-    ? rollingCount(params.t0, params.asOf)
-    : calendarCount(params.t0, params.asOf, params.timezone);
+    ? rollingCount(params)
+    : calendarCount(params);
 }
 
-// Teto em diárias pela DATA DE ENTRADA. null = ilimitado.
+// Teto em diárias pela DATA DE ENTRADA. 180 para tudo, exceto o legado de 30 (D-DONO-2311-DIARIA-AUDIO, P13 "para tudo").
+const DAILY_CAP_DAYS = 180;
+
 function capCountFor(params: AccrualParams): number | null {
-  if (params.cap === "UNLIMITED") return null;
   if (params.cap === "THIRTY_DAYS_LEGACY") return 30;
-  // SIX_MONTHS: capDate = t0 + 6 meses de calendário no TZ; conta as diárias ATÉ ele sob o MESMO modelo.
-  const capDate = zonedWallToUtc(addMonthsLocal(localWallClock(params.t0, params.timezone), 6), params.timezone);
-  return countDue({ ...params, asOf: capDate });
+  return DAILY_CAP_DAYS;
+}
+
+// Instante real em que o relógio fora-do-leilão marca outOfAuctionMs (soma as suspensões já atravessadas).
+function instantForRollingPeriod(outOfAuctionMs: number, params: AccrualParams): Date {
+  let instant = params.t0.getTime() + outOfAuctionMs;
+  for (const suspension of params.suspensions) {
+    const from = suspension.from.getTime();
+    if (from > instant) continue;
+    const to = suspension.to?.getTime() ?? params.asOf.getTime();
+    const duration = to - from;
+    if (duration > 0) instant += duration;
+  }
+  return new Date(instant);
 }
 
 // Instante/legenda representativos do período N.
 function periodFor(n: number, params: AccrualParams): DuePeriod {
   if (params.model === "ROLLING_24H") {
-    // Diária N cobre [t0+(N-1)·24h, t0+N·24h); legenda = data local do INÍCIO do bloco.
-    const refInstant = new Date(params.t0.getTime() + (n - 1) * MS_PER_DAY);
+    // Diária N nasce no instante em que o relógio fora-do-leilão marca (N-1)·24h; a suspensão empurra esse instante.
+    const refInstant = instantForRollingPeriod((n - 1) * MS_PER_DAY, params);
     return { periodSeq: n, refDate: localDateStr(refInstant, params.timezone), refInstant };
   }
-  // CALENDAR: N-ésima data local a partir da data de entrada; instante = meio-dia local (DST-inequívoco).
+  // CALENDAR: N-ésima data local COBRADA (pula as datas inteiramente suspensas); instante = meio-dia local.
+  const suspended = suspendedLocalDates(params);
   const startStr = localDateStr(params.t0, params.timezone);
-  const refDate = addDaysToDateStr(startStr, n - 1);
+  let refDate = startStr;
+  let charged = 0;
+  for (let cursor = startStr; ; cursor = addDaysToDateStr(cursor, 1)) {
+    if (!suspended.has(cursor)) {
+      charged += 1;
+      if (charged === n) {
+        refDate = cursor;
+        break;
+      }
+    }
+  }
   const [year, month, day] = refDate.split("-").map(Number);
   const refInstant = zonedWallToUtc({ year, month, day, hour: 12, minute: 0, second: 0 }, params.timezone);
   return { periodSeq: n, refDate, refInstant };

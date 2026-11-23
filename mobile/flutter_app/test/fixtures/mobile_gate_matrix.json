@@ -16,6 +16,7 @@
         ],
         "permissions": [
           "auction:appraise",
+          "auction:reclaim",
           "audit.read",
           "audit:read",
           "authority_credentials:manage",
@@ -371,6 +372,7 @@
         ],
         "permissions": [
           "auction:appraise",
+          "auction:reclaim",
           "audit.read",
           "audit:read",
           "authority_credentials:manage",
@@ -703,6 +705,7 @@
         ],
         "permissions": [
           "auction:appraise",
+          "auction:reclaim",
           "audit.read",
           "audit:read",
           "billing:read",
@@ -2120,6 +2123,7 @@
         ],
         "permissions": [
           "auction:appraise",
+          "auction:reclaim",
           "audit.read",
           "audit:read",
           "authority_credentials:manage",
@@ -2447,6 +2451,7 @@
         ],
         "permissions": [
           "auction:appraise",
+          "auction:reclaim",
           "audit.read",
           "audit:read",
           "authority_credentials:manage",
@@ -2774,6 +2779,7 @@
         ],
         "permissions": [
           "auction:appraise",
+          "auction:reclaim",
           "audit.read",
           "audit:read",
           "authority_credentials:manage",
@@ -3048,6 +3054,7 @@
         ],
         "permissions": [
           "auction:appraise",
+          "auction:reclaim",
           "audit.read",
           "audit:read",
           "authority_credentials:manage",
@@ -3320,6 +3327,7 @@
         ],
         "permissions": [
           "auction:appraise",
+          "auction:reclaim",
           "audit.read",
           "audit:read",
           "authority_credentials:manage",

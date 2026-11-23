@@ -125,7 +125,7 @@ export class ChargeService {
     let overAccruedDailies = 0;
     if (ctx.enteredAt) {
       asOf = ctx.frozenAt ? new Date(Math.min(now.getTime(), ctx.frozenAt.getTime())) : now;
-      const params: AccrualParams = { t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap };
+      const params: AccrualParams = { t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap, suspensions: ctx.suspensions };
       const summary = summarizeAccrual(params);
       cap = { model: ctx.model, cap: ctx.cap, capCount: summary.capCount, nDue: summary.nDue, nAccrue: summary.nAccrue, capReached: summary.capReached };
       // C3 — pendência de reconciliação: mais DAILY persistidas do que o motor projeta AGORA (congelamento
@@ -192,12 +192,13 @@ export class ChargeService {
     if (ctx.enteredAt) {
       // freeze-retroactive (salto A): nDue (uncapped, time-based) AT now. Se < persistedDailyCount, congelar em now
       // estranharia DAILYs já acumuladas (period termina depois de now) — MODEL-CORRECT p/ ROLLING e CALENDAR.
-      nDueNow = summarizeAccrual({ t0: ctx.enteredAt, asOf: now, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap }).nDue;
+      nDueNow = summarizeAccrual({ t0: ctx.enteredAt, asOf: now, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap, suspensions: ctx.suspensions }).nDue;
       // over-accrual (reconciliação): DAILYs além do teto AT asOf=min(now, frozen_at). frozen ⇒ estável.
       const freezeAsOf = ctx.frozenAt ? new Date(Math.min(now.getTime(), ctx.frozenAt.getTime())) : now;
-      const freezeSummary = summarizeAccrual({ t0: ctx.enteredAt, asOf: freezeAsOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap });
+      const freezeSummary = summarizeAccrual({ t0: ctx.enteredAt, asOf: freezeAsOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap, suspensions: ctx.suspensions });
       const nAccrueAtFreeze = freezeSummary.nAccrue;
-      overAccruedDailyIds = dailies.slice(nAccrueAtFreeze).map((daily) => daily.id);
+      const overAccruedUnpaid = dailies.slice(nAccrueAtFreeze).filter((daily) => daily.settledAt === undefined);
+      overAccruedDailyIds = overAccruedUnpaid.map((daily) => daily.id);
       nAccrueAtFreezeValue = nAccrueAtFreeze;
     }
     const nAccrueAtFreeze = nAccrueAtFreezeValue;
@@ -280,14 +281,14 @@ export class ChargeService {
     const ctx = await this.repository.loadAccrualContext(tenantId, processId);
     if (ctx?.enteredAt) {
       const asOf = ctx.frozenAt ? new Date(Math.min(now.getTime(), ctx.frozenAt.getTime())) : now;
-      capReached = summarizeAccrual({ t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap }).capReached;
+      capReached = summarizeAccrual({ t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap, suspensions: ctx.suspensions }).capReached;
     }
     return { currency, items, capReached, totalDueCents };
   }
 
   // Ω5P PR-14a — CLAIM item I (REMOVAL_STORAGE) da liquidação em cascata §6º, CAPADO ao teto I4/CTB §10. READ-ONLY:
   // NÃO escreve no ledger, NÃO carimba settled_at, NÃO posta ADJUSTMENT — só LÊ. O capping mora AQUI (o charging é o
-  // dono do teto de estada): claim = Σ net do ledger (settledTotal) − Σ líquido das DAILYs SOBRE-ACUMULADAS (as que
+  // dono do teto de estada): o claim considera o líquido do ledger e desconta o líquido das DAILYs SOBRE-ACUMULADAS (as que
   // excedem o teto AT frozen_at). As diárias sobre-acumuladas NÃO inflam o claim contra o ex-dono na cascata (o saldo
   // ao ex-dono, art. 328 §12, não é comido por uma cobrança acima do teto CTB §10, imutável na cadeia). Centavo EXATO.
   async getCascadeExpenseClaim(tenantId: string, processId: string, now: Date = new Date()): Promise<{ claimCents: number; currency: string } | undefined> {
@@ -296,11 +297,10 @@ export class ChargeService {
     const lines = await this.repository.listCharges({ tenantId, processId });
     // Moeda do claim = a das linhas EXIGÍVEIS (REMOVAL/DAILY/ADDITIONAL); fallback à 1ª linha ou BRL (ledger vazio).
     const currency = lines.find((line) => line.kind !== "ADJUSTMENT")?.currency ?? lines[0]?.currency ?? "BRL";
-    // Σ líquido das sobre-acumuladas (cada dailyNetCents já soma os ADJUSTMENTs que a apontam; sem settle, = a própria
-    // DAILY). Subtrai do total → o ledger CAPADO ao teto. Math.max(0,·) defensivo (nunca negativo por construção).
-    const overAccruedCents = state.overAccruedDailyIds.reduce((acc, id) => acc + dailyNetCents(id, lines), 0);
-    const claimCents = Math.max(0, moneyToCents(state.settledTotal) - overAccruedCents);
-    return { claimCents, currency };
+    const cascadeOverAccrued = new Set(state.overAccruedDailyIds);
+    const cascadeOpenLines = lines.filter((line) => line.kind !== "ADJUSTMENT" && !line.settledAt && !cascadeOverAccrued.has(line.id));
+    const cascadeOpenCents = cascadeOpenLines.reduce((acc, line) => acc + dailyNetCents(line.id, lines), 0);
+    return { claimCents: Math.max(0, cascadeOpenCents), currency };
   }
 
   // B-PATIO-REC-01 (plano v3 §5.1; achado N8) — o DEVIDO CAPADO ao teto, para a cobrança on-line da taxa de pátio. READ-ONLY:
@@ -336,7 +336,7 @@ export class ChargeService {
     if (!ctx || !ctx.enteredAt) return { examined: false, accrued: 0, errors: 0 };
 
     const asOf = ctx.frozenAt ? new Date(Math.min(now.getTime(), ctx.frozenAt.getTime())) : now; // congelamento RN-DIA-04
-    const params: AccrualParams = { t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap };
+    const params: AccrualParams = { t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap, suspensions: ctx.suspensions };
     const periods = computeDuePeriods(params);
     const maxExisting = await this.repository.maxDailyPeriodSeq(tenantId, processId);
 
@@ -363,18 +363,27 @@ export class ChargeService {
         logger.warn({ tenantId, processId, periodSeq: period.periodSeq, refDate: period.refDate, reason: "no_tariff_for_ref_date" }, "charging.accrue-daily: fail-closed (sem tarifa vigente na data); diária NÃO acumulada");
         break;
       }
-      const result = await this.repository.accrueDailyCharge({
-        tenantId,
-        processId,
-        periodSeq: period.periodSeq,
-        refDate: period.refDate,
-        unitAmount: toMoneyString(tariff.unitPrice),
-        tariffId: tariff.id,
-        currency: tariff.currency ?? "BRL",
-        actorId,
-        occurredAt: now,
-      });
-      if (result.created) accrued += 1;
+      try {
+        const result = await this.repository.accrueDailyCharge({
+          tenantId,
+          processId,
+          periodSeq: period.periodSeq,
+          refDate: period.refDate,
+          unitAmount: toMoneyString(tariff.unitPrice),
+          tariffId: tariff.id,
+          currency: tariff.currency ?? "BRL",
+          actorId,
+          occurredAt: now,
+        });
+        if (result.created) accrued += 1;
+      } catch (error) {
+        if (error instanceof ChargeError && error.reason === "daily_not_due_under_lock") {
+          errors += 1;
+          logger.warn({ tenantId, processId, periodSeq: period.periodSeq, reason: "daily_not_due_under_lock" }, "charging.accrue-daily: recusada sob a trava (período de leilão aberto); para o laço");
+          break;
+        }
+        throw error;
+      }
     }
     return { examined: true, accrued, errors };
   }

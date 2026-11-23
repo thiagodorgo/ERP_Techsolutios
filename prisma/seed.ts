@@ -152,6 +152,7 @@ const permissionDescriptions = {
   "release:process": "Montar o dossie de liberacao (quem retira + checklist de requisitos) do Processo de custodia do tenant.",
   "release:approve": "Registrar a autorizacao da autoridade para a liberacao do veiculo (Processo de custodia) do tenant.",
   "auction:appraise": "Registrar e consultar a avaliacao sigilosa do leilao (valor de avaliacao e lance minimo, art. 28) do Processo de custodia do tenant.",
+  "auction:reclaim": "Resgatar antes da venda um processo em lote (LOTTED -> ACTIVE_CUSTODY), com fundamento registrado.",
   "service_quotes:read": "Consultar Orcamentos (precos congelados) do tenant.",
   "service_quotes:create": "Criar Orcamentos congelando o preco da Tarifa vigente.",
   "service_quotes:update": "Editar (quantidade/notas em rascunho) e mudar situacao de Orcamentos.",

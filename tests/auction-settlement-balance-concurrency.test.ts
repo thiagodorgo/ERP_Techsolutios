@@ -118,14 +118,14 @@ async function seedDistributed(client: BootstrapClient, settlement: Awaited<Retu
   const tenant = await client.tenant.create({ data: { name: `Settle Bal ${suffix}`, slug: `settle-bal-${suffix}` } });
   const custodyHash = "a".repeat(64);
   const custodyPrev = "b".repeat(64);
-  const { processId } = await withTenantRls(client, tenant.id, async (tx) => {
+  const seeded = await withTenantRls(client, tenant.id, async (tx) => {
     const [profile] = await tx.$queryRaw<Array<{ id: string }>>`
       INSERT INTO jurisdiction_profiles (tenant_id, name, scope) VALUES (${tenant.id}::uuid, 'Perfil', 'PUBLIC_AGREEMENT') RETURNING id
     `;
-    const [proc] = await tx.$queryRaw<Array<{ id: string }>>`
+    const [proc] = await tx.$queryRaw<Array<{ id: string; entered_at: Date | null; frozen_at: Date | null }>>`
       INSERT INTO impound_processes (tenant_id, profile_id, origin_authority, vehicle_unidentified, unidentified_reason, status, entered_at, frozen_at, custody_seq_head, custody_hash_head)
-      VALUES (${tenant.id}::uuid, ${profile.id}::uuid, 'Autoridade', true, 'Placa adulterada', 'AUCTION_CLOSED', now() - interval '120 days', now(), 1, ${custodyHash})
-      RETURNING id
+      VALUES (${tenant.id}::uuid, ${profile.id}::uuid, 'Autoridade', true, 'Placa adulterada', 'AUCTION_CLOSED', now() - interval '2 hours', now(), 1, ${custodyHash})
+      RETURNING id, entered_at, frozen_at
     `;
     await tx.$queryRaw`
       INSERT INTO custody_events (tenant_id, process_id, seq, type, payload, occurred_at, prev_hash, hash)
@@ -135,8 +135,14 @@ async function seedDistributed(client: BootstrapClient, settlement: Awaited<Retu
       INSERT INTO auction_attempts (tenant_id, process_id, round_number, outcome, sold_amount, sale_note_reference)
       VALUES (${tenant.id}::uuid, ${proc.id}::uuid, 1, 'SOLD', ${soldAmount}::numeric, 'NOTA-1')
     `;
-    return { processId: proc.id };
+    return { processId: proc.id, enteredAt: proc.entered_at, frozenAt: proc.frozen_at };
   });
+  const processId = seeded.processId;
+  const occurredAt = new Date();
+  const { createLockedChargeReader } = await import("../src/modules/charging/charge-locked-reader.js");
+  const lockedChargeReader = createLockedChargeReader(client);
+  const state = await lockedChargeReader.getReleaseChargeState(tenant.id, processId, occurredAt);
+  assert.ok(state, "seed precisa de charge state resolvido para base atômica");
   const expiresAt = new Date(Date.now() + 5 * 365 * 86_400_000);
   const { allocations, ownerBalanceCents, shortfallCents } = distributeCascade(hammerCents, [
     { kind: "AUCTION_COST", claimCents: 0 },
@@ -149,8 +155,13 @@ async function seedDistributed(client: BootstrapClient, settlement: Awaited<Retu
   ]);
   await settlement.distributeSettlementAtomic({
     tenantId: tenant.id, processId, expectedFrom: "AUCTION_CLOSED", soldRound: 1, hammerCents,
+    chargeBasis: {
+      expectedDailyCount: state.nAccrueAtFreeze,
+      enteredAt: state.enteredAt ?? null,
+      frozenAt: state.frozenAt ?? seeded.frozenAt,
+    },
     allocations, ownerBalanceCents, shortfallCents, auctionCostCents: 0, removalStorageCents: 0, currency: "BRL",
-    ownerNotifyDueAt: new Date(Date.now() + 30 * 86_400_000), ownerClaimExpiresAt: expiresAt, actorId: undefined, occurredAt: new Date(),
+    ownerNotifyDueAt: new Date(Date.now() + 30 * 86_400_000), ownerClaimExpiresAt: expiresAt, actorId: undefined, occurredAt,
   });
   return { tenantId: tenant.id, processId, expiresAt, hammerCents };
 }

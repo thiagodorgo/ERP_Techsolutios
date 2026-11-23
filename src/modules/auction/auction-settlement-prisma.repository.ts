@@ -1,6 +1,8 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import { createLockedChargeReader } from "../charging/charge-locked-reader.js";
+import type { AccrueProcessResult, ReleaseChargeState } from "../charging/charge.types.js";
 import { moneyToCents } from "../charging/charge.validators.js";
 import { computeEventHash, genesisHash } from "../impound/impound.hashchain.js";
 import { appendOutboxEventTx, buildOutboxPayloadFromCustodyEvent } from "../impound/impound.outbox.repository.js";
@@ -38,6 +40,9 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 type LockedProcessRow = {
   readonly status: string;
+  readonly entered_at: Date | null;
+  readonly frozen_at: Date | null;
+  readonly yard_id: string | null;
   readonly custody_seq_head: number;
   readonly custody_hash_head: string | null;
 };
@@ -69,6 +74,25 @@ export class PrismaAuctionSettlementRepository implements AuctionSettlementRepos
     // GATE de estado re-verificado sob FOR UPDATE: a liquidação só ocorre em AUCTION_CLOSED.
     if (locked.status !== input.expectedFrom) {
       throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "settlement_wrong_state", "The settlement can only be distributed for an auction-closed process.");
+    }
+    await this.lockSettlementYardTimezoneTx(input.tenantId, input.processId);
+    const lockedChargeReader = createLockedChargeReader(this.client);
+    const settlementLockedState = await lockedChargeReader.getReleaseChargeState(input.tenantId, input.processId, input.occurredAt);
+    if (!settlementLockedState) {
+      throw new AuctionSettlementError(409, "SETTLEMENT_GUARD_FAILED", "settlement_gate_unresolved", "Charge state could not be resolved for this process; retry.");
+    }
+    if (!settlementChargeBasisMatches(locked, input.chargeBasis)) {
+      throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "concurrent_custody_append", "The charge basis changed concurrently; retry the settlement.");
+    }
+    if (settlementLockedState.nAccrueAtFreeze !== input.chargeBasis.expectedDailyCount) {
+      throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "concurrent_custody_append", "The expected daily count changed concurrently; retry the settlement.");
+    }
+    if (settlementLockedState.dailyShortfall > 0) {
+      throw new AuctionSettlementError(409, "SETTLEMENT_GUARD_FAILED", "settlement_daily_charges_missing", "Daily charges are still missing for this process; settlement cannot proceed.");
+    }
+    const lockedClaim = await lockedChargeReader.getCascadeExpenseClaim(input.tenantId, input.processId, input.occurredAt);
+    if (!lockedClaim || lockedClaim.claimCents !== input.removalStorageCents) {
+      throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "concurrent_custody_append", "The cascade claim changed concurrently; retry the settlement.");
     }
     // BASE de I7 RE-DERIVADA sob o lock (findActiveSoldRound — NUNCA Σ sold_amount; não dupla-conta revenda). Assegura
     // que o hammer que a cascata distribuiu É o soldAmount da SOLD efetiva persistida (belt-and-suspenders anti-forja).
@@ -213,7 +237,7 @@ export class PrismaAuctionSettlementRepository implements AuctionSettlementRepos
 
   private async lockProcess(tenantId: string, processId: string): Promise<LockedProcessRow | undefined> {
     const rows = await this.client.$queryRaw<LockedProcessRow[]>`
-      SELECT status, custody_seq_head, custody_hash_head
+      SELECT status, entered_at, frozen_at, yard_id, custody_seq_head, custody_hash_head
       FROM impound_processes
       WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
       FOR UPDATE
@@ -233,6 +257,16 @@ export class PrismaAuctionSettlementRepository implements AuctionSettlementRepos
       FOR UPDATE
     `;
     return rows[0] ? mapSettlement(rows[0]) : undefined;
+  }
+
+  private async lockSettlementYardTimezoneTx(tenantId: string, processId: string): Promise<void> {
+    await this.client.$queryRaw`
+      SELECT y.id
+      FROM yards y
+      JOIN impound_processes ip ON ip.tenant_id = y.tenant_id AND ip.yard_id = y.id
+      WHERE ip.tenant_id = ${tenantId}::uuid AND ip.id = ${processId}::uuid
+      FOR SHARE OF y
+    `;
   }
 
   // RÉPLICA FIEL de auction-prisma.repository.ts:appendEventTx (reusando as PURAS): computa seq/prev/hash, INSERE o
@@ -319,15 +353,23 @@ export async function createPrismaSettlementPorts(): Promise<{
   readonly impound: SettlementProcessPort;
   readonly auction: SettlementAuctionStatePort;
   readonly cascadeClaim: SettlementCascadeClaimPort;
+  readonly closeDailies: (tenantId: string, processId: string, now: Date, actorId?: string) => Promise<AccrueProcessResult>;
+  readonly chargeState: (tenantId: string, processId: string, now: Date) => Promise<ReleaseChargeState | undefined>;
 }> {
   const { createPrismaImpoundRepository } = await import("../impound/impound-prisma.repository.js");
   const { createPrismaAuctionRepository } = await import("./auction-prisma.repository.js");
   const { createDefaultChargeService } = await import("../charging/charge.service.js");
-  const [impound, auction] = await Promise.all([createPrismaImpoundRepository(), createPrismaAuctionRepository()]);
+  const [impound, auction, charge] = await Promise.all([
+    createPrismaImpoundRepository(),
+    createPrismaAuctionRepository(),
+    createDefaultChargeService(),
+  ]);
   return {
     impound,
     auction,
-    cascadeClaim: async (tenantId, processId) => (await createDefaultChargeService()).getCascadeExpenseClaim(tenantId, processId),
+    cascadeClaim: (tenantId, processId) => charge.getCascadeExpenseClaim(tenantId, processId),
+    closeDailies: (tenantId, processId, now, actorId) => charge.accrueProcess(tenantId, processId, now, actorId),
+    chargeState: (tenantId, processId, now) => charge.getReleaseChargeState(tenantId, processId, now),
   };
 }
 
@@ -443,6 +485,19 @@ function mapAttemptLite(record: AttemptLiteRow): AuctionAttempt {
 // cents inteiros → string Decimal(12,2) canônica "0.00" (a fronteira app→banco; nunca float na soma, só na formatação).
 function toDecimalString(cents: number): string {
   return (cents / 100).toFixed(2);
+}
+
+function sameInstant(left: Date | null, right: Date | null): boolean {
+  if (left === null && right === null) return true;
+  if (left === null || right === null) return false;
+  return left.getTime() === right.getTime();
+}
+
+function settlementChargeBasisMatches(
+  locked: Pick<LockedProcessRow, "entered_at" | "frozen_at">,
+  basis: DistributeSettlementInput["chargeBasis"],
+): boolean {
+  return sameInstant(locked.entered_at, basis.enteredAt) && sameInstant(locked.frozen_at, basis.frozenAt);
 }
 
 function isUniqueViolation(error: unknown): boolean {
