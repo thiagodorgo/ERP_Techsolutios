@@ -5602,3 +5602,18 @@ O registro leva ao repositório os fechamentos do portão: o item 68 (sessão do
 - **MVP mínimo:** o recorte está nas `D-DONO-2111-RECORTE-MVP` e `D-DONO-2111-RECORTE-MVP-RESPOSTAS` (o app de campo, o mapa operacional com a rota e o pátio a 100%, mais o push, o pagamento on-line e a rota de rua). O Traccar sai do mínimo. O prazo passou para cerca da metade de dezembro, a replanejar depois dos bloqueantes. A conta AWS segue em verificação.
 - **Regra nova no contrato:** `D-DONO-2111-DECISAO-E-LIMITE` (§A2 do `CLAUDE.md` e do `AGENTS.md`): a decisão do dono é limite do plano.
 - **Falha do orquestrador, declarada:** entre ~19:12 e 19:52 SP não havia vigia ligado, e 3 eventos ficaram sem reação por até 61 min. A lição é religar o vigia no mesmo passo de toda conclusão.
+
+## Estado em 2026-11-22 — servidor, Painel do grupo e fechamento dos itens 69/70
+
+- **Quatro merges do recorte:** #622 (`B-APP-ORG-2S`, squash `c572a937`), #623 (`B-GRUPO-GESTOR-1a`, `c8fbd91a`), #624 (`B-PATIO-LIVRO-VAZIO`, `6235b894e`) e #625 (`B-APP-ORG-2S-c`, `833dc7e1`). O #626, ajuste documental do comentário SLA, também fechou `P-GRUPO-COMENTARIO-SLA` no mesmo dia.
+- **Juntas:** J-622 aprovou 5/5 com 30 notas não graves; J-623 teve quatro bloqueantes não graves, todos fechados no conserto único; J-625 teve um bloqueante de registro não grave, também fechado. As três atas e os pareceres pós-merge estão em `agent-orchestration/omega/juntas/`.
+- **Portão SAN3:** os itens 69 e 70 estão FECHADOS COM RESSALVA. PRs #619, #622 e #625 na `main`, provas automáticas verdes e ensaio E-69/E-70 com 11/11 passos. O critério das linhas 177–178 foi substituído pelo da Emenda 1.8.1 §6 + D7 (`C-APP-ORG-69-70-SENTIDO-MUDOU`). O portão passa de **65/71 para 67/71**.
+- **Ressalvas:** as bordas A1/A2 do item 70 e as dívidas não graves das juntas têm pendência e dono em `controle/pendencias.md`. KPI permanece congelado.
+
+## Estado de 2026-11-22 à noite a 2026-11-23 de manhã
+
+- **Marco de KPI:** o PR #629 foi mergeado em `41b04d0b1`; registra 273 blocos concluídos e MVP vendável em 94%. O portão está em **67/71**; faltam os quatro itens da AWS.
+- **Leilão:** `B-PATIO-LEILAO-DIARIAS` está em conserto. A pré-revisão oficial deu **VOLTA** com dois achados graves, um de dinheiro/dado e outro de permissão; o bloco ainda precisa de conferência e junta completa.
+- **MVP:** a revenda após inadimplência entra por `B-LEILAO-REVENDA`, e o motor de comissão começa depois que o leilão estiver na `main` (`D-DONO-2311-REVENDA-NO-MVP` e `D-DONO-2311-COMISSAO-DEPOIS-DO-LEILAO`).
+- **Continuidade:** a execução foi pausada a pedido do dono em 23/11 às 00:57 SP e retomada após o reinício, às 08:05 SP.
+- **Lição de mandato:** a tabela de fatias do mandato cita toda emenda do plano. Se uma emenda move trabalho entre fatias, a tabela é reescrita no mesmo passo. Origem: achado grave A-02 da pré-revisão do leilão, causado por uma tabela que não citava a Emenda 9.

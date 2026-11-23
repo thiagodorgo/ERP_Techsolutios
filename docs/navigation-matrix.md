@@ -22,6 +22,7 @@
 | Tela (rota) | permissão backend | plat_admin | tenant_admin | manager | operator | finance | inventory | field_tech | auditor | support |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Dashboard `/dashboard` | `dashboard:read` | F | F | F | R | R | R | M | R | — |
+| Painel do grupo `/group` (B-GRUPO-GESTOR-1b) — só de leitura; o item do menu só aparece com 2 ou mais pátios do grupo, e quem não é gestor do grupo recebe 403 do servidor | `financial_entries:read` | — | R | R | — | R | — | — | R | — |
 | Ordens de Serviço `/work-orders` | `work_orders:read` | F | F | F | E | R | R | M | R | — |
 | OS detalhe `/work-orders/:id` | `work_orders:read` | F | F | F | E | R | R | M | R | — |
 | Despachos `/operations/dispatches` | `field_dispatch:read` | F | F | F | R | — | — | M | R | — |

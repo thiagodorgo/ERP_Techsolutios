@@ -1772,3 +1772,60 @@ Regime, município e enquadramento fiscal são dados fornecidos pelo dono com o 
 ### 9. Conteúdo comercial deliberadamente omitido
 
 Foram omitidos desta PD pública preços de provedores, valores de planos e franquias, cálculo ou percentual comercial, projeções econômicas e estratégia comercial. A marca aplicável é **(valores fora do repositório público)**.
+
+---
+
+## PD-MERCADO-2211 — o mercado brasileiro de guincho e pátio (2026-11-22)
+
+### 0. Síntese e limite
+
+Pesquisa documental de 22/11/2026, com buscas e páginas de fornecedores e órgãos públicos. Ela encontrou soluções especializadas em operação de guincho ou em pátio e uma oferta simples que reúne os dois domínios. A busca não esgota o mercado e não prova ausência de concorrente.
+
+Todo conteúdo comercial foi deliberadamente omitido. Onde as fontes tratam de preço, vale: **preço público consultado em 22/11; fica fora do repositório público**. Também ficam fora valores, faixas, franquias, limites de gratuidade e hipóteses de posicionamento comercial.
+
+### 1. Fatos observados
+
+- Há produtos focados na operação de guincho, com despacho, aplicativo de campo, checklist, mapa, faturamento e comissões.
+- Há produtos focados em pátios, com entrada, estadia, liberação e leilão, inclusive ofertas voltadas a órgãos públicos.
+- A amostra encontrou uma solução que reúne guincho e pátio, mas sua página não descreve leilão nem integração com órgão de trânsito.
+- A Infornet descreve integração do WebPrestador com centrais de assistência por meio do WebAssist.
+- As fontes públicas consultadas indicam exigências de informatização e integração para pátios credenciados; os documentos normativos não foram todos lidos integralmente nesta pesquisa.
+
+### 2. Hipóteses, não conclusões
+
+- A combinação de pátio credenciado completo, aplicativo do guincheiro, despacho, mapa e cobrança multiempresa pode diferenciar o ERP; a pesquisa não comprova exclusividade.
+- Integrações com centrais de assistência, associações e órgãos estaduais podem reduzir digitação e ampliar a utilidade operacional.
+- A homologação e a integração com órgãos de trânsito podem variar por estado e exigir trabalho específico.
+
+### 3. Concorrentes e cobertura declarada
+
+1. **CheckGuincho** — aplicativo de campo, checklist com fotos, despacho, mapa, financeiro, NFS-e, atendimento por mensagem e portal do cliente; a página não descreve pátio. Fonte: https://appcheckguincho.com/
+2. **ConfisCAR** — remoção, fotos, vídeo, localização, assinatura, entrada e saída de pátio, diárias e financeiro; a página não descreve leilão nem integração com órgão de trânsito. Fonte: https://confiscar.app/
+3. **App Guincho** — aplicativo do motorista, checklist, pátio com diária, mapa, comissão, faturamento e acompanhamento do cliente. Fonte: https://appguincho.com/
+4. **Infornet WebPrestador** — recebimento de chamados de centrais de assistência, checklist por aplicativo, comissões, frota e faturamento. Fonte: https://www.infornet.com.br/blog/guincheiro-conte-com-o-melhor-sistema-do-mercado/
+5. **controleAzul Guincho** — chamados, frota, faturamento, comissão e checklist no celular; a página não descreve pátio nem integração com seguradoras. Fonte: https://www.controleazul.com.br/controleazul-guincho-reboque.aspx
+6. **Confisca** — entrada no pátio, checklist, diárias, liberação, leilão, processo judicial e consultas cadastrais. Fonte: https://www.confisca.com.br/
+7. **DSIN** — pátio para órgãos públicos e empresas, com estadia, boletos e aviso ao proprietário antes do leilão. Fonte: https://www.dsin.com.br/oldsite/dsin_transito_patio.php
+8. **IBS SisCRVL** — remoção, estadia, leilão e aplicativo com rastreamento do guincho; a página não abriu durante a pesquisa, portanto a cobertura veio do resumo da busca. Fonte: https://ibstecnologia.com/siscrvl/
+9. **Shifton** — despacho, aplicativo do motorista, pátio, estadia, turnos e relatórios. Fonte: https://shifton.com/service/pt/industries/reboque-de-carros/
+10. **Towbook** — referência internacional de despacho, pátio, faturamento e aplicativo do motorista; as fontes comerciais consultadas divergiram. Fonte: https://www.capterra.com/p/94188/Towbook-Management-Software/pricing/
+11. **Hinova SGA** — gestão de associações de proteção veicular e aplicativo pelo qual o associado aciona assistência; hipótese da pesquisa: é canal de chamados, não concorrente direto. Fonte: https://cqcs.com.br/noticia/autoinsp-anuncia-integracao-ao-sistema-sga-do-grupo-hinova-durante-a-fenaprove/
+
+### 4. Oportunidades
+
+- Unificar guincho e pátio credenciado, com cadeia de custódia, liberação, leilão, aplicativo de campo, despacho e cobrança.
+- Integrar a entrada de chamados de centrais de assistência e associações para evitar redigitação.
+- Preparar conectores estaduais para requisitos de pátio e trânsito, mantendo as diferenças por jurisdição explícitas.
+- Manter pagamentos digitais e emissão fiscal como capacidades integradas, pois já aparecem na oferta concorrente.
+
+### 5. Riscos e limites
+
+- Ofertas de entrada e produtos especializados elevam a expectativa funcional de empresas pequenas.
+- Concorrentes já anunciam automação de atendimento, pagamentos digitais e integrações operacionais.
+- Integrações estaduais podem variar, demorar e exigir homologação própria.
+- Sem integração com centrais e associações, serviços podem continuar dependendo de digitação manual.
+- Parte dos dados pode estar desatualizada; a página da Infornet é antiga, a fonte internacional diverge e alguns fornecedores não publicam condições comerciais.
+
+### 6. Fontes públicas consultadas
+
+As URLs de produto constam ao lado de cada concorrente. A referência normativa consultada foi a Resolução CONTRAN 1.025/2026: https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-contran/resolucoes/resolucao10252026c.pdf. A pesquisa também usou material público de órgão estadual, mas não leu integralmente todos os documentos; qualquer decisão de conformidade exige conferência da fonte primária aplicável.

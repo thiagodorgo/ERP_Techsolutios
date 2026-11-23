@@ -6458,3 +6458,121 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 - **ID dado pelo redator;** o conflito está na Emenda 2 item 6 do plano `B-ASS-10c-OPERACAO` (fora do repositório) e na nota C3-03 da junta J-612.
 - **Os dois lados:** a maquete aprovada da tela de operação da cobrança dizia que a nota emitida sem pagamento *"precisa ser cancelada"*, frase da época da Q1 (a). O item 60 vale com a Q1 (b): a nota fica e o contador é avisado.
 - **Resolução:** vale a Q1 (b), que é a regra do dono, sobre o texto da maquete (§A1: regra de negócio vence o protótipo). A tela segue a Q1 (b) (testes T-R5-1 e T-R5-2), e o conserto da junta (`80b883cd`) alinhou a frase da referência versionada `platform-cobranca-3opcoes.reference.html`. Ata: `omega/juntas/J-612-b-ass-10c-operacao.md`.
+
+## D-DONO-2211-J2S-CADEIRAS-CLAUDE (2026-11-22 01:13 SP) — todas as cadeiras de junta ficam no Claude
+
+- **Fato (palavras do dono):** *"nao, faca vc as cadeiras da junta do servidor (J-2S)"*; em seguida, *"todas"*.
+- **Efeito:** inspetor e cadeiras da J-2S e das juntas seguintes ficam no Claude, com identidades novas e sem cruzamento, declarado por ordem do dono. Pré-revisão e conferência continuam em outra casa quando houver crédito.
+
+## D-DONO-2211-REDIS-LIMPAR (2026-11-22 09:53 SP) — limpar a fila de teste do Redis local
+
+- **Fato (palavras do dono):** *"pode sim, coloque pra rodar no ci do github"*.
+- **Efeito executado:** antes da limpeza houve `BGSAVE`; foram removidas as chaves de teste antigas e a fila pendente foi reconstruída somente com ids ainda existentes. O Redis vivo não volta a ser terreno de teste.
+
+## D-DONO-2211-TESTES-NO-CI (2026-11-22 09:53 SP) — suíte inteira no CI
+
+- **Fato (palavras do dono):** *"pode sim, coloque pra rodar no ci do github"*.
+- **Leitura do orquestrador, declarada (§A6):** suíte inteira no CI do GitHub; localmente, somente o teste pontual do achado, com Postgres e Redis próprios.
+
+## D-DONO-2211-CI-NO-GITHUB-PRIMEIRO (2026-11-22 14:41 SP) — GitHub é a primeira opção para todo CI
+
+- **Fato (palavras do dono):** *"todo ci rodar no github como primeira opcao"*; antes, *"ci faz pelo github"*.
+- **Efeito:** suíte, regressões e confirmação final rodam primeiro no GitHub. O roteiro local de CI inteiro só entra se o GitHub estiver indisponível, e a exceção fica registrada.
+
+## D-DONO-2211-GEMINI-TETO-20 (2026-11-22 11:20 SP) — Gemini CLI como segundo revisor, com teto total
+
+- **Fato (palavras do dono):** *"use o gemini cli com uns modelos para lhe ajudar, teto 20 reias"*.
+- **Efeito:** Gemini permanece segundo revisor, somente leitura, e todo achado precisa de conferência por outro modelo. O teto é total para a tarefa, não por chamada.
+
+## D-DONO-2211-PATIO-LIVRO-A (2026-11-22 10:44 SP) — livro calcula o devido antes da liberação
+
+- **Fato (resposta do dono no artefato):** *"opção (a)"*.
+- **Efeito:** o sistema calcula o devido, lança as diárias faltantes e só libera o veículo com tudo pago; isenção exige registro de gestor.
+
+## D-DONO-2211-PATIO-P2-RECUSA (2026-11-22 11:03 SP) — livro vazio recusa a liberação
+
+- **Fato (resposta do dono no artefato):** *"P2 = recusa"*.
+- **Efeito:** sem cobrança lançada, o veículo não sai até registro do gestor.
+
+## D-DONO-2211-PATIO-P3-I (2026-11-22 11:03 SP) — isenção fica no próprio livro
+
+- **Fato (resposta do dono no artefato):** *"P3 = (i)"*.
+- **Efeito:** isenção grava diárias a 0,00 no próprio livro, com motivo e autor, sem migração.
+
+## D-DONO-2211-PATIO-P4-II (2026-11-22 14:36 SP) — leilão e reciclagem em bloco próprio
+
+- **Fato (resposta do dono no artefato):** *"P4 = (ii)"*.
+- **Efeito:** `B-PATIO-LEILAO-DIARIAS` fecha as diárias devidas antes de congelar arremate ou reciclagem, para que a cascata credite o devido.
+
+## D-DONO-2211-LEILAO-P5 (2026-11-22 15:54 SP) — custódia completa antes do leilão
+
+- **Fato (palavras do dono):** *"o veiculo sem diaria, sem documentos de custodia nao vai para leilao, para acontecer o leilao todos os passos da custodia do veiculo tem que estarem descritos em sua documentação, casos omissos o adm do patio trata"*.
+- **Efeito:** sem tarifa de diária, ou sem a custódia completa documentada, arremate e reciclagem são recusados. O administrador completa a falta; não há dispensa automática.
+
+## D-DONO-2211-LEILAO-P6-P7 (2026-11-22 17:20 SP) — remoção não é creditada duas vezes; diária segue até o pagamento
+
+- **Fato (respostas do dono no artefato):** *"P6 = (i)"* e *"P7 = (ii)"*. Nota: *"se o dono do veiculo pagou o veiculo nem vai para ieilao, o paramento tem que ser quitado ate 24 horas do inicio do leilao"*.
+- **Efeito:** remoção já paga não volta a ser creditada na cascata; diária só para quando o pagamento do arremate é confirmado. O corte temporal foi substituído pela decisão P10 abaixo.
+
+## D-DONO-2211-LEILAO-P10 (2026-11-22 18:09 SP) — emissão da lista é o corte da quitação
+
+- **Fato (palavras do dono):** *"apos a lista do leilao de veiculos ser emitida, nao sera mais possivel a quitacao do debito, foi para leilao..."*.
+- **Efeito:** antes da emissão da lista, quitar retira o veículo; depois, não há mais quitação e o veículo segue ao leilão. Substitui o corte de 24 horas mencionado na P6.
+
+## D-DONO-2211-LEILAO-P8-P9-P11 (2026-11-22 18:17 SP) — documentação mínima, sem dispensa, e resgate administrativo
+
+- **Fato (respostas do dono na janela):** *"P8 = (ii)"*, *"P9 = (i)"* e *"P11 = (i)"*.
+- **Efeito:** documentado significa diárias lançadas, vistoria de recepção com fotos, pátio atribuído e remoção lançada; o administrador completa o que falta, sem dispensar; o resgate `LOTTED → ACTIVE_CUSTODY` continua e exige alçada administrativa.
+
+## D-DONO-2211-LEILAO-P11-GESTOR (2026-11-22 18:39 SP) — o gestor também pode resgatar em último caso
+
+- **Fato (palavras do dono):** *"o gestor tbm faz, em ultimo caso"*.
+- **Efeito:** o resgate depois do lote vale para Administrador e Gestor, como exceção registrada com motivo; os perfis de plataforma mantêm a alçada prevista.
+
+## D-DONO-2211-GRUPO-JANELA-A (2026-11-22 18:15 SP) — opção A para Gestores do grupo
+
+- **Fato (palavras do dono):** *"escolho a"*.
+- **Efeito:** o menu do Painel entra no PR de integração; a janela Gestores do grupo fica em PR próprio (`B-GRUPO-GESTOR-1c`), com servidor S1/S2 e junta completa. O esboço A foi aprovado sem nota de mudança.
+
+## D-DONO-2211-ARGON-ANTIGRAVITY (2026-11-22 19:06 SP) — usar o Argon pelo Antigravity
+
+- **Fato (palavras do dono):** *"usar o argon pelo antigravity"*.
+- **Efeito:** o Argon usa a cota da assinatura pelo Antigravity, separado do teto da API. Continua valendo `D-GEMINI-SEGUNDO-REVISOR`: entra somente como segundo revisor e todo achado precisa ser conferido por outro modelo.
+
+## D-DONO-2211-AVISAR-ARTEFATO-REGISTRO (2026-11-22 19:26 SP) — evento relevante é avisado e publicado no mesmo passo
+
+- **Fato (palavras do dono):** *"avise e ja ponha no artefato, documente e publicite isso"*.
+- **Leitura do orquestrador, declarada (§A6):** todo evento relevante — merge, veredito de porteiro, conferência ou resposta do dono — entra no mesmo passo em um aviso curto no chat, no artefato de estado republicado, no painel inteiro e no registro pendente que alimenta o PR de registro.
+
+## C-1B-PERMISSAO-JANELA (registro de CONFLITO, §A2, 2026-11-22) — quem pode abrir a janela Gestores do grupo
+
+- **Os dois lados:** o mandato da Emenda 1b dizia *"quem pode abrir: a permissão das rotas, `platform:users:create_admin`"*. A `main` lista com `platform:billing:read` e marca e desmarca com `platform:users:create_admin` (`RBAC_MATRIX.md` l.160-163, arquivo-base, fonte 2 do §A1), e a Emenda 3 §1 já decidira que a janela abre em modo de leitura com `platform:billing:read`.
+- **Como foi tratado:** o planejador seguiu a `main` e a Emenda 3 (Emenda 1b §3.2) e registrou a divergência sem consolidar. A janela ficou para o `B-GRUPO-GESTOR-1c` (`D-DONO-2211-GRUPO-JANELA-A`); o 1b não a entrega.
+- **status:** ABERTO, a resolver no plano do `B-GRUPO-GESTOR-1c` · **gravidade:** registro (§A2), sem efeito no produto enquanto a janela não existe.
+- **critério de encerramento:** o plano do `B-GRUPO-GESTOR-1c` declara quem abre a janela (leitura com `platform:billing:read`, ou só com `platform:users:create_admin`), e a escolha fica registrada aqui como resolução.
+- **Dono:** o orquestrador, no plano do `B-GRUPO-GESTOR-1c`. Fechar a janela só para quem tem `create_admin` é uma linha no front e não fere o servidor, que segue como autoridade. Origem do registro: achado A1 do `porteiro-627`; registrado por `dev-628-fix2-cl` (Claude Opus).
+
+## D-DONO-2211-COMISSAO-NO-MVP (2026-11-22 21:45 SP) — motor de comissões no MVP
+
+- **Fato (palavras do dono):** *"claude o motor de comissoes nao pode ficar fora do mvp, como os guincheiros vao trabalhar?"*.
+- **Efeito:** `B-COMISSAO-MOTOR`, `B-COMISSAO-SALDO` e a página web de Comissões entram no MVP mínimo. Às 21:46, o dono disse *"calma"*; o desenvolvimento foi interrompido antes de criar ramo ou código, sem revogar a entrada no MVP.
+
+## D-DONO-2211-LEILAO-RAPIDO (2026-11-22 21:49 SP) — leilão entra rápido
+
+- **Fato (palavras do dono):** *"o leilao, tem que entrar rapido"*.
+- **Efeito:** o leilão vem antes dos blocos de comissão, sem pular testes, pré-revisão, junta completa nem os demais gates de dinheiro.
+
+## D-DONO-2311-COMISSAO-DEPOIS-DO-LEILAO (2026-11-23 00:08 SP) — comissão começa depois do leilão
+
+- **Fato (palavras do dono):** *"quando a comissão começa (recomendo logo depois do leilão);sim"*.
+- **Efeito:** `B-COMISSAO-MOTOR` começa quando o leilão estiver na `main`, sem retirar braço do conserto do leilão.
+
+## D-DONO-2311-REVENDA-NO-MVP (2026-11-23 00:08 SP) — revenda do leilão no MVP
+
+- **Fato (palavras do dono):** *"se a revenda no leilão entra no MVP (recomendo que sim).sim"*.
+- **Efeito:** o caminho de revenda após inadimplência entra no MVP em bloco próprio, `B-LEILAO-REVENDA`, depois que o leilão estiver na `main`.
+
+## D-DONO-2311-CLAUDE-SO-ORQUESTRA (2026-11-23 08:09 SP) — Claude somente na orquestração
+
+- **Fato (palavras do dono):** *"vc hoje so na orquestracao e tarefas selecionadas por mim"*.
+- **Efeito:** durante o dia 23/11/2026, Claude e seus subagentes somente orquestram ou executam tarefas escolhidas pelo dono; os demais trabalhos seguem para braços externos ou aguardam escolha expressa.
