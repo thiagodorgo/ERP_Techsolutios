@@ -522,7 +522,6 @@ export const ROLE_PERMISSIONS = {
     // Ω5P PR-13b — gestão registra/lê a avaliação sigilosa do leilão (art. 28; = impound:transition).
     "auction:appraise",
     "auction:reclaim",
-  "auction:reclaim",
     // Ω-VID PR-04 — gestão pode mergear identidades de veículo de terceiro (D-Ω-VID-01, aprovado pela junta).
     "vehicle_identity:merge",
     "service_quotes:create",
