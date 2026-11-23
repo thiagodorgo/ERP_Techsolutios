@@ -49,7 +49,7 @@ if (!connectionString) {
     enteredAt?: Date;
     frozenAt?: Date | null;
     tariff?: boolean;
-    cap?: "SIX_MONTHS" | "THIRTY_DAYS_LEGACY";
+    cap?: "SIX_MONTHS" | "THIRTY_DAYS_LEGACY" | "UNLIMITED";
     model?: "ROLLING_24H" | "CALENDAR";
     yard?: boolean;
     yardTimezone?: string;
@@ -1552,6 +1552,240 @@ ${thaw.out}`;
     assert.deepEqual(
       { diariasNoLivro: await count(ctx, "DAILY"), resultado: result, estado: (await row(ctx)).status, congelamentoIntocado: (await frozenMs(ctx)) === legacy.getTime() },
       { diariasNoLivro: 10, resultado: "409 concurrent_custody_append", estado: "AUCTIONED", congelamentoIntocado: true },
+    );
+  });
+
+  // ───────────────────── E11.1-E/E11.2: período na preparação, teto 180 e legado (G1) ─────────────────────
+
+  async function suspensionsOfDb(ctx: Ctx): Promise<Array<{ from: number; to?: number }>> {
+    const rows = await withTenantRls(client, ctx.tenantId, (tx) =>
+      tx.$queryRaw<Array<{ started_at: Date; ended_at: Date | null }>>`
+        SELECT started_at, ended_at FROM impound_daily_suspensions WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid ORDER BY started_at`,
+    );
+    return rows.map((item) => ({ from: new Date(item.started_at).getTime(), to: item.ended_at ? new Date(item.ended_at).getTime() : undefined }));
+  }
+
+  async function prepBackdated(ctx: Ctx, prepAt: Date, lotAt?: Date, round = 1): Promise<void> {
+    const auction = await createDefaultAuctionService();
+    await auction.registerEdict(actor(ctx), ctx.processId, edictBody(round));
+    await auction.setAppraisal(actor(ctx), ctx.processId, { round_number: round, appraisal_amount: "10000.00", min_bid_amount: "5000.00" });
+    await auctionRepo.prepareAuctionAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: round, actorId: ctx.userId, occurredAt: prepAt });
+    if (lotAt) await auctionRepo.lotAuctionAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "AUCTION_PREP", roundNumber: round, actorId: ctx.userId, occurredAt: lotAt });
+  }
+
+  test("S1 · (E11.1-E) preparação abre o período; varredura em leilão lança 0; o arremate fecha com 90; crédito 3750.00, saldo 4250.00", async () => {
+    const ctx = await seed("S1", { status: "AUCTION_ELIGIBLE", enteredAt: ago(95) });
+    const charge = await createDefaultChargeService();
+    const t0 = ctx.enteredAt.getTime();
+    const prepAt = new Date(t0 + 90 * MS_PER_DAY);
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
+    await prepBackdated(ctx, prepAt, new Date(t0 + 92 * MS_PER_DAY));
+    const sweep = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    const afterSweep = { lancadas: sweep.accrued, diarias: await count(ctx, "DAILY") };
+    const auction = await createDefaultAuctionService();
+    await auction.recordSale(actor(ctx), ctx.processId, saleBody());
+    const afterSale = { diarias: await count(ctx, "DAILY"), congelado: (await row(ctx)).frozen_at !== null };
+    await auction.closeAuction(actor(ctx), ctx.processId, { round_number: 1, payment_confirmed: true });
+    const frozenAtMs = (await frozenMs(ctx)) ?? undefined;
+    const dist = await (await createDefaultAuctionSettlementService()).distribute(actor(ctx), ctx.processId, {});
+    assert.deepEqual(
+      { afterSweep, afterSale, periodos: await suspensionsOfDb(ctx), ...cascadeOf(dist) },
+      { afterSweep: { lancadas: 0, diarias: 90 }, afterSale: { diarias: 90, congelado: false }, periodos: [{ from: prepAt.getTime(), to: frozenAtMs }], creditoDoPatio: "3750.00", saldoDoExDono: "4250.00", somaDoRateioIgualAoLance: true },
+    );
+  });
+
+  test("S5 · (E11.1-E) arremate e inadimplência mantêm o período aberto da preparação; varredura lança 0; 90 diárias; frozen_at nulo", async () => {
+    const ctx = await seed("S5", { status: "AUCTION_ELIGIBLE", enteredAt: ago(95) });
+    const charge = await createDefaultChargeService();
+    const t0 = ctx.enteredAt.getTime();
+    const prepAt = new Date(t0 + 90 * MS_PER_DAY);
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
+    await prepBackdated(ctx, prepAt, new Date(t0 + 92 * MS_PER_DAY));
+    const auction = await createDefaultAuctionService();
+    await auction.recordSale(actor(ctx), ctx.processId, saleBody());
+    await auction.defaultAuction(actor(ctx), ctx.processId, { round_number: 2 });
+    const sweep = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    assert.deepEqual(
+      { lancadas: sweep.accrued, diarias: await count(ctx, "DAILY"), congelado: (await row(ctx)).frozen_at !== null, periodos: await suspensionsOfDb(ctx) },
+      { lancadas: 0, diarias: 90, congelado: false, periodos: [{ from: prepAt.getTime(), to: undefined }] },
+    );
+  });
+
+  test("S2 · (E11.1-E) 30 dias em leilão param a diária; retirada volta a cobrar; 120 diárias com seq 1..120; depois 180 (teto)", async () => {
+    const ctx = await seed("S2", { status: "AUCTION_ELIGIBLE", enteredAt: ago(250) });
+    const charge = await createDefaultChargeService();
+    const t0 = ctx.enteredAt.getTime();
+    const prepAt = new Date(t0 + 100 * MS_PER_DAY);
+    const reclaimAt = new Date(t0 + 130 * MS_PER_DAY);
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
+    await prepBackdated(ctx, prepAt, prepAt);
+    await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(t0 + 150 * MS_PER_DAY), ctx.userId);
+    const afterFirst = { diarias: await count(ctx, "DAILY"), seqs: await dailySeqs(ctx) };
+    const legenda101 = (await withTenantRls(client, ctx.tenantId, (tx) => tx.$queryRaw<Array<{ ref_date: string | null }>>`
+      SELECT to_char(ref_date, 'YYYY-MM-DD') AS ref_date FROM process_charges WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid AND kind = 'DAILY' AND period_seq = 101`))[0]?.ref_date;
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    const afterSecond = { diarias: await count(ctx, "DAILY"), seqs: await dailySeqs(ctx) };
+    assert.deepEqual(
+      { afterFirst, legenda101, afterSecond },
+      { afterFirst: { diarias: 120, seqs: Array.from({ length: 120 }, (_, index) => index + 1) }, legenda101: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(reclaimAt), afterSecond: { diarias: 180, seqs: Array.from({ length: 180 }, (_, index) => index + 1) } },
+    );
+  });
+
+  test("S3 · (E11.1-E) entrada há 200 dias: 180 antes do lote e 180 no fim, nenhuma sobre-acumulada", async () => {
+    const ctx = await seed("S3", { status: "AUCTION_ELIGIBLE", enteredAt: ago(260) });
+    const charge = await createDefaultChargeService();
+    const t0 = ctx.enteredAt.getTime();
+    const prepAt = new Date(t0 + 200 * MS_PER_DAY);
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
+    const antesDoLote = await count(ctx, "DAILY");
+    await prepBackdated(ctx, prepAt, prepAt);
+    await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: new Date(t0 + 230 * MS_PER_DAY) });
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    const state = await charge.getReleaseChargeState(ctx.tenantId, ctx.processId);
+    assert.deepEqual(
+      { antesDoLote, noFim: await count(ctx, "DAILY"), sobreAcumuladas: (await count(ctx, "DAILY")) - (state?.nAccrueAtFreeze ?? 0) },
+      { antesDoLote: 180, noFim: 180, sobreAcumuladas: 0 },
+    );
+  });
+
+  test("S8 · (E11.1-E) retirada do quitado a partir da preparação fecha o período; 2 dias depois a varredura lança 92", async () => {
+    const ctx = await seed("S8", { status: "AUCTION_ELIGIBLE", enteredAt: ago(96) });
+    const charge = await createDefaultChargeService();
+    const t0 = ctx.enteredAt.getTime();
+    const prepAt = new Date(t0 + 90 * MS_PER_DAY);
+    const withdrawAt = new Date(t0 + 94 * MS_PER_DAY);
+    await prepBackdated(ctx, prepAt);
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, withdrawAt, ctx.userId);
+    await charge.settle(actor(ctx), ctx.processId, { note: "quitado no balcão" });
+    await auctionRepo.withdrawSettledAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "AUCTION_PREP", actorId: ctx.userId, occurredAt: withdrawAt });
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    assert.deepEqual(
+      { diarias: await count(ctx, "DAILY"), seqs: await dailySeqs(ctx), periodos: await suspensionsOfDb(ctx) },
+      { diarias: 92, seqs: Array.from({ length: 92 }, (_, index) => index + 1), periodos: [{ from: prepAt.getTime(), to: withdrawAt.getTime() }] },
+    );
+  });
+
+  test("S8b · (E11.1-E) controle: retirada do quitado a partir de AUCTION_ELIGIBLE não abre período; 92 diárias", async () => {
+    const ctx = await seed("S8b", { status: "AUCTION_ELIGIBLE", enteredAt: ago(92) });
+    const charge = await createDefaultChargeService();
+    const withdrawAt = new Date(ctx.enteredAt.getTime() + 90 * MS_PER_DAY);
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, withdrawAt, ctx.userId);
+    await charge.settle(actor(ctx), ctx.processId, { note: "quitado no balcão" });
+    await auctionRepo.withdrawSettledAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "AUCTION_ELIGIBLE", actorId: ctx.userId, occurredAt: withdrawAt });
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    assert.deepEqual({ diarias: await count(ctx, "DAILY"), periodos: (await suspensionsOfDb(ctx)).length }, { diarias: 92, periodos: 0 });
+  });
+
+  test("S9 · (E11.1-E) 184 diárias com 182 pagas: motor dá 180; estorno só das 183 e 184; extrato acusa 4 acima do teto; script lista 1 processo, 2 pagas, 80.00", async () => {
+    const ctx = await seed("S9", { enteredAt: ago(200) });
+    await seedDailies(ctx, 184);
+    await client.$executeRawUnsafe("UPDATE process_charges SET settled_at = now() WHERE tenant_id = $1::uuid AND process_id = $2::uuid AND kind = 'DAILY' AND period_seq <= 182", ctx.tenantId, ctx.processId);
+    const charge = await createDefaultChargeService();
+    const sweep = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    const state = await charge.getReleaseChargeState(ctx.tenantId, ctx.processId, new Date());
+    const statement = await charge.getStatement(actor(ctx), ctx.processId);
+    const listar = spawnSync(process.execPath, ["--import", "tsx", "scripts/patio-fechar-diarias-congelados.ts", "--organizacao", ctx.tenantId, "--listar-pagas-acima-do-teto"], { env: process.env, encoding: "utf8", timeout: 300_000 });
+    const settle = await charge.settle(actor(ctx), ctx.processId, { note: "quitado" });
+    assert.deepEqual(
+      { lancadas: sweep.accrued, sobreAcumuladas: statement.overAccruedDailies, estornadas: state?.overAccruedDailyIds.length, estornoCount: settle.estornoCount, lista1Processo: `${listar.stdout ?? ""}${listar.stderr ?? ""}`.includes("total de processos com pagas acima do teto: 1"), lista2Pagas80: `${listar.stdout ?? ""}${listar.stderr ?? ""}`.includes("2 pagas, 80.00") },
+      { lancadas: 0, sobreAcumuladas: 4, estornadas: 2, estornoCount: 2, lista1Processo: true, lista2Pagas80: true },
+    );
+  });
+
+  test("S9b · (E11.2/A2) contrato particular com 200 diárias: 180 devidas e 20 sobre-acumuladas; a liberação estorna 20; a cascata não as leva", async () => {
+    const ctx = await seed("S9b", { enteredAt: ago(200), cap: "UNLIMITED" });
+    await seedDailies(ctx, 200);
+    const charge = await createDefaultChargeService();
+    const sweep = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    const state = await charge.getReleaseChargeState(ctx.tenantId, ctx.processId, new Date());
+    const statement = await charge.getStatement(actor(ctx), ctx.processId);
+    const cascade = await charge.getCascadeExpenseClaim(ctx.tenantId, ctx.processId, new Date());
+    const settle = await charge.settle(actor(ctx), ctx.processId, { note: "quitado" });
+    assert.deepEqual(
+      { lancadas: sweep.accrued, sobreAcumuladas: statement.overAccruedDailies, estornadas: state?.overAccruedDailyIds.length, estornoCount: settle.estornoCount, cascadeClaim: cascade?.claimCents },
+      { lancadas: 0, sobreAcumuladas: 20, estornadas: 20, estornoCount: 20, cascadeClaim: 735_000 },
+    );
+  });
+
+  test("S11 · (E11.1-E) resgate fecha o 1º período; re-preparação abre o 2º; 105 diárias, dois períodos", async () => {
+    const ctx = await seed("S11", { status: "AUCTION_ELIGIBLE", enteredAt: ago(125) });
+    const charge = await createDefaultChargeService();
+    const t0 = ctx.enteredAt.getTime();
+    const prep1At = new Date(t0 + 100 * MS_PER_DAY);
+    const reclaimAt = new Date(t0 + 110 * MS_PER_DAY);
+    const eligibleAt = new Date(t0 + 115 * MS_PER_DAY);
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, prep1At, ctx.userId);
+    await prepBackdated(ctx, prep1At, prep1At);
+    await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+    const impound = await createPrismaImpoundRepository();
+    await impound.applyTransition({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", setEnteredAt: false, setFrozenAt: false, event: { type: "STATUS_CHANGE", payload: { from: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", reason: "auction_eligible" }, occurredAt: eligibleAt, actorId: undefined } });
+    await prepBackdated(ctx, eligibleAt, undefined, 2);
+    await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+    assert.deepEqual(
+      { diarias: await count(ctx, "DAILY"), periodos: await suspensionsOfDb(ctx) },
+      { diarias: 105, periodos: [{ from: prep1At.getTime(), to: reclaimAt.getTime() }, { from: eligibleAt.getTime(), to: undefined }] },
+    );
+  });
+
+  test("DB-11 · (E11.1-E) processo em preparação com período aberto e 90 diárias: accrueDailyCharge direto da 91 → 409 daily_not_due_under_lock; 90 diárias", async () => {
+    const ctx = await seed("DB-11", { status: "AUCTION_ELIGIBLE", enteredAt: ago(90) });
+    await prepBackdated(ctx, new Date());
+    await seedDailies(ctx, 90);
+    const repo = await createPrismaChargeRepository();
+    const result = await outcome(() => repo.accrueDailyCharge({ tenantId: ctx.tenantId, processId: ctx.processId, periodSeq: 91, refDate: "2026-02-01", unitAmount: "40.00", currency: "BRL", actorId: ctx.userId, occurredAt: new Date(Date.now() + 2 * MS_PER_DAY) }));
+    assert.deepEqual({ resultado: result, diarias: await count(ctx, "DAILY") }, { resultado: "409 daily_not_due_under_lock", diarias: 90 });
+  });
+
+  test("K9 · varredura × preparação em paralelo (6 rodadas, 3 vezes): o livro tem exatamente as diárias do instante da preparação; cadeia válida", async () => {
+    for (let block = 0; block < 3; block += 1) {
+      for (let round = 0; round < 6; round += 1) {
+        const ctx = await seed(`K9-${block}-${round}`, { status: "AUCTION_ELIGIBLE" });
+        const auction = await createDefaultAuctionService();
+        await auction.registerEdict(actor(ctx), ctx.processId, edictBody());
+        await auction.setAppraisal(actor(ctx), ctx.processId, { round_number: 1, appraisal_amount: "10000.00", min_bid_amount: "5000.00" });
+        const charge = await createDefaultChargeService();
+        const [prep] = await Promise.allSettled([
+          auctionRepo.prepareAuctionAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: 1, actorId: ctx.userId, occurredAt: new Date() }),
+          charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), undefined),
+        ]);
+        assert.equal(prep.status, "fulfilled", `K9 bloco ${block} rodada ${round}: a preparação passa (${prep.status === "rejected" ? reasonOf(prep.reason) : ""})`);
+        const seqs = await dailySeqs(ctx);
+        assert.deepEqual({ diarias: seqs.length, unicas: new Set(seqs).size }, { diarias: 90, unicas: 90 }, `K9 bloco ${block} rodada ${round}`);
+        await assertChainValid(ctx);
+      }
+    }
+  });
+
+  test("S10 · (E11.1-E) script --abrir-periodo-leilao: A abre o período no instante do evento; B e C ficam intocados e listados", async () => {
+    const a = await seed("S10-A", { status: "AUCTION_ELIGIBLE", enteredAt: ago(100) });
+    const prepA = new Date(Date.now() - 20 * MS_PER_DAY);
+    await prepBackdated(a, prepA, new Date(Date.now() - 19 * MS_PER_DAY));
+    await client.$executeRawUnsafe("DELETE FROM impound_daily_suspensions WHERE tenant_id = $1::uuid AND process_id = $2::uuid", a.tenantId, a.processId);
+    await seedDailies(a, 100);
+
+    const b = await seed("S10-B", { status: "AUCTION_ELIGIBLE", enteredAt: ago(100) });
+    await prepBackdated(b, prepA, new Date(Date.now() - 19 * MS_PER_DAY));
+    await client.$executeRawUnsafe("DELETE FROM impound_daily_suspensions WHERE tenant_id = $1::uuid AND process_id = $2::uuid", b.tenantId, b.processId);
+    await seedDailies(b, 100);
+    await client.$executeRawUnsafe("UPDATE process_charges SET settled_at = now() WHERE tenant_id = $1::uuid AND process_id = $2::uuid AND kind = 'DAILY' AND period_seq = 85", b.tenantId, b.processId);
+
+    const c = await seed("S10-C", { status: "AUCTION_PREP", enteredAt: ago(100) });
+    await seedDailies(c, 100);
+
+    const run = (tenantId: string) => spawnSync(process.execPath, ["--import", "tsx", "scripts/patio-fechar-diarias-congelados.ts", "--organizacao", tenantId, "--abrir-periodo-leilao", "--aplicar"], { env: process.env, encoding: "utf8", timeout: 300_000 });
+    run(a.tenantId);
+    const aPeriodos = await suspensionsOfDb(a);
+    const charge = await createDefaultChargeService();
+    const aState = await charge.getReleaseChargeState(a.tenantId, a.processId);
+    await charge.accrueProcess(a.tenantId, a.processId, new Date(), undefined);
+    run(a.tenantId);
+    const aPeriodosDepois = await suspensionsOfDb(a);
+    run(b.tenantId);
+    run(c.tenantId);
+    assert.deepEqual(
+      { aAberto: aPeriodos[0]?.from === prepA.getTime(), aMotor: aState?.nAccrueAtFreeze, aSobre: (await count(a, "DAILY")) - (aState?.nAccrueAtFreeze ?? 0), aIdempotente: aPeriodosDepois.length === 1, bIntocado: (await suspensionsOfDb(b)).length === 0, cIntocado: (await suspensionsOfDb(c)).length === 0 },
+      { aAberto: true, aMotor: 80, aSobre: 20, aIdempotente: true, bIntocado: true, cIntocado: true },
     );
   });
 }
