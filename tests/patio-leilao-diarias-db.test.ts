@@ -439,7 +439,7 @@ if (!connectionString) {
   const NO_OP_CLOSING = async () => ({ examined: true, accrued: 0, errors: 0 });
 
   // AuctionService Prisma pela API pública que o plano cria (portas 7 a 10). Na `main` o construtor tem 6 parâmetros.
-  async function prismaAuctionServiceWith(ports: { closeDailies?: (t: string, p: string, now: Date, a?: string) => Promise<unknown>; chargeState?: (t: string, p: string, now: Date) => Promise<unknown>; currentDailyService?: (t: string, p: string) => Promise<boolean | undefined> }) {
+  async function prismaAuctionServiceWith(ports: { closeDailies?: (t: string, p: string, now: Date, a?: string) => Promise<unknown>; chargeState?: (t: string, p: string, now: Date) => Promise<unknown> }) {
     const [repository, impound, auctionPorts, charge] = await Promise.all([createPrismaAuctionRepository(), createPrismaImpoundRepository(), createPrismaAuctionPorts(), createDefaultChargeService()]);
     const Ctor = AuctionService as unknown as new (...args: unknown[]) => InstanceType<typeof AuctionService>;
     return new Ctor(
@@ -451,7 +451,6 @@ if (!connectionString) {
       auctionPorts.hasActiveRelease,
       ports.closeDailies ?? ((t: string, p: string, now: Date, a?: string) => charge.accrueProcess(t, p, now, a)),
       ports.chargeState ?? ((t: string, p: string, now: Date) => charge.getReleaseChargeState(t, p, now)),
-      ports.currentDailyService ?? ((t: string, p: string) => charge.hasCurrentDailyServiceCatalog(t, p)),
       async () => true,
       async () => true,
     );

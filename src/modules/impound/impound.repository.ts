@@ -325,7 +325,7 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
     const process = await this.findProcessById(tenantId, processId);
     if (!process) return false;
     if (!process.frozenAt) return false;
-    if (process.status === "RELEASE_IN_PROGRESS" || process.status === "AUCTION_CLOSED") return false;
+    if (!["ACTIVE_CUSTODY", "AUCTION_ELIGIBLE", "AUCTION_PREP", "LOTTED", "AUCTIONED"].includes(process.status)) return false;
     this.processes.set(process.id, { ...process, frozenAt: undefined });
     return true;
   }

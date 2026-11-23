@@ -162,7 +162,7 @@ export type AuctionLotGateInput = {
   readonly minBidMissing: boolean;    // min_bid_amount ausente/<=0 (sigiloso art. 28)
 };
 
-// Ω5P PR-13b — ARREMATE (LOTTED→AUCTIONED). CONGELA (setFrozenAt=true — T_stop §5: a arrematação encerra a diária).
+// Ω5P PR-13b — ARREMATE (LOTTED→AUCTIONED). Não congela; o fechamento das diárias e o congelamento final ficam para os atos terminais.
 // CRÍTICO-1 (amarração probatória rodada-vendida × rodada-LOTADA): roundNotLotted = a rodada vendida NÃO é a rodada
 // cujo edital está LOTTED (status===LOTTED, no máx. 1/processo); roundNotConserved = o edital dessa rodada não é
 // CONSERVED; roundEdictIncomplete = o edital dessa rodada não é completo (ref+published_at+business_days>=15). O gate
@@ -178,13 +178,13 @@ export type AuctionSaleGateInput = {
   readonly noteMissing: boolean;
 };
 
-// Ω5P PR-13b — CONSUMAÇÃO (AUCTIONED→AUCTION_CLOSED). Já frozen. paymentUnconfirmed = pagamento/nota não confirmados
+// Ω5P PR-13b — CONSUMAÇÃO (AUCTIONED→AUCTION_CLOSED). Congela no ato de fechamento. paymentUnconfirmed = pagamento/nota não confirmados
 // (consumação ≤3d + nota, art. 34). Reason 409 DISTINTO.
 export type AuctionCloseGateInput = {
   readonly paymentUnconfirmed: boolean;
 };
 
-// Ω5P PR-13b — INADIMPLÊNCIA (AUCTIONED→LOTTED, art. 42). NÃO descongela (set-only; PD-Ω5P-AUC-FROZEN). saleMissing =
+// Ω5P PR-13b — INADIMPLÊNCIA (AUCTIONED→LOTTED, art. 42). Limpa o congelamento legado antes da reintegração e volta ao lote. saleMissing =
 // não há arremate (SOLD) para inadimplir (belt-and-suspenders; a legalidade FSM já garante from=AUCTIONED). Reason DISTINTO.
 export type AuctionDefaultGateInput = {
   readonly saleMissing: boolean;
@@ -556,12 +556,11 @@ const GUARDS: Readonly<Record<string, GuardSpec>> = {
   [edgeKey("AUCTION_ELIGIBLE", "AUCTION_PREP")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionPrep },
   // LOTE (edital completo da rodada + min_bid): NÃO congela.
   [edgeKey("AUCTION_PREP", "LOTTED")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionLot },
-  // ARREMATE (winner + sold>=min_bid + nota): setFrozenAt=TRUE EXPLÍCITO (T_stop §5 — a arrematação encerra a diária).
+  // ARREMATE (winner + sold>=min_bid + nota): não congela; o congelamento acontece em consumação/reciclagem.
   [edgeKey("LOTTED", "AUCTIONED")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionSale },
-  // CONSUMAÇÃO (pagamento + nota): já frozen (setFrozenAt não seta ⇒ mantém).
+  // CONSUMAÇÃO (pagamento + nota): congela no instante do ato (setFrozenAt=true).
   [edgeKey("AUCTIONED", "AUCTION_CLOSED")]: { kind: "enabled", setFrozenAt: true, guard: guardAuctionClose },
-  // INADIMPLÊNCIA (art. 42 → reintegra o lote): setFrozenAt=false EXPLÍCITO — NÃO descongela (set-only; PD-Ω5P-AUC-
-  // FROZEN: a diária permanece congelada; a penalidade recai sobre o arrematante inadimplente).
+  // INADIMPLÊNCIA (art. 42 → reintegra o lote): setFrozenAt=false; o fluxo limpa congelamento legado antes de voltar ao lote.
   [edgeKey("AUCTIONED", "LOTTED")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionDefault },
   // RECLAMADO antes da venda (art. 26 §1º → reabre a liberação PR-10): setFrozenAt=false EXPLÍCITO (nunca congelou).
   [edgeKey("LOTTED", "ACTIVE_CUSTODY")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionReclaim },

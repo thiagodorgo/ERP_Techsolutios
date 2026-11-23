@@ -368,7 +368,7 @@ export class PrismaImpoundRepository implements ImpoundRepository {
       WHERE tenant_id = ${tenantId}::uuid
         AND id = ${processId}::uuid
         AND frozen_at IS NOT NULL
-        AND status NOT IN ('RELEASE_IN_PROGRESS', 'AUCTION_CLOSED')
+        AND status IN ('ACTIVE_CUSTODY', 'AUCTION_ELIGIBLE', 'AUCTION_PREP', 'LOTTED', 'AUCTIONED')
     `;
     return Number(result) > 0;
   }
