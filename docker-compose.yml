@@ -34,9 +34,9 @@ services:
       - erp_techsolutions_local
 
   erp-clamav:
-    image: clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0
+    image: clamav/clamav:1.4.7@sha256:ac15046e610610347c459afabea6683a52cd041c7a10adf5f050ebb05525d62d
     profiles: ["av"]
-    entrypoint: ["/bin/sh", "-c", "cp /opt/avreal/erp-test.hdb /var/lib/clamav/erp-test.hdb && exec /init"]
+    entrypoint: ["/bin/sh", "-c", "cp /opt/avreal/erp-test.hdb /var/lib/clamav/erp-test.hdb && (freshclam --foreground --stdout || printf '%s\n' 'WARNING: freshclam inicial falhou; usando base da imagem' >&2) && exec /init"]
     ports:
       - "127.0.0.1:3310:3310"
     environment:
@@ -58,7 +58,7 @@ services:
       - erp_techsolutions_local
 
   erp-clamav-limits:
-    image: clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0
+    image: clamav/clamav:1.4.7@sha256:ac15046e610610347c459afabea6683a52cd041c7a10adf5f050ebb05525d62d
     profiles: ["av-limits"]
     entrypoint: ["/bin/sh", "-c", "cp /opt/avreal/erp-test.hdb /var/lib/clamav/erp-test.hdb && exec /init"]
     ports:
