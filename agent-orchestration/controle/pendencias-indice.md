@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1417** |
-| IDs distintos | 1402 |
-| **ABERTAS** | **1085** |
+| Cabecalhos `## P-` | **1422** |
+| IDs distintos | 1407 |
+| **ABERTAS** | **1090** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **1024** |
+| — das quais **ativas nesta rodada** | **1029** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 328 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1417 cabecalhos para 1402 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1422 cabecalhos para 1407 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 413
+## ABERTAS · balde A — material — 417
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -487,8 +487,12 @@
 | `P-LEILAO-FECHAMENTO-DIARIAS` | 17994 | ALTA | sim | P-LEILAO-FECHAMENTO-DIARIAS (2026-11-22) — leilão e reciclagem congelam antes de fechar  |
 | `P-PATIO-LIBERACOES-ANTIGAS` | 18006 | ALTA | sim | P-PATIO-LIBERACOES-ANTIGAS (2026-11-22) — liberações antigas podem ter diária devida não |
 | `P-PATIO-ISENCAO-REGISTRADA` | 18012 | ALTA | sim | P-PATIO-ISENCAO-REGISTRADA (2026-11-22) — isenção precisa ficar registrada no livro — AL |
+| `P-LIBERACAO-CUSTODIA-JA-CONGELADA` | 18032 | ALTA | sim | P-LIBERACAO-CUSTODIA-JA-CONGELADA (2026-11-23) — liberação preserva congelamento legado  |
+| `P-LEILAO-REVENDA-SEM-CAMINHO` | 18038 | ALTA | sim | P-LEILAO-REVENDA-SEM-CAMINHO (2026-11-23) — inadimplência sem caminho de revenda — ALTA |
+| `P-LEILAO-DESERTO-DEPOIS-DO-LOTE` | 18044 | MÉDIA | sim | P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão desert |
+| `P-LEILAO-VALORES-DO-INADIMPLENTE` | 18050 | ALTA | sim | P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem  |
 
-## ABERTAS · balde B — processo/registro — 611
+## ABERTAS · balde B — processo/registro — 612
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1103,6 +1107,7 @@
 | `P-6970-INICIO-SO-PATIO-ATIVO` | 17949 | BAIXA | sim | P-6970-INICIO-SO-PATIO-ATIVO (2026-11-22) — Início não mostra outros pátios — BAIXA |
 | `P-RELEASE-GATE-CONC-FORA-DO-GUARD` | 18000 | BAIXA | sim | P-RELEASE-GATE-CONC-FORA-DO-GUARD (2026-11-22) — teste concorrente fora da lista com gua |
 | `P-S2P-REDEFINICAO-TRES-VIAS` | 18023 | BAIXA | sim | P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e  |
+| `P-KPI-EXTRATOR-ID-COM-TEXTO` | 18056 | BAIXA | sim | P-KPI-EXTRATOR-ID-COM-TEXTO (2026-11-23) — extrator perde ID acompanhado de texto — BAIX |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
