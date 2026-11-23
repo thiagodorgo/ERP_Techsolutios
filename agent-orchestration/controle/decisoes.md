@@ -6551,3 +6551,28 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 - **status:** ABERTO, a resolver no plano do `B-GRUPO-GESTOR-1c` · **gravidade:** registro (§A2), sem efeito no produto enquanto a janela não existe.
 - **critério de encerramento:** o plano do `B-GRUPO-GESTOR-1c` declara quem abre a janela (leitura com `platform:billing:read`, ou só com `platform:users:create_admin`), e a escolha fica registrada aqui como resolução.
 - **Dono:** o orquestrador, no plano do `B-GRUPO-GESTOR-1c`. Fechar a janela só para quem tem `create_admin` é uma linha no front e não fere o servidor, que segue como autoridade. Origem do registro: achado A1 do `porteiro-627`; registrado por `dev-628-fix2-cl` (Claude Opus).
+
+## D-DONO-2211-COMISSAO-NO-MVP (2026-11-22 21:45 SP) — motor de comissões no MVP
+
+- **Fato (palavras do dono):** *"o motor de comissoes nao pode ficar fora do mvp, como os guincheiros vao trabalhar?"*.
+- **Efeito:** `B-COMISSAO-MOTOR`, `B-COMISSAO-SALDO` e a página web de Comissões entram no MVP mínimo. Às 21:46, o dono disse *"calma"*; o desenvolvimento foi interrompido antes de criar ramo ou código, sem revogar a entrada no MVP.
+
+## D-DONO-2211-LEILAO-RAPIDO (2026-11-22 21:49 SP) — leilão entra rápido
+
+- **Fato (palavras do dono):** *"o leilao, tem que entrar rapido"*.
+- **Efeito:** o leilão vem antes dos blocos de comissão, sem pular testes, pré-revisão, junta completa nem os demais gates de dinheiro.
+
+## D-DONO-2311-COMISSAO-DEPOIS-DO-LEILAO (2026-11-23 00:08 SP) — comissão começa depois do leilão
+
+- **Fato (palavras do dono):** *"quando a comissão começa (recomendo logo depois do leilão);sim"*.
+- **Efeito:** `B-COMISSAO-MOTOR` começa quando o leilão estiver na `main`, sem retirar braço do conserto do leilão.
+
+## D-DONO-2311-REVENDA-NO-MVP (2026-11-23 00:08 SP) — revenda do leilão no MVP
+
+- **Fato (palavras do dono):** *"se a revenda no leilão entra no MVP (recomendo que sim).sim"*.
+- **Efeito:** o caminho de revenda após inadimplência entra no MVP em bloco próprio, `B-LEILAO-REVENDA`, depois que o leilão estiver na `main`.
+
+## D-DONO-2311-CLAUDE-SO-ORQUESTRA (2026-11-23 08:09 SP) — Claude somente na orquestração
+
+- **Fato (palavras do dono):** *"vc hoje so na orquestracao e tarefas selecionadas por mim"*.
+- **Efeito:** durante o dia 23/11/2026, Claude e seus subagentes somente orquestram ou executam tarefas escolhidas pelo dono; os demais trabalhos seguem para braços externos ou aguardam escolha expressa.

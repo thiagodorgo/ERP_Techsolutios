@@ -18028,3 +18028,33 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
   - **corrida de 3 vias (1.8.3.13):** redefinição por X, concessão a Z e redefinição por Z no mesmo instante; a volta tardia trava o vínculo de Z fora da ordem. Uma das duas redefinições responde 503 e nada muda;
   - **o resíduo do §2.4 da 1.8.3.16:** em `resetPasswordByAdmin` (`src/modules/auth/services/identity-link.service.ts`), quando a identidade lida sem trava diverge da identidade da linha travada, o ramo chama `resolveResetFamily` só para classificar (409 `identity_linked_elsewhere` ou 503 `reset_unavailable`) e nunca grava. Nesse ramo, a volta pede `FOR SHARE` nos vínculos da identidade confirmada sem a pré-trava dos pátios de id menor (a pré-trava foi feita para a pista). Se cruzar com outra redefinição, o PostgreSQL derruba uma, a resposta é 503 e nada é gravado.
 - **critério de encerramento:** a corrida medida por teste `-db` com barreira, nos dois casos, mostrando 503 sem gravação e nenhum par com senha nova e velha; ou a pré-trava estendida ao ramo, com o mesmo teste.
+
+## P-LIBERACAO-CUSTODIA-JA-CONGELADA (2026-11-23) — liberação preserva congelamento legado — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro · **dono:** bloco próprio `B-LIBERACAO-CUSTODIA-JA-CONGELADA` · **bloqueia:** não o `B-PATIO-LEILAO-DIARIAS`.
+- **origem:** Emenda 9.1 do plano `B-PATIO-LEILAO-DIARIAS`: processo em custódia ativa já congelado pode chegar à liberação, e `src/modules/release/**` estava fora daquele bloco.
+- **critério de encerramento:** a liberação de processo em custódia ativa já congelado decide e aplica a regra de descongelamento sob trava, recompõe as diárias devidas sem lacuna nem duplicidade e tem teste de produto sobre o legado.
+
+## P-LEILAO-REVENDA-SEM-CAMINHO (2026-11-23) — inadimplência sem caminho de revenda — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de produto e dinheiro · **dono:** `B-LEILAO-REVENDA` · **bloqueia:** o fechamento desse bloco do MVP.
+- **origem:** Emenda 10.2 do plano `B-PATIO-LEILAO-DIARIAS`; entrou no MVP por `D-DONO-2311-REVENDA-NO-MVP`.
+- **critério de encerramento:** após inadimplência, um ato autorizado cria nova rodada em lote e permite nova venda sem reabrir a quitação antiga, sem congelar diárias antes do pagamento e sem dois sucessos concorrentes de resgate e relote.
+
+## P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão deserto — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de fluxo · **dono:** bloco próprio `B-LEILAO-DESERTO-DEPOIS-DO-LOTE` · **bloqueia:** não o `B-LEILAO-REVENDA`.
+- **origem:** plano `B-LEILAO-REVENDA`, §11: a rodada deserta só é aceita antes do lote, e o veículo permanece em lote quando não há lance.
+- **critério de encerramento:** o produto registra, por ato autorizado e auditável, uma rodada em lote sem lance e conduz o processo ao próximo estado definido, com teste de produto para a primeira rodada e para a revenda.
+
+## P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem regra — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro e conformidade · **dono:** bloco próprio `B-LEILAO-VALORES-DO-INADIMPLENTE` · **bloqueia:** não o `B-LEILAO-REVENDA`.
+- **origem:** plano `B-LEILAO-REVENDA`, §11: não há regra implementada para valores retidos do arrematante inadimplente nem para sua participação posterior; o plano não conferiu a norma citada na fonte.
+- **critério de encerramento:** a fonte normativa é conferida, a regra de retenção e de participação posterior é decidida e implementada com dinheiro exato, auditoria e testes de produto, sem inferir identidade a partir de texto minimizado.
+
+## P-KPI-EXTRATOR-ID-COM-TEXTO (2026-11-23) — extrator perde ID acompanhado de texto — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA, não grave e pré-existente · **dono:** `scripts/kpi-history-append.mjs` · **bloqueia:** não.
+- **origem:** achado A3 da revisão do PR #629: o extrator reconhece somente ID isolado entre parênteses e substitui por rótulo de PR quando o título traz texto junto.
+- **critério de encerramento:** o extrator identifica o ID de bloco também quando ele compartilha os parênteses com outro texto, por teste que cobre os títulos dos PRs #622 e #625, sem edição manual da referência.
