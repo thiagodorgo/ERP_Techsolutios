@@ -22,6 +22,22 @@ import {
   getMemoryAuctionRepositoryForTests,
   resetAuctionRuntimeForTests,
 } from "../src/modules/auction/auction.service.js";
+import {
+  getMemoryChargeRepositoryForTests,
+  resetChargeRuntimeForTests,
+} from "../src/modules/charging/charge.service.js";
+import {
+  getMemoryPriceTableRepositoryForTests,
+  resetPriceTableRuntimeForTests,
+} from "../src/modules/price-tables/price-table.service.js";
+import {
+  getMemoryTariffRepositoryForTests,
+  resetTariffRuntimeForTests,
+} from "../src/modules/tariffs/tariff.service.js";
+import {
+  getMemoryYardRepositoryForTests,
+  resetYardRuntimeForTests,
+} from "../src/modules/yard/yard.service.js";
 import type { AuctionActorContext } from "../src/modules/auction/auction.types.js";
 
 // Ω5P PR-13a — RECICLAGEM (sucata IRREVERSÍVEL, I8) = ATO EXPLÍCITO permissionado/auditado (nunca efeito colateral do
@@ -30,6 +46,8 @@ import type { AuctionActorContext } from "../src/modules/auction/auction.types.j
 // SEM aresta de circulação (só →CLOSED deferido); cadeia valid após os appends.
 
 const MS_PER_DAY = 86_400_000;
+const HOUR = 3_600_000;
+const TARIFF = 40;
 type Ctx = { tenantId: string; processId: string; profileId: string };
 
 function actor(tenantId: string): AuctionActorContext {
@@ -41,19 +59,83 @@ async function reset(): Promise<string> {
   resetNotificationRuntimeForTests();
   resetReleaseRuntimeForTests();
   resetAuctionRuntimeForTests();
+  resetChargeRuntimeForTests();
+  resetPriceTableRuntimeForTests();
+  resetTariffRuntimeForTests();
+  resetYardRuntimeForTests();
   return randomUUID();
+}
+
+async function seedTariff(tenantId: string, serviceCatalogId: string): Promise<void> {
+  const priceTable = await getMemoryPriceTableRepositoryForTests().create({
+    tenantId,
+    name: `Tabela ${randomUUID().slice(0, 6)}`,
+    currency: "BRL",
+    version: 1,
+    status: "published",
+  });
+  await getMemoryTariffRepositoryForTests().create({
+    tenantId,
+    priceTableId: priceTable.id,
+    serviceCatalogId,
+    name: "Diária",
+    unitPrice: TARIFF,
+    currency: "BRL",
+    origin: "test",
+    status: "active",
+  });
+}
+
+async function assignYard(tenantId: string, processId: string): Promise<void> {
+  const yard = getMemoryYardRepositoryForTests();
+  const created = await yard.createYard({ tenantId, name: "Pátio Central", address: "Rua X, 1", timezone: "America/Sao_Paulo" });
+  const area = await yard.createArea({ tenantId, yardId: created.id, kind: "BLOCK", name: "Q1" });
+  const spot = await yard.createSpot({ tenantId, areaId: area.id, code: `S-${randomUUID().slice(0, 4)}` });
+  await getMemoryImpoundRepositoryForTests().assignSpotAtomic({ tenantId, processId, spotId: spot.id, occurredAt: new Date() });
+}
+
+async function completeInspection(tenantId: string, processId: string, inspectedAt: Date): Promise<void> {
+  const impound = getMemoryImpoundRepositoryForTests();
+  const inspection = await impound.upsertInspection({
+    tenantId,
+    processId,
+    inspectedAt,
+    bodyworkState: "Sem avarias",
+    paintState: "Original",
+    tiresState: "Bom",
+    internalObjects: "nenhum",
+    missingEquipment: "nenhum",
+    signatureStatus: "ABSENT",
+  } as never);
+  await impound.addInspectionPhoto({ tenantId, processId, inspectionId: inspection.id, set: "FRONT", fileUrl: "https://arquivos.invalid/frente.jpg", occurredAt: new Date() });
+  await impound.completeInspection({ tenantId, processId, occurredAt: new Date() });
+}
+
+async function addRemoval(tenantId: string, processId: string): Promise<void> {
+  await getMemoryChargeRepositoryForTests().createManualCharge({
+    tenantId,
+    processId,
+    kind: "REMOVAL",
+    quantity: "1.00",
+    unitAmount: "150.00",
+    totalAmount: "150.00",
+    currency: "BRL",
+    occurredAt: new Date(),
+  });
 }
 
 async function makeActiveCustodyProcess(tenantId: string): Promise<Ctx> {
   const impound = getMemoryImpoundRepositoryForTests();
   const profileId = randomUUID();
+  const dailyServiceCatalogId = randomUUID();
+  const enteredAt = new Date(Date.now() - 90 * MS_PER_DAY);
   const process = await impound.openFromRemovalAtomic({
     tenantId,
     serviceOrderId: randomUUID(),
     profileId,
     originAuthority: "Autoridade solicitante",
     unidentifiedReason: "Aguardando vistoria de recepção",
-    completedAt: new Date(Date.now() - 90 * MS_PER_DAY),
+    completedAt: enteredAt,
     actorId: undefined,
   });
   await impound.applyTransition({
@@ -66,6 +148,17 @@ async function makeActiveCustodyProcess(tenantId: string): Promise<Ctx> {
     event: { type: "STATUS_CHANGE", payload: { from: "RECEPTION", to: "ACTIVE_CUSTODY", reason: null }, occurredAt: new Date(), actorId: undefined },
   });
   getMemoryAuctionRepositoryForTests().setAuctionProfileForTests(tenantId, profileId, { scope: "PUBLIC_AGREEMENT", ownerNotifDays: 10, noticeEdictDay: 30, auctionEligibleDay: 60 });
+  getMemoryChargeRepositoryForTests().setProfileForTests(tenantId, profileId, {
+    scope: "PUBLIC_AGREEMENT",
+    model: "ROLLING_24H",
+    cap: "SIX_MONTHS",
+    dailyServiceCatalogId,
+  });
+  impound.setProfileRequiredSetsForTests(tenantId, profileId, ["FRONT"]);
+  await seedTariff(tenantId, dailyServiceCatalogId);
+  await assignYard(tenantId, process.id);
+  await completeInspection(tenantId, process.id, new Date(enteredAt.getTime() + HOUR));
+  await addRemoval(tenantId, process.id);
   return { tenantId, processId: process.id, profileId };
 }
 

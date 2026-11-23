@@ -124,6 +124,7 @@ const expectedPermissionCatalog = [
   "release:process",
   "release:approve",
   "auction:appraise",
+  "auction:reclaim",
   "vehicle_identity:merge",
   "service_quotes:update",
   "service_quotes:approve",

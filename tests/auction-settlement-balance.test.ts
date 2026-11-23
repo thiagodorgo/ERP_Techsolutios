@@ -90,6 +90,19 @@ function stubAuction(attempts: readonly AuctionAttempt[]): SettlementAuctionStat
 }
 
 const zeroClaim: SettlementCascadeClaimPort = async () => ({ claimCents: 0, currency: "BRL" });
+const closeDailiesOk = async () => ({ examined: 0, accrued: 0, errors: 0 });
+const chargeStateReady = async () => ({
+  dailyServiceConfigured: true,
+  debtsSettled: false,
+  reconciliationConsistent: true,
+  settledTotal: "0.00",
+  overAccruedDailyIds: [],
+  persistedDailyCount: 0,
+  nDueNow: 0,
+  nAccrueAtFreeze: 0,
+  dailyShortfall: 0,
+  exigibleCount: 1,
+});
 
 function makeService(attempts: readonly AuctionAttempt[]): AuctionSettlementService {
   return new AuctionSettlementService(
@@ -97,6 +110,8 @@ function makeService(attempts: readonly AuctionAttempt[]): AuctionSettlementServ
     getMemoryImpoundRepositoryForTests(),
     stubAuction(attempts),
     zeroClaim,
+    closeDailiesOk,
+    chargeStateReady,
   );
 }
 

@@ -367,8 +367,8 @@ test("L3 · reciclagem por inservibilidade: 90 diárias e total do livro 3750.00
 
 test("L4 · arremate sem serviço de diária: 409 auction_daily_charges_unpostable; segue LOTTED, sem congelar, sem SOLD, sem AUCTION_SOLD", async () => {
   const ctx = await scenario({ status: "AUCTION_ELIGIBLE" });
+  await driveViaRepository(ctx, "LOTTED");
   const auction = createMemoryAuctionService();
-  await lotViaService(ctx, auction);
   setDailyService(ctx, false);
   const result = await outcome(auction.recordSale(who(ctx), ctx.processId, saleBody()));
   const state = await getMemoryAuctionRepositoryForTests().getState(ctx.tenantId, ctx.processId);

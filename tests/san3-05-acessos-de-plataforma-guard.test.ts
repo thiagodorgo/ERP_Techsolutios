@@ -789,6 +789,10 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/core-saas/services/grant-group-guard.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
     "B-APP-ORG-2S-c (SC, D3-2): a auditoria `user.access_ended_group_exit` gravada em Y, na mesma transação da queda e sob o GUC de Y, sem dado de outro pátio; o `tx` é sempre o de uma transação que já pôs o GUC do pátio Y do par na 1ª instrução: `withTenantRlsBudget` da sessão viva, `runWithTenantContext` da renovação, `setTenantRlsContext(tx, requestedTenantId)` da troca de organização, `withTenantRls` do candidato do Entrar e do `isGrantOutsideGroup` do store. Provado em tests/bapporg2sc_grant-guard-db.test.ts (X1).",
   ],
+  [
+    k("L2", "src/modules/charging/charge-locked-reader.ts", "new PrismaChargeRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-PATIO-LEILAO-DIARIAS (F5): o reader travado de cobrança (`createLockedChargeReader`) nasce com o `tx` já aberto no chamador (callbacks `withTenantRls`/`withTenantRlsBudget`, com GUC na 1ª instrução) para calcular gates de leilão/liquidação sob o mesmo contexto tenant; o arquivo só encapsula o repositório e não abre transação própria.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

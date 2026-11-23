@@ -109,6 +109,19 @@ function stubAuction(status: ImpoundStatus, attempts: readonly AuctionAttempt[])
 }
 
 const zeroClaim: SettlementCascadeClaimPort = async () => ({ claimCents: 0, currency: "BRL" });
+const closeDailiesOk = async () => ({ examined: 0, accrued: 0, errors: 0 });
+const chargeStateReady = async () => ({
+  dailyServiceConfigured: true,
+  debtsSettled: false,
+  reconciliationConsistent: true,
+  settledTotal: "0.00",
+  overAccruedDailyIds: [],
+  persistedDailyCount: 0,
+  nDueNow: 0,
+  nAccrueAtFreeze: 0,
+  dailyShortfall: 0,
+  exigibleCount: 1,
+});
 
 // Serviço com portas controladas (attempts do leilão + claim item I), sobre o repo de settlement + impound de MEMÓRIA
 // REAIS (a cadeia hash é real). Isola a LÓGICA da distribuição; a corrida/atomicidade REAL = teste DB-gated.
@@ -118,6 +131,8 @@ function makeService(status: ImpoundStatus, attempts: readonly AuctionAttempt[],
     getMemoryImpoundRepositoryForTests(),
     stubAuction(status, attempts),
     cascadeClaim,
+    closeDailiesOk,
+    chargeStateReady,
   );
 }
 

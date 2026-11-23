@@ -296,7 +296,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
       scope: regime.scope,
       model: regime.model,
       cap: regime.cap,
-      dailyServiceCatalogId: profile.dailyServiceCatalogId,
+      dailyServiceCatalogId: regime.dailyServiceCatalogId,
     };
   }
 
