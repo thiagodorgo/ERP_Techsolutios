@@ -936,6 +936,209 @@ test("S7 · legado LOTTED congelado há 5 dias: arremate descongela e mantém 5 
   );
 });
 
+// ───────────────────── E11.1-E: o período abre na preparação (S1, S5, S8, S8b) ─────────────────────
+
+async function backdateToAuction(ctx: Ctx, prepAt: Date, lotAt?: Date): Promise<void> {
+  const repo = getMemoryAuctionRepositoryForTests();
+  const base = { tenantId: ctx.tenantId, processId: ctx.processId, actorId: ctx.userId };
+  await repo.registerEdictAtomic({ ...base, roundNumber: 1, classification: "CONSERVED", edictReference: "EDITAL-1/2026", publishedAt: new Date(Date.now() - 30 * MS_PER_DAY), businessDays: 15, occurredAt: new Date() } as never);
+  await repo.setAppraisalAtomic({ ...base, roundNumber: 1, appraisalAmount: "10000.00", minBidAmount: "5000.00" } as never);
+  await repo.prepareAuctionAtomic({ ...base, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: 1, occurredAt: prepAt });
+  if (lotAt) await repo.lotAuctionAtomic({ ...base, expectedFrom: "AUCTION_PREP", roundNumber: 1, occurredAt: lotAt });
+}
+
+test("S1 · (E11.1-E) preparação abre o período; varredura em leilão lança 0; o arremate fecha com 90; crédito 3750.00, saldo 4250.00", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 95 });
+  const charge = createMemoryChargeService();
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(Date.now() - 5 * MS_PER_DAY), ctx.userId);
+  const prepAt = new Date(Date.now() - 5 * MS_PER_DAY);
+  await backdateToAuction(ctx, prepAt, new Date(Date.now() - 3 * MS_PER_DAY));
+  const sweep = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  const afterSweep = { lancadas: sweep.accrued, diarias: await dailyCount(ctx) };
+  const auction = createMemoryAuctionService();
+  await auction.recordSale(who(ctx), ctx.processId, saleBody());
+  const afterSale = { diarias: await dailyCount(ctx), congelado: (await processOf(ctx)).frozenAt !== undefined };
+  await auction.closeAuction(who(ctx), ctx.processId, { round_number: 1, payment_confirmed: true });
+  const frozenAt = (await processOf(ctx)).frozenAt;
+  const periodos = (await suspensionsOf(ctx)).map((suspensao) => ({ from: suspensao.from.getTime(), to: suspensao.to?.getTime() }));
+  const dist = await createMemoryAuctionSettlementService().distribute(who(ctx), ctx.processId, {});
+  assert.deepEqual(
+    { afterSweep, afterSale, periodos, ...cascadeOf(dist) },
+    { afterSweep: { lancadas: 0, diarias: 90 }, afterSale: { diarias: 90, congelado: false }, periodos: [{ from: prepAt.getTime(), to: frozenAt?.getTime() }], creditoDoPatio: "3750.00", saldoDoExDono: "4250.00", somaDoRateioIgualAoLance: true },
+  );
+});
+
+test("S5 · (E11.1-E) arremate e inadimplência mantêm o período aberto da preparação; varredura lança 0; 90 diárias; frozen_at nulo", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 95 });
+  const charge = createMemoryChargeService();
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(Date.now() - 5 * MS_PER_DAY), ctx.userId);
+  const prepAt = new Date(Date.now() - 5 * MS_PER_DAY);
+  await backdateToAuction(ctx, prepAt, new Date(Date.now() - 3 * MS_PER_DAY));
+  const auction = createMemoryAuctionService();
+  await auction.recordSale(who(ctx), ctx.processId, saleBody());
+  await auction.defaultAuction(who(ctx), ctx.processId, { round_number: 2 });
+  const sweep = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  const periodos = await suspensionsOf(ctx);
+  assert.deepEqual(
+    { lancadas: sweep.accrued, diarias: await dailyCount(ctx), congelado: (await processOf(ctx)).frozenAt !== undefined, periodos: periodos.map((suspensao) => ({ from: suspensao.from.getTime(), aberto: suspensao.to === undefined })) },
+    { lancadas: 0, diarias: 90, congelado: false, periodos: [{ from: prepAt.getTime(), aberto: true }] },
+  );
+});
+
+test("S8 · (E11.1-E) retirada do quitado a partir da preparação fecha o período; 2 dias depois a varredura lança 92", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 96 });
+  const prepAt = new Date(Date.now() - 6 * MS_PER_DAY);
+  await backdateToAuction(ctx, prepAt);
+  const charge = createMemoryChargeService();
+  const withdrawAt = new Date(Date.now() - 2 * MS_PER_DAY);
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, withdrawAt, ctx.userId);
+  await charge.settle(who(ctx), ctx.processId, { note: "quitado no balcão" });
+  await getMemoryAuctionRepositoryForTests().withdrawSettledAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "AUCTION_PREP", actorId: ctx.userId, occurredAt: withdrawAt });
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  const periodos = (await suspensionsOf(ctx)).map((suspensao) => ({ from: suspensao.from.getTime(), to: suspensao.to?.getTime() }));
+  assert.deepEqual(
+    { diarias: await dailyCount(ctx), seqs: await dailySeqs(ctx), periodos },
+    { diarias: 92, seqs: Array.from({ length: 92 }, (_, index) => index + 1), periodos: [{ from: prepAt.getTime(), to: withdrawAt.getTime() }] },
+  );
+});
+
+test("S8b · (E11.1-E) controle: retirada do quitado a partir de AUCTION_ELIGIBLE não abre período; 92 diárias", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 92 });
+  const charge = createMemoryChargeService();
+  const withdrawAt = new Date(Date.now() - 2 * MS_PER_DAY);
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, withdrawAt, ctx.userId);
+  await charge.settle(who(ctx), ctx.processId, { note: "quitado no balcão" });
+  await getMemoryAuctionRepositoryForTests().withdrawSettledAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "AUCTION_ELIGIBLE", actorId: ctx.userId, occurredAt: withdrawAt });
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  assert.deepEqual(
+    { diarias: await dailyCount(ctx), periodos: (await suspensionsOf(ctx)).length },
+    { diarias: 92, periodos: 0 },
+  );
+});
+
+// ───────────────────── E11.1-E/E11.2: retorno, teto e sobre-acumulação (S2, S3, S11, S9, S9b) ─────────────────────
+
+type MemoryChargeLists = { charges: Array<Record<string, unknown>> };
+
+function memoryCharges(): MemoryChargeLists {
+  return getMemoryChargeRepositoryForTests() as unknown as MemoryChargeLists;
+}
+
+async function seedMemoryDailies(ctx: Ctx, count: number, settledCount = 0): Promise<void> {
+  const now = new Date();
+  for (let seq = 1; seq <= count; seq += 1) {
+    memoryCharges().charges.push({
+      id: randomUUID(),
+      tenantId: ctx.tenantId,
+      processId: ctx.processId,
+      kind: "DAILY",
+      periodSeq: seq,
+      refDate: `2026-01-${String((seq % 28) + 1).padStart(2, "0")}`,
+      quantity: "1.00",
+      unitAmount: "40.00",
+      totalAmount: "40.00",
+      currency: "BRL",
+      ...(seq <= settledCount ? { settledAt: now } : {}),
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
+
+test("S2 · (E11.1-E) 30 dias em leilão param a diária; retirada volta a cobrar; 120 diárias com seq 1..120; depois 180 (teto)", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 250 });
+  const charge = createMemoryChargeService();
+  const t0 = ctx.enteredAt.getTime();
+  const prepAt = new Date(t0 + 100 * MS_PER_DAY);
+  const reclaimAt = new Date(t0 + 130 * MS_PER_DAY);
+  const sweep1At = new Date(t0 + 150 * MS_PER_DAY);
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
+  await backdateToAuction(ctx, prepAt, prepAt);
+  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, sweep1At, ctx.userId);
+  const afterFirst = { diarias: await dailyCount(ctx), seqs: await dailySeqs(ctx) };
+  const legenda101 = (await lines(ctx)).find((line) => line.kind === "DAILY" && line.periodSeq === 101)?.refDate;
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  const afterSecond = { diarias: await dailyCount(ctx), seqs: await dailySeqs(ctx) };
+  assert.deepEqual(
+    { afterFirst, legenda101, afterSecond },
+    { afterFirst: { diarias: 120, seqs: Array.from({ length: 120 }, (_, index) => index + 1) }, legenda101: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(reclaimAt), afterSecond: { diarias: 180, seqs: Array.from({ length: 180 }, (_, index) => index + 1) } },
+  );
+});
+
+test("S3 · (E11.1-E) entrada há 200 dias: 180 antes do lote e 180 no fim, nenhuma sobre-acumulada", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 260 });
+  const charge = createMemoryChargeService();
+  const t0 = ctx.enteredAt.getTime();
+  const prepAt = new Date(t0 + 200 * MS_PER_DAY);
+  const reclaimAt = new Date(t0 + 230 * MS_PER_DAY);
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
+  const antesDoLote = await dailyCount(ctx);
+  await backdateToAuction(ctx, prepAt, prepAt);
+  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  const statement = await charge.getStatement(who(ctx), ctx.processId);
+  assert.deepEqual(
+    { antesDoLote, noFim: await dailyCount(ctx), sobreAcumuladas: statement.overAccruedDailies },
+    { antesDoLote: 180, noFim: 180, sobreAcumuladas: 0 },
+  );
+});
+
+test("S11 · (E11.1-E) resgate fecha o 1º período; re-preparação abre o 2º; 105 diárias, dois períodos", async () => {
+  const ctx = await scenario({ status: "AUCTION_ELIGIBLE", days: 125 });
+  const charge = createMemoryChargeService();
+  const t0 = ctx.enteredAt.getTime();
+  const prep1At = new Date(t0 + 100 * MS_PER_DAY);
+  const reclaimAt = new Date(t0 + 110 * MS_PER_DAY);
+  const eligibleAt = new Date(t0 + 115 * MS_PER_DAY);
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, prep1At, ctx.userId);
+  await backdateToAuction(ctx, prep1At, prep1At);
+  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+  const impound = getMemoryImpoundRepositoryForTests();
+  await impound.applyTransition({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", setEnteredAt: false, setFrozenAt: false, event: { type: "STATUS_CHANGE", payload: { from: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", reason: "auction_eligible" }, occurredAt: eligibleAt, actorId: undefined } });
+  const repo = getMemoryAuctionRepositoryForTests();
+  const base = { tenantId: ctx.tenantId, processId: ctx.processId, actorId: ctx.userId };
+  await repo.registerEdictAtomic({ ...base, roundNumber: 2, classification: "CONSERVED", edictReference: "EDITAL-2/2026", publishedAt: new Date(Date.now() - 30 * MS_PER_DAY), businessDays: 15, occurredAt: new Date() } as never);
+  await repo.setAppraisalAtomic({ ...base, roundNumber: 2, appraisalAmount: "10000.00", minBidAmount: "5000.00" } as never);
+  await repo.prepareAuctionAtomic({ ...base, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: 2, occurredAt: eligibleAt });
+  await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  const periodos = (await suspensionsOf(ctx)).map((suspensao) => ({ from: suspensao.from.getTime(), to: suspensao.to?.getTime() }));
+  assert.deepEqual(
+    { diarias: await dailyCount(ctx), periodos },
+    { diarias: 105, periodos: [{ from: prep1At.getTime(), to: reclaimAt.getTime() }, { from: eligibleAt.getTime(), to: undefined }] },
+  );
+});
+
+test("S9 · (E11.1-E) 184 diárias com 182 pagas: motor dá 180; estorno só das 183 e 184; extrato acusa 4 acima do teto", async () => {
+  const ctx = await scenario({ days: 200 });
+  await seedMemoryDailies(ctx, 184, 182);
+  const charge = createMemoryChargeService();
+  const sweep = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  const state = await charge.getReleaseChargeState(ctx.tenantId, ctx.processId, new Date());
+  const statement = await charge.getStatement(who(ctx), ctx.processId);
+  const settle = await charge.settle(who(ctx), ctx.processId, { note: "quitado" });
+  const ajustes = (await lines(ctx)).filter((line) => line.kind === "ADJUSTMENT").length;
+  assert.deepEqual(
+    { lancadas: sweep.accrued, sobreAcumuladas: statement.overAccruedDailies, estornadas: state?.overAccruedDailyIds.length, estornoCount: settle.estornoCount, ajustes },
+    { lancadas: 0, sobreAcumuladas: 4, estornadas: 2, estornoCount: 2, ajustes: 2 },
+  );
+});
+
+test("S9b · (E11.2/A2) contrato particular com 200 diárias: 180 devidas e 20 sobre-acumuladas; a liberação estorna 20; a cascata não as leva", async () => {
+  const ctx = await scenario({ days: 200, cap: "UNLIMITED" });
+  await seedMemoryDailies(ctx, 200);
+  const charge = createMemoryChargeService();
+  const sweep = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
+  const state = await charge.getReleaseChargeState(ctx.tenantId, ctx.processId, new Date());
+  const statement = await charge.getStatement(who(ctx), ctx.processId);
+  const cascade = await charge.getCascadeExpenseClaim(ctx.tenantId, ctx.processId, new Date());
+  const settle = await charge.settle(who(ctx), ctx.processId, { note: "quitado" });
+  assert.deepEqual(
+    { lancadas: sweep.accrued, sobreAcumuladas: statement.overAccruedDailies, estornadas: state?.overAccruedDailyIds.length, estornoCount: settle.estornoCount, cascadeClaim: cascade?.claimCents },
+    { lancadas: 0, sobreAcumuladas: 20, estornadas: 20, estornoCount: 20, cascadeClaim: 735_000 },
+  );
+});
+
 for (const [id, missing, reason] of [
   ["W3-D", "inspection", "auction_custody_inspection_incomplete"],
   ["W3-E", "yard", "auction_custody_yard_missing"],
