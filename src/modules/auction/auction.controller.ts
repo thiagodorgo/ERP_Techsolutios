@@ -209,6 +209,21 @@ export class AuctionController {
     return { body: toAuctionViewDto(view, canAppraise) };
   }
 
+
+  async withdrawSettled(request: Request) {
+    const [service, actor, canAppraise] = await this.resolveServiceWithActor(request);
+    const view = await service.withdrawSettled(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: "auction.withdraw_settled",
+      resourceType: "impound_process",
+      resourceId: readRouteParam(request.params.processId),
+      outcome: "success",
+      severity: "warning",
+      metadata: { status: view.status },
+    });
+    return { body: toAuctionViewDto(view, canAppraise) };
+  }
+
   private async resolveServiceWithActor(request: Request) {
     const actor = requireTenantContext(request);
     const canAppraise = (actor.permissions ?? []).includes("auction:appraise");

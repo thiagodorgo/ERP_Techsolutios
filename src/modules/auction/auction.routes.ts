@@ -25,6 +25,7 @@ export const AUCTION_PERMISSIONS = {
   // Ω5P PR-13b — SIGILO da avaliação (art. 28): registrar/ler avaliação+min_bid. Mais estreita que impound:read
   // (gestão+admins = impound:transition; NÃO finance/inventory/support/campo). As transições da FSM reusam transition.
   appraise: "auction:appraise",
+  reclaim: "auction:reclaim",
 } as const;
 
 export function createAuctionRouter(
@@ -137,9 +138,16 @@ export function createAuctionRouter(
   );
   router.post(
     "/impound-processes/:processId/auction/reclaim",
-    requirePermission(AUCTION_PERMISSIONS.transition),
+    requirePermission(AUCTION_PERMISSIONS.reclaim),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.reclaim(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/auction/withdraw-settled",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.withdrawSettled(request));
     }),
   );
   // Ω5P PR-14a — LIQUIDAÇÃO em cascata §6º (I7). ZERO permissão nova: a distribuição é a consumação financeira do

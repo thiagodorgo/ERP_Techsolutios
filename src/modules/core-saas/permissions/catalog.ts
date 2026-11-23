@@ -153,6 +153,7 @@ export const PERMISSION_CATALOG = [
   // distribuição gestão+admins = impound:transition (NÃO finance/inventory/support/campo). As transições da máquina de
   // venda (prep/lot/sale/close/default/reclaim) REUSAM impound:transition; só o registro/leitura da avaliação exige esta.
   "auction:appraise",
+  "auction:reclaim",
   // Ω-VID PR-04 (D-Ω-VID-01) — merge manual de ThirdPartyVehicleIdentity: fundir 2 identidades de veículo de
   // terceiro (irreversível na prática — move ImpoundProcess.identity_id + marca a origem MERGED). EIXO PRÓPRIO,
   // NÃO coberto por impound:update (mesmo padrão de release:approve/auction:appraise: ato de peso maior que
@@ -520,6 +521,8 @@ export const ROLE_PERMISSIONS = {
     "release:approve",
     // Ω5P PR-13b — gestão registra/lê a avaliação sigilosa do leilão (art. 28; = impound:transition).
     "auction:appraise",
+    "auction:reclaim",
+  "auction:reclaim",
     // Ω-VID PR-04 — gestão pode mergear identidades de veículo de terceiro (D-Ω-VID-01, aprovado pela junta).
     "vehicle_identity:merge",
     "service_quotes:create",
