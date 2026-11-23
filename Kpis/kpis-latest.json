@@ -6,7 +6,7 @@
   "release": {
     "block": "KPI-MARCO-2026-11-22 (consolidação de KPI por marco, loop diário `D-KPI-LOOP-GEMINI`: a proposta veio de `kpi-2211-prop-gf` (Gemini 3.8 Flash, pelo Antigravity), a gravação foi de `kpi-2211-grava-cx1` (Codex conta 1, GPT-5.6 Sol, nível menor, redator declarado) e a revisão fica com Claude Opus em identidade nova; cruzamento de casa preservado. O KPI segue CONGELADO para PRs de bloco, `D-GOV-PROPORCIONAL` (5)).",
     "title": "Marco de 22/11: 273 blocos e vendável em 94%",
-    "pr": null,
+    "pr": 629,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
