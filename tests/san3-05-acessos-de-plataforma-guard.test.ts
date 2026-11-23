@@ -881,7 +881,7 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     // B-APP-ORG-2S (S1) 125 → 126 — exatamente a tabela FORCE nova user_creation_log.
     // B-GRUPO-GESTOR (1a, migração autorizada pelo dono, Emenda 2 §2.3): 126 → 128 — exatamente as 2 tabelas FORCE novas
     // (economic_group_managers e user_deactivation_requests) e os 2 models delas.
-    assert.match(f2.stdout, /tabelas ENABLE=128 FORCE=128 · acessores Prisma em FORCE=128/);
+    assert.match(f2.stdout, /tabelas ENABLE=129 FORCE=129 · acessores Prisma em FORCE=129/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);

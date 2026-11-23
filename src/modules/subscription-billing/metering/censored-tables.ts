@@ -54,6 +54,7 @@ export const CENSORED_TENANT_TABLES = [
   "financial_titles",
   "fines",
   "fuel_logs",
+  "impound_daily_suspensions",
   "impound_intake_inspections",
   "impound_outbox_events",
   "impound_payment_intents",

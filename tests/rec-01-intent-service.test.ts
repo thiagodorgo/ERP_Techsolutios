@@ -109,18 +109,43 @@ async function addRemoval(tenantId: string, processId: string, amount: string): 
   });
 }
 
+function memoryChargeLists(): { charges: Array<Record<string, unknown>> } {
+  return getMemoryChargeRepositoryForTests() as unknown as { charges: Array<Record<string, unknown>> };
+}
+
 async function accrueDailies(tenantId: string, processId: string, count: number, unit: string): Promise<void> {
   const repo = getMemoryChargeRepositoryForTests();
+  const context = await repo.loadAccrualContext(tenantId, processId);
+  const capCount = context?.cap === "THIRTY_DAYS_LEGACY" ? 30 : 180;
+  const now = new Date();
   for (let seq = 1; seq <= count; seq += 1) {
-    await repo.accrueDailyCharge({
-      tenantId,
-      processId,
-      periodSeq: seq,
-      refDate: `2024-01-${String((seq % 28) + 1).padStart(2, "0")}`,
-      unitAmount: unit,
-      currency: "BRL",
-      occurredAt: new Date(),
-    });
+    const refDate = `2024-01-${String((seq % 28) + 1).padStart(2, "0")}`;
+    if (seq <= capCount) {
+      await repo.accrueDailyCharge({
+        tenantId,
+        processId,
+        periodSeq: seq,
+        refDate,
+        unitAmount: unit,
+        currency: "BRL",
+        occurredAt: now,
+      });
+    } else {
+      memoryChargeLists().charges.push({
+        id: randomUUID(),
+        tenantId,
+        processId,
+        kind: "DAILY",
+        periodSeq: seq,
+        refDate,
+        quantity: "1.00",
+        unitAmount: unit,
+        totalAmount: unit,
+        currency: "BRL",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
   }
 }
 

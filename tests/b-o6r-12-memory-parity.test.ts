@@ -27,6 +27,7 @@ const impound = {
   findProcessById: async (wantedTenant: string, wantedProcess: string) =>
     wantedTenant === tenantId && wantedProcess === processId ? process : undefined,
   appendEvent: async () => ({ process, event: {} }),
+  listDailySuspensions: async () => [],
 };
 
 test("B-O6R-12 C11: memória congela cobrança na primeira leitura e preserva catch-up do ponteiro nulo", async () => {
