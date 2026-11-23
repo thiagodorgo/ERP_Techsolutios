@@ -10,7 +10,7 @@ const DEV = path.join(ROOT, "docker-compose.yml");
 const PROD = path.join(ROOT, "docker-compose.prod.yml");
 const OVERLAY = path.join(ROOT, "docker-compose.clamav.yml");
 const IMAGE =
-  "clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0";
+  "clamav/clamav:1.4.7@sha256:ac15046e610610347c459afabea6683a52cd041c7a10adf5f050ebb05525d62d";
 
 type Port = { target?: number | string; published?: number | string; host_ip?: string };
 type Service = {
@@ -152,13 +152,14 @@ test("overlay: clamd sem freshclam e só na rede privada", () => {
   );
 });
 
-test("overlay: atualizador só na rede de saída, sem porta, sem clamd", () => {
+test("overlay: atualizador inicializa primeiro, só na rede de saída, sem porta e sem clamd", () => {
   const updater = overlay().services["clamav-freshclam"];
   assert.ok(updater, "serviço clamav-freshclam ausente no overlay");
   assert.equal(updater.environment?.CLAMAV_NO_CLAMD, "true");
   assert.equal(updater.ports?.length ?? 0, 0);
   assert.deepEqual(Object.keys(updater.networks ?? {}), ["clamav_update"]);
-  assert.equal(updater.depends_on?.clamav?.condition, "service_healthy");
+  assert.equal(updater.depends_on?.clamav, undefined);
+  assert.equal(overlay().services.clamav?.depends_on?.["clamav-freshclam"]?.condition, "service_healthy");
   assert.match((updater.healthcheck?.test ?? []).join(" "), /pgrep -x freshclam/);
   assert.equal(updater.image, overlay().services.clamav?.image);
   const mounts = updater.volumes ?? [];
