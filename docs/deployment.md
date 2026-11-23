@@ -386,6 +386,14 @@ e escrita para o vencedor no PR 5.
   `scripts/smoke-compose-persistence.mjs`. Buildar prova que o Dockerfile compila; **so subir prova que o processo
   BOOTA** — e e no boot que moravam os dois P0 deste bloco (agregado core-saas em memoria; worker de jobs que
   nunca subia). Ver "Smoke de contêiner" abaixo.
+- **TLS do banco gerenciado (B-INFRA-RDS-CA, 23/11/2026)** — o driver `pg` trata `sslmode=require` como
+  `verify-full`, e o Node nao conhece a autoridade certificadora do RDS: sem o pacote dela, a API recusa a
+  conexao ao banco no boot ("self-signed certificate in certificate chain", medido contra o RDS de producao).
+  O estagio `runtime` copia o pacote publico do RDS (`docker/certs/rds-global-bundle.pem`, todas as regioes,
+  baixado de `https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem`) e define
+  `NODE_EXTRA_CA_CERTS`, sem desligar a verificacao. A `DATABASE_URL` de producao usa `sslmode=verify-full` com o
+  host real do RDS, e entao o certificado e o nome sao conferidos. Guarda: `tests/dockerfile-rds-ca.test.ts`.
+  O pacote vence por certificado (o mais curto, ver o teste) e se troca baixando de novo o mesmo endereco.
 
 ### Validacao local-prod (nao e o deploy do provedor)
 

@@ -37,6 +37,13 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
+# B-INFRA-RDS-CA — o driver pg trata sslmode=require como verify-full, e o Node não conhece a
+# autoridade certificadora do RDS: sem isto a API recusa a conexão ao banco no boot. O pacote
+# público do RDS (todas as regiões, docker/certs/) entra na imagem e o Node passa a confiar nele,
+# sem desligar a verificação. A DATABASE_URL de produção usa sslmode=verify-full com o host real.
+COPY docker/certs/rds-global-bundle.pem /etc/ssl/certs/rds-global-bundle.pem
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/rds-global-bundle.pem
+
 # Usuário não-root (o node:20 já traz o user `node`).
 USER node
 EXPOSE 3000
