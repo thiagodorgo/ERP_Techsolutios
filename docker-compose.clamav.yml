@@ -12,7 +12,7 @@ services:
         condition: service_healthy
 
   clamav:
-    image: clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0
+    image: clamav/clamav:1.4.7@sha256:ac15046e610610347c459afabea6683a52cd041c7a10adf5f050ebb05525d62d
     environment:
       CLAMAV_NO_FRESHCLAMD: "true"
     volumes:
@@ -27,9 +27,13 @@ services:
     mem_limit: 3g
     networks:
       - clamav_private
+    depends_on:
+      clamav-freshclam:
+        condition: service_healthy
 
   clamav-freshclam:
-    image: clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0
+    image: clamav/clamav:1.4.7@sha256:ac15046e610610347c459afabea6683a52cd041c7a10adf5f050ebb05525d62d
+    entrypoint: ["/bin/sh", "-c", "(freshclam --foreground --stdout || printf '%s\n' 'WARNING: freshclam inicial falhou; usando base da imagem' >&2) && exec /init"]
     environment:
       CLAMAV_NO_CLAMD: "true"
       FRESHCLAM_CHECKS: "12"
@@ -39,9 +43,6 @@ services:
     networks:
       - clamav_update
     mem_limit: 2g
-    depends_on:
-      clamav:
-        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "pgrep -x freshclam"]
       interval: 60s

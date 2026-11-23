@@ -768,13 +768,13 @@ Reler segredos trocados sem imagem nova: `aws ecs update-service --cluster erp-p
 
 **Por que agora:** decisão do dono, 17/11 (*"o traccar e antivirus ja entram"*). Até esta fase, a API roda com `EVIDENCE_SCANNER=unavailable` e **todo upload responde 503** (nada é gravado): é o fail-closed do `B-O6R-07b`. Esta fase põe o antivírus de verdade (o `clamd` do ClamAV) numa tarefa privada, e a API passa a mandar cada arquivo para ele antes de gravar (protocolo `INSTREAM`, desenho da `PD-O6R-B07B-CLAMD-INSTREAM` e do `B-AV-REAL`, já na `main`).
 
-**Pré-requisitos:** Fases 1–3 (VPC, NAT, `erp-sg-clamav`, cluster, papel de execução, a API no ar). A ativação no ambiente de produção é contratação de serviço pago: junta de 5 unânime registrada (como toda a conta, §6.7 item 3). **Terminais:** CloudShell normal para a API da AWS; CloudShell em VPC para a conferência do 3b.6. **Custo:** Fargate **x86** 0,5 vCPU / 3 GB ≈ **US$ 42/mês** (0,5 × 0,0696 + 3 × 0,0076 US$/h × 730 h); o estudo previa ARM (US$ 33,7), mas a imagem fixada no `B-AV-REAL` (`clamav/clamav:1.4.6@sha256:982e28f9…`) só tem `amd64` (o índice da imagem lido no registro: `amd64` e um item de atestação), por isso x86 (pendência P-AWS-CLAMAV-ARM64). Mais ~US$ 0,50/mês da zona privada do Cloud Map e ~US$ 1 de logs.
+**Pré-requisitos:** Fases 1–3 (VPC, NAT, `erp-sg-clamav`, cluster, papel de execução, a API no ar). A ativação no ambiente de produção é contratação de serviço pago: junta de 5 unânime registrada (como toda a conta, §6.7 item 3). **Terminais:** CloudShell normal para a API da AWS; CloudShell em VPC para a conferência do 3b.6. **Custo:** Fargate **x86** 0,5 vCPU / 3 GB ≈ **US$ 42/mês** (0,5 × 0,0696 + 3 × 0,0076 US$/h × 730 h); o estudo previa ARM (US$ 33,7), mas a imagem fixada (`clamav/clamav:1.4.7@sha256:ac15046e…`, publicada em 2026-11-23) só tem `amd64` (o índice da imagem lido no registro: `amd64` e um item de atestação), por isso x86 (pendência P-AWS-CLAMAV-ARM64). Mais ~US$ 0,50/mês da zona privada do Cloud Map e ~US$ 1 de logs.
 
 **Como a API acha o antivírus:** pela **descoberta de serviço do ECS** (AWS Cloud Map, um nome DNS privado `clamav.erp.local` que aponta sempre para o IP da tarefa do momento). A documentação do ECS a sustenta em `us-east-1`, no Fargate, com registro `A` para tarefas `awsvpc`, saúde do registro dada pela própria checagem de saúde do contêiner, e sem custo além da zona privada e das consultas. **Declarado:** a PD do antivírus citava o *Service Connect* (o mesmo Cloud Map, mais um proxy dentro de cada tarefa); aqui fica a descoberta por DNS, sem proxy, porque o cliente da API já tem o próprio tempo-limite de conexão e de varredura (`CLAMAV_CONNECT_TIMEOUT_MS`, `CLAMAV_SCAN_TIMEOUT_MS`) e o proxy só somaria uma peça. Um NLB interno também serviria, mas custa ~US$ 25/mês a mais sem ganho para uma tarefa só.
 
 ```bash
 set -a; . ~/erp-ids.env; set +a
-export IMAGEM_CLAMAV="clamav/clamav@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0"   # a tag 1.4.6, presa pelo digest (o mesmo do docker-compose.clamav.yml)
+export IMAGEM_CLAMAV="clamav/clamav@sha256:ac15046e610610347c459afabea6683a52cd041c7a10adf5f050ebb05525d62d"   # a tag 1.4.7, publicada em 23/11/2026 e presa pelo digest do índice (linux/amd64)
 ```
 
 ### 3b.1 O espaço de nomes privado (`erp.local`)
@@ -798,7 +798,7 @@ echo "SD_CLAMAV_ARN=$SD_CLAMAV_ARN" >> ~/erp-ids.env
 **Conferência:** `aws ec2 describe-security-groups --group-ids "$SG_CLAMAV" --query 'SecurityGroups[0].IpPermissions[].[FromPort,UserIdGroupPairs[].GroupId]' --output text` → `3310` só com `erp-sg-api` e `erp-sg-ops`. **Desfazer:** `aws servicediscovery delete-service --id <id do serviço clamav>` (o ID é o fim do `SD_CLAMAV_ARN`, `srv-…`), `aws ec2 revoke-security-group-ingress --group-id "$SG_CLAMAV" --protocol tcp --port 3310 --source-group "$SG_OPS"` e `aws logs delete-log-group --log-group-name /ecs/erp-clamav`.
 
 ### 3b.3 A receita da tarefa do antivírus
-**Objetivo:** o contêiner oficial do ClamAV com a **mesma configuração do repositório** (`infra/clamav/clamd.conf`: os limites que, sem `AlertExceedsMax yes`, dariam "limpo" por engano). O Fargate não monta arquivo do repositório; então a receita leva o conteúdo do `clamd.conf` numa variável e, antes de subir, o contêiner o grava em `/etc/clamav/clamd.conf` e chama o mesmo início da imagem (`/init`, lido na configuração da imagem no registro). O `freshclam` (atualização da base de vírus) roda dentro da mesma tarefa, como a imagem faz por padrão, e sai pela internet pelo NAT da fase 1. A checagem de saúde é a da própria imagem (`clamdcheck.sh`); o ECS aceita no máximo 300 s de carência, e a primeira base leva alguns minutos para baixar, por isso 10 tentativas de 30 s depois da carência.
+**Objetivo:** o contêiner oficial do ClamAV com a **mesma configuração do repositório** (`infra/clamav/clamd.conf`: os limites que, sem `AlertExceedsMax yes`, dariam "limpo" por engano). O Fargate não monta arquivo do repositório; então a receita leva o conteúdo do `clamd.conf` numa variável, grava-o em `/etc/clamav/clamd.conf`, executa uma rodada síncrona do `freshclam` e só depois chama o início da imagem (`/init`, lido no registro). Assim, o `clamd` já carrega a base nova. Se a rede estiver fora, a falha é avisada e a subida segue com a base embarcada; a API continua recusando base com mais de 72 h. O freshclam permanente do `/init` continua tentando pelo NAT. A checagem de saúde é a da própria imagem (`clamdcheck.sh`); o ECS aceita no máximo 300 s de carência, e a atualização pode levar alguns minutos, por isso 10 tentativas de 30 s depois da carência.
 ```bash
 cd ~/erp 2>/dev/null || git clone --depth 1 --branch main "https://github.com/${GH_DONO}/${GH_REPO}.git" ~/erp
 jq -n --rawfile conf ~/erp/infra/clamav/clamd.conf --arg img "$IMAGEM_CLAMAV" --arg exe "$EXEC_ROLE_ARN" --arg reg "$REGIAO" '{
@@ -810,14 +810,14 @@ jq -n --rawfile conf ~/erp/infra/clamav/clamd.conf --arg img "$IMAGEM_CLAMAV" --
     portMappings: [ { containerPort: 3310, protocol: "tcp" } ],
     environment: [ { name: "CLAMD_CONF", value: $conf } ],
     entryPoint: ["/bin/sh", "-c"],
-    command: ["printf \"%s\\n\" \"$CLAMD_CONF\" > /etc/clamav/clamd.conf && exec /init"],
+    command: ["printf \"%s\\n\" \"$CLAMD_CONF\" > /etc/clamav/clamd.conf && (freshclam --foreground --stdout || printf \"%s\\n\" \"WARNING: freshclam inicial falhou; usando base da imagem\" >&2) && exec /init"],
     logConfiguration: { logDriver: "awslogs", options: { "awslogs-group": "/ecs/erp-clamav", "awslogs-region": $reg, "awslogs-stream-prefix": "clamav" } },
     healthCheck: { command: ["CMD-SHELL", "clamdcheck.sh"], interval: 30, timeout: 10, retries: 10, startPeriod: 300 }
   } ] }' > clamav-taskdef.json
 CLAMAV_TASKDEF_ARN=$(aws ecs register-task-definition --cli-input-json file://clamav-taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text)
 echo "CLAMAV_TASKDEF_ARN=$CLAMAV_TASKDEF_ARN" >> ~/erp-ids.env
 ```
-**Conferência:** `aws ecs describe-task-definition --task-definition erp-clamav --query 'taskDefinition.[cpu,memory,runtimePlatform.cpuArchitecture,containerDefinitions[0].image]' --output text` → `512 3072 X86_64 clamav/clamav@sha256:982e…`. **Custo:** 0 (a receita não custa). **Desfazer:** `aws ecs deregister-task-definition --task-definition erp-clamav:<revisão>`.
+**Conferência:** `aws ecs describe-task-definition --task-definition erp-clamav --query 'taskDefinition.[cpu,memory,runtimePlatform.cpuArchitecture,containerDefinitions[0].image]' --output text` → `512 3072 X86_64 clamav/clamav@sha256:ac15046e…`. **Custo:** 0 (a receita não custa). **Desfazer:** `aws ecs deregister-task-definition --task-definition erp-clamav:<revisão>`.
 
 ### 3b.4 O serviço do antivírus (1 tarefa, privada)
 ```bash
@@ -827,6 +827,8 @@ aws ecs create-service --cluster erp-prod --service-name erp-clamav --task-defin
 aws ecs wait services-stable --cluster erp-prod --services erp-clamav      # a 1ª base de vírus leva minutos
 ```
 **Conferência:** `aws ecs describe-services --cluster erp-prod --services erp-clamav --query 'services[0].[status,runningCount]' --output text` → `ACTIVE 1`; `aws logs tail /ecs/erp-clamav --since 15m --format short` (só na CLI v2 do CloudShell) mostra a base baixada e o `clamd` escutando. **Custo:** ~US$ 42/mês. **Desfazer:** `aws ecs update-service --cluster erp-prod --service erp-clamav --desired-count 0` e `aws ecs delete-service --cluster erp-prod --service erp-clamav --force` — **antes** volte a API para `EVIDENCE_SCANNER=unavailable` (desfazer do 3b.5), senão todo upload passa a responder 503 por antivírus fora do ar, que é o lado seguro, mas é uma queda.
+
+**Desligar e ligar à noite:** depois de ligar novamente (`desired-count 1` e `services-stable`), repita o `zVERSION` do 3b.6 e confira a **data da base**; `PONG` sozinho não prova que o `clamd` carregou a atualização.
 
 ### 3b.5 A API passa a usar o antivírus
 **Objetivo:** os nomes reais do `src/config/env.ts`: `EVIDENCE_SCANNER=clamav`, `CLAMAV_HOST` (obrigatório com `clamav`), `CLAMAV_PORT` (padrão 3310) e `CLAMAV_MAX_DB_AGE_HOURS` (em produção, no mínimo 1; o `docker-compose.clamav.yml` usa 72: base de vírus mais velha que isso faz o upload responder 503).
@@ -844,19 +846,19 @@ aws ecs wait services-stable --cluster erp-prod --services erp-api
 ```bash
 getent hosts clamav.erp.local                                                     # 10.40.1x.y   (o nome do Cloud Map resolve)
 exec 3<>/dev/tcp/clamav.erp.local/3310; printf 'zPING\0' >&3; head -c 4 <&3; echo; exec 3>&-       # PONG
-exec 3<>/dev/tcp/clamav.erp.local/3310; printf 'zVERSION\0' >&3; tr -d '\0' <&3 | head -c 120; echo; exec 3>&-   # ClamAV 1.4.6/<versão da base>/<data da base>
+exec 3<>/dev/tcp/clamav.erp.local/3310; printf 'zVERSION\0' >&3; tr -d '\0' <&3 | head -c 120; echo; exec 3>&-   # ClamAV 1.4.7/<versão da base>/<data da base>
 ```
 Depois, pela API (em qualquer CloudShell), um envio real de anexo de um registro de teste que você tenha criado na console (por exemplo um dano, `entity_type=damage`), com o token de administrador obtido como no 6.3:
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${TOKEN}" -F entity_type=damage -F entity_id=<id do dano de teste> -F "file=@<um PDF ou imagem pequenos e legítimos>" "https://api.${DOMINIO}/api/v1/attachments"   # 201 (ou 2xx), e NÃO 503
 ```
-**Conferência:** `PONG`; a versão com a data da base de hoje ou de ontem; o upload com 2xx em vez de 503. **Esse é o critério do item 27** ("fecha só com o serviço respondendo no ambiente"). Um arquivo de teste de vírus padrão (o EICAR, gerado na hora, nunca guardado no repositório) deve voltar `422` (`scanner_infected`). **Desfazer:** não se aplica (só leitura; apague o anexo de teste pela console). Se quiser fechar a porta da conferência: `aws ec2 revoke-security-group-ingress --group-id "$SG_CLAMAV" --protocol tcp --port 3310 --source-group "$SG_OPS"`.
+**Conferência:** `PONG`; no `zVERSION`, olhe a **data** e exija a base de hoje ou de ontem — `PONG` sozinho não basta; o upload deve dar 2xx em vez de 503. Se o serviço estiver respondendo mas ainda mostrar a data antiga, `exec 3<>/dev/tcp/clamav.erp.local/3310; printf 'zRELOAD\0' >&3; tr -d '\0' <&3; echo; exec 3>&-` é o paliativo pelo túnel; depois repita o `zVERSION`. **Esse é o critério do item 27** ("fecha só com o serviço respondendo no ambiente"). Um arquivo de teste de vírus padrão (o EICAR, gerado na hora, nunca guardado no repositório) deve voltar `422` (`scanner_infected`). **Desfazer:** não se aplica (só leitura; apague o anexo de teste pela console). Se quiser fechar a porta da conferência: `aws ec2 revoke-security-group-ingress --group-id "$SG_CLAMAV" --protocol tcp --port 3310 --source-group "$SG_OPS"`.
 
 **Conferência da fase inteira:** `ACTIVE 1` no `erp-clamav`; `PONG` e a versão da base pelo CloudShell em VPC; upload 2xx. **Item do portão:** o **27** fecha aqui, quando o serviço responder no ambiente.
 
 **O que pode dar errado:**
 - A tarefa reiniciar por falta de memória na recarga da base: o `clamd` recarrega a base nova ao lado da antiga e, por instantes, usa quase o dobro. Se o log mostrar `OutOfMemory` ou a tarefa cair na hora da atualização, suba para 4 GB (a PD media 4 GB; o estudo fixou 3 GB) — nova revisão com `memory: "4096"` (+US$ 5,5/mês).
-- A primeira base não baixar: o `freshclam` precisa de saída pela internet (NAT da fase 1) para `database.clamav.net` na 443; com NAT parado, a tarefa fica sem base e a checagem de saúde a derruba depois de ~10 min. O CDN da ClamAV também limita downloads por IP (o IP do NAT é seu, não compartilhado).
+- A atualização inicial não baixar: o `freshclam` precisa de saída pela internet (NAT da fase 1) para `database.clamav.net` na 443. Com NAT parado, a tarefa sobe com a base da imagem e a API recusa uploads quando ela passar de 72 h; não afrouxe o limite. O daemon continua tentando quando a rede voltar. O CDN da ClamAV também limita downloads por IP (o IP do NAT é seu, não compartilhado).
 - A imagem vir do Docker Hub, que limita downloads anônimos por IP: o pull é raro (só na troca de tarefa), mas se aparecer `toomanyrequests`, espelhe a imagem no ECR (pull-through do Docker Hub, que exige credencial do Docker Hub no Secrets Manager, como o 1.6 faz para o GHCR).
 - O upload continuar 503 com o `clamd` respondendo: a base passou de 72 h (`CLAMAV_MAX_DB_AGE_HOURS`), ou o grupo de segurança não deixa a API chegar à 3310 (`erp-sg-clamav` só aceita `erp-sg-api`, fase 1), ou o nome não resolve (a VPC precisa de DNS ligado, passo 1.1).
 
@@ -1597,7 +1599,7 @@ fi
 | P-AWS-SSE-TIMEOUT | o fluxo de eventos (SSE) fica aberto por muito tempo; o ALB corta conexão parada há 60 s e o CloudFront, como está no 4.6, espera no máximo 60 s entre pedaços da resposta (`OriginReadTimeout: 60`; aceita até 120 s, acima disso só com aumento de cota). Hoje a API manda um sinal de vida a cada 25 s e o mapa reconecta; se a medição em produção mostrar quedas, subir o tempo do ALB (o comando está em "o que pode dar errado" da Fase 4) e escrever e validar a edição do `OriginReadTimeout` do CloudFront | `B-INFRA-AWS-03` |
 | P-AWS-PORTAL-TENANT | `PORTAL_TENANT_ID` provisório até o 1º tenant; definir o processo (6.2) e o valor do `PORTAL_CORS_ORIGIN` do portal | `B-INFRA-AWS-03` |
 | P-AWS-IP-FIXO | a decisão D-AWS-03 e, se vier, o bloco do NLB+EIP ou do Global Accelerator | dono |
-| P-AWS-CLAMAV-ARM64 | a imagem `clamav/clamav:1.4.6` fixada no `B-AV-REAL` só tem `amd64`; medir a tag `-debian` (que tem `arm64`) e o digest dela para a 3b rodar em ARM (−US$ 8/mês) | `B-INFRA-AWS-03` |
+| P-AWS-CLAMAV-ARM64 | a imagem `clamav/clamav:1.4.7` fixada por digest só tem `amd64`; medir a tag `-debian` (que tem `arm64`) e o digest dela para a 3b rodar em ARM (−US$ 8/mês) | `B-INFRA-AWS-03` |
 | P-AWS-CLAMAV-IMAGEM | a 3b.3 entrega o `clamd.conf` por variável e grava o arquivo no início do contêiner; o caminho limpo é uma imagem derivada (`FROM` o digest fixado + `COPY infra/clamav/clamd.conf`) publicada pelo CI | `B-INFRA-AWS-03` |
 | P-AWS-TRACCAR-ARM64 | a imagem `traccar/traccar:6.16.0` tem `arm64`; o estudo fixou x86; trocar economiza ~US$ 7/mês, depois de medir em staging | `B-TRC-06` |
 | P-TRC02-STATUS-TIMEOUT-PROD | o estado online/sem sinal (`EVENT_STATUS_ENABLE`, `STATUS_TIMEOUT`) ficou fora da receita de produção do 3c.6 | `B-TRC-06` |
