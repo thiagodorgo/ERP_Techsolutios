@@ -4879,7 +4879,7 @@
     "backend_tests": "7443/7445",
     "frontend_smoke_tests": "2110/2110",
     "blocks_completed": 269,
-    "description": "PR-622 — No servidor, o guincheiro que atende mais de um pátio do mesmo grupo passa a usar um único login e uma única senha, sem escolher a organização no app; cada pátio administra apenas o seu próprio acesso e, com a proteção de saída do grupo, o portão fecha.. NÚMEROS DA CI no merge commit `c572a937` (push na `main`), workflow `ci`, run 45044854913, tentativa 1: backend `7445 teste(s) · pass 7443 · fail 0 · skipped 2`; frontend 2110/2110; flutter 2069/2307. `blocks_completed` 268 -> 269.",
+    "description": "PR-622 — No servidor, o guincheiro que atende mais de um pátio do mesmo grupo passa a usar um único login e uma única senha, sem escolher a organização no app; cada pátio administra apenas o seu próprio acesso e, com a proteção de saída do grupo, os itens 69 e 70 do portão fecham, com ressalva.. NÚMEROS DA CI no merge commit `c572a937` (push na `main`), workflow `ci`, run 45044854913, tentativa 1: backend `7445 teste(s) · pass 7443 · fail 0 · skipped 2`; frontend 2110/2110; flutter 2069/2307. `blocks_completed` 268 -> 269.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 622`; números do log da rodada 45044854913. Nada fica `null`."
   },
   {
@@ -4921,7 +4921,7 @@
     "backend_tests": "7593/7595",
     "frontend_smoke_tests": "2110/2110",
     "blocks_completed": 271,
-    "description": "PR-625 — O acesso do guincheiro a outro pátio passa a ser revogado imediatamente caso esse pátio deixe de fazer parte do mesmo grupo econômico, derrubando a sessão na hora; com esta proteção e o servidor de acesso unificado, o portão fecha.. NÚMEROS DA CI no merge commit `833dc7e1` (push na `main`), workflow `ci`, run 45069084935, tentativa 2: backend `7595 teste(s) · pass 7593 · fail 0 · skipped 2`; frontend 2110/2110; flutter 2069/2307. `blocks_completed` 270 -> 271.",
+    "description": "PR-625 — O acesso do guincheiro a outro pátio passa a ser revogado imediatamente caso esse pátio deixe de fazer parte do mesmo grupo econômico, derrubando a sessão na hora; com esta proteção e o servidor de acesso unificado, os itens 69 e 70 do portão fecham, com ressalva.. NÚMEROS DA CI no merge commit `833dc7e1` (push na `main`), workflow `ci`, run 45069084935, tentativa 2: backend `7595 teste(s) · pass 7593 · fail 0 · skipped 2`; frontend 2110/2110; flutter 2069/2307. `blocks_completed` 270 -> 271.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 625`; números do log da rodada 45069084935. Nada fica `null`."
   },
   {
