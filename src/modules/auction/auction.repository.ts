@@ -99,7 +99,7 @@ export function evaluateScrapEdictGate(
 // Deps compostas (auction DEPENDE de impound; jamais o contrário). Só os métodos usados — sem acoplar o resto. O
 // auction encadeia o CustodyEvent na cadeia EXISTENTE via impound.appendEvent/applyTransition (reusa o código
 // probatório mergeado — NÃO duplica a lógica de hash).
-export type AuctionImpoundDep = Pick<ImpoundRepository, "findProcessById" | "applyTransition" | "appendEvent">;
+export type AuctionImpoundDep = Pick<ImpoundRepository, "findProcessById" | "applyTransition" | "appendEvent" | "clearLegacyFreeze">;
 
 // Port da checagem de liberação em curso (dono = release), re-verificada sob o lock em markEligibleAtomic (anti-TOCTOU
 // do for-repair-montar, que cria dossiê SEM transicionar o processo). Injetado por DI (testável).
@@ -138,6 +138,8 @@ export interface AuctionRepository {
   closeAuctionAtomic(input: CloseAuctionInput): Promise<AuctionStateSnapshot>;         // AUCTIONED→AUCTION_CLOSED
   defaultAuctionAtomic(input: DefaultAuctionInput): Promise<DefaultAuctionResult>;     // AUCTIONED→LOTTED (NO_PAYMENT)
   reclaimAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot>;            // LOTTED→ACTIVE_CUSTODY
+  withdrawSettledAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot>;    // AUCTION_ELIGIBLE/AUCTION_PREP→ACTIVE_CUSTODY
+  thawLegacyFreezeAtomic(tenantId: string, processId: string): Promise<boolean>;       // descongelamento legado em estados não-terminais
   reset?(): void;
 }
 
@@ -698,6 +700,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
       updatedAt: now,
     };
     this.attempts.push(attempt);
+    await this.impound.clearLegacyFreeze(input.tenantId, input.processId);
     await this.impound.applyTransition({
       tenantId: input.tenantId,
       processId: input.processId,
@@ -722,6 +725,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     }
     // O certame é cancelado (reclamado): a rodada LOTADA passa a CLOSED (mantém no máx. 1 LOTTED/processo).
     this.closeLottedEdicts(input.tenantId, input.processId);
+    await this.impound.clearLegacyFreeze(input.tenantId, input.processId);
     await this.impound.applyTransition({
       tenantId: input.tenantId,
       processId: input.processId,
@@ -732,6 +736,32 @@ export class InMemoryAuctionRepository implements AuctionRepository {
       event: { type: "STATUS_CHANGE", payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "reclaimed_before_sale" }, occurredAt: input.occurredAt, actorId: input.actorId },
     });
     return { status: "ACTIVE_CUSTODY", attempts: this.attemptsFor(input.tenantId, input.processId), edicts: this.edictsFor(input.tenantId, input.processId) };
+  }
+
+
+  async withdrawSettledAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot> {
+    const process = await this.impound.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (process.status !== input.expectedFrom) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    await this.impound.clearLegacyFreeze(input.tenantId, input.processId);
+    await this.impound.applyTransition({
+      tenantId: input.tenantId,
+      processId: input.processId,
+      expectedFrom: input.expectedFrom,
+      to: "ACTIVE_CUSTODY",
+      setEnteredAt: false,
+      setFrozenAt: false,
+      event: { type: "STATUS_CHANGE", payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "settled_before_auction" }, occurredAt: input.occurredAt, actorId: input.actorId },
+    });
+    return { status: "ACTIVE_CUSTODY", attempts: this.attemptsFor(input.tenantId, input.processId), edicts: this.edictsFor(input.tenantId, input.processId) };
+  }
+
+  async thawLegacyFreezeAtomic(tenantId: string, processId: string): Promise<boolean> {
+    return this.impound.clearLegacyFreeze(tenantId, processId);
   }
 
   // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────────

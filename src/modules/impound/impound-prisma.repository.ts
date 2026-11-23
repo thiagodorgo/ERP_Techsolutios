@@ -361,6 +361,18 @@ export class PrismaImpoundRepository implements ImpoundRepository {
     return this.insertEventTx(input.tenantId, input.processId, locked.custody_seq_head, locked.custody_hash_head, input.event);
   }
 
+  async clearLegacyFreeze(tenantId: string, processId: string): Promise<boolean> {
+    const result = await this.client.$executeRaw`
+      UPDATE impound_processes
+      SET frozen_at = NULL
+      WHERE tenant_id = ${tenantId}::uuid
+        AND id = ${processId}::uuid
+        AND frozen_at IS NOT NULL
+        AND status NOT IN ('RELEASE_IN_PROGRESS', 'AUCTION_CLOSED')
+    `;
+    return Number(result) > 0;
+  }
+
   // SELECT ... FOR UPDATE do processo — serializa appends concorrentes no MESMO processo (anti-corrida da FSM).
   private async lockProcess(tenantId: string, processId: string): Promise<LockedProcessRow | undefined> {
     const rows = await this.client.$queryRaw<LockedProcessRow[]>`
@@ -799,6 +811,10 @@ export class RlsPrismaImpoundRepository implements ImpoundRepository {
 
   appendEvent(input: AppendEventInput): Promise<AppendEventResult> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaImpoundRepository(tx).appendEvent(input));
+  }
+
+  clearLegacyFreeze(tenantId: string, processId: string): Promise<boolean> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaImpoundRepository(tx).clearLegacyFreeze(tenantId, processId));
   }
 
   openFromRemovalAtomic(input: OpenFromRemovalInput): Promise<ImpoundProcess> {

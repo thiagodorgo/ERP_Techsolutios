@@ -74,6 +74,7 @@ export interface ImpoundRepository {
   applyTransition(input: ApplyTransitionInput): Promise<ImpoundProcess>;
   // Append de evento não-transição (ex. SPOT_ASSIGNED), atômico com o head e o cross-anchor.
   appendEvent(input: AppendEventInput): Promise<AppendEventResult>;
+  clearLegacyFreeze(tenantId: string, processId: string): Promise<boolean>;
   // PR-06 (F-1) — abertura do SWEEP em UMA tx: create + abertura + RECEPTION (entered_at=completedAt). Sem half-open.
   openFromRemovalAtomic(input: OpenFromRemovalInput): Promise<ImpoundProcess>;
 
@@ -317,6 +318,16 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
       throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
     }
     return this.appendInternal(process, input.event);
+  }
+
+
+  async clearLegacyFreeze(tenantId: string, processId: string): Promise<boolean> {
+    const process = await this.findProcessById(tenantId, processId);
+    if (!process) return false;
+    if (!process.frozenAt) return false;
+    if (process.status === "RELEASE_IN_PROGRESS" || process.status === "AUCTION_CLOSED") return false;
+    this.processes.set(process.id, { ...process, frozenAt: undefined });
+    return true;
   }
 
   // ── PR-06: vistoria (I3) ────────────────────────────────────────────────────────────────────────────────
