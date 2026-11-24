@@ -499,6 +499,8 @@ export class AuctionService {
     }
     const reason = parseNotes(body.reason);
     const reclaimExpectedSeq = parseCustodySeq(body.custody_seq ?? body.custodySeq);
+    const reclaimReadingFresh = process.custodySeqHead === reclaimExpectedSeq;
+    if (!reclaimReadingFresh) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
     const decision = resolveTransition(process, "ACTIVE_CUSTODY", { auctionReclaim: { reasonMissing: reason === undefined }, reason });
     const snapshot = await this.repository.reclaimAtomic({
       tenantId: actor.tenantId,
@@ -519,6 +521,8 @@ export class AuctionService {
     const relotExpectedSeq = parseCustodySeq(body.custody_seq ?? body.custodySeq);
     const state = await this.repository.getState(actor.tenantId, normalizedId);
     if (!state) throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    const relotReadingFresh = state.custodySeqHead === relotExpectedSeq;
+    if (!relotReadingFresh) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
     // E1.3/E2.1.6 passo 3: a guarda da revenda pendente vem ANTES de qualquer gravação (descongelar, fechar diárias).
     const relotPending = isResalePending(state.status, state.attempts, state.edicts);
     if (!relotPending) {
@@ -735,3 +739,4 @@ async function createPrismaAuctionService(): Promise<AuctionService> {
     ports.removalPosted,
   );
 }
+

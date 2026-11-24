@@ -71,6 +71,17 @@ test("RV7/RV15 · relote grava uma vez e rejeita a leitura antiga", async () => 
   );
 });
 
+
+test("RV7c · relotAtomic direto rejeita leitura velha e mantém o edital fora do lote", async () => {
+  const ctx = await seedResaleRepository();
+  const before = (await ctx.impound.listEvents(ctx.tenantId, ctx.processId)).length;
+  await assert.rejects(
+    () => ctx.auction.relotAtomic({ ...ctx.base, expectedFrom: "LOTTED", roundNumber: 3, expectedCustodySeq: ctx.custodySeq - 1, occurredAt: new Date() }),
+    (error: unknown) => (error as { reason?: string }).reason === "auction_reading_stale",
+  );
+  assert.equal((await ctx.auction.getState(ctx.tenantId, ctx.processId))?.edicts.find((edict) => edict.roundNumber === 3)?.status, "DESIGNATED");
+  assert.equal((await ctx.impound.listEvents(ctx.tenantId, ctx.processId)).length, before);
+});
 test("RV8 · seis relotes com a mesma leitura produzem um sucesso, um edital em lote e um evento", async () => {
   const ctx = await seedResaleRepository();
   const settled = await Promise.allSettled(Array.from({ length: 6 }, () => ctx.auction.relotAtomic({ ...ctx.base, expectedFrom: "LOTTED", roundNumber: 3, expectedCustodySeq: ctx.custodySeq, occurredAt: new Date() })));
@@ -102,3 +113,4 @@ test("RV18 · depois do relote a pendência acaba e outra rodada não substitui 
   );
   assert.equal((await ctx.auction.getState(ctx.tenantId, ctx.processId))?.edicts.find((edict) => edict.status === "LOTTED")?.roundNumber, 3);
 });
+

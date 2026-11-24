@@ -695,6 +695,27 @@ if (!connectionString) {
     );
   });
 
+
+  test("RV7c · INTERNO: relotAtomic direto na revenda pendente com expectedCustodySeq = cabeça − 1: 409 auction_reading_stale; edital 3 fora do lote; nada gravado", async () => {
+    const ctx = await resaleScenario("RV7c");
+    await newRound(ctx, 3);
+    const seq = (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1;
+    const result = await outcome(() =>
+      auctionRepo.relotAtomic({
+        tenantId: ctx.tenantId,
+        processId: ctx.processId,
+        expectedFrom: "LOTTED",
+        roundNumber: 3,
+        expectedCustodySeq: seq - 1,
+        actorId: ctx.userId,
+        occurredAt: new Date(),
+      }),
+    );
+    check(
+      { result, estado: (await row(ctx)).status, edital3: (await edicts(ctx))[3], eventos: await eventsAfter(ctx, seq) },
+      { result: "409 auction_reading_stale", estado: "LOTTED", edital3: "DESIGNATED", eventos: [] },
+    );
+  });
   test("RV8a · corrida: 6 relotes da rodada 3 em paralelo com s0, 6 rodadas: exatamente um 200, os outros 409; um edital em lote e um evento; cadeia válida", async () => {
     const observed: unknown[] = [];
     for (let round = 0; round < 6; round += 1) {
@@ -883,6 +904,17 @@ if (!connectionString) {
     );
   });
 
+
+  test("RV15d · dois resgates em série com a mesma leitura s0: 200 no primeiro; 409 auction_reading_stale no segundo", async () => {
+    const ctx = await resaleScenario("RV15d");
+    const s0 = await readSeq(ctx);
+    const primeiro = res(await reclaim(ctx, s0));
+    const segundo = res(await reclaim(ctx, s0));
+    check(
+      { primeiro, segundo, estado: (await row(ctx)).status, edital1: (await edicts(ctx))[1] },
+      { primeiro: "200", segundo: "409 auction_reading_stale", estado: "ACTIVE_CUSTODY", edital1: "CLOSED" },
+    );
+  });
   test("RV15c · INTERNO: reclaimAtomic direto com expectedCustodySeq = cabeça − 1: 409 auction_reading_stale; nada gravado", async () => {
     const ctx = await resaleScenario("RV15c");
     const seq = (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1;
@@ -1001,3 +1033,4 @@ if (!connectionString) {
     );
   });
 }
+
