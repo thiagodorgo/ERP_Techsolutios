@@ -43,6 +43,13 @@ if (!connectionString) {
   type Http = { status: number; reason?: string; data: Record<string, unknown>; body: Record<string, unknown> };
 
   const created: string[] = [];
+  // E1.2: toda recusa do preparo (edital e avaliação de uma rodada) é guardada como VALOR, e não interrompe o caso;
+  // cada caso compara o preparo junto do resultado (`check`), com o esperado vazio.
+  const setupFailures: string[] = [];
+
+  function check(actual: unknown, expected: unknown): void {
+    assert.deepEqual({ preparo: [...setupFailures], resultado: actual }, { preparo: [], resultado: expected });
+  }
 
   function actor(ctx: Ctx): Actor {
     return { tenantId: ctx.tenantId, userId: ctx.userId, roles: ["manager"], permissions: ["impound:read", "impound:transition", "auction:appraise", "auction:reclaim", "charging:settle", "release:process", "release:approve"] };
@@ -160,6 +167,7 @@ if (!connectionString) {
   let baseUrl = "";
 
   afterEach(async () => {
+    setupFailures.length = 0;
     for (const tenantId of created.splice(0)) {
       await teardown(tenantId);
     }
@@ -335,8 +343,9 @@ if (!connectionString) {
 
   async function newRound(ctx: Ctx, round: number, minBid = "5000.00"): Promise<void> {
     const auction = await createDefaultAuctionService();
-    await auction.registerEdict(actor(ctx), ctx.processId, edictBody(round));
-    await auction.setAppraisal(actor(ctx), ctx.processId, { round_number: round, appraisal_amount: "10000.00", min_bid_amount: minBid });
+    const edital = await outcome(() => auction.registerEdict(actor(ctx), ctx.processId, edictBody(round)));
+    const avaliacao = await outcome(() => auction.setAppraisal(actor(ctx), ctx.processId, { round_number: round, appraisal_amount: "10000.00", min_bid_amount: minBid }));
+    if (edital !== "aceito" || avaliacao !== "aceito") setupFailures.push(`rodada ${round}: edital ${edital}; avaliação ${avaliacao}`);
   }
 
   // O cenário comum, pelo serviço: edital e avaliação da rodada 1, preparação, lote, arremate por 8.000,00 e a
@@ -422,10 +431,11 @@ if (!connectionString) {
   // Dispara `first` e `second` na ordem dada de aquisição da trava do processo; devolve o desfecho de cada um.
   async function inLockOrder(ctx: Ctx, first: () => Promise<unknown>, second: () => Promise<unknown>): Promise<[string, string]> {
     const holder = await holdProcessLock(ctx);
+    // Um ato que termina sem chegar a esperar a trava (ex.: o método não existe) não segura a barreira.
     const a = outcome(first);
-    const pidA = await waitBlockedBy([holder.pid], []);
+    const pidA = await Promise.race([waitBlockedBy([holder.pid], []), a.then(() => undefined)]);
     const b = outcome(second);
-    await waitBlockedBy([holder.pid, pidA], [pidA]);
+    await Promise.race([waitBlockedBy(pidA === undefined ? [holder.pid] : [holder.pid, pidA], pidA === undefined ? [] : [pidA]), b.then(() => undefined)]);
     holder.release();
     await holder.done;
     return [await a, await b];
@@ -442,7 +452,7 @@ if (!connectionString) {
     const depoisDoRelote = { editais: await edicts(ctx), congelado: (await row(ctx)).frozen_at !== null };
     const fim = await sellCloseDistribute(ctx, "7000.00", 3);
     const frozen = (await row(ctx)).frozen_at;
-    assert.deepEqual(
+    check(
       { edital3, avaliacao3, relote, depoisDoRelote, ...fim, diarias: await dailyCount(ctx), tentativas: await attempts(ctx), periodos: await suspensions(ctx), liquidacoes: await settlementCount(ctx), cadeiaValida: await chainValid(ctx) },
       {
         edital3: "201",
@@ -479,7 +489,7 @@ if (!connectionString) {
     const relote = res(await relot(ctx, 3, await readSeq(ctx)));
     const fim = await sellCloseDistribute(ctx, "7000.00", 3);
     const frozen = (await row(ctx)).frozen_at;
-    assert.deepEqual(
+    check(
       { lancadasNaEspera: sweep.accrued, relote, ...fim, diarias: await dailyCount(ctx), periodos: await suspensions(ctx) },
       {
         lancadasNaEspera: 0,
@@ -512,7 +522,7 @@ if (!connectionString) {
       const depois = res(await relot(ctx, 3, await readSeq(ctx)));
       observed[item.label] = { recusa, semEvento, edital3, depois, editalDepois: (await edicts(ctx))[3] };
     }
-    assert.deepEqual(observed, {
+    check(observed, {
       "RV6a-patio": { recusa: "409 auction_custody_yard_missing", semEvento: true, edital3: "DESIGNATED", depois: "200", editalDepois: "LOTTED" },
       "RV6a-vistoria": { recusa: "409 auction_custody_inspection_incomplete", semEvento: true, edital3: "DESIGNATED", depois: "200", editalDepois: "LOTTED" },
       "RV6a-remocao": { recusa: "409 auction_custody_removal_charge_missing", semEvento: true, edital3: "DESIGNATED", depois: "200", editalDepois: "LOTTED" },
@@ -530,7 +540,7 @@ if (!connectionString) {
     const relida = await readSeq(ctx);
     const primeira = res(await relot(ctx, 3, relida));
     const lancadas = (await eventsAfter(ctx, relida)).filter((event) => event !== "AUCTION_LOTTED:3").length;
-    assert.deepEqual(
+    check(
       { recusa, depoisDaRecusa, primeira, lancadas, diarias: await dailyCount(ctx), seqs: await dailySeqs(ctx), edital3: (await edicts(ctx))[3], estado: (await row(ctx)).status },
       { recusa: "409 auction_daily_charges_unpostable", depoisDaRecusa: { eventos: 0, diarias: 0, edital3: "DESIGNATED" }, primeira: "200", lancadas: 90, diarias: 90, seqs: Array.from({ length: 90 }, (_, index) => index + 1), edital3: "LOTTED", estado: "LOTTED" },
     );
@@ -548,7 +558,7 @@ if (!connectionString) {
     const relote5 = res(await relot(ctx, 5, await readSeq(ctx)));
     const fim = await sellCloseDistribute(ctx, "6000.00", 5);
     const frozen = (await row(ctx)).frozen_at;
-    assert.deepEqual(
+    check(
       { relote3, venda3, inadimplencia4, relote5, ...fim, tentativas: await attempts(ctx), liquidacoes: await settlementCount(ctx), periodos: await suspensions(ctx), diarias: await dailyCount(ctx), cadeiaValida: await chainValid(ctx) },
       {
         relote3: "200",
@@ -575,7 +585,7 @@ if (!connectionString) {
     const relote = res(await relot(ctx, 3, await readSeq(ctx)));
     const process = await row(ctx);
     const sweep = await (await createDefaultChargeService()).accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
-    assert.deepEqual(
+    check(
       { relote, congelado: process.frozen_at !== null, estado: process.status, periodos: await suspensions(ctx), lancadas: sweep.accrued, candidato: await isSweepCandidate(ctx), eventosPrep: (await events(ctx)).filter((event) => event.type === "AUCTION_PREP").length },
       { relote: "200", congelado: false, estado: "LOTTED", periodos: [{ from: antes[0]?.from, to: undefined }], lancadas: 0, candidato: true, eventosPrep: 1 },
     );
@@ -613,7 +623,7 @@ if (!connectionString) {
     await shiftDays(ctx, 20);
     const second = await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
     const periodos = await suspensions(ctx);
-    assert.deepEqual(
+    check(
       { relote, resgate, antesDoRecuo, primeira, segunda: { lancadas: second.accrued, diarias: await dailyCount(ctx) }, periodos: periodos.length, periodoFechado: periodos[0]?.to !== undefined, estado: (await row(ctx)).status },
       { relote: "200", resgate: "200", antesDoRecuo: { diarias: 170, dentroDoPeriodo: 0 }, primeira: { lancadas: 10, diarias: 180, seqs: Array.from({ length: 180 }, (_, index) => index + 1), novasDentroDoPeriodo: 0 }, segunda: { lancadas: 0, diarias: 180 }, periodos: 1, periodoFechado: true, estado: "ACTIVE_CUSTODY" },
     );
@@ -628,7 +638,7 @@ if (!connectionString) {
     await auction.prepareForAuction(actor(ctx), ctx.processId, { round_number: 1 });
     await auction.lotForAuction(actor(ctx), ctx.processId, { round_number: 1 });
     const seq = await readSeq(ctx);
-    assert.deepEqual(
+    check(
       {
         edital2: res(await http(ctx, "POST", "/edicts", edictBody(2))),
         avaliacao1: res(await http(ctx, "POST", "/appraisal", { round_number: 1, appraisal_amount: "11000.00", min_bid_amount: "5500.00" })),
@@ -642,14 +652,14 @@ if (!connectionString) {
   test("RV4 · controle: com a revenda pendente, a avaliação da rodada 1 (a que está em lote) recusa 409 appraisal_locked_after_lot; o lance mínimo dela fica intocado", async () => {
     const ctx = await resaleScenario("RV4");
     const avaliacao1 = res(await http(ctx, "POST", "/appraisal", { round_number: 1, appraisal_amount: "12000.00", min_bid_amount: "4000.00" }));
-    assert.deepEqual({ avaliacao1, minimo1: await minBidOf(ctx, 1) }, { avaliacao1: "409 appraisal_locked_after_lot", minimo1: "5000.00" });
+    check({ avaliacao1, minimo1: await minBidOf(ctx, 1) }, { avaliacao1: "409 appraisal_locked_after_lot", minimo1: "5000.00" });
   });
 
   test("RV5 · rodada que não é nova: edital, relote pela rota e relote atômico nas rodadas 1 (vendida) e 2 (inadimplida) → 409 resale_round_not_new nos seis", async () => {
     const ctx = await resaleScenario("RV5", { round2Edict: true });
     const seq = await readSeq(ctx);
     const at = { tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED" as const, expectedCustodySeq: seq, actorId: ctx.userId };
-    assert.deepEqual(
+    check(
       {
         edital1: res(await http(ctx, "POST", "/edicts", edictBody(1))),
         edital2: res(await http(ctx, "POST", "/edicts", edictBody(2))),
@@ -679,7 +689,7 @@ if (!connectionString) {
     const segundo = res(await relot(ctx, 3, s0));
     const terceiro = res(await relot(ctx, 3, await readSeq(ctx)));
     const editais = await edicts(ctx);
-    assert.deepEqual(
+    check(
       { primeiro, segundo, terceiro, eventos: await eventsAfter(ctx, s0), emLote: Object.entries(editais).filter(([, status]) => status === "LOTTED").map(([round]) => Number(round)) },
       { primeiro: "200", segundo: "409 auction_reading_stale", terceiro: "409 resale_not_pending", eventos: ["AUCTION_LOTTED:3"], emLote: [3] },
     );
@@ -701,7 +711,7 @@ if (!connectionString) {
         cadeiaValida: await chainValid(ctx),
       });
     }
-    assert.deepEqual(observed, Array.from({ length: 6 }, () => ({ sucessos: 1, recusas409: 5, emLote: [3], eventos: ["AUCTION_LOTTED:3"], cadeiaValida: true })));
+    check(observed, Array.from({ length: 6 }, () => ({ sucessos: 1, recusas409: 5, emLote: [3], eventos: ["AUCTION_LOTTED:3"], cadeiaValida: true })));
   });
 
   test("RV8b · corrida: relotes das rodadas 3, 4 e 5 (todas registradas) em paralelo com s0, 6 rodadas: exatamente um 200; um edital em lote e um evento; cadeia válida", async () => {
@@ -721,14 +731,14 @@ if (!connectionString) {
         cadeiaValida: await chainValid(ctx),
       });
     }
-    assert.deepEqual(observed, Array.from({ length: 6 }, () => ({ sucessos: 1, recusas409: 2, umEmLoteEhOVencedor: true, eventos: 1, cadeiaValida: true })));
+    check(observed, Array.from({ length: 6 }, () => ({ sucessos: 1, recusas409: 2, umEmLoteEhOVencedor: true, eventos: 1, cadeiaValida: true })));
   });
 
   test("RV8c · relote × arremate da rodada 3: pela rota em paralelo (6 rodadas) e nas duas ordens de trava (6 rodadas cada): nunca uma venda em rodada fora do lote; cadeia válida", async () => {
     const violations: string[] = [];
     const orders: string[] = [];
     const saleFirstOutcomes = new Set<string>();
-    const check = async (ctx: Ctx, label: string): Promise<void> => {
+    const inspect = async (ctx: Ctx, label: string): Promise<void> => {
       const chain = await events(ctx);
       const lotSeq = chain.filter((event) => event.type === "AUCTION_LOTTED" && event.payload?.round === 3).map((event) => Number(event.seq));
       const soldSeq = chain.find((event) => event.type === "AUCTION_SOLD" && event.payload?.round === 3)?.seq;
@@ -742,7 +752,7 @@ if (!connectionString) {
       await newRound(ctx, 3);
       const s0 = await readSeq(ctx);
       await Promise.all([relot(ctx, 3, s0), http(ctx, "POST", "/sale", saleBody("7000.00", 3))]);
-      await check(ctx, `rota ${round}`);
+      await inspect(ctx, `rota ${round}`);
     }
     for (const order of ["relote-primeiro", "venda-primeiro"] as const) {
       for (let round = 0; round < 6; round += 1) {
@@ -754,10 +764,10 @@ if (!connectionString) {
         const [first, second] = order === "relote-primeiro" ? await inLockOrder(ctx, relotNow, saleNow) : await inLockOrder(ctx, saleNow, relotNow);
         orders.push(`${order}:${first}/${second}`);
         if (order === "venda-primeiro") saleFirstOutcomes.add(first);
-        await check(ctx, `${order} ${round}`);
+        await inspect(ctx, `${order} ${round}`);
       }
     }
-    assert.deepEqual(
+    check(
       { violations, relotePrimeiro: orders.filter((item) => item === "relote-primeiro:aceito/aceito").length, vendaPrimeiro: [...saleFirstOutcomes] },
       { violations: [], relotePrimeiro: 6, vendaPrimeiro: ["409 sale_round_not_lotted"] },
     );
@@ -777,7 +787,7 @@ if (!connectionString) {
       quitacao: await outcome(() => charge.settle(actor(ctx), ctx.processId, { note: "quitado no balcão" })),
       retirada: await outcome(() => auction.withdrawSettled(actor(ctx), ctx.processId, {})),
     };
-    assert.deepEqual(
+    check(
       { pendente, relote, depois, estado: (await row(ctx)).status },
       { pendente: { quitacao: "409 settle_after_auction_list", retirada: "409 invalid_transition" }, relote: "200", depois: { quitacao: "409 settle_after_auction_list", retirada: "409 invalid_transition" }, estado: "LOTTED" },
     );
@@ -788,7 +798,7 @@ if (!connectionString) {
     await newRound(ctx, 3);
     const resgate = res(await reclaim(ctx, await readSeq(ctx)));
     const relote = res(await relot(ctx, 3, await readSeq(ctx)));
-    assert.deepEqual({ resgate, relote, estado: (await row(ctx)).status }, { resgate: "200", relote: "409 resale_not_pending", estado: "ACTIVE_CUSTODY" });
+    check({ resgate, relote, estado: (await row(ctx)).status }, { resgate: "200", relote: "409 resale_not_pending", estado: "ACTIVE_CUSTODY" });
   });
 
   test("RV12 · INTERNO: relotAtomic direto num processo em lote com venda efetiva semeada: 409 resale_not_pending; nada gravado", async () => {
@@ -804,7 +814,7 @@ if (!connectionString) {
     });
     const seq = (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1;
     const result = await outcome(() => auctionRepo.relotAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", roundNumber: 3, expectedCustodySeq: seq, actorId: ctx.userId, occurredAt: new Date() }));
-    assert.deepEqual({ result, editais: await edicts(ctx), eventos: await eventsAfter(ctx, seq) }, { result: "409 resale_not_pending", editais: { 1: "LOTTED", 3: "DESIGNATED" }, eventos: [] });
+    check({ result, editais: await edicts(ctx), eventos: await eventsAfter(ctx, seq) }, { result: "409 resale_not_pending", editais: { 1: "LOTTED", 3: "DESIGNATED" }, eventos: [] });
   });
 
   test("RV12b · INTERNO (#631): relotAtomic direto com tudo quitado semeado: 409 auction_debts_settled; nada gravado", async () => {
@@ -813,7 +823,7 @@ if (!connectionString) {
     await withTenantRls(client, ctx.tenantId, (tx) => tx.$executeRaw`UPDATE process_charges SET settled_at = now() WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid`);
     const seq = (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1;
     const result = await outcome(() => auctionRepo.relotAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", roundNumber: 3, expectedCustodySeq: seq, actorId: ctx.userId, occurredAt: new Date() }));
-    assert.deepEqual({ result, edital3: (await edicts(ctx))[3], eventos: await eventsAfter(ctx, seq) }, { result: "409 auction_debts_settled", edital3: "DESIGNATED", eventos: [] });
+    check({ result, edital3: (await edicts(ctx))[3], eventos: await eventsAfter(ctx, seq) }, { result: "409 auction_debts_settled", edital3: "DESIGNATED", eventos: [] });
   });
 
   test("RV14 · leitura pela rota em quatro momentos: resalePending falso, verdadeiro, falso, falso; custodySeq inteiro em todos; nenhum campo além dos seis da leitura", async () => {
@@ -834,10 +844,10 @@ if (!connectionString) {
     await newRound(ctx, 3);
     await relot(ctx, 3, await readSeq(ctx));
     await snap();
-    await auction.recordSale(actor(ctx), ctx.processId, saleBody("7000.00", 3));
+    const venda3 = await outcome(() => auction.recordSale(actor(ctx), ctx.processId, saleBody("7000.00", 3)));
     await snap();
     const campos = ["custodySeq", "maxAttempts", "resalePending", "status", "strikeCount", "strikesRemaining"];
-    assert.deepEqual(moments, [false, true, false, false].map((pendente) => ({ pendente, seqInteiro: true, campos })));
+    check({ venda3, moments }, { venda3: "aceito", moments: [false, true, false, false].map((pendente) => ({ pendente, seqInteiro: true, campos })) });
   });
 
   test("RV15 · relote da rodada 3 com s0 e depois resgate com a mesma leitura s0: relote 200; resgate 409 auction_reading_stale; segue LOTTED com o edital 3 em lote; nenhum STATUS_CHANGE de resgate", async () => {
@@ -847,7 +857,7 @@ if (!connectionString) {
     const relote = res(await relot(ctx, 3, s0));
     const resgate = res(await reclaim(ctx, s0));
     const chain = await events(ctx);
-    assert.deepEqual(
+    check(
       { relote, resgate, estado: (await row(ctx)).status, edital3: (await edicts(ctx))[3], resgatesNaCadeia: chain.filter((event) => event.type === "STATUS_CHANGE" && event.payload?.reason === "reclaimed_before_sale").length },
       { relote: "200", resgate: "409 auction_reading_stale", estado: "LOTTED", edital3: "LOTTED", resgatesNaCadeia: 0 },
     );
@@ -867,7 +877,7 @@ if (!connectionString) {
     await newRound(twin, 3);
     await relot(twin, 3, await readSeq(twin));
     const administrador = res(await reclaim(twin, await readSeq(twin), "tenant_admin"));
-    assert.deepEqual(
+    check(
       { gestor, estado: (await row(ctx)).status, edital3: (await edicts(ctx))[3], periodos, lancadas: sweep.accrued, diarias: await dailyCount(ctx), administrador, estadoGemeo: (await row(twin)).status },
       { gestor: "200", estado: "ACTIVE_CUSTODY", edital3: "CLOSED", periodos: [{ from: prepAt, to: reclaimAt }], lancadas: 2, diarias: 92, administrador: "200", estadoGemeo: "ACTIVE_CUSTODY" },
     );
@@ -877,7 +887,7 @@ if (!connectionString) {
     const ctx = await resaleScenario("RV15c");
     const seq = (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1;
     const result = await outcome(() => auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", expectedCustodySeq: seq - 1, actorId: ctx.userId, occurredAt: new Date() }));
-    assert.deepEqual({ result, estado: (await row(ctx)).status, eventos: await eventsAfter(ctx, seq), periodosAbertos: (await suspensions(ctx)).filter((item) => item.to === undefined).length }, { result: "409 auction_reading_stale", estado: "LOTTED", eventos: [], periodosAbertos: 1 });
+    check({ result, estado: (await row(ctx)).status, eventos: await eventsAfter(ctx, seq), periodosAbertos: (await suspensions(ctx)).filter((item) => item.to === undefined).length }, { result: "409 auction_reading_stale", estado: "LOTTED", eventos: [], periodosAbertos: 1 });
   });
 
   test("RV16 · relote × resgate com a mesma leitura s0: pela rota em paralelo (6 rodadas) e nas duas ordens de trava (6 rodadas cada): em toda rodada exatamente um 2xx; fica o estado do vencedor; cadeia válida", async () => {
@@ -912,7 +922,7 @@ if (!connectionString) {
         await judge(ctx, `${order} ${round}`, relotResult === "aceito", reclaimResult === "aceito", relotResult === "aceito" ? reclaimResult : relotResult);
       }
     }
-    assert.deepEqual({ bad, ordemRelote: observed.slice(6, 12), ordemResgate: observed.slice(12, 18) }, { bad: [], ordemRelote: Array(6).fill("relote"), ordemResgate: Array(6).fill("resgate") });
+    check({ bad, ordemRelote: observed.slice(6, 12), ordemResgate: observed.slice(12, 18) }, { bad: [], ordemRelote: Array(6).fill("relote"), ordemResgate: Array(6).fill("resgate") });
   });
 
   test("RV17 · relote × avaliação da rodada 3 com outro lance mínimo, em paralelo, 6 rodadas: o mínimo do edital em lote é o da avaliação se ela foi aceita, ou o anterior; depois do lote, nova avaliação recusa 409 appraisal_locked_after_lot", async () => {
@@ -932,7 +942,7 @@ if (!connectionString) {
         minimoFinalIgual: (await minBidOf(ctx, 3)) === minimo,
       });
     }
-    assert.deepEqual(observed, Array.from({ length: 6 }, () => ({ relote: "200", minimoCoerente: true, avaliacaoAceitaOuTravada: true, depois: "409 appraisal_locked_after_lot", minimoFinalIgual: true })));
+    check(observed, Array.from({ length: 6 }, () => ({ relote: "200", minimoCoerente: true, avaliacaoAceitaOuTravada: true, depois: "409 appraisal_locked_after_lot", minimoFinalIgual: true })));
   });
 
   test("RV18 · depois do relote da rodada 3, com a leitura nova: edital da rodada 4 → 409 auction_edict_wrong_state; relote da 4 → 409 resale_not_pending; a rodada 3 segue em lote", async () => {
@@ -941,7 +951,7 @@ if (!connectionString) {
     await relot(ctx, 3, await readSeq(ctx));
     const edital4 = res(await http(ctx, "POST", "/edicts", edictBody(4)));
     const relote4 = res(await relot(ctx, 4, await readSeq(ctx)));
-    assert.deepEqual({ edital4, relote4, editais: await edicts(ctx) }, { edital4: "409 auction_edict_wrong_state", relote4: "409 resale_not_pending", editais: { 1: "CLOSED", 3: "LOTTED" } });
+    check({ edital4, relote4, editais: await edicts(ctx) }, { edital4: "409 auction_edict_wrong_state", relote4: "409 resale_not_pending", editais: { 1: "CLOSED", 3: "LOTTED" } });
   });
 
   test("RV20 · o ABA: leitura s0 na revenda pendente; resgate com s0 (200); volta pelo caminho normal (elegível, preparação e lote da rodada 1); relote da rodada 3 com o s0 antigo → 409 auction_reading_stale; a rodada 1 segue em lote", async () => {
@@ -955,7 +965,7 @@ if (!connectionString) {
     const lote = await outcome(() => auction.lotForAuction(actor(ctx), ctx.processId, { round_number: 1 }));
     const caminho = { resgate, elegivel, preparacao, lote, pendenteDeNovo: (await http(ctx, "GET", "")).data.resalePending };
     const relote = res(await relot(ctx, 3, s0));
-    assert.deepEqual(
+    check(
       { caminho, relote, editais: await edicts(ctx), estado: (await row(ctx)).status },
       { caminho: { resgate: "200", elegivel: "aceito", preparacao: "aceito", lote: "aceito", pendenteDeNovo: true }, relote: "409 auction_reading_stale", editais: { 1: "LOTTED", 3: "DESIGNATED" }, estado: "LOTTED" },
     );
@@ -965,7 +975,7 @@ if (!connectionString) {
     const ctx = await resaleScenario("RV21");
     await newRound(ctx, 3);
     const seq = await readSeq(ctx);
-    assert.deepEqual(
+    check(
       { semMarcador: res(await reclaim(ctx, undefined)), texto: res(await reclaim(ctx, "abc")), relote: res(await relot(ctx, 3, undefined)), eventos: await eventsAfter(ctx, seq), estado: (await row(ctx)).status },
       { semMarcador: "422 custody_seq_required", texto: "422 custody_seq_invalid", relote: "422 custody_seq_required", eventos: [], estado: "LOTTED" },
     );
@@ -985,7 +995,7 @@ if (!connectionString) {
       );
     });
     const seq = await readSeq(ctx);
-    assert.deepEqual(
+    check(
       { relote: res(await relot(ctx, 3, seq)), edital3: (await edicts(ctx))[3], eventos: await eventsAfter(ctx, seq) },
       { relote: "409 lot_payment_pending", edital3: "DESIGNATED", eventos: [] },
     );
