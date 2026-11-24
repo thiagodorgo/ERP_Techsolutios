@@ -85,7 +85,7 @@ export async function sweepTenant(
   const tables = await client.$queryRawUnsafe<Array<{ table_name: string }>>(
     `SELECT c.table_name FROM information_schema.columns c
        JOIN information_schema.tables t ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-      WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND t.table_type = 'BASE TABLE' AND c.table_name <> 'tenants'`,
+      WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND c.data_type = 'uuid' AND t.table_type = 'BASE TABLE' AND c.table_name <> 'tenants'`,
   );
   let pending = tables.map((row) => row.table_name);
   let lastErrors: string[] = [];

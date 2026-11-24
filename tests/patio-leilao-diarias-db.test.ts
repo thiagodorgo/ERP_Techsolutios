@@ -273,7 +273,7 @@ if (!connectionString) {
     const tables = await client.$queryRaw<Array<{ table_name: string }>>`
       SELECT DISTINCT c.table_name FROM information_schema.columns c
       JOIN information_schema.tables t ON t.table_schema = c.table_schema AND t.table_name = c.table_name AND t.table_type = 'BASE TABLE'
-      WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND c.table_name <> 'tenants'`;
+      WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND c.data_type = 'uuid' AND c.table_name <> 'tenants'`;
     await client.$transaction(async (tx) => {
       await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
       for (const { table_name: table } of tables) {
@@ -1792,5 +1792,16 @@ ${thaw.out}`;
       { aAberto: aPeriodos[0]?.from === prepA.getTime(), aMotor: aState?.nAccrueAtFreeze, aSobre: (await count(a, "DAILY")) - (aState?.nAccrueAtFreeze ?? 0), aIdempotente: aPeriodosDepois.length === 1, bIntocado: (await suspensionsOfDb(b)).length === 0, cIntocado: (await suspensionsOfDb(c)).length === 0 },
       { aAberto: true, aMotor: 80, aSobre: 20, aIdempotente: true, bIntocado: true, cIntocado: true },
     );
+  });
+  test("teardown ignora tabela de teste irmã com tenant_id text (não uuid)", async () => {
+    const suffix = `txt-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`.toLowerCase();
+    const guardTable = `teardown_guard_text_${suffix}`;
+    await client.$executeRawUnsafe(`CREATE TABLE "${guardTable}" (tenant_id text NOT NULL)`);
+    try {
+      const ctx = await seed("teardown-text", { tariff: false, yard: false, inspection: false, removal: false, trail: false });
+      await teardown(ctx.tenantId);
+    } finally {
+      await client.$executeRawUnsafe(`DROP TABLE IF EXISTS "${guardTable}"`);
+    }
   });
 }
