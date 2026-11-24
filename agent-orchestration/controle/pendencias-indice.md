@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1422** |
-| IDs distintos | 1407 |
-| **ABERTAS** | **1090** |
+| Cabecalhos `## P-` | **1431** |
+| IDs distintos | 1416 |
+| **ABERTAS** | **1097** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **1029** |
+| — das quais **ativas nesta rodada** | **1036** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 328 |
+| FECHADAS | 330 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1422 cabecalhos para 1407 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1431 cabecalhos para 1416 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 417
+## ABERTAS · balde A — material — 421
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -489,10 +489,14 @@
 | `P-PATIO-ISENCAO-REGISTRADA` | 18012 | ALTA | sim | P-PATIO-ISENCAO-REGISTRADA (2026-11-22) — isenção precisa ficar registrada no livro — AL |
 | `P-LIBERACAO-CUSTODIA-JA-CONGELADA` | 18032 | ALTA | sim | P-LIBERACAO-CUSTODIA-JA-CONGELADA (2026-11-23) — liberação preserva congelamento legado  |
 | `P-LEILAO-REVENDA-SEM-CAMINHO` | 18038 | ALTA | sim | P-LEILAO-REVENDA-SEM-CAMINHO (2026-11-23) — inadimplência sem caminho de revenda — ALTA |
-| `P-LEILAO-DESERTO-DEPOIS-DO-LOTE` | 18044 | MÉDIA | sim | P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão desert |
-| `P-LEILAO-VALORES-DO-INADIMPLENTE` | 18050 | ALTA | sim | P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem  |
+| `P-LEILAO-DESERTO-DEPOIS-DO-LOTE` | 18045 | MÉDIA | sim | P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão desert |
+| `P-LEILAO-VALORES-DO-INADIMPLENTE` | 18051 | ALTA | sim | P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem  |
+| `P-AWS-TOKEN-GHCR-TROCAR` | 18069 | MÉDIA | sim | P-AWS-TOKEN-GHCR-TROCAR (2026-11-23) — trocar o token do GitHub do cofre — MÉDIA |
+| `P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO` | 18081 | ALTA | sim | P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO (2026-11-23) — legado em lote/arrematado sem período |
+| `P-TETO-180-PAGAS-ACIMA` | 18087 | ALTA | sim | P-TETO-180-PAGAS-ACIMA (2026-11-23) — diárias acima de 180 já pagas — ALTA |
+| `P-EXTRATO-MOSTRAR-PERIODO-LEILAO` | 18099 | MÉDIA | sim | P-EXTRATO-MOSTRAR-PERIODO-LEILAO (2026-11-23) — extrato e guia dizerem "em leilão, sem d |
 
-## ABERTAS · balde B — processo/registro — 612
+## ABERTAS · balde B — processo/registro — 615
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1107,7 +1111,10 @@
 | `P-6970-INICIO-SO-PATIO-ATIVO` | 17949 | BAIXA | sim | P-6970-INICIO-SO-PATIO-ATIVO (2026-11-22) — Início não mostra outros pátios — BAIXA |
 | `P-RELEASE-GATE-CONC-FORA-DO-GUARD` | 18000 | BAIXA | sim | P-RELEASE-GATE-CONC-FORA-DO-GUARD (2026-11-22) — teste concorrente fora da lista com gua |
 | `P-S2P-REDEFINICAO-TRES-VIAS` | 18023 | BAIXA | sim | P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e  |
-| `P-KPI-EXTRATOR-ID-COM-TEXTO` | 18056 | BAIXA | sim | P-KPI-EXTRATOR-ID-COM-TEXTO (2026-11-23) — extrator perde ID acompanhado de texto — BAIX |
+| `P-KPI-EXTRATOR-ID-COM-TEXTO` | 18057 | BAIXA | sim | P-KPI-EXTRATOR-ID-COM-TEXTO (2026-11-23) — extrator perde ID acompanhado de texto — BAIX |
+| `P-AWS-ROTEIRO-NAT-SWAP` | 18063 | BAIXA | sim | P-AWS-ROTEIRO-NAT-SWAP (2026-11-23) — user-data da NAT instala antes da swap — BAIXA |
+| `P-PATIO-ROTULO-FALLBACK-TETO` | 18075 | BAIXA | sim | P-PATIO-ROTULO-FALLBACK-TETO (2026-11-23) — fallback local ainda diz "6 meses" e "Ilimit |
+| `P-TETO-RENOMEAR-IDENTIFICADOR` | 18093 | BAIXA | sim | P-TETO-RENOMEAR-IDENTIFICADOR (2026-11-23) — renomear o identificador técnico do teto —  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -1175,7 +1182,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3754 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3798 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 328
+## FECHADAS — 330
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1507,3 +1514,5 @@
 | `P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES` | 17935 | ALTA | **a atribuir** | P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES (2026-11-22) — acessos concedidos caem na saída — FE |
 | `P-6970-PORTAO-CRITERIO-NOVO` | 17964 | ALTA | sim | P-6970-PORTAO-CRITERIO-NOVO (2026-11-22) — portão ainda trazia o critério antigo — FECHA |
 | `P-PATIO-LIVRO-VAZIO-LIBERA` | 18018 | ALTA | sim | P-PATIO-LIVRO-VAZIO-LIBERA (2026-11-22) — livro vazio liberava sem pagamento — ALTA/GRAV |
+| `P-CLAMAV-BASE-VELHA-NA-SUBIDA` | 18105 | ALTA | sim | P-CLAMAV-BASE-VELHA-NA-SUBIDA (2026-11-23) — antivírus subia com a base velha — FECHADA |
+| `P-CLAMAV-IMAGEM-1-4-7` | 18111 | MÉDIA | sim | P-CLAMAV-IMAGEM-1-4-7 (2026-11-23) — subir a imagem 1.4.7 do antivírus — FECHADA |
