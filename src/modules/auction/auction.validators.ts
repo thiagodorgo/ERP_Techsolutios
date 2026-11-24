@@ -30,6 +30,17 @@ export function parseRoundNumber(value: unknown): number {
   return numeric;
 }
 
+export function parseCustodySeq(value: unknown): number {
+  if (value === undefined || value === null || value === "") {
+    throw new AuctionError(422, "AUCTION_INVALID", "custody_seq_required", "custody_seq is required.");
+  }
+  const numeric = typeof value === "number" ? value : Number(String(value).trim());
+  if (!Number.isInteger(numeric) || numeric < 0) {
+    throw new AuctionError(422, "AUCTION_INVALID", "custody_seq_invalid", "custody_seq must be a non-negative integer.");
+  }
+  return numeric;
+}
+
 // notes = texto de domínio OPCIONAL (§2.8: sem PII; NUNCA entra no payload da cadeia — só na tabela de domínio RLS'd).
 export function parseNotes(value: unknown): string | undefined {
   const normalized = typeof value === "string" ? value.trim() : "";

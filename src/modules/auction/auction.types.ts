@@ -88,6 +88,8 @@ export type AuctionView = {
   readonly strikeCount: number;
   readonly maxAttempts: number;
   readonly status: ImpoundStatus;
+  readonly resalePending: boolean;
+  readonly custodySeq?: number;
 };
 
 // Estado bruto lido/aplicado pelo repositório (status do processo + tentativas + editais). O serviço deriva o
@@ -96,6 +98,7 @@ export type AuctionStateSnapshot = {
   readonly status: ImpoundStatus;
   readonly attempts: readonly AuctionAttempt[];
   readonly edicts: readonly AuctionEdict[];
+  readonly custodySeqHead?: number;
 };
 
 // Subconjunto do JurisdictionProfile que o gate de elegibilidade lê (scope + os prazos t0-relativos). Injetado por DI
@@ -287,6 +290,19 @@ export type ReclaimAuctionInput = {
   readonly tenantId: string;
   readonly processId: string;
   readonly expectedFrom: ImpoundStatus; // LOTTED
+  readonly expectedCustodySeq: number;
+  readonly actorId?: string;
+  readonly occurredAt: Date;
+};
+
+export type WithdrawSettledInput = Omit<ReclaimAuctionInput, "expectedCustodySeq">;
+
+export type RelotForResaleInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly expectedFrom: "LOTTED";
+  readonly roundNumber: number;
+  readonly expectedCustodySeq: number;
   readonly actorId?: string;
   readonly occurredAt: Date;
 };
