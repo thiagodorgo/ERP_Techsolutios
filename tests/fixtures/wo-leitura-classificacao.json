@@ -51,6 +51,15 @@
   "GET /api/v1/commissions/policies": {
     "classe": "NAO-ALCANCADA"
   },
+  "GET /api/v1/commissions/rates": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/commissions/rates/mine": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/commissions/rates/payees/:userId/history": {
+    "classe": "NAO-ALCANCADA"
+  },
   "GET /api/v1/commissions/statements": {
     "classe": "NAO-ALCANCADA"
   },

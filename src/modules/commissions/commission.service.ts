@@ -258,7 +258,7 @@ export class CommissionService {
 
     const lines: SettlementLineResult[] = [];
     let settledCount = 0;
-    let settledTotal = 0;
+    let settledTotalCents = 0n;
 
     for (const calculationId of calculationIds) {
       const calculation = byId.get(calculationId);
@@ -275,12 +275,13 @@ export class CommissionService {
         });
         continue;
       }
-      // Valor honesto: amount = calc.amount (20,6 → 12,2 no seam). ≤ 0 → não cria crédito vazio.
-      const creditAmount = roundToCents(calculation.amount);
-      if (creditAmount <= 0) {
+      // Valor honesto: amountCents (centavos exatos do Decimal(20,6), P-COMISSAO-LIQUIDACAO-CENTAVO / CS3). ≤ 0 → não cria crédito vazio.
+      const creditCents = BigInt(calculation.amountCents || "0");
+      if (creditCents <= 0n) {
         lines.push({ calculationId, outcome: "skipped_zero" });
         continue;
       }
+      const creditAmount = Number(creditCents) / 100;
       // (2) payee(User) → operator_profile (a folha). Sem perfil → 422 (não credita folha inexistente).
       if (!calculation.payeeId) {
         throw payeeNotAProfessionalError();
@@ -308,15 +309,12 @@ export class CommissionService {
         operatorProfileId: professional.operatorProfileId,
       });
       settledCount += 1;
-      settledTotal = roundToCents(settledTotal + creditAmount);
+      settledTotalCents += creditCents;
     }
 
+    const settledTotal = Number(settledTotalCents) / 100;
     return { lines, settledCount, settledTotal, settlementDate };
   }
-}
-
-function roundToCents(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 // 404 — calculation não encontrada no tenant (isolamento cross-tenant).
