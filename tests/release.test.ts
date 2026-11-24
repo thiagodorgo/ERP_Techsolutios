@@ -128,18 +128,50 @@ async function addRemoval(tenantId: string, processId: string, amount = "150.00"
   });
 }
 
+function memoryChargeLists(): { charges: Array<Record<string, unknown>> } {
+  return getMemoryChargeRepositoryForTests() as unknown as { charges: Array<Record<string, unknown>> };
+}
+
 async function accrueDailies(tenantId: string, processId: string, count: number, unit = "10.00"): Promise<void> {
   const repo = getMemoryChargeRepositoryForTests();
+  const context = await repo.loadAccrualContext(tenantId, processId);
+  const capCount = context?.cap === "THIRTY_DAYS_LEGACY" ? 30 : 180;
+  const now = new Date();
   for (let seq = 1; seq <= count; seq += 1) {
-    await repo.accrueDailyCharge({
-      tenantId,
-      processId,
-      periodSeq: seq,
-      refDate: `2024-01-${String((seq % 28) + 1).padStart(2, "0")}`,
-      unitAmount: unit,
-      currency: "BRL",
-      occurredAt: new Date(),
-    });
+    const refDate = `2024-01-${String((seq % 28) + 1).padStart(2, "0")}`;
+    let posted = false;
+    if (seq <= capCount) {
+      try {
+        await repo.accrueDailyCharge({
+          tenantId,
+          processId,
+          periodSeq: seq,
+          refDate,
+          unitAmount: unit,
+          currency: "BRL",
+          occurredAt: now,
+        });
+        posted = true;
+      } catch (error) {
+        if ((error as { reason?: string }).reason !== "daily_not_due_under_lock") throw error;
+      }
+    }
+    if (!posted) {
+      memoryChargeLists().charges.push({
+        id: randomUUID(),
+        tenantId,
+        processId,
+        kind: "DAILY",
+        periodSeq: seq,
+        refDate,
+        quantity: "1.00",
+        unitAmount: unit,
+        totalAmount: unit,
+        currency: "BRL",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
   }
 }
 

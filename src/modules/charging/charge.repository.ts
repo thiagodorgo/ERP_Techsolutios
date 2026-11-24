@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { CanonicalValue, CustodyEventType } from "../impound/impound.types.js";
-import type { ImpoundRepository } from "../impound/impound.repository.js";
+import type { ImpoundRepository, MemoryImpoundAuctionDep } from "../impound/impound.repository.js";
 import type { DailyCap, DailyModel, ProfileScope } from "../jurisdiction/jurisdiction.types.js";
 import {
   ChargeError,
@@ -16,6 +16,8 @@ import {
   type SettleProcessInput,
   type SettleResult,
 } from "./charge.types.js";
+import { assertSettlementBeforeAuctionList } from "./charge.settlement-cutoff.js";
+import { summarizeAccrual } from "./charge.accrual.js";
 import { centsToMoney, moneyToCents, toMoneyString } from "./charge.validators.js";
 
 export type StartRunInput = {
@@ -123,7 +125,9 @@ export class InMemoryChargeRepository implements ChargeRepository {
   private readonly regimeByProcess = new Map<string, StoredProfile>();
   private readonly timezones = new Map<string, string>();
 
-  constructor(private readonly impound: Pick<ImpoundRepository, "appendEvent" | "findProcessById">) {}
+  constructor(
+    private readonly impound: Pick<ImpoundRepository, "appendEvent" | "findProcessById"> & Pick<MemoryImpoundAuctionDep, "listDailySuspensions">,
+  ) {}
 
   async listCharges(input: ListChargesInput): Promise<readonly ProcessCharge[]> {
     return this.charges
@@ -181,6 +185,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
     if (!process) {
       throw new ChargeError(404, "CHARGE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
+    assertSettlementBeforeAuctionList(process.status);
     // (1) RECONCILIAÇÃO POR VALOR (M1): p/ cada DAILY sobre-acumulada posta o RESÍDUO que zera o LÍQUIDO
     // (=−líquido, computado do ledger ATUAL). Idempotente POR VALOR: líquido já 0 ⇒ nada a postar (nunca estorna
     // 2×); um −0,01 pré-existente ⇒ posta só o que falta; nunca sobre/sub-estorna. Estorna só as sobre-acumuladas.
@@ -249,6 +254,21 @@ export class InMemoryChargeRepository implements ChargeRepository {
       (c) => c.tenantId === input.tenantId && c.processId === input.processId && c.kind === "DAILY" && c.periodSeq === input.periodSeq,
     );
     if (exists) return { created: false };
+    const memoryCtx = await this.loadAccrualContext(input.tenantId, input.processId);
+    if (memoryCtx?.enteredAt) {
+      const memoryAsOf = memoryCtx.frozenAt ? new Date(Math.min(input.occurredAt.getTime(), memoryCtx.frozenAt.getTime())) : input.occurredAt;
+      const memoryDueCount = summarizeAccrual({
+        t0: memoryCtx.enteredAt,
+        asOf: memoryAsOf,
+        timezone: memoryCtx.timezone,
+        model: memoryCtx.model,
+        cap: memoryCtx.cap,
+        suspensions: memoryCtx.suspensions,
+      }).nAccrue;
+      if (input.periodSeq > memoryDueCount) {
+        throw new ChargeError(409, "CHARGE_CONFLICT", "daily_not_due_under_lock", "The daily charge is not due under the process lock (auction period open).");
+      }
+    }
     const now = new Date();
     const charge: ProcessCharge = {
       id: randomUUID(),
@@ -294,8 +314,8 @@ export class InMemoryChargeRepository implements ChargeRepository {
       scope: regime.scope,
       model: regime.model,
       cap: regime.cap,
-      // B-O6R-12 (A1): ponteiro ausente no retrato cai no ponteiro atual do perfil (catch-up); cópia não nula vence.
-      dailyServiceCatalogId: regime.dailyServiceCatalogId ?? profile.dailyServiceCatalogId,
+      dailyServiceCatalogId: regime.dailyServiceCatalogId,
+      suspensions: await this.impound.listDailySuspensions(tenantId, processId),
     };
   }
 

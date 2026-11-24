@@ -1012,7 +1012,7 @@ test(
         // B-APP-ORG-2S (S1) 143 → 144 — exatamente a tabela nova do bloco (user_creation_log).
         // B-GRUPO-GESTOR-1a (FM) 144 → 146 — exatamente as 2 tabelas da migração 20260906000000_group_managers
         // (economic_group_managers, user_deactivation_requests).
-        assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|146$`, "m"));
+        assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|147$`, "m"));
         const firstPassword = await admin.$queryRawUnsafe<Array<{ rolpassword: string | null }>>(
           `SELECT rolpassword FROM pg_authid WHERE rolname = ${literal(runtime)}`,
         );

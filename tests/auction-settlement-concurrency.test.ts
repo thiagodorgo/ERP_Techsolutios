@@ -25,7 +25,7 @@ if (!connectionString) {
     const { client, settlement } = await bootstrap(connectionString);
     const ctx = await seedClosedWithSale(client, `settle-${stamp()}`, "9500.00");
     try {
-      const input = buildInput(ctx.tenantId, ctx.processId, 950000, { auctionCostCents: 50000, removalStorageCents: 120000 });
+      const input = buildInput(ctx.tenantId, ctx.processId, 950000, { auctionCostCents: 50000, removalStorageCents: 0 }, ctx.chargeBasis);
       const results = await Promise.allSettled(
         Array.from({ length: CONCURRENCY }, () => settlement.distributeSettlementAtomic({ ...input, occurredAt: new Date() })),
       );
@@ -50,7 +50,7 @@ if (!connectionString) {
     const { client, settlement } = await bootstrap(connectionString);
     const ctx = await seedClosedWithSale(client, `atom-${stamp()}`, "9500.00");
     try {
-      const good = buildInput(ctx.tenantId, ctx.processId, 950000, { auctionCostCents: 0, removalStorageCents: 0 });
+      const good = buildInput(ctx.tenantId, ctx.processId, 950000, { auctionCostCents: 0, removalStorageCents: 0 }, ctx.chargeBasis);
       // Forja: infla a 1ª allocation em 1 centavo → Σ passa a 950001 ≠ hammer 950000.
       const forged = {
         ...good,
@@ -76,7 +76,7 @@ if (!connectionString) {
     const ctx = await seedClosedWithSale(client, `xt-settle-${stamp()}`, "9500.00");
     const other = await client.tenant.create({ data: { name: `Settle XT ${stamp()}`, slug: `settle-xt-${stamp()}` } });
     try {
-      const input = buildInput(other.id, ctx.processId, 950000, { auctionCostCents: 0, removalStorageCents: 0 });
+      const input = buildInput(other.id, ctx.processId, 950000, { auctionCostCents: 0, removalStorageCents: 0 }, ctx.chargeBasis);
       await assert.rejects(
         () => settlement.distributeSettlementAtomic(input),
         (error: unknown) => (error as { statusCode?: number }).statusCode === 404 && (error as { reason?: string }).reason === "process_not_found",
@@ -106,7 +106,13 @@ async function bootstrap(connection: string) {
 }
 
 // Constrói o input de distribuição via distributeCascade PURO (mesma aritmética de centavos do serviço). soldRound=1.
-function buildInput(tenantId: string, processId: string, hammerCents: number, tiers: { auctionCostCents: number; removalStorageCents: number }) {
+function buildInput(
+  tenantId: string,
+  processId: string,
+  hammerCents: number,
+  tiers: { auctionCostCents: number; removalStorageCents: number },
+  chargeBasis: { expectedDailyCount: number; enteredAt: Date | null; frozenAt: Date | null },
+) {
   const { allocations, ownerBalanceCents, shortfallCents } = distributeCascade(hammerCents, [
     { kind: "AUCTION_COST", claimCents: tiers.auctionCostCents },
     { kind: "REMOVAL_STORAGE", claimCents: tiers.removalStorageCents },
@@ -125,6 +131,7 @@ function buildInput(tenantId: string, processId: string, hammerCents: number, ti
     allocations,
     ownerBalanceCents,
     shortfallCents,
+    chargeBasis,
     auctionCostCents: tiers.auctionCostCents,
     removalStorageCents: tiers.removalStorageCents,
     currency: "BRL",
@@ -145,10 +152,10 @@ async function seedClosedWithSale(client: BootstrapClient, suffix: string, soldA
     const [profile] = await tx.$queryRaw<Array<{ id: string }>>`
       INSERT INTO jurisdiction_profiles (tenant_id, name, scope) VALUES (${tenant.id}::uuid, 'Perfil', 'PUBLIC_AGREEMENT') RETURNING id
     `;
-    const [proc] = await tx.$queryRaw<Array<{ id: string }>>`
+    const [proc] = await tx.$queryRaw<Array<{ id: string; entered_at: Date | null; frozen_at: Date | null }>>`
       INSERT INTO impound_processes (tenant_id, profile_id, origin_authority, vehicle_unidentified, unidentified_reason, status, entered_at, frozen_at, custody_seq_head, custody_hash_head)
-      VALUES (${tenant.id}::uuid, ${profile.id}::uuid, 'Autoridade', true, 'Placa adulterada', 'AUCTION_CLOSED', now() - interval '120 days', now(), 1, ${custodyHash})
-      RETURNING id
+      VALUES (${tenant.id}::uuid, ${profile.id}::uuid, 'Autoridade', true, 'Placa adulterada', 'AUCTION_CLOSED', now() - interval '2 hours', now(), 1, ${custodyHash})
+      RETURNING id, entered_at, frozen_at
     `;
     await tx.$queryRaw`
       INSERT INTO custody_events (tenant_id, process_id, seq, type, payload, occurred_at, prev_hash, hash)
@@ -158,9 +165,22 @@ async function seedClosedWithSale(client: BootstrapClient, suffix: string, soldA
       INSERT INTO auction_attempts (tenant_id, process_id, round_number, outcome, sold_amount, sale_note_reference)
       VALUES (${tenant.id}::uuid, ${proc.id}::uuid, 1, 'SOLD', ${soldAmount}::numeric, 'NOTA-1')
     `;
-    return { processId: proc.id };
+    return { processId: proc.id, enteredAt: proc.entered_at, frozenAt: proc.frozen_at };
   });
-  return { tenantId: tenant.id, ...seeded };
+  const occurredAt = new Date();
+  const { createLockedChargeReader } = await import("../src/modules/charging/charge-locked-reader.js");
+  const lockedChargeReader = createLockedChargeReader(client);
+  const state = await lockedChargeReader.getReleaseChargeState(tenant.id, seeded.processId, occurredAt);
+  assert.ok(state, "seed precisa de charge state resolvido para base atômica");
+  return {
+    tenantId: tenant.id,
+    ...seeded,
+    chargeBasis: {
+      expectedDailyCount: state.nAccrueAtFreeze,
+      enteredAt: state.enteredAt ?? null,
+      frozenAt: state.frozenAt ?? seeded.frozenAt,
+    },
+  };
 }
 
 async function countSettlements(client: BootstrapClient, tenantId: string, processId: string): Promise<number> {

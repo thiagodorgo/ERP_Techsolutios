@@ -120,8 +120,9 @@ test("modal de novo perfil: labels PT-BR de escopo/diária/teto + pré-preenchim
   assert.match(html, /24 horas corridas/);
   assert.match(html, /Dia-calendário/);
   assert.match(html, /Teto de estada/);
-  assert.match(html, /6 meses/);
-  assert.match(html, /Ilimitado/);
+  assert.match(html, /180 diárias \(art\. 271 §10\)/);
+  assert.match(html, /180 diárias \(contrato particular\)/);
+  assert.match(html, /30 diárias \(Tema 124\)/);
   // Prazos legais federais pré-preenchidos (GET /jurisdiction-defaults; mock → baseline federal local).
   assert.match(html, /Notificação ao proprietário/);
   assert.match(html, /Elegível a leilão/);
@@ -153,7 +154,7 @@ test("modal de edição desabilita o nome (chave natural imutável — lição v
     scopeLabel: "Convênio público",
     dailyModel: "ROLLING_24H" as const,
     dailyCap: "SIX_MONTHS" as const,
-    dailyCapLabel: "6 meses (art. 271 §10)",
+    dailyCapLabel: "180 diárias (art. 271 §10)",
     dailyModelLabel: "24 horas corridas",
     active: true,
     createdAt: "2026-06-01T00:00:00.000Z",

@@ -789,6 +789,10 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/core-saas/services/grant-group-guard.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
     "B-APP-ORG-2S-c (SC, D3-2): a auditoria `user.access_ended_group_exit` gravada em Y, na mesma transação da queda e sob o GUC de Y, sem dado de outro pátio; o `tx` é sempre o de uma transação que já pôs o GUC do pátio Y do par na 1ª instrução: `withTenantRlsBudget` da sessão viva, `runWithTenantContext` da renovação, `setTenantRlsContext(tx, requestedTenantId)` da troca de organização, `withTenantRls` do candidato do Entrar e do `isGrantOutsideGroup` do store. Provado em tests/bapporg2sc_grant-guard-db.test.ts (X1).",
   ],
+  [
+    k("L2", "src/modules/charging/charge-locked-reader.ts", "new PrismaChargeRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-PATIO-LEILAO-DIARIAS (F5): o reader travado de cobrança (`createLockedChargeReader`) nasce com o `tx` já aberto no chamador (callbacks `withTenantRls`/`withTenantRlsBudget`, com GUC na 1ª instrução) para calcular gates de leilão/liquidação sob o mesmo contexto tenant; o arquivo só encapsula o repositório e não abre transação própria.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
@@ -877,7 +881,7 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     // B-APP-ORG-2S (S1) 125 → 126 — exatamente a tabela FORCE nova user_creation_log.
     // B-GRUPO-GESTOR (1a, migração autorizada pelo dono, Emenda 2 §2.3): 126 → 128 — exatamente as 2 tabelas FORCE novas
     // (economic_group_managers e user_deactivation_requests) e os 2 models delas.
-    assert.match(f2.stdout, /tabelas ENABLE=128 FORCE=128 · acessores Prisma em FORCE=128/);
+    assert.match(f2.stdout, /tabelas ENABLE=129 FORCE=129 · acessores Prisma em FORCE=129/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);

@@ -189,3 +189,13 @@ export async function reclaimBeforeSale(context: AuctionApiContext, processId: s
     rethrow(error);
   }
 }
+
+// POST .../auction/withdraw-settled (impound:transition) — retira do rito quando o processo foi quitado antes do lote.
+export async function withdrawSettled(context: AuctionApiContext, processId: string): Promise<AuctionView | null> {
+  try {
+    const response = await apiRequest<unknown>(auctionPath(processId, "/withdraw-settled"), { ...context, method: "POST", body: {} });
+    return adaptAuctionView(response);
+  } catch (error) {
+    rethrow(error);
+  }
+}

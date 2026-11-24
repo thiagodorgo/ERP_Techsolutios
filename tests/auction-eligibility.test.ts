@@ -26,12 +26,30 @@ import {
   getMemoryAuctionRepositoryForTests,
   resetAuctionRuntimeForTests,
 } from "../src/modules/auction/auction.service.js";
+import {
+  getMemoryChargeRepositoryForTests,
+  resetChargeRuntimeForTests,
+} from "../src/modules/charging/charge.service.js";
+import {
+  getMemoryPriceTableRepositoryForTests,
+  resetPriceTableRuntimeForTests,
+} from "../src/modules/price-tables/price-table.service.js";
+import {
+  getMemoryTariffRepositoryForTests,
+  resetTariffRuntimeForTests,
+} from "../src/modules/tariffs/tariff.service.js";
+import {
+  getMemoryYardRepositoryForTests,
+  resetYardRuntimeForTests,
+} from "../src/modules/yard/yard.service.js";
 import type { AuctionActorContext, AuctionProfile } from "../src/modules/auction/auction.types.js";
 import type { ProfileScope } from "../src/modules/jurisdiction/jurisdiction.types.js";
 
 const MS_PER_DAY = 86_400_000;
+const HOUR = 3_600_000;
+const TARIFF = 40;
 
-type Ctx = { tenantId: string; processId: string; profileId: string };
+type Ctx = { tenantId: string; processId: string; profileId: string; dailyServiceCatalogId: string; enteredAt: Date };
 
 function actor(tenantId: string): AuctionActorContext {
   return { tenantId, userId: randomUUID(), roles: ["manager"], permissions: ["impound:read", "impound:transition"] };
@@ -42,7 +60,76 @@ async function reset(): Promise<string> {
   resetNotificationRuntimeForTests();
   resetReleaseRuntimeForTests();
   resetAuctionRuntimeForTests();
+  resetChargeRuntimeForTests();
+  resetPriceTableRuntimeForTests();
+  resetTariffRuntimeForTests();
+  resetYardRuntimeForTests();
   return randomUUID();
+}
+
+async function seedTariff(tenantId: string, serviceCatalogId: string): Promise<void> {
+  const priceTable = await getMemoryPriceTableRepositoryForTests().create({
+    tenantId,
+    name: `Tabela ${randomUUID().slice(0, 6)}`,
+    currency: "BRL",
+    version: 1,
+    status: "published",
+  });
+  await getMemoryTariffRepositoryForTests().create({
+    tenantId,
+    priceTableId: priceTable.id,
+    serviceCatalogId,
+    name: "Diária",
+    unitPrice: TARIFF,
+    currency: "BRL",
+    origin: "test",
+    status: "active",
+  });
+}
+
+async function assignYard(tenantId: string, processId: string): Promise<void> {
+  const yard = getMemoryYardRepositoryForTests();
+  const created = await yard.createYard({ tenantId, name: "Pátio Central", address: "Rua X, 1", timezone: "America/Sao_Paulo" });
+  const area = await yard.createArea({ tenantId, yardId: created.id, kind: "BLOCK", name: "Q1" });
+  const spot = await yard.createSpot({ tenantId, areaId: area.id, code: `S-${randomUUID().slice(0, 4)}` });
+  await getMemoryImpoundRepositoryForTests().assignSpotAtomic({ tenantId, processId, spotId: spot.id, occurredAt: new Date() });
+}
+
+async function completeInspection(tenantId: string, processId: string, inspectedAt: Date): Promise<void> {
+  const impound = getMemoryImpoundRepositoryForTests();
+  const inspection = await impound.upsertInspection({
+    tenantId,
+    processId,
+    inspectedAt,
+    bodyworkState: "Sem avarias",
+    paintState: "Original",
+    tiresState: "Bom",
+    internalObjects: "nenhum",
+    missingEquipment: "nenhum",
+    signatureStatus: "ABSENT",
+  } as never);
+  await impound.addInspectionPhoto({
+    tenantId,
+    processId,
+    inspectionId: inspection.id,
+    set: "FRONT",
+    fileUrl: "https://arquivos.invalid/frente.jpg",
+    occurredAt: new Date(),
+  });
+  await impound.completeInspection({ tenantId, processId, occurredAt: new Date() });
+}
+
+async function addRemoval(tenantId: string, processId: string): Promise<void> {
+  await getMemoryChargeRepositoryForTests().createManualCharge({
+    tenantId,
+    processId,
+    kind: "REMOVAL",
+    quantity: "1.00",
+    unitAmount: "150.00",
+    totalAmount: "150.00",
+    currency: "BRL",
+    occurredAt: new Date(),
+  });
 }
 
 // Cria um processo em ACTIVE_CUSTODY (openFromRemovalAtomic→RECEPTION [entered_at=t0] + transição direta) e injeta o
@@ -53,6 +140,7 @@ async function makeActiveProcess(
 ): Promise<Ctx> {
   const impound = getMemoryImpoundRepositoryForTests();
   const profileId = randomUUID();
+  const dailyServiceCatalogId = randomUUID();
   const process = await impound.openFromRemovalAtomic({
     tenantId,
     serviceOrderId: randomUUID(),
@@ -78,7 +166,18 @@ async function makeActiveProcess(
     auctionEligibleDay: options.auctionEligibleDay ?? 60,
   };
   getMemoryAuctionRepositoryForTests().setAuctionProfileForTests(tenantId, profileId, profile);
-  return { tenantId, processId: process.id, profileId };
+  getMemoryChargeRepositoryForTests().setProfileForTests(tenantId, profileId, {
+    scope: "PUBLIC_AGREEMENT",
+    model: "ROLLING_24H",
+    cap: "SIX_MONTHS",
+    dailyServiceCatalogId,
+  });
+  impound.setProfileRequiredSetsForTests(tenantId, profileId, ["FRONT"]);
+  await seedTariff(tenantId, dailyServiceCatalogId);
+  await assignYard(tenantId, process.id);
+  await completeInspection(tenantId, process.id, new Date(options.t0.getTime() + HOUR));
+  await addRemoval(tenantId, process.id);
+  return { tenantId, processId: process.id, profileId, dailyServiceCatalogId, enteredAt: options.t0 };
 }
 
 // Marca um marco DEVIDO (DUE) e, se issue=true, o carimba ISSUED — encadeando NOTIFICATION na cadeia (I2). Ambos os
@@ -182,6 +281,11 @@ test("(2f) cadeia quebrada ⇒ auction_chain_broken", async () => {
     (t, p) => getMemoryNotificationRepositoryForTests().listNotifications({ tenantId: t, processId: p }),
     async () => ({ processId: ctx.processId, valid: false, eventCount: 0, headHash: null, brokenAt: { seq: 1, reason: "hash_mismatch" }, checkedAt: new Date().toISOString() }),
     (t, p) => getMemoryReleaseRepositoryForTests().hasActiveRelease(t, p),
+    async () => ({ examined: true, accrued: 0, errors: 0 }),
+    async () => ({ dailyServiceConfigured: true, debtsSettled: false, reconciliationConsistent: true, settledTotal: "0.00", overAccruedDailyIds: [], persistedDailyCount: 0, nDueNow: 0, nAccrueAtFreeze: 0, dailyShortfall: 0, exigibleCount: 0 }),
+    async () => true,
+    async () => true,
+    async () => true,
   );
   await expectReason(broken.markEligible(actor(tenantId), ctx.processId), "auction_chain_broken");
 });

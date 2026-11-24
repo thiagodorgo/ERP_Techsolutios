@@ -1,5 +1,6 @@
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
 import type { DailyCap, DailyModel, ProfileScope } from "../jurisdiction/jurisdiction.types.js";
+import type { AccrualSuspension } from "./charge.accrual.js";
 
 export type ChargeActorContext = {
   readonly tenantId: string;
@@ -106,6 +107,7 @@ export type AccrualContext = {
   readonly model: DailyModel;
   readonly cap: DailyCap;
   readonly dailyServiceCatalogId?: string;
+  readonly suspensions: readonly AccrualSuspension[];
 };
 
 export type AccrueProcessResult = {

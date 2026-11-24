@@ -40,10 +40,10 @@ if (!connectionString) {
       assert.equal((await selectProcess(client, ctx.tenantId, ctx.processId)).status, "AUCTIONED", "estado final = arrematado");
       assert.equal(await countByOutcome(client, ctx.tenantId, ctx.processId, "SOLD"), 1, "exatamente 1 linha SOLD");
       assert.equal(await countSoldEvents(client, ctx.tenantId, ctx.processId), 1, "exatamente 1 AUCTION_SOLD na cadeia");
-      // sold_amount persistido (base de I7) e frozen_at setado (T_stop §5).
+      // sold_amount persistido (base de I7) e sem frozen_at no arremate (frozen só no encerramento/reciclagem).
       const sold = await selectSold(client, ctx.tenantId, ctx.processId);
       assert.equal(Number(sold.sold_amount), 9500, "sold_amount persistido (base de I7)");
-      assert.ok(sold.frozen_at, "o arremate CONGELA (frozen_at)");
+      assert.equal(sold.frozen_at, null, "o arremate não congela (frozen_at só no encerramento/reciclagens)");
     } finally {
       await teardownTenant(client, ctx.tenantId);
       await client.$disconnect();

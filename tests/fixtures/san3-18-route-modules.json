@@ -350,6 +350,7 @@
  "POST /api/v1/impound-processes/:processId/auction/settlement": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/settlement/claim-balance": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/settlement/revert-funset": "{patios}",
+ "POST /api/v1/impound-processes/:processId/auction/withdraw-settled": "{patios}",
  "POST /api/v1/impound-processes/:processId/charges": "{patios}",
  "POST /api/v1/impound-processes/:processId/charges/settle": "{patios}",
  "POST /api/v1/impound-processes/:processId/inspection/complete": "{patios}",

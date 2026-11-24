@@ -1,15 +1,20 @@
 import { env } from "../../config/env.js";
+import type { AccrueProcessResult, ReleaseChargeState } from "../charging/charge.types.js";
+import { createMemoryChargeService } from "../charging/charge.service.js";
 import { verifyChain, type VerifyChainResult } from "../impound/impound.hashchain.js";
 import { isNotificationTrailComplete } from "../impound/impound.notifications.js";
 import type { ProcessNotification } from "../impound/impound.notifications.types.js";
 import { getMemoryNotificationRepositoryForTests } from "../impound/impound.notifications.service.js";
 import type { ImpoundRepository } from "../impound/impound.repository.js";
 import { getMemoryImpoundRepositoryForTests } from "../impound/impound.service.js";
+import { isIntakeComplete } from "../impound/impound.intake.js";
 import { resolveTransition } from "../impound/impound.transitions.js";
 import { AUCTION_MAX_ATTEMPTS } from "../jurisdiction/jurisdiction.defaults.js";
 import { getMemoryReleaseRepositoryForTests } from "../release/release.service.js";
+import type { ReleaseChargeBasis } from "../release/release.types.js";
 import { isAuctionDeadlineReached, isOwnerInitialSatisfied } from "./auction.eligibility.js";
 import { evaluateScrapEdictGate, findActiveSoldRound, isEdictComplete, InMemoryAuctionRepository, type AuctionRepository } from "./auction.repository.js";
+import { custodyDocumentationGap as resolveCustodyDocumentationGap } from "./auction.custody-documentation.js";
 import {
   AuctionError,
   RECYCLABLE_CLASSIFICATIONS,
@@ -45,15 +50,23 @@ export type AuctionProfilePort = (tenantId: string, processId: string) => Promis
 export type AuctionNotificationsPort = (tenantId: string, processId: string) => Promise<readonly ProcessNotification[]>;
 export type AuctionVerifyChainPort = (tenantId: string, processId: string) => Promise<VerifyChainResult | undefined>;
 export type AuctionActiveReleasePort = (tenantId: string, processId: string) => Promise<boolean>;
+export type AuctionCloseDailiesPort = (tenantId: string, processId: string, now: Date, actorId?: string) => Promise<AccrueProcessResult>;
+export type AuctionChargeStatePort = (tenantId: string, processId: string, now: Date) => Promise<ReleaseChargeState | undefined>;
+export type AuctionInspectionCompletePort = (tenantId: string, processId: string) => Promise<boolean>;
+export type AuctionRemovalPostedPort = (tenantId: string, processId: string) => Promise<boolean>;
 
 export class AuctionService {
   constructor(
     private readonly repository: AuctionRepository,
-    private readonly impound: Pick<ImpoundRepository, "findProcessById">,
+    private readonly impound: Pick<ImpoundRepository, "findProcessById" | "getIntakeState">,
     private readonly profile: AuctionProfilePort,
     private readonly notifications: AuctionNotificationsPort,
     private readonly verifyChainPort: AuctionVerifyChainPort,
     private readonly hasActiveRelease: AuctionActiveReleasePort,
+    private readonly closeDailies: AuctionCloseDailiesPort,
+    private readonly chargeState: AuctionChargeStatePort,
+    private readonly inspectionComplete: AuctionInspectionCompletePort,
+    private readonly removalPosted: AuctionRemovalPostedPort,
   ) {}
 
   // GET /impound-processes/:id/auction — tentativas + strikeCount derivado + editais designados (impound:read).
@@ -97,6 +110,22 @@ export class AuctionService {
     // resolveTransition = portão 1 (legalidade ACTIVE_CUSTODY→AUCTION_ELIGIBLE) + guardAuctionEligible (PURA; lança o
     // 409 DISTINTO da 1ª pré-condição faltante). Só chega a markEligibleAtomic se as 6 passarem.
     const decision = resolveTransition(process, "AUCTION_ELIGIBLE", { auctionEligible: gate });
+    const eligibilityCustodyGap = await this.custodyDocumentationGap(actor.tenantId, process);
+    if (eligibilityCustodyGap) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", eligibilityCustodyGap, "Custody documentation is incomplete for auction eligibility.");
+    }
+    await this.assertDebtsNotSettled(actor.tenantId, normalizedId, "auction_debts_settled", actor.userId);
+    const eligibilityClosing = await this.closeDailies(actor.tenantId, normalizedId, now, actor.userId);
+    if (eligibilityClosing.errors > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_unpostable", "Daily charges could not be posted for this process.");
+    }
+    const eligibilityChargeState = await this.chargeState(actor.tenantId, normalizedId, now);
+    if (!eligibilityChargeState) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_gate_unresolved", "Charge state could not be resolved for this process; retry.");
+    }
+    if (eligibilityChargeState.dailyShortfall > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_missing", "Daily charges are still missing for this process; retry.");
+    }
     const snapshot = await this.repository.markEligibleAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
@@ -162,11 +191,14 @@ export class AuctionService {
     };
     const now = new Date();
     const decision = resolveTransition(process, "DIRECT_RECYCLING", { auctionReclassify: gate });
+    const scrapThawed = await this.repository.thawLegacyFreezeAtomic(actor.tenantId, normalizedId);
+    const scrapChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, now, actor.userId);
     const snapshot = await this.repository.reclassifyScrapAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
       expectedFrom: decision.from,
       maxAttempts: AUCTION_MAX_ATTEMPTS,
+      chargeBasis: scrapChargeBasis,
       actorId: actor.userId,
       occurredAt: now,
     });
@@ -203,10 +235,13 @@ export class AuctionService {
     };
     const now = new Date();
     const decision = resolveTransition(process, "DIRECT_RECYCLING", { unrecoverable: gate, reason });
+    const unrecoverableThawed = await this.repository.thawLegacyFreezeAtomic(actor.tenantId, normalizedId);
+    const unrecoverableChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, now, actor.userId);
     const snapshot = await this.repository.reclassifyUnrecoverableAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
       expectedFrom: decision.from,
+      chargeBasis: unrecoverableChargeBasis,
       actorId: actor.userId,
       occurredAt: now,
     });
@@ -290,6 +325,7 @@ export class AuctionService {
       appraisalMissing: !isPositiveMoney(edict?.appraisalAmount),
     };
     const decision = resolveTransition(process, "AUCTION_PREP", { auctionPrep: gate });
+    await this.assertDebtsNotSettled(actor.tenantId, normalizedId, "auction_debts_settled", actor.userId);
     const snapshot = await this.repository.prepareAuctionAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
@@ -316,6 +352,11 @@ export class AuctionService {
       minBidMissing: !isPositiveMoney(edict?.minBidAmount),
     };
     const decision = resolveTransition(process, "LOTTED", { auctionLot: gate });
+    const lotCustodyGap = await this.custodyDocumentationGap(actor.tenantId, process);
+    if (lotCustodyGap) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", lotCustodyGap, "Custody documentation is incomplete for auction lotting.");
+    }
+    await this.assertDebtsNotSettled(actor.tenantId, normalizedId, "auction_debts_settled", actor.userId);
     const snapshot = await this.repository.lotAuctionAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
@@ -327,7 +368,7 @@ export class AuctionService {
     return this.toView(snapshot);
   }
 
-  // POST .../auction/sale (impound:transition). LOTTED→AUCTIONED (ARREMATE — congela, T_stop §5). Gate: winner_ref
+  // POST .../auction/sale (impound:transition). LOTTED→AUCTIONED (ARREMATE sem congelar; o congelamento é no fechamento). Gate: winner_ref
   // presente E sold_amount>=min_bid (piso r1>=avaliação/r2>=50% encodado no min_bid pelo avaliador) E nota presente.
   // Grava a linha SOLD (winner/soldAmount/noteRef) + AUCTION_SOLD na cadeia (soldAmount string). Idempotente por round.
   async recordSale(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<RecordSaleResult> {
@@ -359,6 +400,24 @@ export class AuctionService {
       noteMissing: saleNoteReference === undefined,
     };
     const decision = resolveTransition(process, "AUCTIONED", { auctionSale: gate });
+    const saleCustodyGap = await this.custodyDocumentationGap(actor.tenantId, process);
+    if (saleCustodyGap) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", saleCustodyGap, "Custody documentation is incomplete for auction sale.");
+    }
+    const saleThawed = await this.repository.thawLegacyFreezeAtomic(actor.tenantId, normalizedId);
+    void saleThawed;
+    const saleOccurredAt = new Date();
+    const saleClosing = await this.closeDailies(actor.tenantId, normalizedId, saleOccurredAt, actor.userId);
+    if (saleClosing.errors > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_unpostable", "Daily charges could not be posted for this process.");
+    }
+    const saleChargeState = await this.chargeState(actor.tenantId, normalizedId, saleOccurredAt);
+    if (!saleChargeState) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_gate_unresolved", "Charge state could not be resolved for this process; retry.");
+    }
+    if (saleChargeState.dailyShortfall > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_missing", "Daily charges are still missing for this process; retry.");
+    }
     return this.repository.recordSaleAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
@@ -368,7 +427,7 @@ export class AuctionService {
       soldAmount,
       saleNoteReference,
       actorId: actor.userId,
-      occurredAt: new Date(),
+      occurredAt: saleOccurredAt,
     });
   }
 
@@ -382,19 +441,23 @@ export class AuctionService {
     }
     const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
     const paymentConfirmed = body.payment_confirmed === true || body.paymentConfirmed === true;
+    const closeOccurredAt = new Date();
     const decision = resolveTransition(process, "AUCTION_CLOSED", { auctionClose: { paymentUnconfirmed: !paymentConfirmed } });
+    const closeThawed = await this.repository.thawLegacyFreezeAtomic(actor.tenantId, normalizedId);
+    const closeChargeBasis = await this.freezeChargeBasis(actor.tenantId, normalizedId, closeOccurredAt, actor.userId);
     const snapshot = await this.repository.closeAuctionAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
       expectedFrom: decision.from,
       roundNumber,
+      chargeBasis: closeChargeBasis,
       actorId: actor.userId,
-      occurredAt: new Date(),
+      occurredAt: closeOccurredAt,
     });
     return this.toView(snapshot);
   }
 
-  // POST .../auction/default (impound:transition). AUCTIONED→LOTTED (inadimplência art. 42). NÃO descongela. Registra
+  // POST .../auction/default (impound:transition). AUCTIONED→LOTTED (inadimplência art. 42). Limpa congelamento legado antes da reintegração. Registra
   // NO_PAYMENT (rodada de reintegração; a linha SOLD original permanece imutável) + STATUS_CHANGE default_reintegrated.
   async defaultAuction(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<RecordSaleResult> {
     const normalizedId = parseRequiredUuid(processId, "processId");
@@ -445,6 +508,93 @@ export class AuctionService {
     return this.toView(snapshot);
   }
 
+  async withdrawSettled(actor: { tenantId: string; userId?: string }, processId: string, _body: RawRecord): Promise<AuctionView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (process.status !== "AUCTION_ELIGIBLE" && process.status !== "AUCTION_PREP") {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "invalid_transition", "The requested transition is not allowed for the current state.");
+    }
+    await this.assertDebtsSettled(actor.tenantId, normalizedId);
+    const snapshot = await this.repository.withdrawSettledAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: process.status,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+    return this.toView(snapshot);
+  }
+
+  private async assertDebtsNotSettled(tenantId: string, processId: string, reason: string, actorId?: string): Promise<void> {
+    const now = new Date();
+    const closing = await this.closeDailies(tenantId, processId, now, actorId);
+    if (closing.errors > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_unpostable", "Daily charges could not be posted for this process.");
+    }
+    const state = await this.chargeState(tenantId, processId, now);
+    if (!state) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_gate_unresolved", "Charge state could not be resolved for this process; retry.");
+    }
+    if (state.dailyShortfall > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_missing", "Daily charges are still missing for this process; retry.");
+    }
+    if (state.debtsSettled) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", reason, "Auction flow is blocked while debts are fully settled.");
+    }
+  }
+
+  private async assertDebtsSettled(tenantId: string, processId: string): Promise<void> {
+    const state = await this.chargeState(tenantId, processId, new Date());
+    if (!state) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_gate_unresolved", "Charge state could not be resolved for this process; retry.");
+    }
+    if (!state.debtsSettled) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_withdraw_not_settled", "Auction withdrawal requires all custody debts settled.");
+    }
+  }
+
+  private async custodyDocumentationGap(
+    tenantId: string,
+    process: { readonly id: string; readonly yardId?: string },
+  ): Promise<string | undefined> {
+    const [inspectionComplete, removalPosted] = await Promise.all([
+      this.inspectionComplete(tenantId, process.id),
+      this.removalPosted(tenantId, process.id),
+    ]);
+    return resolveCustodyDocumentationGap({
+      inspectionComplete,
+      yardAssigned: process.yardId !== undefined,
+      removalPosted,
+    });
+  }
+
+  private async freezeChargeBasis(
+    tenantId: string,
+    processId: string,
+    occurredAt: Date,
+    actorId?: string,
+  ): Promise<ReleaseChargeBasis> {
+    const freezeClosing = await this.closeDailies(tenantId, processId, occurredAt, actorId);
+    if (freezeClosing.errors > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_unpostable", "Daily charges could not be posted for this process.");
+    }
+    const freezeChargeState = await this.chargeState(tenantId, processId, occurredAt);
+    if (!freezeChargeState) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_gate_unresolved", "Charge state could not be resolved for this process; retry.");
+    }
+    if (freezeChargeState.dailyShortfall > 0) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_daily_charges_missing", "Daily charges are still missing for this process; retry.");
+    }
+    return {
+      expectedDailyCount: freezeChargeState.nAccrueAtFreeze,
+      enteredAt: freezeChargeState.enteredAt ?? null,
+      frozenAt: occurredAt,
+    };
+  }
+
   // O edital de uma rodada (metadados + SIGILOSOS appraisal/min_bid) p/ o gate da venda. undefined se ausente.
   private async readRoundEdict(tenantId: string, processId: string, roundNumber: number): Promise<AuctionEdict | undefined> {
     const edicts = await this.repository.listEdicts(tenantId, processId);
@@ -467,6 +617,7 @@ const memoryAuctionRepository = new InMemoryAuctionRepository(
   getMemoryImpoundRepositoryForTests(),
   (tenantId, processId) => getMemoryReleaseRepositoryForTests().hasActiveRelease(tenantId, processId),
 );
+const memoryChargeService = createMemoryChargeService();
 let defaultAuctionServicePromise: Promise<AuctionService> | undefined;
 
 async function memoryVerifyChain(tenantId: string, processId: string): Promise<VerifyChainResult | undefined> {
@@ -483,6 +634,17 @@ export function createMemoryAuctionService(): AuctionService {
     (tenantId, processId) => getMemoryNotificationRepositoryForTests().listNotifications({ tenantId, processId }),
     (tenantId, processId) => memoryVerifyChain(tenantId, processId),
     (tenantId, processId) => getMemoryReleaseRepositoryForTests().hasActiveRelease(tenantId, processId),
+    (tenantId, processId, now, actorId) => memoryChargeService.accrueProcess(tenantId, processId, now, actorId),
+    (tenantId, processId, now) => memoryChargeService.getReleaseChargeState(tenantId, processId, now),
+    async (tenantId, processId) => {
+      const state = await getMemoryImpoundRepositoryForTests().getIntakeState(tenantId, processId);
+      if (!state) return false;
+      return isIntakeComplete(state.inspection, state.storedSets, state.profileRequiredSets ?? []);
+    },
+    async (tenantId, processId) => {
+      const statement = await memoryChargeService.getStatement({ tenantId, userId: "system", roles: [], permissions: [] }, processId);
+      return statement.lines.some((line) => line.kind === "REMOVAL");
+    },
   );
 }
 
@@ -506,10 +668,23 @@ export function resetAuctionRuntimeForTests(): void {
 async function createPrismaAuctionService(): Promise<AuctionService> {
   const { createPrismaAuctionRepository, createPrismaAuctionPorts } = await import("./auction-prisma.repository.js");
   const { createPrismaImpoundRepository } = await import("../impound/impound-prisma.repository.js");
-  const [repository, impound, ports] = await Promise.all([
+  const { createDefaultChargeService } = await import("../charging/charge.service.js");
+  const [repository, impound, ports, charge] = await Promise.all([
     createPrismaAuctionRepository(),
     createPrismaImpoundRepository(),
     createPrismaAuctionPorts(),
+    createDefaultChargeService(),
   ]);
-  return new AuctionService(repository, impound, ports.profile, ports.notifications, ports.verifyChain, ports.hasActiveRelease);
+  return new AuctionService(
+    repository,
+    impound,
+    ports.profile,
+    ports.notifications,
+    ports.verifyChain,
+    ports.hasActiveRelease,
+    (tenantId, processId, now, actorId) => charge.accrueProcess(tenantId, processId, now, actorId),
+    (tenantId, processId, now) => charge.getReleaseChargeState(tenantId, processId, now),
+    ports.inspectionComplete,
+    ports.removalPosted,
+  );
 }

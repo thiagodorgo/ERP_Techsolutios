@@ -16,6 +16,22 @@ import {
   getMemoryAuctionRepositoryForTests,
   resetAuctionRuntimeForTests,
 } from "../src/modules/auction/auction.service.js";
+import {
+  getMemoryChargeRepositoryForTests,
+  resetChargeRuntimeForTests,
+} from "../src/modules/charging/charge.service.js";
+import {
+  getMemoryPriceTableRepositoryForTests,
+  resetPriceTableRuntimeForTests,
+} from "../src/modules/price-tables/price-table.service.js";
+import {
+  getMemoryTariffRepositoryForTests,
+  resetTariffRuntimeForTests,
+} from "../src/modules/tariffs/tariff.service.js";
+import {
+  getMemoryYardRepositoryForTests,
+  resetYardRuntimeForTests,
+} from "../src/modules/yard/yard.service.js";
 import type { AuctionActorContext } from "../src/modules/auction/auction.types.js";
 
 // Ω5P PR-13b — máquina de VENDA (InMemory). Prova a FSM da arrematação: AUCTION_ELIGIBLE→AUCTION_PREP→LOTTED→
@@ -25,6 +41,8 @@ import type { AuctionActorContext } from "../src/modules/auction/auction.types.j
 // cadeia); reclamar APÓS arremate = ilegal pela FSM (invalid_transition); auction:appraise gateia o sigilo (art. 28).
 
 const MS_PER_DAY = 86_400_000;
+const HOUR = 3_600_000;
+const TARIFF = 40;
 type Ctx = { tenantId: string; processId: string; profileId: string };
 
 function actor(tenantId: string): AuctionActorContext {
@@ -36,20 +54,84 @@ async function reset(): Promise<string> {
   resetNotificationRuntimeForTests();
   resetReleaseRuntimeForTests();
   resetAuctionRuntimeForTests();
+  resetChargeRuntimeForTests();
+  resetPriceTableRuntimeForTests();
+  resetTariffRuntimeForTests();
+  resetYardRuntimeForTests();
   return randomUUID();
+}
+
+async function seedTariff(tenantId: string, serviceCatalogId: string): Promise<void> {
+  const priceTable = await getMemoryPriceTableRepositoryForTests().create({
+    tenantId,
+    name: `Tabela ${randomUUID().slice(0, 6)}`,
+    currency: "BRL",
+    version: 1,
+    status: "published",
+  });
+  await getMemoryTariffRepositoryForTests().create({
+    tenantId,
+    priceTableId: priceTable.id,
+    serviceCatalogId,
+    name: "Diária",
+    unitPrice: TARIFF,
+    currency: "BRL",
+    origin: "test",
+    status: "active",
+  });
+}
+
+async function assignYard(tenantId: string, processId: string): Promise<void> {
+  const yard = getMemoryYardRepositoryForTests();
+  const created = await yard.createYard({ tenantId, name: "Pátio Central", address: "Rua X, 1", timezone: "America/Sao_Paulo" });
+  const area = await yard.createArea({ tenantId, yardId: created.id, kind: "BLOCK", name: "Q1" });
+  const spot = await yard.createSpot({ tenantId, areaId: area.id, code: `S-${randomUUID().slice(0, 4)}` });
+  await getMemoryImpoundRepositoryForTests().assignSpotAtomic({ tenantId, processId, spotId: spot.id, occurredAt: new Date() });
+}
+
+async function completeInspection(tenantId: string, processId: string, inspectedAt: Date): Promise<void> {
+  const impound = getMemoryImpoundRepositoryForTests();
+  const inspection = await impound.upsertInspection({
+    tenantId,
+    processId,
+    inspectedAt,
+    bodyworkState: "Sem avarias",
+    paintState: "Original",
+    tiresState: "Bom",
+    internalObjects: "nenhum",
+    missingEquipment: "nenhum",
+    signatureStatus: "ABSENT",
+  } as never);
+  await impound.addInspectionPhoto({ tenantId, processId, inspectionId: inspection.id, set: "FRONT", fileUrl: "https://arquivos.invalid/frente.jpg", occurredAt: new Date() });
+  await impound.completeInspection({ tenantId, processId, occurredAt: new Date() });
+}
+
+async function addRemoval(tenantId: string, processId: string): Promise<void> {
+  await getMemoryChargeRepositoryForTests().createManualCharge({
+    tenantId,
+    processId,
+    kind: "REMOVAL",
+    quantity: "1.00",
+    unitAmount: "150.00",
+    totalAmount: "150.00",
+    currency: "BRL",
+    occurredAt: new Date(),
+  });
 }
 
 // Processo direto em AUCTION_ELIGIBLE (bypassa o gate de elegibilidade — a máquina de VENDA é o objeto do teste).
 async function makeEligibleProcess(tenantId: string): Promise<Ctx> {
   const impound = getMemoryImpoundRepositoryForTests();
   const profileId = randomUUID();
+  const dailyServiceCatalogId = randomUUID();
+  const enteredAt = new Date(Date.now() - 120 * MS_PER_DAY);
   const process = await impound.openFromRemovalAtomic({
     tenantId,
     serviceOrderId: randomUUID(),
     profileId,
     originAuthority: "Autoridade solicitante",
     unidentifiedReason: "Aguardando vistoria de recepção",
-    completedAt: new Date(Date.now() - 120 * MS_PER_DAY),
+    completedAt: enteredAt,
     actorId: undefined,
   });
   await impound.applyTransition({
@@ -63,6 +145,17 @@ async function makeEligibleProcess(tenantId: string): Promise<Ctx> {
     event: { type: "STATUS_CHANGE", payload: { from: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", reason: "auction_eligible" }, occurredAt: new Date(), actorId: undefined },
   });
   getMemoryAuctionRepositoryForTests().setAuctionProfileForTests(tenantId, profileId, { scope: "PUBLIC_AGREEMENT", ownerNotifDays: 10, noticeEdictDay: 30, auctionEligibleDay: 60 });
+  getMemoryChargeRepositoryForTests().setProfileForTests(tenantId, profileId, {
+    scope: "PUBLIC_AGREEMENT",
+    model: "ROLLING_24H",
+    cap: "SIX_MONTHS",
+    dailyServiceCatalogId,
+  });
+  impound.setProfileRequiredSetsForTests(tenantId, profileId, ["FRONT"]);
+  await seedTariff(tenantId, dailyServiceCatalogId);
+  await assignYard(tenantId, process.id);
+  await completeInspection(tenantId, process.id, new Date(enteredAt.getTime() + HOUR));
+  await addRemoval(tenantId, process.id);
   return { tenantId, processId: process.id, profileId };
 }
 
@@ -171,7 +264,7 @@ test("arremate OK: LOTTED→AUCTIONED grava SOLD (winner/sold/nota) + AUCTION_SO
   // Congelou (T_stop §5 — arrematação encerra a diária).
   const process = await getMemoryImpoundRepositoryForTests().findProcessById(tenantId, ctx.processId);
   assert.equal(process?.status, "AUCTIONED");
-  assert.ok(process?.frozenAt, "o arremate CONGELA (frozen_at setado)");
+  assert.equal(process?.frozenAt, undefined, "o arremate NÃO congela (frozen_at só no encerramento/reciclagens)");
 
   // AUCTION_SOLD na cadeia: soldAmount como STRING (canonicalJson exige money string); §2.8: sem winner/nota bruta.
   const events = await getMemoryImpoundRepositoryForTests().listEvents(tenantId, ctx.processId);
@@ -216,8 +309,8 @@ test("consumação: AUCTIONED→AUCTION_CLOSED exige pagamento confirmado; sem c
   assert.equal((closed!.payload as Record<string, unknown>).outcome, "SOLD");
 });
 
-// ── inadimplência AUCTIONED→LOTTED (frozen permanece — PD-Ω5P-AUC-FROZEN) ───────────────────────────────────────
-test("inadimplência (art. 42): AUCTIONED→LOTTED registra NO_PAYMENT e MANTÉM o congelamento (não descongela)", async () => {
+// ── inadimplência AUCTIONED→LOTTED (sem congelamento no arremate; frozen_at segue intocado) ──────────────────────
+test("inadimplência (art. 42): AUCTIONED→LOTTED registra NO_PAYMENT sem criar frozen_at no arremate", async () => {
   const tenantId = await reset();
   const ctx = await makeEligibleProcess(tenantId);
   const auction = createMemoryAuctionService();
@@ -225,7 +318,7 @@ test("inadimplência (art. 42): AUCTIONED→LOTTED registra NO_PAYMENT e MANTÉM
   await makeLotted(ctx, auction, who);
   await auction.recordSale(who, ctx.processId, { round_number: 1, winner_ref: "Arrematante 001", sold_amount: "9500.00", sale_note_reference: "NOTA-2026/77" });
   const frozenAfterSale = (await getMemoryImpoundRepositoryForTests().findProcessById(tenantId, ctx.processId))?.frozenAt;
-  assert.ok(frozenAfterSale);
+  assert.equal(frozenAfterSale, undefined, "o arremate não preenche frozen_at (decisão do dono E4.1/Emenda 4.1)");
 
   const result = await auction.defaultAuction(who, ctx.processId, { round_number: 2 });
   assert.equal(result.status, "LOTTED");
@@ -235,7 +328,7 @@ test("inadimplência (art. 42): AUCTIONED→LOTTED registra NO_PAYMENT e MANTÉM
 
   const process = await getMemoryImpoundRepositoryForTests().findProcessById(tenantId, ctx.processId);
   assert.equal(process?.status, "LOTTED", "reintegra o lote");
-  assert.equal(process?.frozenAt?.getTime(), frozenAfterSale?.getTime(), "o congelamento PERMANECE (PD-Ω5P-AUC-FROZEN)");
+  assert.equal(process?.frozenAt, undefined, "inadimplência também não cria frozen_at quando o arremate não congelou");
   // A linha SOLD original permanece imutável (append-only I2): coexiste com a NO_PAYMENT.
   const view = await auction.get(who, ctx.processId);
   assert.equal(view.attempts.filter((a) => a.outcome === "SOLD").length, 1);

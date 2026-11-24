@@ -122,6 +122,7 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
   private readonly inspections = new Map<string, IntakeInspection>(); // keyed by processId (1 por processo)
   private readonly photos: StoredInspectionPhoto[] = [];
   private readonly profileRequiredSets = new Map<string, readonly string[] | null>();
+  private readonly dailySuspensions: DailySuspensionRecord[] = [];
 
   // yardRepository OPCIONAL: habilita a alocação atômica cross-módulo (I1). Em memória a "atomicidade" é
   // single-thread; a corrida/rollback REAL (1 tx Postgres) roda no teste DB-gated.
@@ -317,6 +318,56 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
       throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
     }
     return this.appendInternal(process, input.event);
+  }
+
+  // Período sem diária (leilão). Não abre um segundo período aberto no mesmo processo.
+  async openDailySuspension(tenantId: string, processId: string, startedAt: Date, reason: string): Promise<boolean> {
+    const existsOpen = this.dailySuspensions.some(
+      (suspension) => suspension.tenantId === tenantId && suspension.processId === processId && suspension.endedAt === undefined,
+    );
+    if (existsOpen) return false;
+    this.dailySuspensions.push({ tenantId, processId, startedAt, reason });
+    return true;
+  }
+
+  async closeDailySuspension(tenantId: string, processId: string, endedAt: Date): Promise<boolean> {
+    const index = this.dailySuspensions.findIndex(
+      (suspension) => suspension.tenantId === tenantId && suspension.processId === processId && suspension.endedAt === undefined,
+    );
+    if (index < 0) return false;
+    this.dailySuspensions[index] = { ...this.dailySuspensions[index], endedAt };
+    return true;
+  }
+
+  async listDailySuspensions(tenantId: string, processId: string): Promise<readonly DailySuspension[]> {
+    return this.dailySuspensions
+      .filter((suspension) => suspension.tenantId === tenantId && suspension.processId === processId)
+      .sort((left, right) => left.startedAt.getTime() - right.startedAt.getTime())
+      .map((suspension) => ({ from: suspension.startedAt, to: suspension.endedAt }));
+  }
+
+  async clearLegacyFreeze(tenantId: string, processId: string): Promise<boolean> {
+    const process = await this.findProcessById(tenantId, processId);
+    if (!process) return false;
+    if (!process.frozenAt) return false;
+    if (!["ACTIVE_CUSTODY", "AUCTION_ELIGIBLE", "AUCTION_PREP", "LOTTED", "AUCTIONED"].includes(process.status)) return false;
+    const memoryLegacySuspensionOpened = this.openLegacySuspension(process);
+    void memoryLegacySuspensionOpened;
+    this.processes.set(process.id, { ...process, frozenAt: undefined });
+    return true;
+  }
+
+  // Gêmeo em memória do convertLegacyFreezeTx: antes de descongelar um processo em leilão, converte o congelamento
+  // antigo em período LEGACY_FREEZE (não cobra o tempo de leilão — R1; não mexe no que já foi lançado).
+  private openLegacySuspension(process: ImpoundProcess): boolean {
+    if (!process.frozenAt) return false;
+    if (!["AUCTION_PREP", "LOTTED", "AUCTIONED"].includes(process.status)) return false;
+    const existsOpen = this.dailySuspensions.some(
+      (suspension) => suspension.tenantId === process.tenantId && suspension.processId === process.id && suspension.endedAt === undefined,
+    );
+    if (existsOpen) return false;
+    this.dailySuspensions.push({ tenantId: process.tenantId, processId: process.id, startedAt: process.frozenAt, reason: "LEGACY_FREEZE" });
+    return true;
   }
 
   // ── PR-06: vistoria (I3) ────────────────────────────────────────────────────────────────────────────────
@@ -585,6 +636,7 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
     this.inspections.clear();
     this.photos.length = 0;
     this.profileRequiredSets.clear();
+    this.dailySuspensions.length = 0;
   }
 
   getAuditAnchorsForTests(): readonly CustodyAuditAnchor[] {
@@ -630,3 +682,20 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
     return { process: updatedProcess, event };
   }
 }
+
+// O leilão em memória compõe o repositório de custódia de memória por este tipo (sem acoplar a interface inteira).
+export type MemoryImpoundAuctionDep = Pick<InMemoryImpoundRepository, "clearLegacyFreeze" | "openDailySuspension" | "closeDailySuspension" | "listDailySuspensions">;
+
+// Período sem diária devolvido pelo repositório de custódia (structuralmente idêntico a AccrualSuspension).
+export type DailySuspension = {
+  readonly from: Date;
+  readonly to?: Date;
+};
+
+type DailySuspensionRecord = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly startedAt: Date;
+  readonly endedAt?: Date;
+  readonly reason: string;
+};

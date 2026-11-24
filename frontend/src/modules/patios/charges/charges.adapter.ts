@@ -29,9 +29,9 @@ const DAILY_MODEL_LABELS: Record<DailyModel, string> = {
 
 // Teto intertemporal (I4): pela DATA DE ENTRADA — 6 meses (Res. 1025) | 30 diárias (Tema 124/STJ legado) | ilimitado.
 const DAILY_CAP_LABELS: Record<DailyCap, string> = {
-  SIX_MONTHS: "6 meses (Res. 1025)",
+  SIX_MONTHS: "180 diárias (Res. 1025)",
   THIRTY_DAYS_LEGACY: "30 diárias (regime legado)",
-  UNLIMITED: "Sem teto (ilimitado)",
+  UNLIMITED: "180 diárias (contrato particular)",
 };
 
 export function getKindLabel(kind: ChargeKind | string | null | undefined): string {

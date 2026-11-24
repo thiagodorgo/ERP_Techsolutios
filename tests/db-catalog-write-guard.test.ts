@@ -143,6 +143,13 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
       },
     ],
     [
+      "patio-diaria-suspensao-migration-drill-db.test.ts",
+      {
+        count: 4,
+        reason: "fala SOBRE GRANT da migração (título + regex + mensagem) — não escreve catálogo",
+      },
+    ],
+    [
       "inventory-migration-drill-db.test.ts",
       {
         count: 4,

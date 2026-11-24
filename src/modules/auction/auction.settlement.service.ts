@@ -1,4 +1,6 @@
 import { env } from "../../config/env.js";
+import type { AccrueProcessResult, ReleaseChargeState } from "../charging/charge.types.js";
+import { createMemoryChargeService } from "../charging/charge.service.js";
 import { moneyToCents } from "../charging/charge.validators.js";
 import { getMemoryImpoundRepositoryForTests } from "../impound/impound.service.js";
 import type { ImpoundRepository } from "../impound/impound.repository.js";
@@ -23,6 +25,8 @@ type RawRecord = Record<string, unknown>;
 export type SettlementProcessPort = Pick<ImpoundRepository, "findProcessById">;
 export type SettlementAuctionStatePort = Pick<AuctionRepository, "getState">;
 export type SettlementCascadeClaimPort = (tenantId: string, processId: string) => Promise<{ claimCents: number; currency: string } | undefined>;
+export type SettlementCloseDailiesPort = (tenantId: string, processId: string, now: Date, actorId?: string) => Promise<AccrueProcessResult>;
+export type SettlementChargeStatePort = (tenantId: string, processId: string, now: Date) => Promise<ReleaseChargeState | undefined>;
 
 export class AuctionSettlementService {
   constructor(
@@ -30,6 +34,8 @@ export class AuctionSettlementService {
     private readonly impound: SettlementProcessPort,
     private readonly auction: SettlementAuctionStatePort,
     private readonly cascadeClaim: SettlementCascadeClaimPort,
+    private readonly closeDailies: SettlementCloseDailiesPort,
+    private readonly chargeState: SettlementChargeStatePort,
   ) {}
 
   // GET /impound-processes/:id/auction/settlement (impound:read) — a liquidação + allocations ordenadas. 404 se sem
@@ -69,6 +75,33 @@ export class AuctionSettlementService {
       throw new AuctionSettlementError(409, "SETTLEMENT_GUARD_FAILED", "settlement_sale_missing", "The settlement requires an effective recorded sale (SOLD) with a hammer amount.");
     }
     const hammerCents = moneyToCents(soldAttempt.soldAmount);
+    const now = new Date();
+    const settlementClosing = await this.closeDailies(actor.tenantId, normalizedId, now, actor.userId);
+    if (settlementClosing.errors > 0) {
+      throw new AuctionSettlementError(
+        409,
+        "SETTLEMENT_GUARD_FAILED",
+        "settlement_daily_charges_unpostable",
+        "Daily charges could not be posted for this process; settlement cannot proceed.",
+      );
+    }
+    const settlementChargeState = await this.chargeState(actor.tenantId, normalizedId, now);
+    if (!settlementChargeState) {
+      throw new AuctionSettlementError(
+        409,
+        "SETTLEMENT_GUARD_FAILED",
+        "settlement_gate_unresolved",
+        "Charge state could not be resolved for this process; retry.",
+      );
+    }
+    if (settlementChargeState.dailyShortfall > 0) {
+      throw new AuctionSettlementError(
+        409,
+        "SETTLEMENT_GUARD_FAILED",
+        "settlement_daily_charges_missing",
+        "Daily charges are still missing for this process; settlement cannot proceed.",
+      );
+    }
 
     // Tiers EXTERNOS declarados (Decimal strings ≥0 → centavos inteiros). Ausente ⇒ 0 (sem reclamação).
     const auctionCostCents = parseClaimCents(body.auction_cost ?? body.auctionCost, "auction_cost");
@@ -95,7 +128,6 @@ export class AuctionSettlementService {
     ];
     const { allocations, ownerBalanceCents, shortfallCents } = distributeCascade(hammerCents, claims);
 
-    const now = new Date();
     return this.repository.distributeSettlementAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
@@ -105,6 +137,11 @@ export class AuctionSettlementService {
       allocations,
       ownerBalanceCents,
       shortfallCents,
+      chargeBasis: {
+        expectedDailyCount: settlementChargeState.nAccrueAtFreeze,
+        enteredAt: settlementChargeState.enteredAt ?? null,
+        frozenAt: process.frozenAt ?? now,
+      },
       auctionCostCents,
       removalStorageCents,
       currency,
@@ -169,11 +206,14 @@ const memorySettlementRepository = new InMemoryAuctionSettlementRepository(getMe
 let defaultSettlementServicePromise: Promise<AuctionSettlementService> | undefined;
 
 export function createMemoryAuctionSettlementService(): AuctionSettlementService {
+  const charge = createMemoryChargeService();
   return new AuctionSettlementService(
     memorySettlementRepository,
     getMemoryImpoundRepositoryForTests(),
     getMemoryAuctionRepositoryForTests(),
     (tenantId, processId) => memoryCascadeClaim(tenantId, processId),
+    (tenantId, processId, now, actorId) => charge.accrueProcess(tenantId, processId, now, actorId),
+    (tenantId, processId, now) => charge.getReleaseChargeState(tenantId, processId, now),
   );
 }
 
@@ -181,9 +221,10 @@ export function getMemoryAuctionSettlementRepositoryForTests(): InMemoryAuctionS
   return memorySettlementRepository;
 }
 
+const memoryChargeService = createMemoryChargeService();
+
 async function memoryCascadeClaim(tenantId: string, processId: string): Promise<{ claimCents: number; currency: string } | undefined> {
-  const { createMemoryChargeService } = await import("../charging/charge.service.js");
-  return createMemoryChargeService().getCascadeExpenseClaim(tenantId, processId);
+  return memoryChargeService.getCascadeExpenseClaim(tenantId, processId);
 }
 
 export async function createDefaultAuctionSettlementService(): Promise<AuctionSettlementService> {
@@ -202,5 +243,12 @@ export function resetAuctionSettlementRuntimeForTests(): void {
 async function createPrismaAuctionSettlementService(): Promise<AuctionSettlementService> {
   const { createPrismaAuctionSettlementRepository, createPrismaSettlementPorts } = await import("./auction-settlement-prisma.repository.js");
   const [repository, ports] = await Promise.all([createPrismaAuctionSettlementRepository(), createPrismaSettlementPorts()]);
-  return new AuctionSettlementService(repository, ports.impound, ports.auction, ports.cascadeClaim);
+  return new AuctionSettlementService(
+    repository,
+    ports.impound,
+    ports.auction,
+    ports.cascadeClaim,
+    ports.closeDailies,
+    ports.chargeState,
+  );
 }

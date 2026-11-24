@@ -1491,6 +1491,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/withdraw-settled": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/impound-processes/:processId/charges": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
