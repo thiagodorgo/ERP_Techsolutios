@@ -55,6 +55,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Reports and analytics | full | full | full | scoped | finance-scoped | inventory-scoped | field-scoped | audit-full-read | support-scoped |
 | Audit logs | full | read | scoped | none | scoped | scoped | none | full-read | support-scoped |
 | Cross-tenant support operations | full | none | none | none | none | none | none | read | scoped-support-only |
+| Commissions engine (rates, reconcile, settlement, overviews) | full | full | manage/read | read-own | full | none | read-own | audit-read | support-view |
 
 > SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): a linha histórica "Cloud charge markup rules" fica preservada; suas quatro chaves permanecem órfãs até limpeza, sem apagar a tabela `permissions`.
 

@@ -298,6 +298,9 @@ export const envSchema = z.object({
   GEOCODING_ENABLED: booleanFlag(false),
   GEOCODING_PROVIDER: z.enum(["nominatim"]).default("nominatim"),
   NOMINATIM_BASE_URL: z.string().trim().url().default("https://nominatim.openstreetmap.org/search"),
+  // B-COMISSAO-MOTOR (P1 = (b), D-DONO-2011-COMISSAO-P1-P4) — quando a comissão calculada vira "a receber" (approved):
+  // on_validation (padrão) = após validação operacional aprovada da OS; on_completion = já na conclusão da OS.
+  COMMISSION_RELEASE_MODE: z.enum(["on_validation", "on_completion"]).default("on_validation"),
   NOMINATIM_USER_AGENT: z.string().trim().min(1).default("ERP-Techsolutions/1.0 (+contato-do-operador)"),
   NOMINATIM_COUNTRY_CODES: z.string().trim().default("br"),
   NOMINATIM_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(1100),

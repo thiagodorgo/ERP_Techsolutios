@@ -85,6 +85,82 @@ function assertAllowed(value: string, allowlist: ReadonlySet<string>, reason: st
   return normalized;
 }
 
+export type PreparedProfessionalStatementSourceEntry = {
+  readonly entryType: string;
+  readonly direction: string;
+  readonly sourceType: string;
+  readonly operatorProfileId: string;
+  readonly sourceId: string;
+  readonly installments: ReturnType<typeof buildInstallmentPlan>;
+};
+
+export function prepareProfessionalStatementSourceEntry(
+  input: CreateProfessionalStatementForSourceInput,
+): PreparedProfessionalStatementSourceEntry {
+  const entryType = assertAllowed(input.entryType, ENTRY_TYPE_ALLOWLIST, "invalid_entry_type", "entry_type");
+  const direction = assertAllowed(input.direction, DIRECTION_ALLOWLIST, "invalid_direction", "direction");
+  const sourceType = assertAllowed(input.sourceType, SOURCE_TYPE_ALLOWLIST, "invalid_source_type", "source_type");
+  // AJUSTE (source_type='manual') não passa por aqui — é o POST público. Origem exige um alvo real.
+  if (sourceType === "manual") {
+    throw new ProfessionalStatementError(
+      400,
+      "PROFESSIONAL_STATEMENT_INVALID",
+      "invalid_source_type",
+      "createForSource requires a real source_type (not manual).",
+    );
+  }
+  const operatorProfileId = parseRequiredUuid(input.operatorProfileId, "operatorProfileId");
+  const sourceId = parseRequiredUuid(input.sourceId, "sourceId");
+  const totalAmount = parseAmount(input.amount);
+  const installmentTotal = parseInstallmentTotal(input.installmentTotal);
+  const firstDueDate = parseFirstDueDate(input.firstDueDate);
+  const installments = buildInstallmentPlan(totalAmount, installmentTotal, firstDueDate);
+  return {
+    entryType,
+    direction,
+    sourceType,
+    operatorProfileId,
+    sourceId,
+    installments,
+  };
+}
+
+export async function createProfessionalStatementForSourceInRepository(
+  repository: ProfessionalStatementRepository,
+  operatorProfileLookup: OperatorProfileLookup,
+  actor: ProfessionalStatementActorContext,
+  input: CreateProfessionalStatementForSourceInput,
+): Promise<ProfessionalStatementEntry[]> {
+  const prepared = prepareProfessionalStatementSourceEntry(input);
+
+  // Posse do profissional no tenant (defesa; o módulo-fonte já validou) → 404 cross-tenant.
+  const professional = await operatorProfileLookup(actor.tenantId, prepared.operatorProfileId);
+  if (!professional) {
+    throw operatorProfileNotFoundError();
+  }
+
+  // Idempotência de origem: já existe débito ATIVO desta fonte → devolve o grupo existente (não duplica).
+  const existing = await repository.findActiveBySource(actor.tenantId, prepared.sourceType, prepared.sourceId);
+  if (existing.length > 0) {
+    return existing;
+  }
+
+  return repository.createGroup({
+    tenantId: actor.tenantId,
+    operatorProfileId: prepared.operatorProfileId,
+    groupId: randomUUID(),
+    entryType: prepared.entryType,
+    direction: prepared.direction,
+    description: input.description,
+    currency: "BRL",
+    sourceType: prepared.sourceType,
+    sourceId: prepared.sourceId,
+    createdBy: actor.userId,
+    updatedBy: actor.userId,
+    installments: prepared.installments,
+  });
+}
+
 export type ProfessionalStatementLedgerResult = {
   readonly operatorProfileId: string;
   readonly professionalName: string | undefined;
@@ -190,47 +266,12 @@ export class ProfessionalStatementService {
     actor: ProfessionalStatementActorContext,
     input: CreateProfessionalStatementForSourceInput,
   ): Promise<ProfessionalStatementEntry[]> {
-    const entryType = assertAllowed(input.entryType, ENTRY_TYPE_ALLOWLIST, "invalid_entry_type", "entry_type");
-    const direction = assertAllowed(input.direction, DIRECTION_ALLOWLIST, "invalid_direction", "direction");
-    const sourceType = assertAllowed(input.sourceType, SOURCE_TYPE_ALLOWLIST, "invalid_source_type", "source_type");
-    // AJUSTE (source_type='manual') não passa por aqui — é o POST público. Origem exige um alvo real.
-    if (sourceType === "manual") {
-      throw new ProfessionalStatementError(400, "PROFESSIONAL_STATEMENT_INVALID", "invalid_source_type", "createForSource requires a real source_type (not manual).");
-    }
-    const operatorProfileId = parseRequiredUuid(input.operatorProfileId, "operatorProfileId");
-    const sourceId = parseRequiredUuid(input.sourceId, "sourceId");
-
-    // Posse do profissional no tenant (defesa; o módulo-fonte já validou) → 404 cross-tenant.
-    const professional = await this.operatorProfileLookup(actor.tenantId, operatorProfileId);
-    if (!professional) {
-      throw operatorProfileNotFoundError();
-    }
-
-    // Idempotência de origem: já existe débito ATIVO desta fonte → devolve o grupo existente (não duplica).
-    const existing = await this.repository.findActiveBySource(actor.tenantId, sourceType, sourceId);
-    if (existing.length > 0) {
-      return existing;
-    }
-
-    const totalAmount = parseAmount(input.amount);
-    const installmentTotal = parseInstallmentTotal(input.installmentTotal);
-    const firstDueDate = parseFirstDueDate(input.firstDueDate);
-    const installments = buildInstallmentPlan(totalAmount, installmentTotal, firstDueDate);
-
-    return this.repository.createGroup({
-      tenantId: actor.tenantId,
-      operatorProfileId,
-      groupId: randomUUID(),
-      entryType,
-      direction,
-      description: input.description,
-      currency: "BRL",
-      sourceType,
-      sourceId,
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
-      installments,
-    });
+    return createProfessionalStatementForSourceInRepository(
+      this.repository,
+      this.operatorProfileLookup,
+      actor,
+      input,
+    );
   }
 
   // Ω4C PR-07 — desfazer o lançamento por ORIGEM (RN-MUL-01/RN-EXT-01). Sem débito ativo da fonte → no-op

@@ -251,7 +251,35 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/commissions/mine/overview": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/overview": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/payees": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/payees/:userId/overview": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/commissions/policies": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/rates": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/rates/mine": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/rates/payees/:userId/history": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1339,6 +1367,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/commissions/reconcile": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/commissions/settlements": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1960,6 +1992,10 @@
   "n": 1
  },
  "ROTA POST /api/v1/yards/:yardId/areas": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PUT /api/v1/commissions/rates/payees/:userId": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },

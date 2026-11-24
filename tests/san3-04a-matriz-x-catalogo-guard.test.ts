@@ -126,6 +126,9 @@ const VOCAB: Record<string, { u: string[]; q: string[]; none?: boolean }> = {
   "full-operational": { u: ["FULL"], q: [] },
   "consume/confirm": { u: [], q: ["consume"] },
   "request/approve-policy": { u: ["read", "create"], q: ["approve"] },
+  "manage/read": { u: ["manage", "read"], q: [] },
+  "read-own": { u: ["read-own"], q: [] },
+  "audit-read": { u: ["audit-read"], q: [] },
   "budget-check": { u: ["read"], q: [] },
   "stock-driven-request": { u: ["read", "create"], q: [] },
   "tenant-finance-admin": { u: ["FULLADMIN"], q: [] },
@@ -303,6 +306,33 @@ const ROWS: Record<string, RowSpec> = {
     act: { read: ["billing:read"] },
     FULL: ["billing:read"],
     FULLREAD: ["billing:read"],
+  },
+  "Commissions engine (rates, reconcile, settlement, overviews)": {
+    family: [
+      "commissions:read",
+      "commissions:read_own",
+      "commissions:manage_policy",
+      "commissions:calculate",
+      "commissions:approve",
+      "commissions:adjust",
+      "commissions:settle",
+      "commissions:audit",
+    ],
+    act: {
+      read: ["commissions:read"],
+      "read-own": ["commissions:read_own"],
+      "audit-read": ["commissions:read", "commissions:audit"],
+      manage: ["commissions:manage_policy", "commissions:calculate", "commissions:approve"],
+    },
+    FULL: [
+      "commissions:read",
+      "commissions:calculate",
+      "commissions:approve",
+      "commissions:adjust",
+      "commissions:settle",
+      "commissions:audit",
+    ],
+    FULLREAD: ["commissions:read", "commissions:audit"],
   },
   "Cloud usage metering": { platform: true, family: ["platform:cloud-usage:read"], act: {}, FULL: [], FULLREAD: [] },
   "Cloud cost import": {
@@ -510,9 +540,9 @@ const CAT_REAL = catalogFromRolePermissions(ROLE_PERMISSIONS as Record<string, r
 const REAL = evaluate(ROWS_REAL, CAT_REAL);
 const byKind = (kind: Kind) => REAL.findings.filter((f) => f.kind === kind);
 
-test("[CE-G1a] a fonte é a tabela real: 27 linhas × 9 papéis canônicos = 243 células, todas no dicionário e todas mapeadas", () => {
-  assert.equal(ROWS_REAL.length, 27);
-  assert.equal(ROWS_REAL.length * CANON.length, 243);
+test("[CE-G1a] a fonte é a tabela real: 28 linhas × 9 papéis canônicos = 252 células, todas no dicionário e todas mapeadas", () => {
+  assert.equal(ROWS_REAL.length, 28);
+  assert.equal(ROWS_REAL.length * CANON.length, 252);
   for (const row of ROWS_REAL) {
     assert.ok(ROWS[row.label], `linha sem mapeamento: l.${row.line} "${row.label}"`);
     for (const role of CANON) assert.ok(VOCAB[row.cells[role]], `valor fora do dicionário: l.${row.line} ${role} = "${row.cells[role]}"`);

@@ -5,6 +5,11 @@ import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js
 import {
   toCommissionBasisEventDto,
   toCommissionCalculationDto,
+  toCommissionMyRateDto,
+  toCommissionOverviewDto,
+  toCommissionPayeeOverviewDto,
+  toCommissionPayeeRateDto,
+  toCommissionPayeeRowDto,
   toCommissionPolicyDto,
   toCommissionSettlementDto,
   toCommissionStatementDto,
@@ -153,6 +158,122 @@ export class CommissionController {
 
     return {
       data: toCommissionSettlementDto(result),
+    };
+  }
+
+  async upsertPayeeRate(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.upsertPayeeRate(actor, request.params.userId, request.body ?? {});
+
+    if (result.changed) {
+      const action = result.currentRule.selfChange ? "commission.rate_self_changed" : "commission.rate_changed";
+      await recordRequestAuditBestEffort(request, {
+        action,
+        resourceType: "commission_policy_rule",
+        resourceId: result.currentRule.ruleId,
+        outcome: "success",
+        severity: "info",
+        metadata: {
+          payeeUserId: result.currentRule.payeeUserId,
+          rateType: result.currentRule.rateType,
+          previousRateValue: result.previousRule?.rateValue ?? null,
+          rateValue: result.currentRule.rateValue,
+          ruleId: result.currentRule.ruleId,
+          ...(result.currentRule.selfChange ? {} : { previousRuleId: result.previousRule?.ruleId ?? null }),
+        },
+      });
+    }
+
+    return {
+      status: 200,
+      data: toCommissionPayeeRateDto(result.currentRule),
+    };
+  }
+
+  async listRates(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const items = await service.listCurrentRates(actor);
+    return {
+      body: {
+        items: items.map(toCommissionPayeeRateDto),
+      },
+    };
+  }
+
+  async listPayeeRateHistory(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const items = await service.listPayeeRateHistory(actor, request.params.userId);
+    return {
+      body: {
+        items: items.map(toCommissionPayeeRateDto),
+      },
+    };
+  }
+
+  async getMyRate(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const rate = await service.getMyRate(actor);
+    return {
+      data: toCommissionMyRateDto(rate),
+    };
+  }
+
+  async reconcileCommissions(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const counts = await service.reconcileCommissions(actor);
+
+    await recordRequestAuditBestEffort(request, {
+      action: "commission.reconcile_requested",
+      resourceType: "commission_calculation",
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        created: counts.created,
+        released: counts.released,
+        recalculated: counts.recalculated,
+        skipped: counts.skipped,
+      },
+    });
+
+    return {
+      status: 200,
+      data: counts,
+    };
+  }
+
+  async getOverview(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.getOverview(actor, request.query as Record<string, unknown>);
+    return {
+      data: toCommissionOverviewDto(result),
+    };
+  }
+
+  async listPayees(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.listPayees(actor, request.query as Record<string, unknown>);
+    return {
+      body: toListDto(result, toCommissionPayeeRowDto),
+    };
+  }
+
+  async getPayeeOverview(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.getPayeeOverview(
+      actor,
+      request.params.userId,
+      request.query as Record<string, unknown>,
+    );
+    return {
+      data: toCommissionPayeeOverviewDto(result),
+    };
+  }
+
+  async getMyOverview(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.getMyOverview(actor, request.query as Record<string, unknown>);
+    return {
+      data: toCommissionPayeeOverviewDto(result),
     };
   }
 

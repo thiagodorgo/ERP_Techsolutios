@@ -1,25 +1,61 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
-import type {
-  CommissionBasisEvent,
-  CommissionBasisEventStatus,
-  CommissionCalculation,
-  CommissionCalculationStatus,
-  CommissionPayeeSummary,
-  CommissionPolicy,
-  CommissionPolicyRule,
-  CommissionPolicyStatus,
-  CommissionStatement,
-  CommissionStatementStatus,
-  CreateCommissionBasisEventInput,
-  CreateCommissionPolicyInput,
-  ListCommissionBasisEventsInput,
-  ListCommissionCalculationsInput,
-  ListCommissionPoliciesInput,
-  ListCommissionStatementsInput,
-  ListResult,
-  SummarizeCalculationsByPayeeInput,
+import { PrismaProfessionalStatementRepository } from "../professional-statements/professional-statement-prisma.repository.js";
+import { createProfessionalStatementForSourceInRepository } from "../professional-statements/professional-statement.service.js";
+import { buildCommissionKindWhere } from "./commission-calculation-kind.js";
+import {
+  buildRecentBusinessMonths,
+  COMMISSION_BUSINESS_TIMEZONE,
+  decimalTextToCents,
+  getBusinessMonthUtcRange,
+  normalizeRateValueText,
+  toCommissionBusinessMonth,
+} from "./commission-engine.js";
+import {
+  CommissionError,
+  type CommissionActorContext,
+  type CommissionBasisEvent,
+  type CommissionBasisEventStatus,
+  type CommissionBucket,
+  type CommissionCalculation,
+  type CommissionCalculationStatus,
+  type CommissionJsonRecord,
+  type CommissionOverviewInput,
+  type CommissionOverviewMonthBucket,
+  type CommissionOverviewResult,
+  type CommissionOverviewServiceBucket,
+  type CommissionOverviewTopPayee,
+  type CommissionPayeeOverviewInput,
+  type CommissionPayeeOverviewResult,
+  type CommissionPayeeRateRecord,
+  type CommissionPayeeRow,
+  type CommissionPayeeSummary,
+  type CommissionPolicy,
+  type CommissionPolicyRule,
+  type CommissionPolicyStatus,
+  type CommissionRateType,
+  type CommissionStatement,
+  type CommissionStatementCreditInput,
+  type CommissionStatementStatus,
+  type CommissionUnit,
+  type CreateCommissionBasisEventInput,
+  type CreateCommissionPolicyInput,
+  type EngineFinancialItemRow,
+  type EnginePolicyInfo,
+  type EngineRecalcCandidate,
+  type EngineReconcileScope,
+  type EngineReleaseCandidate,
+  type EngineWorkOrderCandidate,
+  type EngineWorkOrderSnapshot,
+  type ListCommissionBasisEventsInput,
+  type ListCommissionCalculationsInput,
+  type ListCommissionPayeesInput,
+  type ListCommissionPoliciesInput,
+  type ListCommissionStatementsInput,
+  type ListResult,
+  type SummarizeCalculationsByPayeeInput,
+  type UpsertPayeeCommissionRateInput,
 } from "./commission.types.js";
 import { commissionCents, commissionCentsOfSum } from "./commission-money.js";
 import type { CommissionRepository } from "./commission.repository.js";
@@ -32,7 +68,7 @@ import {
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
-export class PrismaCommissionRepository implements CommissionRepository {
+export class PrismaCommissionRepository implements CommissionRepository, CommissionUnit {
   constructor(private readonly client: PrismaExecutor) {}
 
   async createPolicy(input: CreateCommissionPolicyInput): Promise<CommissionPolicy> {
@@ -228,7 +264,7 @@ export class PrismaCommissionRepository implements CommissionRepository {
     const items = await this.client.commissionCalculation.findMany({
       where: { tenant_id: tenantId, id: { in: [...ids] } },
     });
-    return items.map(mapCalculationRecord);
+    return this.attachBasisOrigin(items.map(mapCalculationRecord), tenantId);
   }
 
   // Ω4C PR-10 — marca liquidado com guarda DURO `settled_at: null` (idempotência no banco): re-liquidar não
@@ -291,6 +327,915 @@ export class PrismaCommissionRepository implements CommissionRepository {
       offset: input.offset,
     };
   }
+
+  async evaluateCalculationWorkOrderEligibility(
+    tenantId: string,
+    calculation: CommissionCalculation,
+  ): Promise<"eligible" | "ineligible" | "pending_review"> {
+    const evt = await this.client.commissionBasisEvent.findFirst({
+      where: { tenant_id: tenantId, id: calculation.basisEventId },
+      select: { source_type: true, source_id: true },
+    });
+    const snapWoId =
+      typeof calculation.calculationSnapshot.workOrderId === "string"
+        ? calculation.calculationSnapshot.workOrderId
+        : undefined;
+    const workOrderId = (evt && isWorkOrderSourceType(evt.source_type) ? evt.source_id : undefined) ?? snapWoId;
+    if (!workOrderId) return "eligible";
+
+    const state = await readWorkOrderCancellationPrisma(this.client, tenantId, workOrderId);
+    return evaluateWorkOrderCommissionEligibility(state);
+  }
+
+  async runCommissionUnit<T>(_tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
+    return work(this);
+  }
+
+  async ensureEnginePolicy(tenantId: string, actorUserId: string): Promise<void> {
+    await this.client.$executeRaw`INSERT INTO commission_policies (tenant_id, name, scope, vertical, status, effective_from, created_by) VALUES (${tenantId}::uuid, 'Comissão da organização', 'engine', 'field_services', 'active', now(), ${actorUserId}::uuid) ON CONFLICT (tenant_id) WHERE scope = 'engine' DO NOTHING /* commission_engine_policy_ensure */`; // B-COMISSAO:cria-politica
+  }
+
+  async lockCommissionRate(tenantId: string): Promise<string> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`SELECT id FROM commission_policies WHERE tenant_id = ${tenantId}::uuid AND scope = 'engine' FOR NO KEY UPDATE /* commission_rate_lock */`; // B-COMISSAO:trava-organizacao
+    if (rows.length !== 1) throw commissionLockMissingError();
+    return rows[0]!.id;
+  }
+
+  async lockCommissionPayee(tenantId: string, payeeUserId: string): Promise<boolean> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`SELECT id FROM operator_profiles WHERE tenant_id = ${tenantId}::uuid AND user_id = ${payeeUserId}::uuid FOR NO KEY UPDATE /* commission_payee_lock */`; // B-COMISSAO:trava-guincheiro
+    return rows.length === 1; // B-COMISSAO:trava-devolve-existencia
+  }
+
+  async userExistsInTenant(tenantId: string, userId: string): Promise<boolean> {
+    // B-COMISSAO:fora-da-organizacao
+    const row = await this.client.user.findFirst({
+      where: { tenant_id: tenantId, id: userId },
+      select: { id: true },
+    });
+    return Boolean(row);
+  }
+
+  async findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null> {
+    const rows = await this.client.$queryRaw<PayeeRuleQueryRow[]>`
+      SELECT r.id, r.tenant_id, r.policy_id, r.rule_type, r.basis_type, r.rate_type, r.rate_value::text AS rate_value_text, r.conditions, r.active, r.created_at
+      FROM commission_policy_rules r
+      JOIN commission_policies p ON p.tenant_id = r.tenant_id AND p.id = r.policy_id
+      WHERE r.tenant_id = ${tenantId}::uuid
+        AND p.scope = 'engine'
+        AND r.rule_type = 'engine_payee'
+        AND r.active = true
+        AND (r.conditions ->> 'payeeUserId') = ${payeeUserId}
+      ORDER BY r.created_at DESC
+      LIMIT 1
+    `;
+    return rows[0] ? mapPayeeRuleRow(rows[0]) : null;
+  }
+
+  async replacePayeeRate(
+    policyId: string,
+    input: UpsertPayeeCommissionRateInput,
+    previousRuleId: string | null,
+    now: Date,
+  ): Promise<CommissionPayeeRateRecord> {
+    const nowIso = now.toISOString();
+    if (previousRuleId) {
+      const prev = await this.client.commissionPolicyRule.findFirst({
+        where: { tenant_id: input.tenantId, id: previousRuleId },
+      });
+      const prevConditions = isRecord(prev?.conditions) ? prev.conditions : {};
+      await this.client.commissionPolicyRule.updateMany({
+        where: { tenant_id: input.tenantId, id: previousRuleId, active: true },
+        data: {
+          active: false,
+          conditions: toJsonObject({
+            ...prevConditions,
+            effectiveTo: nowIso,
+          }),
+          updated_at: now,
+        },
+      });
+    }
+
+    const conditions: Record<string, unknown> = {
+      payeeUserId: input.payeeUserId,
+      rateValueText: input.rateValueText,
+      effectiveFrom: nowIso,
+      effectiveTo: null,
+      reason: input.reason,
+      changedBy: input.actorUserId,
+      // B-COMISSAO:marca-propria
+      selfChange: input.selfChange,
+    };
+
+    const created = await this.client.commissionPolicyRule.create({
+      data: {
+        tenant_id: input.tenantId,
+        policy_id: policyId,
+        rule_type: "engine_payee",
+        basis_type: "work_order_total",
+        rate_type: input.rateType,
+        rate_value: new Prisma.Decimal(input.rateValueText),
+        conditions: toJsonObject(conditions),
+        priority: 10,
+        active: true,
+        created_at: now,
+        updated_at: now,
+      },
+    });
+
+    return mapPayeeRuleRow({
+      id: created.id,
+      tenant_id: created.tenant_id,
+      policy_id: created.policy_id,
+      rule_type: created.rule_type,
+      basis_type: created.basis_type,
+      rate_type: created.rate_type,
+      rate_value_text: input.rateValueText,
+      conditions: created.conditions,
+      active: created.active,
+      created_at: created.created_at,
+    });
+  }
+
+  async listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]> {
+    const rows = await this.client.$queryRaw<PayeeRuleQueryRow[]>`
+      SELECT r.id, r.tenant_id, r.policy_id, r.rule_type, r.basis_type, r.rate_type, r.rate_value::text AS rate_value_text, r.conditions, r.active, r.created_at
+      FROM commission_policy_rules r
+      JOIN commission_policies p ON p.tenant_id = r.tenant_id AND p.id = r.policy_id
+      WHERE r.tenant_id = ${tenantId}::uuid
+        AND p.scope = 'engine'
+        AND r.rule_type = 'engine_payee'
+        AND r.active = true
+      ORDER BY r.created_at DESC
+    `;
+    return rows.map(mapPayeeRuleRow);
+  }
+
+  async listPayeeRateHistory(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord[] | null> {
+    const exists = await this.userExistsInTenant(tenantId, payeeUserId);
+    if (!exists) return null;
+    const rows = await this.client.$queryRaw<PayeeRuleQueryRow[]>`
+      SELECT r.id, r.tenant_id, r.policy_id, r.rule_type, r.basis_type, r.rate_type, r.rate_value::text AS rate_value_text, r.conditions, r.active, r.created_at
+      FROM commission_policy_rules r
+      JOIN commission_policies p ON p.tenant_id = r.tenant_id AND p.id = r.policy_id
+      WHERE r.tenant_id = ${tenantId}::uuid
+        AND p.scope = 'engine'
+        AND r.rule_type = 'engine_payee'
+        AND (r.conditions ->> 'payeeUserId') = ${payeeUserId}
+      ORDER BY r.created_at DESC, r.active DESC
+    `;
+    return rows.map(mapPayeeRuleRow);
+  }
+
+  async findEnginePolicies(tenantId: string): Promise<EnginePolicyInfo[]> {
+    // B-COMISSAO:so-le-reservado
+    const rows = await this.client.commissionPolicy.findMany({
+      where: { tenant_id: tenantId, scope: "engine", status: "active" },
+      select: { id: true, effective_from: true },
+      orderBy: { created_at: "asc" },
+    });
+    return rows.map((r) => ({ id: r.id, effectiveFrom: r.effective_from }));
+  }
+
+  async listEngineCandidatesForReconcile(
+    tenantId: string,
+    policyEffectiveFrom: Date,
+  ): Promise<EngineWorkOrderCandidate[]> {
+    // Candidatas do passo 1 (plano §3.4): OS concluída, ou cancelada com "manter cobrança", desde o início da
+    // política, sem o evento-base de chave canônica; até 500 por volta, da mais antiga para a mais nova. O instante
+    // da OS é a conclusão; na cancelada, o cancelamento (`updated_at` só se a coluna vier nula, linha antiga).
+    // B-COMISSAO:tenant-explicito — M23: a linha `WHERE wo.tenant_id = ${tenantId}::uuid` (predicado explícito da
+    //   organização, Emenda 1 §E1.7, além do `withTenantRls`); a subconsulta do evento também casa por `tenant_id`.
+    // B-COMISSAO:base-do-banco — M6: o evento que exclui a OS é só o do espaço reservado, pela chave canônica
+    //   `engine:wo:<id>:v1` (Emenda 1 §E1.3); evento à mão, de outra chave, nunca conta como o evento do motor.
+    const rows = await this.client.$queryRaw<
+      Array<{
+        id: string;
+        code: string;
+        status: string;
+        occurred_at: Date;
+        financial_cancellation_decision: string | null;
+      }>
+    >`
+      SELECT wo.id, wo.code, wo.status, wo.financial_cancellation_decision,
+             COALESCE(CASE WHEN wo.status = 'cancelled' THEN wo.cancelled_at ELSE wo.completed_at END, wo.updated_at) AS occurred_at
+      FROM work_orders wo
+      WHERE wo.tenant_id = ${tenantId}::uuid
+        AND (wo.status = 'completed' OR (wo.status = 'cancelled' AND wo.financial_cancellation_decision = 'keep'))
+        AND COALESCE(CASE WHEN wo.status = 'cancelled' THEN wo.cancelled_at ELSE wo.completed_at END, wo.updated_at) >= ${policyEffectiveFrom}
+        AND NOT EXISTS (
+          SELECT 1 FROM commission_basis_events evt
+          WHERE evt.tenant_id = wo.tenant_id
+            AND evt.idempotency_key = 'engine:wo:' || wo.id::text || ':v1'
+        )
+      ORDER BY occurred_at ASC, wo.id ASC
+      LIMIT 500
+    `;
+    return rows.map((r) => ({
+      id: r.id,
+      code: r.code,
+      status: r.status,
+      completedAt: r.occurred_at,
+      financialDecision: r.financial_cancellation_decision,
+    }));
+  }
+
+  async readReconcileScope(tenantId: string): Promise<EngineReconcileScope> {
+    const policies = await this.findEnginePolicies(tenantId);
+    if (policies.length === 0) return { policies, candidates: [], releaseCandidates: [], recalcCandidates: [] };
+    const [candidates, releaseCandidates, recalcCandidates] = await Promise.all([
+      this.listEngineCandidatesForReconcile(tenantId, policies[0]!.effectiveFrom),
+      this.listEngineReleaseCandidates(tenantId),
+      this.listEngineRecalcCandidates(tenantId),
+    ]);
+    return { policies, candidates, releaseCandidates, recalcCandidates };
+  }
+
+  private async listEngineReleaseCandidates(tenantId: string): Promise<EngineReleaseCandidate[]> {
+    const rows = await this.client.$queryRaw<Array<{ calculation_id: string; work_order_id: string }>>`
+      SELECT c.id AS calculation_id, e.source_id AS work_order_id
+      FROM commission_calculations c
+      JOIN commission_basis_events e ON e.tenant_id = c.tenant_id AND e.id = c.basis_event_id
+      WHERE c.tenant_id = ${tenantId}::uuid
+        AND c.idempotency_key LIKE 'engine:calc:%'
+        AND c.status = 'calculated'
+        AND c.settled_at IS NULL
+        AND e.source_type = 'work_order'
+      ORDER BY c.created_at ASC, c.id ASC
+      LIMIT 500
+    `;
+    return rows.map((r) => ({ calculationId: r.calculation_id, workOrderId: r.work_order_id }));
+  }
+
+  private async listEngineRecalcCandidates(tenantId: string): Promise<EngineRecalcCandidate[]> {
+    // B-COMISSAO:pago-congela
+    const rows = await this.client.$queryRaw<
+      Array<{
+        calculation_id: string;
+        basis_event_id: string;
+        policy_id: string;
+        work_order_id: string;
+        event_idempotency_key: string;
+        status: string;
+        settled_at: Date | null;
+        calculation_snapshot: unknown;
+      }>
+    >`
+      SELECT c.id AS calculation_id, c.basis_event_id, c.policy_id, e.source_id AS work_order_id,
+             e.idempotency_key AS event_idempotency_key, c.status, c.settled_at, c.calculation_snapshot
+      FROM commission_calculations c
+      JOIN commission_basis_events e ON e.tenant_id = c.tenant_id AND e.id = c.basis_event_id
+      WHERE c.tenant_id = ${tenantId}::uuid
+        AND c.idempotency_key LIKE 'engine:calc:%'
+        AND c.status IN ('calculated', 'approved')
+        AND c.settled_at IS NULL
+        AND e.source_type = 'work_order'
+      ORDER BY c.created_at ASC, c.id ASC
+      LIMIT 500
+    `;
+    return rows.map((r) => ({
+      calculationId: r.calculation_id,
+      basisEventId: r.basis_event_id,
+      policyId: r.policy_id,
+      workOrderId: r.work_order_id,
+      eventIdempotencyKey: r.event_idempotency_key,
+      status: r.status as CommissionCalculationStatus,
+      settledAt: r.settled_at,
+      snapshot: isRecord(r.calculation_snapshot) ? r.calculation_snapshot : {},
+    }));
+  }
+
+  async lockAndReadWorkOrderForCommission(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<EngineWorkOrderSnapshot | null> {
+    const rows = await this.client.$queryRaw<
+      Array<{
+        id: string;
+        code: string;
+        status: string;
+        assigned_user_id: string | null;
+        service_catalog_id: string | null;
+        occurred_at: Date;
+        financial_cancellation_decision: string | null;
+      }>
+    >`
+      SELECT id, code, status, assigned_user_id, service_catalog_id, financial_cancellation_decision,
+             COALESCE(CASE WHEN status = 'cancelled' THEN cancelled_at ELSE completed_at END, updated_at) AS occurred_at
+      FROM work_orders
+      WHERE tenant_id = ${tenantId}::uuid AND id = ${workOrderId}::uuid
+      FOR UPDATE /* commission_wo_lock */
+    `;
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      id: row.id,
+      code: row.code,
+      status: row.status,
+      assignedUserId: row.assigned_user_id,
+      serviceCatalogId: row.service_catalog_id,
+      completedAt: row.occurred_at,
+      financialDecision: row.financial_cancellation_decision,
+    };
+  }
+
+  async hasLiveEngineBasisEvent(tenantId: string, workOrderId: string): Promise<boolean> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM commission_basis_events
+      WHERE tenant_id = ${tenantId}::uuid
+        AND source_id = ${workOrderId}
+        AND idempotency_key LIKE 'engine:wo:%'
+        AND status <> 'superseded'
+      LIMIT 1
+    `;
+    return rows.length > 0;
+  }
+
+  async insertEngineBasisEventIfAbsent(input: {
+    readonly tenantId: string;
+    readonly policyId: string;
+    readonly workOrderId: string;
+    readonly sourceEventName: string;
+    readonly idempotencyKey: string;
+    readonly occurredAt: Date;
+    readonly status: CommissionBasisEventStatus;
+    readonly payload: CommissionJsonRecord;
+  }): Promise<string | null> {
+    const payloadJson = JSON.stringify(input.payload);
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO commission_basis_events (
+        tenant_id, source_type, source_id, source_event_name, idempotency_key, payload, occurred_at, status, policy_id
+      )
+      VALUES (
+        ${input.tenantId}::uuid,
+        'work_order',
+        ${input.workOrderId},
+        ${input.sourceEventName},
+        ${input.idempotencyKey},
+        ${payloadJson}::jsonb,
+        ${input.occurredAt},
+        ${input.status},
+        ${input.policyId}::uuid
+      )
+      ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+      RETURNING id
+    `;
+    return rows[0]?.id ?? null;
+  }
+
+  async updateEngineBasisEventOutcome(
+    tenantId: string,
+    eventId: string,
+    status: CommissionBasisEventStatus,
+    payload: CommissionJsonRecord,
+  ): Promise<void> {
+    await this.client.commissionBasisEvent.updateMany({
+      where: { tenant_id: tenantId, id: eventId },
+      data: {
+        status,
+        payload: toJsonObject(payload),
+      },
+    });
+  }
+
+  async listActiveWorkOrderFinancialItems(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<EngineFinancialItemRow[]> {
+    const rows = await this.client.$queryRaw<Array<{ total_amount_text: string; currency: string }>>`
+      SELECT total_amount::text AS total_amount_text, currency
+      FROM work_order_financial_items
+      WHERE tenant_id = ${tenantId}::uuid
+        AND work_order_id = ${workOrderId}::uuid
+        AND deleted_at IS NULL
+      ORDER BY created_at ASC, id ASC
+    `;
+    return rows.map((r) => ({ totalAmountText: r.total_amount_text, currency: r.currency }));
+  }
+
+  async listEngineRulesForPolicy(tenantId: string, policyId: string): Promise<CommissionPolicyRule[]> {
+    const rows = await this.client.commissionPolicyRule.findMany({
+      where: {
+        tenant_id: tenantId,
+        policy_id: policyId,
+        rule_type: { startsWith: "engine_" },
+      },
+      orderBy: [{ priority: "asc" }, { created_at: "asc" }],
+    });
+    return rows.map(mapPolicyRuleRecord);
+  }
+
+  async hasLivePrimaryCalculationForEvent(tenantId: string, basisEventId: string): Promise<boolean> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM commission_calculations
+      WHERE tenant_id = ${tenantId}::uuid
+        AND basis_event_id = ${basisEventId}::uuid
+        AND idempotency_key LIKE 'engine:calc:%'
+        AND status <> 'reversed'
+      LIMIT 1
+    `;
+    return rows.length > 0;
+  }
+
+  async insertEnginePrimaryCalculationIfAbsent(input: {
+    readonly tenantId: string;
+    readonly basisEventId: string;
+    readonly policyId: string;
+    readonly payeeUserId: string;
+    readonly amountDecimalText: string;
+    readonly status: CommissionCalculationStatus;
+    readonly calculationSnapshot: CommissionJsonRecord;
+    readonly idempotencyKey: string;
+  }): Promise<string | null> {
+    const snapJson = JSON.stringify(input.calculationSnapshot);
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO commission_calculations (
+        tenant_id, basis_event_id, policy_id, eligible_user_id, payee_id, amount, currency, status, calculation_snapshot, idempotency_key
+      )
+      VALUES (
+        ${input.tenantId}::uuid,
+        ${input.basisEventId}::uuid,
+        ${input.policyId}::uuid,
+        ${input.payeeUserId}::uuid,
+        ${input.payeeUserId}::uuid,
+        ${input.amountDecimalText}::numeric,
+        'BRL',
+        ${input.status},
+        ${snapJson}::jsonb,
+        ${input.idempotencyKey}
+      )
+      ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+      RETURNING id
+    `;
+    return rows[0]?.id ?? null;
+  }
+
+  async findLatestWorkOrderApprovalStatus(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<"pending_approval" | "approved" | "rejected" | null> {
+    const rows = await this.client.$queryRaw<Array<{ status: string }>>`
+      SELECT status
+      FROM operational_approvals
+      WHERE tenant_id = ${tenantId}::uuid
+        AND entity_type = 'work_order'
+        AND work_order_id = ${workOrderId}::uuid
+      ORDER BY requested_at DESC, id DESC
+      LIMIT 1
+    `;
+    const status = rows[0]?.status;
+    if (status === "pending_approval" || status === "approved" || status === "rejected") {
+      return status;
+    }
+    return null;
+  }
+
+  async transitionCalculatedCommissionStatus(
+    tenantId: string,
+    calculationId: string,
+    nextStatus: "approved" | "rejected",
+  ): Promise<boolean> {
+    const updated = await this.client.commissionCalculation.updateMany({
+      where: {
+        tenant_id: tenantId,
+        id: calculationId,
+        status: "calculated",
+        settled_at: null,
+      },
+      data: {
+        status: nextStatus,
+        updated_at: new Date(),
+      },
+    });
+    return updated.count === 1;
+  }
+
+  async lockAndReadEngineCalculationForRecalc(
+    tenantId: string,
+    calculationId: string,
+  ): Promise<EngineRecalcCandidate | null> {
+    const rows = await this.client.$queryRaw<
+      Array<{
+        calculation_id: string;
+        basis_event_id: string;
+        policy_id: string;
+        work_order_id: string;
+        event_idempotency_key: string;
+        status: string;
+        settled_at: Date | null;
+        calculation_snapshot: unknown;
+      }>
+    >`
+      SELECT c.id AS calculation_id, c.basis_event_id, c.policy_id, e.source_id AS work_order_id,
+             e.idempotency_key AS event_idempotency_key, c.status, c.settled_at, c.calculation_snapshot
+      FROM commission_calculations c
+      JOIN commission_basis_events e ON e.tenant_id = c.tenant_id AND e.id = c.basis_event_id
+      WHERE c.tenant_id = ${tenantId}::uuid
+        AND c.id = ${calculationId}::uuid
+        AND c.idempotency_key LIKE 'engine:calc:%'
+        AND c.status IN ('calculated', 'approved')
+      FOR UPDATE OF c
+    `;
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      calculationId: r.calculation_id,
+      basisEventId: r.basis_event_id,
+      policyId: r.policy_id,
+      workOrderId: r.work_order_id,
+      eventIdempotencyKey: r.event_idempotency_key,
+      status: r.status as CommissionCalculationStatus,
+      settledAt: r.settled_at,
+      snapshot: isRecord(r.calculation_snapshot) ? r.calculation_snapshot : {},
+    };
+  }
+
+  async markEngineBasisEventSuperseded(tenantId: string, basisEventId: string): Promise<boolean> {
+    const updated = await this.client.commissionBasisEvent.updateMany({
+      where: {
+        tenant_id: tenantId,
+        id: basisEventId,
+        status: { not: "superseded" },
+      },
+      data: {
+        status: "superseded",
+      },
+    });
+    return updated.count === 1;
+  }
+
+  async markEngineCalculationReversed(tenantId: string, calculationId: string): Promise<boolean> {
+    const updated = await this.client.commissionCalculation.updateMany({
+      where: {
+        tenant_id: tenantId,
+        id: calculationId,
+        status: { in: ["calculated", "approved"] },
+      },
+      data: {
+        status: "reversed",
+        updated_at: new Date(),
+      },
+    });
+    return updated.count === 1;
+  }
+
+  async findOperatorProfileIdByUser(tenantId: string, userId: string): Promise<string | undefined> {
+    const profile = await this.client.operatorProfile.findFirst({
+      where: { tenant_id: tenantId, user_id: userId },
+      select: { id: true },
+    });
+    return profile?.id;
+  }
+
+  async lockAndReadCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]> {
+    if (ids.length === 0) return [];
+    const sortedIds = [...new Set(ids)].sort();
+    for (const calcId of sortedIds) {
+      await this.client.$queryRaw<Array<{ id: string }>>`
+        SELECT id
+        FROM commission_calculations
+        WHERE tenant_id = ${tenantId}::uuid
+          AND id = ${calcId}::uuid
+        FOR UPDATE /* commission_calc_lock */
+      `;
+    }
+    const items = await this.client.commissionCalculation.findMany({
+      where: { tenant_id: tenantId, id: { in: sortedIds } },
+    });
+    return this.attachBasisOrigin(items.map(mapCalculationRecord), tenantId);
+  }
+
+  async postStatementCreditInUnit(
+    actor: CommissionActorContext,
+    input: CommissionStatementCreditInput,
+  ): Promise<{ readonly groupId: string }> {
+    const entries = await createProfessionalStatementForSourceInRepository(
+      new PrismaProfessionalStatementRepository(this.client),
+      (tenantId, operatorProfileId) => this.lookupOperatorProfileNameInUnit(tenantId, operatorProfileId),
+      actor,
+      {
+        operatorProfileId: input.operatorProfileId,
+        entryType: "remuneration",
+        direction: "credit",
+        sourceType: "remuneration",
+        sourceId: input.sourceId,
+        amount: input.amount,
+        installmentTotal: 1,
+        firstDueDate: input.firstDueDate,
+        description: input.description,
+      },
+    );
+    const groupId = entries[0]?.groupId;
+    if (!groupId) {
+      throw new CommissionError(
+        500,
+        "COMMISSION_SETTLEMENT_FAILED",
+        "statement_credit_failed",
+        "The professional statement credit could not be posted.",
+      );
+    }
+    return { groupId };
+  }
+
+  private async lookupOperatorProfileNameInUnit(
+    tenantId: string,
+    operatorProfileId: string,
+  ): Promise<{ readonly fullName: string | undefined } | undefined> {
+    const profile = await this.client.operatorProfile.findFirst({
+      where: { tenant_id: tenantId, id: operatorProfileId },
+      select: { full_name: true },
+    });
+    return profile ? { fullName: profile.full_name ?? undefined } : undefined;
+  }
+
+  async markCommissionSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined> {
+    // B-COMISSAO:marca-condicional — exige status='approved', settled_at IS NULL e classe 'commission' (P-KIND).
+    const updated = await this.client.commissionCalculation.updateManyAndReturn({
+      where: {
+        tenant_id: tenantId,
+        id: calculationId,
+        status: "approved",
+        settled_at: null,
+        ...buildCommissionKindWhere(),
+      },
+      data: {
+        settled_at: settledAt,
+        settlement_ref: settlementRef,
+        updated_at: settledAt,
+      },
+    });
+    return updated[0] ? mapCalculationRecord(updated[0]) : undefined;
+  }
+
+  async getOverview(input: CommissionOverviewInput): Promise<CommissionOverviewResult> {
+    const refDate = input.to ?? new Date();
+    const currentMonth = toCommissionBusinessMonth(refDate);
+    const months = buildRecentBusinessMonths(refDate, 12);
+
+    const baseTenantWhere: Prisma.CommissionCalculationWhereInput = {
+      tenant_id: input.tenantId, // B-COMISSAO:tenant-explicito-leitura
+    };
+
+    const [toReceiveAgg, rejectedCount, reviewEventCount, activeRecords] = await Promise.all([
+      this.client.commissionCalculation.aggregate({
+        where: {
+          ...baseTenantWhere,
+          ...buildCommissionKindWhere(), // B-COMISSAO:classe-a-receber
+          status: "approved",
+          settled_at: null,
+          ...buildCreatedAtRange(input.from, input.to),
+        },
+        _sum: { amount: true },
+      }),
+      this.client.commissionCalculation.count({
+        where: {
+          ...baseTenantWhere,
+          ...buildCommissionKindWhere(), // B-COMISSAO:classe-reprovadas
+          status: "rejected",
+          ...buildCreatedAtRange(input.from, input.to),
+        },
+      }),
+      this.client.commissionBasisEvent.count({
+        where: {
+          tenant_id: input.tenantId,
+          idempotency_key: { startsWith: "engine:wo:" },
+          status: "pending_review",
+          ...(input.from || input.to
+            ? {
+                occurred_at: {
+                  ...(input.from ? { gte: input.from } : {}),
+                  ...(input.to ? { lte: input.to } : {}),
+                },
+              }
+            : {}),
+        },
+      }),
+      this.client.commissionCalculation.findMany({
+        where: {
+          ...baseTenantWhere,
+          ...buildCommissionKindWhere(),
+          status: { notIn: ["rejected", "reversed"] }, // B-COMISSAO:total-sem-estorno
+        },
+        orderBy: [{ created_at: "desc" }],
+      }),
+    ]);
+
+    const activeCalcs = activeRecords.map(mapCalculationRecord);
+    const inPeriod = activeCalcs.filter((c) => prismaWithinRange(c.createdAt, input.from, input.to));
+
+    const toReceiveCents = commissionCents(toReceiveAgg._sum.amount);
+    const forecastCents = prismaSumCents(
+      inPeriod.filter((c) => c.status === "calculated" && !c.settledAt),
+    ).toString();
+    const paidInPeriodCents = prismaSumCents(
+      activeCalcs.filter(
+        (c) =>
+          c.status === "approved" &&
+          Boolean(c.settledAt) &&
+          prismaWithinRange(c.settledAt!, input.from, input.to),
+      ),
+    ).toString();
+    const paidThisMonthCents = prismaSumCents(
+      activeCalcs.filter(
+        (c) =>
+          c.status === "approved" &&
+          Boolean(c.settledAt) &&
+          toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+      ),
+    ).toString();
+
+    const noRuleCount = inPeriod.filter((c) => c.calculationSnapshot.outcome === "no_rule").length;
+    const disputedCalcCount = inPeriod.filter((c) => c.status === "disputed").length;
+    const reviewCount = reviewEventCount + disputedCalcCount;
+
+    const byMonth: CommissionOverviewMonthBucket[] = months.map((m) => {
+      const calcInMonth = activeCalcs.filter((c) => toCommissionBusinessMonth(c.createdAt) === m);
+      const paidInMonth = activeCalcs.filter(
+        (c) => c.status === "approved" && Boolean(c.settledAt) && toCommissionBusinessMonth(c.settledAt!) === m,
+      );
+      return {
+        month: m,
+        calculatedCents: prismaSumCents(calcInMonth).toString(),
+        paidCents: prismaSumCents(paidInMonth).toString(),
+      };
+    });
+
+    const byServiceType = prismaAggregateByServiceType(inPeriod);
+    const topPayees = prismaAggregateTopPayees(inPeriod);
+    const { changeCents, changeDirection } = prismaComputeOverviewChange(byMonth);
+
+    return {
+      toReceiveCents,
+      forecastCents,
+      paidInPeriodCents,
+      paidThisMonthCents,
+      noRuleCount,
+      reviewCount,
+      rejectedCount,
+      byMonth,
+      byServiceType,
+      topPayees,
+      changeCents,
+      changeDirection,
+      from: input.from,
+      to: input.to,
+    };
+  }
+
+  async listPayees(input: ListCommissionPayeesInput): Promise<ListResult<CommissionPayeeRow>> {
+    const refDate = input.to ?? new Date();
+    const currentMonth = toCommissionBusinessMonth(refDate);
+    const rates = await this.listCurrentPayeeRates(input.tenantId);
+    const rateByPayee = new Map(rates.map((r) => [r.payeeUserId, r]));
+
+    const records = await this.client.commissionCalculation.findMany({
+      where: {
+        tenant_id: input.tenantId,
+        ...buildCommissionKindWhere(),
+        status: { notIn: ["rejected", "reversed"] },
+        ...(input.serviceCatalogId
+          ? {
+              calculation_snapshot: {
+                path: ["serviceCatalogId"],
+                equals: input.serviceCatalogId,
+              },
+            }
+          : {}),
+      },
+      orderBy: [{ created_at: "desc" }],
+    });
+    const commissionCalcs = records.map(mapCalculationRecord);
+
+    const payeeIds = new Set<string>();
+    for (const r of rates) payeeIds.add(r.payeeUserId);
+    for (const c of commissionCalcs) {
+      if (c.payeeId) payeeIds.add(c.payeeId);
+    }
+
+    const rows: CommissionPayeeRow[] = [];
+    for (const payeeId of payeeIds) {
+      const payeeCalcs = commissionCalcs.filter((c) => c.payeeId === payeeId);
+      const inPeriod = payeeCalcs.filter((c) => prismaWithinRange(c.createdAt, input.from, input.to));
+      const currentRate = rateByPayee.get(payeeId) ?? null;
+
+      if (input.bucket && !prismaPayeeMatchesBucket(inPeriod, currentRate, input.bucket)) {
+        continue;
+      }
+
+      const toReceiveCents = prismaSumCents(inPeriod.filter((c) => c.status === "approved" && !c.settledAt));
+      const forecastCents = prismaSumCents(inPeriod.filter((c) => c.status === "calculated" && !c.settledAt));
+      const paidInPeriodCents = prismaSumCents(
+        payeeCalcs.filter(
+          (c) =>
+            c.status === "approved" &&
+            Boolean(c.settledAt) &&
+            prismaWithinRange(c.settledAt!, input.from, input.to),
+        ),
+      );
+      const paidThisMonthCents = prismaSumCents(
+        payeeCalcs.filter(
+          (c) =>
+            c.status === "approved" &&
+            Boolean(c.settledAt) &&
+            toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+        ),
+      );
+
+      rows.push({
+        payeeId,
+        toReceiveCents: toReceiveCents.toString(),
+        paidThisMonthCents: paidThisMonthCents.toString(),
+        paidInPeriodCents: paidInPeriodCents.toString(),
+        forecastCents: forecastCents.toString(),
+        count: inPeriod.length,
+        currentRate,
+      });
+    }
+
+    rows.sort((a, b) => {
+      const diff = BigInt(b.toReceiveCents) - BigInt(a.toReceiveCents);
+      if (diff !== 0n) return diff > 0n ? 1 : -1;
+      return a.payeeId.localeCompare(b.payeeId);
+    });
+
+    return {
+      items: rows.slice(input.offset, input.offset + input.limit),
+      total: rows.length,
+      limit: input.limit,
+      offset: input.offset,
+    };
+  }
+
+  async getPayeeOverview(input: CommissionPayeeOverviewInput): Promise<CommissionPayeeOverviewResult | null> {
+    if (!input.isMine) {
+      const exists = await this.userExistsInTenant(input.tenantId, input.payeeUserId);
+      if (!exists) return null;
+    }
+
+    const now = new Date();
+    const currentMonth = toCommissionBusinessMonth(now);
+    const months = buildRecentBusinessMonths(now, input.months);
+    const [currentRate, records] = await Promise.all([
+      this.findCurrentPayeeRate(input.tenantId, input.payeeUserId),
+      this.client.commissionCalculation.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          payee_id: input.payeeUserId,
+          ...buildCommissionKindWhere(),
+        },
+        orderBy: [{ created_at: "desc" }],
+      }),
+    ]);
+
+    const payeeCalcs = records.map(mapCalculationRecord);
+    const validCalcs = payeeCalcs.filter((c) => c.status !== "rejected" && c.status !== "reversed");
+
+    const toReceiveCents = prismaSumCents(validCalcs.filter((c) => c.status === "approved" && !c.settledAt));
+    const forecastCents = prismaSumCents(validCalcs.filter((c) => c.status === "calculated" && !c.settledAt));
+    const paidThisMonthCents = prismaSumCents(
+      validCalcs.filter(
+        (c) =>
+          c.status === "approved" &&
+          Boolean(c.settledAt) &&
+          toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+      ),
+    );
+
+    const byMonth: CommissionOverviewMonthBucket[] = months.map((m) => {
+      const calcInMonth = validCalcs.filter((c) => toCommissionBusinessMonth(c.createdAt) === m);
+      const paidInMonth = validCalcs.filter(
+        (c) => c.status === "approved" && Boolean(c.settledAt) && toCommissionBusinessMonth(c.settledAt!) === m,
+      );
+      return {
+        month: m,
+        calculatedCents: prismaSumCents(calcInMonth).toString(),
+        paidCents: prismaSumCents(paidInMonth).toString(),
+      };
+    });
+
+    const byServiceType = prismaAggregateByServiceType(validCalcs);
+    const recentCalculations = await this.attachBasisOrigin(payeeCalcs.slice(0, 5), input.tenantId);
+
+    return {
+      payeeId: input.payeeUserId,
+      toReceiveCents: toReceiveCents.toString(),
+      paidThisMonthCents: paidThisMonthCents.toString(),
+      forecastCents: forecastCents.toString(),
+      count: validCalcs.length,
+      currentRate,
+      isMine: input.isMine,
+      byMonth,
+      byServiceType,
+      recentCalculations,
+    };
+  }
 }
 
 export class RlsPrismaCommissionRepository implements CommissionRepository {
@@ -338,6 +1283,59 @@ export class RlsPrismaCommissionRepository implements CommissionRepository {
   listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaCommissionRepository(tx).listStatements(input));
   }
+
+  evaluateCalculationWorkOrderEligibility(
+    tenantId: string,
+    calculation: CommissionCalculation,
+  ): Promise<"eligible" | "ineligible" | "pending_review"> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).evaluateCalculationWorkOrderEligibility(tenantId, calculation),
+    );
+  }
+
+  runCommissionUnit<T>(tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => work(new PrismaCommissionRepository(tx)));
+  }
+
+  readReconcileScope(tenantId: string): Promise<EngineReconcileScope> {
+    // B-COMISSAO:rls-varredura — M8: a leitura das políticas e das candidatas roda na transação do `withTenantRls`;
+    //   a mutação a troca por `new PrismaCommissionRepository(this.prismaClient).readReconcileScope(tenantId)`.
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaCommissionRepository(tx).readReconcileScope(tenantId));
+  }
+
+  listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaCommissionRepository(tx).listCurrentPayeeRates(tenantId));
+  }
+
+  listPayeeRateHistory(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord[] | null> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).listPayeeRateHistory(tenantId, payeeUserId),
+    );
+  }
+
+  findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).findCurrentPayeeRate(tenantId, payeeUserId),
+    );
+  }
+
+  getOverview(input: CommissionOverviewInput): Promise<CommissionOverviewResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).getOverview(input),
+    );
+  }
+
+  listPayees(input: ListCommissionPayeesInput): Promise<ListResult<CommissionPayeeRow>> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).listPayees(input),
+    );
+  }
+
+  getPayeeOverview(input: CommissionPayeeOverviewInput): Promise<CommissionPayeeOverviewResult | null> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).getPayeeOverview(input),
+    );
+  }
 }
 
 export async function createPrismaCommissionRepository(): Promise<RlsPrismaCommissionRepository> {
@@ -373,20 +1371,60 @@ function buildBasisEventWhere(input: ListCommissionBasisEventsInput): Prisma.Com
 }
 
 function buildCalculationWhere(input: ListCommissionCalculationsInput): Prisma.CommissionCalculationWhereInput {
+  const andConditions: Prisma.CommissionCalculationWhereInput[] = [
+    buildCommissionKindWhere(), // B-COMISSAO:classe-lista
+  ];
+
+  if (input.bucket === "to_receive") {
+    andConditions.push({ status: "approved", settled_at: null });
+  } else if (input.bucket === "forecast") {
+    andConditions.push({ status: "calculated", settled_at: null });
+  } else if (input.bucket === "paid") {
+    andConditions.push({ status: "approved", settled_at: { not: null } });
+  } else if (input.bucket === "no_rule") {
+    andConditions.push({
+      status: { notIn: ["rejected", "reversed"] },
+      calculation_snapshot: { path: ["outcome"], equals: "no_rule" },
+    });
+  } else if (input.bucket === "review") {
+    andConditions.push({ status: "disputed" });
+  }
+
+  if (input.serviceCatalogId) {
+    andConditions.push({
+      calculation_snapshot: {
+        path: ["serviceCatalogId"],
+        equals: input.serviceCatalogId,
+      },
+    });
+  }
+
+  if (input.month) {
+    const { start, endExclusive } = getBusinessMonthUtcRange(input.month, COMMISSION_BUSINESS_TIMEZONE);
+    andConditions.push({
+      OR: [
+        { settled_at: { gte: start, lt: endExclusive } },
+        { settled_at: null, created_at: { gte: start, lt: endExclusive } },
+      ],
+    });
+  }
+
   return {
     tenant_id: input.tenantId,
     ...(input.status ? { status: input.status } : {}),
     ...(input.payeeId ? { payee_id: input.payeeId } : {}),
     ...buildCreatedAtRange(input.from, input.to),
+    AND: andConditions,
   };
 }
 
 function buildSummaryWhere(input: SummarizeCalculationsByPayeeInput): Prisma.CommissionCalculationWhereInput {
   return {
     tenant_id: input.tenantId,
+    ...buildCommissionKindWhere(), // B-COMISSAO:classe-resumo
     payee_id: input.payeeId ? input.payeeId : { not: null },
-    // B-APP-ORG-2S (S2e; Emenda 1.8.3.5 §1, D-DONO-2111-TELA-COMISSOES): o resumo não conta recusada nem estornada.
-    status: { notIn: ["rejected", "reversed"] },
+    // B-APP-ORG-2S (S2e; Emenda 1.8.3.5 §1, D-DONO-2111-TELA-COMISSOES) / B-COMISSAO-MOTOR (R9, M18): o resumo não conta recusada nem estornada.
+    status: { notIn: ["rejected", "reversed"] }, // B-COMISSAO:total-sem-estorno
     ...buildCreatedAtRange(input.from, input.to),
   };
 }
@@ -586,3 +1624,146 @@ type StatementRecord = {
   readonly created_at: Date;
   readonly updated_at: Date;
 };
+
+type PayeeRuleQueryRow = {
+  readonly id: string;
+  readonly tenant_id: string;
+  readonly policy_id: string;
+  readonly rule_type: string;
+  readonly basis_type: string;
+  readonly rate_type: string;
+  readonly rate_value_text: string;
+  readonly conditions: unknown;
+  readonly active: boolean;
+  readonly created_at: Date;
+};
+
+function mapPayeeRuleRow(row: PayeeRuleQueryRow): CommissionPayeeRateRecord {
+  const cond = isRecord(row.conditions) ? row.conditions : {};
+  const rateType: CommissionRateType = row.rate_type === "fixed" ? "fixed" : "percent";
+  const rawText = typeof cond.rateValueText === "string" ? cond.rateValueText : row.rate_value_text;
+  const rateValue = normalizeRateValueText(rateType, rawText);
+  const effectiveFrom = typeof cond.effectiveFrom === "string" ? new Date(cond.effectiveFrom) : row.created_at;
+  const effectiveTo =
+    typeof cond.effectiveTo === "string" && cond.effectiveTo.length > 0 ? new Date(cond.effectiveTo) : undefined;
+  return {
+    ruleId: row.id,
+    policyId: row.policy_id,
+    tenantId: row.tenant_id,
+    payeeUserId: String(cond.payeeUserId ?? ""),
+    rateType,
+    rateValue,
+    ...(rateType === "fixed" ? { rateValueCents: decimalTextToCents(rateValue).toString() } : {}),
+    effectiveFrom,
+    effectiveTo,
+    active: row.active,
+    reason: typeof cond.reason === "string" ? cond.reason : undefined,
+    changedBy: typeof cond.changedBy === "string" ? cond.changedBy : undefined,
+    selfChange: cond.selfChange === true,
+    createdAt: row.created_at,
+  };
+}
+
+function commissionLockMissingError(): CommissionError {
+  return new CommissionError(
+    500,
+    "COMMISSION_LOCK_MISSING",
+    "commission_lock_missing",
+    "Engine commission policy lock row could not be acquired.",
+  );
+}
+
+function prismaWithinRange(value: Date, from?: Date, to?: Date): boolean {
+  const timestamp = value.getTime();
+  if (from && timestamp < from.getTime()) return false;
+  if (to && timestamp > to.getTime()) return false;
+  return true;
+}
+
+function prismaSumCents(calculations: readonly CommissionCalculation[]): bigint {
+  let acc = 0n;
+  for (const c of calculations) {
+    acc += BigInt(c.amountCents || "0");
+  }
+  return acc;
+}
+
+function prismaPayeeMatchesBucket(
+  calculations: readonly CommissionCalculation[],
+  currentRate: CommissionPayeeRateRecord | null,
+  bucket: CommissionBucket,
+): boolean {
+  if (bucket === "to_receive") return calculations.some((c) => c.status === "approved" && !c.settledAt);
+  if (bucket === "forecast") return calculations.some((c) => c.status === "calculated" && !c.settledAt);
+  if (bucket === "paid") return calculations.some((c) => c.status === "approved" && Boolean(c.settledAt));
+  if (bucket === "no_rule") {
+    return !currentRate || calculations.some((c) => c.calculationSnapshot.outcome === "no_rule");
+  }
+  if (bucket === "review") return calculations.some((c) => c.status === "disputed");
+  return true;
+}
+
+function prismaAggregateByServiceType(
+  calculations: readonly CommissionCalculation[],
+): CommissionOverviewServiceBucket[] {
+  const bySvc = new Map<string | null, { cents: bigint; count: number }>();
+  for (const c of calculations) {
+    const svcId =
+      typeof c.calculationSnapshot.serviceCatalogId === "string" ? c.calculationSnapshot.serviceCatalogId : null;
+    const prev = bySvc.get(svcId) ?? { cents: 0n, count: 0 };
+    bySvc.set(svcId, { cents: prev.cents + BigInt(c.amountCents || "0"), count: prev.count + 1 });
+  }
+  return [...bySvc.entries()]
+    .map(([serviceCatalogId, v]) => ({
+      serviceCatalogId,
+      totalCents: v.cents.toString(),
+      count: v.count,
+    }))
+    .sort((a, b) => {
+      const diff = BigInt(b.totalCents) - BigInt(a.totalCents);
+      return diff !== 0n ? (diff > 0n ? 1 : -1) : 0;
+    });
+}
+
+function prismaAggregateTopPayees(calculations: readonly CommissionCalculation[]): CommissionOverviewTopPayee[] {
+  const byPayee = new Map<string, { total: bigint; toReceive: bigint; paid: bigint; count: number }>();
+  for (const c of calculations) {
+    if (!c.payeeId) continue;
+    const prev = byPayee.get(c.payeeId) ?? { total: 0n, toReceive: 0n, paid: 0n, count: 0 };
+    const cents = BigInt(c.amountCents || "0");
+    byPayee.set(c.payeeId, {
+      total: prev.total + cents,
+      toReceive: prev.toReceive + (c.status === "approved" && !c.settledAt ? cents : 0n),
+      paid: prev.paid + (c.status === "approved" && c.settledAt ? cents : 0n),
+      count: prev.count + 1,
+    });
+  }
+  return [...byPayee.entries()]
+    .map(([payeeId, v]) => ({
+      payeeId,
+      totalCents: v.total.toString(),
+      toReceiveCents: v.toReceive.toString(),
+      paidCents: v.paid.toString(),
+      count: v.count,
+    }))
+    .sort((a, b) => {
+      const diff = BigInt(b.totalCents) - BigInt(a.totalCents);
+      return diff !== 0n ? (diff > 0n ? 1 : -1) : a.payeeId.localeCompare(b.payeeId);
+    })
+    .slice(0, 10);
+}
+
+function prismaComputeOverviewChange(byMonth: readonly CommissionOverviewMonthBucket[]): {
+  readonly changeCents: string;
+  readonly changeDirection: "up" | "down" | "flat";
+} {
+  const curr = BigInt(byMonth[byMonth.length - 1]?.calculatedCents ?? "0");
+  const prev = BigInt(byMonth[byMonth.length - 2]?.calculatedCents ?? "0");
+  if (curr > prev) {
+    return { changeCents: (curr - prev).toString(), changeDirection: "up" };
+  }
+  if (curr < prev) {
+    return { changeCents: (prev - curr).toString(), changeDirection: "down" };
+  }
+  return { changeCents: "0", changeDirection: "flat" };
+}

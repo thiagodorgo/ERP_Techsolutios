@@ -437,6 +437,13 @@ jobs:
           # B-APP-ORG-2S-c (SC) — a guarda de saída de grupo, X1 a X10, sob papel efêmero; o HD1 fica no job backend.
           SUITES="$SUITES tests/bapporg2sc_grant-guard-db.test.ts"
           SUITES="$SUITES tests/sweep-tenant-text-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-uniques-migration-drill-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-regra-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-uma-vez-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-rls-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-liberacao-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-liquidacao-unidade-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-agregados-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       - name: Route HC1b latency suite alone

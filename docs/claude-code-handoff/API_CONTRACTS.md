@@ -111,6 +111,7 @@ Assinatura da organização (plataforma → cliente): `GET /billing/subscription
 | POST | `/mobile/expense-reports` · `/:reportId/entries` · `/:reportId/submit` | criar/lançar/enviar |
 | POST | `/mobile/ocr/scan` | OCR de recibo |
 | GET | `/mobile/commissions` | minhas comissões |
+| GET/PUT/POST | `/commissions/rates` · `/commissions/rates/mine` · `/commissions/rates/payees/:userId` · `/commissions/rates/payees/:userId/history` · `/commissions/reconcile` · `/commissions/overview` · `/commissions/payees` · `/commissions/payees/:userId/overview` · `/commissions/mine/overview` | motor de comissão (`B-COMISSAO-MOTOR`, C-CENTS: dinheiro em centavos inteiros `…Cents` sem sinal: `toReceiveCents`, `forecastCents`, `paidInPeriodCents`, `paidThisMonthCents`, `calculatedCents`, `paidCents`, `totalCents`, `baseCents`, `amountCents`, `settledTotalCents`, `netCents`, `rateValueCents`) |
 
 ## notifications / chat
 | Método | Rota | Uso |
