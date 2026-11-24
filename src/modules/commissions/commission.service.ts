@@ -2,11 +2,13 @@ import { env } from "../../config/env.js";
 import { getMemoryOperatorProfileRepositoryForTests } from "../operator-profiles/operator-profile.service.js";
 import { createMemoryProfessionalStatementService } from "../professional-statements/professional-statement.service.js";
 import { isReservedBasisEventInput, isReservedPolicyInput } from "./commission-engine.js";
+import { CommissionRateService } from "./commission-rate.service.js";
 import { InMemoryCommissionRepository, type CommissionRepository } from "./commission.repository.js";
 import type {
   CommissionActorContext,
   CommissionBasisEvent,
   CommissionCalculation,
+  CommissionPayeeRateRecord,
   CommissionPolicy,
   CommissionSettlementCollaborators,
   CommissionStatement,
@@ -15,6 +17,7 @@ import type {
   ListResult,
   SettleCalculationsResult,
   SettlementLineResult,
+  UpsertPayeeCommissionRateResult,
 } from "./commission.types.js";
 import { CommissionError } from "./commission.types.js";
 import {
@@ -40,10 +43,34 @@ import {
 type RawRecord = Record<string, unknown>;
 
 export class CommissionService {
+  private readonly rateService: CommissionRateService;
+
   constructor(
     private readonly repository: CommissionRepository,
     private readonly settlementCollaborators?: CommissionSettlementCollaborators,
-  ) {}
+  ) {
+    this.rateService = new CommissionRateService(repository);
+  }
+
+  upsertPayeeRate(
+    actor: CommissionActorContext,
+    payeeUserId: unknown,
+    body: RawRecord,
+  ): Promise<UpsertPayeeCommissionRateResult> {
+    return this.rateService.upsertPayeeRate(actor, payeeUserId, body);
+  }
+
+  listCurrentRates(actor: CommissionActorContext): Promise<CommissionPayeeRateRecord[]> {
+    return this.rateService.listCurrentRates(actor);
+  }
+
+  listPayeeRateHistory(actor: CommissionActorContext, payeeUserId: unknown): Promise<CommissionPayeeRateRecord[]> {
+    return this.rateService.listPayeeHistory(actor, payeeUserId);
+  }
+
+  getMyRate(actor: CommissionActorContext): Promise<CommissionPayeeRateRecord | null> {
+    return this.rateService.getMyRate(actor);
+  }
 
   listPolicies(actor: CommissionActorContext, query: RawRecord): Promise<ListResult<CommissionPolicy>> {
     return this.repository.listPolicies({

@@ -1,25 +1,31 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
-import type {
-  CommissionBasisEvent,
-  CommissionBasisEventStatus,
-  CommissionCalculation,
-  CommissionCalculationStatus,
-  CommissionPayeeSummary,
-  CommissionPolicy,
-  CommissionPolicyRule,
-  CommissionPolicyStatus,
-  CommissionStatement,
-  CommissionStatementStatus,
-  CreateCommissionBasisEventInput,
-  CreateCommissionPolicyInput,
-  ListCommissionBasisEventsInput,
-  ListCommissionCalculationsInput,
-  ListCommissionPoliciesInput,
-  ListCommissionStatementsInput,
-  ListResult,
-  SummarizeCalculationsByPayeeInput,
+import { decimalTextToCents, normalizeRateValueText } from "./commission-engine.js";
+import {
+  CommissionError,
+  type CommissionBasisEvent,
+  type CommissionBasisEventStatus,
+  type CommissionCalculation,
+  type CommissionCalculationStatus,
+  type CommissionPayeeRateRecord,
+  type CommissionPayeeSummary,
+  type CommissionPolicy,
+  type CommissionPolicyRule,
+  type CommissionPolicyStatus,
+  type CommissionRateType,
+  type CommissionStatement,
+  type CommissionStatementStatus,
+  type CommissionUnit,
+  type CreateCommissionBasisEventInput,
+  type CreateCommissionPolicyInput,
+  type ListCommissionBasisEventsInput,
+  type ListCommissionCalculationsInput,
+  type ListCommissionPoliciesInput,
+  type ListCommissionStatementsInput,
+  type ListResult,
+  type SummarizeCalculationsByPayeeInput,
+  type UpsertPayeeCommissionRateInput,
 } from "./commission.types.js";
 import { commissionCents, commissionCentsOfSum } from "./commission-money.js";
 import type { CommissionRepository } from "./commission.repository.js";
@@ -32,7 +38,7 @@ import {
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
-export class PrismaCommissionRepository implements CommissionRepository {
+export class PrismaCommissionRepository implements CommissionRepository, CommissionUnit {
   constructor(private readonly client: PrismaExecutor) {}
 
   async createPolicy(input: CreateCommissionPolicyInput): Promise<CommissionPolicy> {
@@ -291,6 +297,146 @@ export class PrismaCommissionRepository implements CommissionRepository {
       offset: input.offset,
     };
   }
+
+  async runCommissionUnit<T>(_tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
+    return work(this);
+  }
+
+  async ensureEnginePolicy(tenantId: string, actorUserId: string): Promise<void> {
+    await this.client.$executeRaw`INSERT INTO commission_policies (tenant_id, name, scope, vertical, status, effective_from, created_by) VALUES (${tenantId}::uuid, 'Comissão da organização', 'engine', 'field_services', 'active', now(), ${actorUserId}::uuid) ON CONFLICT (tenant_id) WHERE scope = 'engine' DO NOTHING /* commission_engine_policy_ensure */`; // B-COMISSAO:cria-politica
+  }
+
+  async lockCommissionRate(tenantId: string): Promise<string> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`SELECT id FROM commission_policies WHERE tenant_id = ${tenantId}::uuid AND scope = 'engine' FOR NO KEY UPDATE /* commission_rate_lock */`; // B-COMISSAO:trava-organizacao
+    if (rows.length !== 1) throw commissionLockMissingError();
+    return rows[0]!.id;
+  }
+
+  async lockCommissionPayee(tenantId: string, payeeUserId: string): Promise<boolean> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`SELECT id FROM operator_profiles WHERE tenant_id = ${tenantId}::uuid AND user_id = ${payeeUserId}::uuid FOR NO KEY UPDATE /* commission_payee_lock */`; // B-COMISSAO:trava-guincheiro
+    return rows.length === 1; // B-COMISSAO:trava-devolve-existencia
+  }
+
+  async userExistsInTenant(tenantId: string, userId: string): Promise<boolean> {
+    // B-COMISSAO:fora-da-organizacao
+    const row = await this.client.user.findFirst({
+      where: { tenant_id: tenantId, id: userId },
+      select: { id: true },
+    });
+    return Boolean(row);
+  }
+
+  async findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null> {
+    const rows = await this.client.$queryRaw<PayeeRuleQueryRow[]>`
+      SELECT r.id, r.tenant_id, r.policy_id, r.rule_type, r.basis_type, r.rate_type, r.rate_value::text AS rate_value_text, r.conditions, r.active, r.created_at
+      FROM commission_policy_rules r
+      JOIN commission_policies p ON p.tenant_id = r.tenant_id AND p.id = r.policy_id
+      WHERE r.tenant_id = ${tenantId}::uuid
+        AND p.scope = 'engine'
+        AND r.rule_type = 'engine_payee'
+        AND r.active = true
+        AND (r.conditions ->> 'payeeUserId') = ${payeeUserId}
+      ORDER BY r.created_at DESC
+      LIMIT 1
+    `;
+    return rows[0] ? mapPayeeRuleRow(rows[0]) : null;
+  }
+
+  async replacePayeeRate(
+    policyId: string,
+    input: UpsertPayeeCommissionRateInput,
+    previousRuleId: string | null,
+    now: Date,
+  ): Promise<CommissionPayeeRateRecord> {
+    const nowIso = now.toISOString();
+    if (previousRuleId) {
+      const prev = await this.client.commissionPolicyRule.findFirst({
+        where: { tenant_id: input.tenantId, id: previousRuleId },
+      });
+      const prevConditions = isRecord(prev?.conditions) ? prev.conditions : {};
+      await this.client.commissionPolicyRule.updateMany({
+        where: { tenant_id: input.tenantId, id: previousRuleId, active: true },
+        data: {
+          active: false,
+          conditions: toJsonObject({
+            ...prevConditions,
+            effectiveTo: nowIso,
+          }),
+          updated_at: now,
+        },
+      });
+    }
+
+    const conditions: Record<string, unknown> = {
+      payeeUserId: input.payeeUserId,
+      rateValueText: input.rateValueText,
+      effectiveFrom: nowIso,
+      effectiveTo: null,
+      reason: input.reason,
+      changedBy: input.actorUserId,
+      // B-COMISSAO:marca-propria
+      selfChange: input.selfChange,
+    };
+
+    const created = await this.client.commissionPolicyRule.create({
+      data: {
+        tenant_id: input.tenantId,
+        policy_id: policyId,
+        rule_type: "engine_payee",
+        basis_type: "work_order_total",
+        rate_type: input.rateType,
+        rate_value: new Prisma.Decimal(input.rateValueText),
+        conditions: toJsonObject(conditions),
+        priority: 10,
+        active: true,
+        created_at: now,
+        updated_at: now,
+      },
+    });
+
+    return mapPayeeRuleRow({
+      id: created.id,
+      tenant_id: created.tenant_id,
+      policy_id: created.policy_id,
+      rule_type: created.rule_type,
+      basis_type: created.basis_type,
+      rate_type: created.rate_type,
+      rate_value_text: input.rateValueText,
+      conditions: created.conditions,
+      active: created.active,
+      created_at: created.created_at,
+    });
+  }
+
+  async listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]> {
+    const rows = await this.client.$queryRaw<PayeeRuleQueryRow[]>`
+      SELECT r.id, r.tenant_id, r.policy_id, r.rule_type, r.basis_type, r.rate_type, r.rate_value::text AS rate_value_text, r.conditions, r.active, r.created_at
+      FROM commission_policy_rules r
+      JOIN commission_policies p ON p.tenant_id = r.tenant_id AND p.id = r.policy_id
+      WHERE r.tenant_id = ${tenantId}::uuid
+        AND p.scope = 'engine'
+        AND r.rule_type = 'engine_payee'
+        AND r.active = true
+      ORDER BY r.created_at DESC
+    `;
+    return rows.map(mapPayeeRuleRow);
+  }
+
+  async listPayeeRateHistory(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord[] | null> {
+    const exists = await this.userExistsInTenant(tenantId, payeeUserId);
+    if (!exists) return null;
+    const rows = await this.client.$queryRaw<PayeeRuleQueryRow[]>`
+      SELECT r.id, r.tenant_id, r.policy_id, r.rule_type, r.basis_type, r.rate_type, r.rate_value::text AS rate_value_text, r.conditions, r.active, r.created_at
+      FROM commission_policy_rules r
+      JOIN commission_policies p ON p.tenant_id = r.tenant_id AND p.id = r.policy_id
+      WHERE r.tenant_id = ${tenantId}::uuid
+        AND p.scope = 'engine'
+        AND r.rule_type = 'engine_payee'
+        AND (r.conditions ->> 'payeeUserId') = ${payeeUserId}
+      ORDER BY r.created_at DESC, r.active DESC
+    `;
+    return rows.map(mapPayeeRuleRow);
+  }
 }
 
 export class RlsPrismaCommissionRepository implements CommissionRepository {
@@ -337,6 +483,26 @@ export class RlsPrismaCommissionRepository implements CommissionRepository {
 
   listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaCommissionRepository(tx).listStatements(input));
+  }
+
+  runCommissionUnit<T>(tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => work(new PrismaCommissionRepository(tx)));
+  }
+
+  listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaCommissionRepository(tx).listCurrentPayeeRates(tenantId));
+  }
+
+  listPayeeRateHistory(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord[] | null> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).listPayeeRateHistory(tenantId, payeeUserId),
+    );
+  }
+
+  findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).findCurrentPayeeRate(tenantId, payeeUserId),
+    );
   }
 }
 
@@ -586,3 +752,51 @@ type StatementRecord = {
   readonly created_at: Date;
   readonly updated_at: Date;
 };
+
+type PayeeRuleQueryRow = {
+  readonly id: string;
+  readonly tenant_id: string;
+  readonly policy_id: string;
+  readonly rule_type: string;
+  readonly basis_type: string;
+  readonly rate_type: string;
+  readonly rate_value_text: string;
+  readonly conditions: unknown;
+  readonly active: boolean;
+  readonly created_at: Date;
+};
+
+function mapPayeeRuleRow(row: PayeeRuleQueryRow): CommissionPayeeRateRecord {
+  const cond = isRecord(row.conditions) ? row.conditions : {};
+  const rateType: CommissionRateType = row.rate_type === "fixed" ? "fixed" : "percent";
+  const rawText = typeof cond.rateValueText === "string" ? cond.rateValueText : row.rate_value_text;
+  const rateValue = normalizeRateValueText(rateType, rawText);
+  const effectiveFrom = typeof cond.effectiveFrom === "string" ? new Date(cond.effectiveFrom) : row.created_at;
+  const effectiveTo =
+    typeof cond.effectiveTo === "string" && cond.effectiveTo.length > 0 ? new Date(cond.effectiveTo) : undefined;
+  return {
+    ruleId: row.id,
+    policyId: row.policy_id,
+    tenantId: row.tenant_id,
+    payeeUserId: String(cond.payeeUserId ?? ""),
+    rateType,
+    rateValue,
+    ...(rateType === "fixed" ? { rateValueCents: decimalTextToCents(rateValue).toString() } : {}),
+    effectiveFrom,
+    effectiveTo,
+    active: row.active,
+    reason: typeof cond.reason === "string" ? cond.reason : undefined,
+    changedBy: typeof cond.changedBy === "string" ? cond.changedBy : undefined,
+    selfChange: cond.selfChange === true,
+    createdAt: row.created_at,
+  };
+}
+
+function commissionLockMissingError(): CommissionError {
+  return new CommissionError(
+    500,
+    "COMMISSION_LOCK_MISSING",
+    "commission_lock_missing",
+    "Engine commission policy lock row could not be acquired.",
+  );
+}

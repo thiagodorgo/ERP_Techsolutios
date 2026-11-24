@@ -1,3 +1,6 @@
+export * from "./commission-calculation-kind.js";
+export * from "./commission-engine.js";
+export * from "./commission-rate.service.js";
 export * from "./commission.controller.js";
 export * from "./commission.dto.js";
 export * from "./commission.repository.js";

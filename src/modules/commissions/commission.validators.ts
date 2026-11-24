@@ -8,6 +8,7 @@ import {
   type CommissionCalculationStatus,
   type CommissionJsonRecord,
   type CommissionPolicyStatus,
+  type CommissionRateType,
   type CommissionStatementStatus,
 } from "./commission.types.js";
 
@@ -258,4 +259,70 @@ function isSensitivePayloadKey(key: string): boolean {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function parseRateType(value: unknown): CommissionRateType {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (normalized === "percent" || normalized === "fixed") {
+    return normalized;
+  }
+  throw new CommissionError(422, "COMMISSION_RATE_INVALID", "invalid_rate_type", "rateType must be 'percent' or 'fixed'.");
+}
+
+export function parseRateValueText(value: unknown, rateType: CommissionRateType): string {
+  if (typeof value !== "string") {
+    throw new CommissionError(422, "COMMISSION_RATE_INVALID", "invalid_rate_value", "rateValue must be a decimal string.");
+  }
+  const trimmed = value.trim();
+  const maxDecimals = rateType === "percent" ? 4 : 2;
+  const pattern = rateType === "percent" ? /^(\d+)(?:\.(\d{1,4}))?$/ : /^(\d+)(?:\.(\d{1,2}))?$/;
+  const match = pattern.exec(trimmed);
+  if (!match) {
+    throw new CommissionError(
+      422,
+      "COMMISSION_RATE_INVALID",
+      "invalid_rate_value",
+      `rateValue must be a non-negative decimal string with up to ${maxDecimals} decimal places.`,
+    );
+  }
+  const intPart = BigInt(match[1]!);
+  const fracRaw = match[2] ?? "";
+  const scaled = intPart * 10n ** BigInt(maxDecimals) + BigInt(fracRaw.padEnd(maxDecimals, "0") || "0");
+  const maxScaled = rateType === "percent" ? 1_000_000n : 9_999_999n;
+  if (scaled < 0n || scaled > maxScaled) {
+    throw new CommissionError(
+      422,
+      "COMMISSION_RATE_INVALID",
+      "invalid_rate_value",
+      rateType === "percent" ? "rateValue must be between 0 and 100." : "rateValue must be between 0.00 and 99999.99.",
+    );
+  }
+  if (rateType === "fixed") {
+    return `${intPart.toString()}.${fracRaw.padEnd(2, "0")}`;
+  }
+  const cleanFrac = fracRaw.replace(/0+$/, "");
+  return cleanFrac.length > 0 ? `${intPart.toString()}.${cleanFrac}` : intPart.toString();
+}
+
+export function parseRateReason(value: unknown): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (normalized.length < 5 || normalized.length > 300) {
+    throw new CommissionError(
+      422,
+      "COMMISSION_RATE_INVALID",
+      "reason_required",
+      "reason is required and must be between 5 and 300 characters.",
+    );
+  }
+  return normalized;
+}
+
+export function parseExpectedRuleId(value: unknown): string | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+  if (typeof value !== "string" || !uuidPattern.test(value.trim())) {
+    throw new CommissionError(422, "COMMISSION_RATE_INVALID", "invalid_expected_rule_id", "expectedRuleId must be a valid UUID or null.");
+  }
+  return value.trim();
 }

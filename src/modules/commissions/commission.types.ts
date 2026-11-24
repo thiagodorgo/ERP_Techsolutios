@@ -275,6 +275,63 @@ export type CommissionSettlementCollaborators = {
   readonly resolveOperatorProfileByUser: CommissionOperatorProfileByUserResolver;
 };
 
+export type CommissionRateType = "percent" | "fixed";
+
+export type CommissionPayeeRateRecord = {
+  readonly ruleId: string;
+  readonly policyId: string;
+  readonly tenantId: string;
+  readonly payeeUserId: string;
+  readonly rateType: CommissionRateType;
+  readonly rateValue: string;
+  readonly rateValueCents?: string;
+  readonly effectiveFrom: Date;
+  readonly effectiveTo?: Date;
+  readonly active: boolean;
+  readonly reason?: string;
+  readonly changedBy?: string;
+  readonly selfChange: boolean;
+  readonly createdAt: Date;
+};
+
+export type UpsertPayeeCommissionRateInput = {
+  readonly tenantId: string;
+  readonly payeeUserId: string;
+  readonly actorUserId: string;
+  readonly rateType: CommissionRateType;
+  readonly rateValueText: string;
+  readonly reason: string;
+  readonly expectedRuleId: string | null;
+  readonly selfChange: boolean;
+};
+
+export type UpsertPayeeCommissionRateResult = {
+  readonly changed: boolean;
+  readonly previousRule?: CommissionPayeeRateRecord;
+  readonly currentRule: CommissionPayeeRateRecord;
+};
+
+export type CommissionReconcileCounts = {
+  readonly created: number;
+  readonly released: number;
+  readonly recalculated: number;
+  readonly skipped: number;
+};
+
+export interface CommissionUnit {
+  ensureEnginePolicy(tenantId: string, actorUserId: string): Promise<void>;
+  lockCommissionRate(tenantId: string): Promise<string>;
+  lockCommissionPayee(tenantId: string, payeeUserId: string): Promise<boolean>;
+  userExistsInTenant(tenantId: string, userId: string): Promise<boolean>;
+  findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null>;
+  replacePayeeRate(
+    policyId: string,
+    input: UpsertPayeeCommissionRateInput,
+    previousRuleId: string | null,
+    now: Date,
+  ): Promise<CommissionPayeeRateRecord>;
+}
+
 export class CommissionError extends Error {
   constructor(
     readonly statusCode: number,

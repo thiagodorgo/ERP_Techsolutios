@@ -5,6 +5,8 @@ import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js
 import {
   toCommissionBasisEventDto,
   toCommissionCalculationDto,
+  toCommissionMyRateDto,
+  toCommissionPayeeRateDto,
   toCommissionPolicyDto,
   toCommissionSettlementDto,
   toCommissionStatementDto,
@@ -153,6 +155,63 @@ export class CommissionController {
 
     return {
       data: toCommissionSettlementDto(result),
+    };
+  }
+
+  async upsertPayeeRate(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.upsertPayeeRate(actor, request.params.userId, request.body ?? {});
+
+    if (result.changed) {
+      const action = result.currentRule.selfChange ? "commission.rate_self_changed" : "commission.rate_changed";
+      await recordRequestAuditBestEffort(request, {
+        action,
+        resourceType: "commission_policy_rule",
+        resourceId: result.currentRule.ruleId,
+        outcome: "success",
+        severity: "info",
+        metadata: {
+          payeeUserId: result.currentRule.payeeUserId,
+          rateType: result.currentRule.rateType,
+          previousRateValue: result.previousRule?.rateValue ?? null,
+          rateValue: result.currentRule.rateValue,
+          ruleId: result.currentRule.ruleId,
+          ...(result.currentRule.selfChange ? {} : { previousRuleId: result.previousRule?.ruleId ?? null }),
+        },
+      });
+    }
+
+    return {
+      status: 200,
+      data: toCommissionPayeeRateDto(result.currentRule),
+    };
+  }
+
+  async listRates(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const items = await service.listCurrentRates(actor);
+    return {
+      body: {
+        items: items.map(toCommissionPayeeRateDto),
+      },
+    };
+  }
+
+  async listPayeeRateHistory(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const items = await service.listPayeeRateHistory(actor, request.params.userId);
+    return {
+      body: {
+        items: items.map(toCommissionPayeeRateDto),
+      },
+    };
+  }
+
+  async getMyRate(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const rate = await service.getMyRate(actor);
+    return {
+      data: toCommissionMyRateDto(rate),
     };
   }
 

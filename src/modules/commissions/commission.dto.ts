@@ -1,6 +1,7 @@
 import type {
   CommissionBasisEvent,
   CommissionCalculation,
+  CommissionPayeeRateRecord,
   CommissionPolicy,
   CommissionPolicyRule,
   CommissionStatement,
@@ -134,6 +135,39 @@ export function toListDto<T>(result: ListResult<T>, mapItem: (item: T) => unknow
       offset: result.offset,
       total: result.total,
     },
+  };
+}
+
+export function toCommissionPayeeRateDto(rate: CommissionPayeeRateRecord) {
+  return {
+    ruleId: rate.ruleId,
+    policyId: rate.policyId,
+    payeeUserId: rate.payeeUserId,
+    rateType: rate.rateType,
+    rateValue: rate.rateValue,
+    ...(rate.rateType === "fixed" && rate.rateValueCents !== undefined ? { rateValueCents: rate.rateValueCents } : {}),
+    effectiveFrom: rate.effectiveFrom.toISOString(),
+    effectiveTo: rate.effectiveTo ? rate.effectiveTo.toISOString() : null,
+    active: rate.active,
+    reason: rate.reason ?? null,
+    changedBy: rate.changedBy ?? null,
+    selfChange: rate.selfChange,
+    createdAt: rate.createdAt.toISOString(),
+  };
+}
+
+export function toCommissionMyRateDto(rate: CommissionPayeeRateRecord | null) {
+  if (!rate) return null;
+  return {
+    ruleId: rate.ruleId,
+    policyId: rate.policyId,
+    payeeUserId: rate.payeeUserId,
+    rateType: rate.rateType,
+    rateValue: rate.rateValue,
+    ...(rate.rateType === "fixed" && rate.rateValueCents !== undefined ? { rateValueCents: rate.rateValueCents } : {}),
+    effectiveFrom: rate.effectiveFrom.toISOString(),
+    effectiveTo: rate.effectiveTo ? rate.effectiveTo.toISOString() : null,
+    active: rate.active,
   };
 }
 

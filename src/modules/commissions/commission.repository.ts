@@ -2,16 +2,21 @@ import { randomUUID } from "node:crypto";
 
 import { Prisma } from "@prisma/client";
 
+import { getMemoryOperatorProfileRepositoryForTests } from "../operator-profiles/operator-profile.service.js";
+import { decimalTextToCents, normalizeRateValueText } from "./commission-engine.js";
 import { commissionCents, commissionCentsOfSum } from "./commission-money.js";
 import type {
   CommissionBasisEvent,
   CommissionCalculation,
   CommissionCalculationStatus,
   CommissionJsonRecord,
+  CommissionPayeeRateRecord,
   CommissionPayeeSummary,
   CommissionPolicy,
   CommissionPolicyRule,
+  CommissionRateType,
   CommissionStatement,
+  CommissionUnit,
   CreateCommissionBasisEventInput,
   CreateCommissionPolicyInput,
   ListCommissionBasisEventsInput,
@@ -20,6 +25,7 @@ import type {
   ListCommissionStatementsInput,
   ListResult,
   SummarizeCalculationsByPayeeInput,
+  UpsertPayeeCommissionRateInput,
 } from "./commission.types.js";
 import {
   evaluateWorkOrderCommissionEligibility,
@@ -47,6 +53,10 @@ export interface CommissionRepository {
     settledAt: Date,
     settlementRef: string,
   ): Promise<CommissionCalculation | undefined>;
+  runCommissionUnit<T>(tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T>;
+  listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]>;
+  listPayeeRateHistory(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord[] | null>;
+  findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null>;
   reset?(): void;
 }
 
@@ -68,14 +78,29 @@ export type SeedCommissionCalculationInput = {
   readonly settlementRef?: string;
 };
 
-export class InMemoryCommissionRepository implements CommissionRepository {
+export class InMemoryCommissionRepository implements CommissionRepository, CommissionUnit {
   private readonly policies = new Map<string, CommissionPolicy>();
   private readonly basisEvents = new Map<string, CommissionBasisEvent>();
   private readonly calculations = new Map<string, CommissionCalculation>();
   private readonly statements = new Map<string, CommissionStatement>();
+  private readonly tenantUsers = new Map<string, Set<string>>();
+  private userExistsChecker?: (tenantId: string, userId: string) => Promise<boolean>;
   // Dublê do estado de cancelamento da OS (WS-SCALE-COMISSAO). Semeável nos testes para provar a
   // supressão; sem estado, `resolve` devolve null (OS não-encontrada → elegível).
   readonly workOrderGate = new InMemoryWorkOrderCancellationGate();
+
+  setUserExistsChecker(checker: (tenantId: string, userId: string) => Promise<boolean>): void {
+    this.userExistsChecker = checker;
+  }
+
+  registerTenantUserForTests(tenantId: string, userId: string): void {
+    let set = this.tenantUsers.get(tenantId);
+    if (!set) {
+      set = new Set<string>();
+      this.tenantUsers.set(tenantId, set);
+    }
+    set.add(userId);
+  }
 
   async createPolicy(input: CreateCommissionPolicyInput): Promise<CommissionPolicy> {
     const now = new Date();
@@ -293,11 +318,142 @@ export class InMemoryCommissionRepository implements CommissionRepository {
     return paginate(items, input.limit, input.offset);
   }
 
+  async runCommissionUnit<T>(_tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
+    return work(this);
+  }
+
+  async ensureEnginePolicy(tenantId: string, actorUserId: string): Promise<void> {
+    const existing = [...this.policies.values()].find((p) => p.tenantId === tenantId && p.scope === "engine");
+    if (existing) return;
+    const now = new Date();
+    const policyId = randomUUID();
+    this.policies.set(policyId, {
+      id: policyId,
+      tenantId,
+      name: "Comissão da organização",
+      scope: "engine",
+      vertical: "field_services",
+      status: "active",
+      effectiveFrom: now,
+      version: 1,
+      createdBy: actorUserId,
+      createdAt: now,
+      updatedAt: now,
+      rules: [],
+    });
+  }
+
+  async lockCommissionRate(tenantId: string): Promise<string> {
+    const existing = [...this.policies.values()].find((p) => p.tenantId === tenantId && p.scope === "engine");
+    if (!existing) {
+      throw new Error("Engine commission policy lock missing.");
+    }
+    return existing.id;
+  }
+
+  async lockCommissionPayee(tenantId: string, payeeUserId: string): Promise<boolean> {
+    const profile = await getMemoryOperatorProfileRepositoryForTests().findByUserId(tenantId, payeeUserId);
+    return Boolean(profile);
+  }
+
+  async userExistsInTenant(tenantId: string, userId: string): Promise<boolean> {
+    if (this.tenantUsers.get(tenantId)?.has(userId)) {
+      return true;
+    }
+    if (this.userExistsChecker) {
+      return this.userExistsChecker(tenantId, userId);
+    }
+    return false;
+  }
+
+  async findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null> {
+    const policy = [...this.policies.values()].find((p) => p.tenantId === tenantId && p.scope === "engine");
+    if (!policy) return null;
+    const activeRule = policy.rules.find(
+      (r) => r.ruleType === "engine_payee" && r.active && r.conditions.payeeUserId === payeeUserId,
+    );
+    return activeRule ? mapMemoryRuleToPayeeRate(activeRule) : null;
+  }
+
+  async replacePayeeRate(
+    policyId: string,
+    input: UpsertPayeeCommissionRateInput,
+    previousRuleId: string | null,
+    now: Date,
+  ): Promise<CommissionPayeeRateRecord> {
+    const policy = this.policies.get(policyId);
+    if (!policy || policy.tenantId !== input.tenantId) {
+      throw new Error("Engine policy not found in memory.");
+    }
+    const updatedRules: CommissionPolicyRule[] = policy.rules.map((r) => {
+      if (previousRuleId && r.id === previousRuleId) {
+        return {
+          ...r,
+          active: false,
+          conditions: {
+            ...r.conditions,
+            effectiveTo: now.toISOString(),
+          },
+          updatedAt: now,
+        };
+      }
+      return r;
+    });
+
+    const newRule: CommissionPolicyRule = {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      policyId,
+      ruleType: "engine_payee",
+      basisType: "work_order_total",
+      rateType: input.rateType,
+      rateValue: Number(input.rateValueText),
+      conditions: {
+        payeeUserId: input.payeeUserId,
+        rateValueText: input.rateValueText,
+        effectiveFrom: now.toISOString(),
+        effectiveTo: null,
+        reason: input.reason,
+        changedBy: input.actorUserId,
+        // B-COMISSAO:marca-propria
+        selfChange: input.selfChange,
+      },
+      priority: 10,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    updatedRules.push(newRule);
+    this.policies.set(policyId, { ...policy, rules: updatedRules, updatedAt: now });
+    return mapMemoryRuleToPayeeRate(newRule);
+  }
+
+  async listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]> {
+    const policy = [...this.policies.values()].find((p) => p.tenantId === tenantId && p.scope === "engine");
+    if (!policy) return [];
+    return policy.rules
+      .filter((r) => r.ruleType === "engine_payee" && r.active && typeof r.conditions.payeeUserId === "string")
+      .map(mapMemoryRuleToPayeeRate)
+      .sort((a, b) => b.effectiveFrom.getTime() - a.effectiveFrom.getTime());
+  }
+
+  async listPayeeRateHistory(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord[] | null> {
+    const exists = await this.userExistsInTenant(tenantId, payeeUserId);
+    if (!exists) return null;
+    const policy = [...this.policies.values()].find((p) => p.tenantId === tenantId && p.scope === "engine");
+    if (!policy) return [];
+    return policy.rules
+      .filter((r) => r.ruleType === "engine_payee" && r.conditions.payeeUserId === payeeUserId)
+      .map(mapMemoryRuleToPayeeRate)
+      .sort((a, b) => b.effectiveFrom.getTime() - a.effectiveFrom.getTime() || (b.active ? 1 : 0) - (a.active ? 1 : 0));
+  }
+
   reset(): void {
     this.policies.clear();
     this.basisEvents.clear();
     this.calculations.clear();
     this.statements.clear();
+    this.tenantUsers.clear();
     this.workOrderGate.reset();
   }
 
@@ -334,4 +490,32 @@ function withinRange(value: Date, from?: Date, to?: Date): boolean {
   if (to && timestamp > to.getTime()) return false;
 
   return true;
+}
+
+function mapMemoryRuleToPayeeRate(rule: CommissionPolicyRule): CommissionPayeeRateRecord {
+  const rateType: CommissionRateType = rule.rateType === "fixed" ? "fixed" : "percent";
+  const rawText = typeof rule.conditions.rateValueText === "string" ? rule.conditions.rateValueText : String(rule.rateValue);
+  const rateValue = normalizeRateValueText(rateType, rawText);
+  const effectiveFrom =
+    typeof rule.conditions.effectiveFrom === "string" ? new Date(rule.conditions.effectiveFrom) : rule.createdAt;
+  const effectiveTo =
+    typeof rule.conditions.effectiveTo === "string" && rule.conditions.effectiveTo.length > 0
+      ? new Date(rule.conditions.effectiveTo)
+      : undefined;
+  return {
+    ruleId: rule.id,
+    policyId: rule.policyId,
+    tenantId: rule.tenantId,
+    payeeUserId: String(rule.conditions.payeeUserId ?? ""),
+    rateType,
+    rateValue,
+    ...(rateType === "fixed" ? { rateValueCents: decimalTextToCents(rateValue).toString() } : {}),
+    effectiveFrom,
+    effectiveTo,
+    active: rule.active,
+    reason: typeof rule.conditions.reason === "string" ? rule.conditions.reason : undefined,
+    changedBy: typeof rule.conditions.changedBy === "string" ? rule.conditions.changedBy : undefined,
+    selfChange: rule.conditions.selfChange === true,
+    createdAt: rule.createdAt,
+  };
 }
