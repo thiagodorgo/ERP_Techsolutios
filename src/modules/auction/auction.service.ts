@@ -13,7 +13,7 @@ import { AUCTION_MAX_ATTEMPTS } from "../jurisdiction/jurisdiction.defaults.js";
 import { getMemoryReleaseRepositoryForTests } from "../release/release.service.js";
 import type { ReleaseChargeBasis } from "../release/release.types.js";
 import { isAuctionDeadlineReached, isOwnerInitialSatisfied } from "./auction.eligibility.js";
-import { evaluateScrapEdictGate, findActiveSoldRound, isEdictComplete, isResalePending, InMemoryAuctionRepository, type AuctionRepository } from "./auction.repository.js";
+import { evaluateScrapEdictGate, findActiveSoldRound, isEdictComplete, isResalePending, isRoundNotNew, InMemoryAuctionRepository, type AuctionRepository } from "./auction.repository.js";
 import { custodyDocumentationGap as resolveCustodyDocumentationGap } from "./auction.custody-documentation.js";
 import {
   AuctionError,
@@ -518,8 +518,10 @@ export class AuctionService {
     const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
     const relotExpectedSeq = parseCustodySeq(body.custody_seq ?? body.custodySeq);
     const state = await this.repository.getState(actor.tenantId, normalizedId);
-    const lottedRound = state?.edicts.find((edict) => edict.status === "LOTTED")?.roundNumber;
-    if (!state || !isResalePending(state.status, state.attempts, lottedRound)) {
+    if (!state) throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    // E1.3/E2.1.6 passo 3: a guarda da revenda pendente vem ANTES de qualquer gravação (descongelar, fechar diárias).
+    const relotPending = isResalePending(state.status, state.attempts, state.edicts);
+    if (!relotPending) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "resale_not_pending", "This vehicle is not pending resale.");
     }
     const edict = state.edicts.find((candidate) => candidate.roundNumber === roundNumber);
@@ -527,9 +529,9 @@ export class AuctionService {
     if (edict.classification !== "CONSERVED") throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Lotting requires a conserved vehicle.");
     if (!isPositiveMoney(edict.appraisalAmount)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_appraisal_missing", "Lotting requires an appraisal.");
     if (!isPositiveMoney(edict.minBidAmount)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_min_bid_missing", "Lotting requires a minimum bid.");
-    if (state.attempts.some((attempt) => attempt.roundNumber === roundNumber)) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a new round.");
-    const gap = await this.custodyDocumentationGap(actor.tenantId, process);
-    if (gap) throw new AuctionError(409, "AUCTION_GUARD_FAILED", gap, "Custody documentation is incomplete for auction relotting.");
+    if (isRoundNotNew(state.attempts, roundNumber)) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
+    const relotCustodyGap = await this.custodyDocumentationGap(actor.tenantId, process);
+    if (relotCustodyGap) throw new AuctionError(409, "AUCTION_GUARD_FAILED", relotCustodyGap, "Custody documentation is incomplete for auction relotting.");
     const relotOccurredAt = new Date();
     const thawed = await this.repository.thawLegacyFreezeAtomic(actor.tenantId, normalizedId);
     void thawed;
@@ -651,11 +653,7 @@ export class AuctionService {
       strikeCount: snapshot.attempts.filter((attempt) => attempt.outcome === "DESERTED").length,
       maxAttempts: AUCTION_MAX_ATTEMPTS,
       status: snapshot.status,
-      resalePending: isResalePending(
-        snapshot.status,
-        snapshot.attempts,
-        snapshot.edicts.find((edict) => edict.status === "LOTTED")?.roundNumber,
-      ),
+      resalePending: isResalePending(snapshot.status, snapshot.attempts, snapshot.edicts),
       custodySeq: snapshot.custodySeqHead,
     };
   }

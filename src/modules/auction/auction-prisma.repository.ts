@@ -18,6 +18,7 @@ import {
   findActiveSoldRound,
   isEdictComplete,
   isResalePending,
+  isRoundNotNew,
   APPRAISAL_EDITABLE_STATES,
   EDICT_REGISTRABLE_STATES,
   type AuctionRepository,
@@ -134,13 +135,14 @@ export class PrismaAuctionRepository implements AuctionRepository {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
     // Pré-condição de estado (BAIXO-C) RE-VERIFICADA sob FOR UPDATE: registrar edital só em ACTIVE_CUSTODY/AUCTION_ELIGIBLE.
-    const attempts = await this.listAttempts(input.tenantId, input.processId);
-    const lottedRound = (await this.listEdicts(input.tenantId, input.processId)).find((edict) => edict.status === "LOTTED")?.roundNumber;
-    const resalePending = isResalePending(locked.status as ImpoundStatus, attempts, lottedRound);
-    if (!EDICT_REGISTRABLE_STATES.includes(locked.status as ImpoundStatus) && !resalePending) {
+    // B-LEILAO-REVENDA (§3.3): em revenda pendente (relida sob a trava), o edital de uma rodada NOVA também é aceito em LOTTED.
+    const edictAttempts = await this.listAttempts(input.tenantId, input.processId);
+    const edictResalePending = isResalePending(locked.status as ImpoundStatus, edictAttempts, await this.listEdicts(input.tenantId, input.processId));
+    const edictRoundHasResult = isRoundNotNew(edictAttempts, input.roundNumber);
+    if (!EDICT_REGISTRABLE_STATES.includes(locked.status as ImpoundStatus) && !edictResalePending) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "auction_edict_wrong_state", "An auction edict can only be registered while the process is in active custody or auction-eligible.");
     }
-    if (resalePending && input.roundNumber <= attempts.reduce((max, attempt) => Math.max(max, attempt.roundNumber), 0)) {
+    if (edictResalePending && edictRoundHasResult) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
     }
     // IDEMPOTÊNCIA sob o lock (pré-check antes do INSERT; o partial-unique auction_edicts_round_idem_key é o BACKSTOP —
@@ -348,13 +350,12 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (!locked) {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
-    const resalePending = isResalePending(
-      locked.status as ImpoundStatus,
-      await this.listAttempts(input.tenantId, input.processId),
-      (await this.listEdicts(input.tenantId, input.processId)).find((edict) => edict.status === "LOTTED")?.roundNumber,
-    );
-    const resaleEdict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
-    if (!APPRAISAL_EDITABLE_STATES.includes(locked.status as ImpoundStatus) && !(resalePending && resaleEdict?.status === "DESIGNATED")) {
+    // B-LEILAO-REVENDA (§3.3): em revenda pendente (relida sob a trava), só o edital da rodada nova AINDA NÃO posto em
+    // lote (DESIGNATED) aceita avaliação; o edital em lote continua travado.
+    const appraisalEdict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
+    const appraisalResalePending = appraisalEdict !== undefined && isResalePending(locked.status as ImpoundStatus, await this.listAttempts(input.tenantId, input.processId), await this.listEdicts(input.tenantId, input.processId));
+    const appraisalResaleRound = appraisalResalePending && appraisalEdict.status === "DESIGNATED";
+    if (!APPRAISAL_EDITABLE_STATES.includes(locked.status as ImpoundStatus) && !appraisalResaleRound) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_locked_after_lot", "The appraisal/minimum bid is frozen once the round is lotted; it can only be set before LOTTED.");
     }
     const existing = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
@@ -406,10 +407,16 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (relotLocked.status !== input.expectedFrom) throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     const relotSeqMatches = relotLocked.custody_seq_head === input.expectedCustodySeq;
     if (!relotSeqMatches) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
+    // B-LEILAO-REVENDA (E2.1.6): sob a trava, relê as tentativas e os editais e refaz a revenda pendente e a rodada nova.
     const attempts = await this.listAttempts(input.tenantId, input.processId);
-    const lottedRound = (await this.listEdicts(input.tenantId, input.processId)).find((candidate) => candidate.status === "LOTTED")?.roundNumber;
-    if (!isResalePending(relotLocked.status as ImpoundStatus, attempts, lottedRound)) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_not_pending", "This vehicle is not pending resale.");
-    if (attempts.some((attempt) => attempt.roundNumber === input.roundNumber)) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a new round.");
+    const relotResalePending = isResalePending(relotLocked.status as ImpoundStatus, attempts, await this.listEdicts(input.tenantId, input.processId));
+    if (!relotResalePending) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "resale_not_pending", "This vehicle is not pending resale.");
+    }
+    const relotRoundHasResult = isRoundNotNew(attempts, input.roundNumber);
+    if (relotRoundHasResult) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
+    }
     const edict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
     if (!edict || !isEdictComplete(edict)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict.");
     if (edict.classification !== "CONSERVED") throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Lotting requires a conserved vehicle.");

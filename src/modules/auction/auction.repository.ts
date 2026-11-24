@@ -59,15 +59,16 @@ export function findActiveSoldRound(attempts: readonly AuctionAttempt[]): number
   return active.length > 0 ? active[active.length - 1].roundNumber : undefined;
 }
 
-export function isResalePending(
-  status: ImpoundStatus,
-  attempts: readonly AuctionAttempt[],
-  lottedRound: number | undefined,
-): boolean {
-  return status === "LOTTED"
-    && findActiveSoldRound(attempts) === undefined
-    && lottedRound !== undefined
-    && attempts.some((attempt) => attempt.roundNumber === lottedRound && attempt.outcome === "SOLD");
+// B-LEILAO-REVENDA (E2.1.5): revenda pendente = processo em LOTTED, sem venda efetiva, e com uma venda na rodada do
+// edital em lote (a venda que foi inadimplida). Depois do relote a rodada em lote é a nova, sem resultado, e a pendência acaba.
+export function isResalePending(status: ImpoundStatus, attempts: readonly AuctionAttempt[], edicts: readonly AuctionEdict[]): boolean {
+  const lottedRound = edicts.find((edict) => edict.status === "LOTTED")?.roundNumber;
+  return status === "LOTTED" && findActiveSoldRound(attempts) === undefined && lottedRound !== undefined && attempts.some((attempt) => attempt.roundNumber === lottedRound && attempt.outcome === "SOLD");
+}
+
+// B-LEILAO-REVENDA (§3.3, E2.1.6 passo 5): a rodada da revenda tem de ser MAIOR que toda rodada com resultado.
+export function isRoundNotNew(attempts: readonly AuctionAttempt[], roundNumber: number): boolean {
+  return attempts.some((attempt) => attempt.roundNumber >= roundNumber);
 }
 
 // Um edital é COMPLETO (prova de um certame REAL) quando tem referência não-vazia + published_at + business_days >=
@@ -323,13 +324,13 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     }
     // Pré-condição de estado (BAIXO-C): registrar edital só em ACTIVE_CUSTODY/AUCTION_ELIGIBLE — não poluir a cadeia
     // com AUCTION_LOTTED em RECEPTION/RELEASED/DIRECT_RECYCLING/CLOSED (re-verificado sob FOR UPDATE no Prisma).
-    const attempts = this.attemptsFor(input.tenantId, input.processId);
-    const lottedRound = this.edictsFor(input.tenantId, input.processId).find((edict) => edict.status === "LOTTED")?.roundNumber;
-    const resalePending = isResalePending(process.status, attempts, lottedRound);
-    if (!EDICT_REGISTRABLE_STATES.includes(process.status) && !resalePending) {
+    // B-LEILAO-REVENDA (§3.3): em revenda pendente, o edital de uma rodada NOVA também é aceito em LOTTED.
+    const memoryEdictAttempts = this.attemptsFor(input.tenantId, input.processId);
+    const memoryEdictResalePending = isResalePending(process.status, memoryEdictAttempts, this.edictsFor(input.tenantId, input.processId));
+    if (!EDICT_REGISTRABLE_STATES.includes(process.status) && !memoryEdictResalePending) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "auction_edict_wrong_state", "An auction edict can only be registered while the process is in active custody or auction-eligible.");
     }
-    if (resalePending && input.roundNumber <= attempts.reduce((max, attempt) => Math.max(max, attempt.roundNumber), 0)) {
+    if (memoryEdictResalePending && isRoundNotNew(memoryEdictAttempts, input.roundNumber)) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
     }
     const existing = this.edicts.find(
@@ -510,13 +511,11 @@ export class InMemoryAuctionRepository implements AuctionRepository {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
     // MÉDIO-2: a reserva CONGELA no lote — appraisal/min_bid imutáveis a partir de LOTTED.
-    const resalePending = isResalePending(
-      process.status,
-      this.attemptsFor(input.tenantId, input.processId),
-      this.edictsFor(input.tenantId, input.processId).find((edict) => edict.status === "LOTTED")?.roundNumber,
-    );
-    const resaleEdict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
-    if (!APPRAISAL_EDITABLE_STATES.includes(process.status) && !(resalePending && resaleEdict?.status === "DESIGNATED")) {
+    // B-LEILAO-REVENDA (§3.3): em revenda pendente, só o edital da rodada nova AINDA NÃO posto em lote aceita avaliação.
+    const memoryAppraisalEdict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
+    const memoryAppraisalResalePending = memoryAppraisalEdict !== undefined && isResalePending(process.status, this.attemptsFor(input.tenantId, input.processId), this.edictsFor(input.tenantId, input.processId));
+    const memoryAppraisalResaleRound = memoryAppraisalResalePending && memoryAppraisalEdict.status === "DESIGNATED";
+    if (!APPRAISAL_EDITABLE_STATES.includes(process.status) && !memoryAppraisalResaleRound) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_locked_after_lot", "The appraisal/minimum bid is frozen once the round is lotted; it can only be set before LOTTED.");
     }
     const index = this.edicts.findIndex(
@@ -778,9 +777,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     const memoryRelotSeqMatches = relotProcess.custodySeqHead === input.expectedCustodySeq;
     if (!memoryRelotSeqMatches) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
     const attempts = this.attemptsFor(input.tenantId, input.processId);
-    const lottedRound = this.edictsFor(input.tenantId, input.processId).find((edict) => edict.status === "LOTTED")?.roundNumber;
-    if (!isResalePending(relotProcess.status, attempts, lottedRound)) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_not_pending", "This vehicle is not pending resale.");
-    if (attempts.some((attempt) => attempt.roundNumber === input.roundNumber)) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a new round.");
+    if (!isResalePending(relotProcess.status, attempts, this.edictsFor(input.tenantId, input.processId))) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_not_pending", "This vehicle is not pending resale.");
+    if (isRoundNotNew(attempts, input.roundNumber)) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
     const edict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
     if (!edict || !isEdictComplete(edict)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict.");
     if (edict.classification !== "CONSERVED") throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Lotting requires a conserved vehicle.");
