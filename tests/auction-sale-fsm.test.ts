@@ -301,6 +301,7 @@ test("consumação: AUCTIONED→AUCTION_CLOSED exige pagamento confirmado; sem c
   const who = actor(tenantId);
   await makeLotted(ctx, auction, who);
   await auction.recordSale(who, ctx.processId, { round_number: 1, winner_ref: "Arrematante 001", sold_amount: "9500.00", sale_note_reference: "NOTA-2026/77" });
+  const custodySeq = (await getMemoryAuctionRepositoryForTests().getState(ctx.tenantId, ctx.processId))?.custodySeqHead;
 
   await assert.rejects(() => auction.closeAuction(who, ctx.processId, { round_number: 1 }), is409("close_payment_unconfirmed"));
   const view = await auction.closeAuction(who, ctx.processId, { round_number: 1, payment_confirmed: true });
@@ -359,8 +360,9 @@ test("reclamado (art. 26 §1º): LOTTED→ACTIVE_CUSTODY exige reason e reabre a
   await makeLotted(ctx, auction, who);
 
   // Sem reason → reason_required.
-  await assert.rejects(() => auction.reclaim(who, ctx.processId, {}), is409("reason_required"));
-  const view = await auction.reclaim(who, ctx.processId, { reason: "Proprietário reclamou o veículo antes do certame" });
+  const custodySeq = (await getMemoryAuctionRepositoryForTests().getState(ctx.tenantId, ctx.processId))?.custodySeqHead;
+  await assert.rejects(() => auction.reclaim(who, ctx.processId, { custody_seq: custodySeq }), is409("reason_required"));
+  const view = await auction.reclaim(who, ctx.processId, { reason: "Proprietário reclamou o veículo antes do certame", custody_seq: custodySeq });
   assert.equal(view.status, "ACTIVE_CUSTODY");
   const process = await getMemoryImpoundRepositoryForTests().findProcessById(tenantId, ctx.processId);
   assert.equal(process?.frozenAt, undefined, "reclamar antes da venda NÃO congela (nunca congelou)");
@@ -379,10 +381,11 @@ test("reclamar APÓS o arremate (AUCTIONED) é ILEGAL pela FSM → 409 invalid_t
   const who = actor(tenantId);
   await makeLotted(ctx, auction, who);
   await auction.recordSale(who, ctx.processId, { round_number: 1, winner_ref: "Arrematante 001", sold_amount: "9500.00", sale_note_reference: "NOTA-2026/77" });
+  const custodySeq = (await getMemoryAuctionRepositoryForTests().getState(ctx.tenantId, ctx.processId))?.custodySeqHead;
 
   // Já AUCTIONED: reclaim → AUCTIONED→ACTIVE_CUSTODY não existe em IMPOUND_TRANSITIONS → invalid_transition (mesmo com reason).
   await assert.rejects(
-    () => auction.reclaim(who, ctx.processId, { reason: "tentativa de reclamar tarde demais" }),
+    () => auction.reclaim(who, ctx.processId, { reason: "tentativa de reclamar tarde demais", custody_seq: custodySeq }),
     (error: unknown) => (error as { statusCode?: number }).statusCode === 409 && (error as { reason?: string }).reason === "invalid_transition",
   );
 });

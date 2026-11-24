@@ -877,7 +877,7 @@ test("V1 · (E8.3) resgate de processo em lote congelado há 5 dias: frozen_at n
   const ctx = await scenario({ days: 10 });
   await legacyFrozen(ctx, "LOTTED");
   assert.equal(await dailyCount(ctx), 5, "pré-condição: 5 diárias até o congelamento");
-  await createMemoryAuctionService().reclaim(who(ctx), ctx.processId, { reason: "Dono apresentou a documentação" });
+  await createMemoryAuctionService().reclaim(who(ctx), ctx.processId, { reason: "Dono apresentou a documentação", custody_seq: (await getMemoryAuctionRepositoryForTests().getState(ctx.tenantId, ctx.processId))?.custodySeqHead });
   const afterReclaim = { estado: (await processOf(ctx)).status, congelado: (await processOf(ctx)).frozenAt !== undefined };
   const periodos = await suspensionsOf(ctx);
   const start = await outcome(createMemoryReleaseService().start(who(ctx) as never, ctx.processId, { recipient_name: "Dono" }));
@@ -1054,7 +1054,7 @@ test("S2 · (E11.1-E) 30 dias em leilão param a diária; retirada volta a cobra
   const sweep1At = new Date(t0 + 150 * MS_PER_DAY);
   await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
   await backdateToAuction(ctx, prepAt, prepAt);
-  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", expectedCustodySeq: (await getMemoryAuctionRepositoryForTests().getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1, actorId: ctx.userId, occurredAt: reclaimAt });
   await charge.accrueProcess(ctx.tenantId, ctx.processId, sweep1At, ctx.userId);
   const afterFirst = { diarias: await dailyCount(ctx), seqs: await dailySeqs(ctx) };
   const legenda101 = (await lines(ctx)).find((line) => line.kind === "DAILY" && line.periodSeq === 101)?.refDate;
@@ -1075,7 +1075,7 @@ test("S3 · (E11.1-E) entrada há 200 dias: 180 antes do lote e 180 no fim, nenh
   await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
   const antesDoLote = await dailyCount(ctx);
   await backdateToAuction(ctx, prepAt, prepAt);
-  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", expectedCustodySeq: (await getMemoryAuctionRepositoryForTests().getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1, actorId: ctx.userId, occurredAt: reclaimAt });
   await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
   const statement = await charge.getStatement(who(ctx), ctx.processId);
   assert.deepEqual(
@@ -1093,7 +1093,7 @@ test("S11 · (E11.1-E) resgate fecha o 1º período; re-preparação abre o 2º;
   const eligibleAt = new Date(t0 + 115 * MS_PER_DAY);
   await charge.accrueProcess(ctx.tenantId, ctx.processId, prep1At, ctx.userId);
   await backdateToAuction(ctx, prep1At, prep1At);
-  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+  await getMemoryAuctionRepositoryForTests().reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", expectedCustodySeq: (await getMemoryAuctionRepositoryForTests().getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1, actorId: ctx.userId, occurredAt: reclaimAt });
   const impound = getMemoryImpoundRepositoryForTests();
   await impound.applyTransition({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", setEnteredAt: false, setFrozenAt: false, event: { type: "STATUS_CHANGE", payload: { from: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", reason: "auction_eligible" }, occurredAt: eligibleAt, actorId: undefined } });
   const repo = getMemoryAuctionRepositoryForTests();

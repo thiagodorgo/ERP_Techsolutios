@@ -137,6 +137,21 @@ export function auctionActionErrorMessage(reason: string | null | undefined, sta
       return "Só um processo elegível a leilão pode registrar uma rodada do certame.";
     case "auction_edict_missing":
       return "Registre o edital desta rodada antes de lançar uma rodada deserta.";
+    case "auction_edict_not_found":
+      return "Registre o edital desta rodada antes de informar a avaliação.";
+    case "appraisal_locked_after_lot":
+      return "A avaliação não pode ser alterada depois que a rodada foi colocada em lote.";
+    case "appraisal_round_has_result":
+      return "A avaliação não pode ser alterada depois que a rodada teve resultado.";
+    case "resale_not_pending":
+      return "Este veículo não está aguardando revenda.";
+    case "resale_round_not_new":
+      return "Use uma rodada nova, com número maior que as rodadas já encerradas.";
+    case "auction_reading_stale":
+      return "As informações do leilão mudaram. Recarregue o dossiê e tente novamente.";
+    case "custody_seq_required":
+    case "custody_seq_invalid":
+      return "Recarregue o dossiê antes de concluir esta ação.";
     // Valores inválidos (avaliação/lance/arremate).
     case "appraisal_amount_invalid":
     case "min_bid_amount_invalid":
@@ -299,7 +314,16 @@ export function adaptAuctionView(response: unknown): AuctionView | null {
   const edicts = (readArray(payload.edicts) ?? [])
     .map((item) => adaptEdict(item))
     .filter((item): item is AuctionEdictDto => Boolean(item));
-  return { status, strikeCount, maxAttempts, strikesRemaining, attempts, edicts };
+  return {
+    status,
+    strikeCount,
+    maxAttempts,
+    strikesRemaining,
+    attempts,
+    edicts,
+    resalePending: dataRecord.resalePending === true || dataRecord.resale_pending === true,
+    custodySeq: readNumber(dataRecord, ["custodySeq", "custody_seq"]) ?? 0,
+  };
 }
 
 function adaptEdict(input: unknown): AuctionEdictDto | null {
@@ -379,15 +403,20 @@ export function buildRoundRows(view: AuctionView): AuctionRoundRow[] {
     }));
 }
 
+// B-LEILAO-REVENDA (E2.4/E2.4.2): ESPELHO client-side de isRoundNotNew, negado: a rodada nova é maior que toda rodada com resultado.
+export function isNewAuctionRound(view: AuctionView, roundNumber: number): boolean {
+  return view.attempts.every((attempt) => attempt.roundNumber < roundNumber);
+}
+
 // Rodada default sugerida para uma ação por estágio (o edital de maior rodada; a lotada p/ o arremate/consumação).
 export function defaultRoundForStage(view: AuctionView, stage: AuctionStage): number {
   if (stage === "lotted" || stage === "auctioned" || stage === "closed") {
     const lotted = view.edicts.find((edict) => edict.status === "LOTTED");
     if (lotted) return lotted.roundNumber;
   }
-  const maxEdictRound = view.edicts.reduce((max, edict) => Math.max(max, edict.roundNumber), 0);
+  const maxEdictRound = view.edicts.filter((edict) => isNewAuctionRound(view, edict.roundNumber)).reduce((max, edict) => Math.max(max, edict.roundNumber), 0);
   if (maxEdictRound > 0) return maxEdictRound;
-  return view.strikeCount + 1; // próxima rodada a designar (elegível sem editais ainda)
+  return Math.max(view.strikeCount, ...view.attempts.map((attempt) => attempt.roundNumber)) + 1; // próxima rodada nova a designar
 }
 
 function readArray(value: unknown): unknown[] | undefined {

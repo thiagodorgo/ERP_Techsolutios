@@ -17,6 +17,8 @@ import {
   evaluateScrapEdictGate,
   findActiveSoldRound,
   isEdictComplete,
+  isResalePending,
+  isRoundNotNew,
   APPRAISAL_EDITABLE_STATES,
   EDICT_REGISTRABLE_STATES,
   type AuctionRepository,
@@ -37,6 +39,7 @@ import {
   type MarkEligibleInput,
   type PrepareAuctionInput,
   type ReclaimAuctionInput,
+  type RelotForResaleInput,
   type RecordAttemptInput,
   type RecordAttemptResult,
   type RecordSaleInput,
@@ -46,6 +49,7 @@ import {
   type ReclassifyScrapInput,
   type ReclassifyUnrecoverableInput,
   type SetAppraisalInput,
+  type WithdrawSettledInput,
 } from "./auction.types.js";
 import { isBelowMinBid, isPositiveMoney, maskEdictReference } from "./auction.validators.js";
 import type {
@@ -73,14 +77,15 @@ export class PrismaAuctionRepository implements AuctionRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
   async getState(tenantId: string, processId: string): Promise<AuctionStateSnapshot | undefined> {
-    const rows = await this.client.$queryRaw<Array<{ status: string }>>`
-      SELECT status FROM impound_processes WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
+    const rows = await this.client.$queryRaw<Array<{ status: string; custody_seq_head: number }>>`
+      SELECT status, custody_seq_head FROM impound_processes WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
     `;
     if (rows.length === 0) return undefined;
     return {
       status: rows[0].status as ImpoundStatus,
       attempts: await this.listAttempts(tenantId, processId),
       edicts: await this.listEdicts(tenantId, processId),
+      custodySeqHead: rows[0].custody_seq_head,
     };
   }
 
@@ -130,8 +135,15 @@ export class PrismaAuctionRepository implements AuctionRepository {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
     // Pré-condição de estado (BAIXO-C) RE-VERIFICADA sob FOR UPDATE: registrar edital só em ACTIVE_CUSTODY/AUCTION_ELIGIBLE.
-    if (!EDICT_REGISTRABLE_STATES.includes(locked.status as ImpoundStatus)) {
+    // B-LEILAO-REVENDA (§3.3): em revenda pendente (relida sob a trava), o edital de uma rodada NOVA também é aceito em LOTTED.
+    const edictAttempts = await this.listAttempts(input.tenantId, input.processId);
+    const edictResalePending = isResalePending(locked.status as ImpoundStatus, edictAttempts, await this.listEdicts(input.tenantId, input.processId));
+    const edictRoundHasResult = isRoundNotNew(edictAttempts, input.roundNumber);
+    if (!EDICT_REGISTRABLE_STATES.includes(locked.status as ImpoundStatus) && !edictResalePending) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "auction_edict_wrong_state", "An auction edict can only be registered while the process is in active custody or auction-eligible.");
+    }
+    if (edictResalePending && edictRoundHasResult) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
     }
     // IDEMPOTÊNCIA sob o lock (pré-check antes do INSERT; o partial-unique auction_edicts_round_idem_key é o BACKSTOP —
     // um 23505 no create abortaria a tx, por isso pré-checamos sob o FOR UPDATE que serializa os registros da rodada).
@@ -338,7 +350,21 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (!locked) {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
-    if (!APPRAISAL_EDITABLE_STATES.includes(locked.status as ImpoundStatus)) {
+    // B-LEILAO-REVENDA (§3.3 e E2.4): em revenda pendente (relida sob a trava), a avaliação só vale no edital da rodada
+    // NOVA (a régua do registro de edital: maior que toda rodada com resultado) ainda não posto em lote; o edital em
+    // lote continua travado.
+    const appraisalEdict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
+    const appraisalAttempts = await this.listAttempts(input.tenantId, input.processId);
+    const appraisalResalePending = isResalePending(locked.status as ImpoundStatus, appraisalAttempts, await this.listEdicts(input.tenantId, input.processId));
+    const appraisalRoundNotNew = isRoundNotNew(appraisalAttempts, input.roundNumber);
+    if (appraisalEdict?.status !== "LOTTED" && appraisalRoundNotNew) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_round_has_result", "This round already has a recorded outcome; its appraisal can no longer change.");
+    }
+    if (appraisalResalePending && appraisalEdict === undefined) {
+      throw new AuctionError(404, "AUCTION_EDICT_NOT_FOUND", "auction_edict_not_found", "No auction edict is registered for this round; register the edict before the appraisal.");
+    }
+    const appraisalResaleRound = appraisalResalePending && appraisalEdict?.status === "DESIGNATED";
+    if (!APPRAISAL_EDITABLE_STATES.includes(locked.status as ImpoundStatus) && !appraisalResaleRound) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_locked_after_lot", "The appraisal/minimum bid is frozen once the round is lotted; it can only be set before LOTTED.");
     }
     const existing = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
@@ -382,6 +408,45 @@ export class PrismaAuctionRepository implements AuctionRepository {
       actorId: input.actorId,
     });
     return { status: "AUCTION_PREP", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
+  }
+
+  async relotAtomic(input: RelotForResaleInput): Promise<AuctionStateSnapshot> {
+    const relotLocked = await this.lockProcess(input.tenantId, input.processId);
+    if (!relotLocked) throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    if (relotLocked.status !== input.expectedFrom) throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    const relotSeqMatches = relotLocked.custody_seq_head === input.expectedCustodySeq;
+    if (!relotSeqMatches) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
+    // B-LEILAO-REVENDA (E2.1.6): sob a trava, relê as tentativas e os editais e refaz a revenda pendente e a rodada nova.
+    const attempts = await this.listAttempts(input.tenantId, input.processId);
+    const relotResalePending = isResalePending(relotLocked.status as ImpoundStatus, attempts, await this.listEdicts(input.tenantId, input.processId));
+    if (!relotResalePending) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "resale_not_pending", "This vehicle is not pending resale.");
+    }
+    const relotRoundHasResult = isRoundNotNew(attempts, input.roundNumber);
+    if (relotRoundHasResult) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
+    }
+    const edict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
+    if (!edict || !isEdictComplete(edict)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict.");
+    if (edict.classification !== "CONSERVED") throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Lotting requires a conserved vehicle.");
+    if (!isPositiveMoney(edict.appraisalAmount)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_appraisal_missing", "Lotting requires an appraisal.");
+    if (!isPositiveMoney(edict.minBidAmount)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_min_bid_missing", "Lotting requires a minimum bid.");
+    const relotPaymentPending = await this.hasLivePaymentIntent(input.tenantId, input.processId);
+    if (relotPaymentPending) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_payment_pending", "Cannot relot a process with a live payment intent.");
+    const relotDebtsSettled = await this.areDebtsSettled(input.tenantId, input.processId);
+    if (relotDebtsSettled) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_debts_settled", "Cannot relot a process with all debts settled.");
+    await this.client.$executeRaw`
+      UPDATE auction_edicts SET status = 'CLOSED', updated_at = now()
+      WHERE tenant_id = ${input.tenantId}::uuid AND process_id = ${input.processId}::uuid AND status = 'LOTTED' AND round_number <> ${input.roundNumber}
+    `;
+    await this.client.auctionEdict.update({ where: { id: edict.id }, data: { status: "LOTTED" } });
+    await this.appendEventTx(input.tenantId, input.processId, relotLocked, {
+      type: "AUCTION_LOTTED",
+      payload: buildAuctionLotEventPayload(edict),
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return { status: "LOTTED", attempts, edicts: await this.listEdicts(input.tenantId, input.processId), custodySeqHead: relotLocked.custody_seq_head + 1 };
   }
 
   // LOTE (AUCTION_PREP→LOTTED): re-verifica sob FOR UPDATE (edital COMPLETO + min_bid>0) + AUCTION_LOTTED.
@@ -596,6 +661,10 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (locked.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const reclaimSeqMatches = locked.custody_seq_head === input.expectedCustodySeq;
+    if (!reclaimSeqMatches) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
+    }
     await this.closeLottedEdicts(input.tenantId, input.processId);
     await this.convertLegacyFreezeTx(input.tenantId, input.processId, locked.status, locked.frozen_at);
     const reclaimSuspensionClosed = await this.closeDailySuspensionTx(input.tenantId, input.processId, input.occurredAt);
@@ -611,7 +680,7 @@ export class PrismaAuctionRepository implements AuctionRepository {
   }
 
 
-  async withdrawSettledAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot> {
+  async withdrawSettledAtomic(input: WithdrawSettledInput): Promise<AuctionStateSnapshot> {
     const locked = await this.lockProcess(input.tenantId, input.processId);
     if (!locked) {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
@@ -930,7 +999,11 @@ export class RlsPrismaAuctionRepository implements AuctionRepository {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).reclaimAtomic(input));
   }
 
-  withdrawSettledAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot> {
+  relotAtomic(input: RelotForResaleInput): Promise<AuctionStateSnapshot> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).relotAtomic(input));
+  }
+
+  withdrawSettledAtomic(input: WithdrawSettledInput): Promise<AuctionStateSnapshot> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).withdrawSettledAtomic(input));
   }
 

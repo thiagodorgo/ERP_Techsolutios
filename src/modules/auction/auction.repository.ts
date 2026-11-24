@@ -16,6 +16,7 @@ import {
   type MarkEligibleInput,
   type PrepareAuctionInput,
   type ReclaimAuctionInput,
+  type RelotForResaleInput,
   type RecordAttemptInput,
   type RecordAttemptResult,
   type RecordSaleInput,
@@ -25,6 +26,7 @@ import {
   type ReclassifyScrapInput,
   type ReclassifyUnrecoverableInput,
   type SetAppraisalInput,
+  type WithdrawSettledInput,
 } from "./auction.types.js";
 import { isBelowMinBid, isPositiveMoney, maskEdictReference } from "./auction.validators.js";
 
@@ -55,6 +57,18 @@ export function findActiveSoldRound(attempts: readonly AuctionAttempt[]): number
     .filter((attempt) => attempt.outcome === "SOLD" && !defaulted.has(attempt.roundNumber))
     .sort((left, right) => left.roundNumber - right.roundNumber);
   return active.length > 0 ? active[active.length - 1].roundNumber : undefined;
+}
+
+// B-LEILAO-REVENDA (E2.1.5): revenda pendente = processo em LOTTED, sem venda efetiva, e com uma venda na rodada do
+// edital em lote (a venda que foi inadimplida). Depois do relote a rodada em lote é a nova, sem resultado, e a pendência acaba.
+export function isResalePending(status: ImpoundStatus, attempts: readonly AuctionAttempt[], edicts: readonly AuctionEdict[]): boolean {
+  const lottedRound = edicts.find((edict) => edict.status === "LOTTED")?.roundNumber;
+  return status === "LOTTED" && findActiveSoldRound(attempts) === undefined && lottedRound !== undefined && attempts.some((attempt) => attempt.roundNumber === lottedRound && attempt.outcome === "SOLD");
+}
+
+// B-LEILAO-REVENDA (§3.3, E2.1.6 passo 5): a rodada da revenda tem de ser MAIOR que toda rodada com resultado.
+export function isRoundNotNew(attempts: readonly AuctionAttempt[], roundNumber: number): boolean {
+  return attempts.some((attempt) => attempt.roundNumber >= roundNumber);
 }
 
 // Um edital é COMPLETO (prova de um certame REAL) quando tem referência não-vazia + published_at + business_days >=
@@ -138,7 +152,8 @@ export interface AuctionRepository {
   closeAuctionAtomic(input: CloseAuctionInput): Promise<AuctionStateSnapshot>;         // AUCTIONED→AUCTION_CLOSED
   defaultAuctionAtomic(input: DefaultAuctionInput): Promise<DefaultAuctionResult>;     // AUCTIONED→LOTTED (NO_PAYMENT)
   reclaimAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot>;            // LOTTED→ACTIVE_CUSTODY
-  withdrawSettledAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot>;    // AUCTION_ELIGIBLE/AUCTION_PREP→ACTIVE_CUSTODY
+  relotAtomic(input: RelotForResaleInput): Promise<AuctionStateSnapshot>;
+  withdrawSettledAtomic(input: WithdrawSettledInput): Promise<AuctionStateSnapshot>;    // AUCTION_ELIGIBLE/AUCTION_PREP→ACTIVE_CUSTODY
   thawLegacyFreezeAtomic(tenantId: string, processId: string): Promise<boolean>;       // descongelamento legado em estados não-terminais
   reset?(): void;
 }
@@ -259,7 +274,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
   async getState(tenantId: string, processId: string): Promise<AuctionStateSnapshot | undefined> {
     const process = await this.impound.findProcessById(tenantId, processId);
     if (!process) return undefined;
-    return { status: process.status, attempts: this.attemptsFor(tenantId, processId), edicts: this.edictsFor(tenantId, processId) };
+    return { status: process.status, attempts: this.attemptsFor(tenantId, processId), edicts: this.edictsFor(tenantId, processId), custodySeqHead: process.custodySeqHead };
   }
 
   async listEdicts(tenantId: string, processId: string): Promise<readonly AuctionEdict[]> {
@@ -309,8 +324,14 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     }
     // Pré-condição de estado (BAIXO-C): registrar edital só em ACTIVE_CUSTODY/AUCTION_ELIGIBLE — não poluir a cadeia
     // com AUCTION_LOTTED em RECEPTION/RELEASED/DIRECT_RECYCLING/CLOSED (re-verificado sob FOR UPDATE no Prisma).
-    if (!EDICT_REGISTRABLE_STATES.includes(process.status)) {
+    // B-LEILAO-REVENDA (§3.3): em revenda pendente, o edital de uma rodada NOVA também é aceito em LOTTED.
+    const memoryEdictAttempts = this.attemptsFor(input.tenantId, input.processId);
+    const memoryEdictResalePending = isResalePending(process.status, memoryEdictAttempts, this.edictsFor(input.tenantId, input.processId));
+    if (!EDICT_REGISTRABLE_STATES.includes(process.status) && !memoryEdictResalePending) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "auction_edict_wrong_state", "An auction edict can only be registered while the process is in active custody or auction-eligible.");
+    }
+    if (memoryEdictResalePending && isRoundNotNew(memoryEdictAttempts, input.roundNumber)) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
     }
     const existing = this.edicts.find(
       (edict) => edict.tenantId === input.tenantId && edict.processId === input.processId && edict.roundNumber === input.roundNumber,
@@ -490,7 +511,20 @@ export class InMemoryAuctionRepository implements AuctionRepository {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
     // MÉDIO-2: a reserva CONGELA no lote — appraisal/min_bid imutáveis a partir de LOTTED.
-    if (!APPRAISAL_EDITABLE_STATES.includes(process.status)) {
+    // B-LEILAO-REVENDA (§3.3 e E2.4): em revenda pendente, a avaliação só vale no edital da rodada NOVA (a régua do
+    // registro de edital: maior que toda rodada com resultado) ainda não posto em lote.
+    const memoryAppraisalEdict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
+    const memoryAppraisalAttempts = this.attemptsFor(input.tenantId, input.processId);
+    const memoryAppraisalResalePending = isResalePending(process.status, memoryAppraisalAttempts, this.edictsFor(input.tenantId, input.processId));
+    const memoryAppraisalRoundNotNew = isRoundNotNew(memoryAppraisalAttempts, input.roundNumber);
+    if (memoryAppraisalEdict?.status !== "LOTTED" && memoryAppraisalRoundNotNew) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_round_has_result", "This round already has a recorded outcome; its appraisal can no longer change.");
+    }
+    if (memoryAppraisalResalePending && memoryAppraisalEdict === undefined) {
+      throw new AuctionError(404, "AUCTION_EDICT_NOT_FOUND", "auction_edict_not_found", "No auction edict is registered for this round; register the edict before the appraisal.");
+    }
+    const memoryAppraisalResaleRound = memoryAppraisalResalePending && memoryAppraisalEdict?.status === "DESIGNATED";
+    if (!APPRAISAL_EDITABLE_STATES.includes(process.status) && !memoryAppraisalResaleRound) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_locked_after_lot", "The appraisal/minimum bid is frozen once the round is lotted; it can only be set before LOTTED.");
     }
     const index = this.edicts.findIndex(
@@ -725,6 +759,10 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (process.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const memoryReclaimSeqMatches = process.custodySeqHead === input.expectedCustodySeq;
+    if (!memoryReclaimSeqMatches) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
+    }
     // O certame é cancelado (reclamado): a rodada LOTADA passa a CLOSED (mantém no máx. 1 LOTTED/processo).
     this.closeLottedEdicts(input.tenantId, input.processId);
     await this.impound.clearLegacyFreeze(input.tenantId, input.processId);
@@ -741,8 +779,36 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     return { status: "ACTIVE_CUSTODY", attempts: this.attemptsFor(input.tenantId, input.processId), edicts: this.edictsFor(input.tenantId, input.processId) };
   }
 
+  async relotAtomic(input: RelotForResaleInput): Promise<AuctionStateSnapshot> {
+    const relotProcess = await this.impound.findProcessById(input.tenantId, input.processId);
+    if (!relotProcess) throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    if (relotProcess.status !== input.expectedFrom) throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    const memoryRelotSeqMatches = relotProcess.custodySeqHead === input.expectedCustodySeq;
+    if (!memoryRelotSeqMatches) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
+    const attempts = this.attemptsFor(input.tenantId, input.processId);
+    if (!isResalePending(relotProcess.status, attempts, this.edictsFor(input.tenantId, input.processId))) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_not_pending", "This vehicle is not pending resale.");
+    if (isRoundNotNew(attempts, input.roundNumber)) throw new AuctionError(409, "AUCTION_CONFLICT", "resale_round_not_new", "A resale must use a round newer than every recorded outcome.");
+    const edict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
+    if (!edict || !isEdictComplete(edict)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict.");
+    if (edict.classification !== "CONSERVED") throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Lotting requires a conserved vehicle.");
+    if (!isPositiveMoney(edict.appraisalAmount)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_appraisal_missing", "Lotting requires an appraisal.");
+    if (!isPositiveMoney(edict.minBidAmount)) throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_min_bid_missing", "Lotting requires a minimum bid.");
+    this.markLottedEdict(input.tenantId, input.processId, input.roundNumber);
+    await this.impound.appendEvent({
+      tenantId: input.tenantId,
+      processId: input.processId,
+      event: {
+        type: "AUCTION_LOTTED",
+        payload: buildAuctionLotEventPayload(edict),
+        occurredAt: input.occurredAt,
+        actorId: input.actorId,
+      },
+    });
+    return this.getState(input.tenantId, input.processId) as Promise<AuctionStateSnapshot>;
+  }
 
-  async withdrawSettledAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot> {
+
+  async withdrawSettledAtomic(input: WithdrawSettledInput): Promise<AuctionStateSnapshot> {
     const process = await this.impound.findProcessById(input.tenantId, input.processId);
     if (!process) {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");

@@ -102,7 +102,7 @@ if (!connectionString) {
       const is404 = (error: unknown) => (error as { statusCode?: number }).statusCode === 404 && (error as { reason?: string }).reason === "process_not_found";
       await assert.rejects(() => auction.recordSaleAtomic({ tenantId: other.id, processId: ctx.processId, expectedFrom: "LOTTED", roundNumber: 1, winnerRef: "X", soldAmount: "9000.00", saleNoteReference: "N", actorId: undefined, occurredAt: new Date() }), is404);
       await assert.rejects(() => auction.defaultAuctionAtomic({ tenantId: other.id, processId: ctx.processId, expectedFrom: "AUCTIONED", roundNumber: 2, actorId: undefined, occurredAt: new Date() }), is404);
-      await assert.rejects(() => auction.reclaimAtomic({ tenantId: other.id, processId: ctx.processId, expectedFrom: "LOTTED", actorId: undefined, occurredAt: new Date() }), is404);
+  await assert.rejects(() => auction.reclaimAtomic({ tenantId: other.id, processId: ctx.processId, expectedFrom: "LOTTED", expectedCustodySeq: 0, actorId: undefined, occurredAt: new Date() }), is404);
     } finally {
       await teardownTenant(client, ctx.tenantId);
       await teardownTenant(client, other.id);

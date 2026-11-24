@@ -91,6 +91,8 @@ export function toAuctionViewDto(view: AuctionView, canAppraise = false) {
       strikeCount: view.strikeCount,
       maxAttempts: view.maxAttempts,
       status: view.status,
+      resalePending: view.resalePending,
+      custodySeq: view.custodySeq ?? null,
       // Elegível quando ainda não esgotou o teto de rodadas (visão HINT p/ a UI; o backend é a autoridade).
       strikesRemaining: Math.max(view.maxAttempts - view.strikeCount, 0),
     },

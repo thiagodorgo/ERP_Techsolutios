@@ -342,6 +342,7 @@ jobs:
           SUITES="$SUITES tests/patio-livro-vazio-db.test.ts"
           # B-PATIO-LEILAO-DIARIAS: suítes -db do bloco no job backend-postgres (E1.3).
           SUITES="$SUITES tests/patio-leilao-diarias-db.test.ts"
+          SUITES="$SUITES tests/leilao-revenda-db.test.ts"
           SUITES="$SUITES tests/patio-diaria-suspensao-migration-drill-db.test.ts"
           SUITES="$SUITES tests/auction-reclaim-migration-drill-db.test.ts"
           SUITES="$SUITES tests/auction-sale-concurrency.test.ts"

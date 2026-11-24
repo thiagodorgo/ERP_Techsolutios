@@ -129,13 +129,17 @@ async function eventCount(tenantId: string, processId: string): Promise<number> 
 
 const reclaimPath = (processId: string) => `/api/v1/impound-processes/${processId}/auction/reclaim`;
 
+async function reclaimBodyFor(tenantId: string, processId: string, reason = "Dono apresentou a documentação") {
+  return { reason, custody_seq: (await getMemoryAuctionRepositoryForTests().getState(tenantId, processId))?.custodySeqHead };
+}
+
 test("P1 · ator com impound:transition e SEM auction:reclaim chama o resgate de um processo em lote: 403; segue LOTTED; nenhum evento novo", async () => {
   resetAll();
   const tenantId = randomUUID();
   const processId = await processAt(tenantId, "LOTTED");
   const eventsBefore = await eventCount(tenantId, processId);
   await withApp(async (baseUrl) => {
-    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "manager", ["impound:read", "impound:transition"]), body: { reason: "Dono apresentou a documentação" } });
+    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "manager", ["impound:read", "impound:transition"]), body: await reclaimBodyFor(tenantId, processId) });
     assert.deepEqual(
       { http: response.status, estado: await statusOf(tenantId, processId), eventosNovos: (await eventCount(tenantId, processId)) - eventsBefore },
       { http: 403, estado: "LOTTED", eventosNovos: 0 },
@@ -149,7 +153,7 @@ test("P1b · o Gestor (manager), com as permissões do catálogo, resgata com mo
   const tenantId = randomUUID();
   const processId = await processAt(tenantId, "LOTTED");
   await withApp(async (baseUrl) => {
-    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "manager"), body: { reason: "Dono apresentou a documentação" } });
+    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "manager"), body: await reclaimBodyFor(tenantId, processId) });
     assert.deepEqual({ http: response.status, estado: await statusOf(tenantId, processId) }, { http: 200, estado: "ACTIVE_CUSTODY" }, JSON.stringify(response.body));
   });
 });
@@ -159,7 +163,7 @@ test("P2 · o administrador da organização (tenant_admin) resgata com motivo: 
   const tenantId = randomUUID();
   const processId = await processAt(tenantId, "LOTTED");
   await withApp(async (baseUrl) => {
-    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "tenant_admin"), body: { reason: "Dono apresentou a documentação" } });
+    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "tenant_admin"), body: await reclaimBodyFor(tenantId, processId) });
     const events = await getMemoryImpoundRepositoryForTests().listEvents(tenantId, processId);
     assert.deepEqual(
       { http: response.status, estado: await statusOf(tenantId, processId), codigoNaCadeia: events.some((event) => (event.payload as { reason?: unknown }).reason === "reclaimed_before_sale") },
@@ -176,7 +180,7 @@ test("P2b · controle: ator com o perfil platform_admin na sessão resgata pelo 
   const tenantId = randomUUID();
   const processId = await processAt(tenantId, "LOTTED");
   await withApp(async (baseUrl) => {
-    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "platform_admin"), body: { reason: "Dono apresentou a documentação" } });
+    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "platform_admin"), body: await reclaimBodyFor(tenantId, processId) });
     assert.deepEqual({ http: response.status, estado: await statusOf(tenantId, processId) }, { http: 200, estado: "ACTIVE_CUSTODY" }, JSON.stringify(response.body));
   });
 });
@@ -186,7 +190,7 @@ test("P3 · administrador de OUTRA organização chama o resgate: 404; o process
   const tenantId = randomUUID();
   const processId = await processAt(tenantId, "LOTTED");
   await withApp(async (baseUrl) => {
-    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(randomUUID(), "tenant_admin"), body: { reason: "Tentativa de outra organização" } });
+    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(randomUUID(), "tenant_admin"), body: await reclaimBodyFor(tenantId, processId, "Tentativa de outra organização") });
     assert.deepEqual({ http: response.status, estado: await statusOf(tenantId, processId) }, { http: 404, estado: "LOTTED" }, JSON.stringify(response.body));
   });
 });
@@ -225,7 +229,7 @@ test("P6 · controle: resgate SEM motivo, por quem tem a permissão: 409 reason_
   const tenantId = randomUUID();
   const processId = await processAt(tenantId, "LOTTED");
   await withApp(async (baseUrl) => {
-    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "tenant_admin"), body: {} });
+    const response = await call(baseUrl, reclaimPath(processId), { headers: headers(tenantId, "tenant_admin"), body: { custody_seq: (await getMemoryAuctionRepositoryForTests().getState(tenantId, processId))?.custodySeqHead } });
     assert.deepEqual({ http: response.status, razao: response.reason, estado: await statusOf(tenantId, processId) }, { http: 409, razao: "reason_required", estado: "LOTTED" }, JSON.stringify(response.body));
   });
 });
