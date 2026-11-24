@@ -261,6 +261,17 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
       }
 
       if (!loginResult.ok) {
+        if ((loginResult as { reason: string }).reason === "tenant_suspended") {
+          response.status(403).json({
+            error: {
+              code: "FORBIDDEN",
+              reason: "tenant_suspended",
+              message: "Organization is suspended.",
+            },
+          });
+          return;
+        }
+
         if (loginResult.reason === "locked") {
           response.status(423).json({
             error: {

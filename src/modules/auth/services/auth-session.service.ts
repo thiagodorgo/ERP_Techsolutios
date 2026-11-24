@@ -130,6 +130,11 @@ export class AuthSessionService {
     return this.runWithTenantContext(payload.tenant_id, async (tx) => {
       const repository = new AuthSessionRepository(tx);
       const session = await repository.findByIdForTenant(payload.session_id, payload.tenant_id);
+      const tenant = await tx.tenant.findFirst({
+        where: { id: payload.tenant_id, status: "active" },
+        select: { id: true },
+      });
+      if (!tenant) return { ok: false, reason: "revoked" };
       if (session && (await grantEndedByGroupExit(tx, { tenantId: payload.tenant_id, userId: session.user_id }))) return { ok: false, reason: "revoked" };
       const refreshTokenHash = hashRefreshToken(refreshToken);
 
