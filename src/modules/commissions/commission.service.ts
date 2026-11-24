@@ -1,6 +1,7 @@
 import { env } from "../../config/env.js";
 import { getMemoryOperatorProfileRepositoryForTests } from "../operator-profiles/operator-profile.service.js";
 import { createMemoryProfessionalStatementService } from "../professional-statements/professional-statement.service.js";
+import { isReservedBasisEventInput, isReservedPolicyInput } from "./commission-engine.js";
 import { InMemoryCommissionRepository, type CommissionRepository } from "./commission.repository.js";
 import type {
   CommissionActorContext,
@@ -75,6 +76,15 @@ export class CommissionService {
       rules: parsePolicyRules(body.rules),
     };
 
+    if (isReservedPolicyInput(input)) {
+      throw new CommissionError(
+        422,
+        "COMMISSION_POLICY_RESERVED",
+        "reserved_scope",
+        "The engine scope and engine_* rule types are reserved for the commission engine.",
+      );
+    }
+
     return this.repository.createPolicy(input);
   }
 
@@ -90,7 +100,7 @@ export class CommissionService {
   }
 
   createBasisEvent(actor: CommissionActorContext, body: RawRecord): Promise<CommissionBasisEvent> {
-    return this.repository.createBasisEvent({
+    const input = {
       tenantId: actor.tenantId,
       sourceType: assertNonEmptyString(body.sourceType ?? body.source_type, "sourceType", 80),
       sourceId: assertNonEmptyString(body.sourceId ?? body.source_id, "sourceId", 120),
@@ -100,7 +110,18 @@ export class CommissionService {
       occurredAt: parseOptionalDate(body.occurredAt ?? body.occurred_at, "occurredAt") ?? new Date(),
       status: parseBasisEventStatus(body.status),
       policyId: parseOptionalUuid(body.policyId ?? body.policy_id, "policyId"),
-    });
+    };
+
+    if (isReservedBasisEventInput(input)) {
+      throw new CommissionError(
+        422,
+        "COMMISSION_BASIS_EVENT_RESERVED",
+        "reserved_key",
+        "The engine: key prefix and engine. event prefix are reserved for the commission engine.",
+      );
+    }
+
+    return this.repository.createBasisEvent(input);
   }
 
   listCalculations(actor: CommissionActorContext, query: RawRecord): Promise<ListResult<CommissionCalculation>> {
