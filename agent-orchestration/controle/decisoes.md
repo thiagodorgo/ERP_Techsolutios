@@ -6576,3 +6576,49 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** *"vc hoje so na orquestracao e tarefas selecionadas por mim"*.
 - **Efeito:** durante o dia 23/11/2026, Claude e seus subagentes somente orquestram ou executam tarefas escolhidas pelo dono; os demais trabalhos seguem para braços externos ou aguardam escolha expressa.
+
+## D-DONO-2311-CLAUDE-LIMITE-REDUZIDO (2026-11-23 10:43 SP) — Claude com limite reduzido
+
+- **Fato (palavras do dono):** *"claude esta com limite reduzidoa priori so orquestracao e verificacao com cautela para nao estourar o limite, sendo coisa de mais passa pra outra ia"*.
+- **Efeito:** durante o dia 23/11/2026, Claude e seus subagentes fazem só orquestração e verificação leve; o trabalho pesado vai para outra IA. A junta do leilão, com banco e corrida, fica na DeepSeek.
+
+## D-DONO-2311-DIARIA-AUDIO (2026-11-23 11:46 SP) — o áudio vale como padrão da diária
+
+- **Fato (palavras do dono):** *"O áudio vale como padrão. Pode seguir na sua recomendação. O sistema tem um teto de 6 meses e o áudio fala em 180. O que está valendo é o áudio. Também não sei a carência de 60 dias já instalado. Também eu não sei. Procure. E você pode fazer até uma tarefa. Uso de DeepSeek e o Azure para regularizar isso o mais rápido possível."*
+- **Efeito:** a regra do áudio vira padrão: (R1) no período em leilão não se cobra diária; (R2) se o veículo volta ao pátio sem venda, a diária volta; (R3) o teto é de 180 diárias, regra geral para qualquer edital ou pátio, valendo o áudio e não os 6 meses do sistema; (R4) a elegibilidade começa em 60 dias. A R4 já existia na `main` desde 27/07 (#294).
+- **Respostas P12 a P15 (12:06 e 12:09):** P12 = o período sem diária começa na preparação, no envio ao leiloeiro do lote (transição `AUCTION_ELIGIBLE` → `AUCTION_PREP`); P13 = o teto de 180 vale para tudo, inclusive o contrato particular; P14 = sim, tira-se a diária lançada desde o início do período de leilão; P15 = o administrador decide um a um pela lista, sem devolução automática.
+
+## D-DONO-2311-AWS-PASSO-A-PASSO (2026-11-23 12:17 SP) — AWS só com autorização, passo a passo
+
+- **Fato (palavras do dono):** *"na aws vc so mexe com autorizacao minha, vamos fazer passo a passo"*.
+- **Efeito:** todo comando que cria, altera ou apaga algo na AWS espera a autorização do dono, um passo por vez. A leitura sem custo, para medir, continua livre. Nenhum agente roda comando na AWS por conta própria.
+
+## D-DONO-2311-AWS-SEM-JUNTA (2026-11-23 12:24 SP) — PD e junta dispensadas, excepcionalmente, para a AWS
+
+- **Fato (palavras do dono):** *"Claude, seguinte, excepcionalmente nessa pesquisa não preciso usar a junta, a pesquisa do custo da AWS, não preciso usar a junta. É porque não vai ter concorrência, a gente vai usar esse e pronto, tá entendendo?"*
+- **Efeito:** a PD e a junta de 5 da contratação da AWS ficam dispensadas, como exceção e só para a AWS. No lugar delas valem a autorização do dono a cada passo e o custo do roteiro, mostrado antes de cada passo. A pesquisa de custo também fica dispensada, por não haver alternativa a comparar.
+
+## D-DONO-2311-DEV-LEILAO-DEEPSEEK (2026-11-23 12:27 SP) — dev do leilão na DeepSeek
+
+- **Fato (palavras do dono):** *"no leilao de acordo"*.
+- **Efeito:** o dev da Emenda 11/11.1 vai para a DeepSeek; a conferência vai para o Azure; a junta completa do leilão fica na DeepSeek, com identidades novas e sem cruzamento. Continua valendo a regra de 03/11: sem limite nas outras casas, qualquer um verifica.
+
+## D-DONO-2311-AWS-DESLIGAR-DIARIO (2026-11-23 12:45 SP) — a infra da AWS é desligada todo dia
+
+- **Fato (palavras do dono):** *"Claude, lembrando que essa infraestrutura que a gente vai fazer, a gente no final do desenvolvimento vai desligar ela todos os dias, viu?"*
+- **Efeito:** durante o desenvolvimento, a infra é desligada no fim de cada dia para economizar. Desligam: a API, o antivírus, o rastreador, os bancos e a NAT. Não desligam: o balanceador, o cache, os IPs, os segredos e os logs. O roteiro de desligar e ligar fica como pendência do orquestrador.
+
+## D-DONO-2311-AZURE-TETO-ZERADO (2026-11-23 14:38 SP) — contagem do Azure zerada e teto redefinido
+
+- **Fato (pedido do dono, sem o valor por regra de repositório público):** o dono mandou zerar toda a contagem do Azure e redefinir o teto dele.
+- **Efeito executado:** o histórico de gastos do Azure foi preservado em arquivo próprio; o teto do Azure (AZ e AZC) foi redefinido para o novo valor pedido, e a contagem foi zerada.
+
+## D-DONO-2311-AZURE-CONTAGEM-REGRESSIVA (2026-11-23 14:39 SP) — o teto do Azure conta de forma regressiva, sem margem
+
+- **Fato (pedido do dono, sem o valor por regra de repositório público):** o dono pediu que o teto do Azure contasse de forma regressiva até acabar o uso, zerando tudo.
+- **Efeito executado:** a margem foi zerada no AZ e no AZC, e o teto passou a contar de forma regressiva. A trava só barra lançamento novo; uma execução em curso pode passar do teto pelo custo dela mesma, então os lançamentos do Azure vão com mandato curto.
+
+## D-DONO-2311-LEGADO-SO-ANALISE (2026-11-23 15:00 SP) — banco legado só em análise
+
+- **Fato (palavras do dono):** *"o banco que eu pedi para você analisar, que você está analisando com o codex, é o banco do sistema legado que nós vamos substituir e não é para mexer nesse banco nem jogar para cima do ERP ainda, viu?"*
+- **Efeito:** o banco legado fica só em análise, fora do repositório. Nenhuma carga em banco nenhum até o dono mandar. Os dumps originais seguem intocados.
