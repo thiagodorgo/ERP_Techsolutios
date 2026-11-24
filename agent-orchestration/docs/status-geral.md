@@ -5617,3 +5617,18 @@ O registro leva ao repositório os fechamentos do portão: o item 68 (sessão do
 - **MVP:** a revenda após inadimplência entra por `B-LEILAO-REVENDA`, e o motor de comissão começa depois que o leilão estiver na `main` (`D-DONO-2311-REVENDA-NO-MVP` e `D-DONO-2311-COMISSAO-DEPOIS-DO-LEILAO`).
 - **Continuidade:** a execução foi pausada a pedido do dono em 23/11 às 00:57 SP e retomada após o reinício, às 08:05 SP.
 - **Lição de mandato:** a tabela de fatias do mandato cita toda emenda do plano. Se uma emenda move trabalho entre fatias, a tabela é reescrita no mesmo passo. Origem: achado grave A-02 da pré-revisão do leilão, causado por uma tabela que não citava a Emenda 9.
+
+## Estado de 2026-11-23 (tarde e noite)
+
+- **Leilão:** a J-631 aprovou o `B-PATIO-LEILAO-DIARIAS` por unanimidade de 3, sem nenhum grave (inspetor LIBERADO; C1 sem achado; C2 e C3 com 2 não graves cada). A triagem levou ao conserto único `75daccf12` (o drill de `auction:reclaim` e a linha `SUITES=`), com conferência CONFERIDO pelo Azure. Ata em `agent-orchestration/omega/juntas/J-631-b-patio-leilao-diarias.md`; o PR #631 segue para o merge.
+- **Antivírus:** o #633 (`ba99eb41`) fechou `P-CLAMAV-BASE-VELHA-NA-SUBIDA` e `P-CLAMAV-IMAGEM-1-4-7`: imagem 1.4.7 por digest, com o `clamd` só iniciando com a base em dia. Na AWS, a receita nova do antivírus foi aplicada e o antivírus responde em dia, sem recarga manual.
+- **AWS:** as fases 0 a 2 do roteiro foram concluídas com autorização do dono a cada passo: acesso e sessão; a rede privada de produção com 4 sub-redes, em duas zonas, com o portão de internet, as rotas, os grupos de segurança e a NAT; o repositório de imagens com espelho e os segredos da API; o banco, o cache, as migrações, os papéis e permissões e o papel de runtime, com o ensaio de restauração. A API foi testada lá dentro, com a trava do papel de runtime verde. O resto (o certificado da API e o envio real de um arquivo) espera o DNS.
+- **Banco legado:** fica só em análise, fora do repositório, até o dono mandar (`D-DONO-2311-LEGADO-SO-ANALISE`); o redesenho de campos e a migração também ficam fora do repositório.
+
+## Estado de 2026-11-24 (manhã e tarde)
+
+- **Retomada e `main`:** a execução foi retomada depois do desligamento autorizado. Entraram o #634 (registro de 23/11), o #635 (marco de KPI) e o #636 (limpeza estável dos testes de banco).
+- **AWS:** ocorreu o primeiro ciclo completo de desligar e religar: banco, NAT e antivírus voltaram e foram conferidos. A continuação do roteiro ainda espera a troca dos servidores de nome e a validação do DNS.
+- **Revenda:** o `B-LEILAO-REVENDA` está no PR #637, aberto e em junta completa; a ata e o resultado da J-637 ficam para o próximo registro.
+- **Comissão:** o `B-COMISSAO-MOTOR` segue em desenvolvimento, em paralelo à revenda e com revisão própria.
+- **Leilão sem venda:** o `B-LEILAO-DESERTO` foi planejado como bloco curto para depois da revenda, com retorno do veículo ao pátio e retomada da diária dentro do teto total.

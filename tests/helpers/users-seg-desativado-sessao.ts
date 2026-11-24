@@ -147,7 +147,7 @@ export async function desmontarSessaoReal(h: SessaoRealHarness): Promise<void> {
       const tables = await h.admin.$queryRaw<Array<{ table_name: string }>>`
         SELECT c.table_name FROM information_schema.columns c
         JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema
-        WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND t.table_type = 'BASE TABLE'
+        WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND c.data_type = 'uuid' AND t.table_type = 'BASE TABLE'
         ORDER BY c.table_name
       `;
 

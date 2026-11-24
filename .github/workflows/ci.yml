@@ -435,6 +435,7 @@ jobs:
           SUITES="$SUITES tests/bapporg2s_login-conexao-db.test.ts"
           # B-APP-ORG-2S-c (SC) — a guarda de saída de grupo, X1 a X10, sob papel efêmero; o HD1 fica no job backend.
           SUITES="$SUITES tests/bapporg2sc_grant-guard-db.test.ts"
+          SUITES="$SUITES tests/sweep-tenant-text-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-uniques-migration-drill-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-regra-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-uma-vez-db.test.ts"
