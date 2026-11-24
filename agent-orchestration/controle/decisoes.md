@@ -6622,3 +6622,43 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** *"o banco que eu pedi para você analisar, que você está analisando com o codex, é o banco do sistema legado que nós vamos substituir e não é para mexer nesse banco nem jogar para cima do ERP ainda, viu?"*
 - **Efeito:** o banco legado fica só em análise, fora do repositório. Nenhuma carga em banco nenhum até o dono mandar. Os dumps originais seguem intocados.
+
+## D-DONO-2311-EMENDA2-REVENDA-OPUS (2026-11-23 19:10 SP) — Emenda 2 da revenda no Opus
+
+- **Fato (palavras do dono):** *"Não rodar emenda 2 da revenda no Fable. Usar o Opus.utra Code."*
+- **Efeito:** a Emenda 2 do `B-LEILAO-REVENDA` foi atribuída a uma identidade nova no Opus, por ordem explícita do dono, em vez do modelo de topo previsto no contrato.
+
+## D-DONO-2411-REVENDA-ESPERA-SEM-DIARIA (2026-11-24 09:58 SP) — espera da revenda continua sem diária
+
+- **Fato (palavras do dono):** *"enquanto esta em leilao fica sem diaria sendo cobrada. nao havendo venda no leilao o carro volta para o patio e sera cobrada o valor das diarias, limitando a 180 dias totais que podem serem cobradas diarias no patio"*.
+- **Efeito:** a espera da revenda após inadimplência ainda é tempo de leilão e não cobra diária. Sem venda, o veículo volta ao pátio, a diária volta a correr e o total cobrável continua limitado a 180 dias.
+
+## D-DONO-2411-AWS-LIGADA-HOJE (2026-11-24 10:12 SP) — AWS ligada durante o dia
+
+- **Fato (palavras do dono):** *"deixar ligada hoje"* e *"desligar à noite"*.
+- **Efeito:** a AWS fica ligada durante o desenvolvimento de 24/11 e é desligada à noite pelo roteiro autorizado. A continuação da implantação espera a troca dos servidores de nome e a validação do DNS.
+
+## D-DONO-2411-DESERTO-NO-MVP (2026-11-24 10:45 SP) — leilão sem venda entra no MVP
+
+- **Fato (palavras do dono):** *"sim, num bloco curto do leilão logo depois da revenda (o sistema registra o leilão sem venda e devolve o veículo ao pátio, com a diária voltando até 180)"*.
+- **Efeito:** nasce o bloco curto `B-LEILAO-DESERTO`, depois da revenda, para registrar o leilão sem venda, devolver o veículo ao pátio e retomar a diária dentro do teto total.
+
+## D-DONO-2411-LEGADO-ESPERA-AWS (2026-11-24 10:45 SP) — legado espera a AWS
+
+- **Fato (palavras do dono):** *"esperar a AWS terminar, como estava"*.
+- **Efeito:** a migração do sistema legado permanece parada até a conclusão da AWS. Nenhuma análise, resposta ou mapeamento do banco do cliente entra no repositório.
+
+## D-DONO-2411-REVENDA-COMISSAO-PARALELO (2026-11-24 10:45 SP) — revenda e comissão em paralelo
+
+- **Fato (palavras do dono):** *"as duas em paralelo, cada uma num braço ... com junta própria cada uma"*.
+- **Efeito:** `B-LEILAO-REVENDA` e `B-COMISSAO-MOTOR` seguem em paralelo, em braços separados, e cada bloco conserva sua própria revisão e junta.
+
+## D-DONO-2411-AZURE-20 (2026-11-24 11:26 SP) — novo teto do Azure
+
+- **Fato (palavras do dono, sem o valor por regra do repositório público):** *"apague toda regra de limite do azure"* e *"a cada uso, retire do saldo e mostre o valor"*.
+- **Efeito:** a contagem anterior foi arquivada e a contagem vigente recomeçou zerada; a trava passa a respeitar o novo teto, sem margem, e o saldo é mostrado ao dono a cada uso.
+
+## D-DONO-2411-AZURE-COBRE-CLAUDE (2026-11-24 12:44 SP) — Azure cobre o Claude
+
+- **Fato (palavras do dono):** *"coloque o azure lhe cobrindo agora, onde for possivel, vc fica so na orquestracao. o azure esta num loop aparentemente, verificar"*.
+- **Efeito:** o estado aparente de tarefa viva do Azure foi conferido e corrigido. Onde for possível, o Azure cobre a execução e o Claude fica somente na orquestração; os trabalhos em curso obedecem às regras de passagem de estado e de verificação independente.
