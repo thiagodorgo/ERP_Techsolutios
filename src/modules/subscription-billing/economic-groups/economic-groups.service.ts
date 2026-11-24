@@ -87,6 +87,12 @@ export type PutMembersInput = {
   readonly actorId: string | null;
 };
 
+export type AddMemberInput = {
+  readonly tenantId: string;
+  readonly validFrom?: string;
+  readonly actorId: string | null;
+};
+
 export class EconomicGroupsService {
   constructor(
     private readonly repository: EconomicGroupsRepository,
@@ -170,6 +176,33 @@ export class EconomicGroupsService {
     const deleted = await this.repository.softDeleteGroup(group.id, actorId, this.clock());
     if (!deleted) throw groupNotFound();
     return viewOf(deleted, memberships, today);
+  }
+
+  /** Abre o vínculo de uma única organização sem fechar vínculo de terceiro. */
+  async addMember(groupId: string, input: AddMemberInput): Promise<GroupDetail> {
+    const group = await this.requireGroup(groupId);
+    const tenant = await this.tenants.getTenant(input.tenantId);
+    if (!tenant) throw new SubscriptionBillingError(404, "NOT_FOUND", "tenant_not_found", "Organização não encontrada.");
+    if (tenant.slug === PLATFORM_ORGANIZATION_SLUG) throw new SubscriptionBillingError(422, "SUBSCRIPTION_BILLING_INVALID", "platform_organization", "A organização da plataforma não entra em grupo.");
+    const today = todayBusinessDate(this.clock());
+    const validFrom = input.validFrom ?? today;
+    if (typeof validFrom !== "string" || !BUSINESS_DATE_PATTERN.test(validFrom)) throw new SubscriptionBillingError(400, "SUBSCRIPTION_BILLING_INVALID", "invalid_valid_from", "Data inválida: use AAAA-MM-DD.");
+    try {
+      assertNotBeforeToday(validFrom, today);
+      const own = await this.repository.listMembershipsOfTenants([input.tenantId]);
+      if (own.some((row) => row.groupId === group.id && overlaps(row, validFrom))) return this.getGroup(group.id);
+      if (own.some((row) => row.groupId !== group.id && overlaps(row, validFrom))) throw tenantInAnotherGroup([input.tenantId]);
+      const currentMembers = (await this.allMemberships()).filter((row) => row.groupId === group.id && overlaps(row, validFrom));
+      if (currentMembers.length >= GROUP_MEMBERS_MAX) throw new SubscriptionBillingError(422, "SUBSCRIPTION_BILLING_INVALID", "too_many_members", `Um grupo tem no máximo ${GROUP_MEMBERS_MAX} organizações.`);
+      const opens: OpenMembershipRecord[] = [{ tenantId: input.tenantId, groupId: group.id, validFrom, createdBy: input.actorId }];
+      await this.repository.applyMembershipChanges({ closes: [], opens, audit: this.auditOf(group.id, [], opens, input.actorId) });
+    } catch (error) {
+      if (error instanceof MembershipConflictError) throw membershipConflict();
+      if (error instanceof MembershipRangeError) throw rangeInvalid();
+      if (error instanceof MembershipRuleError) throw ruleError(error);
+      throw error;
+    }
+    return this.getGroup(group.id);
   }
 
   /**

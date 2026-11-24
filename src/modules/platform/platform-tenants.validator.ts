@@ -1,115 +1,53 @@
-import type {
-  CreatePlatformTenantDto,
-  CreateTenantAdminDto,
-  PlatformPlan,
-  PlatformTenantStatus,
-  UpdatePlatformTenantDto,
-  UpdatePlatformTenantModulesDto,
-} from "./platform.types.js";
+import { CoreSaasError } from "../core-saas/types/core-saas.types.js";
+import { parseBillingProfileInput } from "../subscription-billing/billing-profile/billing-profile.js";
+import type { CreatePlatformTenantDto, CreateTenantAdminDto, PlatformPlan, UpdatePlatformTenantDto, UpdatePlatformTenantModulesDto, UpdateTenantStatusDto } from "./platform.types.js";
 
-const validPlans = new Set<PlatformPlan>(["starter", "professional", "enterprise"]);
-const validStatuses = new Set<PlatformTenantStatus>(["active", "suspended", "pending"]);
+const PLANS = new Set<PlatformPlan>(["starter", "professional", "business", "enterprise"]);
+const CREATE_FIELDS = new Set(["name", "group", "profile", "plan", "admin"]);
+const STATUS_REASONS = new Set<UpdateTenantStatusDto["reason"]>(["nonpayment", "customer_request", "security", "other"]);
 
 export function parseCreatePlatformTenantDto(body: Record<string, unknown>): CreatePlatformTenantDto {
-  const name = readRequiredString(body.name, "name");
-  const slug = readRequiredString(body.slug, "slug");
-  const plan = readPlan(body.plan);
-  const status = body.status === undefined ? undefined : readStatus(body.status);
-  const adminName = readOptionalString(body.adminName);
-  const adminEmail = readOptionalString(body.adminEmail);
-
-  assertSlug(slug);
-
-  if (adminEmail) {
-    assertEmail(adminEmail);
-  }
-
-  return {
-    name,
-    slug,
-    plan,
-    ...(status ? { status } : {}),
-    ...(adminName ? { adminName } : {}),
-    ...(adminEmail ? { adminEmail } : {}),
-  };
+  assertKnownFields(body, CREATE_FIELDS);
+  const name = requiredText(body.name, "name");
+  const groupBody = object(body.group, "group");
+  assertKnownFields(groupBody, new Set(["id", "name"]));
+  const groupId = optionalText(groupBody.id);
+  const groupName = optionalText(groupBody.name);
+  if ((groupId ? 1 : 0) + (groupName ? 1 : 0) !== 1) bad("invalid_group", "group must contain exactly id or name.");
+  const profileBody = body.profile === undefined ? undefined : object(body.profile, "profile");
+  const planBody = body.plan === undefined ? undefined : object(body.plan, "plan");
+  const adminBody = body.admin === undefined ? undefined : object(body.admin, "admin");
+  const planCode = planBody ? requiredText(planBody.code, "plan.code") : undefined;
+  if (planCode && !PLANS.has(planCode as PlatformPlan)) bad("invalid_plan", "plan.code is invalid.");
+  const admin = adminBody ? { name: requiredText(adminBody.name, "admin.name"), email: requiredText(adminBody.email, "admin.email") } : undefined;
+  if (admin) assertEmail(admin.email);
+  return { name, group: groupId ? { id: groupId } : { name: groupName! }, ...(profileBody ? { profile: parseBillingProfileInput(profileBody) } : {}), ...(planCode ? { plan: { code: planCode as PlatformPlan } } : {}), ...(admin ? { admin } : {}) };
 }
-
 export function parseUpdatePlatformTenantDto(body: Record<string, unknown>): UpdatePlatformTenantDto {
-  const name = readOptionalString(body.name);
-  const plan = body.plan === undefined ? undefined : readPlan(body.plan);
-  const status = body.status === undefined ? undefined : readStatus(body.status);
-
-  return {
-    ...(name ? { name } : {}),
-    ...(plan ? { plan } : {}),
-    ...(status ? { status } : {}),
-  };
+  const forbidden = Object.keys(body).find((key) => key !== "name");
+  if (forbidden) throw new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "field_not_editable_here", `Field ${forbidden} is not editable here.`);
+  return { name: requiredText(body.name, "name") };
 }
-
-export function parseUpdateTenantStatusDto(body: Record<string, unknown>): PlatformTenantStatus {
-  return readStatus(body.status);
+export function parseUpdateTenantStatusDto(body: Record<string, unknown>): UpdateTenantStatusDto {
+  assertKnownFields(body, new Set(["status", "reason"]));
+  const status = requiredText(body.status, "status");
+  const reason = requiredText(body.reason, "reason");
+  if (status !== "active" && status !== "suspended") bad("invalid_status_transition", "status must be active or suspended.", 422);
+  if (!STATUS_REASONS.has(reason as UpdateTenantStatusDto["reason"])) bad("reason_required", "reason is required.");
+  return { status, reason: reason as UpdateTenantStatusDto["reason"] };
 }
-
 export function parseUpdatePlatformTenantModulesDto(body: Record<string, unknown>): UpdatePlatformTenantModulesDto {
-  const enabledModules = Array.isArray(body.enabledModules)
-    ? body.enabledModules.filter((item): item is string => typeof item === "string")
-    : [];
-
-  return {
-    enabledModules,
-  };
+  assertKnownFields(body, new Set(["enabledModules"]));
+  return { enabledModules: Array.isArray(body.enabledModules) ? body.enabledModules.filter((item): item is string => typeof item === "string") : [] };
 }
-
 export function parseCreateTenantAdminDto(body: Record<string, unknown>): CreateTenantAdminDto {
-  const name = readRequiredString(body.name, "name");
-  const email = readRequiredString(body.email, "email");
-
-  assertEmail(email);
-
-  return {
-    name,
-    email,
-  };
+  assertKnownFields(body, new Set(["name", "email"]));
+  const result = { name: requiredText(body.name, "name"), email: requiredText(body.email, "email") };
+  assertEmail(result.email); return result;
 }
-
-function readRequiredString(value: unknown, field: string): string {
-  const normalized = readOptionalString(value);
-
-  if (!normalized) {
-    throw new Error(`${field} is required.`);
-  }
-
-  return normalized;
-}
-
-function readOptionalString(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function readPlan(value: unknown): PlatformPlan {
-  if (typeof value === "string" && validPlans.has(value as PlatformPlan)) {
-    return value as PlatformPlan;
-  }
-
-  throw new Error("Invalid platform plan.");
-}
-
-function readStatus(value: unknown): PlatformTenantStatus {
-  if (typeof value === "string" && validStatuses.has(value as PlatformTenantStatus)) {
-    return value as PlatformTenantStatus;
-  }
-
-  throw new Error("Invalid tenant status.");
-}
-
-function assertSlug(value: string): void {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) {
-    throw new Error("slug must use lowercase letters, numbers and hyphens.");
-  }
-}
-
-function assertEmail(value: string): void {
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    throw new Error("email is invalid.");
-  }
-}
+function assertKnownFields(body: Record<string, unknown>, fields: ReadonlySet<string>): void { const unknown = Object.keys(body).find((key) => !fields.has(key)); if (unknown) bad("unknown_field", `Unknown field: ${unknown}.`); }
+function object(value: unknown, field: string): Record<string, unknown> { if (!value || typeof value !== "object" || Array.isArray(value)) bad("invalid_field", `${field} must be an object.`); return value as Record<string, unknown>; }
+function requiredText(value: unknown, field: string): string { const text = optionalText(value); if (!text) bad("invalid_field", `${field} is required.`); return text!; }
+function optionalText(value: unknown): string | undefined { return typeof value === "string" && value.trim() ? value.trim() : undefined; }
+function assertEmail(value: string): void { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) bad("invalid_field", "email is invalid."); }
+function bad(reason: string, message: string, status = 400): never { throw new CoreSaasError(status, status === 422 ? "UNPROCESSABLE_ENTITY" : "BAD_REQUEST", reason, message); }

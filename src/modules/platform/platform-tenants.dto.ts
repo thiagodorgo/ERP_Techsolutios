@@ -1,6 +1,1 @@
-export type {
-  CreatePlatformTenantDto,
-  CreateTenantAdminDto,
-  UpdatePlatformTenantDto,
-  UpdatePlatformTenantModulesDto,
-} from "./platform.types.js";
+export type { CreatePlatformTenantDto, CreateTenantAdminDto, UpdatePlatformTenantDto, UpdatePlatformTenantModulesDto, UpdateTenantStatusDto } from "./platform.types.js";
