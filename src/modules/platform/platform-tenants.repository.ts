@@ -1,49 +1,7 @@
 import type { CreatePlatformTenantDto, PlatformTenant, PlatformTenantStatus, UpdatePlatformTenantDto } from "./platform.types.js";
 
-const initialTenants: PlatformTenant[] = [
-  {
-    id: "pten-industrial-01",
-    name: "Techsolutions Industrial",
-    slug: "techsolutions-industrial",
-    plan: "professional",
-    status: "active",
-    activeUsers: 84,
-    enabledModules: ["dashboard", "users", "tenant-admin", "inventory", "approvals", "finance", "mobile"],
-    createdAt: "2026-01-10T12:00:00.000Z",
-    lastActivityAt: "2026-06-02T09:40:00.000Z",
-    adminUser: {
-      id: "adm-industrial-01",
-      name: "Carlos Almeida",
-      email: "carlos.almeida@techsolutions.example",
-    },
-    usageSummary: {
-      workOrders: 1248,
-      storageGb: 84,
-      apiCalls: 39240,
-    },
-  },
-  {
-    id: "pten-mining-02",
-    name: "Minas Norte Service",
-    slug: "minas-norte-service",
-    plan: "starter",
-    status: "suspended",
-    activeUsers: 18,
-    enabledModules: ["dashboard", "users", "tenant-admin", "inventory"],
-    createdAt: "2026-02-18T10:20:00.000Z",
-    lastActivityAt: "2026-05-31T17:10:00.000Z",
-    adminUser: {
-      id: "adm-mining-02",
-      name: "Renata Borges",
-      email: "renata.borges@minasnorte.example",
-    },
-    usageSummary: {
-      workOrders: 206,
-      storageGb: 12,
-      apiCalls: 8320,
-    },
-  },
-];
+// O dublê começa vazio: cadastros de demonstração não são fonte de verdade do produto.
+const initialTenants: PlatformTenant[] = [];
 
 export class PlatformTenantsRepository {
   private tenants = [...initialTenants];
