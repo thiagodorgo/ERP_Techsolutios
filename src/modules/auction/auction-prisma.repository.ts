@@ -363,7 +363,7 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (appraisalResalePending && appraisalEdict === undefined) {
       throw new AuctionError(404, "AUCTION_EDICT_NOT_FOUND", "auction_edict_not_found", "No auction edict is registered for this round; register the edict before the appraisal.");
     }
-    const appraisalResaleRound = appraisalResalePending && appraisalEdict.status === "DESIGNATED";
+    const appraisalResaleRound = appraisalResalePending && appraisalEdict?.status === "DESIGNATED";
     if (!APPRAISAL_EDITABLE_STATES.includes(locked.status as ImpoundStatus) && !appraisalResaleRound) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_locked_after_lot", "The appraisal/minimum bid is frozen once the round is lotted; it can only be set before LOTTED.");
     }
