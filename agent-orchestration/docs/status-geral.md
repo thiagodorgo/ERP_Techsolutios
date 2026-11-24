@@ -5640,5 +5640,7 @@ O registro leva ao repositório os fechamentos do portão: o item 68 (sessão do
 - **Comissão na `main`:** o #639 (`B-COMISSAO-MOTOR`, PR1) passou pela J-639 unânime e mergou; a ata em `agent-orchestration/omega/juntas/J-639-b-comissao-motor.md`, e o porteiro deu LIBERADO COM RESSALVA.
 - **Revenda na `main`:** o #637 (`B-LEILAO-REVENDA`) passou pela J-637, pelo defeito grave achado pelo revisor de telas, pelo conserto único, pela conferência e pela revotação unânime, e mergou; ata em `agent-orchestration/omega/juntas/J-637-b-leilao-revenda.md`.
 - **Portão:** os itens 9, 10 e 43 fecharam com a evidência da AWS (a API no ar, o login e a leitura da plataforma respondendo 200, e o 1º administrador de plataforma criado pelo script de bootstrap). O item 27 segue aberto, à espera da 1ª organização real.
-- **Organização real:** o bloco `B-PLAT-ORG-REAL` foi aprovado pelo dono, com plano pronto em 24/11 e respostas às perguntas; o grupo é a matriz das filiais, e cada filial é uma organização.
-- **Leilão sem venda:** o `B-LEILAO-DESERTO` ficou com o plano pronto para o dev, à espera da liberação.
+- **Organização real:** o bloco `B-PLAT-ORG-REAL` foi aprovado pelo dono, com plano pronto em 24/11 e respostas às perguntas; o grupo é a matriz das filiais, e cada filial é uma organização. O dev do PR-a começou às 20:09, com as respostas do dono; a Emenda 1.2 (a tela) foi escrita às 20:35.
+- **Porteiro do #637:** LIBERADO às 20:05 — o `B-PLAT-ORG-REAL` (PR-a) e o `B-LEILAO-DESERTO` podem iniciar.
+- **Leilão sem venda:** o `B-LEILAO-DESERTO` começa às 20:44, depois do porteiro do #637.
+- **Antigravity:** a cota de terceiros do Antigravity (Claude/GPT) acabou de novo; o Antigravity fica só com os Gemini, sem valor nem identificador.

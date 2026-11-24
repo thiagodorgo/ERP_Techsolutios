@@ -6713,3 +6713,13 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** *"A, A, SIM, sim"*, respondendo à PM1, à PM2, à PM3 e à confirmação do gestor, nessa ordem.
 - **Efeito:** PM1 = a diária durante a suspensão continua devida e é lançada na reativação; PM2 = a mensalidade e o aviso de pagamento continuam na filial suspensa; PM3 = autorizada a migração aditiva da tabela de pedidos do `B-GRUPO-ADMIN-FILIAIS`; gestor = pode autorizar a si mesmo para administrar várias filiais.
+
+## D-DONO-2411-ORG-LOTE-E-QM4 (2026-11-24 19:50 SP) — o lote da tela da organização real aprovado e a QM4 respondida
+
+- **Fato (palavras do dono):** *"sim"* (19:50, ao lote da tela) e, para a QM4, a nota literal: *"o fluxo eh criar grupo, depois organizacao. uma organizacao so nasce se tiver um grupo"* (19:53).
+- **Efeito:** a maquete do lote da tela vai para `screen-refs/` no PR-b. Para a QM4, vale criar o grupo antes da organização: uma organização só nasce se tiver um grupo; o item `group` não entra em `setup.missing[]`, e o C12 se escreve assim.
+
+## D-DONO-2411-ORG-QM1-QM3 (2026-11-24 19:54 SP) — respostas QM1, QM2 e QM3 da organização real
+
+- **Fato (respostas do dono, pelo seletor do Estado):** QM1 = (b); QM2 = (b); QM3 = não.
+- **Efeito:** QM1 = a linha abre o detalhe logo abaixo, no padrão de `D-PADRAO-BLOCOS-CLICAVEIS` (muda o §5.2 do plano; +3 a 4 h no PR-b). QM2 = o nome é único só dentro do grupo (a trava de nome é grupo + nome normalizado; o C10 prova os dois lados). QM3 = os planos mantêm os nomes do cadastro (o PR-b alinha a tela de módulos ao cadastro, sem tradução própria). O PR-a não tem mais trava.
