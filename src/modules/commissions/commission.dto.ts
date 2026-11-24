@@ -1,7 +1,11 @@
+import { decimalTextToCents } from "./commission-engine.js";
 import type {
   CommissionBasisEvent,
   CommissionCalculation,
+  CommissionOverviewResult,
+  CommissionPayeeOverviewResult,
   CommissionPayeeRateRecord,
+  CommissionPayeeRow,
   CommissionPolicy,
   CommissionPolicyRule,
   CommissionStatement,
@@ -59,6 +63,22 @@ export function toCommissionBasisEventDto(event: CommissionBasisEvent) {
 }
 
 export function toCommissionCalculationDto(calculation: CommissionCalculation) {
+  const snap = calculation.calculationSnapshot ?? {};
+  const workOrderCode = typeof snap.workOrderCode === "string" ? snap.workOrderCode : null;
+  const serviceCatalogId = typeof snap.serviceCatalogId === "string" ? snap.serviceCatalogId : null;
+  const baseCents =
+    typeof snap.baseCents === "number" && Number.isFinite(snap.baseCents)
+      ? BigInt(Math.max(0, Math.round(snap.baseCents))).toString()
+      : typeof snap.baseCents === "string" && /^\d+$/.test(snap.baseCents)
+        ? snap.baseCents
+        : null;
+  const rateType = snap.rateType === "percent" || snap.rateType === "fixed" ? snap.rateType : null;
+  const rateValue = typeof snap.rateValue === "string" ? snap.rateValue : null;
+  const rateValueCents =
+    rateType === "fixed" && rateValue !== null ? decimalTextToCents(rateValue).toString() : undefined;
+  const outcome = typeof snap.outcome === "string" ? snap.outcome : null;
+  const statusLabelKey = deriveCalculationStatusLabelKey(calculation);
+
   return {
     id: calculation.id,
     basisEventId: calculation.basisEventId,
@@ -70,6 +90,14 @@ export function toCommissionCalculationDto(calculation: CommissionCalculation) {
     amount: calculation.amount,
     // B-APP-ORG-2S (S2e) — centavos exatos em texto; o app lê só este campo. `amount` (número) fica para a web.
     amountCents: calculation.amountCents,
+    workOrderCode,
+    serviceCatalogId,
+    baseCents,
+    rateType,
+    rateValue,
+    ...(rateValueCents !== undefined ? { rateValueCents } : {}),
+    outcome,
+    statusLabelKey,
     currency: calculation.currency,
     status: calculation.status,
     calculationSnapshot: calculation.calculationSnapshot,
@@ -80,6 +108,28 @@ export function toCommissionCalculationDto(calculation: CommissionCalculation) {
     createdAt: calculation.createdAt.toISOString(),
     updatedAt: calculation.updatedAt.toISOString(),
   };
+}
+
+function deriveCalculationStatusLabelKey(calculation: CommissionCalculation): string {
+  if (calculation.status === "approved" && calculation.settledAt) {
+    return "paid";
+  }
+  if (calculation.status === "approved") {
+    return "to_receive";
+  }
+  if (calculation.status === "calculated") {
+    return "forecast";
+  }
+  if (calculation.status === "disputed") {
+    return "review";
+  }
+  if (calculation.status === "rejected") {
+    return "rejected";
+  }
+  if (calculation.status === "reversed") {
+    return "reversed";
+  }
+  return "pending";
 }
 
 // Ω4C PR-10 — sumário da liquidação em lote (por linha + agregados). §2.8: só ids internos + agregado (sem
@@ -183,6 +233,83 @@ export function toCommissionMyRateDto(rate: CommissionPayeeRateRecord | null) {
     effectiveFrom: rate.effectiveFrom.toISOString(),
     effectiveTo: rate.effectiveTo ? rate.effectiveTo.toISOString() : null,
     active: rate.active,
+  };
+}
+
+export function toCommissionOverviewDto(result: CommissionOverviewResult) {
+  // B-COMISSAO:centavos-texto — M20: todo campo …Cents sai como texto de dígitos sem sinal (^[0-9]+$).
+  return {
+    toReceiveCents: result.toReceiveCents,
+    forecastCents: result.forecastCents,
+    paidInPeriodCents: result.paidInPeriodCents,
+    paidThisMonthCents: result.paidThisMonthCents,
+    noRuleCount: result.noRuleCount,
+    reviewCount: result.reviewCount,
+    rejectedCount: result.rejectedCount,
+    counts: {
+      noRule: result.noRuleCount,
+      review: result.reviewCount,
+      rejected: result.rejectedCount,
+    },
+    byMonth: result.byMonth.map((m) => ({
+      month: m.month,
+      calculatedCents: m.calculatedCents,
+      paidCents: m.paidCents,
+    })),
+    byServiceType: result.byServiceType.map((s) => ({
+      serviceCatalogId: s.serviceCatalogId,
+      totalCents: s.totalCents,
+      count: s.count,
+    })),
+    topPayees: result.topPayees.map((p) => ({
+      payeeId: p.payeeId,
+      totalCents: p.totalCents,
+      toReceiveCents: p.toReceiveCents,
+      paidCents: p.paidCents,
+      count: p.count,
+    })),
+    changeCents: result.changeCents,
+    changeDirection: result.changeDirection,
+    from: result.from ? result.from.toISOString() : null,
+    to: result.to ? result.to.toISOString() : null,
+  };
+}
+
+export function toCommissionPayeeRowDto(row: CommissionPayeeRow) {
+  return {
+    payeeId: row.payeeId,
+    toReceiveCents: row.toReceiveCents,
+    paidThisMonthCents: row.paidThisMonthCents,
+    paidInPeriodCents: row.paidInPeriodCents,
+    forecastCents: row.forecastCents,
+    count: row.count,
+    currentRate: row.currentRate ? toCommissionPayeeRateDto(row.currentRate) : null,
+  };
+}
+
+export function toCommissionPayeeOverviewDto(result: CommissionPayeeOverviewResult) {
+  return {
+    payeeId: result.payeeId,
+    toReceiveCents: result.toReceiveCents,
+    paidThisMonthCents: result.paidThisMonthCents,
+    forecastCents: result.forecastCents,
+    count: result.count,
+    currentRate: result.currentRate
+      ? result.isMine
+        ? toCommissionMyRateDto(result.currentRate)
+        : toCommissionPayeeRateDto(result.currentRate)
+      : null,
+    byMonth: result.byMonth.map((m) => ({
+      month: m.month,
+      calculatedCents: m.calculatedCents,
+      paidCents: m.paidCents,
+    })),
+    byServiceType: result.byServiceType.map((s) => ({
+      serviceCatalogId: s.serviceCatalogId,
+      totalCents: s.totalCents,
+      count: s.count,
+    })),
+    recentCalculations: result.recentCalculations.map(toCommissionCalculationDto),
   };
 }
 

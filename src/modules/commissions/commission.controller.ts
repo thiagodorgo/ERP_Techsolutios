@@ -6,7 +6,10 @@ import {
   toCommissionBasisEventDto,
   toCommissionCalculationDto,
   toCommissionMyRateDto,
+  toCommissionOverviewDto,
+  toCommissionPayeeOverviewDto,
   toCommissionPayeeRateDto,
+  toCommissionPayeeRowDto,
   toCommissionPolicyDto,
   toCommissionSettlementDto,
   toCommissionStatementDto,
@@ -235,6 +238,42 @@ export class CommissionController {
     return {
       status: 200,
       data: counts,
+    };
+  }
+
+  async getOverview(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.getOverview(actor, request.query as Record<string, unknown>);
+    return {
+      data: toCommissionOverviewDto(result),
+    };
+  }
+
+  async listPayees(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.listPayees(actor, request.query as Record<string, unknown>);
+    return {
+      body: toListDto(result, toCommissionPayeeRowDto),
+    };
+  }
+
+  async getPayeeOverview(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.getPayeeOverview(
+      actor,
+      request.params.userId,
+      request.query as Record<string, unknown>,
+    );
+    return {
+      data: toCommissionPayeeOverviewDto(result),
+    };
+  }
+
+  async getMyOverview(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.getMyOverview(actor, request.query as Record<string, unknown>);
+    return {
+      data: toCommissionPayeeOverviewDto(result),
     };
   }
 

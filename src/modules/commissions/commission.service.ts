@@ -10,7 +10,10 @@ import type {
   CommissionActorContext,
   CommissionBasisEvent,
   CommissionCalculation,
+  CommissionOverviewResult,
+  CommissionPayeeOverviewResult,
   CommissionPayeeRateRecord,
+  CommissionPayeeRow,
   CommissionPolicy,
   CommissionReconcileCounts,
   CommissionSettlementCollaborators,
@@ -37,10 +40,14 @@ import {
   parseLimit,
   parseNonNegativeNumber,
   parseOffset,
+  parseOptionalBucket,
   parseOptionalDate,
+  parseOptionalMonth,
   parseOptionalUuid,
+  parseOverviewMonths,
   parsePolicyStatus,
   parsePositiveInteger,
+  parseRequiredUuid,
   parseSettlementDate,
   parseStatementStatus,
   sanitizeJsonRecord,
@@ -168,6 +175,12 @@ export class CommissionService {
       tenantId: actor.tenantId,
       status: parseCalculationStatus(query.status),
       payeeId: parseOptionalUuid(query.payeeId ?? query.payee_id, "payeeId"),
+      bucket: parseOptionalBucket(query.bucket),
+      serviceCatalogId: parseOptionalUuid(
+        query.serviceCatalogId ?? query.service_catalog_id,
+        "serviceCatalogId",
+      ),
+      month: parseOptionalMonth(query.month),
       from,
       to,
       limit: parseLimit(query.limit),
@@ -185,11 +198,79 @@ export class CommissionService {
       tenantId: actor.tenantId,
       status: parseCalculationStatus(query.status),
       payeeId: actor.userId,
+      bucket: parseOptionalBucket(query.bucket),
+      serviceCatalogId: parseOptionalUuid(
+        query.serviceCatalogId ?? query.service_catalog_id,
+        "serviceCatalogId",
+      ),
+      month: parseOptionalMonth(query.month),
       from,
       to,
       limit: parseLimit(query.limit),
       offset: parseOffset(query.offset),
     });
+  }
+
+  getOverview(actor: CommissionActorContext, query: RawRecord): Promise<CommissionOverviewResult> {
+    const { from, to } = parseDateRange(query.from, query.to);
+    return this.repository.getOverview({
+      tenantId: actor.tenantId,
+      from,
+      to,
+    });
+  }
+
+  listPayees(actor: CommissionActorContext, query: RawRecord): Promise<ListResult<CommissionPayeeRow>> {
+    const { from, to } = parseDateRange(query.from, query.to);
+    return this.repository.listPayees({
+      tenantId: actor.tenantId,
+      from,
+      to,
+      bucket: parseOptionalBucket(query.bucket),
+      serviceCatalogId: parseOptionalUuid(
+        query.serviceCatalogId ?? query.service_catalog_id,
+        "serviceCatalogId",
+      ),
+      limit: parseLimit(query.limit),
+      offset: parseOffset(query.offset),
+    });
+  }
+
+  async getPayeeOverview(
+    actor: CommissionActorContext,
+    userIdParam: unknown,
+    query: RawRecord,
+  ): Promise<CommissionPayeeOverviewResult> {
+    const payeeUserId = parseRequiredUuid(userIdParam, "userId");
+    const months = parseOverviewMonths(query.months);
+    const result = await this.repository.getPayeeOverview({
+      tenantId: actor.tenantId,
+      payeeUserId,
+      months,
+      isMine: false,
+    });
+    if (!result) {
+      throw new CommissionError(
+        404,
+        "COMMISSION_PAYEE_NOT_FOUND",
+        "payee_not_found",
+        "Payee user was not found in this organization.",
+      );
+    }
+    return result;
+  }
+
+  async getMyOverview(actor: CommissionActorContext, query: RawRecord): Promise<CommissionPayeeOverviewResult> {
+    const months = parseOverviewMonths(query.months);
+    // B-COMISSAO:favorecido-do-ator — M10: em /mine/overview, o favorecido é fixado no usuário logado; qualquer payeeId/payee_id da query é ignorado.
+    const payeeUserId = actor.userId;
+    const result = await this.repository.getPayeeOverview({
+      tenantId: actor.tenantId,
+      payeeUserId,
+      months,
+      isMine: true,
+    });
+    return result!;
   }
 
   // R8.1 — extrato agregado por payee na janela (requer commissions:read).

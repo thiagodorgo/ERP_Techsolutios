@@ -529,6 +529,251 @@ test("[R3/R16] POST /commissions/reconcile exige commissions:calculate e devolve
   });
 });
 
+test("[R15/R16/M10] GET /commissions/mine/overview exige commissions:read_own e fixa o favorecido no ator logado, ignorando payee_id na query", async () => {
+  await withCommissionApi(async ({ baseUrl, seed }) => {
+    const [{ getMemoryCommissionRepositoryForTests }] = await Promise.all([
+      import("../src/modules/commissions/index.js"),
+    ]);
+    const repo = getMemoryCommissionRepositoryForTests();
+    const svcId = randomUUID();
+
+    repo.seedCalculationForTests({
+      tenantId: seed.tenantA.id,
+      payeeId: seed.userIdsA.operator,
+      amount: 120,
+      status: "approved",
+      idempotencyKey: `engine:calc:${randomUUID()}`,
+      calculationSnapshot: {
+        workOrderCode: "OS-MINE-1",
+        serviceCatalogId: svcId,
+        baseCents: 120000,
+        rateType: "percent",
+        rateValue: "10",
+        outcome: "calculated",
+      },
+    });
+    repo.seedCalculationForTests({
+      tenantId: seed.tenantA.id,
+      payeeId: seed.userIdsA.manager,
+      amount: 550,
+      status: "approved",
+      idempotencyKey: `engine:calc:${randomUUID()}`,
+      calculationSnapshot: {
+        workOrderCode: "OS-OTHER-1",
+        serviceCatalogId: svcId,
+        baseCents: 550000,
+        rateType: "percent",
+        rateValue: "10",
+        outcome: "calculated",
+      },
+    });
+
+    // viewer não tem commissions:read_own -> 403
+    const forbidden = await fetch(`${baseUrl}/api/v1/commissions/mine/overview`, {
+      headers: authHeadersId(seed.tenantA.id, seed.userIdsA.viewer, "viewer"),
+    });
+    assert.equal(forbidden.status, 403);
+
+    // operator (tem commissions:read_own) passando payee_id e payeeId do manager -> deve ver apenas as suas (R$ 120,00 = "12000", M10)
+    const mineRes = await fetch(
+      `${baseUrl}/api/v1/commissions/mine/overview?months=3&payee_id=${seed.userIdsA.manager}&payeeId=${seed.userIdsA.manager}`,
+      {
+        headers: authHeadersId(seed.tenantA.id, seed.userIdsA.operator, "operator"),
+      },
+    );
+    assert.equal(mineRes.status, 200);
+    const mineData = (await readJson(mineRes)).data as Record<string, unknown>;
+    assert.equal(mineData.payeeId, seed.userIdsA.operator);
+    assert.equal(mineData.toReceiveCents, "12000");
+    assert.equal((mineData.byMonth as unknown[]).length, 3);
+  });
+});
+
+test("[R16/R18] GET /commissions/overview, /payees e /payees/:userId/overview exigem commissions:read, validam filtros (400) e devolvem 404 para userId de outra organização", async () => {
+  await withCommissionApi(async ({ baseUrl, seed }) => {
+    // operator só tem commissions:read_own, não tem commissions:read -> 403 nas três rotas
+    for (const path of [
+      "/api/v1/commissions/overview",
+      "/api/v1/commissions/payees",
+      `/api/v1/commissions/payees/${seed.userIdsA.operator}/overview`,
+    ]) {
+      const res = await fetch(`${baseUrl}${path}`, {
+        headers: authHeadersId(seed.tenantA.id, seed.userIdsA.operator, "operator"),
+      });
+      assert.equal(res.status, 403, `${path} deve recusar operator com 403`);
+    }
+
+    // 400 para bucket inválido, months inválido e month inválido
+    const badBucket = await fetch(`${baseUrl}/api/v1/commissions/payees?bucket=invalid_bucket`, {
+      headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance"),
+    });
+    assert.equal(badBucket.status, 400);
+
+    const badMonths = await fetch(`${baseUrl}/api/v1/commissions/payees/${seed.userIdsA.operator}/overview?months=5`, {
+      headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance"),
+    });
+    assert.equal(badMonths.status, 400);
+
+    const badMonthCalc = await fetch(`${baseUrl}/api/v1/commissions/calculations?month=2026-13`, {
+      headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance"),
+    });
+    assert.equal(badMonthCalc.status, 400);
+
+    // 404 para userId de outra organização em /payees/:userId/overview
+    const crossRes = await fetch(`${baseUrl}/api/v1/commissions/payees/${seed.userIdsB.admin}/overview`, {
+      headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance"),
+    });
+    assert.equal(crossRes.status, 404);
+  });
+});
+
+test("[R18] GET /commissions/calculations e /calculations/mine aceitam filtros bucket, serviceCatalogId e month e enriquecem cada linha com os campos do retrato", async () => {
+  await withCommissionApi(async ({ baseUrl, seed }) => {
+    const [{ getMemoryCommissionRepositoryForTests }] = await Promise.all([
+      import("../src/modules/commissions/index.js"),
+    ]);
+    const repo = getMemoryCommissionRepositoryForTests();
+    const svcId = randomUUID();
+
+    repo.seedCalculationForTests({
+      tenantId: seed.tenantA.id,
+      payeeId: seed.userIdsA.operator,
+      amount: 80,
+      status: "approved",
+      idempotencyKey: `engine:calc:${randomUUID()}`,
+      createdAt: new Date("2026-05-15T15:00:00.000Z"),
+      calculationSnapshot: {
+        workOrderCode: "OS-CALC-80",
+        serviceCatalogId: svcId,
+        baseCents: 40000,
+        rateType: "fixed",
+        rateValue: "80.00",
+        outcome: "calculated",
+      },
+    });
+    repo.seedCalculationForTests({
+      tenantId: seed.tenantA.id,
+      payeeId: seed.userIdsA.operator,
+      amount: 35,
+      status: "calculated",
+      idempotencyKey: `engine:calc:${randomUUID()}`,
+      createdAt: new Date("2026-04-10T15:00:00.000Z"),
+      calculationSnapshot: {
+        workOrderCode: "OS-CALC-35",
+        serviceCatalogId: randomUUID(),
+        baseCents: 35000,
+        rateType: "percent",
+        rateValue: "10",
+        outcome: "calculated",
+      },
+    });
+
+    const filtered = await fetch(
+      `${baseUrl}/api/v1/commissions/calculations?bucket=to_receive&serviceCatalogId=${svcId}&month=2026-05`,
+      {
+        headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance"),
+      },
+    );
+    assert.equal(filtered.status, 200);
+    const body = await readJson(filtered);
+    const items = body.items as Array<Record<string, unknown>>;
+    assert.equal(items.length, 1);
+    assert.equal(items[0]?.amountCents, "8000");
+    assert.equal(items[0]?.workOrderCode, "OS-CALC-80");
+    assert.equal(items[0]?.serviceCatalogId, svcId);
+    assert.equal(items[0]?.baseCents, "40000");
+    assert.equal(items[0]?.rateType, "fixed");
+    assert.equal(items[0]?.rateValue, "80.00");
+    assert.equal(items[0]?.rateValueCents, "8000");
+    assert.equal(items[0]?.outcome, "calculated");
+    assert.equal(items[0]?.statusLabelKey, "to_receive");
+  });
+});
+
+test("[R17/R19/M20/A-E161-4] todo campo …Cents casa ^[0-9]+$ em todas as respostas novas e nenhuma chave proibida (tenant_id, tenantId, cnh) vaza", async (t) => {
+  await withCommissionApi(async ({ baseUrl, seed }) => {
+    const [{ getMemoryCommissionRepositoryForTests }] = await Promise.all([
+      import("../src/modules/commissions/index.js"),
+    ]);
+    const repo = getMemoryCommissionRepositoryForTests();
+    const svcId = randomUUID();
+
+    await fetch(`${baseUrl}/api/v1/commissions/rates/payees/${seed.userIdsA.operator}`, {
+      method: "PUT",
+      headers: jsonHeadersId(seed.tenantA.id, seed.userIdsA.admin, "tenant_admin"),
+      body: JSON.stringify({
+        rateType: "fixed",
+        rateValue: "95.00",
+        reason: "Regra fixa para conferência C-CENTS",
+        expectedRuleId: null,
+      }),
+    });
+
+    repo.seedCalculationForTests({
+      tenantId: seed.tenantA.id,
+      payeeId: seed.userIdsA.operator,
+      amount: 95,
+      status: "approved",
+      idempotencyKey: `engine:calc:${randomUUID()}`,
+      calculationSnapshot: {
+        workOrderCode: "OS-CENTS-1",
+        serviceCatalogId: svcId,
+        baseCents: 50000,
+        rateType: "fixed",
+        rateValue: "95.00",
+        outcome: "calculated",
+      },
+    });
+
+    const endpoints = [
+      { name: "GET /commissions/overview", url: `${baseUrl}/api/v1/commissions/overview`, headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance") },
+      { name: "GET /commissions/payees", url: `${baseUrl}/api/v1/commissions/payees`, headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance") },
+      { name: "GET /commissions/payees/:userId/overview", url: `${baseUrl}/api/v1/commissions/payees/${seed.userIdsA.operator}/overview`, headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance") },
+      { name: "GET /commissions/mine/overview", url: `${baseUrl}/api/v1/commissions/mine/overview`, headers: authHeadersId(seed.tenantA.id, seed.userIdsA.operator, "operator") },
+      { name: "GET /commissions/calculations", url: `${baseUrl}/api/v1/commissions/calculations`, headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance") },
+      { name: "GET /commissions/rates", url: `${baseUrl}/api/v1/commissions/rates`, headers: authHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance") },
+    ];
+
+    const checkedFields: string[] = [];
+
+    const walkAndCheckCents = (node: unknown, pathPrefix: string) => {
+      if (Array.isArray(node)) {
+        node.forEach((child, idx) => walkAndCheckCents(child, `${pathPrefix}[${idx}]`));
+        return;
+      }
+      if (typeof node === "object" && node !== null) {
+        for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+          assert.notEqual(k, "tenant_id", `chave proibida tenant_id em ${pathPrefix}`);
+          assert.notEqual(k, "tenantId", `chave proibida tenantId em ${pathPrefix}`);
+          assert.equal(/cnh/i.test(k), false, `chave proibida CNH em ${pathPrefix}.${k}`);
+          if (k === "calculationSnapshot") {
+            continue;
+          }
+          const fullPath = `${pathPrefix}.${k}`;
+          if (k.endsWith("Cents") && v !== null && v !== undefined) {
+            assert.equal(typeof v, "string", `${fullPath} deve ser string`);
+            assert.match(v as string, /^[0-9]+$/, `${fullPath} deve casar ^[0-9]+$ (recebido: ${String(v)})`);
+            checkedFields.push(`${fullPath}=${String(v)}`);
+          } else {
+            walkAndCheckCents(v, fullPath);
+          }
+        }
+      }
+    };
+
+    for (const ep of endpoints) {
+      const res = await fetch(ep.url, { headers: ep.headers });
+      assert.equal(res.status, 200, `${ep.name} deve responder 200`);
+      const text = await res.text();
+      assert.equal(text.includes(seed.tenantA.id), false, `${ep.name} nunca vaza tenant_id no corpo`);
+      walkAndCheckCents(JSON.parse(text), ep.name);
+    }
+
+    t.diagnostic(`campos …Cents conferidos (${checkedFields.length}): ${checkedFields.join(", ")}`);
+    assert.ok(checkedFields.length >= 20, `esperado conferir ao menos 20 campos …Cents, conferidos: ${checkedFields.length}`);
+  });
+});
+
 function authHeadersId(tenantId: string, userId: string, role: string): Record<string, string> {
   return {
     "x-tenant-id": tenantId,

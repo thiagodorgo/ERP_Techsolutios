@@ -5,17 +5,34 @@ import { Prisma } from "@prisma/client";
 import { getMemoryOperatorProfileRepositoryForTests } from "../operator-profiles/operator-profile.service.js";
 import { createMemoryProfessionalStatementService } from "../professional-statements/professional-statement.service.js";
 import { isCommissionCalculationKey } from "./commission-calculation-kind.js";
-import { decimalTextToCents, engineWorkOrderEventKey, normalizeRateValueText } from "./commission-engine.js";
+import {
+  buildRecentBusinessMonths,
+  COMMISSION_BUSINESS_TIMEZONE,
+  decimalTextToCents,
+  engineWorkOrderEventKey,
+  getBusinessMonthUtcRange,
+  normalizeRateValueText,
+  toCommissionBusinessMonth,
+} from "./commission-engine.js";
 import { commissionCents, commissionCentsOfSum } from "./commission-money.js";
 import {
   CommissionError,
   type CommissionActorContext,
   type CommissionBasisEvent,
   type CommissionBasisEventStatus,
+  type CommissionBucket,
   type CommissionCalculation,
   type CommissionCalculationStatus,
   type CommissionJsonRecord,
+  type CommissionOverviewInput,
+  type CommissionOverviewMonthBucket,
+  type CommissionOverviewResult,
+  type CommissionOverviewServiceBucket,
+  type CommissionOverviewTopPayee,
+  type CommissionPayeeOverviewInput,
+  type CommissionPayeeOverviewResult,
   type CommissionPayeeRateRecord,
+  type CommissionPayeeRow,
   type CommissionPayeeSummary,
   type CommissionPolicy,
   type CommissionPolicyRule,
@@ -34,6 +51,7 @@ import {
   type EngineWorkOrderSnapshot,
   type ListCommissionBasisEventsInput,
   type ListCommissionCalculationsInput,
+  type ListCommissionPayeesInput,
   type ListCommissionPoliciesInput,
   type ListCommissionStatementsInput,
   type ListResult,
@@ -78,6 +96,9 @@ export interface CommissionRepository {
   listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]>;
   listPayeeRateHistory(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord[] | null>;
   findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null>;
+  getOverview(input: CommissionOverviewInput): Promise<CommissionOverviewResult>;
+  listPayees(input: ListCommissionPayeesInput): Promise<ListResult<CommissionPayeeRow>>;
+  getPayeeOverview(input: CommissionPayeeOverviewInput): Promise<CommissionPayeeOverviewResult | null>;
   reset?(): void;
 }
 
@@ -229,8 +250,12 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
   async listCalculations(input: ListCommissionCalculationsInput): Promise<ListResult<CommissionCalculation>> {
     const items = this.sortedCalculations()
       .filter((calculation) => calculation.tenantId === input.tenantId)
+      .filter((calculation) => isCommissionCalculationKey(calculation.idempotencyKey)) // B-COMISSAO:classe-lista
       .filter((calculation) => !input.status || calculation.status === input.status)
       .filter((calculation) => !input.payeeId || calculation.payeeId === input.payeeId)
+      .filter((calculation) => matchesBucket(calculation, input.bucket))
+      .filter((calculation) => matchesServiceCatalogId(calculation, input.serviceCatalogId))
+      .filter((calculation) => matchesBusinessMonth(calculation, input.month))
       .filter((calculation) => withinRange(calculation.createdAt, input.from, input.to));
     const page = paginate(items, input.limit, input.offset);
 
@@ -256,6 +281,7 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
 
     for (const calculation of this.calculations.values()) {
       if (calculation.tenantId !== input.tenantId) continue;
+      if (!isCommissionCalculationKey(calculation.idempotencyKey)) continue; // B-COMISSAO:classe-resumo
       if (!calculation.payeeId) continue;
       if (input.payeeId && calculation.payeeId !== input.payeeId) continue;
       if (!withinRange(calculation.createdAt, input.from, input.to)) continue;
@@ -420,6 +446,207 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
       (r) => r.ruleType === "engine_payee" && r.active && r.conditions.payeeUserId === payeeUserId,
     );
     return activeRule ? mapMemoryRuleToPayeeRate(activeRule) : null;
+  }
+
+  async getOverview(input: CommissionOverviewInput): Promise<CommissionOverviewResult> {
+    const refDate = input.to ?? new Date();
+    const currentMonth = toCommissionBusinessMonth(refDate);
+    const months = buildRecentBusinessMonths(refDate, 12);
+
+    const allCalcs = this.sortedCalculations().filter((c) => c.tenantId === input.tenantId);
+    const commissionCalcs = allCalcs.filter((c) => isCommissionCalculationKey(c.idempotencyKey));
+    const inPeriod = commissionCalcs.filter((c) => withinRange(c.createdAt, input.from, input.to));
+
+    const toReceiveCents = sumCents(
+      inPeriod.filter((c) => c.status === "approved" && !c.settledAt),
+    );
+    const forecastCents = sumCents(
+      inPeriod.filter((c) => c.status === "calculated" && !c.settledAt),
+    );
+    const paidInPeriodCents = sumCents(
+      commissionCalcs.filter(
+        (c) => c.status === "approved" && Boolean(c.settledAt) && withinRange(c.settledAt!, input.from, input.to),
+      ),
+    );
+    const paidThisMonthCents = sumCents(
+      commissionCalcs.filter(
+        (c) =>
+          c.status === "approved" &&
+          Boolean(c.settledAt) &&
+          toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+      ),
+    );
+
+    const validCalcs = inPeriod.filter((c) => c.status !== "rejected" && c.status !== "reversed");
+    const noRuleCount = validCalcs.filter((c) => c.calculationSnapshot.outcome === "no_rule").length;
+    const reviewEventCount = [...this.basisEvents.values()].filter(
+      (e) =>
+        e.tenantId === input.tenantId &&
+        e.idempotencyKey.startsWith("engine:wo:") &&
+        e.status === "pending_review" &&
+        withinRange(e.occurredAt, input.from, input.to),
+    ).length;
+    const disputedCalcCount = validCalcs.filter((c) => c.status === "disputed").length;
+    const reviewCount = reviewEventCount + disputedCalcCount;
+    const rejectedCount = inPeriod.filter((c) => c.status === "rejected").length;
+
+    const byMonth: CommissionOverviewMonthBucket[] = months.map((m) => {
+      const calcInMonth = commissionCalcs.filter(
+        (c) =>
+          c.status !== "rejected" &&
+          c.status !== "reversed" &&
+          toCommissionBusinessMonth(c.createdAt) === m,
+      );
+      const paidInMonth = commissionCalcs.filter(
+        (c) => c.status === "approved" && Boolean(c.settledAt) && toCommissionBusinessMonth(c.settledAt!) === m,
+      );
+      return {
+        month: m,
+        calculatedCents: sumCents(calcInMonth).toString(),
+        paidCents: sumCents(paidInMonth).toString(),
+      };
+    });
+
+    const byServiceType = aggregateByServiceType(validCalcs);
+    const topPayees = aggregateTopPayees(validCalcs);
+    const { changeCents, changeDirection } = computeOverviewChange(byMonth);
+
+    return {
+      toReceiveCents: toReceiveCents.toString(),
+      forecastCents: forecastCents.toString(),
+      paidInPeriodCents: paidInPeriodCents.toString(),
+      paidThisMonthCents: paidThisMonthCents.toString(),
+      noRuleCount,
+      reviewCount,
+      rejectedCount,
+      byMonth,
+      byServiceType,
+      topPayees,
+      changeCents,
+      changeDirection,
+      from: input.from,
+      to: input.to,
+    };
+  }
+
+  async listPayees(input: ListCommissionPayeesInput): Promise<ListResult<CommissionPayeeRow>> {
+    const refDate = input.to ?? new Date();
+    const currentMonth = toCommissionBusinessMonth(refDate);
+    const rates = await this.listCurrentPayeeRates(input.tenantId);
+    const rateByPayee = new Map(rates.map((r) => [r.payeeUserId, r]));
+
+    const commissionCalcs = this.sortedCalculations()
+      .filter((c) => c.tenantId === input.tenantId)
+      .filter((c) => isCommissionCalculationKey(c.idempotencyKey))
+      .filter((c) => matchesServiceCatalogId(c, input.serviceCatalogId));
+
+    const payeeIds = new Set<string>();
+    for (const r of rates) payeeIds.add(r.payeeUserId);
+    for (const c of commissionCalcs) {
+      if (c.payeeId) payeeIds.add(c.payeeId);
+    }
+
+    const rows: CommissionPayeeRow[] = [];
+    for (const payeeId of payeeIds) {
+      const payeeCalcs = commissionCalcs.filter((c) => c.payeeId === payeeId);
+      const inPeriod = payeeCalcs.filter((c) => withinRange(c.createdAt, input.from, input.to));
+      const validInPeriod = inPeriod.filter((c) => c.status !== "rejected" && c.status !== "reversed");
+      const currentRate = rateByPayee.get(payeeId) ?? null;
+
+      if (input.bucket && !payeeMatchesBucket(validInPeriod, currentRate, input.bucket)) {
+        continue;
+      }
+
+      const toReceiveCents = sumCents(validInPeriod.filter((c) => c.status === "approved" && !c.settledAt));
+      const forecastCents = sumCents(validInPeriod.filter((c) => c.status === "calculated" && !c.settledAt));
+      const paidInPeriodCents = sumCents(
+        payeeCalcs.filter(
+          (c) => c.status === "approved" && Boolean(c.settledAt) && withinRange(c.settledAt!, input.from, input.to),
+        ),
+      );
+      const paidThisMonthCents = sumCents(
+        payeeCalcs.filter(
+          (c) =>
+            c.status === "approved" &&
+            Boolean(c.settledAt) &&
+            toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+        ),
+      );
+
+      rows.push({
+        payeeId,
+        toReceiveCents: toReceiveCents.toString(),
+        paidThisMonthCents: paidThisMonthCents.toString(),
+        paidInPeriodCents: paidInPeriodCents.toString(),
+        forecastCents: forecastCents.toString(),
+        count: validInPeriod.length,
+        currentRate,
+      });
+    }
+
+    rows.sort((a, b) => {
+      const diff = BigInt(b.toReceiveCents) - BigInt(a.toReceiveCents);
+      if (diff !== 0n) return diff > 0n ? 1 : -1;
+      return a.payeeId.localeCompare(b.payeeId);
+    });
+
+    return paginate(rows, input.limit, input.offset);
+  }
+
+  async getPayeeOverview(input: CommissionPayeeOverviewInput): Promise<CommissionPayeeOverviewResult | null> {
+    if (!input.isMine) {
+      const exists = await this.userExistsInTenant(input.tenantId, input.payeeUserId);
+      if (!exists) return null;
+    }
+
+    const now = new Date();
+    const currentMonth = toCommissionBusinessMonth(now);
+    const months = buildRecentBusinessMonths(now, input.months);
+    const currentRate = await this.findCurrentPayeeRate(input.tenantId, input.payeeUserId);
+
+    const payeeCalcs = this.sortedCalculations()
+      .filter((c) => c.tenantId === input.tenantId && c.payeeId === input.payeeUserId)
+      .filter((c) => isCommissionCalculationKey(c.idempotencyKey));
+    const validCalcs = payeeCalcs.filter((c) => c.status !== "rejected" && c.status !== "reversed");
+
+    const toReceiveCents = sumCents(validCalcs.filter((c) => c.status === "approved" && !c.settledAt));
+    const forecastCents = sumCents(validCalcs.filter((c) => c.status === "calculated" && !c.settledAt));
+    const paidThisMonthCents = sumCents(
+      validCalcs.filter(
+        (c) =>
+          c.status === "approved" &&
+          Boolean(c.settledAt) &&
+          toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+      ),
+    );
+
+    const byMonth: CommissionOverviewMonthBucket[] = months.map((m) => {
+      const calcInMonth = validCalcs.filter((c) => toCommissionBusinessMonth(c.createdAt) === m);
+      const paidInMonth = validCalcs.filter(
+        (c) => c.status === "approved" && Boolean(c.settledAt) && toCommissionBusinessMonth(c.settledAt!) === m,
+      );
+      return {
+        month: m,
+        calculatedCents: sumCents(calcInMonth).toString(),
+        paidCents: sumCents(paidInMonth).toString(),
+      };
+    });
+
+    const byServiceType = aggregateByServiceType(validCalcs);
+    const recentCalculations = this.attachBasisOrigin(payeeCalcs.slice(0, 5), input.tenantId);
+
+    return {
+      payeeId: input.payeeUserId,
+      toReceiveCents: toReceiveCents.toString(),
+      paidThisMonthCents: paidThisMonthCents.toString(),
+      forecastCents: forecastCents.toString(),
+      count: validCalcs.length,
+      currentRate,
+      isMine: input.isMine,
+      byMonth,
+      byServiceType,
+      recentCalculations,
+    };
   }
 
   async replacePayeeRate(
@@ -952,4 +1179,118 @@ function isEngineCandidateStatus(status: string, financialDecision: string | nul
 /** O instante da OS que decide a vigência: a conclusão; na cancelada com "manter cobrança", o cancelamento. */
 function engineOccurrenceInstant(wo: InMemoryEngineWorkOrderRow): Date {
   return (wo.status === "cancelled" ? wo.cancelledAt : wo.completedAt) ?? wo.updatedAt;
+}
+
+function sumCents(calculations: readonly CommissionCalculation[]): bigint {
+  let acc = 0n;
+  for (const c of calculations) {
+    acc += BigInt(c.amountCents || "0");
+  }
+  return acc;
+}
+
+function matchesBucket(calculation: CommissionCalculation, bucket?: CommissionBucket): boolean {
+  if (!bucket) return true;
+  if (bucket === "to_receive") return calculation.status === "approved" && !calculation.settledAt;
+  if (bucket === "forecast") return calculation.status === "calculated" && !calculation.settledAt;
+  if (bucket === "paid") return calculation.status === "approved" && Boolean(calculation.settledAt);
+  if (bucket === "no_rule") {
+    return (
+      calculation.status !== "rejected" &&
+      calculation.status !== "reversed" &&
+      calculation.calculationSnapshot.outcome === "no_rule"
+    );
+  }
+  if (bucket === "review") return calculation.status === "disputed";
+  return true;
+}
+
+function payeeMatchesBucket(
+  calculations: readonly CommissionCalculation[],
+  currentRate: CommissionPayeeRateRecord | null,
+  bucket: CommissionBucket,
+): boolean {
+  if (bucket === "to_receive") return calculations.some((c) => c.status === "approved" && !c.settledAt);
+  if (bucket === "forecast") return calculations.some((c) => c.status === "calculated" && !c.settledAt);
+  if (bucket === "paid") return calculations.some((c) => c.status === "approved" && Boolean(c.settledAt));
+  if (bucket === "no_rule") {
+    return !currentRate || calculations.some((c) => c.calculationSnapshot.outcome === "no_rule");
+  }
+  if (bucket === "review") return calculations.some((c) => c.status === "disputed");
+  return true;
+}
+
+function matchesServiceCatalogId(calculation: CommissionCalculation, serviceCatalogId?: string): boolean {
+  if (!serviceCatalogId) return true;
+  return calculation.calculationSnapshot.serviceCatalogId === serviceCatalogId;
+}
+
+function matchesBusinessMonth(calculation: CommissionCalculation, month?: string): boolean {
+  if (!month) return true;
+  const { start, endExclusive } = getBusinessMonthUtcRange(month, COMMISSION_BUSINESS_TIMEZONE);
+  const t = (calculation.settledAt ?? calculation.createdAt).getTime();
+  return t >= start.getTime() && t < endExclusive.getTime();
+}
+
+function aggregateByServiceType(calculations: readonly CommissionCalculation[]): CommissionOverviewServiceBucket[] {
+  const bySvc = new Map<string | null, { cents: bigint; count: number }>();
+  for (const c of calculations) {
+    const svcId =
+      typeof c.calculationSnapshot.serviceCatalogId === "string" ? c.calculationSnapshot.serviceCatalogId : null;
+    const prev = bySvc.get(svcId) ?? { cents: 0n, count: 0 };
+    bySvc.set(svcId, { cents: prev.cents + BigInt(c.amountCents || "0"), count: prev.count + 1 });
+  }
+  return [...bySvc.entries()]
+    .map(([serviceCatalogId, v]) => ({
+      serviceCatalogId,
+      totalCents: v.cents.toString(),
+      count: v.count,
+    }))
+    .sort((a, b) => {
+      const diff = BigInt(b.totalCents) - BigInt(a.totalCents);
+      return diff !== 0n ? (diff > 0n ? 1 : -1) : 0;
+    });
+}
+
+function aggregateTopPayees(calculations: readonly CommissionCalculation[]): CommissionOverviewTopPayee[] {
+  const byPayee = new Map<string, { total: bigint; toReceive: bigint; paid: bigint; count: number }>();
+  for (const c of calculations) {
+    if (!c.payeeId) continue;
+    const prev = byPayee.get(c.payeeId) ?? { total: 0n, toReceive: 0n, paid: 0n, count: 0 };
+    const cents = BigInt(c.amountCents || "0");
+    byPayee.set(c.payeeId, {
+      total: prev.total + cents,
+      toReceive: prev.toReceive + (c.status === "approved" && !c.settledAt ? cents : 0n),
+      paid: prev.paid + (c.status === "approved" && c.settledAt ? cents : 0n),
+      count: prev.count + 1,
+    });
+  }
+  return [...byPayee.entries()]
+    .map(([payeeId, v]) => ({
+      payeeId,
+      totalCents: v.total.toString(),
+      toReceiveCents: v.toReceive.toString(),
+      paidCents: v.paid.toString(),
+      count: v.count,
+    }))
+    .sort((a, b) => {
+      const diff = BigInt(b.totalCents) - BigInt(a.totalCents);
+      return diff !== 0n ? (diff > 0n ? 1 : -1) : a.payeeId.localeCompare(b.payeeId);
+    })
+    .slice(0, 10);
+}
+
+function computeOverviewChange(byMonth: readonly CommissionOverviewMonthBucket[]): {
+  readonly changeCents: string;
+  readonly changeDirection: "up" | "down" | "flat";
+} {
+  const curr = BigInt(byMonth[byMonth.length - 1]?.calculatedCents ?? "0");
+  const prev = BigInt(byMonth[byMonth.length - 2]?.calculatedCents ?? "0");
+  if (curr > prev) {
+    return { changeCents: (curr - prev).toString(), changeDirection: "up" };
+  }
+  if (curr < prev) {
+    return { changeCents: (prev - curr).toString(), changeDirection: "down" };
+  }
+  return { changeCents: "0", changeDirection: "flat" };
 }

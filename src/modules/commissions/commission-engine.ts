@@ -246,3 +246,50 @@ export function isReservedBasisEventInput(input: {
   const eventName = input.sourceEventName.trim().toLowerCase();
   return key.startsWith("engine:") || eventName.startsWith("engine.");
 }
+
+// B-COMISSAO:fuso-sp — M19: fuso de negócio para corte de mês ("pago no mês", competência e filtro month=YYYY-MM).
+export const COMMISSION_BUSINESS_TIMEZONE = "America/Sao_Paulo";
+
+export function toCommissionBusinessMonth(date: Date, timeZone: string = COMMISSION_BUSINESS_TIMEZONE): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((p) => p.type === "year")?.value ?? "1970";
+  const month = parts.find((p) => p.type === "month")?.value ?? "01";
+  return `${year}-${month}`;
+}
+
+export function buildRecentBusinessMonths(referenceDate: Date, count: number, timeZone: string = COMMISSION_BUSINESS_TIMEZONE): string[] {
+  const refYm = toCommissionBusinessMonth(referenceDate, timeZone);
+  const [yStr, mStr] = refYm.split("-");
+  let year = Number(yStr);
+  let month = Number(mStr);
+  const out: string[] = [];
+  for (let i = 0; i < count; i += 1) {
+    out.unshift(`${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`);
+    month -= 1;
+    if (month < 1) {
+      month = 12;
+      year -= 1;
+    }
+  }
+  return out;
+}
+
+export function getBusinessMonthUtcRange(
+  yearMonth: string,
+  timeZone: string = COMMISSION_BUSINESS_TIMEZONE,
+): { readonly start: Date; readonly endExclusive: Date } {
+  const [yStr, mStr] = yearMonth.split("-");
+  const year = Number(yStr);
+  const month = Number(mStr);
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  // America/Sao_Paulo = UTC-03:00 (03:00 UTC do dia 1º); UTC = 00:00 UTC do dia 1º.
+  const offsetHours = timeZone === "America/Sao_Paulo" ? 3 : 0;
+  const start = new Date(Date.UTC(year, month - 1, 1, offsetHours, 0, 0, 0));
+  const endExclusive = new Date(Date.UTC(nextYear, nextMonth - 1, 1, offsetHours, 0, 0, 0));
+  return { start, endExclusive };
+}

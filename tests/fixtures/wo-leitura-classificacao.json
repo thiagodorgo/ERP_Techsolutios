@@ -48,6 +48,18 @@
   "GET /api/v1/commissions/calculations/mine": {
     "classe": "SEM-DADO-DE-OS"
   },
+  "GET /api/v1/commissions/mine/overview": {
+    "classe": "SEM-DADO-DE-OS"
+  },
+  "GET /api/v1/commissions/overview": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/commissions/payees": {
+    "classe": "NAO-ALCANCADA"
+  },
+  "GET /api/v1/commissions/payees/:userId/overview": {
+    "classe": "NAO-ALCANCADA"
+  },
   "GET /api/v1/commissions/policies": {
     "classe": "NAO-ALCANCADA"
   },

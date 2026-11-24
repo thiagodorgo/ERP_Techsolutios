@@ -1,10 +1,12 @@
 import {
   COMMISSION_BASIS_EVENT_STATUSES,
+  COMMISSION_BUCKETS,
   COMMISSION_CALCULATION_STATUSES,
   COMMISSION_POLICY_STATUSES,
   COMMISSION_STATEMENT_STATUSES,
   CommissionError,
   type CommissionBasisEventStatus,
+  type CommissionBucket,
   type CommissionCalculationStatus,
   type CommissionJsonRecord,
   type CommissionPolicyStatus,
@@ -325,4 +327,47 @@ export function parseExpectedRuleId(value: unknown): string | null {
     throw new CommissionError(422, "COMMISSION_RATE_INVALID", "invalid_expected_rule_id", "expectedRuleId must be a valid UUID or null.");
   }
   return value.trim();
+}
+
+export function parseOptionalBucket(value: unknown): CommissionBucket | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (COMMISSION_BUCKETS.includes(normalized as CommissionBucket)) {
+    return normalized as CommissionBucket;
+  }
+  throw new CommissionError(
+    400,
+    "COMMISSION_FILTER_INVALID",
+    "invalid_bucket",
+    "bucket must be one of: to_receive, forecast, paid, no_rule, review.",
+  );
+}
+
+export function parseOptionalMonth(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const normalized = typeof value === "string" ? value.trim() : "";
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(normalized);
+  if (!match) {
+    throw new CommissionError(
+      400,
+      "COMMISSION_FILTER_INVALID",
+      "invalid_month",
+      "month must be in YYYY-MM format.",
+    );
+  }
+  return normalized;
+}
+
+export function parseOverviewMonths(value: unknown): 3 | 6 | 12 {
+  if (value === undefined || value === null || value === "") return 6;
+  const parsed = Number.parseInt(String(value), 10);
+  if (parsed === 3 || parsed === 6 || parsed === 12) {
+    return parsed;
+  }
+  throw new CommissionError(
+    400,
+    "COMMISSION_FILTER_INVALID",
+    "invalid_months",
+    "months must be 3, 6, or 12.",
+  );
 }

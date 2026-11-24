@@ -251,6 +251,22 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/commissions/mine/overview": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/overview": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/payees": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/payees/:userId/overview": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/commissions/policies": {
   "classe": "LEITURA",
   "n": 1

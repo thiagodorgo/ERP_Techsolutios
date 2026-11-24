@@ -4,16 +4,32 @@ import { withTenantRls } from "../../database/rls.js";
 import { PrismaProfessionalStatementRepository } from "../professional-statements/professional-statement-prisma.repository.js";
 import { createProfessionalStatementForSourceInRepository } from "../professional-statements/professional-statement.service.js";
 import { buildCommissionKindWhere } from "./commission-calculation-kind.js";
-import { decimalTextToCents, normalizeRateValueText } from "./commission-engine.js";
+import {
+  buildRecentBusinessMonths,
+  COMMISSION_BUSINESS_TIMEZONE,
+  decimalTextToCents,
+  getBusinessMonthUtcRange,
+  normalizeRateValueText,
+  toCommissionBusinessMonth,
+} from "./commission-engine.js";
 import {
   CommissionError,
   type CommissionActorContext,
   type CommissionBasisEvent,
   type CommissionBasisEventStatus,
+  type CommissionBucket,
   type CommissionCalculation,
   type CommissionCalculationStatus,
   type CommissionJsonRecord,
+  type CommissionOverviewInput,
+  type CommissionOverviewMonthBucket,
+  type CommissionOverviewResult,
+  type CommissionOverviewServiceBucket,
+  type CommissionOverviewTopPayee,
+  type CommissionPayeeOverviewInput,
+  type CommissionPayeeOverviewResult,
   type CommissionPayeeRateRecord,
+  type CommissionPayeeRow,
   type CommissionPayeeSummary,
   type CommissionPolicy,
   type CommissionPolicyRule,
@@ -34,6 +50,7 @@ import {
   type EngineWorkOrderSnapshot,
   type ListCommissionBasisEventsInput,
   type ListCommissionCalculationsInput,
+  type ListCommissionPayeesInput,
   type ListCommissionPoliciesInput,
   type ListCommissionStatementsInput,
   type ListResult,
@@ -956,6 +973,269 @@ export class PrismaCommissionRepository implements CommissionRepository, Commiss
     });
     return updated[0] ? mapCalculationRecord(updated[0]) : undefined;
   }
+
+  async getOverview(input: CommissionOverviewInput): Promise<CommissionOverviewResult> {
+    const refDate = input.to ?? new Date();
+    const currentMonth = toCommissionBusinessMonth(refDate);
+    const months = buildRecentBusinessMonths(refDate, 12);
+
+    const baseTenantWhere: Prisma.CommissionCalculationWhereInput = {
+      tenant_id: input.tenantId, // B-COMISSAO:tenant-explicito-leitura
+    };
+
+    const [toReceiveAgg, rejectedCount, reviewEventCount, activeRecords] = await Promise.all([
+      this.client.commissionCalculation.aggregate({
+        where: {
+          ...baseTenantWhere,
+          ...buildCommissionKindWhere(), // B-COMISSAO:classe-a-receber
+          status: "approved",
+          settled_at: null,
+          ...buildCreatedAtRange(input.from, input.to),
+        },
+        _sum: { amount: true },
+      }),
+      this.client.commissionCalculation.count({
+        where: {
+          ...baseTenantWhere,
+          ...buildCommissionKindWhere(), // B-COMISSAO:classe-reprovadas
+          status: "rejected",
+          ...buildCreatedAtRange(input.from, input.to),
+        },
+      }),
+      this.client.commissionBasisEvent.count({
+        where: {
+          tenant_id: input.tenantId,
+          idempotency_key: { startsWith: "engine:wo:" },
+          status: "pending_review",
+          ...(input.from || input.to
+            ? {
+                occurred_at: {
+                  ...(input.from ? { gte: input.from } : {}),
+                  ...(input.to ? { lte: input.to } : {}),
+                },
+              }
+            : {}),
+        },
+      }),
+      this.client.commissionCalculation.findMany({
+        where: {
+          ...baseTenantWhere,
+          ...buildCommissionKindWhere(),
+          status: { notIn: ["rejected", "reversed"] }, // B-COMISSAO:total-sem-estorno
+        },
+        orderBy: [{ created_at: "desc" }],
+      }),
+    ]);
+
+    const activeCalcs = activeRecords.map(mapCalculationRecord);
+    const inPeriod = activeCalcs.filter((c) => prismaWithinRange(c.createdAt, input.from, input.to));
+
+    const toReceiveCents = commissionCents(toReceiveAgg._sum.amount);
+    const forecastCents = prismaSumCents(
+      inPeriod.filter((c) => c.status === "calculated" && !c.settledAt),
+    ).toString();
+    const paidInPeriodCents = prismaSumCents(
+      activeCalcs.filter(
+        (c) =>
+          c.status === "approved" &&
+          Boolean(c.settledAt) &&
+          prismaWithinRange(c.settledAt!, input.from, input.to),
+      ),
+    ).toString();
+    const paidThisMonthCents = prismaSumCents(
+      activeCalcs.filter(
+        (c) =>
+          c.status === "approved" &&
+          Boolean(c.settledAt) &&
+          toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+      ),
+    ).toString();
+
+    const noRuleCount = inPeriod.filter((c) => c.calculationSnapshot.outcome === "no_rule").length;
+    const disputedCalcCount = inPeriod.filter((c) => c.status === "disputed").length;
+    const reviewCount = reviewEventCount + disputedCalcCount;
+
+    const byMonth: CommissionOverviewMonthBucket[] = months.map((m) => {
+      const calcInMonth = activeCalcs.filter((c) => toCommissionBusinessMonth(c.createdAt) === m);
+      const paidInMonth = activeCalcs.filter(
+        (c) => c.status === "approved" && Boolean(c.settledAt) && toCommissionBusinessMonth(c.settledAt!) === m,
+      );
+      return {
+        month: m,
+        calculatedCents: prismaSumCents(calcInMonth).toString(),
+        paidCents: prismaSumCents(paidInMonth).toString(),
+      };
+    });
+
+    const byServiceType = prismaAggregateByServiceType(inPeriod);
+    const topPayees = prismaAggregateTopPayees(inPeriod);
+    const { changeCents, changeDirection } = prismaComputeOverviewChange(byMonth);
+
+    return {
+      toReceiveCents,
+      forecastCents,
+      paidInPeriodCents,
+      paidThisMonthCents,
+      noRuleCount,
+      reviewCount,
+      rejectedCount,
+      byMonth,
+      byServiceType,
+      topPayees,
+      changeCents,
+      changeDirection,
+      from: input.from,
+      to: input.to,
+    };
+  }
+
+  async listPayees(input: ListCommissionPayeesInput): Promise<ListResult<CommissionPayeeRow>> {
+    const refDate = input.to ?? new Date();
+    const currentMonth = toCommissionBusinessMonth(refDate);
+    const rates = await this.listCurrentPayeeRates(input.tenantId);
+    const rateByPayee = new Map(rates.map((r) => [r.payeeUserId, r]));
+
+    const records = await this.client.commissionCalculation.findMany({
+      where: {
+        tenant_id: input.tenantId,
+        ...buildCommissionKindWhere(),
+        status: { notIn: ["rejected", "reversed"] },
+        ...(input.serviceCatalogId
+          ? {
+              calculation_snapshot: {
+                path: ["serviceCatalogId"],
+                equals: input.serviceCatalogId,
+              },
+            }
+          : {}),
+      },
+      orderBy: [{ created_at: "desc" }],
+    });
+    const commissionCalcs = records.map(mapCalculationRecord);
+
+    const payeeIds = new Set<string>();
+    for (const r of rates) payeeIds.add(r.payeeUserId);
+    for (const c of commissionCalcs) {
+      if (c.payeeId) payeeIds.add(c.payeeId);
+    }
+
+    const rows: CommissionPayeeRow[] = [];
+    for (const payeeId of payeeIds) {
+      const payeeCalcs = commissionCalcs.filter((c) => c.payeeId === payeeId);
+      const inPeriod = payeeCalcs.filter((c) => prismaWithinRange(c.createdAt, input.from, input.to));
+      const currentRate = rateByPayee.get(payeeId) ?? null;
+
+      if (input.bucket && !prismaPayeeMatchesBucket(inPeriod, currentRate, input.bucket)) {
+        continue;
+      }
+
+      const toReceiveCents = prismaSumCents(inPeriod.filter((c) => c.status === "approved" && !c.settledAt));
+      const forecastCents = prismaSumCents(inPeriod.filter((c) => c.status === "calculated" && !c.settledAt));
+      const paidInPeriodCents = prismaSumCents(
+        payeeCalcs.filter(
+          (c) =>
+            c.status === "approved" &&
+            Boolean(c.settledAt) &&
+            prismaWithinRange(c.settledAt!, input.from, input.to),
+        ),
+      );
+      const paidThisMonthCents = prismaSumCents(
+        payeeCalcs.filter(
+          (c) =>
+            c.status === "approved" &&
+            Boolean(c.settledAt) &&
+            toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+        ),
+      );
+
+      rows.push({
+        payeeId,
+        toReceiveCents: toReceiveCents.toString(),
+        paidThisMonthCents: paidThisMonthCents.toString(),
+        paidInPeriodCents: paidInPeriodCents.toString(),
+        forecastCents: forecastCents.toString(),
+        count: inPeriod.length,
+        currentRate,
+      });
+    }
+
+    rows.sort((a, b) => {
+      const diff = BigInt(b.toReceiveCents) - BigInt(a.toReceiveCents);
+      if (diff !== 0n) return diff > 0n ? 1 : -1;
+      return a.payeeId.localeCompare(b.payeeId);
+    });
+
+    return {
+      items: rows.slice(input.offset, input.offset + input.limit),
+      total: rows.length,
+      limit: input.limit,
+      offset: input.offset,
+    };
+  }
+
+  async getPayeeOverview(input: CommissionPayeeOverviewInput): Promise<CommissionPayeeOverviewResult | null> {
+    if (!input.isMine) {
+      const exists = await this.userExistsInTenant(input.tenantId, input.payeeUserId);
+      if (!exists) return null;
+    }
+
+    const now = new Date();
+    const currentMonth = toCommissionBusinessMonth(now);
+    const months = buildRecentBusinessMonths(now, input.months);
+    const [currentRate, records] = await Promise.all([
+      this.findCurrentPayeeRate(input.tenantId, input.payeeUserId),
+      this.client.commissionCalculation.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          payee_id: input.payeeUserId,
+          ...buildCommissionKindWhere(),
+        },
+        orderBy: [{ created_at: "desc" }],
+      }),
+    ]);
+
+    const payeeCalcs = records.map(mapCalculationRecord);
+    const validCalcs = payeeCalcs.filter((c) => c.status !== "rejected" && c.status !== "reversed");
+
+    const toReceiveCents = prismaSumCents(validCalcs.filter((c) => c.status === "approved" && !c.settledAt));
+    const forecastCents = prismaSumCents(validCalcs.filter((c) => c.status === "calculated" && !c.settledAt));
+    const paidThisMonthCents = prismaSumCents(
+      validCalcs.filter(
+        (c) =>
+          c.status === "approved" &&
+          Boolean(c.settledAt) &&
+          toCommissionBusinessMonth(c.settledAt!) === currentMonth,
+      ),
+    );
+
+    const byMonth: CommissionOverviewMonthBucket[] = months.map((m) => {
+      const calcInMonth = validCalcs.filter((c) => toCommissionBusinessMonth(c.createdAt) === m);
+      const paidInMonth = validCalcs.filter(
+        (c) => c.status === "approved" && Boolean(c.settledAt) && toCommissionBusinessMonth(c.settledAt!) === m,
+      );
+      return {
+        month: m,
+        calculatedCents: prismaSumCents(calcInMonth).toString(),
+        paidCents: prismaSumCents(paidInMonth).toString(),
+      };
+    });
+
+    const byServiceType = prismaAggregateByServiceType(validCalcs);
+    const recentCalculations = await this.attachBasisOrigin(payeeCalcs.slice(0, 5), input.tenantId);
+
+    return {
+      payeeId: input.payeeUserId,
+      toReceiveCents: toReceiveCents.toString(),
+      paidThisMonthCents: paidThisMonthCents.toString(),
+      forecastCents: forecastCents.toString(),
+      count: validCalcs.length,
+      currentRate,
+      isMine: input.isMine,
+      byMonth,
+      byServiceType,
+      recentCalculations,
+    };
+  }
 }
 
 export class RlsPrismaCommissionRepository implements CommissionRepository {
@@ -1038,6 +1318,24 @@ export class RlsPrismaCommissionRepository implements CommissionRepository {
       new PrismaCommissionRepository(tx).findCurrentPayeeRate(tenantId, payeeUserId),
     );
   }
+
+  getOverview(input: CommissionOverviewInput): Promise<CommissionOverviewResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).getOverview(input),
+    );
+  }
+
+  listPayees(input: ListCommissionPayeesInput): Promise<ListResult<CommissionPayeeRow>> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).listPayees(input),
+    );
+  }
+
+  getPayeeOverview(input: CommissionPayeeOverviewInput): Promise<CommissionPayeeOverviewResult | null> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).getPayeeOverview(input),
+    );
+  }
 }
 
 export async function createPrismaCommissionRepository(): Promise<RlsPrismaCommissionRepository> {
@@ -1073,17 +1371,57 @@ function buildBasisEventWhere(input: ListCommissionBasisEventsInput): Prisma.Com
 }
 
 function buildCalculationWhere(input: ListCommissionCalculationsInput): Prisma.CommissionCalculationWhereInput {
+  const andConditions: Prisma.CommissionCalculationWhereInput[] = [
+    buildCommissionKindWhere(), // B-COMISSAO:classe-lista
+  ];
+
+  if (input.bucket === "to_receive") {
+    andConditions.push({ status: "approved", settled_at: null });
+  } else if (input.bucket === "forecast") {
+    andConditions.push({ status: "calculated", settled_at: null });
+  } else if (input.bucket === "paid") {
+    andConditions.push({ status: "approved", settled_at: { not: null } });
+  } else if (input.bucket === "no_rule") {
+    andConditions.push({
+      status: { notIn: ["rejected", "reversed"] },
+      calculation_snapshot: { path: ["outcome"], equals: "no_rule" },
+    });
+  } else if (input.bucket === "review") {
+    andConditions.push({ status: "disputed" });
+  }
+
+  if (input.serviceCatalogId) {
+    andConditions.push({
+      calculation_snapshot: {
+        path: ["serviceCatalogId"],
+        equals: input.serviceCatalogId,
+      },
+    });
+  }
+
+  if (input.month) {
+    const { start, endExclusive } = getBusinessMonthUtcRange(input.month, COMMISSION_BUSINESS_TIMEZONE);
+    andConditions.push({
+      OR: [
+        { settled_at: { gte: start, lt: endExclusive } },
+        { settled_at: null, created_at: { gte: start, lt: endExclusive } },
+      ],
+    });
+  }
+
   return {
     tenant_id: input.tenantId,
     ...(input.status ? { status: input.status } : {}),
     ...(input.payeeId ? { payee_id: input.payeeId } : {}),
     ...buildCreatedAtRange(input.from, input.to),
+    AND: andConditions,
   };
 }
 
 function buildSummaryWhere(input: SummarizeCalculationsByPayeeInput): Prisma.CommissionCalculationWhereInput {
   return {
     tenant_id: input.tenantId,
+    ...buildCommissionKindWhere(), // B-COMISSAO:classe-resumo
     payee_id: input.payeeId ? input.payeeId : { not: null },
     // B-APP-ORG-2S (S2e; Emenda 1.8.3.5 §1, D-DONO-2111-TELA-COMISSOES) / B-COMISSAO-MOTOR (R9, M18): o resumo não conta recusada nem estornada.
     status: { notIn: ["rejected", "reversed"] }, // B-COMISSAO:total-sem-estorno
@@ -1333,4 +1671,99 @@ function commissionLockMissingError(): CommissionError {
     "commission_lock_missing",
     "Engine commission policy lock row could not be acquired.",
   );
+}
+
+function prismaWithinRange(value: Date, from?: Date, to?: Date): boolean {
+  const timestamp = value.getTime();
+  if (from && timestamp < from.getTime()) return false;
+  if (to && timestamp > to.getTime()) return false;
+  return true;
+}
+
+function prismaSumCents(calculations: readonly CommissionCalculation[]): bigint {
+  let acc = 0n;
+  for (const c of calculations) {
+    acc += BigInt(c.amountCents || "0");
+  }
+  return acc;
+}
+
+function prismaPayeeMatchesBucket(
+  calculations: readonly CommissionCalculation[],
+  currentRate: CommissionPayeeRateRecord | null,
+  bucket: CommissionBucket,
+): boolean {
+  if (bucket === "to_receive") return calculations.some((c) => c.status === "approved" && !c.settledAt);
+  if (bucket === "forecast") return calculations.some((c) => c.status === "calculated" && !c.settledAt);
+  if (bucket === "paid") return calculations.some((c) => c.status === "approved" && Boolean(c.settledAt));
+  if (bucket === "no_rule") {
+    return !currentRate || calculations.some((c) => c.calculationSnapshot.outcome === "no_rule");
+  }
+  if (bucket === "review") return calculations.some((c) => c.status === "disputed");
+  return true;
+}
+
+function prismaAggregateByServiceType(
+  calculations: readonly CommissionCalculation[],
+): CommissionOverviewServiceBucket[] {
+  const bySvc = new Map<string | null, { cents: bigint; count: number }>();
+  for (const c of calculations) {
+    const svcId =
+      typeof c.calculationSnapshot.serviceCatalogId === "string" ? c.calculationSnapshot.serviceCatalogId : null;
+    const prev = bySvc.get(svcId) ?? { cents: 0n, count: 0 };
+    bySvc.set(svcId, { cents: prev.cents + BigInt(c.amountCents || "0"), count: prev.count + 1 });
+  }
+  return [...bySvc.entries()]
+    .map(([serviceCatalogId, v]) => ({
+      serviceCatalogId,
+      totalCents: v.cents.toString(),
+      count: v.count,
+    }))
+    .sort((a, b) => {
+      const diff = BigInt(b.totalCents) - BigInt(a.totalCents);
+      return diff !== 0n ? (diff > 0n ? 1 : -1) : 0;
+    });
+}
+
+function prismaAggregateTopPayees(calculations: readonly CommissionCalculation[]): CommissionOverviewTopPayee[] {
+  const byPayee = new Map<string, { total: bigint; toReceive: bigint; paid: bigint; count: number }>();
+  for (const c of calculations) {
+    if (!c.payeeId) continue;
+    const prev = byPayee.get(c.payeeId) ?? { total: 0n, toReceive: 0n, paid: 0n, count: 0 };
+    const cents = BigInt(c.amountCents || "0");
+    byPayee.set(c.payeeId, {
+      total: prev.total + cents,
+      toReceive: prev.toReceive + (c.status === "approved" && !c.settledAt ? cents : 0n),
+      paid: prev.paid + (c.status === "approved" && c.settledAt ? cents : 0n),
+      count: prev.count + 1,
+    });
+  }
+  return [...byPayee.entries()]
+    .map(([payeeId, v]) => ({
+      payeeId,
+      totalCents: v.total.toString(),
+      toReceiveCents: v.toReceive.toString(),
+      paidCents: v.paid.toString(),
+      count: v.count,
+    }))
+    .sort((a, b) => {
+      const diff = BigInt(b.totalCents) - BigInt(a.totalCents);
+      return diff !== 0n ? (diff > 0n ? 1 : -1) : a.payeeId.localeCompare(b.payeeId);
+    })
+    .slice(0, 10);
+}
+
+function prismaComputeOverviewChange(byMonth: readonly CommissionOverviewMonthBucket[]): {
+  readonly changeCents: string;
+  readonly changeDirection: "up" | "down" | "flat";
+} {
+  const curr = BigInt(byMonth[byMonth.length - 1]?.calculatedCents ?? "0");
+  const prev = BigInt(byMonth[byMonth.length - 2]?.calculatedCents ?? "0");
+  if (curr > prev) {
+    return { changeCents: (curr - prev).toString(), changeDirection: "up" };
+  }
+  if (curr < prev) {
+    return { changeCents: (prev - curr).toString(), changeDirection: "down" };
+  }
+  return { changeCents: "0", changeDirection: "flat" };
 }

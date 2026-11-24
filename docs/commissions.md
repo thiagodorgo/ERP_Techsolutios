@@ -35,6 +35,24 @@ Limites preservados:
 - nenhuma UI web, Figma ou Flutter foi adicionada
 - eventos assincronos continuam planejados para fases posteriores
 
+## B-COMISSAO-MOTOR (PR1)
+
+O PR1 do bloco `B-COMISSAO-MOTOR` adiciona as leituras agregadas para o financeiro e para o proprio guincheiro,
+com valores monetarios em centavos de texto (`*Cents`) e recorte mensal pelo fuso de negocio `America/Sao_Paulo`.
+
+Rotas novas:
+
+- `GET /api/v1/commissions/overview` (`commissions:read`)
+- `GET /api/v1/commissions/payees` (`commissions:read`)
+- `GET /api/v1/commissions/payees/:userId/overview` (`commissions:read`)
+- `GET /api/v1/commissions/mine/overview` (`commissions:read_own`, favorecido fixado no ator)
+
+Regras de resposta desta fatia:
+
+- campos agregados monetarios em texto (`toReceiveCents`, `forecastCents`, `paidInPeriodCents`, `paidThisMonthCents`)
+- buckets mensais (`byMonth`) e por tipo de servico (`byServiceType`) em centavos
+- `mine/overview` ignora `payeeId/payee_id` da query e sempre usa o usuario autenticado
+
 ## Principios
 
 - multi-tenant por padrao

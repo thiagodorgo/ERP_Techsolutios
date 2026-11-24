@@ -157,6 +157,39 @@ export function createCommissionRouter(resolveService: CommissionServiceResolver
     }),
   );
 
+  // B-COMISSAO-MOTOR (F6, §3.10) — ordem no roteador: /mine/overview antes de /payees/:userId/overview.
+  router.get(
+    "/commissions/overview",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.getOverview(request));
+    }),
+  );
+
+  router.get(
+    "/commissions/payees",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.listPayees(request));
+    }),
+  );
+
+  router.get(
+    "/commissions/mine/overview",
+    requirePermission(COMMISSION_PERMISSIONS.readOwn),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.getMyOverview(request));
+    }),
+  );
+
+  router.get(
+    "/commissions/payees/:userId/overview",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.getPayeeOverview(request));
+    }),
+  );
+
   return router;
 }
 

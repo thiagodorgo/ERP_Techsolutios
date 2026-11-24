@@ -133,11 +133,97 @@ export type ListCommissionBasisEventsInput = ListCommissionsInput & {
   readonly status?: CommissionBasisEventStatus;
 };
 
+export const COMMISSION_BUCKETS = ["to_receive", "forecast", "paid", "no_rule", "review"] as const;
+export type CommissionBucket = (typeof COMMISSION_BUCKETS)[number];
+
 export type ListCommissionCalculationsInput = ListCommissionsInput & {
   readonly status?: CommissionCalculationStatus;
   readonly payeeId?: string;
   readonly from?: Date;
   readonly to?: Date;
+  readonly bucket?: CommissionBucket;
+  readonly serviceCatalogId?: string;
+  readonly month?: string;
+};
+
+export type CommissionOverviewMonthBucket = {
+  readonly month: string;
+  readonly calculatedCents: string;
+  readonly paidCents: string;
+};
+
+export type CommissionOverviewServiceBucket = {
+  readonly serviceCatalogId: string | null;
+  readonly totalCents: string;
+  readonly count: number;
+};
+
+export type CommissionOverviewTopPayee = {
+  readonly payeeId: string;
+  readonly totalCents: string;
+  readonly toReceiveCents: string;
+  readonly paidCents: string;
+  readonly count: number;
+};
+
+export type CommissionOverviewInput = {
+  readonly tenantId: string;
+  readonly from?: Date;
+  readonly to?: Date;
+};
+
+export type CommissionOverviewResult = {
+  readonly toReceiveCents: string;
+  readonly forecastCents: string;
+  readonly paidInPeriodCents: string;
+  readonly paidThisMonthCents: string;
+  readonly noRuleCount: number;
+  readonly reviewCount: number;
+  readonly rejectedCount: number;
+  readonly byMonth: readonly CommissionOverviewMonthBucket[];
+  readonly byServiceType: readonly CommissionOverviewServiceBucket[];
+  readonly topPayees: readonly CommissionOverviewTopPayee[];
+  readonly changeCents: string;
+  readonly changeDirection: "up" | "down" | "flat";
+  readonly from?: Date;
+  readonly to?: Date;
+};
+
+export type ListCommissionPayeesInput = ListCommissionsInput & {
+  readonly from?: Date;
+  readonly to?: Date;
+  readonly bucket?: CommissionBucket;
+  readonly serviceCatalogId?: string;
+};
+
+export type CommissionPayeeRow = {
+  readonly payeeId: string;
+  readonly toReceiveCents: string;
+  readonly paidThisMonthCents: string;
+  readonly paidInPeriodCents: string;
+  readonly forecastCents: string;
+  readonly count: number;
+  readonly currentRate: CommissionPayeeRateRecord | null;
+};
+
+export type CommissionPayeeOverviewInput = {
+  readonly tenantId: string;
+  readonly payeeUserId: string;
+  readonly months: 3 | 6 | 12;
+  readonly isMine: boolean;
+};
+
+export type CommissionPayeeOverviewResult = {
+  readonly payeeId: string;
+  readonly toReceiveCents: string;
+  readonly paidThisMonthCents: string;
+  readonly forecastCents: string;
+  readonly count: number;
+  readonly currentRate: CommissionPayeeRateRecord | null;
+  readonly isMine: boolean;
+  readonly byMonth: readonly CommissionOverviewMonthBucket[];
+  readonly byServiceType: readonly CommissionOverviewServiceBucket[];
+  readonly recentCalculations: readonly CommissionCalculation[];
 };
 
 export type ListCommissionStatementsInput = ListCommissionsInput & {

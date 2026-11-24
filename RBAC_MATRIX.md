@@ -48,6 +48,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Purchasing | full | full | request/approve-policy | request | budget-check | stock-driven-request | none | read | support-view |
 | Finance | full | tenant-finance-admin | manager-view | none | full | stock-cost-view | none | read | support-view |
 | Billing | full | full | read | none | full | none | none | read | support-view |
+| Commissions engine (rates, reconcile, settlement, overviews) | full | full | manage/read | read-own | full | none | read-own | audit-read | support-view |
 | Cloud usage metering | full | none | none | none | none | none | none | read | support-view |
 | Cloud cost import | full | none | none | none | none | none | none | read | support-view |
 | Cloud cost allocation | full | none | none | none | none | none | none | read | support-view |

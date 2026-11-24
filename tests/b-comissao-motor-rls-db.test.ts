@@ -302,6 +302,12 @@ if (!connection) {
       b.tenantId,
     )) as Array<{ calcsB: number }>;
     assert.equal(calcsB, 0, "sob conexão que contorna RLS, a volta de A não cria nada de B (M23)");
+
+    // M24: roda a varredura de B (cria cálculo de R$ 60,00 em B) e confere que o overview de A sob conexão que contorna RLS soma só A (R$ 30,00 = "3000"), nunca B
+    const countsB = await reconcileTenantCommissions(admin, b.tenantId);
+    assert.deepEqual(countsB, { created: 1, released: 0, recalculated: 0, skipped: 0 });
+    const overviewA = await (service as any).getOverview(actorA, {});
+    assert.equal(overviewA.forecastCents, "3000", "overview de A não soma cálculos de B sob conexão que contorna RLS (M24)");
   });
 
   test("[E1.7 / E1.6.1-Q1.4] guarda de código: toda consulta crua ($queryRaw / $executeRaw) dentro de src/modules/commissions/ contém tenant_id", () => {
