@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Alert, Button, Card, EmptyState, Select, Skeleton } from "../../../../components/ui";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import type { ProcessDetail } from "../../processes/processes.types";
-import { defaultRoundForStage, deriveScrapGate, resolveAuctionStage } from "../auction.adapter";
+import { defaultRoundForStage, deriveScrapGate, isNewAuctionRound, resolveAuctionStage } from "../auction.adapter";
 import {
   AuctionActionError,
   closeAuction,
@@ -72,13 +72,25 @@ export function AuctionPanel({
   const defaultRound = useMemo(() => {
     if (!auction) return 1;
     if (auction.resalePending) {
-      const designated = auction.edicts.filter((edict) => edict.status === "DESIGNATED").at(-1);
+      const designated = auction.edicts.filter((edict) => edict.status === "DESIGNATED" && isNewAuctionRound(auction, edict.roundNumber)).at(-1);
       return designated?.roundNumber ?? Math.max(0, ...auction.attempts.map((attempt) => attempt.roundNumber), ...auction.edicts.map((edict) => edict.roundNumber)) + 1;
     }
     return defaultRoundForStage(auction, stage);
   }, [auction, stage]);
   const actionRound = roundOverride ?? defaultRound;
-  const roundChoices = useMemo(() => (auction ? [...new Set(auction.edicts.map((edict) => edict.roundNumber))].sort((a, b) => a - b) : []), [auction]);
+  const roundChoices = useMemo(
+    () =>
+      auction
+        ? [
+            ...new Set(
+              auction.edicts
+                .filter((edict) => !auction.resalePending || isNewAuctionRound(auction, edict.roundNumber))
+                .map((edict) => edict.roundNumber),
+            ),
+          ].sort((a, b) => a - b)
+        : [],
+    [auction],
+  );
   const scrapGate = useMemo(() => (auction ? deriveScrapGate(auction) : []), [auction]);
   const activeEdict = useMemo(() => auction?.edicts.find((edict) => edict.roundNumber === actionRound) ?? null, [auction, actionRound]);
 
@@ -209,14 +221,20 @@ export function AuctionPanel({
           </Card>
 
           {canAppraise ? (
-            <AppraisalForm
-              defaultRound={defaultRound}
-              appraisalAmount={activeEdict?.appraisalAmount ?? null}
-              minBidAmount={activeEdict?.minBidAmount ?? null}
-              busy={busy}
-              error={actionError}
-              onSubmit={handleAppraisal}
-            />
+            activeEdict && !isNewAuctionRound(auction, activeEdict.roundNumber) ? (
+              <Alert title="Avaliação encerrada nesta rodada" tone="info">
+                A {activeEdict.roundNumber}ª rodada já tem resultado, e a avaliação dela não muda mais. Para o próximo leilão, avalie a rodada nova.
+              </Alert>
+            ) : (
+              <AppraisalForm
+                defaultRound={defaultRound}
+                appraisalAmount={activeEdict?.appraisalAmount ?? null}
+                minBidAmount={activeEdict?.minBidAmount ?? null}
+                busy={busy}
+                error={actionError}
+                onSubmit={handleAppraisal}
+              />
+            )
           ) : null}
 
           {canTransition ? (
