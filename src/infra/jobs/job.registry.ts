@@ -16,6 +16,7 @@ import { createFieldOpsEventFanoutJobHandler } from "../../modules/field-dispatc
 import { createImpoundReconcileRemovalsJobHandler } from "../../modules/impound/impound.jobs.js";
 import { createChargingAccrueDailyJobHandler } from "../../modules/charging/charge.jobs.js";
 import { createImpoundNotifyDueJobHandler } from "../../modules/impound/impound.notifications.jobs.js";
+import { createCommissionsReconcileJobHandler } from "../../modules/commissions/commission.jobs.js";
 
 export type JobHandler<TPayload extends JobPayload = JobPayload> = (
   payload: TPayload,
@@ -70,6 +71,7 @@ function createDefaultJobRegistry(): JobRegistry {
   registry.register("impound.reconcile-removals", createImpoundReconcileRemovalsJobHandler());
   registry.register("charging.accrue-daily", createChargingAccrueDailyJobHandler());
   registry.register("impound.notify-due", createImpoundNotifyDueJobHandler());
+  registry.register("commissions.reconcile", createCommissionsReconcileJobHandler());
 
   return registry;
 }

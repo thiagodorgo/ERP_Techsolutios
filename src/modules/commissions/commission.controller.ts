@@ -215,6 +215,29 @@ export class CommissionController {
     };
   }
 
+  async reconcileCommissions(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const counts = await service.reconcileCommissions(actor);
+
+    await recordRequestAuditBestEffort(request, {
+      action: "commission.reconcile_requested",
+      resourceType: "commission_calculation",
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        created: counts.created,
+        released: counts.released,
+        recalculated: counts.recalculated,
+        skipped: counts.skipped,
+      },
+    });
+
+    return {
+      status: 200,
+      data: counts,
+    };
+  }
+
   private async resolveServiceWithActor(request: Request) {
     return [await this.resolveService(), requireTenantContext(request)] as const;
   }

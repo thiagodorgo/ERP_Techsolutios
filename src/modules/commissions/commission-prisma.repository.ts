@@ -8,6 +8,7 @@ import {
   type CommissionBasisEventStatus,
   type CommissionCalculation,
   type CommissionCalculationStatus,
+  type CommissionJsonRecord,
   type CommissionPayeeRateRecord,
   type CommissionPayeeSummary,
   type CommissionPolicy,
@@ -19,6 +20,11 @@ import {
   type CommissionUnit,
   type CreateCommissionBasisEventInput,
   type CreateCommissionPolicyInput,
+  type EngineFinancialItemRow,
+  type EnginePolicyInfo,
+  type EngineReconcileScope,
+  type EngineWorkOrderCandidate,
+  type EngineWorkOrderSnapshot,
   type ListCommissionBasisEventsInput,
   type ListCommissionCalculationsInput,
   type ListCommissionPoliciesInput,
@@ -437,6 +443,233 @@ export class PrismaCommissionRepository implements CommissionRepository, Commiss
     `;
     return rows.map(mapPayeeRuleRow);
   }
+
+  async findEnginePolicies(tenantId: string): Promise<EnginePolicyInfo[]> {
+    // B-COMISSAO:so-le-reservado
+    const rows = await this.client.commissionPolicy.findMany({
+      where: { tenant_id: tenantId, scope: "engine", status: "active" },
+      select: { id: true, effective_from: true },
+      orderBy: { created_at: "asc" },
+    });
+    return rows.map((r) => ({ id: r.id, effectiveFrom: r.effective_from }));
+  }
+
+  async listEngineCandidatesForReconcile(
+    tenantId: string,
+    policyEffectiveFrom: Date,
+  ): Promise<EngineWorkOrderCandidate[]> {
+    // Candidatas do passo 1 (plano §3.4): OS concluída, ou cancelada com "manter cobrança", desde o início da
+    // política, sem o evento-base de chave canônica; até 500 por volta, da mais antiga para a mais nova. O instante
+    // da OS é a conclusão; na cancelada, o cancelamento (`updated_at` só se a coluna vier nula, linha antiga).
+    // B-COMISSAO:tenant-explicito — M23: a linha `WHERE wo.tenant_id = ${tenantId}::uuid` (predicado explícito da
+    //   organização, Emenda 1 §E1.7, além do `withTenantRls`); a subconsulta do evento também casa por `tenant_id`.
+    // B-COMISSAO:base-do-banco — M6: o evento que exclui a OS é só o do espaço reservado, pela chave canônica
+    //   `engine:wo:<id>:v1` (Emenda 1 §E1.3); evento à mão, de outra chave, nunca conta como o evento do motor.
+    const rows = await this.client.$queryRaw<
+      Array<{
+        id: string;
+        code: string;
+        status: string;
+        occurred_at: Date;
+        financial_cancellation_decision: string | null;
+      }>
+    >`
+      SELECT wo.id, wo.code, wo.status, wo.financial_cancellation_decision,
+             COALESCE(CASE WHEN wo.status = 'cancelled' THEN wo.cancelled_at ELSE wo.completed_at END, wo.updated_at) AS occurred_at
+      FROM work_orders wo
+      WHERE wo.tenant_id = ${tenantId}::uuid
+        AND (wo.status = 'completed' OR (wo.status = 'cancelled' AND wo.financial_cancellation_decision = 'keep'))
+        AND COALESCE(CASE WHEN wo.status = 'cancelled' THEN wo.cancelled_at ELSE wo.completed_at END, wo.updated_at) >= ${policyEffectiveFrom}
+        AND NOT EXISTS (
+          SELECT 1 FROM commission_basis_events evt
+          WHERE evt.tenant_id = wo.tenant_id
+            AND evt.idempotency_key = 'engine:wo:' || wo.id::text || ':v1'
+        )
+      ORDER BY occurred_at ASC, wo.id ASC
+      LIMIT 500
+    `;
+    return rows.map((r) => ({
+      id: r.id,
+      code: r.code,
+      status: r.status,
+      completedAt: r.occurred_at,
+      financialDecision: r.financial_cancellation_decision,
+    }));
+  }
+
+  async readReconcileScope(tenantId: string): Promise<EngineReconcileScope> {
+    const policies = await this.findEnginePolicies(tenantId);
+    if (policies.length === 0) return { policies, candidates: [] };
+    const candidates = await this.listEngineCandidatesForReconcile(tenantId, policies[0]!.effectiveFrom);
+    return { policies, candidates };
+  }
+
+  async lockAndReadWorkOrderForCommission(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<EngineWorkOrderSnapshot | null> {
+    const rows = await this.client.$queryRaw<
+      Array<{
+        id: string;
+        code: string;
+        status: string;
+        assigned_user_id: string | null;
+        service_catalog_id: string | null;
+        occurred_at: Date;
+        financial_cancellation_decision: string | null;
+      }>
+    >`
+      SELECT id, code, status, assigned_user_id, service_catalog_id, financial_cancellation_decision,
+             COALESCE(CASE WHEN status = 'cancelled' THEN cancelled_at ELSE completed_at END, updated_at) AS occurred_at
+      FROM work_orders
+      WHERE tenant_id = ${tenantId}::uuid AND id = ${workOrderId}::uuid
+      FOR UPDATE /* commission_wo_lock */
+    `;
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      id: row.id,
+      code: row.code,
+      status: row.status,
+      assignedUserId: row.assigned_user_id,
+      serviceCatalogId: row.service_catalog_id,
+      completedAt: row.occurred_at,
+      financialDecision: row.financial_cancellation_decision,
+    };
+  }
+
+  async hasLiveEngineBasisEvent(tenantId: string, workOrderId: string): Promise<boolean> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM commission_basis_events
+      WHERE tenant_id = ${tenantId}::uuid
+        AND source_id = ${workOrderId}
+        AND idempotency_key LIKE 'engine:wo:%'
+        AND status <> 'superseded'
+      LIMIT 1
+    `;
+    return rows.length > 0;
+  }
+
+  async insertEngineBasisEventIfAbsent(input: {
+    readonly tenantId: string;
+    readonly policyId: string;
+    readonly workOrderId: string;
+    readonly sourceEventName: string;
+    readonly idempotencyKey: string;
+    readonly occurredAt: Date;
+    readonly status: CommissionBasisEventStatus;
+    readonly payload: CommissionJsonRecord;
+  }): Promise<string | null> {
+    const payloadJson = JSON.stringify(input.payload);
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO commission_basis_events (
+        tenant_id, source_type, source_id, source_event_name, idempotency_key, payload, occurred_at, status, policy_id
+      )
+      VALUES (
+        ${input.tenantId}::uuid,
+        'work_order',
+        ${input.workOrderId},
+        ${input.sourceEventName},
+        ${input.idempotencyKey},
+        ${payloadJson}::jsonb,
+        ${input.occurredAt},
+        ${input.status},
+        ${input.policyId}::uuid
+      )
+      ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+      RETURNING id
+    `;
+    return rows[0]?.id ?? null;
+  }
+
+  async updateEngineBasisEventOutcome(
+    tenantId: string,
+    eventId: string,
+    status: CommissionBasisEventStatus,
+    payload: CommissionJsonRecord,
+  ): Promise<void> {
+    await this.client.commissionBasisEvent.updateMany({
+      where: { tenant_id: tenantId, id: eventId },
+      data: {
+        status,
+        payload: toJsonObject(payload),
+      },
+    });
+  }
+
+  async listActiveWorkOrderFinancialItems(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<EngineFinancialItemRow[]> {
+    const rows = await this.client.$queryRaw<Array<{ total_amount_text: string; currency: string }>>`
+      SELECT total_amount::text AS total_amount_text, currency
+      FROM work_order_financial_items
+      WHERE tenant_id = ${tenantId}::uuid
+        AND work_order_id = ${workOrderId}::uuid
+        AND deleted_at IS NULL
+      ORDER BY created_at ASC, id ASC
+    `;
+    return rows.map((r) => ({ totalAmountText: r.total_amount_text, currency: r.currency }));
+  }
+
+  async listEngineRulesForPolicy(tenantId: string, policyId: string): Promise<CommissionPolicyRule[]> {
+    const rows = await this.client.commissionPolicyRule.findMany({
+      where: {
+        tenant_id: tenantId,
+        policy_id: policyId,
+        rule_type: { startsWith: "engine_" },
+      },
+      orderBy: [{ priority: "asc" }, { created_at: "asc" }],
+    });
+    return rows.map(mapPolicyRuleRecord);
+  }
+
+  async hasLivePrimaryCalculationForEvent(tenantId: string, basisEventId: string): Promise<boolean> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM commission_calculations
+      WHERE tenant_id = ${tenantId}::uuid
+        AND basis_event_id = ${basisEventId}::uuid
+        AND idempotency_key LIKE 'engine:calc:%'
+        AND status <> 'reversed'
+      LIMIT 1
+    `;
+    return rows.length > 0;
+  }
+
+  async insertEnginePrimaryCalculationIfAbsent(input: {
+    readonly tenantId: string;
+    readonly basisEventId: string;
+    readonly policyId: string;
+    readonly payeeUserId: string;
+    readonly amountDecimalText: string;
+    readonly status: CommissionCalculationStatus;
+    readonly calculationSnapshot: CommissionJsonRecord;
+    readonly idempotencyKey: string;
+  }): Promise<string | null> {
+    const snapJson = JSON.stringify(input.calculationSnapshot);
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO commission_calculations (
+        tenant_id, basis_event_id, policy_id, eligible_user_id, payee_id, amount, currency, status, calculation_snapshot, idempotency_key
+      )
+      VALUES (
+        ${input.tenantId}::uuid,
+        ${input.basisEventId}::uuid,
+        ${input.policyId}::uuid,
+        ${input.payeeUserId}::uuid,
+        ${input.payeeUserId}::uuid,
+        ${input.amountDecimalText}::numeric,
+        'BRL',
+        ${input.status},
+        ${snapJson}::jsonb,
+        ${input.idempotencyKey}
+      )
+      ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+      RETURNING id
+    `;
+    return rows[0]?.id ?? null;
+  }
 }
 
 export class RlsPrismaCommissionRepository implements CommissionRepository {
@@ -487,6 +720,12 @@ export class RlsPrismaCommissionRepository implements CommissionRepository {
 
   runCommissionUnit<T>(tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => work(new PrismaCommissionRepository(tx)));
+  }
+
+  readReconcileScope(tenantId: string): Promise<EngineReconcileScope> {
+    // B-COMISSAO:rls-varredura — M8: a leitura das políticas e das candidatas roda na transação do `withTenantRls`;
+    //   a mutação a troca por `new PrismaCommissionRepository(this.prismaClient).readReconcileScope(tenantId)`.
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaCommissionRepository(tx).readReconcileScope(tenantId));
   }
 
   listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]> {

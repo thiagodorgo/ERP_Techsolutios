@@ -318,6 +318,44 @@ export type CommissionReconcileCounts = {
   readonly skipped: number;
 };
 
+export type EnginePolicyInfo = {
+  readonly id: string;
+  readonly effectiveFrom: Date;
+};
+
+export type EngineWorkOrderCandidate = {
+  readonly id: string;
+  readonly code: string;
+  readonly status: string;
+  readonly completedAt: Date;
+  readonly financialDecision: string | null;
+};
+
+export type EngineWorkOrderSnapshot = {
+  readonly id: string;
+  readonly code: string;
+  readonly status: string;
+  readonly assignedUserId: string | null;
+  readonly serviceCatalogId: string | null;
+  readonly completedAt: Date | null;
+  readonly financialDecision: string | null;
+};
+
+export type EngineFinancialItemRow = {
+  readonly totalAmountText: string;
+  readonly currency: string;
+};
+
+/**
+ * B-COMISSAO-MOTOR (F3, plano §3.4) — o que a volta da varredura lê antes de tocar qualquer OS: as políticas do
+ * espaço reservado da organização (`scope = engine`) e as OS candidatas a nascer. Lido dentro do contexto da
+ * organização (`withTenantRls`), nunca pelo cliente sem contexto (M8).
+ */
+export type EngineReconcileScope = {
+  readonly policies: readonly EnginePolicyInfo[];
+  readonly candidates: readonly EngineWorkOrderCandidate[];
+};
+
 export interface CommissionUnit {
   ensureEnginePolicy(tenantId: string, actorUserId: string): Promise<void>;
   lockCommissionRate(tenantId: string): Promise<string>;
@@ -330,6 +368,40 @@ export interface CommissionUnit {
     previousRuleId: string | null,
     now: Date,
   ): Promise<CommissionPayeeRateRecord>;
+  findEnginePolicies(tenantId: string): Promise<EnginePolicyInfo[]>;
+  listEngineCandidatesForReconcile(tenantId: string, policyEffectiveFrom: Date): Promise<EngineWorkOrderCandidate[]>;
+  readReconcileScope(tenantId: string): Promise<EngineReconcileScope>;
+  lockAndReadWorkOrderForCommission(tenantId: string, workOrderId: string): Promise<EngineWorkOrderSnapshot | null>;
+  hasLiveEngineBasisEvent(tenantId: string, workOrderId: string): Promise<boolean>;
+  insertEngineBasisEventIfAbsent(input: {
+    readonly tenantId: string;
+    readonly policyId: string;
+    readonly workOrderId: string;
+    readonly sourceEventName: string;
+    readonly idempotencyKey: string;
+    readonly occurredAt: Date;
+    readonly status: CommissionBasisEventStatus;
+    readonly payload: CommissionJsonRecord;
+  }): Promise<string | null>;
+  updateEngineBasisEventOutcome(
+    tenantId: string,
+    eventId: string,
+    status: CommissionBasisEventStatus,
+    payload: CommissionJsonRecord,
+  ): Promise<void>;
+  listActiveWorkOrderFinancialItems(tenantId: string, workOrderId: string): Promise<EngineFinancialItemRow[]>;
+  listEngineRulesForPolicy(tenantId: string, policyId: string): Promise<CommissionPolicyRule[]>;
+  hasLivePrimaryCalculationForEvent(tenantId: string, basisEventId: string): Promise<boolean>;
+  insertEnginePrimaryCalculationIfAbsent(input: {
+    readonly tenantId: string;
+    readonly basisEventId: string;
+    readonly policyId: string;
+    readonly payeeUserId: string;
+    readonly amountDecimalText: string;
+    readonly status: CommissionCalculationStatus;
+    readonly calculationSnapshot: CommissionJsonRecord;
+    readonly idempotencyKey: string;
+  }): Promise<string | null>;
 }
 
 export class CommissionError extends Error {

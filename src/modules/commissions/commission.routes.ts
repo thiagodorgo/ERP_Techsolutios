@@ -149,6 +149,14 @@ export function createCommissionRouter(resolveService: CommissionServiceResolver
     }),
   );
 
+  router.post(
+    "/commissions/reconcile",
+    requirePermission(COMMISSION_PERMISSIONS.calculate),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reconcileCommissions(request));
+    }),
+  );
+
   return router;
 }
 

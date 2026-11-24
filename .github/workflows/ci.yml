@@ -437,6 +437,8 @@ jobs:
           SUITES="$SUITES tests/bapporg2sc_grant-guard-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-uniques-migration-drill-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-regra-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-uma-vez-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-rls-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       - name: Route HC1b latency suite alone

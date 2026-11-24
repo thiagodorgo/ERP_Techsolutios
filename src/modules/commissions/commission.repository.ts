@@ -3,10 +3,11 @@ import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 
 import { getMemoryOperatorProfileRepositoryForTests } from "../operator-profiles/operator-profile.service.js";
-import { decimalTextToCents, normalizeRateValueText } from "./commission-engine.js";
+import { decimalTextToCents, engineWorkOrderEventKey, normalizeRateValueText } from "./commission-engine.js";
 import { commissionCents, commissionCentsOfSum } from "./commission-money.js";
 import type {
   CommissionBasisEvent,
+  CommissionBasisEventStatus,
   CommissionCalculation,
   CommissionCalculationStatus,
   CommissionJsonRecord,
@@ -19,6 +20,11 @@ import type {
   CommissionUnit,
   CreateCommissionBasisEventInput,
   CreateCommissionPolicyInput,
+  EngineFinancialItemRow,
+  EnginePolicyInfo,
+  EngineReconcileScope,
+  EngineWorkOrderCandidate,
+  EngineWorkOrderSnapshot,
   ListCommissionBasisEventsInput,
   ListCommissionCalculationsInput,
   ListCommissionPoliciesInput,
@@ -54,6 +60,9 @@ export interface CommissionRepository {
     settlementRef: string,
   ): Promise<CommissionCalculation | undefined>;
   runCommissionUnit<T>(tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T>;
+  // B-COMISSAO-MOTOR (F3) — o escopo da volta da varredura (políticas do motor + OS candidatas), lido no contexto
+  // da organização. No Prisma, dentro de `withTenantRls` (M8); na memória, direto do dublê.
+  readReconcileScope(tenantId: string): Promise<EngineReconcileScope>;
   listCurrentPayeeRates(tenantId: string): Promise<CommissionPayeeRateRecord[]>;
   listPayeeRateHistory(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord[] | null>;
   findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null>;
@@ -88,6 +97,9 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
   // Dublê do estado de cancelamento da OS (WS-SCALE-COMISSAO). Semeável nos testes para provar a
   // supressão; sem estado, `resolve` devolve null (OS não-encontrada → elegível).
   readonly workOrderGate = new InMemoryWorkOrderCancellationGate();
+  // B-COMISSAO-MOTOR (F3) — dublê das OS que o motor lê (situação, guincheiro, conclusão, itens). A memória não tem
+  // `work_orders` nem itens; o teste semeia, no idioma do `workOrderGate`. Sem semente, nenhuma OS é candidata.
+  readonly engineWorkOrders = new InMemoryEngineWorkOrderSource();
 
   setUserExistsChecker(checker: (tenantId: string, userId: string) => Promise<boolean>): void {
     this.userExistsChecker = checker;
@@ -448,6 +460,177 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
       .sort((a, b) => b.effectiveFrom.getTime() - a.effectiveFrom.getTime() || (b.active ? 1 : 0) - (a.active ? 1 : 0));
   }
 
+  async findEnginePolicies(tenantId: string): Promise<EnginePolicyInfo[]> {
+    return [...this.policies.values()]
+      .filter((p) => p.tenantId === tenantId && p.scope === "engine" && p.status === "active")
+      .map((p) => ({ id: p.id, effectiveFrom: p.effectiveFrom }));
+  }
+
+  async listEngineCandidatesForReconcile(
+    tenantId: string,
+    policyEffectiveFrom: Date,
+  ): Promise<EngineWorkOrderCandidate[]> {
+    // Mesma regra do repositório Prisma: concluída (ou cancelada com "manter cobrança") desde o início da política, e
+    // sem o evento-base de chave canônica `engine:wo:<id>:v1`. Até 500, da mais antiga para a mais nova.
+    return this.engineWorkOrders
+      .listForTenant(tenantId)
+      .filter((wo) => isEngineCandidateStatus(wo.status, wo.financialDecision))
+      .filter((wo) => engineOccurrenceInstant(wo).getTime() >= policyEffectiveFrom.getTime())
+      .filter(
+        (wo) =>
+          ![...this.basisEvents.values()].some(
+            (e) => e.tenantId === tenantId && e.idempotencyKey === engineWorkOrderEventKey(wo.id, 1),
+          ),
+      )
+      .sort((a, b) => engineOccurrenceInstant(a).getTime() - engineOccurrenceInstant(b).getTime() || a.id.localeCompare(b.id))
+      .slice(0, 500)
+      .map((wo) => ({
+        id: wo.id,
+        code: wo.code,
+        status: wo.status,
+        completedAt: engineOccurrenceInstant(wo),
+        financialDecision: wo.financialDecision,
+      }));
+  }
+
+  async lockAndReadWorkOrderForCommission(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<EngineWorkOrderSnapshot | null> {
+    // Na memória não há trava de linha: a prova da corrida é com banco (plano §6.2). Aqui só a leitura do dublê.
+    const wo = this.engineWorkOrders.find(tenantId, workOrderId);
+    if (!wo) return null;
+    return {
+      id: wo.id,
+      code: wo.code,
+      status: wo.status,
+      assignedUserId: wo.assignedUserId,
+      serviceCatalogId: wo.serviceCatalogId,
+      completedAt: engineOccurrenceInstant(wo),
+      financialDecision: wo.financialDecision,
+    };
+  }
+
+  async readReconcileScope(tenantId: string): Promise<EngineReconcileScope> {
+    const policies = await this.findEnginePolicies(tenantId);
+    if (policies.length === 0) return { policies, candidates: [] };
+    const candidates = await this.listEngineCandidatesForReconcile(tenantId, policies[0]!.effectiveFrom);
+    return { policies, candidates };
+  }
+
+  async hasLiveEngineBasisEvent(tenantId: string, workOrderId: string): Promise<boolean> {
+    return [...this.basisEvents.values()].some(
+      (e) =>
+        e.tenantId === tenantId &&
+        e.sourceId === workOrderId &&
+        e.idempotencyKey.startsWith("engine:wo:") &&
+        e.status !== "superseded",
+    );
+  }
+
+  async insertEngineBasisEventIfAbsent(input: {
+    readonly tenantId: string;
+    readonly policyId: string;
+    readonly workOrderId: string;
+    readonly sourceEventName: string;
+    readonly idempotencyKey: string;
+    readonly occurredAt: Date;
+    readonly status: CommissionBasisEventStatus;
+    readonly payload: CommissionJsonRecord;
+  }): Promise<string | null> {
+    const exists = [...this.basisEvents.values()].some(
+      (e) => e.tenantId === input.tenantId && e.idempotencyKey === input.idempotencyKey,
+    );
+    if (exists) return null;
+    const id = randomUUID();
+    this.basisEvents.set(id, {
+      id,
+      tenantId: input.tenantId,
+      sourceType: "work_order",
+      sourceId: input.workOrderId,
+      sourceEventName: input.sourceEventName,
+      idempotencyKey: input.idempotencyKey,
+      payload: input.payload,
+      occurredAt: input.occurredAt,
+      status: input.status,
+      policyId: input.policyId,
+      createdAt: new Date(),
+    });
+    return id;
+  }
+
+  async updateEngineBasisEventOutcome(
+    tenantId: string,
+    eventId: string,
+    status: CommissionBasisEventStatus,
+    payload: CommissionJsonRecord,
+  ): Promise<void> {
+    const existing = this.basisEvents.get(eventId);
+    if (existing && existing.tenantId === tenantId) {
+      this.basisEvents.set(eventId, { ...existing, status, payload });
+    }
+  }
+
+  async listActiveWorkOrderFinancialItems(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<EngineFinancialItemRow[]> {
+    const wo = this.engineWorkOrders.find(tenantId, workOrderId);
+    return wo ? wo.items.map((item) => ({ totalAmountText: item.totalAmountText, currency: item.currency })) : [];
+  }
+
+  async listEngineRulesForPolicy(tenantId: string, policyId: string): Promise<CommissionPolicyRule[]> {
+    const policy = this.policies.get(policyId);
+    if (!policy || policy.tenantId !== tenantId) return [];
+    return policy.rules.filter((r) => r.ruleType.startsWith("engine_"));
+  }
+
+  async hasLivePrimaryCalculationForEvent(tenantId: string, basisEventId: string): Promise<boolean> {
+    return [...this.calculations.values()].some(
+      (c) =>
+        c.tenantId === tenantId &&
+        c.basisEventId === basisEventId &&
+        c.idempotencyKey.startsWith("engine:calc:") &&
+        c.status !== "reversed",
+    );
+  }
+
+  async insertEnginePrimaryCalculationIfAbsent(input: {
+    readonly tenantId: string;
+    readonly basisEventId: string;
+    readonly policyId: string;
+    readonly payeeUserId: string;
+    readonly amountDecimalText: string;
+    readonly status: CommissionCalculationStatus;
+    readonly calculationSnapshot: CommissionJsonRecord;
+    readonly idempotencyKey: string;
+  }): Promise<string | null> {
+    const exists = [...this.calculations.values()].some(
+      (c) => c.tenantId === input.tenantId && c.idempotencyKey === input.idempotencyKey,
+    );
+    if (exists) return null;
+    const id = randomUUID();
+    const now = new Date();
+    const amountNum = Number(input.amountDecimalText);
+    this.calculations.set(id, {
+      id,
+      tenantId: input.tenantId,
+      basisEventId: input.basisEventId,
+      policyId: input.policyId,
+      eligibleUserId: input.payeeUserId,
+      payeeId: input.payeeUserId,
+      amount: amountNum,
+      amountCents: commissionCents(new Prisma.Decimal(input.amountDecimalText)),
+      currency: "BRL",
+      status: input.status,
+      calculationSnapshot: input.calculationSnapshot,
+      idempotencyKey: input.idempotencyKey,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return id;
+  }
+
   reset(): void {
     this.policies.clear();
     this.basisEvents.clear();
@@ -455,6 +638,7 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
     this.statements.clear();
     this.tenantUsers.clear();
     this.workOrderGate.reset();
+    this.engineWorkOrders.reset();
   }
 
   private sortedPolicies(): CommissionPolicy[] {
@@ -518,4 +702,74 @@ function mapMemoryRuleToPayeeRate(rule: CommissionPolicyRule): CommissionPayeeRa
     selfChange: rule.conditions.selfChange === true,
     createdAt: rule.createdAt,
   };
+}
+
+/** B-COMISSAO-MOTOR (F3) — o que o teste semeia como OS que o motor lê, na memória. */
+export type InMemoryEngineWorkOrderSeed = {
+  readonly id: string;
+  readonly code: string;
+  readonly status: string;
+  readonly assignedUserId: string | null;
+  readonly serviceCatalogId?: string | null;
+  readonly completedAt?: Date | null;
+  readonly cancelledAt?: Date | null;
+  readonly updatedAt?: Date;
+  readonly financialDecision?: string | null;
+  readonly items?: ReadonlyArray<{ readonly totalAmountText: string; readonly currency?: string }>;
+};
+
+type InMemoryEngineWorkOrderRow = {
+  readonly tenantId: string;
+  readonly id: string;
+  readonly code: string;
+  readonly status: string;
+  readonly assignedUserId: string | null;
+  readonly serviceCatalogId: string | null;
+  readonly completedAt: Date | null;
+  readonly cancelledAt: Date | null;
+  readonly updatedAt: Date;
+  readonly financialDecision: string | null;
+  readonly items: ReadonlyArray<{ readonly totalAmountText: string; readonly currency: string }>;
+};
+
+/** Dublê das OS do motor na memória (o idioma do `InMemoryWorkOrderCancellationGate`): só o que o teste semeia. */
+export class InMemoryEngineWorkOrderSource {
+  private readonly rows = new Map<string, InMemoryEngineWorkOrderRow>();
+
+  seed(tenantId: string, seed: InMemoryEngineWorkOrderSeed): void {
+    this.rows.set(`${tenantId}:${seed.id}`, {
+      tenantId,
+      id: seed.id,
+      code: seed.code,
+      status: seed.status,
+      assignedUserId: seed.assignedUserId,
+      serviceCatalogId: seed.serviceCatalogId ?? null,
+      completedAt: seed.completedAt ?? null,
+      cancelledAt: seed.cancelledAt ?? null,
+      updatedAt: seed.updatedAt ?? new Date(),
+      financialDecision: seed.financialDecision ?? null,
+      items: (seed.items ?? []).map((item) => ({ totalAmountText: item.totalAmountText, currency: item.currency ?? "BRL" })),
+    });
+  }
+
+  find(tenantId: string, workOrderId: string): InMemoryEngineWorkOrderRow | undefined {
+    return this.rows.get(`${tenantId}:${workOrderId}`);
+  }
+
+  listForTenant(tenantId: string): InMemoryEngineWorkOrderRow[] {
+    return [...this.rows.values()].filter((row) => row.tenantId === tenantId);
+  }
+
+  reset(): void {
+    this.rows.clear();
+  }
+}
+
+function isEngineCandidateStatus(status: string, financialDecision: string | null): boolean {
+  return status === "completed" || (status === "cancelled" && financialDecision === "keep");
+}
+
+/** O instante da OS que decide a vigência: a conclusão; na cancelada com "manter cobrança", o cancelamento. */
+function engineOccurrenceInstant(wo: InMemoryEngineWorkOrderRow): Date {
+  return (wo.status === "cancelled" ? wo.cancelledAt : wo.completedAt) ?? wo.updatedAt;
 }

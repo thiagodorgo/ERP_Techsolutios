@@ -505,6 +505,30 @@ test("[R11/M9/M12/C-CENTS] ciclo de regra por pessoa: criar, idempotência de va
   });
 });
 
+test("[R3/R16] POST /commissions/reconcile exige commissions:calculate e devolve contagens", async () => {
+  await withCommissionApi(async ({ baseUrl, seed }) => {
+    const forbidden = await fetch(`${baseUrl}/api/v1/commissions/reconcile`, {
+      method: "POST",
+      headers: jsonHeadersId(seed.tenantA.id, seed.userIdsA.viewer, "viewer"),
+    });
+    assert.equal(forbidden.status, 403);
+
+    const allowed = await fetch(`${baseUrl}/api/v1/commissions/reconcile`, {
+      method: "POST",
+      headers: jsonHeadersId(seed.tenantA.id, seed.userIdsA.finance, "finance"),
+    });
+    assert.equal(allowed.status, 200);
+    const body = await readJson(allowed);
+    const data = body.data as Record<string, unknown>;
+    assert.deepEqual(data, {
+      created: 0,
+      released: 0,
+      recalculated: 0,
+      skipped: 0,
+    });
+  });
+});
+
 function authHeadersId(tenantId: string, userId: string, role: string): Record<string, string> {
   return {
     "x-tenant-id": tenantId,

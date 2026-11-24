@@ -3,6 +3,7 @@ import { getMemoryOperatorProfileRepositoryForTests } from "../operator-profiles
 import { createMemoryProfessionalStatementService } from "../professional-statements/professional-statement.service.js";
 import { isReservedBasisEventInput, isReservedPolicyInput } from "./commission-engine.js";
 import { CommissionRateService } from "./commission-rate.service.js";
+import { reconcileTenantCommissionsWithRepository } from "./commission-reconcile.service.js";
 import { InMemoryCommissionRepository, type CommissionRepository } from "./commission.repository.js";
 import type {
   CommissionActorContext,
@@ -10,6 +11,7 @@ import type {
   CommissionCalculation,
   CommissionPayeeRateRecord,
   CommissionPolicy,
+  CommissionReconcileCounts,
   CommissionSettlementCollaborators,
   CommissionStatement,
   CommissionSummaryResult,
@@ -70,6 +72,10 @@ export class CommissionService {
 
   getMyRate(actor: CommissionActorContext): Promise<CommissionPayeeRateRecord | null> {
     return this.rateService.getMyRate(actor);
+  }
+
+  reconcileCommissions(actor: CommissionActorContext): Promise<CommissionReconcileCounts> {
+    return reconcileTenantCommissionsWithRepository(this.repository, actor.tenantId);
   }
 
   listPolicies(actor: CommissionActorContext, query: RawRecord): Promise<ListResult<CommissionPolicy>> {

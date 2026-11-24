@@ -40,6 +40,8 @@ export type JobWorkerModules = {
   readonly enqueueInitialBillingChannelJobs: () => Promise<unknown>;
   /** B-ASS-09a — 1º tick da varredura do rateio automático (`cloud-cost-allocation.run`, `mode: import_catch_up`, 6 h). */
   readonly enqueueInitialCloudAllocationImportCatchUp: () => Promise<unknown>;
+  /** B-COMISSAO-MOTOR (F3) — 1º tick da varredura do motor de comissão (`commissions.reconcile`, 60 s). */
+  readonly enqueueInitialCommissionsReconcileScan: () => Promise<unknown>;
 };
 
 export type JobWorkerBootstrapOptions = {
@@ -78,6 +80,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     { enqueueInitialImpoundNotifyDueScan },
     { enqueueInitialSubscriptionMeasureDaily, enqueueInitialSubscriptionCloseStatements, enqueueInitialBillingChannelJobs },
     { enqueueInitialCloudAllocationImportCatchUp },
+    { enqueueInitialCommissionsReconcileScan },
   ] = await Promise.all([
     import("./job.worker.js"),
     import("../../modules/notifications/scheduled-notification.jobs.js"),
@@ -86,6 +89,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     import("../../modules/impound/impound.notifications.jobs.js"),
     import("../../modules/subscription-billing/subscription-billing.jobs.js"),
     import("../../modules/cloud-cost-allocation/cloud-cost-allocation.jobs.js"),
+    import("../../modules/commissions/commission.jobs.js"),
   ]);
 
   return {
@@ -98,6 +102,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     enqueueInitialSubscriptionCloseStatements,
     enqueueInitialBillingChannelJobs,
     enqueueInitialCloudAllocationImportCatchUp: () => enqueueInitialCloudAllocationImportCatchUp(),
+    enqueueInitialCommissionsReconcileScan,
   };
 }
 
@@ -169,6 +174,8 @@ export async function startJobWorkerIfEnabled(
   await modules.enqueueInitialBillingChannelJobs();
   // B-ASS-09a — 1º tick da varredura do rateio automático (auto-reenfileirante 6 h). Gated pela mesma flag.
   await modules.enqueueInitialCloudAllocationImportCatchUp();
+  // B-COMISSAO-MOTOR (F3) — 1º tick da varredura do motor de comissão (auto-reenfileirante 60 s).
+  await modules.enqueueInitialCommissionsReconcileScan();
   logger.info({ pollIntervalMs: 1000 }, "In-process job worker started (JOBS_WORKER_ENABLED).");
 
   return { started: true, worker, ...(heartbeat ? { heartbeat } : {}) };

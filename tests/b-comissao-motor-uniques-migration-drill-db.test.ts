@@ -42,8 +42,9 @@ if (!connectionString) {
   const tempDirs = new Set<string>();
 
   async function bootstrap() {
-    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString! }) });
+    // A fábrica da casa (G3/G4 de tests/db-fuso-utc-pontos-de-conexao.test.ts): nada de adaptador solto no teste.
+    const { createPrismaClient } = await import("../src/database/pg-connection.js");
+    const admin = createPrismaClient(connectionString!);
     adminForTeardown = admin;
 
     const source = new URL(connectionString!);
@@ -60,7 +61,7 @@ if (!connectionString) {
       env: { ...process.env, DATABASE_URL: target.toString() },
       stdio: "pipe",
     });
-    const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: target.toString() }) });
+    const db = createPrismaClient(target.toString());
     return { admin, db, name };
   }
 
@@ -433,7 +434,7 @@ if (!connectionString) {
 
   test("[T-D(f)] falha no meio: para k = 1..3, falha injetada depois da k-ésima sentença deixa 0 índices novos e o redeploy recupera", async () => {
     const { admin, name: drillName } = await drill();
-    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
+    const { createPrismaClient } = await import("../src/database/pg-connection.js");
 
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "comm-drill-"));
     tempDirs.add(tempRoot);
@@ -479,7 +480,7 @@ if (!connectionString) {
         const failed = runPrisma(["migrate", "deploy"], configPath, tempRoot, url);
         assert.ok(failed.status !== 0);
 
-        db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
+        db = createPrismaClient(url);
         assert.deepEqual(await indexNames(db), [], `k=${k}: 0 índices novos após falha`);
 
         writeFileSync(migrationFile, cleanMigration);

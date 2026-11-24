@@ -7,6 +7,14 @@ export const COMMISSION_ENGINE_VERSION = 1;
 export const ENGINE_POLICY_SCOPE = "engine";
 export const ENGINE_POLICY_VERTICAL = "field_services";
 
+/**
+ * A chave canônica do evento-base do motor para uma OS (Emenda 1 §E1.3): `engine:wo:<id da OS>:v<n>`. O passo 1
+ * (nascer) usa a versão 1; a lista de candidatas exclui a OS que já tem o evento desta chave (plano §3.4).
+ */
+export function engineWorkOrderEventKey(workOrderId: string, version: number): string {
+  return `engine:wo:${workOrderId}:v${version}`;
+}
+
 export type EngineRateType = "percent" | "fixed";
 export type EngineRuleType = "engine_payee" | "engine_service" | "engine_default";
 
