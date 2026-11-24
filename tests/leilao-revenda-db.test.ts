@@ -8,4 +8,3 @@ import { PrismaAuctionRepository } from "../src/modules/auction/auction-prisma.r
 test("RV12 · o repositório Prisma expõe o relote atômico protegido pela trava", () => {
   assert.equal(typeof PrismaAuctionRepository.prototype.relotAtomic, "function");
 });
-

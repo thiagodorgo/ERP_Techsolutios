@@ -1387,12 +1387,12 @@ ${thaw.out}`;
 
   // ────────────────────────────── F1b: E8.3 o resgate e a inadimplência desfazem o congelamento legado ──────────────────────────────
 
-  const reclaimBody = { reason: "Dono apresentou a documentação" };
+  const reclaimBody = async (ctx: Ctx) => ({ reason: "Dono apresentou a documentação", custody_seq: (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead });
 
   test("V1 · (C2-07) resgate de processo em lote congelado há 5 dias (entrada há 10 dias e 2 h, 5 diárias no livro): frozen_at nulo e candidato logo depois do resgate; a liberação cobra 5 diárias, total 200.00", async () => {
     const ctx = await seedLegacyFrozen("V1", "LOTTED");
     assert.equal(await count(ctx, "DAILY"), 5, "pré-condição: o legado tem as 5 diárias até o congelamento");
-    await (await createDefaultAuctionService()).reclaim(actor(ctx), ctx.processId, reclaimBody);
+    await (await createDefaultAuctionService()).reclaim(actor(ctx), ctx.processId, await reclaimBody(ctx));
     const afterReclaim = { estado: (await row(ctx)).status, congelado: (await row(ctx)).frozen_at !== null, candidato: await isSweepCandidate(ctx) };
     const start = await outcome(async () => (await createDefaultReleaseService()).start(actor(ctx) as never, ctx.processId, { recipient_name: "Dono" }));
     assert.deepEqual(
@@ -1404,7 +1404,7 @@ ${thaw.out}`;
 
   test("V2 · controle: resgate de processo em lote SEM congelamento: frozen_at segue nulo; a mesma resposta de hoje (ACTIVE_CUSTODY)", async () => {
     const ctx = await seed("V2", { status: "LOTTED", enteredAt: ago(10) });
-    const view = await (await createDefaultAuctionService()).reclaim(actor(ctx), ctx.processId, reclaimBody);
+    const view = await (await createDefaultAuctionService()).reclaim(actor(ctx), ctx.processId, await reclaimBody(ctx));
     assert.deepEqual({ resposta: view.status, estado: (await row(ctx)).status, congelado: (await row(ctx)).frozen_at !== null }, { resposta: "ACTIVE_CUSTODY", estado: "ACTIVE_CUSTODY", congelado: false });
   });
 
@@ -1424,7 +1424,7 @@ ${thaw.out}`;
       const ctx = await seedLegacyFrozen(`V4-${round}`, "LOTTED");
       const auction = await createDefaultAuctionService();
       const charge = await createDefaultChargeService();
-      const [reclaim] = await Promise.allSettled([auction.reclaim(actor(ctx), ctx.processId, reclaimBody), charge.accrueTenantScan(ctx.tenantId, new Date())]);
+    const [reclaim] = await Promise.allSettled([auction.reclaim(actor(ctx), ctx.processId, await reclaimBody(ctx)), charge.accrueTenantScan(ctx.tenantId, new Date())]);
       await charge.accrueTenantScan(ctx.tenantId, new Date());
       const seqs = await dailySeqs(ctx);
       const line = `rodada ${round}: resgate ${reclaim.status === "fulfilled" ? "aceito" : reasonOf(reclaim.reason)}, diarias ${seqs.length}, unicas ${new Set(seqs).size}`;
@@ -1619,7 +1619,7 @@ ${thaw.out}`;
     const reclaimAt = new Date(t0 + 130 * MS_PER_DAY);
     await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
     await prepBackdated(ctx, prepAt, prepAt);
-    await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+  await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", expectedCustodySeq: (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1, actorId: ctx.userId, occurredAt: reclaimAt });
     await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(t0 + 150 * MS_PER_DAY), ctx.userId);
     const afterFirst = { diarias: await count(ctx, "DAILY"), seqs: await dailySeqs(ctx) };
     const legenda101 = (await withTenantRls(client, ctx.tenantId, (tx) => tx.$queryRaw<Array<{ ref_date: string | null }>>`
@@ -1640,7 +1640,7 @@ ${thaw.out}`;
     await charge.accrueProcess(ctx.tenantId, ctx.processId, prepAt, ctx.userId);
     const antesDoLote = await count(ctx, "DAILY");
     await prepBackdated(ctx, prepAt, prepAt);
-    await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: new Date(t0 + 230 * MS_PER_DAY) });
+  await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", expectedCustodySeq: (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1, actorId: ctx.userId, occurredAt: new Date(t0 + 230 * MS_PER_DAY) });
     await charge.accrueProcess(ctx.tenantId, ctx.processId, new Date(), ctx.userId);
     const state = await charge.getReleaseChargeState(ctx.tenantId, ctx.processId);
     assert.deepEqual(
@@ -1717,7 +1717,7 @@ ${thaw.out}`;
     const eligibleAt = new Date(t0 + 115 * MS_PER_DAY);
     await charge.accrueProcess(ctx.tenantId, ctx.processId, prep1At, ctx.userId);
     await prepBackdated(ctx, prep1At, prep1At);
-    await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", actorId: ctx.userId, occurredAt: reclaimAt });
+  await auctionRepo.reclaimAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "LOTTED", expectedCustodySeq: (await auctionRepo.getState(ctx.tenantId, ctx.processId))?.custodySeqHead ?? -1, actorId: ctx.userId, occurredAt: reclaimAt });
     const impound = await createPrismaImpoundRepository();
     await impound.applyTransition({ tenantId: ctx.tenantId, processId: ctx.processId, expectedFrom: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", setEnteredAt: false, setFrozenAt: false, event: { type: "STATUS_CHANGE", payload: { from: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", reason: "auction_eligible" }, occurredAt: eligibleAt, actorId: undefined } });
     await prepBackdated(ctx, eligibleAt, undefined, 2);

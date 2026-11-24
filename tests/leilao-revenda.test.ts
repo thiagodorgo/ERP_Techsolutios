@@ -74,4 +74,3 @@ test("RV7/RV15 · relote grava uma vez e rejeita a leitura antiga", async () => 
     (error: unknown) => (error as { reason?: string }).reason === "auction_reading_stale",
   );
 });
-
