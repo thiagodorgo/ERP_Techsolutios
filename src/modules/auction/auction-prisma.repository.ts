@@ -350,10 +350,19 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (!locked) {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
-    // B-LEILAO-REVENDA (§3.3): em revenda pendente (relida sob a trava), só o edital da rodada nova AINDA NÃO posto em
-    // lote (DESIGNATED) aceita avaliação; o edital em lote continua travado.
+    // B-LEILAO-REVENDA (§3.3 e E2.4): em revenda pendente (relida sob a trava), a avaliação só vale no edital da rodada
+    // NOVA (a régua do registro de edital: maior que toda rodada com resultado) ainda não posto em lote; o edital em
+    // lote continua travado.
     const appraisalEdict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
-    const appraisalResalePending = appraisalEdict !== undefined && isResalePending(locked.status as ImpoundStatus, await this.listAttempts(input.tenantId, input.processId), await this.listEdicts(input.tenantId, input.processId));
+    const appraisalAttempts = await this.listAttempts(input.tenantId, input.processId);
+    const appraisalResalePending = isResalePending(locked.status as ImpoundStatus, appraisalAttempts, await this.listEdicts(input.tenantId, input.processId));
+    const appraisalRoundNotNew = isRoundNotNew(appraisalAttempts, input.roundNumber);
+    if (appraisalEdict?.status !== "LOTTED" && appraisalRoundNotNew) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_round_has_result", "This round already has a recorded outcome; its appraisal can no longer change.");
+    }
+    if (appraisalResalePending && appraisalEdict === undefined) {
+      throw new AuctionError(404, "AUCTION_EDICT_NOT_FOUND", "auction_edict_not_found", "No auction edict is registered for this round; register the edict before the appraisal.");
+    }
     const appraisalResaleRound = appraisalResalePending && appraisalEdict.status === "DESIGNATED";
     if (!APPRAISAL_EDITABLE_STATES.includes(locked.status as ImpoundStatus) && !appraisalResaleRound) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_locked_after_lot", "The appraisal/minimum bid is frozen once the round is lotted; it can only be set before LOTTED.");

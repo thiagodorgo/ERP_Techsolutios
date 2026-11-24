@@ -511,10 +511,19 @@ export class InMemoryAuctionRepository implements AuctionRepository {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
     // MÉDIO-2: a reserva CONGELA no lote — appraisal/min_bid imutáveis a partir de LOTTED.
-    // B-LEILAO-REVENDA (§3.3): em revenda pendente, só o edital da rodada nova AINDA NÃO posto em lote aceita avaliação.
+    // B-LEILAO-REVENDA (§3.3 e E2.4): em revenda pendente, a avaliação só vale no edital da rodada NOVA (a régua do
+    // registro de edital: maior que toda rodada com resultado) ainda não posto em lote.
     const memoryAppraisalEdict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
-    const memoryAppraisalResalePending = memoryAppraisalEdict !== undefined && isResalePending(process.status, this.attemptsFor(input.tenantId, input.processId), this.edictsFor(input.tenantId, input.processId));
-    const memoryAppraisalResaleRound = memoryAppraisalResalePending && memoryAppraisalEdict.status === "DESIGNATED";
+    const memoryAppraisalAttempts = this.attemptsFor(input.tenantId, input.processId);
+    const memoryAppraisalResalePending = isResalePending(process.status, memoryAppraisalAttempts, this.edictsFor(input.tenantId, input.processId));
+    const memoryAppraisalRoundNotNew = isRoundNotNew(memoryAppraisalAttempts, input.roundNumber);
+    if (memoryAppraisalEdict?.status !== "LOTTED" && memoryAppraisalRoundNotNew) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_round_has_result", "This round already has a recorded outcome; its appraisal can no longer change.");
+    }
+    if (memoryAppraisalResalePending && memoryAppraisalEdict === undefined) {
+      throw new AuctionError(404, "AUCTION_EDICT_NOT_FOUND", "auction_edict_not_found", "No auction edict is registered for this round; register the edict before the appraisal.");
+    }
+    const memoryAppraisalResaleRound = memoryAppraisalResalePending && memoryAppraisalEdict?.status === "DESIGNATED";
     if (!APPRAISAL_EDITABLE_STATES.includes(process.status) && !memoryAppraisalResaleRound) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_locked_after_lot", "The appraisal/minimum bid is frozen once the round is lotted; it can only be set before LOTTED.");
     }
