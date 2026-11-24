@@ -270,6 +270,25 @@ if (!connectionString) {
     return value === null || value === undefined ? undefined : Number(value).toFixed(2);
   }
 
+  async function appraisalOf(ctx: Ctx, round: number): Promise<string | undefined> {
+    const rows = await withTenantRls(
+      client,
+      ctx.tenantId,
+      (tx) =>
+        tx.$queryRaw<
+          Array<{
+            appraisal: string | null;
+            min_bid: string | null;
+            status: string;
+          }>
+        >`
+        SELECT appraisal_amount::text AS appraisal, min_bid_amount::text AS min_bid, status
+        FROM auction_edicts WHERE tenant_id = ${ctx.tenantId}::uuid AND process_id = ${ctx.processId}::uuid AND round_number = ${round}`,
+    );
+    const item = rows[0];
+    return item ? `${item.appraisal === null ? "null" : Number(item.appraisal).toFixed(2)}/${item.min_bid === null ? "null" : Number(item.min_bid).toFixed(2)} ${item.status}` : undefined;
+  }
+
   async function attempts(ctx: Ctx): Promise<string[]> {
     const rows = await withTenantRls(client, ctx.tenantId, (tx) =>
       tx.$queryRaw<Array<{ round_number: number; outcome: string; sold: string | null }>>`
@@ -359,6 +378,33 @@ if (!connectionString) {
     await auction.lotForAuction(actor(ctx), ctx.processId, { round_number: 1 });
     await auction.recordSale(actor(ctx), ctx.processId, saleBody("8000.00", 1));
     await auction.defaultAuction(actor(ctx), ctx.processId, { round_number: 2 });
+    return ctx;
+  }
+
+  async function desertedThenDefaultScenario(label: string): Promise<Ctx> {
+    const ctx = await seed(label, { status: "AUCTION_ELIGIBLE" });
+    const auction = await createDefaultAuctionService();
+    await auction.registerEdict(actor(ctx), ctx.processId, edictBody(1));
+    await auction.setAppraisal(actor(ctx), ctx.processId, {
+      round_number: 1,
+      appraisal_amount: "12000.00",
+      min_bid_amount: "6000.00",
+    });
+    await auction.recordAttempt(actor(ctx), ctx.processId, { round_number: 1 });
+    await auction.registerEdict(actor(ctx), ctx.processId, edictBody(2));
+    await auction.setAppraisal(actor(ctx), ctx.processId, {
+      round_number: 2,
+      appraisal_amount: "10000.00",
+      min_bid_amount: "5000.00",
+    });
+    await auction.prepareForAuction(actor(ctx), ctx.processId, {
+      round_number: 2,
+    });
+    await auction.lotForAuction(actor(ctx), ctx.processId, { round_number: 2 });
+    await auction.recordSale(actor(ctx), ctx.processId, saleBody("8000.00", 2));
+    await auction.defaultAuction(actor(ctx), ctx.processId, {
+      round_number: 3,
+    });
     return ctx;
   }
 
@@ -653,6 +699,158 @@ if (!connectionString) {
     const ctx = await resaleScenario("RV4");
     const avaliacao1 = res(await http(ctx, "POST", "/appraisal", { round_number: 1, appraisal_amount: "12000.00", min_bid_amount: "4000.00" }));
     check({ avaliacao1, minimo1: await minBidOf(ctx, 1) }, { avaliacao1: "409 appraisal_locked_after_lot", minimo1: "5000.00" });
+  });
+
+  test("RV24 · rodada deserta não pode ser reavaliada durante a revenda; a rodada nova segue até o relote", async () => {
+    const ctx = await desertedThenDefaultScenario("RV24");
+    const avaliacao1 = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 1,
+        appraisal_amount: "9000.00",
+        min_bid_amount: "4500.00",
+      }),
+    );
+    const avaliacao3 = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 3,
+        appraisal_amount: "9000.00",
+        min_bid_amount: "4500.00",
+      }),
+    );
+    const edital1Registro = res(await http(ctx, "POST", "/edicts", edictBody(1)));
+    const edital4 = res(await http(ctx, "POST", "/edicts", edictBody(4)));
+    const avaliacao4 = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 4,
+        appraisal_amount: "9000.00",
+        min_bid_amount: "4500.00",
+      }),
+    );
+    const relote4 = res(await relot(ctx, 4, await readSeq(ctx)));
+    check(
+      {
+        avaliacao1,
+        edital1: await appraisalOf(ctx, 1),
+        avaliacao3,
+        edital1Registro,
+        edital4,
+        avaliacao4,
+        relote4,
+        editais: await edicts(ctx),
+      },
+      {
+        avaliacao1: "409 appraisal_round_has_result",
+        edital1: "12000.00/6000.00 DESIGNATED",
+        avaliacao3: "409 appraisal_round_has_result",
+        edital1Registro: "409 resale_round_not_new",
+        edital4: "201",
+        avaliacao4: "200",
+        relote4: "200",
+        editais: { 1: "DESIGNATED", 2: "CLOSED", 4: "LOTTED" },
+      },
+    );
+  });
+
+  test("RV25 · avaliação da rodada nova exige edital antes de gravar", async () => {
+    const ctx = await resaleScenario("RV25");
+    const avaliacao3SemEdital = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 3,
+        appraisal_amount: "9000.00",
+        min_bid_amount: "4500.00",
+      }),
+    );
+    const edital3 = res(await http(ctx, "POST", "/edicts", edictBody(3)));
+    const avaliacao3 = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 3,
+        appraisal_amount: "9000.00",
+        min_bid_amount: "4500.00",
+      }),
+    );
+    check(
+      { avaliacao3SemEdital, edital3, avaliacao3, editais: await edicts(ctx) },
+      {
+        avaliacao3SemEdital: "404 auction_edict_not_found",
+        edital3: "201",
+        avaliacao3: "200",
+        editais: { 1: "LOTTED", 3: "DESIGNATED" },
+      },
+    );
+  });
+
+  test("RV26 · avaliação de rodada com resultado é recusada no elegível, na preparação e na custódia ativa", async () => {
+    const ctx = await seed("RV26", { status: "AUCTION_ELIGIBLE" });
+    const auction = await createDefaultAuctionService();
+    await auction.registerEdict(actor(ctx), ctx.processId, edictBody(1));
+    await auction.setAppraisal(actor(ctx), ctx.processId, {
+      round_number: 1,
+      appraisal_amount: "12000.00",
+      min_bid_amount: "6000.00",
+    });
+    await auction.recordAttempt(actor(ctx), ctx.processId, { round_number: 1 });
+    const elegivel = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 1,
+        appraisal_amount: "11000.00",
+        min_bid_amount: "5500.00",
+      }),
+    );
+    const valores1Elegivel = await appraisalOf(ctx, 1);
+    await auction.registerEdict(actor(ctx), ctx.processId, edictBody(2));
+    const nova2 = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 2,
+        appraisal_amount: "10000.00",
+        min_bid_amount: "5000.00",
+      }),
+    );
+    await auction.prepareForAuction(actor(ctx), ctx.processId, {
+      round_number: 2,
+    });
+    const preparacao = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 1,
+        appraisal_amount: "1.00",
+        min_bid_amount: "1.00",
+      }),
+    );
+    const valores1Prep = await appraisalOf(ctx, 1);
+    await auction.lotForAuction(actor(ctx), ctx.processId, { round_number: 2 });
+    await auction.recordSale(actor(ctx), ctx.processId, saleBody("8000.00", 2));
+    await auction.defaultAuction(actor(ctx), ctx.processId, {
+      round_number: 3,
+    });
+    await reclaim(ctx, await readSeq(ctx));
+    const custodia = res(
+      await http(ctx, "POST", "/appraisal", {
+        round_number: 2,
+        appraisal_amount: "2.00",
+        min_bid_amount: "2.00",
+      }),
+    );
+    check(
+      {
+        elegivel,
+        valores1Elegivel,
+        nova2,
+        preparacao,
+        valores1Prep,
+        estado: (await row(ctx)).status,
+        custodia,
+        valores2Custodia: await appraisalOf(ctx, 2),
+      },
+      {
+        elegivel: "409 appraisal_round_has_result",
+        valores1Elegivel: "12000.00/6000.00 DESIGNATED",
+        nova2: "200",
+        preparacao: "409 appraisal_round_has_result",
+        valores1Prep: "12000.00/6000.00 DESIGNATED",
+        estado: "ACTIVE_CUSTODY",
+        custodia: "409 appraisal_round_has_result",
+        valores2Custodia: "10000.00/5000.00 CLOSED",
+      },
+    );
   });
 
   test("RV5 · rodada que não é nova: edital, relote pela rota e relote atômico nas rodadas 1 (vendida) e 2 (inadimplida) → 409 resale_round_not_new nos seis", async () => {
@@ -975,6 +1173,93 @@ if (!connectionString) {
       });
     }
     check(observed, Array.from({ length: 6 }, () => ({ relote: "200", minimoCoerente: true, avaliacaoAceitaOuTravada: true, depois: "409 appraisal_locked_after_lot", minimoFinalIgual: true })));
+  });
+
+  test("RV27 · avaliação × resultado da mesma rodada nunca troca valores depois do resultado", async () => {
+    const observed: unknown[] = [];
+    for (const order of ["avaliacao-primeiro", "deserta-primeiro"] as const) {
+      for (let round = 0; round < 6; round += 1) {
+        const ctx = await seed(`RV27-${order}-${round}`, {
+          status: "AUCTION_ELIGIBLE",
+        });
+        const auction = await createDefaultAuctionService();
+        await auction.registerEdict(actor(ctx), ctx.processId, edictBody(1));
+        await auction.setAppraisal(actor(ctx), ctx.processId, {
+          round_number: 1,
+          appraisal_amount: "12000.00",
+          min_bid_amount: "6000.00",
+        });
+        const appraisal = () =>
+          auction.setAppraisal(actor(ctx), ctx.processId, {
+            round_number: 1,
+            appraisal_amount: "11000.00",
+            min_bid_amount: "5500.00",
+          });
+        const deserted = () => auction.recordAttempt(actor(ctx), ctx.processId, { round_number: 1 });
+        const [first, second] = order === "avaliacao-primeiro" ? await inLockOrder(ctx, appraisal, deserted) : await inLockOrder(ctx, deserted, appraisal);
+        observed.push({
+          order,
+          first,
+          second,
+          valores: await appraisalOf(ctx, 1),
+          cadeia: await chainValid(ctx),
+        });
+      }
+    }
+    for (const order of ["avaliacao-primeiro", "arremate-primeiro"] as const) {
+      for (let round = 0; round < 6; round += 1) {
+        const ctx = await resaleScenario(`RV27-lote-${order}-${round}`);
+        await newRound(ctx, 3, "5000.00");
+        await relot(ctx, 3, await readSeq(ctx));
+        const auction = await createDefaultAuctionService();
+        const appraisal = () =>
+          auction.setAppraisal(actor(ctx), ctx.processId, {
+            round_number: 3,
+            appraisal_amount: "11000.00",
+            min_bid_amount: "5500.00",
+          });
+        const sale = () => auction.recordSale(actor(ctx), ctx.processId, saleBody("8000.00", 3));
+        const [first, second] = order === "avaliacao-primeiro" ? await inLockOrder(ctx, appraisal, sale) : await inLockOrder(ctx, sale, appraisal);
+        observed.push({
+          order,
+          first,
+          second,
+          valores: await appraisalOf(ctx, 3),
+          cadeia: await chainValid(ctx),
+        });
+      }
+    }
+    const expected = [
+      ...Array.from({ length: 6 }, () => ({
+        order: "avaliacao-primeiro",
+        first: "aceito",
+        second: "aceito",
+        valores: "11000.00/5500.00 DESIGNATED",
+        cadeia: true,
+      })),
+      ...Array.from({ length: 6 }, () => ({
+        order: "deserta-primeiro",
+        first: "aceito",
+        second: "409 appraisal_round_has_result",
+        valores: "12000.00/6000.00 DESIGNATED",
+        cadeia: true,
+      })),
+      ...Array.from({ length: 6 }, () => ({
+        order: "avaliacao-primeiro",
+        first: "409 appraisal_locked_after_lot",
+        second: "aceito",
+        valores: "10000.00/5000.00 LOTTED",
+        cadeia: true,
+      })),
+      ...Array.from({ length: 6 }, () => ({
+        order: "arremate-primeiro",
+        first: "aceito",
+        second: "409 appraisal_locked_after_lot",
+        valores: "10000.00/5000.00 LOTTED",
+        cadeia: true,
+      })),
+    ];
+    check(observed, expected);
   });
 
   test("RV18 · depois do relote da rodada 3, com a leitura nova: edital da rodada 4 → 409 auction_edict_wrong_state; relote da 4 → 409 resale_not_pending; a rodada 3 segue em lote", async () => {
