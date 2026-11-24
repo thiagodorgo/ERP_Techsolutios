@@ -22,7 +22,9 @@ import {
   type CreateCommissionPolicyInput,
   type EngineFinancialItemRow,
   type EnginePolicyInfo,
+  type EngineRecalcCandidate,
   type EngineReconcileScope,
+  type EngineReleaseCandidate,
   type EngineWorkOrderCandidate,
   type EngineWorkOrderSnapshot,
   type ListCommissionBasisEventsInput,
@@ -304,6 +306,25 @@ export class PrismaCommissionRepository implements CommissionRepository, Commiss
     };
   }
 
+  async evaluateCalculationWorkOrderEligibility(
+    tenantId: string,
+    calculation: CommissionCalculation,
+  ): Promise<"eligible" | "ineligible" | "pending_review"> {
+    const evt = await this.client.commissionBasisEvent.findFirst({
+      where: { tenant_id: tenantId, id: calculation.basisEventId },
+      select: { source_type: true, source_id: true },
+    });
+    const snapWoId =
+      typeof calculation.calculationSnapshot.workOrderId === "string"
+        ? calculation.calculationSnapshot.workOrderId
+        : undefined;
+    const workOrderId = (evt && isWorkOrderSourceType(evt.source_type) ? evt.source_id : undefined) ?? snapWoId;
+    if (!workOrderId) return "eligible";
+
+    const state = await readWorkOrderCancellationPrisma(this.client, tenantId, workOrderId);
+    return evaluateWorkOrderCommissionEligibility(state);
+  }
+
   async runCommissionUnit<T>(_tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
     return work(this);
   }
@@ -499,9 +520,67 @@ export class PrismaCommissionRepository implements CommissionRepository, Commiss
 
   async readReconcileScope(tenantId: string): Promise<EngineReconcileScope> {
     const policies = await this.findEnginePolicies(tenantId);
-    if (policies.length === 0) return { policies, candidates: [] };
-    const candidates = await this.listEngineCandidatesForReconcile(tenantId, policies[0]!.effectiveFrom);
-    return { policies, candidates };
+    if (policies.length === 0) return { policies, candidates: [], releaseCandidates: [], recalcCandidates: [] };
+    const [candidates, releaseCandidates, recalcCandidates] = await Promise.all([
+      this.listEngineCandidatesForReconcile(tenantId, policies[0]!.effectiveFrom),
+      this.listEngineReleaseCandidates(tenantId),
+      this.listEngineRecalcCandidates(tenantId),
+    ]);
+    return { policies, candidates, releaseCandidates, recalcCandidates };
+  }
+
+  private async listEngineReleaseCandidates(tenantId: string): Promise<EngineReleaseCandidate[]> {
+    const rows = await this.client.$queryRaw<Array<{ calculation_id: string; work_order_id: string }>>`
+      SELECT c.id AS calculation_id, e.source_id AS work_order_id
+      FROM commission_calculations c
+      JOIN commission_basis_events e ON e.tenant_id = c.tenant_id AND e.id = c.basis_event_id
+      WHERE c.tenant_id = ${tenantId}::uuid
+        AND c.idempotency_key LIKE 'engine:calc:%'
+        AND c.status = 'calculated'
+        AND c.settled_at IS NULL
+        AND e.source_type = 'work_order'
+      ORDER BY c.created_at ASC, c.id ASC
+      LIMIT 500
+    `;
+    return rows.map((r) => ({ calculationId: r.calculation_id, workOrderId: r.work_order_id }));
+  }
+
+  private async listEngineRecalcCandidates(tenantId: string): Promise<EngineRecalcCandidate[]> {
+    // B-COMISSAO:pago-congela
+    const rows = await this.client.$queryRaw<
+      Array<{
+        calculation_id: string;
+        basis_event_id: string;
+        policy_id: string;
+        work_order_id: string;
+        event_idempotency_key: string;
+        status: string;
+        settled_at: Date | null;
+        calculation_snapshot: unknown;
+      }>
+    >`
+      SELECT c.id AS calculation_id, c.basis_event_id, c.policy_id, e.source_id AS work_order_id,
+             e.idempotency_key AS event_idempotency_key, c.status, c.settled_at, c.calculation_snapshot
+      FROM commission_calculations c
+      JOIN commission_basis_events e ON e.tenant_id = c.tenant_id AND e.id = c.basis_event_id
+      WHERE c.tenant_id = ${tenantId}::uuid
+        AND c.idempotency_key LIKE 'engine:calc:%'
+        AND c.status IN ('calculated', 'approved')
+        AND c.settled_at IS NULL
+        AND e.source_type = 'work_order'
+      ORDER BY c.created_at ASC, c.id ASC
+      LIMIT 500
+    `;
+    return rows.map((r) => ({
+      calculationId: r.calculation_id,
+      basisEventId: r.basis_event_id,
+      policyId: r.policy_id,
+      workOrderId: r.work_order_id,
+      eventIdempotencyKey: r.event_idempotency_key,
+      status: r.status as CommissionCalculationStatus,
+      settledAt: r.settled_at,
+      snapshot: isRecord(r.calculation_snapshot) ? r.calculation_snapshot : {},
+    }));
   }
 
   async lockAndReadWorkOrderForCommission(
@@ -670,6 +749,115 @@ export class PrismaCommissionRepository implements CommissionRepository, Commiss
     `;
     return rows[0]?.id ?? null;
   }
+
+  async findLatestWorkOrderApprovalStatus(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<"pending_approval" | "approved" | "rejected" | null> {
+    const rows = await this.client.$queryRaw<Array<{ status: string }>>`
+      SELECT status
+      FROM operational_approvals
+      WHERE tenant_id = ${tenantId}::uuid
+        AND entity_type = 'work_order'
+        AND work_order_id = ${workOrderId}::uuid
+      ORDER BY requested_at DESC, id DESC
+      LIMIT 1
+    `;
+    const status = rows[0]?.status;
+    if (status === "pending_approval" || status === "approved" || status === "rejected") {
+      return status;
+    }
+    return null;
+  }
+
+  async transitionCalculatedCommissionStatus(
+    tenantId: string,
+    calculationId: string,
+    nextStatus: "approved" | "rejected",
+  ): Promise<boolean> {
+    const updated = await this.client.commissionCalculation.updateMany({
+      where: {
+        tenant_id: tenantId,
+        id: calculationId,
+        status: "calculated",
+        settled_at: null,
+      },
+      data: {
+        status: nextStatus,
+        updated_at: new Date(),
+      },
+    });
+    return updated.count === 1;
+  }
+
+  async lockAndReadEngineCalculationForRecalc(
+    tenantId: string,
+    calculationId: string,
+  ): Promise<EngineRecalcCandidate | null> {
+    const rows = await this.client.$queryRaw<
+      Array<{
+        calculation_id: string;
+        basis_event_id: string;
+        policy_id: string;
+        work_order_id: string;
+        event_idempotency_key: string;
+        status: string;
+        settled_at: Date | null;
+        calculation_snapshot: unknown;
+      }>
+    >`
+      SELECT c.id AS calculation_id, c.basis_event_id, c.policy_id, e.source_id AS work_order_id,
+             e.idempotency_key AS event_idempotency_key, c.status, c.settled_at, c.calculation_snapshot
+      FROM commission_calculations c
+      JOIN commission_basis_events e ON e.tenant_id = c.tenant_id AND e.id = c.basis_event_id
+      WHERE c.tenant_id = ${tenantId}::uuid
+        AND c.id = ${calculationId}::uuid
+        AND c.idempotency_key LIKE 'engine:calc:%'
+        AND c.status IN ('calculated', 'approved')
+      FOR UPDATE OF c
+    `;
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      calculationId: r.calculation_id,
+      basisEventId: r.basis_event_id,
+      policyId: r.policy_id,
+      workOrderId: r.work_order_id,
+      eventIdempotencyKey: r.event_idempotency_key,
+      status: r.status as CommissionCalculationStatus,
+      settledAt: r.settled_at,
+      snapshot: isRecord(r.calculation_snapshot) ? r.calculation_snapshot : {},
+    };
+  }
+
+  async markEngineBasisEventSuperseded(tenantId: string, basisEventId: string): Promise<boolean> {
+    const updated = await this.client.commissionBasisEvent.updateMany({
+      where: {
+        tenant_id: tenantId,
+        id: basisEventId,
+        status: { not: "superseded" },
+      },
+      data: {
+        status: "superseded",
+      },
+    });
+    return updated.count === 1;
+  }
+
+  async markEngineCalculationReversed(tenantId: string, calculationId: string): Promise<boolean> {
+    const updated = await this.client.commissionCalculation.updateMany({
+      where: {
+        tenant_id: tenantId,
+        id: calculationId,
+        status: { in: ["calculated", "approved"] },
+      },
+      data: {
+        status: "reversed",
+        updated_at: new Date(),
+      },
+    });
+    return updated.count === 1;
+  }
 }
 
 export class RlsPrismaCommissionRepository implements CommissionRepository {
@@ -716,6 +904,15 @@ export class RlsPrismaCommissionRepository implements CommissionRepository {
 
   listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaCommissionRepository(tx).listStatements(input));
+  }
+
+  evaluateCalculationWorkOrderEligibility(
+    tenantId: string,
+    calculation: CommissionCalculation,
+  ): Promise<"eligible" | "ineligible" | "pending_review"> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).evaluateCalculationWorkOrderEligibility(tenantId, calculation),
+    );
   }
 
   runCommissionUnit<T>(tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
@@ -790,8 +987,8 @@ function buildSummaryWhere(input: SummarizeCalculationsByPayeeInput): Prisma.Com
   return {
     tenant_id: input.tenantId,
     payee_id: input.payeeId ? input.payeeId : { not: null },
-    // B-APP-ORG-2S (S2e; Emenda 1.8.3.5 §1, D-DONO-2111-TELA-COMISSOES): o resumo não conta recusada nem estornada.
-    status: { notIn: ["rejected", "reversed"] },
+    // B-APP-ORG-2S (S2e; Emenda 1.8.3.5 §1, D-DONO-2111-TELA-COMISSOES) / B-COMISSAO-MOTOR (R9, M18): o resumo não conta recusada nem estornada.
+    status: { notIn: ["rejected", "reversed"] }, // B-COMISSAO:total-sem-estorno
     ...buildCreatedAtRange(input.from, input.to),
   };
 }

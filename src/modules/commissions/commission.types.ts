@@ -227,8 +227,18 @@ export type SettleCalculationsInput = {
 };
 
 // Disposição por linha da liquidação. `settled` = crédito lançado + marcado; `already_settled` = idempotente
-// (settled_at já definido, nada re-lançado); `skipped_zero` = amount ≤ 0 (não cria crédito vazio).
-export const SETTLEMENT_OUTCOMES = ["settled", "already_settled", "skipped_zero"] as const;
+// (settled_at já definido, nada re-lançado); `skipped_zero` = amount ≤ 0 (não cria crédito vazio);
+// `not_released` = situação diferente de `approved`; `blocked` = o gate de cancelamento não diz "elegível";
+// `stale_base` = soma atual dos itens difere da base do retrato; `not_commission` = classe diferente de `commission`.
+export const SETTLEMENT_OUTCOMES = [
+  "settled",
+  "already_settled",
+  "skipped_zero",
+  "not_released",
+  "blocked",
+  "stale_base",
+  "not_commission",
+] as const;
 export type SettlementOutcome = (typeof SETTLEMENT_OUTCOMES)[number];
 
 export type SettlementLineResult = {
@@ -346,14 +356,33 @@ export type EngineFinancialItemRow = {
   readonly currency: string;
 };
 
+export type EngineReleaseCandidate = {
+  readonly calculationId: string;
+  readonly workOrderId: string;
+};
+
+export type EngineRecalcCandidate = {
+  readonly calculationId: string;
+  readonly basisEventId: string;
+  readonly policyId: string;
+  readonly workOrderId: string;
+  readonly eventIdempotencyKey: string;
+  readonly status: CommissionCalculationStatus;
+  readonly settledAt: Date | null;
+  readonly snapshot: CommissionJsonRecord;
+};
+
 /**
- * B-COMISSAO-MOTOR (F3, plano §3.4) — o que a volta da varredura lê antes de tocar qualquer OS: as políticas do
- * espaço reservado da organização (`scope = engine`) e as OS candidatas a nascer. Lido dentro do contexto da
- * organização (`withTenantRls`), nunca pelo cliente sem contexto (M8).
+ * B-COMISSAO-MOTOR (F3/F4, plano §3.4 / §3.6 / §3.7) — o que a volta da varredura lê antes de tocar qualquer OS:
+ * as políticas do espaço reservado da organização (`scope = engine`), as OS candidatas a nascer, os cálculos
+ * previstos (`calculated`) candidatos a liberar (passo 2) e os cálculos candidatos a conferir a base (passo 3).
+ * Lido dentro do contexto da organização (`withTenantRls`), nunca pelo cliente sem contexto (M8).
  */
 export type EngineReconcileScope = {
   readonly policies: readonly EnginePolicyInfo[];
   readonly candidates: readonly EngineWorkOrderCandidate[];
+  readonly releaseCandidates: readonly EngineReleaseCandidate[];
+  readonly recalcCandidates: readonly EngineRecalcCandidate[];
 };
 
 export interface CommissionUnit {
@@ -402,6 +431,21 @@ export interface CommissionUnit {
     readonly calculationSnapshot: CommissionJsonRecord;
     readonly idempotencyKey: string;
   }): Promise<string | null>;
+  findLatestWorkOrderApprovalStatus(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<"pending_approval" | "approved" | "rejected" | null>;
+  transitionCalculatedCommissionStatus(
+    tenantId: string,
+    calculationId: string,
+    nextStatus: "approved" | "rejected",
+  ): Promise<boolean>;
+  lockAndReadEngineCalculationForRecalc(
+    tenantId: string,
+    calculationId: string,
+  ): Promise<EngineRecalcCandidate | null>;
+  markEngineBasisEventSuperseded(tenantId: string, basisEventId: string): Promise<boolean>;
+  markEngineCalculationReversed(tenantId: string, calculationId: string): Promise<boolean>;
 }
 
 export class CommissionError extends Error {

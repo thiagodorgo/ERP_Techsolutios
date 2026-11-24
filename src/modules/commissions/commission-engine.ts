@@ -15,6 +15,12 @@ export function engineWorkOrderEventKey(workOrderId: string, version: number): s
   return `engine:wo:${workOrderId}:v${version}`;
 }
 
+export function parseEngineWorkOrderEventVersion(idempotencyKey: string): number {
+  const match = /:v(\d+)$/.exec(idempotencyKey.trim());
+  const parsed = match ? Number.parseInt(match[1]!, 10) : 1;
+  return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+}
+
 export type EngineRateType = "percent" | "fixed";
 export type EngineRuleType = "engine_payee" | "engine_service" | "engine_default";
 

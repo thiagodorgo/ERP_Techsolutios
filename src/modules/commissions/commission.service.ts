@@ -275,6 +275,17 @@ export class CommissionService {
         });
         continue;
       }
+      // B-COMISSAO:so-liberada-paga
+      if (calculation.status !== "approved") {
+        lines.push({ calculationId, outcome: "not_released" });
+        continue;
+      }
+      // B-COMISSAO:segundo-gate
+      const eligibility = await this.repository.evaluateCalculationWorkOrderEligibility(actor.tenantId, calculation);
+      if (eligibility !== "eligible") {
+        lines.push({ calculationId, outcome: "blocked" });
+        continue;
+      }
       // Valor honesto: amountCents (centavos exatos do Decimal(20,6), P-COMISSAO-LIQUIDACAO-CENTAVO / CS3). ≤ 0 → não cria crédito vazio.
       const creditCents = BigInt(calculation.amountCents || "0");
       if (creditCents <= 0n) {

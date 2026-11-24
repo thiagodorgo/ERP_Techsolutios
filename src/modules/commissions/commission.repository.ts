@@ -22,7 +22,9 @@ import type {
   CreateCommissionPolicyInput,
   EngineFinancialItemRow,
   EnginePolicyInfo,
+  EngineRecalcCandidate,
   EngineReconcileScope,
+  EngineReleaseCandidate,
   EngineWorkOrderCandidate,
   EngineWorkOrderSnapshot,
   ListCommissionBasisEventsInput,
@@ -59,6 +61,11 @@ export interface CommissionRepository {
     settledAt: Date,
     settlementRef: string,
   ): Promise<CommissionCalculation | undefined>;
+  // Ω4C PR-10 / B-COMISSAO-MOTOR (R8) — segunda conferência da OS antes de pagar (evaluateWorkOrderCommissionEligibility).
+  evaluateCalculationWorkOrderEligibility(
+    tenantId: string,
+    calculation: CommissionCalculation,
+  ): Promise<"eligible" | "ineligible" | "pending_review">;
   runCommissionUnit<T>(tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T>;
   // B-COMISSAO-MOTOR (F3) — o escopo da volta da varredura (políticas do motor + OS candidatas), lido no contexto
   // da organização. No Prisma, dentro de `withTenantRls` (M8); na memória, direto do dublê.
@@ -247,8 +254,8 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
       if (!calculation.payeeId) continue;
       if (input.payeeId && calculation.payeeId !== input.payeeId) continue;
       if (!withinRange(calculation.createdAt, input.from, input.to)) continue;
-      // Emenda 1.8.3.5 §1 — a mesma regra do Prisma: o resumo não conta recusada nem estornada.
-      if (calculation.status === "rejected" || calculation.status === "reversed") continue;
+      // Emenda 1.8.3.5 §1 / B-COMISSAO-MOTOR (R9, M18) — a mesma regra do Prisma: o resumo não conta recusada nem estornada.
+      if (calculation.status === "rejected" || calculation.status === "reversed") continue; // B-COMISSAO:total-sem-estorno
 
       const current = totals.get(calculation.payeeId) ?? { total: 0, totalDecimal: new Prisma.Decimal(0), count: 0 };
       totals.set(calculation.payeeId, {
@@ -284,7 +291,7 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
       amount: input.amount,
       amountCents: commissionCents(new Prisma.Decimal(input.amount)),
       currency: input.currency ?? "BRL",
-      status: input.status ?? "calculated",
+      status: input.status ?? "approved",
       calculationSnapshot: input.calculationSnapshot ?? {},
       idempotencyKey: input.idempotencyKey ?? randomUUID(),
       settledAt: input.settledAt,
@@ -328,6 +335,29 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
       .filter((statement) => !input.payeeId || statement.payeeId === input.payeeId);
 
     return paginate(items, input.limit, input.offset);
+  }
+
+  async evaluateCalculationWorkOrderEligibility(
+    tenantId: string,
+    calculation: CommissionCalculation,
+  ): Promise<"eligible" | "ineligible" | "pending_review"> {
+    const evt = this.basisEvents.get(calculation.basisEventId);
+    const snapWoId =
+      typeof calculation.calculationSnapshot.workOrderId === "string"
+        ? calculation.calculationSnapshot.workOrderId
+        : undefined;
+    const workOrderId = (evt && isWorkOrderSourceType(evt.sourceType) ? evt.sourceId : undefined) ?? snapWoId;
+    if (!workOrderId) return "eligible";
+
+    const engineWo = this.engineWorkOrders.find(tenantId, workOrderId);
+    if (engineWo) {
+      return evaluateWorkOrderCommissionEligibility({
+        status: engineWo.status,
+        financialDecision: engineWo.financialDecision as "keep" | "keep_unpaid" | "zero" | null,
+      });
+    }
+    const gateState = await this.workOrderGate.resolve(tenantId, workOrderId);
+    return evaluateWorkOrderCommissionEligibility(gateState);
   }
 
   async runCommissionUnit<T>(_tenantId: string, work: (unit: CommissionUnit) => Promise<T>): Promise<T> {
@@ -513,9 +543,93 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
 
   async readReconcileScope(tenantId: string): Promise<EngineReconcileScope> {
     const policies = await this.findEnginePolicies(tenantId);
-    if (policies.length === 0) return { policies, candidates: [] };
+    if (policies.length === 0) return { policies, candidates: [], releaseCandidates: [], recalcCandidates: [] };
     const candidates = await this.listEngineCandidatesForReconcile(tenantId, policies[0]!.effectiveFrom);
-    return { policies, candidates };
+    const releaseCandidates: EngineReleaseCandidate[] = [...this.calculations.values()]
+      .filter((c) => c.tenantId === tenantId && c.idempotencyKey.startsWith("engine:calc:") && c.status === "calculated" && !c.settledAt)
+      .flatMap((c) => {
+        const evt = this.basisEvents.get(c.basisEventId);
+        return evt && evt.sourceType === "work_order" ? [{ calculationId: c.id, workOrderId: evt.sourceId }] : [];
+      });
+    const recalcCandidates: EngineRecalcCandidate[] = [...this.calculations.values()]
+      .filter(
+        (c) =>
+          c.tenantId === tenantId &&
+          c.idempotencyKey.startsWith("engine:calc:") &&
+          (c.status === "calculated" || c.status === "approved") &&
+          !c.settledAt,
+      )
+      .flatMap((c) => {
+        const evt = this.basisEvents.get(c.basisEventId);
+        return evt && evt.sourceType === "work_order"
+          ? [
+              {
+                calculationId: c.id,
+                basisEventId: c.basisEventId,
+                policyId: c.policyId,
+                workOrderId: evt.sourceId,
+                eventIdempotencyKey: evt.idempotencyKey,
+                status: c.status,
+                settledAt: c.settledAt ?? null,
+                snapshot: c.calculationSnapshot,
+              },
+            ]
+          : [];
+      });
+    return { policies, candidates, releaseCandidates, recalcCandidates };
+  }
+
+  async findLatestWorkOrderApprovalStatus(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<"pending_approval" | "approved" | "rejected" | null> {
+    return this.engineWorkOrders.find(tenantId, workOrderId)?.approvalStatus ?? null;
+  }
+
+  async transitionCalculatedCommissionStatus(
+    tenantId: string,
+    calculationId: string,
+    nextStatus: "approved" | "rejected",
+  ): Promise<boolean> {
+    const calc = this.calculations.get(calculationId);
+    if (!calc || calc.tenantId !== tenantId || calc.status !== "calculated" || calc.settledAt) return false;
+    this.calculations.set(calculationId, { ...calc, status: nextStatus, updatedAt: new Date() });
+    return true;
+  }
+
+  async lockAndReadEngineCalculationForRecalc(
+    tenantId: string,
+    calculationId: string,
+  ): Promise<EngineRecalcCandidate | null> {
+    const calc = this.calculations.get(calculationId);
+    if (!calc || calc.tenantId !== tenantId || !calc.idempotencyKey.startsWith("engine:calc:")) return null;
+    if (calc.status !== "calculated" && calc.status !== "approved") return null;
+    const evt = this.basisEvents.get(calc.basisEventId);
+    if (!evt || evt.tenantId !== tenantId) return null;
+    return {
+      calculationId: calc.id,
+      basisEventId: calc.basisEventId,
+      policyId: calc.policyId,
+      workOrderId: evt.sourceId,
+      eventIdempotencyKey: evt.idempotencyKey,
+      status: calc.status,
+      settledAt: calc.settledAt ?? null,
+      snapshot: calc.calculationSnapshot,
+    };
+  }
+
+  async markEngineBasisEventSuperseded(tenantId: string, basisEventId: string): Promise<boolean> {
+    const evt = this.basisEvents.get(basisEventId);
+    if (!evt || evt.tenantId !== tenantId || evt.status === "superseded") return false;
+    this.basisEvents.set(basisEventId, { ...evt, status: "superseded" });
+    return true;
+  }
+
+  async markEngineCalculationReversed(tenantId: string, calculationId: string): Promise<boolean> {
+    const calc = this.calculations.get(calculationId);
+    if (!calc || calc.tenantId !== tenantId || (calc.status !== "calculated" && calc.status !== "approved")) return false;
+    this.calculations.set(calculationId, { ...calc, status: "reversed", updatedAt: new Date() });
+    return true;
   }
 
   async hasLiveEngineBasisEvent(tenantId: string, workOrderId: string): Promise<boolean> {
@@ -715,6 +829,7 @@ export type InMemoryEngineWorkOrderSeed = {
   readonly cancelledAt?: Date | null;
   readonly updatedAt?: Date;
   readonly financialDecision?: string | null;
+  readonly approvalStatus?: "pending_approval" | "approved" | "rejected" | null;
   readonly items?: ReadonlyArray<{ readonly totalAmountText: string; readonly currency?: string }>;
 };
 
@@ -729,6 +844,7 @@ type InMemoryEngineWorkOrderRow = {
   readonly cancelledAt: Date | null;
   readonly updatedAt: Date;
   readonly financialDecision: string | null;
+  readonly approvalStatus: "pending_approval" | "approved" | "rejected" | null;
   readonly items: ReadonlyArray<{ readonly totalAmountText: string; readonly currency: string }>;
 };
 
@@ -748,6 +864,7 @@ export class InMemoryEngineWorkOrderSource {
       cancelledAt: seed.cancelledAt ?? null,
       updatedAt: seed.updatedAt ?? new Date(),
       financialDecision: seed.financialDecision ?? null,
+      approvalStatus: seed.approvalStatus ?? null,
       items: (seed.items ?? []).map((item) => ({ totalAmountText: item.totalAmountText, currency: item.currency ?? "BRL" })),
     });
   }
