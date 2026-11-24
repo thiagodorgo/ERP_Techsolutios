@@ -18106,7 +18106,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 - **status:** FECHADA · **gravidade:** ALTA para operar (não para dado) · **dono:** `B-AV-BASE-SUBIDA` · **bloqueia:** não mais.
 - **origem:** AWS 3b.6 de 23/11: o `clamd` só inicia depois da atualização, e a base da imagem ficava mais velha a cada subida; com o desligamento diário, toda manhã repetiria a corrida.
-- **fechamento:** PR #633 (`ba99eb41`), que faz o `clamd` só começar com a base em dia; na AWS, fechou com a receita `erp-clamav:3` (imagem 1.4.7, base do dia sem recarga manual).
+- **fechamento:** PR #633 (`ba99eb41`), que faz o `clamd` só começar com a base em dia; na AWS, fechou com a receita nova do antivírus (imagem 1.4.7, base do dia sem recarga manual).
 
 ## P-CLAMAV-IMAGEM-1-4-7 (2026-11-23) — subir a imagem 1.4.7 do antivírus — FECHADA
 
