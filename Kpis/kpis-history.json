@@ -4965,5 +4965,61 @@
     "blocks_completed": 273,
     "description": "PR-628 — É registro: reúne as decisões do dono, atas das avaliações recentes, pareceres e pendências do período, e leva o portão da versão vendável a 67 de 71 sem alteração no produto.. NÚMEROS DA CI no merge commit `c88648c0` (push na `main`), workflow `ci`, run 45085824567, tentativa 1: backend `7640 teste(s) · pass 7638 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 273 -> 273.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 628`; números do log da rodada 45085824567. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-23",
+    "version": "PR-630",
+    "pr": 630,
+    "merge_commit": "5ada70ea763caad3dc4e2076be9b405cf8f66e17",
+    "approved_head": "8bce86458cf5a6328fb679dab6860dbfe1210101",
+    "status": "published_per_pr",
+    "flutter_tests": "2069/2307",
+    "backend_tests": "7638/7640",
+    "frontend_smoke_tests": "2118/2118",
+    "blocks_completed": 273,
+    "description": "PR-630 — É registro: reúne as decisões do dono, novas pendências com responsável e gravidade e o levantamento de mercado, sem alteração no produto.. NÚMEROS DA CI no merge commit `5ada70ea` (push na `main`), workflow `ci`, run 45175592812, tentativa 1: backend `7640 teste(s) · pass 7638 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 273 -> 273.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 630`; números do log da rodada 45175592812. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-23",
+    "version": "B-INFRA-RDS-CA",
+    "pr": 632,
+    "merge_commit": "95fe6fcb8191533709d532e6a6ddceaff833dad4",
+    "approved_head": "7034f4d994ff70251ce2d8449e177634c92e6ba0",
+    "status": "published_per_pr",
+    "flutter_tests": "2069/2307",
+    "backend_tests": "7642/7644",
+    "frontend_smoke_tests": "2118/2118",
+    "blocks_completed": 274,
+    "description": "B-INFRA-RDS-CA — O sistema passa a reconhecer a autoridade que assina o certificado do banco de dados gerenciado na nuvem e segue conferindo o certificado e o nome do servidor, para que a conexão segura funcione quando subir em produção; o roteiro de implantação também foi corrigido.. NÚMEROS DA CI no merge commit `95fe6fcb` (push na `main`), workflow `ci`, run 45235042747, tentativa 1: backend `7644 teste(s) · pass 7642 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 273 -> 274.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 632`; números do log da rodada 45235042747. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-23",
+    "version": "PR-633",
+    "pr": 633,
+    "merge_commit": "ba99eb41c4f8db282104c1fb7200e5dc143d94a5",
+    "approved_head": "b8720bec7d6b0a7b76c821d99c48e451514f4667",
+    "status": "published_per_pr",
+    "flutter_tests": "2069/2307",
+    "backend_tests": "7646/7648",
+    "frontend_smoke_tests": "2118/2118",
+    "blocks_completed": 275,
+    "description": "PR-633 — O antivírus passa a atualizar a base de vírus antes de subir, em vez de ficar preso à base que veio com a imagem, que também foi atualizada; sem internet, ele sobe com a base embarcada e o sistema continua recusando o envio de arquivos se a base estiver velha demais.. NÚMEROS DA CI no merge commit `ba99eb41` (push na `main`), workflow `ci`, run 45270839429, tentativa 1: backend `7648 teste(s) · pass 7646 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 274 -> 275.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 633`; números do log da rodada 45270839429. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-23",
+    "version": "B-PATIO-LEILAO-DIARIAS",
+    "pr": 631,
+    "merge_commit": "8d402829878ca5c883d35b6d4d2f5d3f4f753a29",
+    "approved_head": "d057c4786dd834702c1f2f6dc108d87d4c2c4d14",
+    "status": "published_per_pr",
+    "flutter_tests": "2069/2307",
+    "backend_tests": "7806/7808",
+    "frontend_smoke_tests": "2118/2118",
+    "blocks_completed": 276,
+    "description": "B-PATIO-LEILAO-DIARIAS — No leilão não se cobra diária enquanto o veículo está em leilão, e a diária volta se o veículo voltar; o teto passa a 180 diárias também no contrato particular, e o regime antigo de 30 diárias continua como estava; o pátio é creditado pelo valor devido. A mudança passou por junta completa, unânime.. NÚMEROS DA CI no merge commit `8d402829` (push na `main`), workflow `ci`, run 45277858069, tentativa 1: backend `7808 teste(s) · pass 7806 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 275 -> 276.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 631`; números do log da rodada 45277858069. Nada fica `null`."
   }
 ]
