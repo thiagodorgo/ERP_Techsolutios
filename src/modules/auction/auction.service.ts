@@ -739,4 +739,3 @@ async function createPrismaAuctionService(): Promise<AuctionService> {
     ports.removalPosted,
   );
 }
-

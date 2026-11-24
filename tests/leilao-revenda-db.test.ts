@@ -1318,4 +1318,3 @@ if (!connectionString) {
     );
   });
 }
-
