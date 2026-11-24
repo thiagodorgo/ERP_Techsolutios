@@ -18064,6 +18064,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 - **status:** ABERTA · **gravidade:** BAIXA de documentação e infra · **dono:** o orquestrador, no próximo PR de documentação · **bloqueia:** não.
 - **origem:** defeito do roteiro medido em 23/11 às 16:00 SP: o user-data do passo 1.5 instala dependências antes de criar a swap, e a instalação foi morta por falta de memória. O conserto ao vivo (swap criada e instalação refeita) foi aplicado e conferido.
+- **nota de 24/11:** no primeiro ciclo de religamento, a NAT permaneceu numa máquina um tamanho acima porque faltou capacidade para o tamanho anterior na zona; a swap e o encaminhamento foram conferidos depois da subida.
 - **critério de encerramento:** o user-data do passo 1.5 cria a swap antes da instalação (ou usa instância com mais memória), e o roteiro é atualizado no próximo PR de documentação.
 
 ## P-AWS-TOKEN-GHCR-TROCAR (2026-11-23) — trocar o token do GitHub do cofre — MÉDIA
@@ -18113,3 +18114,45 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** FECHADA · **gravidade:** MÉDIA de infra · **dono:** `B-AV-BASE-SUBIDA` · **bloqueia:** não mais.
 - **origem:** o log do antivírus recomendava a 1.4.7; a troca do digest ia por PR em `infra/clamav` e na receita.
 - **fechamento:** PR #633 (`ba99eb41`), que fixou a imagem 1.4.7 por digest e atualizou a receita e as topologias.
+
+## P-FLAKY-L11A-TEARDOWN-TEXT-UUID (2026-11-24) — limpeza de teste confundia `tenant_id` textual com UUID — FECHADA
+
+- **status:** FECHADA em 2026-11-24 · **gravidade:** MÉDIA de teste · **dono:** PR #636 · **bloqueia:** não mais.
+- **origem:** o teardown L11a varria tabelas de teste por nome de coluna e tentava comparar como UUID inclusive uma `tenant_id` textual, produzindo falha intermitente sem relação com o produto.
+- **fechamento:** PR #636, squash `f2f6076a`, restringiu a limpeza às colunas `tenant_id` de tipo UUID, cobriu as ocorrências irmãs e incluiu o caso novo no subconjunto PostgreSQL do CI; a reconferência leu `# fail 0` nos jobs `backend` e `backend-postgres`.
+
+## P-FLAKY-K11H-TITULO-CAS (2026-11-24) — barreira do teste de CAS deixa a corrida escapar — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de teste de dinheiro · **dono:** bloco de saneamento do teste K11h · **bloqueia:** não o marco de KPI; exige investigação.
+- **origem:** revisão do PR #635: o caso T-K11h aceitou o perdedor depois de duas mudanças de estado numa tentativa do `backend-postgres`, mas passou na repetição sem mudança de produto. A barreira atual não torna a corrida determinística.
+- **critério de encerramento:** o T-K11h controla a ordem dos dois escritores, prova que o perdedor é recusado depois das duas mudanças de estado e passa repetidamente no CI sem depender de reexecução.
+
+## P-TETO-180-ATO-DE-DEVOLUCAO (2026-11-24) — devolução de diária já paga acima do teto precisa de ato próprio — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de dinheiro e auditoria · **dono:** bloco próprio do ato de devolução · **bloqueia:** não o leilão.
+- **origem:** P15 e Emenda 11.1 do `B-PATIO-LEILAO-DIARIAS`: o script apenas lista as linhas já pagas acima do teto; nenhuma linha paga é estornada automaticamente.
+- **critério de encerramento:** existe um ato autorizado e auditável que recebe a decisão caso a caso do dono, devolve o valor exato sem estorno automático ou duplicado e deixa teste de produto para autorização, idempotência e trilha financeira.
+
+## P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já concluída — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de fluxo · **dono:** `B-LEILAO-DESERTO`, §4.4 do plano · **bloqueia:** o fechamento dessa fatia do bloco.
+- **origem:** a preparação e o lote não consultam as tentativas; o painel pode sugerir uma rodada que já tem resultado e conduzir a um lote que não pode ser vendido nem declarado deserto.
+- **critério de encerramento:** preparar e lotear recusam rodada que já tenha resultado, a sugestão do painel aponta a próxima rodada livre e testes de produto cobrem memória, banco e regressão da revenda.
+
+## P-LEILAO-SUCATA-RODADAS-FIXAS (2026-11-24) — sucata depende das rodadas fixas 1 e 2 — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de fluxo · **dono:** bloco próprio do leilão, após decisão do dono · **bloqueia:** não o `B-LEILAO-DESERTO`.
+- **origem:** leitura F10 do plano do `B-LEILAO-DESERTO`: a sucata exige as rodadas 1 e 2 desertas; após revenda, as rodadas desertas podem ter números maiores e a sucata nunca fica disponível.
+- **critério de encerramento:** a regra de quais rodadas desertas habilitam a sucata é decidida e registrada, e o produto a aplica também depois de revenda, com teste que use números de rodada posteriores.
+
+## P-LEILAO-DESERTO-ANTES-DO-LOTE (2026-11-24) — rota antiga registra deserto antes do lote — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de produto · **dono:** bloco próprio de decisão do fluxo de leilão · **bloqueia:** não o `B-LEILAO-DESERTO`.
+- **origem:** o caminho antigo continua registrando tentativa deserta sem o veículo ter ido a lote; com o ato novo depois do lote, o produto precisa decidir se esse caminho ainda faz sentido.
+- **critério de encerramento:** o dono decide se o deserto antes do lote permanece; a decisão fica documentada e o caminho escolhido é mantido ou removido com teste de produto e sem dois atos contraditórios.
+
+## P-LEILAO-DATA-DO-LEILAO (2026-11-24) — sistema não guarda a data do leilão — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de regra temporal · **dono:** bloco próprio de data e prazo do leilão · **bloqueia:** não o `B-LEILAO-DESERTO`.
+- **origem:** plano do `B-LEILAO-DESERTO`: sem a data do leilão, o deserto e o arremate podem ser registrados antes do prazo do edital terminar.
+- **critério de encerramento:** o leilão tem data e prazo persistidos, os atos de arremate e deserto recusam execução antecipada e testes de produto cobrem o instante anterior, o limite e o instante posterior ao prazo.
