@@ -133,11 +133,97 @@ export type ListCommissionBasisEventsInput = ListCommissionsInput & {
   readonly status?: CommissionBasisEventStatus;
 };
 
+export const COMMISSION_BUCKETS = ["to_receive", "forecast", "paid", "no_rule", "review"] as const;
+export type CommissionBucket = (typeof COMMISSION_BUCKETS)[number];
+
 export type ListCommissionCalculationsInput = ListCommissionsInput & {
   readonly status?: CommissionCalculationStatus;
   readonly payeeId?: string;
   readonly from?: Date;
   readonly to?: Date;
+  readonly bucket?: CommissionBucket;
+  readonly serviceCatalogId?: string;
+  readonly month?: string;
+};
+
+export type CommissionOverviewMonthBucket = {
+  readonly month: string;
+  readonly calculatedCents: string;
+  readonly paidCents: string;
+};
+
+export type CommissionOverviewServiceBucket = {
+  readonly serviceCatalogId: string | null;
+  readonly totalCents: string;
+  readonly count: number;
+};
+
+export type CommissionOverviewTopPayee = {
+  readonly payeeId: string;
+  readonly totalCents: string;
+  readonly toReceiveCents: string;
+  readonly paidCents: string;
+  readonly count: number;
+};
+
+export type CommissionOverviewInput = {
+  readonly tenantId: string;
+  readonly from?: Date;
+  readonly to?: Date;
+};
+
+export type CommissionOverviewResult = {
+  readonly toReceiveCents: string;
+  readonly forecastCents: string;
+  readonly paidInPeriodCents: string;
+  readonly paidThisMonthCents: string;
+  readonly noRuleCount: number;
+  readonly reviewCount: number;
+  readonly rejectedCount: number;
+  readonly byMonth: readonly CommissionOverviewMonthBucket[];
+  readonly byServiceType: readonly CommissionOverviewServiceBucket[];
+  readonly topPayees: readonly CommissionOverviewTopPayee[];
+  readonly changeCents: string;
+  readonly changeDirection: "up" | "down" | "flat";
+  readonly from?: Date;
+  readonly to?: Date;
+};
+
+export type ListCommissionPayeesInput = ListCommissionsInput & {
+  readonly from?: Date;
+  readonly to?: Date;
+  readonly bucket?: CommissionBucket;
+  readonly serviceCatalogId?: string;
+};
+
+export type CommissionPayeeRow = {
+  readonly payeeId: string;
+  readonly toReceiveCents: string;
+  readonly paidThisMonthCents: string;
+  readonly paidInPeriodCents: string;
+  readonly forecastCents: string;
+  readonly count: number;
+  readonly currentRate: CommissionPayeeRateRecord | null;
+};
+
+export type CommissionPayeeOverviewInput = {
+  readonly tenantId: string;
+  readonly payeeUserId: string;
+  readonly months: 3 | 6 | 12;
+  readonly isMine: boolean;
+};
+
+export type CommissionPayeeOverviewResult = {
+  readonly payeeId: string;
+  readonly toReceiveCents: string;
+  readonly paidThisMonthCents: string;
+  readonly forecastCents: string;
+  readonly count: number;
+  readonly currentRate: CommissionPayeeRateRecord | null;
+  readonly isMine: boolean;
+  readonly byMonth: readonly CommissionOverviewMonthBucket[];
+  readonly byServiceType: readonly CommissionOverviewServiceBucket[];
+  readonly recentCalculations: readonly CommissionCalculation[];
 };
 
 export type ListCommissionStatementsInput = ListCommissionsInput & {
@@ -227,8 +313,18 @@ export type SettleCalculationsInput = {
 };
 
 // Disposição por linha da liquidação. `settled` = crédito lançado + marcado; `already_settled` = idempotente
-// (settled_at já definido, nada re-lançado); `skipped_zero` = amount ≤ 0 (não cria crédito vazio).
-export const SETTLEMENT_OUTCOMES = ["settled", "already_settled", "skipped_zero"] as const;
+// (settled_at já definido, nada re-lançado); `skipped_zero` = amount ≤ 0 (não cria crédito vazio);
+// `not_released` = situação diferente de `approved`; `blocked` = o gate de cancelamento não diz "elegível";
+// `stale_base` = soma atual dos itens difere da base do retrato; `not_commission` = classe diferente de `commission`.
+export const SETTLEMENT_OUTCOMES = [
+  "settled",
+  "already_settled",
+  "skipped_zero",
+  "not_released",
+  "blocked",
+  "stale_base",
+  "not_commission",
+] as const;
 export type SettlementOutcome = (typeof SETTLEMENT_OUTCOMES)[number];
 
 export type SettlementLineResult = {
@@ -240,10 +336,18 @@ export type SettlementLineResult = {
   readonly operatorProfileId?: string;
 };
 
+export type SettlementPayeeResult = {
+  readonly payeeId: string;
+  readonly netCents: string;
+  readonly lines: readonly SettlementLineResult[];
+};
+
 export type SettleCalculationsResult = {
   readonly lines: readonly SettlementLineResult[];
   readonly settledCount: number;
   readonly settledTotal: number;
+  readonly settledTotalCents?: string;
+  readonly payees?: readonly SettlementPayeeResult[];
   readonly settlementDate: Date;
 };
 
@@ -274,6 +378,185 @@ export type CommissionSettlementCollaborators = {
   readonly postStatementCredit: CommissionStatementCreditPoster;
   readonly resolveOperatorProfileByUser: CommissionOperatorProfileByUserResolver;
 };
+
+export type CommissionRateType = "percent" | "fixed";
+
+export type CommissionPayeeRateRecord = {
+  readonly ruleId: string;
+  readonly policyId: string;
+  readonly tenantId: string;
+  readonly payeeUserId: string;
+  readonly rateType: CommissionRateType;
+  readonly rateValue: string;
+  readonly rateValueCents?: string;
+  readonly effectiveFrom: Date;
+  readonly effectiveTo?: Date;
+  readonly active: boolean;
+  readonly reason?: string;
+  readonly changedBy?: string;
+  readonly selfChange: boolean;
+  readonly createdAt: Date;
+};
+
+export type UpsertPayeeCommissionRateInput = {
+  readonly tenantId: string;
+  readonly payeeUserId: string;
+  readonly actorUserId: string;
+  readonly rateType: CommissionRateType;
+  readonly rateValueText: string;
+  readonly reason: string;
+  readonly expectedRuleId: string | null;
+  readonly selfChange: boolean;
+};
+
+export type UpsertPayeeCommissionRateResult = {
+  readonly changed: boolean;
+  readonly previousRule?: CommissionPayeeRateRecord;
+  readonly currentRule: CommissionPayeeRateRecord;
+};
+
+export type CommissionReconcileCounts = {
+  readonly created: number;
+  readonly released: number;
+  readonly recalculated: number;
+  readonly skipped: number;
+};
+
+export type EnginePolicyInfo = {
+  readonly id: string;
+  readonly effectiveFrom: Date;
+};
+
+export type EngineWorkOrderCandidate = {
+  readonly id: string;
+  readonly code: string;
+  readonly status: string;
+  readonly completedAt: Date;
+  readonly financialDecision: string | null;
+};
+
+export type EngineWorkOrderSnapshot = {
+  readonly id: string;
+  readonly code: string;
+  readonly status: string;
+  readonly assignedUserId: string | null;
+  readonly serviceCatalogId: string | null;
+  readonly completedAt: Date | null;
+  readonly financialDecision: string | null;
+};
+
+export type EngineFinancialItemRow = {
+  readonly totalAmountText: string;
+  readonly currency: string;
+};
+
+export type EngineReleaseCandidate = {
+  readonly calculationId: string;
+  readonly workOrderId: string;
+};
+
+export type EngineRecalcCandidate = {
+  readonly calculationId: string;
+  readonly basisEventId: string;
+  readonly policyId: string;
+  readonly workOrderId: string;
+  readonly eventIdempotencyKey: string;
+  readonly status: CommissionCalculationStatus;
+  readonly settledAt: Date | null;
+  readonly snapshot: CommissionJsonRecord;
+};
+
+/**
+ * B-COMISSAO-MOTOR (F3/F4, plano §3.4 / §3.6 / §3.7) — o que a volta da varredura lê antes de tocar qualquer OS:
+ * as políticas do espaço reservado da organização (`scope = engine`), as OS candidatas a nascer, os cálculos
+ * previstos (`calculated`) candidatos a liberar (passo 2) e os cálculos candidatos a conferir a base (passo 3).
+ * Lido dentro do contexto da organização (`withTenantRls`), nunca pelo cliente sem contexto (M8).
+ */
+export type EngineReconcileScope = {
+  readonly policies: readonly EnginePolicyInfo[];
+  readonly candidates: readonly EngineWorkOrderCandidate[];
+  readonly releaseCandidates: readonly EngineReleaseCandidate[];
+  readonly recalcCandidates: readonly EngineRecalcCandidate[];
+};
+
+export interface CommissionUnit {
+  ensureEnginePolicy(tenantId: string, actorUserId: string): Promise<void>;
+  lockCommissionRate(tenantId: string): Promise<string>;
+  lockCommissionPayee(tenantId: string, payeeUserId: string): Promise<boolean>;
+  userExistsInTenant(tenantId: string, userId: string): Promise<boolean>;
+  findCurrentPayeeRate(tenantId: string, payeeUserId: string): Promise<CommissionPayeeRateRecord | null>;
+  replacePayeeRate(
+    policyId: string,
+    input: UpsertPayeeCommissionRateInput,
+    previousRuleId: string | null,
+    now: Date,
+  ): Promise<CommissionPayeeRateRecord>;
+  findEnginePolicies(tenantId: string): Promise<EnginePolicyInfo[]>;
+  listEngineCandidatesForReconcile(tenantId: string, policyEffectiveFrom: Date): Promise<EngineWorkOrderCandidate[]>;
+  readReconcileScope(tenantId: string): Promise<EngineReconcileScope>;
+  lockAndReadWorkOrderForCommission(tenantId: string, workOrderId: string): Promise<EngineWorkOrderSnapshot | null>;
+  hasLiveEngineBasisEvent(tenantId: string, workOrderId: string): Promise<boolean>;
+  insertEngineBasisEventIfAbsent(input: {
+    readonly tenantId: string;
+    readonly policyId: string;
+    readonly workOrderId: string;
+    readonly sourceEventName: string;
+    readonly idempotencyKey: string;
+    readonly occurredAt: Date;
+    readonly status: CommissionBasisEventStatus;
+    readonly payload: CommissionJsonRecord;
+  }): Promise<string | null>;
+  updateEngineBasisEventOutcome(
+    tenantId: string,
+    eventId: string,
+    status: CommissionBasisEventStatus,
+    payload: CommissionJsonRecord,
+  ): Promise<void>;
+  listActiveWorkOrderFinancialItems(tenantId: string, workOrderId: string): Promise<EngineFinancialItemRow[]>;
+  listEngineRulesForPolicy(tenantId: string, policyId: string): Promise<CommissionPolicyRule[]>;
+  hasLivePrimaryCalculationForEvent(tenantId: string, basisEventId: string): Promise<boolean>;
+  insertEnginePrimaryCalculationIfAbsent(input: {
+    readonly tenantId: string;
+    readonly basisEventId: string;
+    readonly policyId: string;
+    readonly payeeUserId: string;
+    readonly amountDecimalText: string;
+    readonly status: CommissionCalculationStatus;
+    readonly calculationSnapshot: CommissionJsonRecord;
+    readonly idempotencyKey: string;
+  }): Promise<string | null>;
+  findLatestWorkOrderApprovalStatus(
+    tenantId: string,
+    workOrderId: string,
+  ): Promise<"pending_approval" | "approved" | "rejected" | null>;
+  transitionCalculatedCommissionStatus(
+    tenantId: string,
+    calculationId: string,
+    nextStatus: "approved" | "rejected",
+  ): Promise<boolean>;
+  lockAndReadEngineCalculationForRecalc(
+    tenantId: string,
+    calculationId: string,
+  ): Promise<EngineRecalcCandidate | null>;
+  markEngineBasisEventSuperseded(tenantId: string, basisEventId: string): Promise<boolean>;
+  markEngineCalculationReversed(tenantId: string, calculationId: string): Promise<boolean>;
+  findOperatorProfileIdByUser(tenantId: string, userId: string): Promise<string | undefined>;
+  lockAndReadCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]>;
+  evaluateCalculationWorkOrderEligibility(
+    tenantId: string,
+    calculation: CommissionCalculation,
+  ): Promise<"eligible" | "ineligible" | "pending_review">;
+  postStatementCreditInUnit(
+    actor: CommissionActorContext,
+    input: CommissionStatementCreditInput,
+  ): Promise<{ readonly groupId: string }>;
+  markCommissionSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined>;
+}
 
 export class CommissionError extends Error {
   constructor(

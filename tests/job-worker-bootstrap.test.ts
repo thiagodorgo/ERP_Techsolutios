@@ -76,6 +76,9 @@ function recordingModules(calls: string[], worker: JobWorker): JobWorkerModules 
     enqueueInitialCloudAllocationImportCatchUp: async () => {
       calls.push("cloud-cost-allocation.import-catch-up");
     },
+    enqueueInitialCommissionsReconcileScan: async () => {
+      calls.push("commissions.reconcile");
+    },
   };
 }
 
@@ -126,6 +129,7 @@ test("produção válida sobe o worker E enfileira as CINCO varreduras, uma vez 
       "billing.channel",
       // B-ASS-09a (T10) — o 1º tick da varredura do rateio automático. MUTAÇÃO QUE MATA: M10 (a chamada apagada).
       "cloud-cost-allocation.import-catch-up",
+      "commissions.reconcile",
     ]);
     assert.equal(warns.length, 0);
     assert.equal(infos.length, 1);

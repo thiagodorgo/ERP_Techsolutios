@@ -116,6 +116,80 @@ export function createCommissionRouter(resolveService: CommissionServiceResolver
     }),
   );
 
+  // B-COMISSAO-MOTOR (F2, §3.3 / §3.10) — ordem no roteador: /rates/mine antes de /:userId.
+  router.get(
+    "/commissions/rates/mine",
+    requirePermission(COMMISSION_PERMISSIONS.readOwn),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.getMyRate(request));
+    }),
+  );
+
+  router.get(
+    "/commissions/rates",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.listRates(request));
+    }),
+  );
+
+  router.put(
+    "/commissions/rates/payees/:userId",
+    requirePermission(COMMISSION_PERMISSIONS.managePolicy),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.upsertPayeeRate(request));
+    }),
+  );
+
+  router.get(
+    "/commissions/rates/payees/:userId/history",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.listPayeeRateHistory(request));
+    }),
+  );
+
+  router.post(
+    "/commissions/reconcile",
+    requirePermission(COMMISSION_PERMISSIONS.calculate),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reconcileCommissions(request));
+    }),
+  );
+
+  // B-COMISSAO-MOTOR (F6, §3.10) — ordem no roteador: /mine/overview antes de /payees/:userId/overview.
+  router.get(
+    "/commissions/overview",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.getOverview(request));
+    }),
+  );
+
+  router.get(
+    "/commissions/payees",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.listPayees(request));
+    }),
+  );
+
+  router.get(
+    "/commissions/mine/overview",
+    requirePermission(COMMISSION_PERMISSIONS.readOwn),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.getMyOverview(request));
+    }),
+  );
+
+  router.get(
+    "/commissions/payees/:userId/overview",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.getPayeeOverview(request));
+    }),
+  );
+
   return router;
 }
 

@@ -35,6 +35,9 @@ export const JOB_NAMES = [
   // notificações vencidas (t0 + prazo do perfil) + CustodyEvent NOTIFICATION (I2). Idempotente ((tenant,process,
   // kind))/DST-imune/catch-up/fail-closed. Auto-reenfileirante 1h, gated por JOBS_WORKER_ENABLED. Ator = SISTEMA.
   "impound.notify-due",
+  // B-COMISSAO-MOTOR (F3, §3.4) — varredura recorrente auto-reenfileirante 60 s do motor de comissão,
+  // gated por JOBS_WORKER_ENABLED + CORE_SAAS_PERSISTENCE=prisma.
+  "commissions.reconcile",
 ] as const;
 
 export type JobName = (typeof JOB_NAMES)[number];

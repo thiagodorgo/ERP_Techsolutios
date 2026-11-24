@@ -176,6 +176,7 @@ const JOBS: ReadonlyMap<string, EtiquetaJob> = new Map([
   ["impound.reconcile-removals", "FORA-DA-SUPERFICIE"],
   ["charging.accrue-daily", "FORA-DA-SUPERFICIE"],
   ["impound.notify-due", "FORA-DA-SUPERFICIE"],
+  ["commissions.reconcile", "FORA-DA-SUPERFICIE"],
 ]);
 
 type Cenario = {
@@ -1324,7 +1325,7 @@ if (!connectionString) {
         for (const chave of forceEnumeradas) assert.deepEqual(canonico(efe.rotas[chave]), canonico(sup.rotas[chave]), chave);
       });
 
-      await t.test("T11f · job.registry fecha 8 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
+      await t.test("T11f · job.registry fecha 8 jobs FORCE com efeito próprio e etiqueta os outros 10 como B-ARNES-2", () => {
         const forceEnumerados = [...JOBS]
           .filter(([, etiqueta]) => etiqueta === "FORCE-PLATAFORMA")
           .map(([chave]) => chave)
@@ -1332,7 +1333,7 @@ if (!connectionString) {
         const foraDaSuperficie = [...JOBS].filter(([, etiqueta]) => etiqueta === "FORA-DA-SUPERFICIE");
         // 4 → 8 no B-ASS-08b: os 4 jobs do canal de cobrança (billing.*), cada um com cenário executado nos dois papéis.
         assert.equal(forceEnumerados.length, 8);
-        assert.equal(foraDaSuperficie.length, 9, "os demais jobs pertencem à pendência B-ARNES-2");
+        assert.equal(foraDaSuperficie.length, 10, "os demais jobs pertencem à pendência B-ARNES-2");
         assert.deepEqual(Object.keys(sup.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob efêmero");
         for (const chave of forceEnumerados) assert.deepEqual(canonico(efe.jobs[chave]), canonico(sup.jobs[chave]), chave);
