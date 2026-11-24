@@ -344,6 +344,7 @@
  "POST /api/v1/impound-processes/:processId/auction/lot": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/prep": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/reclaim": "{patios}",
+ "POST /api/v1/impound-processes/:processId/auction/relot": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/reclassify-scrap": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/reclassify-unrecoverable": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/sale": "{patios}",

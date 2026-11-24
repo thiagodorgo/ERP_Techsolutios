@@ -209,6 +209,20 @@ export class AuctionController {
     return { body: toAuctionViewDto(view, canAppraise) };
   }
 
+  async relotForResale(request: Request) {
+    const [service, actor, canAppraise] = await this.resolveServiceWithActor(request);
+    const view = await service.relotForResale(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: "auction.relotted",
+      resourceType: "impound_process",
+      resourceId: readRouteParam(request.params.processId),
+      outcome: "success",
+      severity: "warning",
+      metadata: { status: view.status },
+    });
+    return { body: toAuctionViewDto(view, canAppraise) };
+  }
+
 
   async withdrawSettled(request: Request) {
     const [service, actor, canAppraise] = await this.resolveServiceWithActor(request);

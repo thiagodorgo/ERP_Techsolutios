@@ -144,6 +144,13 @@ export function createAuctionRouter(
     }),
   );
   router.post(
+    "/impound-processes/:processId/auction/relot",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.relotForResale(request));
+    }),
+  );
+  router.post(
     "/impound-processes/:processId/auction/withdraw-settled",
     requirePermission(AUCTION_PERMISSIONS.transition),
     handleAsyncRoute(async (request, response) => {
