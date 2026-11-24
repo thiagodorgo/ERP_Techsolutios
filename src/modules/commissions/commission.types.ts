@@ -250,10 +250,18 @@ export type SettlementLineResult = {
   readonly operatorProfileId?: string;
 };
 
+export type SettlementPayeeResult = {
+  readonly payeeId: string;
+  readonly netCents: string;
+  readonly lines: readonly SettlementLineResult[];
+};
+
 export type SettleCalculationsResult = {
   readonly lines: readonly SettlementLineResult[];
   readonly settledCount: number;
   readonly settledTotal: number;
+  readonly settledTotalCents?: string;
+  readonly payees?: readonly SettlementPayeeResult[];
   readonly settlementDate: Date;
 };
 
@@ -446,6 +454,22 @@ export interface CommissionUnit {
   ): Promise<EngineRecalcCandidate | null>;
   markEngineBasisEventSuperseded(tenantId: string, basisEventId: string): Promise<boolean>;
   markEngineCalculationReversed(tenantId: string, calculationId: string): Promise<boolean>;
+  findOperatorProfileIdByUser(tenantId: string, userId: string): Promise<string | undefined>;
+  lockAndReadCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]>;
+  evaluateCalculationWorkOrderEligibility(
+    tenantId: string,
+    calculation: CommissionCalculation,
+  ): Promise<"eligible" | "ineligible" | "pending_review">;
+  postStatementCreditInUnit(
+    actor: CommissionActorContext,
+    input: CommissionStatementCreditInput,
+  ): Promise<{ readonly groupId: string }>;
+  markCommissionSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined>;
 }
 
 export class CommissionError extends Error {

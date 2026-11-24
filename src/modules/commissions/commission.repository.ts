@@ -3,37 +3,42 @@ import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 
 import { getMemoryOperatorProfileRepositoryForTests } from "../operator-profiles/operator-profile.service.js";
+import { createMemoryProfessionalStatementService } from "../professional-statements/professional-statement.service.js";
+import { isCommissionCalculationKey } from "./commission-calculation-kind.js";
 import { decimalTextToCents, engineWorkOrderEventKey, normalizeRateValueText } from "./commission-engine.js";
 import { commissionCents, commissionCentsOfSum } from "./commission-money.js";
-import type {
-  CommissionBasisEvent,
-  CommissionBasisEventStatus,
-  CommissionCalculation,
-  CommissionCalculationStatus,
-  CommissionJsonRecord,
-  CommissionPayeeRateRecord,
-  CommissionPayeeSummary,
-  CommissionPolicy,
-  CommissionPolicyRule,
-  CommissionRateType,
-  CommissionStatement,
-  CommissionUnit,
-  CreateCommissionBasisEventInput,
-  CreateCommissionPolicyInput,
-  EngineFinancialItemRow,
-  EnginePolicyInfo,
-  EngineRecalcCandidate,
-  EngineReconcileScope,
-  EngineReleaseCandidate,
-  EngineWorkOrderCandidate,
-  EngineWorkOrderSnapshot,
-  ListCommissionBasisEventsInput,
-  ListCommissionCalculationsInput,
-  ListCommissionPoliciesInput,
-  ListCommissionStatementsInput,
-  ListResult,
-  SummarizeCalculationsByPayeeInput,
-  UpsertPayeeCommissionRateInput,
+import {
+  CommissionError,
+  type CommissionActorContext,
+  type CommissionBasisEvent,
+  type CommissionBasisEventStatus,
+  type CommissionCalculation,
+  type CommissionCalculationStatus,
+  type CommissionJsonRecord,
+  type CommissionPayeeRateRecord,
+  type CommissionPayeeSummary,
+  type CommissionPolicy,
+  type CommissionPolicyRule,
+  type CommissionRateType,
+  type CommissionStatement,
+  type CommissionStatementCreditInput,
+  type CommissionUnit,
+  type CreateCommissionBasisEventInput,
+  type CreateCommissionPolicyInput,
+  type EngineFinancialItemRow,
+  type EnginePolicyInfo,
+  type EngineRecalcCandidate,
+  type EngineReconcileScope,
+  type EngineReleaseCandidate,
+  type EngineWorkOrderCandidate,
+  type EngineWorkOrderSnapshot,
+  type ListCommissionBasisEventsInput,
+  type ListCommissionCalculationsInput,
+  type ListCommissionPoliciesInput,
+  type ListCommissionStatementsInput,
+  type ListResult,
+  type SummarizeCalculationsByPayeeInput,
+  type UpsertPayeeCommissionRateInput,
 } from "./commission.types.js";
 import {
   evaluateWorkOrderCommissionEligibility,
@@ -305,13 +310,13 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
     return calculation;
   }
 
-  // Ω4C PR-10 — carrega calculations tenant-scoped por id (dedupe já feito no validator). Não enriquece
-  // basis origin (a liquidação não precisa de source_type — usa amount + payee).
+  // Ω4C PR-10 — carrega calculations tenant-scoped por id (dedupe já feito no validator).
   async findCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]> {
     const idSet = new Set(ids);
-    return [...this.calculations.values()].filter(
+    const items = [...this.calculations.values()].filter(
       (calculation) => calculation.tenantId === tenantId && idSet.has(calculation.id),
     );
+    return this.attachBasisOrigin(items, tenantId);
   }
 
   // Ω4C PR-10 — marca liquidado só se ainda não liquidado (dupla-guarda). Já liquidado → undefined (no-op).
@@ -630,6 +635,64 @@ export class InMemoryCommissionRepository implements CommissionRepository, Commi
     if (!calc || calc.tenantId !== tenantId || (calc.status !== "calculated" && calc.status !== "approved")) return false;
     this.calculations.set(calculationId, { ...calc, status: "reversed", updatedAt: new Date() });
     return true;
+  }
+
+  async findOperatorProfileIdByUser(tenantId: string, userId: string): Promise<string | undefined> {
+    const profile = await getMemoryOperatorProfileRepositoryForTests().findByUserId(tenantId, userId);
+    return profile?.id;
+  }
+
+  async lockAndReadCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]> {
+    return this.findCalculationsByIds(tenantId, ids);
+  }
+
+  async postStatementCreditInUnit(
+    actor: CommissionActorContext,
+    input: CommissionStatementCreditInput,
+  ): Promise<{ readonly groupId: string }> {
+    const entries = await createMemoryProfessionalStatementService().createForSource(actor, {
+      operatorProfileId: input.operatorProfileId,
+      entryType: "remuneration",
+      direction: "credit",
+      sourceType: "remuneration",
+      sourceId: input.sourceId,
+      amount: input.amount,
+      installmentTotal: 1,
+      firstDueDate: input.firstDueDate,
+      description: input.description,
+    });
+    const groupId = entries[0]?.groupId;
+    if (!groupId) {
+      throw new CommissionError(
+        500,
+        "COMMISSION_SETTLEMENT_FAILED",
+        "statement_credit_failed",
+        "The professional statement credit could not be posted.",
+      );
+    }
+    return { groupId };
+  }
+
+  async markCommissionSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined> {
+    // B-COMISSAO:marca-condicional
+    const current = this.calculations.get(calculationId);
+    if (
+      !current ||
+      current.tenantId !== tenantId ||
+      current.settledAt ||
+      current.status !== "approved" ||
+      !isCommissionCalculationKey(current.idempotencyKey)
+    ) {
+      return undefined;
+    }
+    const updated: CommissionCalculation = { ...current, settledAt, settlementRef, updatedAt: new Date() };
+    this.calculations.set(calculationId, updated);
+    return updated;
   }
 
   async hasLiveEngineBasisEvent(tenantId: string, workOrderId: string): Promise<boolean> {

@@ -440,6 +440,7 @@ jobs:
           SUITES="$SUITES tests/b-comissao-motor-uma-vez-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-rls-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-liberacao-db.test.ts"
+          SUITES="$SUITES tests/b-comissao-motor-liquidacao-unidade-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       - name: Route HC1b latency suite alone

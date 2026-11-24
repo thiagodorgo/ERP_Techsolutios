@@ -1,9 +1,13 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import { PrismaProfessionalStatementRepository } from "../professional-statements/professional-statement-prisma.repository.js";
+import { createProfessionalStatementForSourceInRepository } from "../professional-statements/professional-statement.service.js";
+import { buildCommissionKindWhere } from "./commission-calculation-kind.js";
 import { decimalTextToCents, normalizeRateValueText } from "./commission-engine.js";
 import {
   CommissionError,
+  type CommissionActorContext,
   type CommissionBasisEvent,
   type CommissionBasisEventStatus,
   type CommissionCalculation,
@@ -16,6 +20,7 @@ import {
   type CommissionPolicyStatus,
   type CommissionRateType,
   type CommissionStatement,
+  type CommissionStatementCreditInput,
   type CommissionStatementStatus,
   type CommissionUnit,
   type CreateCommissionBasisEventInput,
@@ -242,7 +247,7 @@ export class PrismaCommissionRepository implements CommissionRepository, Commiss
     const items = await this.client.commissionCalculation.findMany({
       where: { tenant_id: tenantId, id: { in: [...ids] } },
     });
-    return items.map(mapCalculationRecord);
+    return this.attachBasisOrigin(items.map(mapCalculationRecord), tenantId);
   }
 
   // Ω4C PR-10 — marca liquidado com guarda DURO `settled_at: null` (idempotência no banco): re-liquidar não
@@ -857,6 +862,99 @@ export class PrismaCommissionRepository implements CommissionRepository, Commiss
       },
     });
     return updated.count === 1;
+  }
+
+  async findOperatorProfileIdByUser(tenantId: string, userId: string): Promise<string | undefined> {
+    const profile = await this.client.operatorProfile.findFirst({
+      where: { tenant_id: tenantId, user_id: userId },
+      select: { id: true },
+    });
+    return profile?.id;
+  }
+
+  async lockAndReadCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]> {
+    if (ids.length === 0) return [];
+    const sortedIds = [...new Set(ids)].sort();
+    for (const calcId of sortedIds) {
+      await this.client.$queryRaw<Array<{ id: string }>>`
+        SELECT id
+        FROM commission_calculations
+        WHERE tenant_id = ${tenantId}::uuid
+          AND id = ${calcId}::uuid
+        FOR UPDATE /* commission_calc_lock */
+      `;
+    }
+    const items = await this.client.commissionCalculation.findMany({
+      where: { tenant_id: tenantId, id: { in: sortedIds } },
+    });
+    return this.attachBasisOrigin(items.map(mapCalculationRecord), tenantId);
+  }
+
+  async postStatementCreditInUnit(
+    actor: CommissionActorContext,
+    input: CommissionStatementCreditInput,
+  ): Promise<{ readonly groupId: string }> {
+    const entries = await createProfessionalStatementForSourceInRepository(
+      new PrismaProfessionalStatementRepository(this.client),
+      (tenantId, operatorProfileId) => this.lookupOperatorProfileNameInUnit(tenantId, operatorProfileId),
+      actor,
+      {
+        operatorProfileId: input.operatorProfileId,
+        entryType: "remuneration",
+        direction: "credit",
+        sourceType: "remuneration",
+        sourceId: input.sourceId,
+        amount: input.amount,
+        installmentTotal: 1,
+        firstDueDate: input.firstDueDate,
+        description: input.description,
+      },
+    );
+    const groupId = entries[0]?.groupId;
+    if (!groupId) {
+      throw new CommissionError(
+        500,
+        "COMMISSION_SETTLEMENT_FAILED",
+        "statement_credit_failed",
+        "The professional statement credit could not be posted.",
+      );
+    }
+    return { groupId };
+  }
+
+  private async lookupOperatorProfileNameInUnit(
+    tenantId: string,
+    operatorProfileId: string,
+  ): Promise<{ readonly fullName: string | undefined } | undefined> {
+    const profile = await this.client.operatorProfile.findFirst({
+      where: { tenant_id: tenantId, id: operatorProfileId },
+      select: { full_name: true },
+    });
+    return profile ? { fullName: profile.full_name ?? undefined } : undefined;
+  }
+
+  async markCommissionSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined> {
+    // B-COMISSAO:marca-condicional — exige status='approved', settled_at IS NULL e classe 'commission' (P-KIND).
+    const updated = await this.client.commissionCalculation.updateManyAndReturn({
+      where: {
+        tenant_id: tenantId,
+        id: calculationId,
+        status: "approved",
+        settled_at: null,
+        ...buildCommissionKindWhere(),
+      },
+      data: {
+        settled_at: settledAt,
+        settlement_ref: settlementRef,
+        updated_at: settledAt,
+      },
+    });
+    return updated[0] ? mapCalculationRecord(updated[0]) : undefined;
   }
 }
 

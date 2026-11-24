@@ -89,6 +89,21 @@ export function toCommissionSettlementDto(result: SettleCalculationsResult) {
     settlementDate: dateOnly(result.settlementDate),
     settledCount: result.settledCount,
     settledTotal: result.settledTotal,
+    settledTotalCents: result.settledTotalCents ?? "0",
+    ...(result.payees
+      ? {
+          payees: result.payees.map((p) => ({
+            payeeId: p.payeeId,
+            netCents: p.netCents,
+            lines: p.lines.map((line) => ({
+              calculationId: line.calculationId,
+              outcome: line.outcome,
+              statementGroupId: line.statementGroupId ?? null,
+              operatorProfileId: line.operatorProfileId ?? null,
+            })),
+          })),
+        }
+      : {}),
     lines: result.lines.map((line) => ({
       calculationId: line.calculationId,
       outcome: line.outcome,

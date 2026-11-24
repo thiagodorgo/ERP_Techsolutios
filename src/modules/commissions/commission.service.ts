@@ -1,7 +1,8 @@
 import { env } from "../../config/env.js";
 import { getMemoryOperatorProfileRepositoryForTests } from "../operator-profiles/operator-profile.service.js";
 import { createMemoryProfessionalStatementService } from "../professional-statements/professional-statement.service.js";
-import { isReservedBasisEventInput, isReservedPolicyInput } from "./commission-engine.js";
+import { classifyCalculationKey } from "./commission-calculation-kind.js";
+import { decimalTextToCents, isReservedBasisEventInput, isReservedPolicyInput } from "./commission-engine.js";
 import { CommissionRateService } from "./commission-rate.service.js";
 import { reconcileTenantCommissionsWithRepository } from "./commission-reconcile.service.js";
 import { InMemoryCommissionRepository, type CommissionRepository } from "./commission.repository.js";
@@ -15,13 +16,16 @@ import type {
   CommissionSettlementCollaborators,
   CommissionStatement,
   CommissionSummaryResult,
+  CommissionUnit,
   CreateCommissionPolicyInput,
   ListResult,
   SettleCalculationsResult,
   SettlementLineResult,
+  SettlementPayeeResult,
   UpsertPayeeCommissionRateResult,
 } from "./commission.types.js";
 import { CommissionError } from "./commission.types.js";
+import { isWorkOrderSourceType } from "./work-order-cancellation.gate.js";
 import {
   assertNonEmptyString,
   optionalString,
@@ -239,93 +243,248 @@ export class CommissionService {
   // Invariante REM-03 (liquidar 2× NÃO duplica o crédito): dupla-guarda = source-idempotency do extrato +
   // guarda `settled_at`.
   async settleCalculations(actor: CommissionActorContext, body: RawRecord): Promise<SettleCalculationsResult> {
-    const collaborators = this.settlementCollaborators;
-    if (!collaborators) {
-      throw new CommissionError(
-        500,
-        "COMMISSION_SETTLEMENT_UNAVAILABLE",
-        "settlement_not_configured",
-        "Commission settlement collaborators are not configured.",
-      );
-    }
-
     const calculationIds = parseCalculationIds(body.calculationIds ?? body.calculation_ids);
     const settlementDate = parseSettlementDate(body.settlementDate ?? body.settlement_date);
     const description = optionalString(body.description, 200);
 
+    // Passo 1 (antes de qualquer escrita — Emenda 1 §E1.4): carrega os cálculos pedidos e confere que todos
+    // pertencem à organização (qualquer id ausente -> 404 calculation_not_found). Agrupa os ids por payee_id.
     const calculations = await this.repository.findCalculationsByIds(actor.tenantId, calculationIds);
     const byId = new Map(calculations.map((calculation) => [calculation.id, calculation]));
 
-    const lines: SettlementLineResult[] = [];
-    let settledCount = 0;
-    let settledTotalCents = 0n;
+    const lineById = new Map<string, SettlementLineResult>();
+    const idsByPayee = new Map<string, string[]>();
 
     for (const calculationId of calculationIds) {
       const calculation = byId.get(calculationId);
-      // (1) 404 cross-tenant / inexistente (nunca liquida linha de outro tenant).
       if (!calculation) {
         throw calculationNotFoundError();
       }
-      // Idempotência por marcador: já liquidada → não re-lança (dupla-guarda com a source-idempotency).
-      if (calculation.settledAt) {
-        lines.push({
-          calculationId,
-          outcome: "already_settled",
-          statementGroupId: calculation.settlementRef,
-        });
-        continue;
-      }
-      // B-COMISSAO:so-liberada-paga
-      if (calculation.status !== "approved") {
-        lines.push({ calculationId, outcome: "not_released" });
-        continue;
-      }
-      // B-COMISSAO:segundo-gate
-      const eligibility = await this.repository.evaluateCalculationWorkOrderEligibility(actor.tenantId, calculation);
-      if (eligibility !== "eligible") {
-        lines.push({ calculationId, outcome: "blocked" });
-        continue;
-      }
-      // Valor honesto: amountCents (centavos exatos do Decimal(20,6), P-COMISSAO-LIQUIDACAO-CENTAVO / CS3). ≤ 0 → não cria crédito vazio.
-      const creditCents = BigInt(calculation.amountCents || "0");
-      if (creditCents <= 0n) {
-        lines.push({ calculationId, outcome: "skipped_zero" });
-        continue;
-      }
-      const creditAmount = Number(creditCents) / 100;
-      // (2) payee(User) → operator_profile (a folha). Sem perfil → 422 (não credita folha inexistente).
       if (!calculation.payeeId) {
+        if (classifyCalculationKey(calculation.idempotencyKey) !== "commission") {
+          lineById.set(calculationId, { calculationId, outcome: "not_commission" });
+          continue;
+        }
+        if (calculation.settledAt) {
+          lineById.set(calculationId, {
+            calculationId,
+            outcome: "already_settled",
+            statementGroupId: calculation.settlementRef,
+          });
+          continue;
+        }
+        if (calculation.status !== "approved") {
+          lineById.set(calculationId, { calculationId, outcome: "not_released" });
+          continue;
+        }
+        if (BigInt(calculation.amountCents || "0") <= 0n) {
+          lineById.set(calculationId, { calculationId, outcome: "skipped_zero" });
+          continue;
+        }
         throw payeeNotAProfessionalError();
       }
-      const professional = await collaborators.resolveOperatorProfileByUser(actor.tenantId, calculation.payeeId);
-      if (!professional) {
-        throw payeeNotAProfessionalError();
-      }
-      // (3) CRÉDITO no extrato (rail PR-07). Idempotente por (remuneration, calculationId): reprocessar a MESMA
-      // fonte devolve o grupo existente (nunca duplica) — a garantia de REM-03 mesmo se o settled_at não pegou.
-      const { groupId } = await collaborators.postStatementCredit(actor, {
-        operatorProfileId: professional.operatorProfileId,
-        sourceId: calculationId,
-        amount: creditAmount,
-        firstDueDate: settlementDate,
-        description,
-      });
-      // (4) marca o calculation liquidado (settled_at + settlement_ref = group_id do crédito).
-      await this.repository.markSettled(actor.tenantId, calculationId, new Date(), groupId);
-
-      lines.push({
-        calculationId,
-        outcome: "settled",
-        statementGroupId: groupId,
-        operatorProfileId: professional.operatorProfileId,
-      });
-      settledCount += 1;
-      settledTotalCents += creditCents;
+      const group = idsByPayee.get(calculation.payeeId) ?? [];
+      group.push(calculationId);
+      idsByPayee.set(calculation.payeeId, group);
     }
 
+    let settledCount = 0;
+    let settledTotalCents = 0n;
+    const payees: SettlementPayeeResult[] = [];
+
+    // Passo 2 (por guincheiro, numa única transação com RLS da organização — Emenda 1 §E1.4):
+    for (const [payeeUserId, payeeCalcIds] of idsByPayee.entries()) {
+      const payeeOutcome = await this.repository.runCommissionUnit(actor.tenantId, async (unit) => {
+        // 2.1. Trava o perfil do guincheiro (lockCommissionPayee). Sem perfil -> 422 payee_not_a_professional.
+        const payeeLocked = await unit.lockCommissionPayee(actor.tenantId, payeeUserId); // B-COMISSAO:liquida-trava-guincheiro
+        const operatorProfileId = payeeLocked
+          ? await unit.findOperatorProfileIdByUser(actor.tenantId, payeeUserId)
+          : undefined;
+        if (!payeeLocked || !operatorProfileId) {
+          throw payeeNotAProfessionalError();
+        }
+
+        // 2.2. Trava em ordem crescente de work_order_id todas as OS envolvidas neste grupo.
+        const initialWorkOrderIds = new Set<string>();
+        for (const calcId of payeeCalcIds) {
+          const initialCalc = byId.get(calcId);
+          const woId = initialCalc ? extractWorkOrderIdFromCalculation(initialCalc) : undefined;
+          if (woId) {
+            initialWorkOrderIds.add(woId);
+          }
+        }
+        for (const workOrderId of [...initialWorkOrderIds].sort()) {
+          await unit.lockAndReadWorkOrderForCommission(actor.tenantId, workOrderId); // B-COMISSAO:trava-os-liquidacao
+        }
+
+        // 2.3. Trava em ordem crescente de calculation_id as linhas de commission_calculations do grupo.
+        const lockedCalculations = await unit.lockAndReadCalculationsByIds(actor.tenantId, payeeCalcIds);
+        const lockedById = new Map(lockedCalculations.map((c) => [c.id, c]));
+
+        const payeeLines: SettlementLineResult[] = [];
+        let payeeSettledCount = 0;
+        let payeeNetCents = 0n;
+
+        // 2.4. Sob os cadeados, reconfere cada cálculo.
+        for (const calculationId of payeeCalcIds) {
+          const calculation = lockedById.get(calculationId);
+          if (!calculation) {
+            throw calculationNotFoundError();
+          }
+
+          // (0) Classe (Emenda 1.4 §A.3 / P-KIND): só paga linha de classe COMISSÃO.
+          // B-COMISSAO:liquida-so-comissao
+          if (classifyCalculationKey(calculation.idempotencyKey) !== "commission") {
+            payeeLines.push({ calculationId, outcome: "not_commission" });
+            continue;
+          }
+
+          // (a) Já liquidado -> skip idempotente.
+          if (calculation.settledAt) {
+            payeeLines.push({
+              calculationId,
+              outcome: "already_settled",
+              statementGroupId: calculation.settlementRef,
+            });
+            continue;
+          }
+
+          // (b) Situação !== 'approved' -> not_released (M15).
+          // B-COMISSAO:so-liberada-paga
+          if (calculation.status !== "approved") {
+            payeeLines.push({ calculationId, outcome: "not_released" });
+            continue;
+          }
+
+          // (c1) Gate de cancelamento !== 'eligible' -> blocked (M16).
+          // B-COMISSAO:segundo-gate
+          const eligibility = await unit.evaluateCalculationWorkOrderEligibility(actor.tenantId, calculation);
+          if (eligibility !== "eligible") {
+            payeeLines.push({ calculationId, outcome: "blocked" });
+            continue;
+          }
+
+          // (c2) Para cálculo do motor (engine:calc:%), relê itens financeiros ativos da OS sob o cadeado (M30).
+          // B-COMISSAO:rele-base
+          if (await isCalculationBaseStale(unit, actor.tenantId, calculation)) {
+            payeeLines.push({ calculationId, outcome: "stale_base" });
+            continue;
+          }
+
+          // (c3) Valor <= 0 -> skipped_zero.
+          const creditCents = BigInt(calculation.amountCents || "0");
+          if (creditCents <= 0n) {
+            payeeLines.push({ calculationId, outcome: "skipped_zero" });
+            continue;
+          }
+          const creditAmount = Number(creditCents) / 100;
+
+          // (d) Lança o crédito no extrato NA MESMA TRANSAÇÃO da unidade (M31).
+          // B-COMISSAO:extrato-na-unidade
+          const { groupId } = await unit.postStatementCreditInUnit(actor, {
+            operatorProfileId,
+            sourceId: calculationId,
+            amount: creditAmount,
+            firstDueDate: settlementDate,
+            description,
+          });
+
+          // (e) Marca o cálculo liquidado exigindo status='approved', settled_at IS NULL e classe 'commission' (M28).
+          const marked = await unit.markCommissionSettled(actor.tenantId, calculationId, new Date(), groupId);
+          if (!marked) {
+            throw new CommissionError(
+              409,
+              "COMMISSION_SETTLEMENT_CONFLICT",
+              "calculation_state_changed",
+              "Commission calculation state changed concurrently during settlement.",
+            );
+          }
+
+          payeeLines.push({
+            calculationId,
+            outcome: "settled",
+            statementGroupId: groupId,
+            operatorProfileId,
+          });
+          payeeSettledCount += 1;
+          payeeNetCents += creditCents;
+        }
+
+        return {
+          payeeId: payeeUserId,
+          netCents: payeeNetCents.toString(),
+          lines: payeeLines,
+          settledCount: payeeSettledCount,
+          settledCents: payeeNetCents,
+        };
+      });
+
+      for (const line of payeeOutcome.lines) {
+        lineById.set(line.calculationId, line);
+      }
+      settledCount += payeeOutcome.settledCount;
+      settledTotalCents += payeeOutcome.settledCents;
+      payees.push({
+        payeeId: payeeOutcome.payeeId,
+        netCents: payeeOutcome.netCents,
+        lines: payeeOutcome.lines,
+      });
+    }
+
+    const lines = calculationIds.map((id) => lineById.get(id)!);
     const settledTotal = Number(settledTotalCents) / 100;
-    return { lines, settledCount, settledTotal, settlementDate };
+    return {
+      lines,
+      settledCount,
+      settledTotal,
+      settledTotalCents: settledTotalCents.toString(),
+      payees,
+      settlementDate,
+    };
   }
+}
+
+function extractWorkOrderIdFromCalculation(calculation: CommissionCalculation): string | undefined {
+  if (calculation.sourceType && isWorkOrderSourceType(calculation.sourceType) && calculation.sourceId) {
+    return calculation.sourceId;
+  }
+  if (
+    typeof calculation.calculationSnapshot.workOrderId === "string" &&
+    calculation.calculationSnapshot.workOrderId.length > 0
+  ) {
+    return calculation.calculationSnapshot.workOrderId;
+  }
+  return undefined;
+}
+
+async function isCalculationBaseStale(
+  unit: CommissionUnit,
+  tenantId: string,
+  calculation: CommissionCalculation,
+): Promise<boolean> {
+  if (!calculation.idempotencyKey.startsWith("engine:calc:")) {
+    return false;
+  }
+  const workOrderId = extractWorkOrderIdFromCalculation(calculation);
+  if (!workOrderId) {
+    return false;
+  }
+  const snapBaseRaw = calculation.calculationSnapshot.baseCents;
+  const snapBaseCents =
+    typeof snapBaseRaw === "number" && Number.isFinite(snapBaseRaw)
+      ? BigInt(Math.round(snapBaseRaw))
+      : typeof snapBaseRaw === "string" && /^\d+$/.test(snapBaseRaw)
+        ? BigInt(snapBaseRaw)
+        : null;
+  if (snapBaseCents === null) {
+    return false;
+  }
+  const items = await unit.listActiveWorkOrderFinancialItems(tenantId, workOrderId);
+  let currentBaseCents = 0n;
+  for (const item of items) {
+    currentBaseCents += decimalTextToCents(item.totalAmountText);
+  }
+  return currentBaseCents !== snapBaseCents;
 }
 
 // 404 — calculation não encontrada no tenant (isolamento cross-tenant).
