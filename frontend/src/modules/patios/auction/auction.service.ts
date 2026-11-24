@@ -181,9 +181,22 @@ export async function defaultAuction(context: AuctionApiContext, processId: stri
 }
 
 // POST .../auction/reclaim (impound:transition, art. 26 §1º) — LOTTED→ACTIVE_CUSTODY (reclamado antes da venda).
-export async function reclaimBeforeSale(context: AuctionApiContext, processId: string, reason: string): Promise<AuctionView | null> {
+export async function reclaimBeforeSale(context: AuctionApiContext, processId: string, reason: string, custodySeq: number): Promise<AuctionView | null> {
   try {
-    const response = await apiRequest<unknown>(auctionPath(processId, "/reclaim"), { ...context, method: "POST", body: { reason: reason.trim() } });
+    const response = await apiRequest<unknown>(auctionPath(processId, "/reclaim"), { ...context, method: "POST", body: { reason: reason.trim(), custody_seq: custodySeq } });
+    return adaptAuctionView(response);
+  } catch (error) {
+    rethrow(error);
+  }
+}
+
+export async function relotForResale(context: AuctionApiContext, processId: string, roundNumber: number, custodySeq: number): Promise<AuctionView | null> {
+  try {
+    const response = await apiRequest<unknown>(auctionPath(processId, "/relot"), {
+      ...context,
+      method: "POST",
+      body: { round_number: roundNumber, custody_seq: custodySeq },
+    });
     return adaptAuctionView(response);
   } catch (error) {
     rethrow(error);

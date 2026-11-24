@@ -137,6 +137,15 @@ export function auctionActionErrorMessage(reason: string | null | undefined, sta
       return "Só um processo elegível a leilão pode registrar uma rodada do certame.";
     case "auction_edict_missing":
       return "Registre o edital desta rodada antes de lançar uma rodada deserta.";
+    case "resale_not_pending":
+      return "Este veículo não está aguardando revenda.";
+    case "resale_round_not_new":
+      return "Use uma rodada nova, com número maior que as rodadas já encerradas.";
+    case "auction_reading_stale":
+      return "As informações do leilão mudaram. Recarregue o dossiê e tente novamente.";
+    case "custody_seq_required":
+    case "custody_seq_invalid":
+      return "Recarregue o dossiê antes de concluir esta ação.";
     // Valores inválidos (avaliação/lance/arremate).
     case "appraisal_amount_invalid":
     case "min_bid_amount_invalid":
@@ -299,7 +308,16 @@ export function adaptAuctionView(response: unknown): AuctionView | null {
   const edicts = (readArray(payload.edicts) ?? [])
     .map((item) => adaptEdict(item))
     .filter((item): item is AuctionEdictDto => Boolean(item));
-  return { status, strikeCount, maxAttempts, strikesRemaining, attempts, edicts };
+  return {
+    status,
+    strikeCount,
+    maxAttempts,
+    strikesRemaining,
+    attempts,
+    edicts,
+    resalePending: dataRecord.resalePending === true || dataRecord.resale_pending === true,
+    custodySeq: readNumber(dataRecord, ["custodySeq", "custody_seq"]) ?? 0,
+  };
 }
 
 function adaptEdict(input: unknown): AuctionEdictDto | null {

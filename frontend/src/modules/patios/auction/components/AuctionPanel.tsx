@@ -14,6 +14,7 @@ import {
   markEligible,
   prepareForAuction,
   reclaimBeforeSale,
+  relotForResale,
   reclassifyScrap,
   reclassifyUnrecoverable,
   recordDesertedAttempt,
@@ -68,7 +69,14 @@ export function AuctionPanel({
   const [roundOverride, setRoundOverride] = useState<number | null>(null);
 
   const stage = resolveAuctionStage(process.status);
-  const defaultRound = useMemo(() => (auction ? defaultRoundForStage(auction, stage) : 1), [auction, stage]);
+  const defaultRound = useMemo(() => {
+    if (!auction) return 1;
+    if (auction.resalePending) {
+      const designated = auction.edicts.filter((edict) => edict.status === "DESIGNATED").at(-1);
+      return designated?.roundNumber ?? Math.max(0, ...auction.attempts.map((attempt) => attempt.roundNumber), ...auction.edicts.map((edict) => edict.roundNumber)) + 1;
+    }
+    return defaultRoundForStage(auction, stage);
+  }, [auction, stage]);
   const actionRound = roundOverride ?? defaultRound;
   const roundChoices = useMemo(() => (auction ? [...new Set(auction.edicts.map((edict) => edict.roundNumber))].sort((a, b) => a - b) : []), [auction]);
   const scrapGate = useMemo(() => (auction ? deriveScrapGate(auction) : []), [auction]);
@@ -104,10 +112,11 @@ export function AuctionPanel({
   const handleClose = () => void run(() => closeAuction(context, process.id, actionRound));
   const handleDefault = () => void run(() => defaultAuction(context, process.id, actionRound));
   const handleReclaim = () => void run(async () => {
-    await reclaimBeforeSale(context, process.id, reclaimReason);
+    await reclaimBeforeSale(context, process.id, reclaimReason, auction?.custodySeq ?? process.custodySeqHead);
     setReclaimOpen(false);
     setReclaimReason("");
   });
+  const handleRelot = () => void run(() => relotForResale(context, process.id, actionRound, auction?.custodySeq ?? process.custodySeqHead));
   const handleWithdrawSettled = () => void run(() => withdrawSettled(context, process.id));
 
   if (denied) {
@@ -246,7 +255,37 @@ export function AuctionPanel({
 
       {stage === "lotted" ? (
         <>
-          {canTransition ? (
+          {auction.resalePending ? (
+            <>
+              <Card title="Nova rodada do leilão">
+                {actionError ? <Alert title="Não foi possível concluir" tone="danger">{actionError}</Alert> : null}
+                <Alert title="Revenda necessária" tone="warning">
+                  O arrematante não pagou. Para vender de novo, registre o edital e a avaliação da nova rodada e coloque o veículo em lote.
+                </Alert>
+                {canTransition ? (
+                  <div style={actionRow}>
+                    <Button type="button" variant="secondary" onClick={() => setEditalOpen(true)} disabled={busy}>
+                      <Boxes size={15} aria-hidden /> Registrar edital
+                    </Button>
+                    {roundSelector}
+                    <Button type="button" onClick={handleRelot} disabled={busy} aria-label="Colocar em lote para novo leilão">
+                      <Boxes size={15} aria-hidden /> {busy ? "Loteando…" : "Colocar em lote para novo leilão"}
+                    </Button>
+                  </div>
+                ) : <EmptyState title="Somente leitura" detail="Você não tem permissão para preparar a nova rodada." />}
+              </Card>
+              {canAppraise ? (
+                <AppraisalForm
+                  defaultRound={defaultRound}
+                  appraisalAmount={activeEdict?.appraisalAmount ?? null}
+                  minBidAmount={activeEdict?.minBidAmount ?? null}
+                  busy={busy}
+                  error={actionError}
+                  onSubmit={handleAppraisal}
+                />
+              ) : null}
+            </>
+          ) : canTransition ? (
             <SaleForm defaultRound={defaultRound} busy={busy} error={actionError} onSubmit={handleSale} />
           ) : (
             <Card title="Registrar arremate">

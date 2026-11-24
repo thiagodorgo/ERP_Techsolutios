@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import React from "react";
@@ -190,4 +191,15 @@ test("painel: com impound:read em modo mock — empty honesto (D-007: não fabri
   assert.doesNotMatch(html, /\btenant\b/i);
   assert.doesNotMatch(html, /pol[íi]cia/i);
   assert.doesNotMatch(html, new RegExp(TENANT_ID));
+});
+
+test("painel: revenda pendente mantém o painel existente e oferece edital, avaliação e relote antes do arremate", async () => {
+  const html = await renderPanel(["impound:read", "impound:transition", "auction:appraise"]);
+  assert.match(html, /Leilão indisponível/, "controle: o renderPanel continua no estado vazio honesto sem resposta do backend");
+  const source = await readFile(new URL("../src/modules/patios/auction/components/AuctionPanel.tsx", import.meta.url), "utf8");
+  assert.match(source, /O arrematante não pagou\. Para vender de novo, registre o edital e a avaliação da nova rodada e coloque o veículo em lote\./);
+  assert.match(source, /Colocar em lote para novo leilão/);
+  assert.match(source, /auction\.resalePending/);
+  assert.match(source, /Registrar edital/);
+  assert.match(source, /<AppraisalForm/);
 });

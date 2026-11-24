@@ -66,6 +66,8 @@ export type AuctionView = {
   readonly maxAttempts: number;
   readonly strikesRemaining: number;
   readonly status: ImpoundStatus;
+  readonly resalePending: boolean;
+  readonly custodySeq: number;
   readonly attempts: readonly AuctionAttemptDto[];
   readonly edicts: readonly AuctionEdictDto[];
 };
