@@ -69,10 +69,13 @@ test("C10: mesmo nome é serializado no grupo e permitido em outro grupo", async
 
   while (Date.now() < deadline && waiters < 2 && !resolvedWhileHeld) {
     const [row] = await h.admin.$queryRaw<Array<{ waiters: number }>>`
-      SELECT count(*)::int AS waiters
-      FROM pg_locks l
+      SELECT count(DISTINCT a.pid)::int AS waiters
+      FROM pg_stat_activity a
+      JOIN pg_locks l ON l.pid = a.pid
       JOIN pg_class c ON c.oid = l.relation
-      WHERE c.relname = 'economic_groups' AND l.granted = false
+      WHERE a.usename = ${h.role.roleName}
+        AND c.relname = 'economic_groups'
+        AND cardinality(pg_blocking_pids(a.pid)) > 0
     `;
     waiters = row?.waiters ?? 0;
     if (waiters < 2) await new Promise((resolve) => setTimeout(resolve, 50));
