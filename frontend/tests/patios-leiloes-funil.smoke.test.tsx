@@ -194,6 +194,7 @@ test("painel: com impound:read em modo mock — empty honesto (D-007: não fabri
 
 test("LD11 · contrato visual do leilão sem lance usa serviço próprio e mensagens PT-BR seguras", async () => {
   const service = await import("../src/modules/patios/auction/auction.service");
+  const { shouldShowDesertedAfterLot } = await import("../src/modules/patios/auction/components/AuctionPanel");
   const { auctionActionErrorMessage, defaultRoundForStage } = await import("../src/modules/patios/auction/auction.adapter");
   const view = {
     status: "AUCTION_ELIGIBLE",
@@ -206,6 +207,8 @@ test("LD11 · contrato visual do leilão sem lance usa serviço próprio e mensa
   assert.deepEqual(
     {
       servico: typeof (service as Record<string, unknown>).recordDesertedAfterLot,
+      corpo: service.buildDesertedAfterLotBody({ roundNumber: 3, custodySeq: 5, notes: "Sem lance" }),
+      exibe: [shouldShowDesertedAfterLot("lotted", true, { resalePending: false }), shouldShowDesertedAfterLot("lotted", true, { resalePending: true }), shouldShowDesertedAfterLot("lotted", false, { resalePending: false })],
       rodada: defaultRoundForStage(view, "eligible"),
       lote: auctionActionErrorMessage("deserted_round_not_lotted"),
       resultado: auctionActionErrorMessage("deserted_round_has_result"),
@@ -214,6 +217,8 @@ test("LD11 · contrato visual do leilão sem lance usa serviço próprio e mensa
     },
     {
       servico: "function",
+      corpo: { round_number: 3, custody_seq: 5, notes: "Sem lance" },
+      exibe: [true, false, false],
       rodada: 2,
       lote: "Esta rodada não é a que está em leilão. Atualize a página e confira.",
       resultado: "Esta rodada já tem resultado registrado. Se o arrematante não pagou, registre o novo lote.",

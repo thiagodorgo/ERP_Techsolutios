@@ -93,9 +93,10 @@ test("LD1/LD2 · leilão sem lance depois do lote grava DESERTED, retorna ao pá
     const state = await ctx.auction.getState(ctx.tenantId, ctx.processId);
     const process = await ctx.impound.findProcessById(ctx.tenantId, ctx.processId);
     const events = await ctx.impound.listEvents(ctx.tenantId, ctx.processId);
+    const suspensions = await ctx.impound.listDailySuspensions(ctx.tenantId, ctx.processId);
     assert.deepEqual(
-      { http: response.status, estado: process?.status, resultado: state?.attempts.find((item) => item.roundNumber === 1)?.outcome, emLote: state?.edicts.filter((item) => item.status === "LOTTED").length, eventos: events.length - beforeEvents.length, razao: (events.at(-1)?.payload as { reason?: string } | undefined)?.reason },
-      { http: 200, estado: "ACTIVE_CUSTODY", resultado: "DESERTED", emLote: 0, eventos: 2, razao: "deserted_after_lot" },
+      { http: response.status, estado: process?.status, resultado: state?.attempts.find((item) => item.roundNumber === 1)?.outcome, emLote: state?.edicts.filter((item) => item.status === "LOTTED").length, eventos: events.length - beforeEvents.length, razao: (events.at(-1)?.payload as { reason?: string } | undefined)?.reason, periodosAbertos: suspensions.filter((item) => item.to === undefined).length },
+      { http: 200, estado: "ACTIVE_CUSTODY", resultado: "DESERTED", emLote: 0, eventos: 2, razao: "deserted_after_lot", periodosAbertos: 0 },
       JSON.stringify(response.body),
     );
   });
@@ -119,6 +120,23 @@ test("LD5/LD6 · recusa rodada diferente, resultado existente e leitura ausente/
   });
 });
 
+test("LD5 · revenda pendente recusa a rodada com resultado e uma rodada que não está em lote", async () => {
+  const ctx = await seedLotted();
+  await ctx.auction.recordSaleAtomic({ ...ctx.base, expectedFrom: "LOTTED", roundNumber: 1, winnerRef: "REF-NEUTRA", soldAmount: "8000.00", saleNoteReference: "NOTA-1", occurredAt: new Date() });
+  await ctx.auction.defaultAuctionAtomic({ ...ctx.base, expectedFrom: "AUCTIONED", roundNumber: 2, occurredAt: new Date() });
+  const state = await ctx.auction.getState(ctx.tenantId, ctx.processId);
+  await withApp(async (baseUrl) => {
+    const results = [
+      await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 1, custody_seq: state?.custodySeqHead }),
+      await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 3, custody_seq: state?.custodySeqHead }),
+    ];
+    assert.deepEqual(results.map(({ status, reason }) => ({ status, reason })), [
+      { status: 409, reason: "deserted_round_has_result" },
+      { status: 409, reason: "deserted_round_not_lotted" },
+    ]);
+  });
+});
+
 test("LD7 · auction:reclaim governa o ato e outra organização recebe 404", async () => {
   const denied = await seedLotted();
   await withApp(async (baseUrl) => {
@@ -130,7 +148,7 @@ test("LD7 · auction:reclaim governa o ato e outra organização recebe 404", as
 
 test("LD9/LD13 · rodada com resultado ou inferior não pode voltar à preparação nem ao lote", async () => {
   const ctx = await seedEligible();
-  for (const roundNumber of [1, 2]) {
+  for (const roundNumber of [1, 2, 3]) {
     await ctx.auction.registerEdictAtomic({ ...ctx.base, roundNumber, classification: "CONSERVED", edictReference: `EDITAL-${roundNumber}`, publishedAt: new Date("2026-01-02T12:00:00.000Z"), businessDays: 15, occurredAt: new Date() });
     await ctx.auction.setAppraisalAtomic({ ...ctx.base, roundNumber, appraisalAmount: "10000.00", minBidAmount: "5000.00" });
   }
@@ -138,6 +156,11 @@ test("LD9/LD13 · rodada com resultado ou inferior não pode voltar à preparaç
   await assert.rejects(
     () => ctx.auction.prepareAuctionAtomic({ ...ctx.base, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: 1, occurredAt: new Date() }),
     (error: unknown) => (error as { reason?: string }).reason === "prep_round_has_result",
+  );
+  await ctx.auction.prepareAuctionAtomic({ ...ctx.base, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: 3, occurredAt: new Date() });
+  await assert.rejects(
+    () => ctx.auction.lotAuctionAtomic({ ...ctx.base, expectedFrom: "AUCTION_PREP", roundNumber: 1, occurredAt: new Date() }),
+    (error: unknown) => (error as { reason?: string }).reason === "lot_round_has_result",
   );
 });
 
@@ -151,6 +174,23 @@ test("LD14/LD15 · resultado tardio inferior é recusado e repetição da mesma 
     () => ctx.auction.recordAttemptAtomic({ ...ctx.base, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: 1, occurredAt: new Date() }),
     (error: unknown) => (error as { reason?: string }).reason === "attempt_round_not_new",
   );
+});
+
+test("LD15 · inadimplência tardia usa somente rodada nova", async () => {
+  const ctx = await seedEligible();
+  for (const roundNumber of [1, 2]) {
+    await ctx.auction.registerEdictAtomic({ ...ctx.base, roundNumber, classification: "CONSERVED", edictReference: `EDITAL-${roundNumber}`, publishedAt: new Date("2026-01-02T12:00:00.000Z"), businessDays: 15, occurredAt: new Date() });
+    await ctx.auction.setAppraisalAtomic({ ...ctx.base, roundNumber, appraisalAmount: "10000.00", minBidAmount: "5000.00" });
+  }
+  await ctx.auction.prepareAuctionAtomic({ ...ctx.base, expectedFrom: "AUCTION_ELIGIBLE", roundNumber: 2, occurredAt: new Date() });
+  await ctx.auction.lotAuctionAtomic({ ...ctx.base, expectedFrom: "AUCTION_PREP", roundNumber: 2, occurredAt: new Date() });
+  await ctx.auction.recordSaleAtomic({ ...ctx.base, expectedFrom: "LOTTED", roundNumber: 2, winnerRef: "REF-NEUTRA", soldAmount: "8000.00", saleNoteReference: "NOTA-2", occurredAt: new Date() });
+  await assert.rejects(
+    () => ctx.auction.defaultAuctionAtomic({ ...ctx.base, expectedFrom: "AUCTIONED", roundNumber: 1, occurredAt: new Date() }),
+    (error: unknown) => (error as { reason?: string }).reason === "default_round_not_new",
+  );
+  const result = await ctx.auction.defaultAuctionAtomic({ ...ctx.base, expectedFrom: "AUCTIONED", roundNumber: 3, occurredAt: new Date() });
+  assert.deepEqual({ status: result.status, round: result.attempt.roundNumber }, { status: "LOTTED", round: 3 });
 });
 
 test("LD12 · controle: deserto antes do lote continua idempotente por rodada em ordem", async () => {

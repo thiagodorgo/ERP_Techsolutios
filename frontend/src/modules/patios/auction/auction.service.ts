@@ -193,12 +193,17 @@ export async function reclaimBeforeSale(context: AuctionApiContext, processId: s
 
 export async function recordDesertedAfterLot(context: AuctionApiContext, processId: string, input: DesertedAfterLotInput): Promise<AuctionView | null> {
   try {
-    const desertedAfterLotBody = { round_number: input.roundNumber, custody_seq: input.custodySeq, notes: input.notes };
+    const desertedAfterLotBody = buildDesertedAfterLotBody(input);
     const response = await apiRequest<unknown>(auctionPath(processId, "/deserted"), { ...context, method: "POST", body: desertedAfterLotBody });
     return adaptAuctionView(response);
   } catch (error) {
     rethrow(error);
   }
+}
+
+export function buildDesertedAfterLotBody(input: DesertedAfterLotInput) {
+  const desertedAfterLotBody = { round_number: input.roundNumber, custody_seq: input.custodySeq, notes: input.notes };
+  return desertedAfterLotBody;
 }
 
 export async function relotForResale(context: AuctionApiContext, processId: string, roundNumber: number, custodySeq: number): Promise<AuctionView | null> {

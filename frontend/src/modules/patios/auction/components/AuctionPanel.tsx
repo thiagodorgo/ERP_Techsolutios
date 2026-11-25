@@ -71,7 +71,6 @@ export function AuctionPanel({
   const [roundOverride, setRoundOverride] = useState<number | null>(null);
 
   const stage = resolveAuctionStage(process.status);
-  const showDesertedAfterLot = stage === "lotted" && canReclaim && !auction?.resalePending;
   const defaultRound = useMemo(() => {
     if (!auction) return 1;
     if (auction.resalePending) {
@@ -175,6 +174,8 @@ export function AuctionPanel({
       </Card>
     );
   }
+
+  const showDesertedAfterLot = shouldShowDesertedAfterLot(stage, canReclaim, auction);
 
   const roundSelector = roundChoices.length > 1 ? (
     <Select label="Rodada" value={String(actionRound)} onChange={(event) => setRoundOverride(Number(event.target.value))}>
@@ -513,3 +514,8 @@ export function AuctionPanel({
 }
 
 export default AuctionPanel;
+
+export function shouldShowDesertedAfterLot(stage: ReturnType<typeof resolveAuctionStage>, canReclaim: boolean, auction: { readonly resalePending: boolean }): boolean {
+  const showDesertedAfterLot = stage === "lotted" && canReclaim && !auction.resalePending;
+  return showDesertedAfterLot;
+}
