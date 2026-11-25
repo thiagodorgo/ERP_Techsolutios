@@ -6743,7 +6743,7 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 ## D-DONO-2511-JUNTA-641-CODEX6 (2026-11-25 ~14:20 SP) — as cadeiras da J-641 vão para os Codex, com identidade nova
 
 - **Fato (palavras do dono):** *"Códex 6 com identidade nova"*.
-- **Efeito:** com a DeepSeek sem saldo, as 3 cadeiras da J-641 tinham caído (o inspetor já tinha dado LIBERADO e o parcial estava gravado). Elas passam aos Codex como sucessoras pelo P3 — cada sucessor re-executa a evidência do caído —, com identidade nova. A conta 6 foi a do dev do bloco, e o dono a autorizou a votar; o cruzamento é declarado na ata e em cada voto. Leitura do orquestrador, declarada como tal: a cadeira C2 foi para a conta 7, sem relação com o bloco, para não enfileirar as 3 numa conta só.
+- **Efeito:** com a DeepSeek indisponível, as 3 cadeiras da J-641 tinham caído (o inspetor já tinha dado LIBERADO e o parcial estava gravado). Elas passam aos Codex como sucessoras pelo P3 — cada sucessor re-executa a evidência do caído —, com identidade nova. A conta 6 foi a do dev do bloco, e o dono a autorizou a votar; o cruzamento é declarado na ata e em cada voto. Leitura do orquestrador, declarada como tal: a cadeira C2 foi para a conta 7, sem relação com o bloco, para não enfileirar as 3 numa conta só.
 
 ## D-DONO-2511-JUNTA-642-DEEPSEEK (2026-11-25 ~16:15 SP) — as cadeiras da J-642 na DeepSeek
 
@@ -6755,7 +6755,7 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 ## D-DONO-2511-QWEN-BRACO-2-3 (2026-11-25 ~18:30 SP) — o Qwen entra como braço, com 2 a 3 tarefas em paralelo
 
 - **Fato (palavras do dono):** *"instale a extensao oficial"* (a extensão do Qwen no editor), *"os dados do Qwen"* (o Qwen no painel) e *"Claude, seu limite com o qwen é 2 a 3 tarefas."*.
-- **Efeito:** o Qwen entra como braço de trabalho, por assinatura (modelo de topo da casa, nível menor declarado), com perfil próprio e a chave fora do repositório, só em variável de usuário. Exceção à regra de uma tarefa por braço: até 2 a 3 tarefas em paralelo, só para o Qwen. O painel do orquestrador passa a mostrar o Qwen no padrão das outras IAs (nome, limite da assinatura, o que faz e a meta), sem custo por chamada. Estreou na auditoria do achado grave da J-642 e nas críticas do plano do `B-AUTH-LOGIN-PLATAFORMA` e da Emenda 1.2.
+- **Efeito:** o Qwen entra como braço de trabalho, por assinatura (modelo de topo da casa, nível menor declarado), com perfil próprio e a chave fora do repositório, só em variável de usuário. Exceção à regra de uma tarefa por braço: até 2 a 3 tarefas em paralelo, só para o Qwen. O painel do orquestrador passa a mostrar o Qwen no padrão das outras IAs (nome, limite da assinatura, o que faz e a meta), dentro da assinatura. Estreou na auditoria do achado grave da J-642 e nas críticas do plano do `B-AUTH-LOGIN-PLATAFORMA` e da Emenda 1.2.
 
 ## D-DONO-2511-USUARIO-COM-PAPEL (2026-11-25 ~19:04 SP) — cadastro de usuário só com papel definido
 
