@@ -513,6 +513,28 @@ export class AuctionService {
     return this.toView(snapshot);
   }
 
+  async recordDesertedAfterLot(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<AuctionView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
+    const notes = parseNotes(body.notes);
+    const desertExpectedSeq = parseCustodySeq(body.custody_seq ?? body.custodySeq);
+    const decision = resolveTransition(process, "ACTIVE_CUSTODY", { auctionReclaim: { reasonMissing: false }, reason: "deserted_after_lot" });
+    const desertOccurredAt = new Date();
+    const snapshot = await this.repository.desertAfterLotAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      roundNumber,
+      expectedCustodySeq: desertExpectedSeq,
+      notes,
+      actorId: actor.userId,
+      occurredAt: desertOccurredAt,
+    });
+    return this.toView(snapshot);
+  }
+
   async relotForResale(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<AuctionView> {
     const normalizedId = parseRequiredUuid(processId, "processId");
     const process = await this.impound.findProcessById(actor.tenantId, normalizedId);

@@ -1111,6 +1111,7 @@ o estado atual não permite o salto.
 | POST | `/impound-processes/:id/charges/settle` | `charging:settle` | Quitação dos encargos. |
 | GET/POST | `/impound-processes/:id/release` (+ `/start`, `/consume`, `/recipient`, `/checks`, `/approve`, `/for-repair/start`, `/for-repair/return`) | `impound:read`/`transition`, `release:process`/`approve` | Liberação do veículo (I5). |
 | GET/POST | `/impound-processes/:id/auction` (+ `/eligibility`, `/attempts`, `/edicts`, `/appraisal`, `/lot`, `/sale`, `/settlement`, …) | `impound:read`/`transition`, `auction:appraise` | Funil de leilão / elegibilidade (2-strikes, I8) e liquidação em cascata. |
+| POST | `/impound-processes/:id/auction/deserted` | `auction:reclaim` | Registra leilão sem venda após o lote, fecha a suspensão de diárias e devolve o veículo à custódia ativa. |
 
 **B-PATIO-LIVRO-VAZIO — reasons de guard da liberação (por rota e camada):**
 

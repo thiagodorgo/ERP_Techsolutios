@@ -1495,6 +1495,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/deserted": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/impound-processes/:processId/auction/reclaim": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1

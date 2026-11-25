@@ -295,6 +295,17 @@ export type ReclaimAuctionInput = {
   readonly occurredAt: Date;
 };
 
+export type DesertAfterLotInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly expectedFrom: ImpoundStatus;
+  readonly roundNumber: number;
+  readonly expectedCustodySeq: number;
+  readonly notes?: string;
+  readonly actorId?: string;
+  readonly occurredAt: Date;
+};
+
 export type WithdrawSettledInput = Omit<ReclaimAuctionInput, "expectedCustodySeq">;
 
 export type RelotForResaleInput = {

@@ -347,6 +347,7 @@
  "POST /api/v1/impound-processes/:processId/auction/attempts": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/close": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/default": "{patios}",
+ "POST /api/v1/impound-processes/:processId/auction/deserted": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/edicts": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/eligibility": "{patios}",
  "POST /api/v1/impound-processes/:processId/auction/lot": "{patios}",

@@ -35,6 +35,7 @@ import {
   type CloseAuctionInput,
   type DefaultAuctionInput,
   type DefaultAuctionResult,
+  type DesertAfterLotInput,
   type LotAuctionInput,
   type MarkEligibleInput,
   type PrepareAuctionInput,
@@ -679,6 +680,41 @@ export class PrismaAuctionRepository implements AuctionRepository {
     return { status: "ACTIVE_CUSTODY", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
   }
 
+  async desertAfterLotAtomic(input: DesertAfterLotInput): Promise<AuctionStateSnapshot> {
+    const desertLocked = await this.lockProcess(input.tenantId, input.processId);
+    if (!desertLocked) throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    if (desertLocked.status !== input.expectedFrom) throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    const desertSeqMatches = desertLocked.custody_seq_head === input.expectedCustodySeq;
+    if (!desertSeqMatches) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
+    const desertEdicts = await this.listEdicts(input.tenantId, input.processId);
+    const desertLottedRound = desertEdicts.find((edict) => edict.status === "LOTTED")?.roundNumber;
+    const desertRoundIsLotted = desertLottedRound === input.roundNumber;
+    if (!desertRoundIsLotted) throw new AuctionError(409, "AUCTION_CONFLICT", "deserted_round_not_lotted", "Only the currently lotted round can be recorded as deserted.");
+    const desertRoundHasResult = (await this.readAttemptForRound(input.tenantId, input.processId, input.roundNumber)).length > 0;
+    if (desertRoundHasResult) throw new AuctionError(409, "AUCTION_CONFLICT", "deserted_round_has_result", "The lotted round already has a recorded outcome.");
+    let attemptRow;
+    try {
+      attemptRow = await this.client.auctionAttempt.create({ data: { tenant_id: input.tenantId, process_id: input.processId, round_number: input.roundNumber, outcome: "DESERTED", notes: input.notes ?? null, recorded_by: input.actorId ?? null } });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "A concurrent deserted result raced this one; retry.");
+      throw error;
+    }
+    const attempt = mapAttempt(attemptRow);
+    await this.closeLottedEdicts(input.tenantId, input.processId);
+    const desertEdict = desertEdicts.find((edict) => edict.roundNumber === input.roundNumber);
+    const desertClosed = await this.appendEventTx(input.tenantId, input.processId, desertLocked, {
+      type: "AUCTION_CLOSED", payload: buildAuctionClosedEventPayload(attempt, maskEdictReference(desertEdict?.edictReference)), occurredAt: input.occurredAt, actorId: input.actorId,
+    });
+    await this.convertLegacyFreezeTx(input.tenantId, input.processId, desertLocked.status, desertLocked.frozen_at);
+    const desertSuspensionClosed = await this.closeDailySuspensionTx(input.tenantId, input.processId, input.occurredAt);
+    void desertSuspensionClosed;
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "ACTIVE_CUSTODY", frozen_at: null } });
+    await this.appendEventTx(input.tenantId, input.processId, { custody_seq_head: desertClosed.seq, custody_hash_head: desertClosed.hash }, {
+      type: "STATUS_CHANGE", payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "deserted_after_lot" }, occurredAt: input.occurredAt, actorId: input.actorId,
+    });
+    return { status: "ACTIVE_CUSTODY", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
+  }
+
 
   async withdrawSettledAtomic(input: WithdrawSettledInput): Promise<AuctionStateSnapshot> {
     const locked = await this.lockProcess(input.tenantId, input.processId);
@@ -997,6 +1033,10 @@ export class RlsPrismaAuctionRepository implements AuctionRepository {
 
   reclaimAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).reclaimAtomic(input));
+  }
+
+  desertAfterLotAtomic(input: DesertAfterLotInput): Promise<AuctionStateSnapshot> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).desertAfterLotAtomic(input));
   }
 
   relotAtomic(input: RelotForResaleInput): Promise<AuctionStateSnapshot> {
