@@ -168,5 +168,12 @@ test("S11: criar usuário em organização suspensa é recusado", async () => {
   });
   assert.equal(response.status, 400, JSON.stringify(response.body));
   assert.equal(response.body.error?.reason, "inactive_tenant");
+  const coreUser = await requestJson(h.baseUrl, "/api/v1/users", {
+    method: "POST",
+    headers: { "x-tenant-id": org.tenantId, "x-user-id": org.userId, "x-role": "tenant_admin" },
+    body: { name: "Operador suspenso", email: `s11-core-${Date.now()}@example.com`, roles: ["operator"] },
+  });
+  assert.equal(coreUser.status, 400, JSON.stringify(coreUser.body));
+  assert.equal(coreUser.body.error?.reason, "inactive_tenant");
   assert.equal(await h.admin.user.count({ where: { tenant_id: org.tenantId } }), before);
 });

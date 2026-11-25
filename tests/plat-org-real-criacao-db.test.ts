@@ -10,6 +10,7 @@ import {
   montarPlatOrgReal,
   type PlatOrgRealHarness,
 } from "./helpers/plat-org-real.js";
+import { requestJson } from "./helpers/auth-identity-fixture.js";
 
 const connectionString = process.env.DATABASE_URL;
 assert.ok(connectionString, "DATABASE_URL is required");
@@ -105,4 +106,61 @@ test("C10: mesmo nome é serializado no grupo e permitido em outro grupo", async
     group: { id: groupB.id },
   });
   assert.equal(otherGroup.status, 201, JSON.stringify(otherGroup.body));
+});
+
+test("C8: plano inválido é recusado antes de criar a organização", async () => {
+  const h = await harness();
+  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const name = `Filial C8 ${suffix}`;
+  const group = await criarGrupo(h, `Grupo C8 ${suffix}`);
+
+  const response = await requestJson(h.baseUrl, "/api/v1/platform/tenants", {
+    method: "POST",
+    headers: h.platformHeaders,
+    body: { name, group: { id: group.id }, plan: { code: "starter" } },
+  });
+
+  assert.equal(response.status, 422, JSON.stringify(response.body));
+  assert.equal(response.body.error?.reason, "plan_not_found");
+  assert.equal(await h.admin.tenant.count({ where: { name } }), 0);
+  assert.equal(await h.admin.economicGroupMember.count({ where: { group_id: group.id } }), 0);
+});
+
+test("C15: paridade do Passo 1 com PrismaCoreSaasStore.createTenant sob papel sem bypass", async () => {
+  const h = await harness();
+  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { PrismaCoreSaasStore } = await import("../src/modules/core-saas/store/prisma-core-saas.store.js");
+  const store = new PrismaCoreSaasStore(h.client);
+  const orgStore = await store.createTenant({ name: `Filial Paridade ${suffix}`, status: "active", modules: [] });
+  h.tenantIds.push(orgStore.id);
+
+  const created = await criarOrganizacaoPelaPlataforma(h, {
+    name: `Filial Paridade ${suffix}`,
+    group: { name: `Grupo C15 ${suffix}` },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  const orgRouteId = (created.body.data as { organization: { id: string } }).organization.id;
+
+  const [rowStore, rowRoute] = await Promise.all([
+    h.admin.tenant.findUniqueOrThrow({ where: { id: orgStore.id } }),
+    h.admin.tenant.findUniqueOrThrow({ where: { id: orgRouteId } }),
+  ]);
+  const slugPattern = new RegExp(`^filial-paridade-${suffix}-[a-z0-9]+$`);
+  assert.match(rowStore.slug, slugPattern);
+  assert.match(rowRoute.slug, slugPattern);
+  assert.equal(rowRoute.status, rowStore.status);
+  assert.deepEqual(rowRoute.modules, rowStore.modules);
+
+  const [auditStore, auditRoute] = await Promise.all([
+    h.admin.auditLog.findFirst({ where: { tenant_id: orgStore.id, action: "tenant.created" } }),
+    h.admin.auditLog.findFirst({ where: { tenant_id: orgRouteId, action: "tenant.created" } }),
+  ]);
+  assert.ok(auditStore, "store.createTenant deve gravar tenant.created");
+  assert.ok(auditRoute, "rota da plataforma deve gravar tenant.created sob RLS");
+  assert.equal(auditRoute.action, auditStore.action);
+  assert.equal(auditRoute.resource_type, auditStore.resource_type);
+  assert.equal(auditRoute.actor_type, auditStore.actor_type);
+  assert.equal(auditRoute.outcome, auditStore.outcome);
+  assert.equal(auditRoute.severity, auditStore.severity);
+  assert.equal(auditRoute.tenant_id, orgRouteId);
 });

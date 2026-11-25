@@ -108,6 +108,103 @@ test("R9 — o repositório Prisma reutiliza slug e contexto RLS canônicos", as
   assert.doesNotMatch(source, /normalize\(["']NFD["']\)/);
 });
 
+test("C14 — criação intercalada com addMember não fecha vínculo de outra filial do grupo", async () => {
+  const { InMemoryPlatformOrganizationsRepository } = await import("../src/modules/platform/platform-organizations.repository.js");
+  const { PlatformOrganizationsService } = await import("../src/modules/platform/platform-organizations.service.js");
+  const { InMemoryEconomicGroupsRepository } = await import("../src/modules/subscription-billing/economic-groups/economic-groups.repository.js");
+  const { EconomicGroupsService } = await import("../src/modules/subscription-billing/economic-groups/economic-groups.service.js");
+  const { InMemoryBillingProfileRepository } = await import("../src/modules/subscription-billing/billing-profile/billing-profile.js");
+  const { createDefaultSubscriptionsService } = await import("../src/modules/subscription-billing/subscription-billing.service.js");
+
+  const repository = new InMemoryPlatformOrganizationsRepository();
+  const baseGroupRepository = new InMemoryEconomicGroupsRepository();
+  const directory = {
+    getTenant: async (id: string) => {
+      const row = await repository.findById(id);
+      return row ? { id: row.id, slug: row.slug, name: row.name } : null;
+    },
+    listTenantIds: async () => (await repository.list()).map((row) => row.id),
+  };
+
+  let shouldInterleave = false;
+  let bReads = 0;
+  let service!: InstanceType<typeof PlatformOrganizationsService>;
+  let groupId!: string;
+
+  const decoratedGroupRepository: typeof baseGroupRepository = {
+    listGroups: () => baseGroupRepository.listGroups(),
+    getGroup: (id) => baseGroupRepository.getGroup(id),
+    createGroup: (input) => baseGroupRepository.createGroup(input),
+    updateGroup: (id, patch) => baseGroupRepository.updateGroup(id, patch),
+    softDeleteGroup: (id, actorId, at) => baseGroupRepository.softDeleteGroup(id, actorId, at),
+    applyMembershipChanges: (input) => baseGroupRepository.applyMembershipChanges(input),
+    async listMembershipsOfTenants(tenantIds) {
+      const result = await baseGroupRepository.listMembershipsOfTenants(tenantIds);
+      if (shouldInterleave) {
+        bReads += 1;
+        if (bReads === 2) {
+          shouldInterleave = false;
+          const interleaveService = new PlatformOrganizationsService(
+            repository,
+            new EconomicGroupsService(baseGroupRepository, directory),
+            await createDefaultSubscriptionsService(),
+            new InMemoryBillingProfileRepository(),
+          );
+          await interleaveService.createTenant({ name: "Filial A Intercalada", group: { id: groupId } }, "usr_platform_test");
+        }
+      }
+      return result;
+    },
+  };
+
+  const groups = new EconomicGroupsService(decoratedGroupRepository, directory);
+  service = new PlatformOrganizationsService(
+    repository,
+    groups,
+    await createDefaultSubscriptionsService(),
+    new InMemoryBillingProfileRepository(),
+  );
+
+  const group = await groups.createGroup({ name: "Grupo C14", actorId: "usr_platform_test" });
+  groupId = group.id;
+  const seed = await service.createTenant({ name: "Filial Semente", group: { id: groupId } }, "usr_platform_test");
+  assert.equal(seed.provisioning.group.status, "done");
+
+  shouldInterleave = true;
+  const createdB = await service.createTenant({ name: "Filial B Intercalada", group: { id: groupId } }, "usr_platform_test");
+  assert.equal(createdB.provisioning.group.status, "done");
+
+  const detail = await groups.getGroup(groupId);
+  const activeNames = detail.members.filter((m) => m.validTo === null).map((m) => m.tenantName).sort();
+  assert.deepEqual(activeNames, ["Filial A Intercalada", "Filial B Intercalada", "Filial Semente"]);
+});
+
+test("C16 — addMember recusa organização que já está em outro grupo com 422 tenant_in_another_group", async () => {
+  const { InMemoryPlatformOrganizationsRepository } = await import("../src/modules/platform/platform-organizations.repository.js");
+  const { InMemoryEconomicGroupsRepository } = await import("../src/modules/subscription-billing/economic-groups/economic-groups.repository.js");
+  const { EconomicGroupsService } = await import("../src/modules/subscription-billing/economic-groups/economic-groups.service.js");
+
+  const repository = new InMemoryPlatformOrganizationsRepository();
+  const groupRepository = new InMemoryEconomicGroupsRepository();
+  const directory = {
+    getTenant: async (id: string) => {
+      const row = await repository.findById(id);
+      return row ? { id: row.id, slug: row.slug, name: row.name } : null;
+    },
+    listTenantIds: async () => (await repository.list()).map((row) => row.id),
+  };
+  const groups = new EconomicGroupsService(groupRepository, directory);
+  const groupX = await groups.createGroup({ name: "Grupo C16 X", actorId: "usr_platform_test" });
+  const groupY = await groups.createGroup({ name: "Grupo C16 Y", actorId: "usr_platform_test" });
+  const created = await repository.create({ name: "Filial C16", group: { id: groupX.id }, actorUserId: "usr_platform_test" });
+
+  await groups.addMember(groupX.id, { tenantId: created.organization.id, actorId: "usr_platform_test" });
+  await assert.rejects(
+    () => groups.addMember(groupY.id, { tenantId: created.organization.id, actorId: "usr_platform_test" }),
+    (error: { statusCode?: number; reason?: string }) => error.statusCode === 422 && error.reason === "tenant_in_another_group",
+  );
+});
+
 async function withApi(run: (baseUrl: string) => Promise<void>): Promise<void> {
   process.env.LOG_LEVEL = "silent";
   process.env.JWT_SECRET = "dev-only-change-me";
