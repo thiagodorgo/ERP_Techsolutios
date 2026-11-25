@@ -666,6 +666,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
       "POST /api/v1/impound-processes/:processId/auction/close",
       "POST /api/v1/impound-processes/:processId/auction/default",
       "POST /api/v1/impound-processes/:processId/auction/reclaim",
+      "POST /api/v1/impound-processes/:processId/auction/deserted",
       "POST /api/v1/impound-processes/:processId/auction/relot",
     ],
   },

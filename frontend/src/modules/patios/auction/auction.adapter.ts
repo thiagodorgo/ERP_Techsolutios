@@ -143,6 +143,16 @@ export function auctionActionErrorMessage(reason: string | null | undefined, sta
       return "A avaliação não pode ser alterada depois que a rodada foi colocada em lote.";
     case "appraisal_round_has_result":
       return "A avaliação não pode ser alterada depois que a rodada teve resultado.";
+    case "deserted_round_not_lotted":
+      return "Esta rodada não é a que está em leilão. Atualize a página e confira.";
+    case "deserted_round_has_result":
+      return "Esta rodada já tem resultado registrado. Se o arrematante não pagou, registre o novo lote.";
+    case "prep_round_has_result":
+    case "lot_round_has_result":
+      return "Esta rodada já foi a leilão. Registre o edital de uma rodada nova.";
+    case "attempt_round_not_new":
+    case "default_round_not_new":
+      return "Já existe resultado numa rodada de número igual ou maior. Registre na rodada nova.";
     case "resale_not_pending":
       return "Este veículo não está aguardando revenda.";
     case "resale_round_not_new":

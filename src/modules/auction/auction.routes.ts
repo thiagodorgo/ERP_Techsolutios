@@ -34,6 +34,7 @@ export function createAuctionRouter(
 ): Router {
   const router = Router();
   const controller = new AuctionController(resolveService);
+  const desertedAfterLotPermission = AUCTION_PERMISSIONS.reclaim;
   const settlementController = new AuctionSettlementController(resolveSettlementService);
 
   router.use(tenantContextMiddleware);
@@ -141,6 +142,13 @@ export function createAuctionRouter(
     requirePermission(AUCTION_PERMISSIONS.reclaim),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.reclaim(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/auction/deserted",
+    requirePermission(desertedAfterLotPermission),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.recordDesertedAfterLot(request));
     }),
   );
   router.post(

@@ -91,6 +91,10 @@ export type DesertedAttemptInput = {
   readonly notes?: string;
 };
 
+export type DesertedAfterLotInput = DesertedAttemptInput & {
+  readonly custodySeq: number;
+};
+
 // Avaliação SIGILOSA (auction:appraise, art. 28) — appraisal_amount + min_bid_amount na designação da rodada.
 export type AppraisalInput = {
   readonly roundNumber: number;

@@ -12,6 +12,7 @@ import {
   type CloseAuctionInput,
   type DefaultAuctionInput,
   type DefaultAuctionResult,
+  type DesertAfterLotInput,
   type LotAuctionInput,
   type MarkEligibleInput,
   type PrepareAuctionInput,
@@ -151,6 +152,7 @@ export interface AuctionRepository {
   recordSaleAtomic(input: RecordSaleInput): Promise<RecordSaleResult>;                 // LOTTED→AUCTIONED (grava SOLD)
   closeAuctionAtomic(input: CloseAuctionInput): Promise<AuctionStateSnapshot>;         // AUCTIONED→AUCTION_CLOSED
   defaultAuctionAtomic(input: DefaultAuctionInput): Promise<DefaultAuctionResult>;     // AUCTIONED→LOTTED (NO_PAYMENT)
+  desertAfterLotAtomic(input: DesertAfterLotInput): Promise<AuctionStateSnapshot>;     // LOTTED→ACTIVE_CUSTODY (DESERTED)
   reclaimAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot>;            // LOTTED→ACTIVE_CUSTODY
   relotAtomic(input: RelotForResaleInput): Promise<AuctionStateSnapshot>;
   withdrawSettledAtomic(input: WithdrawSettledInput): Promise<AuctionStateSnapshot>;    // AUCTION_ELIGIBLE/AUCTION_PREP→ACTIVE_CUSTODY
@@ -401,6 +403,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
         status: process.status,
       };
     }
+    const memoryAttemptRoundNotNew = isRoundNotNew(this.attemptsFor(input.tenantId, input.processId), input.roundNumber);
+    if (memoryAttemptRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "attempt_round_not_new", "A recorded outcome already exists for an equal or newer round.");
     const now = new Date();
     const attempt: AuctionAttempt = {
       id: randomUUID(),
@@ -554,6 +558,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (process.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const memoryPrepRoundNotNew = isRoundNotNew(this.attemptsFor(input.tenantId, input.processId), input.roundNumber);
+    if (memoryPrepRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "prep_round_has_result", "This auction round is not newer than every recorded outcome.");
     const edict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
     if (edict?.classification !== "CONSERVED") {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Auction preparation requires a CONSERVED classification in the round edict.");
@@ -583,6 +589,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (process.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const memoryLotRoundNotNew = isRoundNotNew(this.attemptsFor(input.tenantId, input.processId), input.roundNumber);
+    if (memoryLotRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "lot_round_has_result", "This auction round is not newer than every recorded outcome.");
     const edict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
     if (!edict || !isEdictComplete(edict)) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict (reference + published_at + business_days >= 15).");
@@ -718,6 +726,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (process.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const memoryDefaultRoundNotNew = isRoundNotNew(this.attemptsFor(input.tenantId, input.processId), input.roundNumber);
+    if (memoryDefaultRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "default_round_not_new", "A default must be recorded in a round newer than every recorded outcome.");
     // MÉDIO-3: a SOLD EFETIVA superada (a que ainda não foi inadimplida). NO_PAYMENT amarra-se a ela via defaultedSaleRound.
     const defaultedSaleRound = findActiveSoldRound(this.attemptsFor(input.tenantId, input.processId));
     if (defaultedSaleRound === undefined) {
@@ -775,6 +785,45 @@ export class InMemoryAuctionRepository implements AuctionRepository {
       setEnteredAt: false,
       setFrozenAt: false,
       event: { type: "STATUS_CHANGE", payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "reclaimed_before_sale" }, occurredAt: input.occurredAt, actorId: input.actorId },
+    });
+    return { status: "ACTIVE_CUSTODY", attempts: this.attemptsFor(input.tenantId, input.processId), edicts: this.edictsFor(input.tenantId, input.processId) };
+  }
+
+  async desertAfterLotAtomic(input: DesertAfterLotInput): Promise<AuctionStateSnapshot> {
+    const desertProcess = await this.impound.findProcessById(input.tenantId, input.processId);
+    if (!desertProcess) throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    if (desertProcess.status !== input.expectedFrom) throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    const memoryDesertSeqMatches = desertProcess.custodySeqHead === input.expectedCustodySeq;
+    if (!memoryDesertSeqMatches) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
+    const memoryDesertLottedRound = this.edictsFor(input.tenantId, input.processId).find((edict) => edict.status === "LOTTED")?.roundNumber;
+    const memoryDesertRoundIsLotted = memoryDesertLottedRound === input.roundNumber;
+    if (!memoryDesertRoundIsLotted) throw new AuctionError(409, "AUCTION_CONFLICT", "deserted_round_not_lotted", "Only the currently lotted round can be recorded as deserted.");
+    const memoryDesertRoundHasResult = this.attemptsFor(input.tenantId, input.processId).some((attempt) => attempt.roundNumber === input.roundNumber);
+    if (memoryDesertRoundHasResult) throw new AuctionError(409, "AUCTION_CONFLICT", "deserted_round_has_result", "The lotted round already has a recorded outcome.");
+    const now = new Date();
+    const attempt: AuctionAttempt = {
+      id: randomUUID(), tenantId: input.tenantId, processId: input.processId, roundNumber: input.roundNumber,
+      outcome: "DESERTED", notes: input.notes, recordedBy: input.actorId, createdAt: now, updatedAt: now,
+    };
+    this.attempts.push(attempt);
+    const lottedEdict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
+    this.closeLottedEdicts(input.tenantId, input.processId);
+    await this.impound.appendEvent({
+      tenantId: input.tenantId,
+      processId: input.processId,
+      event: { type: "AUCTION_CLOSED", payload: buildAuctionClosedEventPayload(attempt, maskEdictReference(lottedEdict?.edictReference)), occurredAt: input.occurredAt, actorId: input.actorId },
+    });
+    await this.impound.clearLegacyFreeze(input.tenantId, input.processId);
+    const memoryDesertClosedAt = input.occurredAt;
+    await this.impound.closeDailySuspension(input.tenantId, input.processId, memoryDesertClosedAt);
+    await this.impound.applyTransition({
+      tenantId: input.tenantId,
+      processId: input.processId,
+      expectedFrom: input.expectedFrom,
+      to: "ACTIVE_CUSTODY",
+      setEnteredAt: false,
+      setFrozenAt: false,
+      event: { type: "STATUS_CHANGE", payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "deserted_after_lot" }, occurredAt: input.occurredAt, actorId: input.actorId },
     });
     return { status: "ACTIVE_CUSTODY", attempts: this.attemptsFor(input.tenantId, input.processId), edicts: this.edictsFor(input.tenantId, input.processId) };
   }

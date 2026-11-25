@@ -209,6 +209,20 @@ export class AuctionController {
     return { body: toAuctionViewDto(view, canAppraise) };
   }
 
+  async recordDesertedAfterLot(request: Request) {
+    const [service, actor, canAppraise] = await this.resolveServiceWithActor(request);
+    const view = await service.recordDesertedAfterLot(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: "auction.attempt_deserted_after_lot",
+      resourceType: "impound_process",
+      resourceId: readRouteParam(request.params.processId),
+      outcome: "success",
+      severity: "warning",
+      metadata: { round: readAuditRound(request.body), status: view.status, strikeCount: view.strikeCount },
+    });
+    return { body: toAuctionViewDto(view, canAppraise) };
+  }
+
   async relotForResale(request: Request) {
     const [service, actor, canAppraise] = await this.resolveServiceWithActor(request);
     const view = await service.relotForResale(actor, readRouteParam(request.params.processId), request.body ?? {});
@@ -252,4 +266,10 @@ function readAuditReason(body: unknown): string | null {
   const normalized = typeof value === "string" ? value.trim() : "";
   if (!normalized) return null;
   return normalized.slice(0, 500);
+}
+
+function readAuditRound(body: unknown): number | null {
+  const record = body as { readonly round_number?: unknown; readonly roundNumber?: unknown } | null | undefined;
+  const value = record?.round_number ?? record?.roundNumber;
+  return typeof value === "number" && Number.isInteger(value) ? value : null;
 }
