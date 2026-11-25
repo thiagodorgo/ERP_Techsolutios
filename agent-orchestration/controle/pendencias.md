@@ -18043,11 +18043,12 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **nota (E11.10 do plano B-PATIO-LEILAO-DIARIAS):** a revenda mantém o **mesmo** período aberto do leilão.
 - **critério de encerramento:** após inadimplência, um ato autorizado cria nova rodada em lote e permite nova venda sem reabrir a quitação antiga, sem congelar diárias antes do pagamento e sem dois sucessos concorrentes de resgate e relote.
 
-## P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão deserto — MÉDIA
+## P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão deserto — FECHADA
 
-- **status:** ABERTA · **gravidade:** MÉDIA de fluxo · **dono:** bloco próprio `B-LEILAO-DESERTO-DEPOIS-DO-LOTE` · **bloqueia:** não o `B-LEILAO-REVENDA`.
+- **status:** FECHADA em 2026-11-25 · **gravidade:** MÉDIA de fluxo · **dono:** `B-LEILAO-DESERTO` · **bloqueia:** não mais.
 - **origem:** plano `B-LEILAO-REVENDA`, §11: a rodada deserta só é aceita antes do lote, e o veículo permanece em lote quando não há lance.
 - **critério de encerramento:** o produto registra, por ato autorizado e auditável, uma rodada em lote sem lance e conduz o processo ao próximo estado definido, com teste de produto para a primeira rodada e para a revenda.
+- **fechamento:** PR #641, squash `44a64521e`, por `D-DONO-2411-DESERTO-NO-MVP`: o ato novo (a rota de leilão sem venda depois do lote, com a permissão de resgate) registra a rodada em lote sem lance, fecha os editais loteados, devolve o veículo ao pátio em custódia ativa, emite o evento de leilão encerrado e faz a diária voltar a ser cobrada dentro do teto; o período de suspensão fecha no instante exato do ato. Espelhado nos dois repositórios (memória e banco). Provas: LD1 e LD2.
 
 ## P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem regra — ALTA
 
@@ -18134,11 +18135,12 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** P15 e Emenda 11.1 do `B-PATIO-LEILAO-DIARIAS`: o script apenas lista as linhas já pagas acima do teto; nenhuma linha paga é estornada automaticamente.
 - **critério de encerramento:** existe um ato autorizado e auditável que recebe a decisão caso a caso do dono, devolve o valor exato sem estorno automático ou duplicado e deixa teste de produto para autorização, idempotência e trilha financeira.
 
-## P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já concluída — ALTA
+## P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já concluída — FECHADA
 
-- **status:** ABERTA · **gravidade:** ALTA de fluxo · **dono:** `B-LEILAO-DESERTO`, §4.4 do plano · **bloqueia:** o fechamento dessa fatia do bloco.
+- **status:** FECHADA em 2026-11-25 · **gravidade:** ALTA de fluxo · **dono:** `B-LEILAO-DESERTO`, §4.4 do plano · **bloqueia:** não mais.
 - **origem:** a preparação e o lote não consultam as tentativas; o painel pode sugerir uma rodada que já tem resultado e conduzir a um lote que não pode ser vendido nem declarado deserto.
 - **critério de encerramento:** preparar e lotear recusam rodada que já tenha resultado, a sugestão do painel aponta a próxima rodada livre e testes de produto cobrem memória, banco e regressão da revenda.
+- **fechamento:** PR #641, squash `44a64521e`, por `D-DONO-2411-DESERTO-TRAVA-MESMO-BLOCO`: a preparação recusa com `prep_round_has_result` e o lote recusa com `lot_round_has_result`, nos dois repositórios, e o registro tardio de rodada mais antiga é recusado com `attempt_round_not_new` e `default_round_not_new` (`D-DONO-2411-DESERTO-D7-A`); o painel passa a sugerir a próxima rodada livre (`shouldShowDesertedAfterLot`). Provas: LD9, LD13, LD14 e LD15, em memória e em banco, mais a regressão da revenda (o RV20 ajustado para a rodada nova).
 
 ## P-LEILAO-SUCATA-RODADAS-FIXAS (2026-11-24) — sucata depende das rodadas fixas 1 e 2 — MÉDIA
 
@@ -18229,3 +18231,21 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** BAIXA de acessibilidade · **dono:** o bloco de acessibilidade da biblioteca de componentes · **bloqueia:** não.
 - **origem:** R4 da E2.4-10 do plano da revenda: `.ui-button` não tem regra própria de `:hover` nem de `:focus-visible`; o foco depende do contorno do navegador, no sistema inteiro.
 - **critério de encerramento:** `git grep -n -E "\.ui-button[a-z-]*:(hover|focus-visible)"` acha pelo menos um resultado de cada, e a conferência visual confirma.
+
+## P-AWS-CLOUDFRONT-CONTA-VERIFICADA (2026-11-24) — a conta precisava de verificação para criar distribuição do CloudFront — FECHADA
+
+- **status:** FECHADA em 2026-11-25 · **gravidade:** ALTA de continuidade do roteiro · **dono:** o dono (só ele abre o pedido ao Suporte) · **bloqueia:** não mais.
+- **origem:** passo 4.6 do roteiro da AWS, em 24/11 às 20:26: a criação da distribuição foi recusada porque a conta precisa de verificação antes de criar recursos do CloudFront, e o pedido ao Suporte só o dono abre (a API de suporte não funciona no plano básico). Os passos 4.7 (o build e a publicação), 4.8 (a política do papel do GitHub) e 5.5 (o registro do app no domínio) ficaram esperando.
+- **fechamento:** 25/11, 11:29–11:33: o Suporte aprovou o pedido de cota de distribuições web, o dono refez o login e a distribuição foi criada (o alias do app, o certificado do app e duas origens: o bucket privado e a API), com a política do bucket restrita a essa distribuição; implantação concluída às 11:33. Os passos que esperavam foram feitos no mesmo dia: o 4.7 (129 arquivos publicados, com cache longo nos assets e sem cache no índice), o 4.8 (a política do papel do GitHub, com 4 declarações) e o 5.5 (os registros do app no domínio, por criação, apontando para a distribuição). O endereço do app respondeu 200, com TLS válido.
+
+## P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO (2026-11-25) — a saúde diz que o login sem organização está inativo, mas o login responde 200 — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de operação e de leitura da saúde · **dono:** o bloco `B-AUTH-LOGIN-PLATAFORMA` · **bloqueia:** não.
+- **origem:** passo 6.8 do roteiro da AWS, em 25/11: depois da concessão de execução da função de candidatos ao login e da reciclagem da tarefa da API, o login sem organização do administrador de plataforma respondeu 200 com `authenticated: true`, mas a saúde continuou dizendo `login_without_org: inactive` (3 leituras, 1 tarefa, 1 implantação). Hipótese registrada: a sonda do boot exige que a dona da função tenha atributo elevado, e a dona atual não tem. O login funciona mesmo assim.
+- **critério de encerramento:** a saúde e o login concordam (a saúde passa a dizer que o login sem organização está ativo), ou o plano do bloco registra, medido, por que divergem e o que a saúde passa a afirmar.
+
+## P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computador — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de tela (classificação do redator do registro; o REGISTRO não deu gravidade) · **dono:** um bloco de tela, quando o dono priorizar · **bloqueia:** não.
+- **origem:** uso real do dono no celular, em 25/11, na Cobrança da plataforma: o console web abre no layout de computador, o menu lateral não recolhe e o seletor de organização fica cortado à direita.
+- **critério de encerramento:** o console web responde no celular com o menu lateral recolhível e o seletor de organização inteiro na tela, com teste de tela que cubra a largura estreita.

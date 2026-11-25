@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1450** |
-| IDs distintos | 1435 |
+| Cabecalhos `## P-` | **1453** |
+| IDs distintos | 1438 |
 | **ABERTAS** | **1114** |
 | — das quais **diferidas** (balde C) | 61 |
 | — das quais **ativas nesta rodada** | **1053** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 332 |
+| FECHADAS | 335 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1450 cabecalhos para 1435 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1453 cabecalhos para 1438 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -489,24 +489,24 @@
 | `P-PATIO-ISENCAO-REGISTRADA` | 18013 | ALTA | sim | P-PATIO-ISENCAO-REGISTRADA (2026-11-22) — isenção precisa ficar registrada no livro — AL |
 | `P-LIBERACAO-CUSTODIA-JA-CONGELADA` | 18033 | ALTA | sim | P-LIBERACAO-CUSTODIA-JA-CONGELADA (2026-11-23) — liberação preserva congelamento legado  |
 | `P-LEILAO-REVENDA-SEM-CAMINHO` | 18039 | ALTA | sim | P-LEILAO-REVENDA-SEM-CAMINHO (2026-11-23) — inadimplência sem caminho de revenda — ALTA |
-| `P-LEILAO-DESERTO-DEPOIS-DO-LOTE` | 18046 | MÉDIA | sim | P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão desert |
-| `P-LEILAO-VALORES-DO-INADIMPLENTE` | 18052 | ALTA | sim | P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem  |
-| `P-AWS-TOKEN-GHCR-TROCAR` | 18071 | MÉDIA | sim | P-AWS-TOKEN-GHCR-TROCAR (2026-11-23) — trocar o token do GitHub do cofre — MÉDIA |
-| `P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO` | 18083 | ALTA | sim | P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO (2026-11-23) — legado em lote/arrematado sem período |
-| `P-TETO-180-PAGAS-ACIMA` | 18089 | ALTA | sim | P-TETO-180-PAGAS-ACIMA (2026-11-23) — diárias acima de 180 já pagas — ALTA |
-| `P-EXTRATO-MOSTRAR-PERIODO-LEILAO` | 18101 | MÉDIA | sim | P-EXTRATO-MOSTRAR-PERIODO-LEILAO (2026-11-23) — extrato e guia dizerem "em leilão, sem d |
-| `P-FLAKY-K11H-TITULO-CAS` | 18125 | ALTA | sim | P-FLAKY-K11H-TITULO-CAS (2026-11-24) — barreira do teste de CAS deixa a corrida escapar  |
-| `P-TETO-180-ATO-DE-DEVOLUCAO` | 18131 | ALTA | sim | P-TETO-180-ATO-DE-DEVOLUCAO (2026-11-24) — devolução de diária já paga acima do teto pre |
-| `P-LEILAO-LOTE-RODADA-COM-RESULTADO` | 18137 | ALTA | sim | P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já co |
-| `P-LEILAO-SUCATA-RODADAS-FIXAS` | 18143 | MÉDIA | sim | P-LEILAO-SUCATA-RODADAS-FIXAS (2026-11-24) — sucata depende das rodadas fixas 1 e 2 — MÉ |
-| `P-LEILAO-DESERTO-ANTES-DO-LOTE` | 18149 | MÉDIA | sim | P-LEILAO-DESERTO-ANTES-DO-LOTE (2026-11-24) — rota antiga registra deserto antes do lote |
-| `P-LEILAO-DATA-DO-LEILAO` | 18155 | ALTA | sim | P-LEILAO-DATA-DO-LEILAO (2026-11-24) — sistema não guarda a data do leilão — ALTA |
-| `P-DNS-ZONA-EXPORT-CONFERIR` | 18185 | ALTA | sim | P-DNS-ZONA-EXPORT-CONFERIR (2026-11-24) — conferir a exportação da zona do provedor anti |
-| `P-DNS-SPF-DUPLO` | 18191 | MÉDIA | sim | P-DNS-SPF-DUPLO (2026-11-24) — dois SPF no domínio do cliente — MÉDIA |
-| `P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS` | 18203 | MÉDIA | sim | P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS (2026-11-24) — dois PUT /members simultâneos p |
-| `P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO` | 18209 | ALTA | sim | P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO (2026-11-24) — portal do proprietário atende uma fil |
-| `P-LEILAO-RAZOES-SEM-TEXTO` | 18215 | MÉDIA | sim | P-LEILAO-RAZOES-SEM-TEXTO (2026-11-24) — razões do relote sem tradução — MÉDIA |
-| `P-PAINEL-LEILAO-ENVIO-COMPARTILHADO` | 18221 | MÉDIA | sim | P-PAINEL-LEILAO-ENVIO-COMPARTILHADO (2026-11-24) — envio compartilhado no painel do leil |
+| `P-LEILAO-VALORES-DO-INADIMPLENTE` | 18053 | ALTA | sim | P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem  |
+| `P-AWS-TOKEN-GHCR-TROCAR` | 18072 | MÉDIA | sim | P-AWS-TOKEN-GHCR-TROCAR (2026-11-23) — trocar o token do GitHub do cofre — MÉDIA |
+| `P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO` | 18084 | ALTA | sim | P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO (2026-11-23) — legado em lote/arrematado sem período |
+| `P-TETO-180-PAGAS-ACIMA` | 18090 | ALTA | sim | P-TETO-180-PAGAS-ACIMA (2026-11-23) — diárias acima de 180 já pagas — ALTA |
+| `P-EXTRATO-MOSTRAR-PERIODO-LEILAO` | 18102 | MÉDIA | sim | P-EXTRATO-MOSTRAR-PERIODO-LEILAO (2026-11-23) — extrato e guia dizerem "em leilão, sem d |
+| `P-FLAKY-K11H-TITULO-CAS` | 18126 | ALTA | sim | P-FLAKY-K11H-TITULO-CAS (2026-11-24) — barreira do teste de CAS deixa a corrida escapar  |
+| `P-TETO-180-ATO-DE-DEVOLUCAO` | 18132 | ALTA | sim | P-TETO-180-ATO-DE-DEVOLUCAO (2026-11-24) — devolução de diária já paga acima do teto pre |
+| `P-LEILAO-SUCATA-RODADAS-FIXAS` | 18145 | MÉDIA | sim | P-LEILAO-SUCATA-RODADAS-FIXAS (2026-11-24) — sucata depende das rodadas fixas 1 e 2 — MÉ |
+| `P-LEILAO-DESERTO-ANTES-DO-LOTE` | 18151 | MÉDIA | sim | P-LEILAO-DESERTO-ANTES-DO-LOTE (2026-11-24) — rota antiga registra deserto antes do lote |
+| `P-LEILAO-DATA-DO-LEILAO` | 18157 | ALTA | sim | P-LEILAO-DATA-DO-LEILAO (2026-11-24) — sistema não guarda a data do leilão — ALTA |
+| `P-DNS-ZONA-EXPORT-CONFERIR` | 18187 | ALTA | sim | P-DNS-ZONA-EXPORT-CONFERIR (2026-11-24) — conferir a exportação da zona do provedor anti |
+| `P-DNS-SPF-DUPLO` | 18193 | MÉDIA | sim | P-DNS-SPF-DUPLO (2026-11-24) — dois SPF no domínio do cliente — MÉDIA |
+| `P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS` | 18205 | MÉDIA | sim | P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS (2026-11-24) — dois PUT /members simultâneos p |
+| `P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO` | 18211 | ALTA | sim | P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO (2026-11-24) — portal do proprietário atende uma fil |
+| `P-LEILAO-RAZOES-SEM-TEXTO` | 18217 | MÉDIA | sim | P-LEILAO-RAZOES-SEM-TEXTO (2026-11-24) — razões do relote sem tradução — MÉDIA |
+| `P-PAINEL-LEILAO-ENVIO-COMPARTILHADO` | 18223 | MÉDIA | sim | P-PAINEL-LEILAO-ENVIO-COMPARTILHADO (2026-11-24) — envio compartilhado no painel do leil |
+| `P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO` | 18241 | MÉDIA | sim | P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO (2026-11-25) — a saúde diz que o login sem organizaç |
+| `P-WEB-CONSOLE-CELULAR` | 18247 | MÉDIA | sim | P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computad |
 
 ## ABERTAS · balde B — processo/registro — 620
 
@@ -1123,15 +1123,15 @@
 | `P-6970-INICIO-SO-PATIO-ATIVO` | 17950 | BAIXA | sim | P-6970-INICIO-SO-PATIO-ATIVO (2026-11-22) — Início não mostra outros pátios — BAIXA |
 | `P-RELEASE-GATE-CONC-FORA-DO-GUARD` | 18001 | BAIXA | sim | P-RELEASE-GATE-CONC-FORA-DO-GUARD (2026-11-22) — teste concorrente fora da lista com gua |
 | `P-S2P-REDEFINICAO-TRES-VIAS` | 18024 | BAIXA | sim | P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e  |
-| `P-KPI-EXTRATOR-ID-COM-TEXTO` | 18058 | BAIXA | sim | P-KPI-EXTRATOR-ID-COM-TEXTO (2026-11-23) — extrator perde ID acompanhado de texto — BAIX |
-| `P-AWS-ROTEIRO-NAT-SWAP` | 18064 | BAIXA | sim | P-AWS-ROTEIRO-NAT-SWAP (2026-11-23) — user-data da NAT instala antes da swap — BAIXA |
-| `P-PATIO-ROTULO-FALLBACK-TETO` | 18077 | BAIXA | sim | P-PATIO-ROTULO-FALLBACK-TETO (2026-11-23) — fallback local ainda diz "6 meses" e "Ilimit |
-| `P-TETO-RENOMEAR-IDENTIFICADOR` | 18095 | BAIXA | sim | P-TETO-RENOMEAR-IDENTIFICADOR (2026-11-23) — renomear o identificador técnico do teto —  |
-| `P-COMISSAO-A1-LITERAL` | 18167 | BAIXA | sim | P-COMISSAO-A1-LITERAL (2026-11-24) — meta do A1 da comissão não reproduz o número real — |
-| `P-COMISSAO-M-2N` | 18173 | BAIXA | sim | P-COMISSAO-M-2N (2026-11-24) — meta `M >= 2N` da comissão não alcançada literalmente — B |
-| `P-COMISSAO-M18-ANCORA` | 18179 | BAIXA | sim | P-COMISSAO-M18-ANCORA (2026-11-24) — âncora da M18 da comissão com múltiplas ocorrências |
-| `P-DNS-TTL-300` | 18197 | BAIXA | sim | P-DNS-TTL-300 (2026-11-24) — os 17 registros copiados ficaram com TTL de 5 min — BAIXA |
-| `P-UI-BUTTON-FOCO-VISIVEL` | 18227 | BAIXA | sim | P-UI-BUTTON-FOCO-VISIVEL (2026-11-24) — `.ui-button` sem foco visível próprio — BAIXA |
+| `P-KPI-EXTRATOR-ID-COM-TEXTO` | 18059 | BAIXA | sim | P-KPI-EXTRATOR-ID-COM-TEXTO (2026-11-23) — extrator perde ID acompanhado de texto — BAIX |
+| `P-AWS-ROTEIRO-NAT-SWAP` | 18065 | BAIXA | sim | P-AWS-ROTEIRO-NAT-SWAP (2026-11-23) — user-data da NAT instala antes da swap — BAIXA |
+| `P-PATIO-ROTULO-FALLBACK-TETO` | 18078 | BAIXA | sim | P-PATIO-ROTULO-FALLBACK-TETO (2026-11-23) — fallback local ainda diz "6 meses" e "Ilimit |
+| `P-TETO-RENOMEAR-IDENTIFICADOR` | 18096 | BAIXA | sim | P-TETO-RENOMEAR-IDENTIFICADOR (2026-11-23) — renomear o identificador técnico do teto —  |
+| `P-COMISSAO-A1-LITERAL` | 18169 | BAIXA | sim | P-COMISSAO-A1-LITERAL (2026-11-24) — meta do A1 da comissão não reproduz o número real — |
+| `P-COMISSAO-M-2N` | 18175 | BAIXA | sim | P-COMISSAO-M-2N (2026-11-24) — meta `M >= 2N` da comissão não alcançada literalmente — B |
+| `P-COMISSAO-M18-ANCORA` | 18181 | BAIXA | sim | P-COMISSAO-M18-ANCORA (2026-11-24) — âncora da M18 da comissão com múltiplas ocorrências |
+| `P-DNS-TTL-300` | 18199 | BAIXA | sim | P-DNS-TTL-300 (2026-11-24) — os 17 registros copiados ficaram com TTL de 5 min — BAIXA |
+| `P-UI-BUTTON-FOCO-VISIVEL` | 18229 | BAIXA | sim | P-UI-BUTTON-FOCO-VISIVEL (2026-11-24) — `.ui-button` sem foco visível próprio — BAIXA |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -1199,7 +1199,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3754 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3798 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 332
+## FECHADAS — 335
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1531,7 +1531,10 @@
 | `P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES` | 17936 | ALTA | **a atribuir** | P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES (2026-11-22) — acessos concedidos caem na saída — FE |
 | `P-6970-PORTAO-CRITERIO-NOVO` | 17965 | ALTA | sim | P-6970-PORTAO-CRITERIO-NOVO (2026-11-22) — portão ainda trazia o critério antigo — FECHA |
 | `P-PATIO-LIVRO-VAZIO-LIBERA` | 18019 | ALTA | sim | P-PATIO-LIVRO-VAZIO-LIBERA (2026-11-22) — livro vazio liberava sem pagamento — ALTA/GRAV |
-| `P-CLAMAV-BASE-VELHA-NA-SUBIDA` | 18107 | ALTA | sim | P-CLAMAV-BASE-VELHA-NA-SUBIDA (2026-11-23) — antivírus subia com a base velha — FECHADA |
-| `P-CLAMAV-IMAGEM-1-4-7` | 18113 | MÉDIA | sim | P-CLAMAV-IMAGEM-1-4-7 (2026-11-23) — subir a imagem 1.4.7 do antivírus — FECHADA |
-| `P-FLAKY-L11A-TEARDOWN-TEXT-UUID` | 18119 | MÉDIA | sim | P-FLAKY-L11A-TEARDOWN-TEXT-UUID (2026-11-24) — limpeza de teste confundia `tenant_id` te |
-| `P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO` | 18161 | ALTA | sim | P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO (2026-11-24) — avaliação de rodada com resultado |
+| `P-LEILAO-DESERTO-DEPOIS-DO-LOTE` | 18046 | MÉDIA | sim | P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão desert |
+| `P-CLAMAV-BASE-VELHA-NA-SUBIDA` | 18108 | ALTA | sim | P-CLAMAV-BASE-VELHA-NA-SUBIDA (2026-11-23) — antivírus subia com a base velha — FECHADA |
+| `P-CLAMAV-IMAGEM-1-4-7` | 18114 | MÉDIA | sim | P-CLAMAV-IMAGEM-1-4-7 (2026-11-23) — subir a imagem 1.4.7 do antivírus — FECHADA |
+| `P-FLAKY-L11A-TEARDOWN-TEXT-UUID` | 18120 | MÉDIA | sim | P-FLAKY-L11A-TEARDOWN-TEXT-UUID (2026-11-24) — limpeza de teste confundia `tenant_id` te |
+| `P-LEILAO-LOTE-RODADA-COM-RESULTADO` | 18138 | ALTA | sim | P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já co |
+| `P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO` | 18163 | ALTA | sim | P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO (2026-11-24) — avaliação de rodada com resultado |
+| `P-AWS-CLOUDFRONT-CONTA-VERIFICADA` | 18235 | ALTA | sim | P-AWS-CLOUDFRONT-CONTA-VERIFICADA (2026-11-24) — a conta precisava de verificação para c |
