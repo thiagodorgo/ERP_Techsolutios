@@ -43,7 +43,7 @@ test("I1: tenant_admin recebe 403 nas oito rotas e não altera o banco", async (
     ["PATCH", `/api/v1/platform/tenants/${target.tenantId}/modules`, { enabledModules: [] }],
     ["POST", `/api/v1/platform/tenants/${target.tenantId}/admin-user`, { name: "Negado", email: "negado@example.com" }],
   ] as const;
-  const before = await counts(h);
+  const before = await scopedState(h, target.tenantId);
 
   for (const [method, path, body] of routes) {
     const response = await requestJson(h.baseUrl, path, {
@@ -54,7 +54,7 @@ test("I1: tenant_admin recebe 403 nas oito rotas e não altera o banco", async (
     assert.equal(response.status, 403, `${method} ${path}: ${JSON.stringify(response.body)}`);
   }
 
-  assert.deepEqual(await counts(h), before);
+  assert.deepEqual(await scopedState(h, target.tenantId), before);
 });
 
 test("I2: GET /tenants não devolve usuário, e-mail nem documento", async () => {
@@ -158,14 +158,22 @@ test("I6: rename da organização de sistema é recusado e o nome não muda", as
   assert.equal((await h.admin.tenant.findUniqueOrThrow({ where: { id: organizationId } })).name, `Filial I6 renomeada ${suffix}`);
 });
 
-async function counts(h: PlatOrgRealHarness) {
-  const [tenants, users, members, audits] = await Promise.all([
-    h.admin.tenant.count(),
-    h.admin.user.count(),
-    h.admin.economicGroupMember.count(),
-    h.admin.platformAuditLog.count(),
+async function scopedState(h: PlatOrgRealHarness, targetTenantId: string) {
+  const [target, deniedTenants, users, members, audits] = await Promise.all([
+    h.admin.tenant.findUnique({
+      where: { id: targetTenantId },
+      select: { name: true, status: true, modules: true, updated_at: true },
+    }),
+    h.admin.tenant.count({ where: { name: "Negada I1" } }),
+    h.admin.user.count({
+      where: {
+        OR: [{ tenant_id: targetTenantId }, { email: "negado@example.com" }],
+      },
+    }),
+    h.admin.economicGroupMember.count({ where: { tenant_id: targetTenantId } }),
+    h.admin.platformAuditLog.count({ where: { actor_user_id: h.actor.userId } }),
   ]);
-  return { tenants, users, members, audits };
+  return { target, deniedTenants, users, members, audits };
 }
 
 function collectKeys(value: unknown, keys: string[] = []): readonly string[] {
