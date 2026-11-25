@@ -403,6 +403,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
         status: process.status,
       };
     }
+    const memoryAttemptRoundNotNew = isRoundNotNew(this.attemptsFor(input.tenantId, input.processId), input.roundNumber);
+    if (memoryAttemptRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "attempt_round_not_new", "A recorded outcome already exists for an equal or newer round.");
     const now = new Date();
     const attempt: AuctionAttempt = {
       id: randomUUID(),
@@ -556,6 +558,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (process.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const memoryPrepRoundNotNew = isRoundNotNew(this.attemptsFor(input.tenantId, input.processId), input.roundNumber);
+    if (memoryPrepRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "prep_round_has_result", "This auction round is not newer than every recorded outcome.");
     const edict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
     if (edict?.classification !== "CONSERVED") {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Auction preparation requires a CONSERVED classification in the round edict.");
@@ -585,6 +589,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (process.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const memoryLotRoundNotNew = isRoundNotNew(this.attemptsFor(input.tenantId, input.processId), input.roundNumber);
+    if (memoryLotRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "lot_round_has_result", "This auction round is not newer than every recorded outcome.");
     const edict = this.edictFor(input.tenantId, input.processId, input.roundNumber);
     if (!edict || !isEdictComplete(edict)) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict (reference + published_at + business_days >= 15).");
@@ -720,6 +726,8 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     if (process.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const memoryDefaultRoundNotNew = isRoundNotNew(this.attemptsFor(input.tenantId, input.processId), input.roundNumber);
+    if (memoryDefaultRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "default_round_not_new", "A default must be recorded in a round newer than every recorded outcome.");
     // MÉDIO-3: a SOLD EFETIVA superada (a que ainda não foi inadimplida). NO_PAYMENT amarra-se a ela via defaultedSaleRound.
     const defaultedSaleRound = findActiveSoldRound(this.attemptsFor(input.tenantId, input.processId));
     if (defaultedSaleRound === undefined) {

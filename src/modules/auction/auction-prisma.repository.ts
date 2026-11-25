@@ -230,6 +230,8 @@ export class PrismaAuctionRepository implements AuctionRepository {
         status: locked.status as ImpoundStatus,
       };
     }
+    const attemptRoundNotNew = isRoundNotNew(await this.listAttempts(input.tenantId, input.processId), input.roundNumber);
+    if (attemptRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "attempt_round_not_new", "A recorded outcome already exists for an equal or newer round.");
     // INSERT da rodada (DESERTED). Um 23505 aqui (corrida que fure o lock — não deveria) é re-lançado como conflito.
     let attemptRow;
     try {
@@ -392,6 +394,8 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (locked.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const prepRoundNotNew = isRoundNotNew(await this.listAttempts(input.tenantId, input.processId), input.roundNumber);
+    if (prepRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "prep_round_has_result", "This auction round is not newer than every recorded outcome.");
     const edict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
     if (edict?.classification !== "CONSERVED") {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Auction preparation requires a CONSERVED classification in the round edict.");
@@ -459,6 +463,8 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (locked.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const lotRoundNotNew = isRoundNotNew(await this.listAttempts(input.tenantId, input.processId), input.roundNumber);
+    if (lotRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "lot_round_has_result", "This auction round is not newer than every recorded outcome.");
     const edict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
     if (!edict || !isEdictComplete(edict)) {
       throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict (reference + published_at + business_days >= 15).");
@@ -617,6 +623,8 @@ export class PrismaAuctionRepository implements AuctionRepository {
     if (locked.status !== input.expectedFrom) {
       throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
     }
+    const defaultRoundNotNew = isRoundNotNew(await this.listAttempts(input.tenantId, input.processId), input.roundNumber);
+    if (defaultRoundNotNew) throw new AuctionError(409, "AUCTION_CONFLICT", "default_round_not_new", "A default must be recorded in a round newer than every recorded outcome.");
     // MÉDIO-3: a SOLD EFETIVA superada (não já inadimplida). NO_PAYMENT amarra-se a ela via defaulted_sale_round.
     const defaultedSaleRound = findActiveSoldRound(await this.listAttempts(input.tenantId, input.processId));
     if (defaultedSaleRound === undefined) {
