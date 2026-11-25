@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test, { after } from "node:test";
 
+import type { PrismaClient } from "@prisma/client";
+
 process.env.CORE_SAAS_PERSISTENCE = "prisma";
 
 import { requestJson } from "./helpers/auth-identity-fixture.js";
@@ -15,7 +17,22 @@ const connectionString = process.env.DATABASE_URL;
 assert.ok(connectionString, "DATABASE_URL is required");
 
 let harnessPromise: Promise<PlatOrgRealHarness> | undefined;
-const harness = () => (harnessPromise ??= montarPlatOrgReal(connectionString));
+let derrubarBancoS9 = false;
+const embrulharClienteS9 = (client: PrismaClient): PrismaClient =>
+  new Proxy(client, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver) as unknown;
+      if (prop === "$transaction") {
+        const original = (value as (...args: unknown[]) => unknown).bind(target);
+        return (...args: unknown[]) => {
+          if (derrubarBancoS9) throw new Error("banco fora (S9)");
+          return original(...args);
+        };
+      }
+      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+    },
+  }) as PrismaClient;
+const harness = () => (harnessPromise ??= montarPlatOrgReal(connectionString, { embrulharCliente: embrulharClienteS9 }));
 
 after(async () => {
   if (harnessPromise) {
@@ -176,4 +193,56 @@ test("S11: criar usuário em organização suspensa é recusado", async () => {
   assert.equal(coreUser.status, 400, JSON.stringify(coreUser.body));
   assert.equal(coreUser.body.error?.reason, "inactive_tenant");
   assert.equal(await h.admin.user.count({ where: { tenant_id: org.tenantId } }), before);
+});
+
+test("S8: valor desconhecido de situação no banco tranca qualquer usuário — falha fechada", async () => {
+  const h = await harness();
+  const org = await novaOrganizacao(h, "plat-org-s8");
+  const control = await novaOrganizacao(h, "plat-org-s8-controle");
+  const session = await entrar(h, { tenantId: org.tenantId, email: org.email, password: org.password });
+  const controlSession = await entrar(h, {
+    tenantId: control.tenantId,
+    email: control.email,
+    password: control.password,
+  });
+  await h.admin.tenant.update({ where: { id: org.tenantId }, data: { status: "desconhecido-s8" } });
+
+  const protectedRoute = await requestJson(h.baseUrl, "/api/v1/auth/identity-links", {
+    headers: portador(session.accessToken),
+  });
+  assert.equal(protectedRoute.status, 401, JSON.stringify(protectedRoute.body));
+  assert.equal(protectedRoute.body.error?.reason, "session_inactive");
+  const login = await requestJson(h.baseUrl, "/api/v1/auth/login", {
+    method: "POST",
+    body: { tenantId: org.tenantId, email: org.email, password: org.password },
+  });
+  assert.notEqual(login.status, 200, JSON.stringify(login.body));
+  const positive = await requestJson(h.baseUrl, "/api/v1/auth/identity-links", {
+    headers: portador(controlSession.accessToken),
+  });
+  assert.equal(positive.status, 200, JSON.stringify(positive.body));
+});
+
+test("S9: banco fora na conferência responde 503, não 401, e não desloga", async () => {
+  const h2 = await montarPlatOrgReal(connectionString, { embrulharCliente: embrulharClienteS9 });
+  try {
+    const org = await novaOrganizacao(h2, "plat-org-s9");
+    const session = await entrar(h2, { tenantId: org.tenantId, email: org.email, password: org.password });
+    derrubarBancoS9 = true;
+    const unavailable = await requestJson(h2.baseUrl, "/api/v1/auth/identity-links", {
+      headers: portador(session.accessToken),
+    });
+    assert.equal(unavailable.status, 503, JSON.stringify(unavailable.body));
+    assert.equal(unavailable.body.error?.reason, "session_check_unavailable");
+    assert.notEqual(unavailable.body.error?.reason, "session_inactive");
+
+    derrubarBancoS9 = false;
+    const recovered = await requestJson(h2.baseUrl, "/api/v1/auth/identity-links", {
+      headers: portador(session.accessToken),
+    });
+    assert.equal(recovered.status, 200, JSON.stringify(recovered.body));
+  } finally {
+    derrubarBancoS9 = false;
+    await desmontarPlatOrgReal(h2);
+  }
 });

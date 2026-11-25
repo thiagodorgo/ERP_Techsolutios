@@ -123,6 +123,41 @@ test("I5: criação real roda pelo papel NOSUPERUSER NOBYPASSRLS", async () => {
   assert.equal((response.body.data as { provisioning?: { group?: { status?: string } } })?.provisioning?.group?.status, "done");
 });
 
+test("I6: rename da organização de sistema é recusado e o nome não muda", async () => {
+  const h = await harness();
+  let system = await h.admin.tenant.findUnique({ where: { slug: "platform" }, select: { id: true, name: true } });
+  if (!system) {
+    system = await h.admin.tenant.create({
+      data: { name: "Plataforma", slug: "platform", status: "active", modules: [] },
+      select: { id: true, name: true },
+    });
+    h.tenantIds.push(system.id);
+  }
+  const denied = await requestJson(h.baseUrl, `/api/v1/platform/tenants/${system.id}`, {
+    method: "PATCH",
+    headers: h.platformHeaders,
+    body: { name: "Novo Nome" },
+  });
+  assert.equal(denied.status, 422, JSON.stringify(denied.body));
+  assert.equal(denied.body.error?.reason, "platform_organization");
+  assert.equal((await h.admin.tenant.findUniqueOrThrow({ where: { id: system.id } })).name, system.name);
+
+  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const created = await criarOrganizacaoPelaPlataforma(h, {
+    name: `Filial I6 ${suffix}`,
+    group: { name: `Grupo I6 ${suffix}` },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  const organizationId = (created.body.data as { organization: { id: string } }).organization.id;
+  const renamed = await requestJson(h.baseUrl, `/api/v1/platform/tenants/${organizationId}`, {
+    method: "PATCH",
+    headers: h.platformHeaders,
+    body: { name: `Filial I6 renomeada ${suffix}` },
+  });
+  assert.equal(renamed.status, 200, JSON.stringify(renamed.body));
+  assert.equal((await h.admin.tenant.findUniqueOrThrow({ where: { id: organizationId } })).name, `Filial I6 renomeada ${suffix}`);
+});
+
 async function counts(h: PlatOrgRealHarness) {
   const [tenants, users, members, audits] = await Promise.all([
     h.admin.tenant.count(),

@@ -12,8 +12,11 @@ export type PlatOrgRealHarness = SessaoRealHarness & {
   readonly platformHeaders: Record<string, string>;
 };
 
-export async function montarPlatOrgReal(connectionString: string): Promise<PlatOrgRealHarness> {
-  const session = await montarSessaoReal(connectionString);
+export async function montarPlatOrgReal(
+  connectionString: string,
+  options: Parameters<typeof montarSessaoReal>[1] = {},
+): Promise<PlatOrgRealHarness> {
+  const session = await montarSessaoReal(connectionString, options);
   const actor = await novaOrganizacao(session, "plat-org-actor");
 
   return {
@@ -24,6 +27,25 @@ export async function montarPlatOrgReal(connectionString: string): Promise<PlatO
       "x-role": "platform_admin",
     },
   };
+}
+
+export async function assegurarPapeisGlobais(
+  harness: PlatOrgRealHarness,
+  keys: readonly string[],
+): Promise<void> {
+  for (const key of keys) {
+    const existing = await harness.admin.role.findFirst({
+      where: { key, tenant_id: null },
+      select: { id: true },
+    });
+    if (!existing) {
+      const created = await harness.admin.role.create({
+        data: { key, name: `Global ${key} (plat-org)`, scope: "system" },
+        select: { id: true },
+      });
+      harness.createdGlobalRoleIds.push(created.id);
+    }
+  }
 }
 
 export async function desmontarPlatOrgReal(harness: PlatOrgRealHarness): Promise<void> {

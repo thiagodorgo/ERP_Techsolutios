@@ -205,6 +205,70 @@ test("C16 — addMember recusa organização que já está em outro grupo com 42
   );
 });
 
+test("C9: falha injetada na assinatura mantém organização e grupo íntegros com subscription failed", async () => {
+  const { InMemoryPlatformOrganizationsRepository } = await import("../src/modules/platform/platform-organizations.repository.js");
+  const { PlatformOrganizationsService } = await import("../src/modules/platform/platform-organizations.service.js");
+  const { InMemoryEconomicGroupsRepository } = await import("../src/modules/subscription-billing/economic-groups/economic-groups.repository.js");
+  const { EconomicGroupsService } = await import("../src/modules/subscription-billing/economic-groups/economic-groups.service.js");
+  const { InMemoryBillingProfileRepository } = await import("../src/modules/subscription-billing/billing-profile/billing-profile.js");
+  const { InMemoryPlansRepository } = await import("../src/modules/subscription-billing/plans/plans.repository.js");
+  const { PlansService } = await import("../src/modules/subscription-billing/plans/plans.service.js");
+  const { InMemorySubscriptionsRepository } = await import("../src/modules/subscription-billing/plans/subscriptions.repository.js");
+  const { SubscriptionsService } = await import("../src/modules/subscription-billing/plans/subscriptions.service.js");
+  const { RecordingTenantModulesWriter } = await import("../src/modules/subscription-billing/plans/tenant-modules.sync.js");
+  const { InMemoryTenantLookup } = await import("../src/modules/subscription-billing/subscription-billing.service.js");
+
+  const repository = new InMemoryPlatformOrganizationsRepository();
+  const groupRepository = new InMemoryEconomicGroupsRepository();
+  const directory = {
+    getTenant: async (id: string) => {
+      const row = await repository.findById(id);
+      return row ? { id: row.id, slug: row.slug, name: row.name } : null;
+    },
+    listTenantIds: async () => (await repository.list()).map((row) => row.id),
+  };
+  const groups = new EconomicGroupsService(groupRepository, directory);
+  const plansRepository = new InMemoryPlansRepository();
+  const plans = new PlansService(plansRepository);
+  const plan = await plans.createPlan({ code: "c9", kind: "base", name: "Plano C9", description: "" });
+  await plans.addVersion(plan.id, {
+    validFrom: new Date(), monthlyPriceCents: 10000, includedUsers: 1, includedStorageGb: 1,
+    extraUserPriceCents: 1000, extraGbPriceCents: 100, perVehiclePriceCents: null,
+    modules: [], notes: null, inaugural: false,
+  });
+  const tenants = new InMemoryTenantLookup();
+  const baseSubscriptions = new SubscriptionsService(
+    new InMemorySubscriptionsRepository(), plansRepository, tenants, new RecordingTenantModulesWriter(),
+  );
+  const subscriptions = new Proxy(baseSubscriptions, {
+    get(target, prop, receiver) {
+      if (prop === "putSubscription") return async () => { throw new Error("falha injetada C9"); };
+      const value = Reflect.get(target, prop, receiver) as unknown;
+      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+    },
+  });
+  const service = new PlatformOrganizationsService(
+    repository,
+    groups,
+    subscriptions,
+    new InMemoryBillingProfileRepository(),
+    undefined,
+    (row) => tenants.upsert({ id: row.id, slug: row.slug }),
+  );
+
+  const result = await service.createTenant({
+    name: "Filial C9",
+    group: { name: "Grupo C9" },
+    plan: { code: plan.code },
+  }, "usr_platform_test");
+  assert.deepEqual(result.provisioning.subscription, { status: "failed", reason: "step_failed" });
+  assert.equal(result.provisioning.group.status, "done");
+  assert.equal((await repository.list()).some((row) => row.id === result.organization.id), true);
+  const group = await groups.getGroup(result.organization.group!.id);
+  assert.equal(group.members.some((member) => member.tenantId === result.organization.id && member.validTo === null), true);
+  assert.equal(result.organization.setup.complete, false);
+});
+
 async function withApi(run: (baseUrl: string) => Promise<void>): Promise<void> {
   process.env.LOG_LEVEL = "silent";
   process.env.JWT_SECRET = "dev-only-change-me";
