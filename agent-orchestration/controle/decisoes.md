@@ -6662,3 +6662,64 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** *"coloque o azure lhe cobrindo agora, onde for possivel, vc fica so na orquestracao. o azure esta num loop aparentemente, verificar"*.
 - **Efeito:** o estado aparente de tarefa viva do Azure foi conferido e corrigido. Onde for possível, o Azure cobre a execução e o Claude fica somente na orquestração; os trabalhos em curso obedecem às regras de passagem de estado e de verificação independente.
+
+## D-DONO-2411-REVENDA-K3-JUNTO (2026-11-24 16:28 SP) — o defeito antigo da avaliação entra no conserto da revenda
+
+- **Fato (palavras do dono):** *"O defeito antigo da avaliação entra no conserto da revenda?  sim."*
+- **Efeito:** vale a variante (a) da E2.4.1-K3: a avaliação, em qualquer estado, é recusada no edital de uma rodada que já tem resultado, pela mesma `isRoundNotNew`. Depois do conserto, só a C1 (dinheiro e diária) se refaz, com os 3 itens da K3.2. A `P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO` fecha neste conserto, e não num bloco próprio.
+
+## D-DONO-2411-DESERTO-TRAVA-MESMO-BLOCO (2026-11-24 16:28 SP) — a trava do leilão sem venda fica no mesmo bloco
+
+- **Fato (palavras do dono):** *"O leilão sem venda: a trava fica no mesmo bloco ou num bloco seguinte? No mesmo bloco."*
+- **Efeito:** a recusa de preparar ou lotear uma rodada que já tem resultado fica no bloco `B-LEILAO-DESERTO`, e não num bloco seguinte. O D3 da crítica do plano do leilão sem venda fica resolvido pelo dono.
+
+## D-DONO-2411-REVENDA-K5-A1 (2026-11-24 17:13 SP) — avaliação da rodada fica fechada depois do resultado
+
+- **Fato (palavras do dono):** *"Revenda (K5): depois do resultado, a avaliação da rodada fica fechada? sim"*.
+- **Efeito:** vale a E2.4.2-K5.2, a (a1). A rodada com resultado fica fechada para avaliação, e a tela explica por quê; antes do resultado, a correção segue como hoje. Sai a (a2), com a tabela nova, a permissão nova e a emenda própria.
+
+## D-DONO-2411-DESERTO-D7-A (2026-11-24 17:13 SP) — recusar o registro tardio do resultado de rodada mais antiga
+
+- **Fato (palavras do dono):** *"Leilão sem venda (D7): recusar o registro tardio do resultado de uma rodada mais antiga? sim"*.
+- **Efeito:** vale a F3b da Emenda 2 do plano do leilão sem venda: resultado só em rodada nova, com 4 recusas, LD14, LD15 e 4 mutações. Custo aceito: um veículo com rodadas registradas fora de ordem perde o caminho da sucata.
+
+## D-DONO-2411-DNS-NA-AWS (2026-11-24 17:19 SP) — todo registro de DNS na AWS; o provedor antigo não muda
+
+- **Fato (regra do responsável do cliente, relida pelo dono; sem nome de provedor nem de domínio):** a partir de 24/11, todo registro de DNS se faz na AWS, e nada muda no provedor antigo, que permanece como está.
+- **Efeito:** a zona do provedor antigo fica intocada; registros novos e ajustes de DNS do domínio do cliente passam a ser feitos na AWS.
+
+## D-DONO-2411-ORG-REAL-COM-TELA (2026-11-24 18:26 SP) — bloco da organização real, com tela da plataforma
+
+- **Fato (palavras do dono):** *"(A) Fazer o bloco que grava as organizações no banco (o B-SAN3-18)... com tela para a plataforma criar, ja com as lacunas vistas no banco do sistema antigo superadas"*.
+- **Correção do dono (18:28):** *"opa, se ligue que ha o grupo, o qual eh a matriz das filiais(organizacoes. estou correto?"*.
+- **Efeito:** nasce o `B-PLAT-ORG-REAL` (criar, editar e suspender organização, mais o 1º administrador, com tela da plataforma), cobrindo as lacunas do banco antigo. O grupo é a matriz das filiais: cada filial é uma organização, e dentro dela ficam os pátios físicos. O banco antigo continua intocado.
+
+## D-DONO-2411-AZURE-COBRE-RODADA (2026-11-24 18:32 SP) — o Azure cobre quem cair nesta rodada
+
+- **Fato (palavras do dono):** *"azure cobre quem cair nessa rodada"*.
+- **Efeito:** nesta rodada, um agente que cair por limite, saldo ou parada é retomado na hora no Azure, em identidade nova de sucessor. O saldo do Azure respeita o teto, e o custo é mostrado ao dono; a cadeira coberta pelo Azure fica sem cruzamento com o dev, por ordem do dono.
+
+## D-DONO-2411-GEMINI-CLI-TETO-10 (2026-11-24 18:33 SP) — Gemini CLI entra com teto para cobrir ou fazer trabalho
+
+- **Fato (palavras do dono, sem o valor por regra do repositório público):** *"use o gemini cli"*, com um teto em dólar para cobrir alguém ou fazer trabalhos.
+- **Efeito:** o Gemini CLI entra como braço com um teto global em dólar a partir de agora, para cobrir queda e fazer trabalho; o custo e o saldo são mostrados ao dono a cada uso. Continuam valendo os limites do contrato: o Gemini é só segundo revisor e não faz design.
+
+## D-DONO-2411-ORG-P1-P7 (2026-11-24 18:53 SP) — respostas do plano da organização real
+
+- **Fato (palavras do dono):** *"p1=a. p2=a; p3=a, p4=ja autorizo, p5=tudo, p7= pode ate existir com autorizacao do gestor do grupo"*.
+- **Efeito:** P1 = cada pátio físico vira uma filial (organização) dentro do grupo; P2 = cada filial tem a própria assinatura; P3 = só nome e grupo são obrigatórios na criação; P4 = dados da matriz no cadastro do grupo, autorizada; P5 = a suspensão corta tudo; P7 = a mesma pessoa pode administrar várias filiais, com autorização do gestor do grupo.
+
+## D-DONO-2411-ORG-PM1-PM3 (2026-11-24 19:20 SP) — respostas finais da organização real
+
+- **Fato (palavras do dono):** *"A, A, SIM, sim"*, respondendo à PM1, à PM2, à PM3 e à confirmação do gestor, nessa ordem.
+- **Efeito:** PM1 = a diária durante a suspensão continua devida e é lançada na reativação; PM2 = a mensalidade e o aviso de pagamento continuam na filial suspensa; PM3 = autorizada a migração aditiva da tabela de pedidos do `B-GRUPO-ADMIN-FILIAIS`; gestor = pode autorizar a si mesmo para administrar várias filiais.
+
+## D-DONO-2411-ORG-LOTE-E-QM4 (2026-11-24 19:50 SP) — o lote da tela da organização real aprovado e a QM4 respondida
+
+- **Fato (palavras do dono):** *"sim"* (19:50, ao lote da tela) e, para a QM4, a nota literal: *"o fluxo eh criar grupo, depois organizacao. uma organizacao so nasce se tiver um grupo"* (19:53).
+- **Efeito:** a maquete do lote da tela vai para `screen-refs/` no PR-b. Para a QM4, vale criar o grupo antes da organização: uma organização só nasce se tiver um grupo; o item `group` não entra em `setup.missing[]`, e o C12 se escreve assim.
+
+## D-DONO-2411-ORG-QM1-QM3 (2026-11-24 19:54 SP) — respostas QM1, QM2 e QM3 da organização real
+
+- **Fato (respostas do dono, pelo seletor do Estado):** QM1 = (b); QM2 = (b); QM3 = não.
+- **Efeito:** QM1 = a linha abre o detalhe logo abaixo, no padrão de `D-PADRAO-BLOCOS-CLICAVEIS` (muda o §5.2 do plano; +3 a 4 h no PR-b). QM2 = o nome é único só dentro do grupo (a trava de nome é grupo + nome normalizado; o C10 prova os dois lados). QM3 = os planos mantêm os nomes do cadastro (o PR-b alinha a tela de módulos ao cadastro, sem tradução própria). O PR-a não tem mais trava.

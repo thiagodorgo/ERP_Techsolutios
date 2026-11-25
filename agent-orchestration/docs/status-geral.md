@@ -5632,3 +5632,15 @@ O registro leva ao repositório os fechamentos do portão: o item 68 (sessão do
 - **Revenda:** o `B-LEILAO-REVENDA` está no PR #637, aberto e em junta completa; a ata e o resultado da J-637 ficam para o próximo registro.
 - **Comissão:** o `B-COMISSAO-MOTOR` segue em desenvolvimento, em paralelo à revenda e com revisão própria.
 - **Leilão sem venda:** o `B-LEILAO-DESERTO` foi planejado como bloco curto para depois da revenda, com retorno do veículo ao pátio e retomada da diária dentro do teto total.
+
+## Estado de 2026-11-24 (tarde e noite)
+
+- **API no ar:** a API está em produção na internet, com a saúde pronta, a trava do papel de runtime sem bypass verde e o TLS conferido. O balanceador, o serviço e o caminho do antivírus foram concluídos com autorização do dono a cada passo; a Fase 3 do roteiro da AWS fechou.
+- **Incidente de DNS:** na troca de servidores de nome, a zona nova só tinha NS, SOA e o CNAME de validação, e o site e o e-mail do cliente ficaram fora por cerca de 7 minutos. Causa: a cópia dos registros de e-mail e do site não foi feita antes da troca. Lição registrada: copiar a zona inteira em vigor para a zona nova e conferir registro por registro antes de trocar os servidores de nome, e vigiar qualquer mudança de servidor de nome. A restauração copiou 17 registros e o certificado saiu.
+- **Comissão na `main`:** o #639 (`B-COMISSAO-MOTOR`, PR1) passou pela J-639 unânime e mergou; a ata em `agent-orchestration/omega/juntas/J-639-b-comissao-motor.md`, e o porteiro deu LIBERADO COM RESSALVA.
+- **Revenda na `main`:** o #637 (`B-LEILAO-REVENDA`) passou pela J-637, pelo defeito grave achado pelo revisor de telas, pelo conserto único, pela conferência e pela revotação unânime, e mergou; ata em `agent-orchestration/omega/juntas/J-637-b-leilao-revenda.md`.
+- **Portão:** os itens 9, 10 e 43 fecharam com a evidência da AWS (a API no ar, o login e a leitura da plataforma respondendo 200, e o 1º administrador de plataforma criado pelo script de bootstrap). O item 27 segue aberto, à espera da 1ª organização real.
+- **Organização real:** o bloco `B-PLAT-ORG-REAL` foi aprovado pelo dono, com plano pronto em 24/11 e respostas às perguntas; o grupo é a matriz das filiais, e cada filial é uma organização. O dev do PR-a começou às 20:09, com as respostas do dono; a Emenda 1.2 (a tela) foi escrita às 20:35.
+- **Porteiro do #637:** LIBERADO às 20:05 — o `B-PLAT-ORG-REAL` (PR-a) e o `B-LEILAO-DESERTO` podem iniciar.
+- **Leilão sem venda:** o `B-LEILAO-DESERTO` começa às 20:44, depois do porteiro do #637.
+- **Antigravity:** a cota de terceiros do Antigravity (Claude/GPT) acabou de novo; o Antigravity fica só com os Gemini, sem valor nem identificador.
