@@ -5,6 +5,7 @@ import type {
   AppraisalInput,
   AuctionApiContext,
   AuctionView,
+  DesertedAfterLotInput,
   DesertedAttemptInput,
   EdictInput,
   SaleInput,
@@ -184,6 +185,16 @@ export async function defaultAuction(context: AuctionApiContext, processId: stri
 export async function reclaimBeforeSale(context: AuctionApiContext, processId: string, reason: string, custodySeq: number): Promise<AuctionView | null> {
   try {
     const response = await apiRequest<unknown>(auctionPath(processId, "/reclaim"), { ...context, method: "POST", body: { reason: reason.trim(), custody_seq: custodySeq } });
+    return adaptAuctionView(response);
+  } catch (error) {
+    rethrow(error);
+  }
+}
+
+export async function recordDesertedAfterLot(context: AuctionApiContext, processId: string, input: DesertedAfterLotInput): Promise<AuctionView | null> {
+  try {
+    const desertedAfterLotBody = { round_number: input.roundNumber, custody_seq: input.custodySeq, notes: input.notes };
+    const response = await apiRequest<unknown>(auctionPath(processId, "/deserted"), { ...context, method: "POST", body: desertedAfterLotBody });
     return adaptAuctionView(response);
   } catch (error) {
     rethrow(error);
