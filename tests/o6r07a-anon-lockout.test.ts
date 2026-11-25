@@ -268,7 +268,7 @@ async function buildHarness(): Promise<{
 
   const service = new LocalAuthLoginService(
     sealRepository(repository),
-    { async findById(tenantId: string) { return { id: tenantId, name: "Org Anônima" }; } },
+    { async findById(tenantId: string) { return { id: tenantId, name: "Org Anônima", status: "active" }; } },
     {
       async findByIdForTenant(userId: string, tenantId: string) {
         return { id: userId, tenant_id: tenantId, email: EMAIL, name: "Alvo", status: "active" };

@@ -194,7 +194,7 @@ export class LocalAuthLoginService {
 
     if (tenant.status !== "active") {
       await this.recordLoginFailure(tenantId, email, "tenant_suspended", auditContext);
-      return { ok: false, reason: "tenant_suspended" } as unknown as LocalAuthLoginResult;
+      return { ok: false, reason: "tenant_suspended" };
     }
 
     if (isTemporaryPasswordExpired(credential)) return this.refuseExpired(tenantId, email, auditContext);

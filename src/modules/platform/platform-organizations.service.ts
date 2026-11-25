@@ -5,12 +5,20 @@ import { InMemoryBillingProfileRepository, missingFields, type BillingProfileRep
 import { InMemoryEconomicGroupsRepository } from "../subscription-billing/economic-groups/economic-groups.repository.js";
 import { EconomicGroupsService, type GroupDetail } from "../subscription-billing/economic-groups/economic-groups.service.js";
 import type { SubscriptionsService } from "../subscription-billing/plans/subscriptions.service.js";
-import { createDefaultStatementRuntime } from "../subscription-billing/statements/statement.factory.js";
-import { createDefaultOverviewRuntime } from "../subscription-billing/overview/overview.factory.js";
 import { createDefaultSubscriptionsService, getMemoryTenantLookupForTests } from "../subscription-billing/subscription-billing.service.js";
 import { getMemoryOverviewTenantListForTests } from "../subscription-billing/overview/overview.factory.js";
 import { PlatformModulesService } from "./platform-modules.service.js";
-import { InMemoryPlatformOrganizationsRepository, normalizedOrganizationName, OrganizationNameConflictError, type PlatformOrganizationsRepository } from "./platform-organizations.repository.js";
+import {
+  InMemoryPlatformOrganizationsRepository,
+  normalizedOrganizationName,
+  OrganizationGroupNameInvalidError,
+  OrganizationGroupNameTakenError,
+  OrganizationGroupNotFoundError,
+  OrganizationGroupTooManyMembersError,
+  OrganizationNameConflictError,
+  type OrganizationGroupRef,
+  type PlatformOrganizationsRepository,
+} from "./platform-organizations.repository.js";
 import type { CreatePlatformOrganizationResult, CreatePlatformTenantDto, CreateTenantAdminDto, PlatformModule, PlatformOrganization, PlatformOrganizationRecord, ProvisioningStep, UpdatePlatformTenantDto, UpdatePlatformTenantModulesDto, UpdateTenantStatusDto } from "./platform.types.js";
 
 export type PlatformOrganizationsServiceResolver = () => Promise<PlatformOrganizationsService>;
@@ -26,7 +34,17 @@ export class PlatformOrganizationsService {
     private readonly modules = new PlatformModulesService(),
   ) {}
 
-  async listTenants(): Promise<PlatformOrganization[]> { return Promise.all((await this.organizations.list()).map((row) => this.toOrganization(row))); }
+  async listTenants(): Promise<PlatformOrganization[]> {
+    const groups = await this.groups.listGroups();
+    const byTenant = new Map<string, OrganizationGroupRef>();
+    for (const group of groups) {
+      const detail = await this.groups.getGroup(group.id);
+      for (const member of detail.members) byTenant.set(member.tenantId, { id: group.id, name: group.name });
+    }
+    const result: PlatformOrganization[] = [];
+    for (const row of await this.organizations.list()) result.push(await this.toOrganization(row, byTenant.get(row.id) ?? null));
+    return result;
+  }
   async getTenant(id: string): Promise<PlatformOrganization> { return this.toOrganization(await this.requireTenant(id)); }
 
   async createTenant(input: CreatePlatformTenantDto, actorUserId: string): Promise<CreatePlatformOrganizationResult> {
@@ -34,18 +52,22 @@ export class PlatformOrganizationsService {
     const existingGroup = "id" in input.group ? await this.requireGroup(input.group.id) : null;
     await this.assertOrganizationNameAvailable(existingGroup, input.name);
     if (input.plan) await this.assertPlanAvailable(input.plan.code);
-    const row = await this.createRecord(input.name, existingGroup?.id ?? null, actorUserId);
+    const created = await this.createRecord(input.name, input.group, actorUserId);
+    const row = created.organization;
     this.registerTenant(row);
 
     let group: ProvisioningStep;
-    let resolvedGroup: GroupDetail | null = existingGroup;
+    let resolvedGroup: OrganizationGroupRef | null = created.group ?? existingGroup;
     try {
-      if (!resolvedGroup) {
-        const created = await this.groups.createGroup({ name: newGroupName!, actorId: actorUserId });
-        resolvedGroup = await this.groups.getGroup(created.id);
+      if (created.group) group = { status: "done" };
+      else {
+        if (!resolvedGroup) {
+          const memoryGroup = await this.groups.createGroup({ name: newGroupName!, actorId: actorUserId });
+          resolvedGroup = await this.groups.getGroup(memoryGroup.id);
+        }
+        resolvedGroup = await this.groups.addMember(resolvedGroup.id, { tenantId: row.id, actorId: actorUserId });
+        group = { status: "done" };
       }
-      resolvedGroup = await this.groups.addMember(resolvedGroup.id, { tenantId: row.id, actorId: actorUserId });
-      group = { status: "done" };
     } catch (error) { group = failed(error); }
 
     const profile = await this.runOptional(input.profile, async () => { await this.profiles.upsert(row.id, input.profile!, new Date()); });
@@ -89,7 +111,7 @@ export class PlatformOrganizationsService {
     return { user: { id: user.id, name: user.name, email: user.email }, ...(user.temporaryPassword ? { temporaryPassword: user.temporaryPassword } : {}) };
   }
 
-  private async createRecord(name: string, groupId: string | null, actorUserId: string) { try { return await this.organizations.create({ name, groupId, actorUserId }); } catch (error) { throw translate(error); } }
+  private async createRecord(name: string, group: CreatePlatformTenantDto["group"], actorUserId: string) { try { return await this.organizations.create({ name, group, actorUserId }); } catch (error) { throw translate(error); } }
   private async requireTenant(id: string) { const row = await this.organizations.findById(id); if (!row) throw new CoreSaasError(404, "NOT_FOUND", "platform_tenant_not_found", "Platform tenant not found."); return row; }
   private async requireGroup(id: string) { try { return await this.groups.getGroup(id); } catch { throw new CoreSaasError(404, "NOT_FOUND", "group_not_found", "Economic group not found."); } }
   private assertNotPlatform(row: PlatformOrganizationRecord) { if (row.slug === "platform") throw new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "platform_organization", "The platform organization cannot be changed here."); }
@@ -97,7 +119,7 @@ export class PlatformOrganizationsService {
   private async assertOrganizationNameAvailable(group: GroupDetail | null, name: string, exceptId?: string) { if (!group) return; const wanted = normalizedOrganizationName(name); for (const member of group.members) { if (member.tenantId === exceptId) continue; const row = await this.organizations.findById(member.tenantId); if (row && normalizedOrganizationName(row.name) === wanted) throw new CoreSaasError(409, "CONFLICT", "organization_name_conflict", "Organization name already exists in this group."); } }
   private async runOptional<T>(value: T | undefined, run: () => Promise<void>): Promise<ProvisioningStep> { if (value === undefined) return { status: "skipped" }; try { await run(); return { status: "done" }; } catch (error) { return failed(error); } }
   private async groupOf(id: string): Promise<GroupDetail | null> { for (const group of await this.groups.listGroups()) { const detail = await this.groups.getGroup(group.id); if (detail.members.some((member) => member.tenantId === id)) return detail; } return null; }
-  private async toOrganization(row: PlatformOrganizationRecord, knownGroup?: GroupDetail | null): Promise<PlatformOrganization> {
+  private async toOrganization(row: PlatformOrganizationRecord, knownGroup?: OrganizationGroupRef | null): Promise<PlatformOrganization> {
     const group = knownGroup === undefined ? await this.groupOf(row.id) : knownGroup;
     const setup = await organizationSetup(row.id, this.subscriptions, this.profiles, this.core);
     return { id: row.id, name: row.name, slug: row.slug, status: row.status === "active" ? "active" : row.status === "pending" ? "pending" : "suspended", createdAt: row.createdAt.toISOString(), system: row.slug === "platform", group: group ? { id: group.id, name: group.name } : null, setup };
@@ -113,9 +135,16 @@ export async function organizationSetup(id: string, subscriptions: Subscriptions
 }
 
 let memoryService: PlatformOrganizationsService | undefined;
-let prismaService: Promise<PlatformOrganizationsService> | undefined;
+let prismaService: { readonly client: unknown; readonly core: ICoreSaasService | undefined; readonly value: Promise<PlatformOrganizationsService> } | undefined;
 export async function createDefaultPlatformOrganizationsService(core?: ICoreSaasService): Promise<PlatformOrganizationsService> {
-  if (env.CORE_SAAS_PERSISTENCE === "prisma") return prismaService ??= createPrismaService(core);
+  if (env.CORE_SAAS_PERSISTENCE === "prisma") {
+    const database = await import("../../database/prisma.js");
+    const client = (globalThis as { prisma?: typeof database.prisma }).prisma ?? database.prisma;
+    if (!prismaService || prismaService.client !== client || prismaService.core !== core) {
+      prismaService = { client, core, value: createPrismaService(core, client) };
+    }
+    return prismaService.value;
+  }
   if (!memoryService) {
     const repository = new InMemoryPlatformOrganizationsRepository();
     const groupRepository = new InMemoryEconomicGroupsRepository();
@@ -124,7 +153,56 @@ export async function createDefaultPlatformOrganizationsService(core?: ICoreSaas
   }
   return memoryService;
 }
-async function createPrismaService(core?: ICoreSaasService) { const [overview, subscriptions, statements, database, repositoryModule] = await Promise.all([createDefaultOverviewRuntime(), createDefaultSubscriptionsService(), createDefaultStatementRuntime(), import("../../database/prisma.js"), import("./platform-organizations-prisma.repository.js")]); return new PlatformOrganizationsService(new repositoryModule.PrismaPlatformOrganizationsRepository(database.prisma), overview.groups, subscriptions, statements.billingProfiles, core); }
+async function createPrismaService(core: ICoreSaasService | undefined, client: typeof import("../../database/prisma.js")["prisma"]) {
+  const [repositoryModule, groupsModule, tenantsModule, groupsServiceModule, trailModule, subscriptionsModule, plansModule, tenantLookupModule, modulesWriterModule, profileModule] = await Promise.all([
+    import("./platform-organizations-prisma.repository.js"),
+    import("../subscription-billing/economic-groups/economic-groups.prisma.js"),
+    import("../subscription-billing/overview/tenant-list.prisma.js"),
+    import("../subscription-billing/economic-groups/economic-groups.service.js"),
+    import("../subscription-billing/overview/overview.trail.js"),
+    import("../subscription-billing/plans/subscriptions-prisma.repository.js"),
+    import("../subscription-billing/plans/plans-prisma.repository.js"),
+    import("../subscription-billing/plans/tenant-lookup.prisma.js"),
+    import("../subscription-billing/plans/tenant-modules.prisma.js"),
+    import("../subscription-billing/statements/statement.prisma-runtime.js"),
+  ]);
+  const tenantList = new tenantsModule.PrismaOverviewTenantList(client);
+  const directory = {
+    async getTenant(id: string) {
+      const row = (await tenantList.listTenants()).find((tenant) => tenant.tenantId === id);
+      return row ? { id: row.tenantId, name: row.tenantName, slug: row.slug ?? "" } : null;
+    },
+    async listTenantIds() {
+      return (await tenantList.listTenants()).map((tenant) => tenant.tenantId);
+    },
+  };
+  const groups = new groupsServiceModule.EconomicGroupsService(
+    new groupsModule.PrismaEconomicGroupsRepository(client),
+    directory,
+    () => new Date(),
+    trailModule.membershipAuditBuilder,
+  );
+  const subscriptions = new (await import("../subscription-billing/plans/subscriptions.service.js")).SubscriptionsService(
+    new subscriptionsModule.PrismaSubscriptionsRepository(client),
+    new plansModule.PrismaPlansRepository(client),
+    new tenantLookupModule.PrismaTenantLookup(client),
+    new modulesWriterModule.PrismaTenantModulesWriter(client),
+  );
+  return new PlatformOrganizationsService(
+    new repositoryModule.PrismaPlatformOrganizationsRepository(client),
+    groups,
+    subscriptions,
+    new profileModule.PrismaBillingProfileRepository(client),
+    core,
+  );
+}
 function failed(error: unknown): ProvisioningStep { return { status: "failed", reason: reasonOf(error) }; }
 function reasonOf(error: unknown): string { return typeof error === "object" && error !== null && "reason" in error && typeof error.reason === "string" ? error.reason : typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : "step_failed"; }
-function translate(error: unknown): Error { if (error instanceof OrganizationNameConflictError) return new CoreSaasError(409, "CONFLICT", "organization_name_conflict", "Organization name already exists in this group."); return error instanceof Error ? error : new Error("organization operation failed"); }
+function translate(error: unknown): Error {
+  if (error instanceof OrganizationNameConflictError) return new CoreSaasError(409, "CONFLICT", "organization_name_conflict", "Organization name already exists in this group.");
+  if (error instanceof OrganizationGroupNotFoundError) return new CoreSaasError(404, "NOT_FOUND", "group_not_found", "Economic group not found.");
+  if (error instanceof OrganizationGroupNameInvalidError) return new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "name_invalid", "Economic group name is invalid.");
+  if (error instanceof OrganizationGroupNameTakenError) return new CoreSaasError(409, "CONFLICT", "group_name_exists", "Economic group name already exists.");
+  if (error instanceof OrganizationGroupTooManyMembersError) return new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "too_many_members", "Economic group has too many organizations.");
+  return error instanceof Error ? error : new Error("organization operation failed");
+}

@@ -147,7 +147,7 @@ function buildLoginHarness(passwordHash: string): {
       },
       async markSuccessfulLogin() {},
     },
-    { async findById(tenantId: string) { return { id: tenantId, name: "Org Pino" }; } },
+    { async findById(tenantId: string) { return { id: tenantId, name: "Org Pino", status: "active" }; } },
     {
       async findByIdForTenant(userId: string, tenantId: string) {
         return {
