@@ -520,6 +520,8 @@ export class AuctionService {
     const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
     const notes = parseNotes(body.notes);
     const desertExpectedSeq = parseCustodySeq(body.custody_seq ?? body.custodySeq);
+    const desertReadingFresh = process.custodySeqHead === desertExpectedSeq;
+    if (!desertReadingFresh) throw new AuctionError(409, "AUCTION_CONFLICT", "auction_reading_stale", "The auction reading is stale; reload and retry.");
     const decision = resolveTransition(process, "ACTIVE_CUSTODY", { auctionReclaim: { reasonMissing: false }, reason: "deserted_after_lot" });
     const desertOccurredAt = new Date();
     const snapshot = await this.repository.desertAfterLotAtomic({

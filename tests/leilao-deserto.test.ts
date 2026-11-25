@@ -8,10 +8,12 @@ process.env.CORE_SAAS_PERSISTENCE = "memory";
 process.env.LOG_LEVEL = "silent";
 
 import { getMemoryAuctionRepositoryForTests, resetAuctionRuntimeForTests } from "../src/modules/auction/auction.service.js";
-import { getMemoryChargeRepositoryForTests, resetChargeRuntimeForTests } from "../src/modules/charging/charge.service.js";
+import { createMemoryChargeService, getMemoryChargeRepositoryForTests, resetChargeRuntimeForTests } from "../src/modules/charging/charge.service.js";
 import { resetNotificationRuntimeForTests } from "../src/modules/impound/impound.notifications.service.js";
 import { getMemoryImpoundRepositoryForTests, resetImpoundRuntimeForTests } from "../src/modules/impound/impound.service.js";
+import { getMemoryPriceTableRepositoryForTests, resetPriceTableRuntimeForTests } from "../src/modules/price-tables/price-table.service.js";
 import { resetReleaseRuntimeForTests } from "../src/modules/release/release.service.js";
+import { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests } from "../src/modules/tariffs/tariff.service.js";
 
 type HttpResult = { status: number; reason?: string; body: Record<string, unknown> };
 
@@ -21,6 +23,8 @@ function resetAll(): void {
   resetReleaseRuntimeForTests();
   resetAuctionRuntimeForTests();
   resetChargeRuntimeForTests();
+  resetPriceTableRuntimeForTests();
+  resetTariffRuntimeForTests();
 }
 
 function headers(tenantId: string, role = "manager", permissions?: readonly string[]): Record<string, string> {
@@ -67,7 +71,10 @@ async function seedEligible() {
   for (const [from, to] of [["RECEPTION", "ACTIVE_CUSTODY"], ["ACTIVE_CUSTODY", "AUCTION_ELIGIBLE"]] as const) {
     await impound.applyTransition({ tenantId, processId: opened.id, expectedFrom: from, to, setEnteredAt: false, setFrozenAt: false, event: { type: "STATUS_CHANGE", payload: { from, to, reason: null }, occurredAt: new Date(), actorId: undefined } });
   }
-  getMemoryChargeRepositoryForTests().setProfileForTests(tenantId, opened.profileId, { scope: "PUBLIC_AGREEMENT", model: "ROLLING_24H", cap: "SIX_MONTHS", dailyServiceCatalogId: randomUUID() });
+  const dailyServiceCatalogId = randomUUID();
+  getMemoryChargeRepositoryForTests().setProfileForTests(tenantId, opened.profileId, { scope: "PUBLIC_AGREEMENT", model: "ROLLING_24H", cap: "SIX_MONTHS", dailyServiceCatalogId });
+  const priceTable = await getMemoryPriceTableRepositoryForTests().create({ tenantId, name: "Tabela teste", currency: "BRL", version: 1, status: "published" });
+  await getMemoryTariffRepositoryForTests().create({ tenantId, priceTableId: priceTable.id, serviceCatalogId: dailyServiceCatalogId, name: "Diária", unitPrice: 40, currency: "BRL", origin: "test", status: "active" });
   const base = { tenantId, processId: opened.id, actorId: undefined };
   return { tenantId, processId: opened.id, impound, auction, base };
 }
@@ -75,10 +82,11 @@ async function seedEligible() {
 async function seedLotted(roundNumber = 1) {
   const ctx = await seedEligible();
   const { tenantId, processId, impound, auction, base } = ctx;
-  await auction.registerEdictAtomic({ ...base, roundNumber, classification: "CONSERVED", edictReference: `EDITAL-${roundNumber}`, publishedAt: new Date("2026-01-02T12:00:00.000Z"), businessDays: 15, occurredAt: new Date() });
+  const prepTime = new Date("2026-01-01T12:00:00.000Z");
+  await auction.registerEdictAtomic({ ...base, roundNumber, classification: "CONSERVED", edictReference: `EDITAL-${roundNumber}`, publishedAt: new Date("2026-01-02T12:00:00.000Z"), businessDays: 15, occurredAt: prepTime });
   await auction.setAppraisalAtomic({ ...base, roundNumber, appraisalAmount: "10000.00", minBidAmount: "5000.00" });
-  await auction.prepareAuctionAtomic({ ...base, expectedFrom: "AUCTION_ELIGIBLE", roundNumber, occurredAt: new Date() });
-  await auction.lotAuctionAtomic({ ...base, expectedFrom: "AUCTION_PREP", roundNumber, occurredAt: new Date() });
+  await auction.prepareAuctionAtomic({ ...base, expectedFrom: "AUCTION_ELIGIBLE", roundNumber, occurredAt: prepTime });
+  await auction.lotAuctionAtomic({ ...base, expectedFrom: "AUCTION_PREP", roundNumber, occurredAt: prepTime });
   const state = await auction.getState(tenantId, processId);
   return { tenantId, processId, impound, auction, base, custodySeq: state?.custodySeqHead ?? -1 };
 }
@@ -94,9 +102,11 @@ test("LD1/LD2 · leilão sem lance depois do lote grava DESERTED, retorna ao pá
     const process = await ctx.impound.findProcessById(ctx.tenantId, ctx.processId);
     const events = await ctx.impound.listEvents(ctx.tenantId, ctx.processId);
     const suspensions = await ctx.impound.listDailySuspensions(ctx.tenantId, ctx.processId);
+    const actAt = events.at(-1)?.occurredAt;
+    const sweepAtAct = await createMemoryChargeService().accrueProcess(ctx.tenantId, ctx.processId, actAt ?? new Date());
     assert.deepEqual(
-      { http: response.status, estado: process?.status, resultado: state?.attempts.find((item) => item.roundNumber === 1)?.outcome, emLote: state?.edicts.filter((item) => item.status === "LOTTED").length, eventos: events.length - beforeEvents.length, razao: (events.at(-1)?.payload as { reason?: string } | undefined)?.reason, periodosAbertos: suspensions.filter((item) => item.to === undefined).length },
-      { http: 200, estado: "ACTIVE_CUSTODY", resultado: "DESERTED", emLote: 0, eventos: 2, razao: "deserted_after_lot", periodosAbertos: 0 },
+      { http: response.status, estado: process?.status, resultado: state?.attempts.find((item) => item.roundNumber === 1)?.outcome, emLote: state?.edicts.filter((item) => item.status === "LOTTED").length, eventos: events.length - beforeEvents.length, razao: (events.at(-1)?.payload as { reason?: string } | undefined)?.reason, periodosAbertos: suspensions.filter((item) => item.to === undefined).length, fimExatoNoAto: actAt !== undefined && suspensions[0]?.to?.getTime() === actAt.getTime(), varreduraNoAto: sweepAtAct.accrued },
+      { http: 200, estado: "ACTIVE_CUSTODY", resultado: "DESERTED", emLote: 0, eventos: 2, razao: "deserted_after_lot", periodosAbertos: 0, fimExatoNoAto: true, varreduraNoAto: 0 },
       JSON.stringify(response.body),
     );
   });
@@ -104,19 +114,37 @@ test("LD1/LD2 · leilão sem lance depois do lote grava DESERTED, retorna ao pá
 
 test("LD5/LD6 · recusa rodada diferente, resultado existente e leitura ausente/inválida/velha", async () => {
   const ctx = await seedLotted();
+  const beforeEvents = await ctx.impound.listEvents(ctx.tenantId, ctx.processId);
   await withApp(async (baseUrl) => {
+    const repoStaleReason = await ctx.auction.desertAfterLotAtomic({ ...ctx.base, expectedFrom: "LOTTED", roundNumber: 1, expectedCustodySeq: ctx.custodySeq - 1, occurredAt: new Date() }).then(() => "200", (error: unknown) => (error as { reason?: string }).reason ?? "erro");
     const results = [
       await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 2, custody_seq: ctx.custodySeq }),
       await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 1 }),
       await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 1, custody_seq: "abc" }),
       await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 1, custody_seq: ctx.custodySeq - 1 }),
+      await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 1, custody_seq: ctx.custodySeq }),
+      await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 1, custody_seq: ctx.custodySeq }),
+      await call(baseUrl, pathFor(ctx.processId), ctx.tenantId, { round_number: 1, custody_seq: ctx.custodySeq + 2 }),
     ];
-    assert.deepEqual(results.map(({ status, reason }) => ({ status, reason })), [
-      { status: 409, reason: "deserted_round_not_lotted" },
-      { status: 422, reason: "custody_seq_required" },
-      { status: 422, reason: "custody_seq_invalid" },
-      { status: 409, reason: "auction_reading_stale" },
-    ]);
+    const stateAfter = await ctx.auction.getState(ctx.tenantId, ctx.processId);
+    const eventsAfter = await ctx.impound.listEvents(ctx.tenantId, ctx.processId);
+    assert.deepEqual(
+      { repoStaleReason, respostas: results.map(({ status, reason }) => ({ status, reason })), tentativas: stateAfter?.attempts.length, eventosNovos: eventsAfter.length - beforeEvents.length },
+      {
+        repoStaleReason: "auction_reading_stale",
+        respostas: [
+          { status: 409, reason: "deserted_round_not_lotted" },
+          { status: 422, reason: "custody_seq_required" },
+          { status: 422, reason: "custody_seq_invalid" },
+          { status: 409, reason: "auction_reading_stale" },
+          { status: 200, reason: undefined },
+          { status: 409, reason: "auction_reading_stale" },
+          { status: 409, reason: "invalid_transition" },
+        ],
+        tentativas: 1,
+        eventosNovos: 2,
+      },
+    );
   });
 });
 

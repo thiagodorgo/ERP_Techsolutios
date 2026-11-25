@@ -19,6 +19,7 @@ if (!connectionString) {
   const { withTenantRls } = await import("../src/database/rls.js");
   const { computeEventHash, genesisHash } = await import("../src/modules/impound/impound.hashchain.js");
   const { RlsPrismaAuctionRepository } = await import("../src/modules/auction/auction-prisma.repository.js");
+  const { createDefaultChargeService } = await import("../src/modules/charging/charge.service.js");
   const client = createPrismaClient(connectionString);
 
   async function withApp(callback: (baseUrl: string) => Promise<void>): Promise<void> {
@@ -50,8 +51,11 @@ if (!connectionString) {
     const tenant = await client.tenant.create({ data: { name: `Organização teste ${suffix}`, slug: `org-teste-${suffix}` } });
     try {
       const seeded = await withTenantRls(client, tenant.id, async (tx) => {
-        const profile = await tx.jurisdictionProfile.create({ data: { tenant_id: tenant.id, name: "Perfil teste", scope: "PUBLIC_AGREEMENT", daily_model: "ROLLING_24H", daily_cap: "SIX_MONTHS" } });
-        const process = await tx.impoundProcess.create({ data: { tenant_id: tenant.id, profile_id: profile.id, origin_authority: "Autoridade", vehicle_unidentified: true, unidentified_reason: "Em identificação", status: "LOTTED", entered_at: new Date("2026-01-01T00:00:00.000Z"), custody_seq_head: 0, regime_scope: "PUBLIC_AGREEMENT", regime_owner_notif_days: 10, regime_notice_edict_day: 30, regime_auction_eligible_day: 60, regime_auction_edict_business_days: 15, regime_daily_model: "ROLLING_24H", regime_daily_cap: "SIX_MONTHS", regime_release_requirements: [] } });
+        const service = await tx.serviceCatalog.create({ data: { tenant_id: tenant.id, name: "Diária teste" } });
+        const table = await tx.priceTable.create({ data: { tenant_id: tenant.id, name: "Tabela teste", currency: "BRL", status: "published", is_active: true } });
+        await tx.tariff.create({ data: { tenant_id: tenant.id, price_table_id: table.id, service_catalog_id: service.id, name: "Diária", unit_price: "40.00", currency: "BRL", origin: "test", status: "active", is_active: true } });
+        const profile = await tx.jurisdictionProfile.create({ data: { tenant_id: tenant.id, name: "Perfil teste", scope: "PUBLIC_AGREEMENT", daily_model: "ROLLING_24H", daily_cap: "SIX_MONTHS", daily_service_catalog_id: service.id } });
+        const process = await tx.impoundProcess.create({ data: { tenant_id: tenant.id, profile_id: profile.id, origin_authority: "Autoridade", vehicle_unidentified: true, unidentified_reason: "Em identificação", status: "LOTTED", entered_at: new Date("2026-01-01T00:00:00.000Z"), custody_seq_head: 0, regime_scope: "PUBLIC_AGREEMENT", regime_owner_notif_days: 10, regime_notice_edict_day: 30, regime_auction_eligible_day: 60, regime_auction_edict_business_days: 15, regime_daily_model: "ROLLING_24H", regime_daily_cap: "SIX_MONTHS", regime_daily_service_catalog_id: service.id, regime_release_requirements: [] } });
         const occurredAt = new Date("2026-01-01T00:00:00.000Z");
         const payload = { from: null, to: "IN_REMOVAL" };
         const prevHash = genesisHash(tenant.id, process.id);
@@ -77,15 +81,18 @@ if (!connectionString) {
         (error: unknown) => (error as { reason?: string }).reason === "deserted_round_has_result",
       );
       await withTenantRls(client, tenant.id, (tx) => tx.auctionAttempt.deleteMany({ where: { tenant_id: tenant.id, process_id: seeded.processId, round_number: 1 } }));
-      const snapshot = await repo.desertAfterLotAtomic({ tenantId: tenant.id, processId: seeded.processId, expectedFrom: "LOTTED", roundNumber: 1, expectedCustodySeq: 1, notes: "Sem lance", occurredAt: new Date("2026-01-10T00:00:00.000Z") });
+      const actAt = new Date("2026-01-10T00:00:00.000Z");
+      const snapshot = await repo.desertAfterLotAtomic({ tenantId: tenant.id, processId: seeded.processId, expectedFrom: "LOTTED", roundNumber: 1, expectedCustodySeq: 1, notes: "Sem lance", occurredAt: actAt });
+      const sweepAtAct = await (await createDefaultChargeService()).accrueProcess(tenant.id, seeded.processId, actAt);
       const measured = await withTenantRls(client, tenant.id, async (tx) => ({
         process: await tx.impoundProcess.findUnique({ where: { id: seeded.processId } }),
         openPeriods: await tx.impoundDailySuspension.count({ where: { tenant_id: tenant.id, process_id: seeded.processId, ended_at: null } }),
+        suspension: await tx.impoundDailySuspension.findFirst({ where: { tenant_id: tenant.id, process_id: seeded.processId } }),
         events: await tx.custodyEvent.findMany({ where: { tenant_id: tenant.id, process_id: seeded.processId }, orderBy: { seq: "asc" } }),
       }));
       assert.deepEqual(
-        { status: snapshot.status, outcome: snapshot.attempts.at(-1)?.outcome, openPeriods: measured.openPeriods, seq: measured.process?.custody_seq_head, reasons: measured.events.slice(-2).map((event) => (event.payload as { reason?: string }).reason ?? event.type) },
-        { status: "ACTIVE_CUSTODY", outcome: "DESERTED", openPeriods: 0, seq: 3, reasons: ["AUCTION_CLOSED", "deserted_after_lot"] },
+        { status: snapshot.status, outcome: snapshot.attempts.at(-1)?.outcome, openPeriods: measured.openPeriods, endedAtMs: measured.suspension?.ended_at?.getTime(), sweepAtAct: sweepAtAct.accrued, seq: measured.process?.custody_seq_head, reasons: measured.events.slice(-2).map((event) => (event.payload as { reason?: string }).reason ?? event.type) },
+        { status: "ACTIVE_CUSTODY", outcome: "DESERTED", openPeriods: 0, endedAtMs: actAt.getTime(), sweepAtAct: 0, seq: 3, reasons: ["AUCTION_CLOSED", "deserted_after_lot"] },
       );
       await assert.rejects(
         () => repo.desertAfterLotAtomic({ tenantId: tenant.id, processId: seeded.processId, expectedFrom: "LOTTED", roundNumber: 1, expectedCustodySeq: 1, occurredAt: new Date() }),
