@@ -24,6 +24,7 @@ import {
   bootstrapPlatformAdmin,
   readBootstrapInput,
 } from "../scripts/bootstrap-platform-admin.js";
+import { createPrismaClient } from "../src/database/pg-connection.js";
 import { setTenantRlsContext } from "../src/database/rls.js";
 import { LocalAuthCredentialRepository } from "../src/modules/auth/repositories/local-auth-credential.repository.js";
 import { LocalAuthCredentialService } from "../src/modules/auth/services/local-auth-credential.service.js";
@@ -302,7 +303,9 @@ if (!connectionString) {
           const url = new URL(connectionString);
           url.pathname = `/${dbName}`;
           await adminClient.$executeRawUnsafe(`CREATE DATABASE "${dbName}" TEMPLATE "${modelDbName}"`);
-          const legado = new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
+          // Pela fábrica única (B-DB-FUSO-UTC): fixa o fuso da sessão em UTC e não soma ocorrência
+          // à catraca G3 de adapters de conexão construídos à mão em tests/**.
+          const legado = createPrismaClient(url.toString());
           try {
             const tenant = await legado.tenant.create({
               data: { name: "Plataforma", slug: PLATFORM_TENANT_SLUG, status: "active", modules: [] },
