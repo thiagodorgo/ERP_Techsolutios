@@ -38,11 +38,12 @@ const PARSER_ALLOWLIST = [
   "modules/work-orders/work-order-attachment.storage.ts",
 ] as const;
 
-/** Os 3 (e únicos) escritores de blob. */
+/** Os 2 (e únicos) escritores de blob: os 2 provedores da D-014.
+ * B-EVIDENCIA-DURAVEL: `modules/evidence/evidence-storage.ts` saiu da lista — a foto do app passou a gravar pelo
+ * provedor da D-014, e o provedor local protegido (que gravava no diretório temporário do sistema) saiu do código. */
 const WRITER_ALLOWLIST = [
   "modules/checklists/storage/local-checklist-storage.provider.ts",
   "modules/checklists/storage/s3-checklist-storage.provider.ts",
-  "modules/evidence/evidence-storage.ts",
 ] as const;
 
 const WRITE_PATTERNS = [
@@ -166,9 +167,9 @@ test("C4 censo: identificadores *ForTests do gate/factory não são referenciado
   }
 });
 
-// ── C5: só os 3 providers escrevem bytes ──────────────────────────────────────────────────────────
+// ── C5: só os 2 providers escrevem bytes ──────────────────────────────────────────────────────────
 
-test("C5 censo: padrões de ESCRITA em src/** só nos 3 providers (tripwire de texto, alcance declarado)", async () => {
+test("C5 censo: padrões de ESCRITA em src/** só nos 2 providers (tripwire de texto, alcance declarado)", async () => {
   const files = await sourceFiles();
   const offenders: string[] = [];
   for (const pattern of WRITE_PATTERNS) {
@@ -180,14 +181,14 @@ test("C5 censo: padrões de ESCRITA em src/** só nos 3 providers (tripwire de t
   assert.deepEqual(
     offenders.sort(),
     [],
-    "Escrita de bytes fora dos 3 providers. Quem escreve por fora não passa pela marca de verificação — ver B-O6R-07b §3.6 (C5) e a fronteira do E1·7. Pontos cegos DECLARADOS (não pegos por este guard): acesso dinâmico `fs[nome]`, alias de import, e `scripts/`.",
+    "Escrita de bytes fora dos 2 providers. Quem escreve por fora não passa pela marca de verificação — ver B-O6R-07b §3.6 (C5) e a fronteira do E1·7. Pontos cegos DECLARADOS (não pegos por este guard): acesso dinâmico `fs[nome]`, alias de import, e `scripts/`.",
   );
 });
 
-test("C5b censo: a allowlist de escritores tem exatamente 3 arquivos, e todos existem", async () => {
+test("C5b censo: a allowlist de escritores tem exatamente 2 arquivos, e todos existem", async () => {
   const files = await sourceFiles();
   const known = new Set(files.map((file) => file.relativePath));
-  assert.equal(WRITER_ALLOWLIST.length, 3);
+  assert.equal(WRITER_ALLOWLIST.length, 2);
   for (const writer of WRITER_ALLOWLIST) {
     assert.ok(known.has(writer), `escritor da allowlist não existe mais: ${writer}`);
   }
@@ -239,4 +240,19 @@ test("C7 censo: os 5 sítios de `getObject(` que consomem storage chamam o guard
     .filter((file) => file !== "modules/evidence/storage-key-scope.ts")
     .sort();
   assert.deepEqual(callers, [...resolvers].sort());
+});
+
+// ── C8: o servidor não resolve raiz de arquivo pelo diretório temporário do sistema ───────────────
+
+test("C8 censo: nenhum arquivo de src/**, sem os comentários, contém `tmpdir(` (tripwire de texto, alcance declarado)", async () => {
+  // B-EVIDENCIA-DURAVEL (plano §6.3 e Emenda 1, M1): a foto do app era gravada em `os.tmpdir()` e sumia no
+  // reinício do contêiner, DEPOIS de a rota responder `stored` (`P-UPLOAD-ARMAZENAMENTO-EFEMERO`). A propriedade é
+  // "nada em src/ guarda arquivo pelo diretório temporário do sistema", não a forma dos dois nomes que existiam.
+  // Mesmos pontos cegos declarados das outras cláusulas (acesso dinâmico, alias de import, `scripts/`).
+  const found = [...filesMatching(await sourceFiles(), "tmpdir(")].sort();
+  assert.deepEqual(
+    found,
+    [],
+    "Diretório temporário do sistema usado em src/**. Arquivo guardado ali some no reinício do contêiner — ver B-EVIDENCIA-DURAVEL §6.3 (C8). Arquivo de upload vai pelo provedor da D-014.",
+  );
 });
