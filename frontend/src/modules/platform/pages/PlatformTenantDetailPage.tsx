@@ -1,13 +1,20 @@
 import { Boxes, ChevronLeft, Info, Users, type LucideIcon } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, type CSSProperties, type ReactNode } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
-import { usePlatformTenantDetail } from "../usePlatformTenantDetail";
 import type { PlatformTenantDetailData, PlatformTenantDetailInfo } from "../platform-tenant-detail.types";
 import { PLATFORM_SYSTEM_ORG_SLUG } from "../platform-overview.types";
 import { usePlatformTenantUsage } from "../usePlatformTenantUsage";
 import { usePermissions } from "../../../providers/PermissionProvider";
+import { OrganizationAdminDialog } from "../components/OrganizationAdminDialog";
+import { OrganizationDetailPanelView, type OrganizationPanelAction } from "../components/OrganizationDetailPanel";
+import { OrganizationEditNameDialog } from "../components/OrganizationEditNameDialog";
+import { OrganizationSetupDialog } from "../components/OrganizationSetupDialog";
+import { OrganizationStatusDialog } from "../components/OrganizationStatusDialog";
+import { usePlatformOrganizationDetail } from "../usePlatformOrganizationDetail";
+import type { PlatformOrganization } from "../platform.types";
+import { createTenantAdminUser, updatePlatformTenant, updatePlatformTenantStatus } from "../platform.service";
 
 // PR-SCALE-5c — "Detalhe da Organização" (sc tenantDetail). Consome GET
 // /api/v1/platform/tenants/:tenantId/detail via usePlatformTenantDetail, lendo o :tenantId REAL da rota
@@ -70,10 +77,11 @@ function userStatusView(status: string): { label: string; color: string; bg: str
 // Barra de topo comum a TODOS os estados: botão voltar honesto → console de organizações.
 function DetailTopBar() {
   const navigate = useNavigate();
+  const location = useLocation();
   return (
     <button
       type="button"
-      onClick={() => navigate("/platform/tenants")}
+      onClick={() => navigate(`/platform/tenants${location.search}`)}
       style={{ display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 16, padding: "6px 10px 6px 6px", background: "none", border: "none", fontSize: 13, fontWeight: 700, color: "#2563EB", cursor: "pointer", fontFamily: "inherit" }}
     >
       <ChevronLeft size={16} />
@@ -99,9 +107,9 @@ function StatCard({ icon: Icon, iconBg, iconColor, value, label, sub }: StatCard
 
 // Composição rica com DADO REAL (cabeçalho + stats reais + selo honesto + módulos + usuários). Exportada
 // para teste direto (render síncrono com dado real, sem depender do fetch assíncrono do hook).
-export function PlatformTenantDetailView({ detail, usage = null }: { detail: PlatformTenantDetailInfo; usage?: ReactNode }) {
+export function PlatformTenantDetailView({ detail, usage = null, organization }: { detail: PlatformTenantDetailInfo; usage?: ReactNode; organization?: PlatformOrganization }) {
   const status = orgStatusView(detail.status);
-  const isSystemOrg = detail.slug === PLATFORM_SYSTEM_ORG_SLUG;
+  const isSystemOrg = organization?.system ?? detail.slug === PLATFORM_SYSTEM_ORG_SLUG;
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -116,8 +124,8 @@ export function PlatformTenantDetailView({ detail, usage = null }: { detail: Pla
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{detail.name}</div>
             <div style={{ fontSize: 13, color: "#64748B", marginTop: 3 }}>
-              {detail.slug ? <span style={{ fontWeight: 600 }}>{detail.slug}</span> : null}
-              {detail.slug ? " · " : null}
+              {organization?.group?.name ? <span style={{ fontWeight: 600 }}>{organization.group.name}</span> : null}
+              {organization?.group?.name ? " · " : null}
               criada em {formatCreatedAt(detail.createdAt)}
             </div>
             {isSystemOrg ? <div style={{ marginTop: 5, fontSize: 11.5, fontWeight: 700, color: "#2563EB" }}>Organização de sistema</div> : null}
@@ -127,6 +135,10 @@ export function PlatformTenantDetailView({ detail, usage = null }: { detail: Pla
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: status.dot }} />
           {status.label}
         </span>
+      </div>
+
+      <div className="platform-organizations__plan-name">
+        Plano: <strong>{detail.subscription === null ? "Sem plano contratado" : detail.subscription.planName}</strong>
       </div>
 
       {/* Stats REAIS + SELO HONESTO (MRR/uptime omitidos por não terem fonte — D-007) */}
@@ -366,13 +378,34 @@ export function TenantUsageBlock({ tenantId }: { readonly tenantId: string }) {
 
 export function PlatformTenantDetailPage() {
   const { tenantId } = useParams();
-  const { data, loading } = usePlatformTenantDetail(tenantId);
+  const detailState = usePlatformOrganizationDetail(tenantId);
+  const [action, setAction] = useState<OrganizationPanelAction | null>(null);
   // Conferência ESTRITA da permissão: `can()`/`hasAny()` liberam tudo para o Admin Plataforma (isPlatformAdmin), e o
   // servidor recusaria a leitura sem `platform:cloud-usage:read` (`requirePlatformPermission`). Sem ela, o bloco não existe.
-  const { permissions } = usePermissions();
+  const { permissions, can } = usePermissions();
   const canReadUsage = permissions.includes("platform:cloud-usage:read");
   const usage = canReadUsage && tenantId ? <TenantUsageBlock tenantId={tenantId} /> : null;
-  return <PlatformTenantDetailContent data={data} loading={loading} usage={usage} />;
+  if (detailState.loading && !detailState.data.detail) return <PlatformTenantDetailContent data={detailState.data} loading />;
+  if (!detailState.organization) return <PlatformTenantDetailContent data={detailState.data} loading={false} />;
+  const actionPermissions = ["platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:manage"].filter(can);
+  const organization = detailState.organization;
+  const close = () => setAction(null);
+  const done = async () => { close(); await detailState.refresh(false); };
+  const openAction = (next: OrganizationPanelAction) => {
+    if (next !== "status") { setAction(next); return; }
+    void detailState.refresh(false).then((fresh) => {
+      if (fresh.data.source === "api" && fresh.data.detail && !fresh.data.forbidden && !fresh.data.notFound) setAction("status");
+    });
+  };
+  return <div className="platform-organizations page-stack">
+    <DetailTopBar />
+    <OrganizationDetailPanelView organization={organization} data={detailState.data} stale={detailState.stale} permissions={actionPermissions} showFullLink={false} onAction={openAction} />
+    {usage}
+    {action === "edit" ? <OrganizationEditNameDialog organization={organization} onClose={close} onConfirm={async (name) => { await updatePlatformTenant(organization.id, { name }); await done(); }} /> : null}
+    {action === "status" ? <OrganizationStatusDialog organization={organization} detail={detailState.data} onClose={close} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
+    {action === "admin" ? <OrganizationAdminDialog organization={organization} onClose={close} onConfirm={async (input) => createTenantAdminUser(organization.id, input)} onDone={() => void done()} /> : null}
+    {action === "setup" ? <OrganizationSetupDialog organization={organization} onClose={close} /> : null}
+  </div>;
 }
 
 export default PlatformTenantDetailPage;

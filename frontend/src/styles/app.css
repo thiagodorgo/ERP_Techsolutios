@@ -9075,3 +9075,13 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .platform-organizations__status--pending{color:var(--color-status-warning)}
 .platform-organizations__detail-placeholder{padding:18px;background:var(--surface-page);color:var(--text-secondary)}
 @media(max-width:1100px){.platform-organizations__kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.platform-organizations__detail{padding:var(--space-16);background:var(--surface-panel-muted);color:var(--text-primary);border-top:1px solid var(--border-subtle)}
+.platform-organizations__detail-head,.platform-organizations__detail-actions,.platform-organizations__dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:var(--space-12);flex-wrap:wrap}
+.platform-organizations__detail-head h2,.platform-organizations__detail-head p{margin:0}
+.platform-organizations__detail-head p{margin-top:var(--space-4);color:var(--text-secondary)}
+.platform-organizations__detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-12);margin:var(--space-16) 0}
+.platform-organizations__detail-grid>div{padding:var(--space-12);background:var(--surface-panel);border:1px solid var(--border-subtle);border-radius:var(--radius-8)}
+.platform-organizations__detail-grid ul{margin:var(--space-8) 0 0;padding-left:var(--space-16);color:var(--text-secondary)}
+.platform-organizations__detail-actions,.platform-organizations__dialog-actions{justify-content:flex-end}
+.platform-organizations__plan-name{margin-bottom:var(--space-12);color:var(--text-secondary)}
+@media(max-width:760px){.platform-organizations__detail-grid{grid-template-columns:1fr}}

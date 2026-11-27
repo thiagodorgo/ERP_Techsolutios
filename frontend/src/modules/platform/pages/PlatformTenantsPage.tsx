@@ -7,6 +7,7 @@ import type { DenseColumn } from "../../../components/dense-list/types";
 import { KpiStatCard } from "../../../components/patterns";
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
 import { usePermissions } from "../../../providers/PermissionProvider";
+import { OrganizationDetailPanel } from "../components/OrganizationDetailPanel";
 import {
   filterPlatformOrganizations,
   type OrganizationStatusFilter,
@@ -166,8 +167,10 @@ export function PlatformTenantsPage() {
   const statusFilter: OrganizationStatusFilter = rawStatus === "active" || rawStatus === "suspended" || rawStatus === "incomplete" ? rawStatus : "all";
   const write = (key: string, value: string) => { const next = new URLSearchParams(params); value ? next.set(key, value) : next.delete(key); setParams(next, { replace: true }); };
   const changeExpanded = (value: string | null) => { setExpandedId(value); write("org", value ?? ""); };
+  const actionPermissions = ["platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:manage"].filter(can);
+  const returnSearch = params.toString() ? `?${params.toString()}` : "";
 
-  return <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} query={query} groupId={groupId} statusFilter={statusFilter} expandedId={expandedId} canCreate={can("platform:tenants:create")} onCreate={() => undefined} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} />;
+  return <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} query={query} groupId={groupId} statusFilter={statusFilter} expandedId={expandedId} canCreate={can("platform:tenants:create")} onCreate={() => undefined} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} renderDetail={(row) => <OrganizationDetailPanel organization={row} returnSearch={returnSearch} permissions={actionPermissions} onRefreshList={() => void organizations.refresh(false)} />} />;
 }
 
 export default PlatformTenantsPage;
