@@ -48,7 +48,7 @@ function PageHeader({ canCreate, onCreate }: { readonly canCreate: boolean; read
     <header className="page-heading page-heading--row">
       <div>
         <h1>Organizações</h1>
-        <p>Cadastros, grupos e situação das organizações clientes.</p>
+        <p>cadastros e situação das organizações clientes</p>
       </div>
       {canCreate ? <button type="button" className="pat-btn pat-btn--primary" onClick={onCreate}><Plus size={15} aria-hidden="true" />Nova organização</button> : null}
     </header>
