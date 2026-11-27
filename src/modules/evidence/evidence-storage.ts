@@ -1,40 +1,9 @@
-import { createHash, randomUUID } from "node:crypto";
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-
-import { assertUploadVerification, type UploadVerification } from "./upload-gate.js";
+// B-EVIDENCIA-DURAVEL (plano §3.6 e Emenda 1 §E1.4) — este arquivo deixou de ser escritor de bytes. O provedor local
+// protegido (que gravava a foto do app no diretório temporário do sistema, perdida no reinício) e os seus 3 tipos saíram:
+// a foto grava pelo provedor da D-014 (`mobile-evidence-upload.ts`). Ficam os limites, os scanners e a trilha.
 
 export const EVIDENCE_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 export const EVIDENCE_ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png"]);
-
-export type EvidenceStorageInput = {
-  readonly tenantId: string;
-  readonly evidenceId: string;
-  readonly clientEvidenceId: string;
-  readonly buffer: Buffer;
-  readonly checksumSha256: string;
-  /**
-   * B-O6R-07b (§3.4) — OBRIGATÓRIA, mesma razão do `verification` de
-   * `SaveChecklistStorageObjectInput`: sem ela o `tsc` recusa qualquer chamador em `src/**`. O
-   * `mimeType` declarado saiu do tipo — era ele que escolhia a extensão do arquivo gravado
-   * (`.png`/`.jpg`) e o `mime_type` do recibo 201.
-   */
-  readonly verification: UploadVerification;
-};
-
-export type EvidenceStorageReceipt = {
-  readonly fileId: string;
-  readonly mimeType: string;
-  readonly sizeBytes: number;
-  readonly checksumSha256: string;
-  readonly storedAt: Date;
-};
-
-export interface EvidenceStorageProvider {
-  store(input: EvidenceStorageInput): Promise<EvidenceStorageReceipt>;
-  clear?(): Promise<void>;
-}
 
 export type EvidenceScanInput = {
   readonly tenantId: string;
@@ -83,46 +52,6 @@ export class FakeEvidenceScanner implements EvidenceScanner {
 export class UnavailableEvidenceScanner implements EvidenceScanner {
   async scan(): Promise<EvidenceScanResult> {
     return { status: "failed", reason: "scanner_not_configured" };
-  }
-}
-
-export class LocalProtectedEvidenceStorageProvider implements EvidenceStorageProvider {
-  constructor(private readonly root = path.join(os.tmpdir(), "erp-mobile-evidence-protected")) {}
-
-  async store(input: EvidenceStorageInput): Promise<EvidenceStorageReceipt> {
-    // B-O6R-07b — barreira de runtime, igual à dos 2 providers de checklist.
-    const facts = assertUploadVerification(input.verification, input.buffer);
-    const sizeBytes = input.buffer.length;
-    const computed = createHash("sha256").update(input.buffer).digest("hex");
-    if (computed !== input.checksumSha256) {
-      throw new Error("checksum_mismatch");
-    }
-
-    const tenantSegment = safeStorageSegment(input.tenantId);
-    // A extensão passa a derivar do tipo VERIFICADO: antes, um `.png` no disco só provava o que o
-    // cliente tinha escrito no `Content-Type` do part.
-    const extension = facts.mimeType === "image/png" ? ".png" : ".jpg";
-    const dir = path.join(this.root, tenantSegment);
-    const finalName = `${randomUUID()}${extension}`;
-    const tempName = `${randomUUID()}.tmp`;
-    const finalPath = path.join(dir, finalName);
-    const tempPath = path.join(dir, tempName);
-
-    await mkdir(dir, { recursive: true });
-    await writeFile(tempPath, input.buffer, { flag: "wx" });
-    await rename(tempPath, finalPath);
-
-    return {
-      fileId: `evfile_${randomUUID().replace(/-/g, "")}`,
-      mimeType: facts.mimeType,
-      sizeBytes,
-      checksumSha256: input.checksumSha256,
-      storedAt: new Date(),
-    };
-  }
-
-  async clear(): Promise<void> {
-    await rm(this.root, { force: true, recursive: true });
   }
 }
 
@@ -201,8 +130,4 @@ function sanitizeEvidenceAuditValue(value: unknown): unknown {
     return sanitizeEvidenceAuditMetadata(value as Readonly<Record<string, unknown>>);
   }
   return value;
-}
-
-function safeStorageSegment(value: string): string {
-  return value.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 120);
 }

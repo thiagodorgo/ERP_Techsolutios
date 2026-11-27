@@ -11,11 +11,11 @@ import test from "node:test";
 // O QUE ESTE ARQUIVO É, E O QUE NÃO É (a fronteira que o E1·7 mandou escrever, para o próximo bloco não
 // herdar uma garantia que não existe):
 //
-//   camada 1 — TIPO (build): quem chamar `save()` dos 2 providers de checklist ou `store()` do provider
-//              de evidência SEM `verification` falha o `tsc`. Não alcança `tests/**` (fora do
-//              tsconfig), `.js`/`.mjs` em `src/`, `scripts/**`, nem quem escreva bytes sem passar por
-//              provider nenhum.
-//   camada 2 — RUNTIME (providers): `assertUploadVerification` nos 3 `save`/`store`. Pega teste, JS e
+//   camada 1 — TIPO (build): quem chamar `save()` dos 2 providers de checklist SEM `verification` falha o
+//              `tsc` (B-EVIDENCIA-DURAVEL: o `store()` do provider de evidência saiu; a foto do app grava
+//              pelo `save()` da D-014). Não alcança `tests/**` (fora do tsconfig), `.js`/`.mjs` em `src/`,
+//              `scripts/**`, nem quem escreva bytes sem passar por provider nenhum.
+//   camada 2 — RUNTIME (providers): `assertUploadVerification` nos 2 `save`. Pega teste, JS e
 //              cast. Não alcança quem escreve fora dos providers.
 //   camada 3 — ESTE CENSO: **tripwire de TEXTO, não prova**. Pontos cegos DECLARADOS: acesso dinâmico
 //              (`fs[nome]`), alias de import (`import * as x from "node:fs"` + `x.writeFile`), e
