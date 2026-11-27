@@ -1,218 +1,173 @@
-import { Building2, Info, Search, Users, type LucideIcon } from "lucide-react";
-import { useState, type CSSProperties } from "react";
-import { useNavigate } from "react-router-dom";
+import { Building2, CircleAlert, Plus, Search } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 
+import { DenseTable } from "../../../components/dense-list";
+import type { DenseColumn } from "../../../components/dense-list/types";
+import { KpiStatCard } from "../../../components/patterns";
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
+import { usePermissions } from "../../../providers/PermissionProvider";
 import {
-  customerOverviewMetrics,
-  isPlatformSystemOrg,
-  type PlatformOverviewData,
-  type PlatformOverviewOrg,
-} from "../platform-overview.types";
-import { usePlatformOverview } from "../usePlatformOverview";
+  filterPlatformOrganizations,
+  type OrganizationStatusFilter,
+  type PlatformOrganizationRow,
+} from "../platform-organizations.state";
+import { usePlatformOrganizations, type PlatformOrganizationsStatus } from "../usePlatformOrganizations";
 
-const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 13 };
-const th: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: "#94A3B8", letterSpacing: ".06em" };
 const NUMBER_FORMAT = new Intl.NumberFormat("pt-BR");
-const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  timeZone: "America/Sao_Paulo",
-});
+const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
 
-export type OrganizationStatusFilter = "all" | "active" | "suspended" | "pending";
-
-function formatCount(value: number): string {
-  return NUMBER_FORMAT.format(value);
-}
+const widths = {
+  organization: "calc(30.216% - 6.647px)",
+  group: "calc(19.424% - 4.273px)",
+  status: "calc(19.424% - 4.273px)",
+  users: "calc(9.353% - 2.058px)",
+  modules: "calc(9.353% - 2.058px)",
+  createdAt: "calc(12.230% - 2.691px)",
+} as const;
 
 function formatDate(value: string): string {
   const date = new Date(value);
   return value && !Number.isNaN(date.getTime()) ? DATE_FORMAT.format(date) : "—";
 }
 
-function statusView(status: string): { label: string; color: string; dot: string } {
-  if (status === "active") return { label: "Ativa", color: "#059669", dot: "#22C55E" };
-  if (status === "suspended") return { label: "Suspensa", color: "#DC2626", dot: "#EF4444" };
-  if (status === "pending") return { label: "Pendente", color: "#D97706", dot: "#F59E0B" };
-  return { label: "Indefinida", color: "#64748B", dot: "#94A3B8" };
+function formatCount(value: number | null): string {
+  return value === null ? "—" : NUMBER_FORMAT.format(value);
 }
 
-function PageHeader() {
+function statusLabel(status: PlatformOrganizationRow["status"]): string {
+  if (status === "active") return "Ativa";
+  if (status === "suspended") return "Suspensa";
+  return "Pendente";
+}
+
+function PageHeader({ canCreate, onCreate }: { readonly canCreate: boolean; readonly onCreate: () => void }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid #F1F5F9", gap: 10 }}>
+    <header className="page-heading page-heading--row">
       <div>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.3px" }}>Organizações</div>
-        <div style={{ fontSize: 13, color: "#64748B", marginTop: 3, fontWeight: 500 }}>cadastros e situação das organizações clientes</div>
+        <h1>Organizações</h1>
+        <p>Cadastros, grupos e situação das organizações clientes.</p>
       </div>
-    </div>
+      {canCreate ? <button type="button" className="pat-btn pat-btn--primary" onClick={onCreate}><Plus size={15} aria-hidden="true" />Nova organização</button> : null}
+    </header>
   );
 }
 
-type KpiCardProps = {
-  readonly icon: LucideIcon;
-  readonly value: string;
-  readonly label: string;
-  readonly sub: string;
-  readonly tone?: "default" | "warning";
-};
-
-function KpiCard({ icon: Icon, value, label, sub, tone = "default" }: KpiCardProps) {
-  const warning = tone === "warning";
-  return (
-    <div style={{ ...card, padding: 18 }}>
-      <div style={{ width: 36, height: 36, borderRadius: 9, background: warning ? "#FFFBEB" : "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: warning ? "#D97706" : "#2563EB", marginBottom: 14 }}>
-        <Icon size={18} />
-      </div>
-      <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-.5px", marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>{value}</div>
-      <div style={{ fontSize: 12.5, fontWeight: 600, color: "#475569", marginBottom: 5 }}>{label}</div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}>{sub}</div>
-    </div>
-  );
-}
-
-type PlatformTenantsViewProps = {
-  readonly data: PlatformOverviewData;
+export type PlatformTenantsViewProps = {
+  readonly rows: readonly PlatformOrganizationRow[];
+  readonly status?: PlatformOrganizationsStatus;
+  readonly stale?: boolean;
   readonly query?: string;
+  readonly groupId?: string;
   readonly statusFilter?: OrganizationStatusFilter;
+  readonly expandedId?: string | null;
+  readonly canCreate?: boolean;
+  readonly onCreate?: () => void;
   readonly onQueryChange?: (value: string) => void;
+  readonly onGroupChange?: (value: string) => void;
   readonly onStatusFilterChange?: (value: OrganizationStatusFilter) => void;
+  readonly onExpandedIdChange?: (value: string | null) => void;
+  readonly renderDetail?: (row: PlatformOrganizationRow) => ReactNode;
+  readonly onRetry?: () => void;
 };
 
 export function PlatformTenantsView({
-  data,
+  rows,
+  status = rows.length ? "ready" : "empty",
+  stale = false,
   query = "",
+  groupId = "",
   statusFilter = "all",
+  expandedId = null,
+  canCreate = false,
+  onCreate = () => undefined,
   onQueryChange = () => undefined,
+  onGroupChange = () => undefined,
   onStatusFilterChange = () => undefined,
+  onExpandedIdChange = () => undefined,
+  renderDetail = (row) => <div className="platform-organizations__detail-placeholder">Carregando detalhes de {row.name}…</div>,
+  onRetry = () => undefined,
 }: PlatformTenantsViewProps) {
-  const navigate = useNavigate();
-  const metrics = customerOverviewMetrics(data);
-  const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
-  const suspendedCount = metrics.customerOrgs.filter((org) => org.status === "suspended").length;
-  const pendingCount = metrics.customerOrgs.filter((org) => org.status === "pending").length;
-  const filtered = data.orgs.filter((org) => {
-    if (statusFilter !== "all" && (isPlatformSystemOrg(org) || org.status !== statusFilter)) return false;
-    if (!normalizedQuery) return true;
-    return `${org.name} ${org.slug ?? ""}`.toLocaleLowerCase("pt-BR").includes(normalizedQuery);
-  });
+  const groupOptions = useMemo(() => [...new Map(rows.flatMap((row) => row.group ? [[row.group.id, row.group.name] as const] : [])).entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR")), [rows]);
+  const recut = filterPlatformOrganizations(rows, { query, groupId, status: "all" });
+  const customerRecut = recut.filter((row) => !row.system);
+  const counts = {
+    active: customerRecut.filter((row) => row.status === "active").length,
+    suspended: customerRecut.filter((row) => row.status === "suspended").length,
+    incomplete: customerRecut.filter((row) => !row.setup.complete).length,
+  };
+  const visible = filterPlatformOrganizations(rows, { query, groupId, status: statusFilter });
 
-  const filters: readonly { value: OrganizationStatusFilter; label: string; count: number }[] = [
-    { value: "all", label: "Todas", count: metrics.customerOrgs.length },
-    { value: "active", label: "Ativas", count: metrics.activeOrgs },
-    { value: "suspended", label: "Suspensas", count: suspendedCount },
-    { value: "pending", label: "Pendentes", count: pendingCount },
+  useEffect(() => {
+    if (expandedId && !visible.some((row) => row.id === expandedId)) onExpandedIdChange(null);
+  }, [expandedId, onExpandedIdChange, visible]);
+
+  const columns: readonly DenseColumn<PlatformOrganizationRow>[] = [
+    { key: "organization", header: "ORGANIZAÇÃO", width: widths.organization, render: (row) => <span className="platform-organizations__name"><span className="platform-organizations__avatar" aria-hidden="true"><Building2 size={14} /></span><span title={row.name}>{row.name}</span>{row.system ? <span className="ui-badge">Organização de sistema</span> : null}</span> },
+    { key: "group", header: "GRUPO", width: widths.group, render: (row) => <span title={row.group?.name}>{row.group?.name ?? "—"}</span> },
+    { key: "status", header: "SITUAÇÃO", width: widths.status, render: (row) => <span className={`platform-organizations__status platform-organizations__status--${row.status}`}>{statusLabel(row.status)}{!row.setup.complete ? <span className="ui-badge">Cadastro incompleto</span> : null}{row.countsStale ? <span title="Contagens aguardando atualização">Dados desatualizados</span> : null}</span> },
+    { key: "users", header: "USUÁRIOS", width: widths.users, align: "right", tabular: true, render: (row) => formatCount(row.userCount) },
+    { key: "modules", header: "MÓDULOS", width: widths.modules, align: "right", tabular: true, render: (row) => formatCount(row.moduleCount) },
+    { key: "createdAt", header: "CRIADA EM", width: widths.createdAt, align: "right", tabular: true, render: (row) => formatDate(row.createdAt) },
   ];
 
+  if (status === "loading") return <section className="platform-organizations page-stack"><PageHeader canCreate={canCreate} onCreate={onCreate} /><Skeleton lines={7} /></section>;
+  if (status === "forbidden") return <section className="platform-organizations page-stack"><PageHeader canCreate={false} onCreate={onCreate} /><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar as organizações da plataforma." /></section>;
+  if (status === "error") return <section className="platform-organizations page-stack"><PageHeader canCreate={canCreate} onCreate={onCreate} /><ErrorState title="Não foi possível carregar as organizações" detail="Tente novamente para consultar a lista completa." /><button type="button" className="pat-btn" onClick={onRetry}>Tentar novamente</button></section>;
+  if (status === "empty") return <section className="platform-organizations page-stack"><PageHeader canCreate={canCreate} onCreate={onCreate} /><EmptyState title="Nenhuma organização encontrada" detail="Ainda não há organizações cadastradas na plataforma." /></section>;
+
   return (
-    <div style={{ color: "#0F172A" }}>
-      <PageHeader />
-      {data.stale ? (
-        <div style={{ marginBottom: 14 }}>
-          <Alert title="Dados desatualizados" tone="warning">
-            A atualização mais recente falhou. A última lista confirmada continua visível enquanto a plataforma tenta novamente.
-          </Alert>
-        </div>
+    <section className="platform-organizations page-stack">
+      <PageHeader canCreate={canCreate} onCreate={onCreate} />
+      {stale ? <Alert title="Dados desatualizados" tone="warning">A última atualização falhou. O último conjunto completo continua visível.</Alert> : null}
+      <div className="platform-organizations__kpis">
+        <KpiStatCard icon={Building2} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={counts.active} label="Organizações ativas" hint="No recorte atual" onClick={() => onStatusFilterChange("active")} pressed={statusFilter === "active"} />
+        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-danger)" iconBg="var(--surface-panel-muted)" value={counts.suspended} label="Organizações suspensas" hint="No recorte atual" onClick={() => onStatusFilterChange("suspended")} pressed={statusFilter === "suspended"} />
+        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-warning)" iconBg="var(--surface-panel-muted)" value={counts.incomplete} label="Cadastros incompletos" hint="No recorte atual" onClick={() => onStatusFilterChange("incomplete")} pressed={statusFilter === "incomplete"} />
+        <div className="platform-organizations__revenue-note"><strong>Receita por organização</strong><span>Disponível após a ativação da medição cloud.</span></div>
+      </div>
+      <div className="platform-organizations__filters">
+        <label className="platform-organizations__search"><Search size={14} aria-hidden="true" /><span className="sr-only">Buscar organização ou grupo</span><input aria-label="Buscar organização ou grupo" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Buscar organização ou grupo…" /></label>
+        <label>Grupo<select aria-label="Filtrar por grupo" value={groupId} onChange={(event) => onGroupChange(event.target.value)}><option value="">Todos os grupos</option>{groupOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+      </div>
+      {statusFilter !== "all" ? <button type="button" className="platform-organizations__filter-chip" onClick={() => onStatusFilterChange("all")}>Filtro: {statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"} ×</button> : null}
+      {visible.length === 0 ? <EmptyState title="Nenhuma organização encontrada" detail="Ajuste a busca ou os filtros para consultar outras organizações." /> : null}
+      {visible.length > 0 ? (
+        <DenseTable
+          columns={columns}
+          rows={visible}
+          keyForRow={(row) => row.id}
+          sort={null}
+          onSort={() => undefined}
+          onRowClick={(row) => onExpandedIdChange(expandedId === row.id ? null : row.id)}
+          expandedKey={expandedId}
+          renderDetail={renderDetail}
+          isRowExpandable={(row) => !row.system}
+          detailColumnWidth={22}
+          cellTitle={(row, key) => key === "organization" ? row.name : key === "group" ? row.group?.name : undefined}
+        />
       ) : null}
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 16 }}>
-        <KpiCard icon={Building2} value={formatCount(metrics.activeOrgs)} label="Organizações ativas" sub={metrics.systemOrg ? "sem a organização de sistema" : "clientes com cadastro ativo"} />
-        <KpiCard icon={Building2} value={formatCount(suspendedCount)} label="Organizações suspensas" sub="clientes com operação suspensa" tone={suspendedCount > 0 ? "warning" : "default"} />
-        <KpiCard icon={Users} value={formatCount(metrics.totalUsers)} label="Usuários totais" sub={metrics.systemOrg ? "sem usuários da organização de sistema" : "nas organizações clientes"} />
-        <div style={{ ...card, padding: 18, background: "#F8FAFC", borderStyle: "dashed", display: "flex", alignItems: "center", gap: 13 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: "#F5F3FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#7C3AED", flexShrink: 0 }}><Info size={18} /></div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>Receita por organização</div>
-            <div style={{ fontSize: 12, color: "#64748B", marginTop: 3, lineHeight: 1.45 }}>Disponível após a ativação da medição cloud.</div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 13px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, flex: 1, minWidth: 220, maxWidth: 340 }}>
-          <Search size={14} aria-hidden="true" style={{ color: "#94A3B8" }} />
-          <span className="sr-only">Buscar organização</span>
-          <input
-            aria-label="Buscar organização"
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Buscar organização…"
-            style={{ width: "100%", border: 0, outline: 0, background: "transparent", font: "inherit", fontSize: 13, color: "#334155" }}
-          />
-        </label>
-        {filters.map((filter) => {
-          const selected = filter.value === statusFilter;
-          return (
-            <button
-              key={filter.value}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => onStatusFilterChange(filter.value)}
-              style={{ minHeight: 44, padding: "8px 13px", background: selected ? "#EFF6FF" : "#fff", border: `1px solid ${selected ? "#BFDBFE" : "#E2E8F0"}`, borderRadius: 9, fontSize: 12.5, fontWeight: selected ? 700 : 600, color: selected ? "#2563EB" : "#475569", cursor: "pointer", fontFamily: "inherit" }}
-            >
-              {filter.label} ({filter.count})
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={{ ...card, overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", padding: "9px 18px", background: "#F8FAFC", borderBottom: "1px solid #F1F5F9", gap: 8 }}>
-          <span style={{ ...th, flex: 2.1 }}>ORGANIZAÇÃO</span><span style={{ ...th, flex: 1 }}>STATUS</span><span style={{ ...th, flex: 0.8, textAlign: "right" }}>USUÁRIOS</span><span style={{ ...th, flex: 0.8, textAlign: "right" }}>MÓDULOS</span><span style={{ ...th, flex: 1, textAlign: "right" }}>CRIADA EM</span><span style={{ ...th, flex: 0.6, textAlign: "right" }}>AÇÃO</span>
-        </div>
-        {filtered.length === 0 ? (
-          <EmptyState title="Nenhuma organização encontrada" detail="Ajuste a busca ou os filtros para consultar outras organizações." />
-        ) : filtered.map((org: PlatformOverviewOrg, index) => {
-          const status = statusView(org.status);
-          const isSystemOrg = isPlatformSystemOrg(org);
-          const openDetail = () => navigate(`/platform/tenants/${org.id}`);
-          return (
-            <div
-              key={org.id}
-              role={isSystemOrg ? undefined : "button"}
-              tabIndex={isSystemOrg ? undefined : 0}
-              onClick={isSystemOrg ? undefined : openDetail}
-              onKeyDown={isSystemOrg ? undefined : (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openDetail(); } }}
-              style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: index === filtered.length - 1 ? "none" : "1px solid #F8FAFC", cursor: isSystemOrg ? "default" : "pointer", gap: 8, minHeight: 44 }}
-            >
-              <div style={{ flex: 2.1, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: "#EFF6FF", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB" }}><Building2 size={14} /></div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{org.name}</div>
-                  {isSystemOrg ? <div style={{ fontSize: 10.5, fontWeight: 700, color: "#2563EB", marginTop: 2 }}>Organização de sistema</div> : null}
-                </div>
-              </div>
-              <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: status.dot }} /><span style={{ fontSize: 12.5, fontWeight: 600, color: status.color }}>{status.label}</span></div>
-              <span style={{ flex: 0.8, fontSize: 12.5, color: "#475569", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatCount(org.userCount)}</span>
-              <span style={{ flex: 0.8, fontSize: 12.5, color: "#475569", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatCount(org.moduleCount)}</span>
-              <span style={{ flex: 1, fontSize: 12.5, color: "#64748B", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatDate(org.createdAt)}</span>
-              <div style={{ flex: 0.6, display: "flex", justifyContent: "flex-end" }}><span style={{ fontSize: 12, fontWeight: 700, color: isSystemOrg ? "#64748B" : "#2563EB" }}>{isSystemOrg ? "Sistema" : "Ver"}</span></div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    </section>
   );
 }
 
-// Estados §7 da tela, separados do hook para serem renderizáveis no teste (B-SAN3-06b E8): carregando, acesso não
-// permitido, falha sem dado anterior, vazio e, por fim, a lista.
-export function PlatformTenantsScreen({ loading, ...viewProps }: PlatformTenantsViewProps & { readonly loading: boolean }) {
-  const { data } = viewProps;
-  const hasRows = data.orgs.length > 0;
-  if (loading) return <div style={{ color: "#0F172A" }}><PageHeader /><div style={{ ...card, padding: 20 }}><Skeleton lines={7} /></div></div>;
-  if (data.forbidden) return <div style={{ color: "#0F172A" }}><PageHeader /><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar as organizações da plataforma." /></div>;
-  if (data.source === "fallback" && !hasRows) return <div style={{ color: "#0F172A" }}><PageHeader /><Alert title="Não foi possível carregar as organizações" tone="warning">A plataforma tentará novamente em alguns instantes. Nenhuma contagem é exibida enquanto não houver uma resposta confirmada.</Alert></div>;
-  if (!hasRows) return <div style={{ color: "#0F172A" }}><PageHeader /><div style={{ ...card, padding: 8 }}><EmptyState title="Nenhuma organização" detail="Ainda não há organizações cadastradas na plataforma." /></div></div>;
-  return <PlatformTenantsView {...viewProps} />;
+export function PlatformTenantsScreen(props: PlatformTenantsViewProps) {
+  return <PlatformTenantsView {...props} />;
 }
 
 export function PlatformTenantsPage() {
-  const { data, loading } = usePlatformOverview();
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<OrganizationStatusFilter>("all");
-  return <PlatformTenantsScreen data={data} loading={loading} query={query} statusFilter={statusFilter} onQueryChange={setQuery} onStatusFilterChange={setStatusFilter} />;
+  const [params, setParams] = useSearchParams();
+  const { can } = usePermissions();
+  const organizations = usePlatformOrganizations();
+  const [expandedId, setExpandedId] = useState<string | null>(() => params.get("org"));
+  const query = params.get("q") ?? "";
+  const groupId = params.get("grupo") ?? "";
+  const rawStatus = params.get("situacao");
+  const statusFilter: OrganizationStatusFilter = rawStatus === "active" || rawStatus === "suspended" || rawStatus === "incomplete" ? rawStatus : "all";
+  const write = (key: string, value: string) => { const next = new URLSearchParams(params); value ? next.set(key, value) : next.delete(key); setParams(next, { replace: true }); };
+  const changeExpanded = (value: string | null) => { setExpandedId(value); write("org", value ?? ""); };
+
+  return <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} query={query} groupId={groupId} statusFilter={statusFilter} expandedId={expandedId} canCreate={can("platform:tenants:create")} onCreate={() => undefined} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} />;
 }
 
 export default PlatformTenantsPage;

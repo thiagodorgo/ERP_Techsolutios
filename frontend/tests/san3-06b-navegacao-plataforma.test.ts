@@ -38,7 +38,7 @@ test("T39 modo demonstração é vazio e só config/env.ts lê o interruptor", a
   process.env.VITE_USE_MOCKS = "true";
   try {
     assert.deepEqual(await listPlatformTenants(), []);
-    await assert.rejects(() => getPlatformTenantById("x"), /Organização indisponível/);
+    await assert.rejects(() => getPlatformTenantById("x"), /Ação indisponível no modo demonstração/);
     const summary = await getCloudCostSummary();
     assert.equal(summary.source, "mock");
     assert.equal(summary.data, null);
@@ -55,8 +55,9 @@ test("T39 modo demonstração é vazio e só config/env.ts lê o interruptor", a
 test("T40 módulos não vaza código interno e inventário conserva 23 endpoints", () => {
   const source = readFileSync(path.join(FRONTEND, "src/modules/platform/pages/PlatformTenantModulesPage.tsx"), "utf8");
   assert.match(source, /Módulos não encontrados/);
-  assert.match(source, /plano \{planLabel\(tenant\.plan\)\}/);
-  assert.doesNotMatch(source, /P0\d|plano \{tenant\.plan\}/);
+  assert.match(source, /plano \{planName\}/);
+  assert.match(source, /subscription === null \? "Sem plano contratado"/);
+  assert.doesNotMatch(source, /P0\d|planLabel|tenant\.plan/);
   const output = execFileSync(process.execPath, [path.join(REPO, "scripts/san3-06b-endpoints-de-plataforma.mjs"), REPO], { encoding: "utf8", timeout: 120_000 });
   // B-ASS-09 (F6): 53 → 63, as 10 rotas da visão de custo, do câmbio e dos grupos (`/api/v1/platform/billing/overview`, `/fx-rates`, `/economic-groups`).
   // B-ASS-08c2 (F11): 70 → 72, as 2 rotas novas (`POST …/statements/:statementId/invoice` e `GET …/invoices/backlog`).

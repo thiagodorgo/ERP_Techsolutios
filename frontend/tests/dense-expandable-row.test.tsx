@@ -62,6 +62,31 @@ test("DenseTable SEM renderDetail continua a tabela .ui-table de sempre (regress
   assert.doesNotMatch(html, /pat-ab-row|aria-expanded|tabindex/);
 });
 
+test("DenseTable misto: linha estática não recebe foco, eventos, chevron ou detalhe forçado; largura terminal aceita 22px", () => {
+  const rows = [
+    { id: "cliente", nome: "Cliente", valor: "1", system: false },
+    { id: "sistema", nome: "Sistema", valor: "2", system: true },
+  ];
+  const html = renderToStaticMarkup(DenseTable({
+    columns: COLUMNS,
+    rows,
+    keyForRow: (row: (typeof rows)[number]) => row.id,
+    sort: null,
+    onSort: () => undefined,
+    onRowClick: () => undefined,
+    expandedKey: "sistema",
+    renderDetail: (row: (typeof rows)[number]) => <div>{`Detalhe ${row.id}`}</div>,
+    isRowExpandable: (row: (typeof rows)[number]) => !row.system,
+    detailColumnWidth: 22,
+  } as never));
+  assert.equal((html.match(/tabindex="0"/g) ?? []).length, 1);
+  assert.equal((html.match(/aria-expanded=/g) ?? []).length, 1);
+  assert.equal((html.match(/pat-chevron-icon/g) ?? []).length, 1);
+  assert.match(html, /width:22px/);
+  assert.match(html, /pat-ab-row--static/);
+  assert.doesNotMatch(html, /Detalhe sistema/);
+});
+
 /** Acha o <tr> da linha na árvore devolvida pelo componente (sem DOM) e devolve as props dele. */
 function rowProps(element: ReactNode): Record<string, unknown> {
   const found: Record<string, unknown>[] = [];

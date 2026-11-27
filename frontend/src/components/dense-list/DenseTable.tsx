@@ -22,6 +22,8 @@ export function DenseTable<T>({
   expandedKey = null,
   renderDetail,
   cellTitle,
+  isRowExpandable = () => true,
+  detailColumnWidth = 40,
 }: {
   columns: readonly DenseColumn<T>[];
   rows: readonly T[];
@@ -32,6 +34,8 @@ export function DenseTable<T>({
   expandedKey?: string | null;
   renderDetail?: (row: T) => ReactNode;
   cellTitle?: (row: T, columnKey: string) => string | undefined;
+  isRowExpandable?: (row: T) => boolean;
+  detailColumnWidth?: string | number;
 }) {
   if (renderDetail) {
     return (
@@ -40,7 +44,7 @@ export function DenseTable<T>({
           {columns.map((column) => (
             <col key={column.key} style={column.width ? { width: column.width } : undefined} />
           ))}
-          <col style={{ width: 40 }} />
+          <col style={{ width: detailColumnWidth }} />
         </colgroup>
         <thead>
           <tr>
@@ -53,15 +57,17 @@ export function DenseTable<T>({
         <tbody>
           {rows.map((row) => {
             const key = keyForRow(row);
+            const expandable = isRowExpandable(row);
             return (
               <DenseExpandableRow
                 key={key}
                 rowKey={key}
-                expanded={expandedKey === key}
+                expanded={expandable && expandedKey === key}
+                expandable={expandable}
                 colSpan={columns.length + 1}
                 onToggle={() => onRowClick?.(row)}
                 cells={columns.map((column) => ({ key: column.key, content: column.render(row), className: cellClassName(column), title: cellTitle?.(row, column.key) }))}
-                detail={expandedKey === key ? renderDetail(row) : null}
+                detail={expandable && expandedKey === key ? renderDetail(row) : null}
               />
             );
           })}

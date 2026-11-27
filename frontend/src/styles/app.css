@@ -9045,3 +9045,33 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .assin-a > .page-heading--row .ui-badge { white-space: nowrap; }
 /* StatusPill com ícone (B-ASS-11, REV576-04): o ícone antes do rótulo, no lugar do ponto. */
 .pat-pill__icon { display: inline-flex; align-items: center; flex-shrink: 0; }
+
+/* B-PLAT-ORG-REAL PR-b — composição aprovada da lista de organizações. Cores somente por tokens. */
+.platform-organizations{color:var(--text-primary)}
+.platform-organizations__kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.platform-organizations__revenue-note{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:18px;border:1px dashed var(--border-subtle);border-radius:12px;background:var(--surface-panel-muted);color:var(--text-secondary)}
+.platform-organizations__filters{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
+.platform-organizations__filters label{display:flex;flex-direction:column;gap:6px;color:var(--text-secondary);font-size:12px;font-weight:700}
+.platform-organizations__search{position:relative;min-width:280px;flex:1}
+.platform-organizations__search>svg{position:absolute;left:12px;bottom:12px;color:var(--text-muted)}
+.platform-organizations__search input,.platform-organizations__filters select{height:40px;border:1px solid var(--border-subtle);border-radius:9px;background:var(--surface-panel);color:var(--text-primary);font:inherit;padding:0 12px}
+.platform-organizations__search input{width:100%;padding-left:34px}
+.platform-organizations__search input:focus-visible,.platform-organizations__filters select:focus-visible,.platform-organizations__filter-chip:focus-visible{outline:2px solid var(--color-core-primary);outline-offset:2px}
+.platform-organizations__filter-chip{justify-self:start;width:max-content;border:1px solid var(--border-subtle);border-radius:999px;background:var(--surface-panel-muted);color:var(--text-secondary);padding:7px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.platform-organizations .pat-ab-table{background:var(--surface-panel);color:var(--text-primary)}
+.platform-organizations .pat-ab-table thead th{background:var(--surface-panel-muted);color:var(--text-secondary);border-color:var(--border-subtle)}
+.platform-organizations .pat-ab-row,.platform-organizations .pat-ab-row td{height:44px;max-height:44px;line-height:44px;background:var(--surface-panel);color:var(--text-primary)}
+.platform-organizations .pat-ab-row:hover td{background:var(--surface-panel-muted)}
+.platform-organizations .pat-ab-row:focus-visible{outline:2px solid var(--color-core-primary);outline-offset:-2px}
+.platform-organizations .pat-ab-row td:last-child,.platform-organizations .pat-ab-table th:last-child{padding-left:0;padding-right:0;text-align:center}
+.platform-organizations .pat-ab-row--static{cursor:default}
+.platform-organizations .pat-ab-row--static:hover td{background:var(--surface-panel)}
+.platform-organizations__name{display:flex;align-items:center;gap:8px;min-width:0;height:44px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.platform-organizations__name>span[title]{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.platform-organizations__avatar{display:inline-flex;width:26px;height:26px;flex:0 0 26px;align-items:center;justify-content:center;border-radius:7px;background:var(--surface-panel-muted);color:var(--color-core-primary)}
+.platform-organizations__status{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.platform-organizations__status--active{color:var(--color-status-success)}
+.platform-organizations__status--suspended{color:var(--color-status-danger)}
+.platform-organizations__status--pending{color:var(--color-status-warning)}
+.platform-organizations__detail-placeholder{padding:18px;background:var(--surface-page);color:var(--text-secondary)}
+@media(max-width:1100px){.platform-organizations__kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
