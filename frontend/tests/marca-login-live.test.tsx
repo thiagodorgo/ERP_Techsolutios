@@ -53,7 +53,7 @@ const settle = async () => {
 
 // =============================== O backend dublado pelo contrato ===============================
 
-const EMAIL = "operacao@exemplo.com.br";
+const EMAIL = "operacao@empresa.example";
 const PASSWORD = "Senha-de-teste-L";
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
