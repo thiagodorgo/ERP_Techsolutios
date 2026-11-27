@@ -87,7 +87,7 @@ export type LocalAuthLoginResult =
     }
   | {
       readonly ok: false;
-      readonly reason: "invalid_credentials" | "locked" | "inactive";
+      readonly reason: "invalid_credentials" | "locked" | "inactive" | "tenant_suspended";
     };
 
 export type SignAccessTokenInput = {

@@ -793,6 +793,26 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/charging/charge-locked-reader.ts", "new PrismaChargeRepository(tx)", "PARAMETRO(tx)", "×1"),
     "B-PATIO-LEILAO-DIARIAS (F5): o reader travado de cobrança (`createLockedChargeReader`) nasce com o `tx` já aberto no chamador (callbacks `withTenantRls`/`withTenantRlsBudget`, com GUC na 1ª instrução) para calcular gates de leilão/liquidação sob o mesmo contexto tenant; o arquivo só encapsula o repositório e não abre transação própria.",
   ],
+  [
+    k("L1", "src/modules/platform/platform-organizations-prisma.repository.ts", "PrismaPlatformOrganizationsRepository.assertGroupCapacity", "tx.economicGroupMember", "economicGroupMember.count", "economic_group_members", "PARAMETRO(tx)", "×1"),
+    "B-PLAT-ORG-REAL PR-a: `assertGroupCapacity` percorre organizações globais e, imediatamente antes de cada COUNT em `economic_group_members` (FORCE), executa `setTenantRlsContext(tx, tenant.id)`; o predicado repete `tenant_id: tenant.id` e `group_id`, dentro da transação já serializada pelo `FOR UPDATE` do grupo.",
+  ],
+  [
+    k("L1", "src/modules/platform/platform-organizations-prisma.repository.ts", "PrismaPlatformOrganizationsRepository.assertOrganizationNameAvailable", "tx.economicGroupMember", "economicGroupMember.findFirst", "economic_group_members", "PARAMETRO(tx)", "×1"),
+    "B-PLAT-ORG-REAL PR-a: para cada organização homônima, a leitura do vínculo FORCE vem imediatamente depois de `setTenantRlsContext(tx, tenant.id)` e filtra explicitamente `tenant_id: tenant.id` mais `group_id`; C10 prova o contrato sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/platform/platform-organizations-prisma.repository.ts", "PrismaPlatformOrganizationsRepository.create", "tx.economicGroupMember", "economicGroupMember.create", "economic_group_members", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-PLAT-ORG-REAL PR-a: a inserção do vínculo FORCE ocorre na mesma transação da organização e depois de `setTenantRlsContext(tx, tenant.id)`; os dados levam o mesmo `tenant_id`, e a suíte de isolamento executa a criação pelo papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/platform/platform-organizations-prisma.repository.ts", "PrismaPlatformOrganizationsRepository.lockExistingGroup", "tx", "RAW-SQL($queryRaw) OPACO", "?", "PARAMETRO(tx)", "×1"),
+    "B-PLAT-ORG-REAL PR-a: `SELECT ... FROM economic_groups ... FOR UPDATE` toca somente `economic_groups`, tabela global sem RLS; a trava serializa criação e renomeação no mesmo grupo antes de qualquer acesso tenant-scoped.",
+  ],
+  [
+    k("L2", "src/modules/platform/platform-organizations-prisma.repository.ts", "new AuditLogRepository(tx)", "$TRANSACTION-SEM-SETTER-PROVADO", "×2"),
+    "B-PLAT-ORG-REAL PR-a: as duas trilhas em `audit_logs` (FORCE) recebem o tx da criação após `setTenantRlsContext(tx, tenant.id)`; a trilha de mudança de situação recebe o tx cujo primeiro comando é `setTenantRlsContext(tx, id)`. C15/S10 e a suíte de isolamento conferem as escritas sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

@@ -445,6 +445,10 @@ jobs:
           SUITES="$SUITES tests/b-comissao-motor-liberacao-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-liquidacao-unidade-db.test.ts"
           SUITES="$SUITES tests/b-comissao-motor-agregados-db.test.ts"
+          # B-PLAT-ORG-REAL PR-a — criação, suspensão e isolamento sob papel efêmero NOSUPERUSER NOBYPASSRLS.
+          SUITES="$SUITES tests/plat-org-real-criacao-db.test.ts"
+          SUITES="$SUITES tests/plat-org-real-suspensao-db.test.ts"
+          SUITES="$SUITES tests/plat-org-real-isolamento-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       - name: Route HC1b latency suite alone
