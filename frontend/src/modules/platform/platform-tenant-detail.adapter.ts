@@ -80,6 +80,16 @@ export function adaptPlatformTenantDetail(raw: unknown): PlatformTenantDetailInf
     }
   }
 
+  let subscription: PlatformTenantDetailInfo["subscription"];
+  if (row.subscription === null) subscription = null;
+  else if (row.subscription && typeof row.subscription === "object") {
+    const value = row.subscription as Record<string, unknown>;
+    const status = nonEmptyString(value.status);
+    const planName = nonEmptyString(value.planName);
+    if (!status || !planName) return null;
+    subscription = { status, planName };
+  } else return null;
+
   // Projeção EXPLÍCITA: só os campos do DTO real. Campo extra (mrr/uptime/health) NÃO é copiado.
   return {
     id,
@@ -90,5 +100,6 @@ export function adaptPlatformTenantDetail(raw: unknown): PlatformTenantDetailInf
     moduleCount: toCount(row.moduleCount),
     modules,
     users,
+    subscription,
   };
 }

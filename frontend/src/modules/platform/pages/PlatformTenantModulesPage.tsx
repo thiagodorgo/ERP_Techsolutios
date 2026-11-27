@@ -5,13 +5,7 @@ import { useParams } from "react-router-dom";
 import { Badge, Button, Card, Checkbox, EmptyState, Skeleton } from "../../../components/ui";
 import { getPlatformTenantById, listPlatformTenantModules, updatePlatformTenantModules } from "../platform.service";
 import type { PlatformModule, PlatformTenant } from "../platform.types";
-
-function planLabel(plan: PlatformTenant["plan"]): string {
-  if (plan === "starter") return "Inicial";
-  if (plan === "professional") return "Profissional";
-  if (plan === "enterprise") return "Empresarial";
-  return "Indefinido";
-}
+import { usePlatformTenantDetail } from "../usePlatformTenantDetail";
 
 export function PlatformTenantModulesPage() {
   const { tenantId = "" } = useParams();
@@ -20,6 +14,7 @@ export function PlatformTenantModulesPage() {
   const [enabledModules, setEnabledModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const detailState = usePlatformTenantDetail(tenantId);
 
   useEffect(() => {
     Promise.all([getPlatformTenantById(tenantId), listPlatformTenantModules(tenantId)])
@@ -53,15 +48,19 @@ export function PlatformTenantModulesPage() {
     );
   }
 
-  if (loading) return <Skeleton lines={8} />;
+  if (loading || detailState.loading) return <Skeleton lines={8} />;
   if (error || !tenant) return <EmptyState title="Módulos não encontrados" detail={error ?? "Não foi possível carregar os módulos."} />;
+
+  const subscription = detailState.data.detail?.subscription;
+  const planName = subscription === null ? "Sem plano contratado" : subscription?.planName;
+  if (!planName) return <EmptyState title="Plano indisponível" detail="Não foi possível consultar o plano desta organização. Tente novamente." />;
 
   return (
     <section className="page-stack">
       <header className="page-heading page-heading--row">
         <div>
           <h1>Módulos da Organização</h1>
-          <p>{tenant.name} · plano {planLabel(tenant.plan)}</p>
+          <p>{tenant.name} · plano {planName}</p>
         </div>
         <Button onClick={saveModules}>
           <Save size={16} />

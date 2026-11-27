@@ -74,6 +74,7 @@ test("adaptPlatformTenantDetail: usuário sem e-mail descartado, org sem id → 
       { email: "sem-nome@org.com", status: "active" }, // sem nome → descartado
       "lixo",
     ],
+    subscription: { status: "active", planName: "Plano Regional Teste" },
   });
 
   assert.ok(detail);
@@ -150,6 +151,7 @@ test("getPlatformTenantDetail api: source 'api', adapta o payload real e não va
           mrr: 12345,
           modules: [{ key: "work-orders", label: "Ordens de Serviço", enabled: true }],
           users: [{ name: "Rafael Lima", email: "rafael@beta.com", status: "active" }],
+          subscription: { status: "active", planName: "Plano Regional Teste" },
         },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } },
@@ -205,6 +207,7 @@ test("detalhe da organização: com dado REAL mostra nome/usuários/módulos rea
       { name: "Marina Costa", email: "marina@alpha.com", roleLabel: "Administradora", status: "active" },
       { name: "Carlos Nunes", email: "carlos@alpha.com", roleLabel: "Técnico de Campo", status: "inactive" },
     ],
+    subscription: { status: "active", planName: "Plano Regional Teste" },
   };
 
   const html = await renderTenantDetailView(detail);
