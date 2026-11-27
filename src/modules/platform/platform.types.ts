@@ -2,7 +2,10 @@ import type { BillingProfileInput } from "../subscription-billing/billing-profil
 
 export type PlatformTenantStatus = "active" | "suspended" | "pending";
 export type PlatformPlan = "starter" | "professional" | "business" | "enterprise";
-export type PlatformTenant = { readonly plan: PlatformPlan; readonly enabledModules: readonly string[] };
+// B-PLANOS-MODULOS (D-PLANOS-MODULOS-PORTA-REAL): "plano" de organização, no sistema, É a assinatura. O mapa de
+// código `modulesByPlan` saiu; o que a leitura do painel precisa saber é se a organização tem assinatura em vigor
+// (quem manda nos módulos dela é o plano contratado) ou não (a plataforma liga e desliga área pela porta real).
+export type PlatformTenant = { readonly enabledModules: readonly string[]; readonly managedBySubscription: boolean };
 export type PlatformModuleCategory = "MVP" | "Fase 2" | "Enterprise";
 export type PlatformModuleStatus = "enabled" | "disabled" | "blocked_by_plan";
 export type PlatformOrganizationRecord = { readonly id: string; readonly name: string; readonly slug: string; readonly status: string; readonly modules: readonly string[]; readonly createdAt: Date; readonly updatedAt: Date };

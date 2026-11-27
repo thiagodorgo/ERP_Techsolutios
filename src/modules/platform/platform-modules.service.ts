@@ -1,4 +1,4 @@
-import type { PlatformModule, PlatformPlan, PlatformTenant } from "./platform.types.js";
+import type { PlatformModule, PlatformTenant } from "./platform.types.js";
 
 // B-SAN3-18 (F1, P4) — CATÁLOGO CANÔNICO de módulos: a fonte ÚNICA de chave → rótulo. O registro de navegação, a
 // classe de rota do gate (`src/modules/navigation/route-modules.ts`), a semente (`DEMO_TENANT_MODULES`), o plano
@@ -59,25 +59,17 @@ export function normalizeModuleKeys(modules: readonly string[] | undefined | nul
   return [...out];
 }
 
-const modulesByPlan: Record<PlatformPlan, Set<string>> = {
-  starter: new Set(["dashboard", "users", "tenant-admin", "inventory"]),
-  professional: new Set([
-    "dashboard",
-    "users",
-    "tenant-admin",
-    "inventory",
-    "approvals",
-    "finance",
-    "notifications",
-    "mobile",
-    "tenant_checklist",
-    "field_operations",
-    "reports",
-    "audit",
-  ]),
-  business: new Set(["inventory", "integrations"]),
-  enterprise: new Set(moduleCatalog.map((item) => item.key)),
-};
+// B-PLANOS-MODULOS (D-PLANOS-MODULOS-PORTA-REAL) — o mapa de código `modulesByPlan` SAIU: ele não ligava nem
+// destrava nada (o gate e o menu leem `tenants.modules`), só fazia a tela de módulos mentir, tratando toda
+// organização como se fosse do plano inicial. O conteúdo de cada plano é DADO (a lista `modules` da versão do plano
+// no banco), não código. No lugar entra a lista canônica que a porta grava.
+
+// A lista que a porta grava em `tenants.modules`: só as chaves canônicas pedidas, na ordem do catálogo e sem
+// repetição. Apelido e chave desconhecida já foram recusados pelo validador (422 `module_unknown`).
+export function canonicalModuleList(modules: readonly string[]): string[] {
+  const wanted = new Set(modules);
+  return CANONICAL_MODULE_KEYS.filter((key) => wanted.has(key));
+}
 
 // Flag de módulo derivada da lista de módulos habilitados de uma organização (`Tenant.modules`).
 // Reusa o MESMO catálogo do painel de módulos (fonte única de key→label) — o detalhe da org expõe o
@@ -100,16 +92,20 @@ export function mapTenantModuleFlags(enabledModules: readonly string[]): TenantM
 
 export class PlatformModulesService {
   listForTenant(tenant: PlatformTenant): PlatformModule[] {
-    const planModules = modulesByPlan[tenant.plan];
+    // "Ligada" é calculada com `normalizeModuleKeys`: sem isto, uma chave antiga gravada como apelido
+    // (`work-orders`) apareceria desligada no painel embora o gate e o menu a tratem como ligada.
+    const enabled = new Set(normalizeModuleKeys(tenant.enabledModules));
 
     return moduleCatalog.map((module) => {
-      const availableInPlan = planModules.has(module.key);
-      const enabled = tenant.enabledModules.includes(module.key);
+      const isEnabled = enabled.has(module.key);
+      // SEM assinatura em vigor não há plano para comparar: tudo está disponível e a plataforma liga pela porta.
+      // COM assinatura, `blocked_by_plan` é verdade operacional — aquela área só liga mudando o plano contratado.
+      const availableInPlan = tenant.managedBySubscription ? isEnabled : true;
 
       return {
         ...module,
         availableInPlan,
-        status: !availableInPlan ? "blocked_by_plan" : enabled ? "enabled" : "disabled",
+        status: isEnabled ? "enabled" : tenant.managedBySubscription ? "blocked_by_plan" : "disabled",
       };
     });
   }

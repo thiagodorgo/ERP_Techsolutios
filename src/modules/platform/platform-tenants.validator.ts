@@ -1,10 +1,12 @@
 import { CoreSaasError } from "../core-saas/types/core-saas.types.js";
 import { parseBillingProfileInput } from "../subscription-billing/billing-profile/billing-profile.js";
+import { CANONICAL_MODULE_KEYS } from "./platform-modules.service.js";
 import type { CreatePlatformTenantDto, CreateTenantAdminDto, PlatformPlan, UpdatePlatformTenantDto, UpdatePlatformTenantModulesDto, UpdateTenantStatusDto } from "./platform.types.js";
 
 const PLANS = new Set<PlatformPlan>(["starter", "professional", "business", "enterprise"]);
 const CREATE_FIELDS = new Set(["name", "group", "profile", "plan", "admin"]);
 const STATUS_REASONS = new Set<UpdateTenantStatusDto["reason"]>(["nonpayment", "customer_request", "security", "other"]);
+const MODULES_MAX_ITEMS = 50;
 
 export function parseCreatePlatformTenantDto(body: Record<string, unknown>): CreatePlatformTenantDto {
   assertKnownFields(body, CREATE_FIELDS);
@@ -38,7 +40,18 @@ export function parseUpdateTenantStatusDto(body: Record<string, unknown>): Updat
 }
 export function parseUpdatePlatformTenantModulesDto(body: Record<string, unknown>): UpdatePlatformTenantModulesDto {
   assertKnownFields(body, new Set(["enabledModules"]));
-  return { enabledModules: Array.isArray(body.enabledModules) ? body.enabledModules.filter((item): item is string => typeof item === "string") : [] };
+  // B-PLANOS-MODULOS (§5.2) — a porta passou a GRAVAR de verdade, então o validador deixou de FILTRAR: filtro
+  // silencioso de corpo malformado virava lista vazia, e lista vazia desliga tudo. Corpo fora da forma é
+  // 400 `invalid_field`; chave que não é canônica do catálogo (apelido incluído) é 422 `module_unknown`.
+  // Lista vazia continua válida — é o único jeito de desligar tudo, e só chega aqui como pedido explícito.
+  const raw = body.enabledModules;
+  if (!Array.isArray(raw)) bad("invalid_field", "enabledModules must be an array.");
+  if (raw.length > MODULES_MAX_ITEMS) bad("invalid_field", `enabledModules accepts at most ${MODULES_MAX_ITEMS} items.`);
+  for (const item of raw) if (typeof item !== "string") bad("invalid_field", "enabledModules items must be strings.");
+  const keys = raw as string[];
+  const unknown = keys.find((key) => !CANONICAL_MODULE_KEYS.includes(key));
+  if (unknown !== undefined) bad("module_unknown", `Unknown module: ${unknown}.`, 422);
+  return { enabledModules: keys };
 }
 export function parseCreateTenantAdminDto(body: Record<string, unknown>): CreateTenantAdminDto {
   assertKnownFields(body, new Set(["name", "email"]));

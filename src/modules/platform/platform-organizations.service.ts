@@ -100,7 +100,10 @@ export class PlatformOrganizationsService {
   }
   async listTenantModules(id: string): Promise<PlatformModule[]> {
     const row = await this.requireTenant(id);
-    return this.modules.listForTenant({ enabledModules: row.modules, plan: "starter" } as never);
+    return this.modules.listForTenant({
+      enabledModules: row.modules,
+      managedBySubscription: await this.subscriptionInForce(id),
+    });
   }
   async updateTenantModules(id: string, _input: UpdatePlatformTenantModulesDto): Promise<PlatformModule[]> { await this.requireTenant(id); throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription."); }
   async createTenantAdminUser(id: string, input: CreateTenantAdminDto, actorUserId: string) {
@@ -116,6 +119,14 @@ export class PlatformOrganizationsService {
   private async requireGroup(id: string) { try { return await this.groups.getGroup(id); } catch { throw new CoreSaasError(404, "NOT_FOUND", "group_not_found", "Economic group not found."); } }
   private assertNotPlatform(row: PlatformOrganizationRecord) { if (row.slug === "platform") throw new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "platform_organization", "The platform organization cannot be changed here."); }
   private async assertPlanAvailable(code: string) { const row = (await this.subscriptions.getPlansSummary()).find((plan) => plan.code === code && plan.currentVersion); if (!row) throw new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "plan_not_found", "Plan is unavailable."); }
+  // B-PLANOS-MODULOS (§5.3/§5.5) — assinatura em vigor = `valid_to` NULO ou NO FUTURO: a assinatura cancelada que
+  // ainda não venceu continua mandando nos módulos da organização (`getSubscription` do repositório olha só
+  // `valid_to IS NULL` e deixaria a porta abrir). Se a leitura falhar o erro SOBE: nem a porta nem o painel caem
+  // para "sem assinatura" — é falha fechada.
+  private async subscriptionInForce(id: string, now: Date = new Date()): Promise<boolean> {
+    const history = await this.subscriptions.getHistory(id);
+    return history.some(({ subscription }) => subscription.validTo === null || subscription.validTo.getTime() > now.getTime());
+  }
   private async assertOrganizationNameAvailable(group: GroupDetail | null, name: string, exceptId?: string) { if (!group) return; const wanted = normalizedOrganizationName(name); for (const member of group.members) { if (member.tenantId === exceptId) continue; const row = await this.organizations.findById(member.tenantId); if (row && normalizedOrganizationName(row.name) === wanted) throw new CoreSaasError(409, "CONFLICT", "organization_name_conflict", "Organization name already exists in this group."); } }
   private async runOptional<T>(value: T | undefined, run: () => Promise<void>): Promise<ProvisioningStep> { if (value === undefined) return { status: "skipped" }; try { await run(); return { status: "done" }; } catch (error) { return failed(error); } }
   private async groupOf(id: string): Promise<GroupDetail | null> { for (const group of await this.groups.listGroups()) { const detail = await this.groups.getGroup(group.id); if (detail.members.some((member) => member.tenantId === id)) return detail; } return null; }
