@@ -2,7 +2,8 @@ import { Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { Badge, Button, Card, Checkbox, EmptyState, Skeleton } from "../../../components/ui";
+import { Alert, Badge, Button, Card, Checkbox, EmptyState, Skeleton } from "../../../components/ui";
+import { ApiError } from "../../../services/api/client";
 import { getPlatformTenantById, listPlatformTenantModules, updatePlatformTenantModules } from "../platform.service";
 import type { PlatformModule, PlatformTenant } from "../platform.types";
 import { usePlatformTenantDetail } from "../usePlatformTenantDetail";
@@ -14,6 +15,7 @@ export function PlatformTenantModulesPage() {
   const [enabledModules, setEnabledModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [savingError, setSavingError] = useState<string | null>(null);
   const detailState = usePlatformTenantDetail(tenantId);
 
   useEffect(() => {
@@ -37,8 +39,13 @@ export function PlatformTenantModulesPage() {
   );
 
   async function saveModules() {
-    const updated = await updatePlatformTenantModules(tenantId, enabledModules);
-    setModules(updated);
+    setSavingError(null);
+    try {
+      const updated = await updatePlatformTenantModules(tenantId, enabledModules);
+      setModules(updated);
+    } catch (item) {
+      setSavingError(item instanceof ApiError && item.status === 409 && item.reason === "module_change_requires_subscription" ? "Os módulos são definidos pela assinatura. Altere o plano para mudar este conjunto." : "Não foi possível salvar os módulos. Nada foi alterado.");
+    }
   }
 
   function toggleModule(module: PlatformModule) {
@@ -67,6 +74,8 @@ export function PlatformTenantModulesPage() {
           Salvar alterações
         </Button>
       </header>
+
+      {savingError ? <Alert title="Alteração não concluída" tone="warning">{savingError}</Alert> : null}
 
       {Object.entries(groupedModules).map(([category, items]) => (
         <Card key={category} title={category}>

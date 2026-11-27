@@ -8,6 +8,7 @@ import { KpiStatCard } from "../../../components/patterns";
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { OrganizationDetailPanel } from "../components/OrganizationDetailPanel";
+import { NewOrganizationDialog } from "../components/NewOrganizationDialog";
 import {
   filterPlatformOrganizations,
   type OrganizationStatusFilter,
@@ -161,6 +162,7 @@ export function PlatformTenantsPage() {
   const { can } = usePermissions();
   const organizations = usePlatformOrganizations();
   const [expandedId, setExpandedId] = useState<string | null>(() => params.get("org"));
+  const [createOpen, setCreateOpen] = useState(false);
   const query = params.get("q") ?? "";
   const groupId = params.get("grupo") ?? "";
   const rawStatus = params.get("situacao");
@@ -170,7 +172,10 @@ export function PlatformTenantsPage() {
   const actionPermissions = ["platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:manage"].filter(can);
   const returnSearch = params.toString() ? `?${params.toString()}` : "";
 
-  return <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} query={query} groupId={groupId} statusFilter={statusFilter} expandedId={expandedId} canCreate={can("platform:tenants:create")} onCreate={() => undefined} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} renderDetail={(row) => <OrganizationDetailPanel organization={row} returnSearch={returnSearch} permissions={actionPermissions} onRefreshList={() => void organizations.refresh(false)} />} />;
+  return <>
+    <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} query={query} groupId={groupId} statusFilter={statusFilter} expandedId={expandedId} canCreate={can("platform:tenants:create")} onCreate={() => setCreateOpen(true)} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} renderDetail={(row) => <OrganizationDetailPanel organization={row} returnSearch={returnSearch} permissions={actionPermissions} onRefreshList={() => void organizations.refresh(false)} />} />
+    {createOpen ? <NewOrganizationDialog onClose={() => setCreateOpen(false)} onCreated={() => void organizations.refresh(false)} permissions={actionPermissions} /> : null}
+  </>;
 }
 
 export default PlatformTenantsPage;

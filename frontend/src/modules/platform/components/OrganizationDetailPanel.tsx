@@ -60,6 +60,6 @@ export function OrganizationDetailPanel({ organization, returnSearch = "", permi
     {action === "edit" ? <OrganizationEditNameDialog organization={organization} onClose={close} onConfirm={async (name) => { await updatePlatformTenant(organization.id, { name }); await done(); }} /> : null}
     {action === "status" ? <OrganizationStatusDialog organization={organization} detail={state.data} onClose={close} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
     {action === "admin" ? <OrganizationAdminDialog organization={organization} onClose={close} onConfirm={async (input) => createTenantAdminUser(organization.id, input)} onDone={() => void done()} /> : null}
-    {action === "setup" ? <OrganizationSetupDialog organization={organization} onClose={close} /> : null}
+    {action === "setup" ? <OrganizationSetupDialog organization={organization} permissions={permissions} onClose={close} /> : null}
   </>;
 }

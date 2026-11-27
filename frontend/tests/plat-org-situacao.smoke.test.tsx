@@ -34,7 +34,7 @@ test("FS2 enumeração e PATCH são idênticos para suspender e reativar", async
   const previous = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     calls.push({ url: String(input), method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
-    return jsonResponse({ ...ORGANIZATION_A, status: calls.length === 1 ? "suspended" : "active" });
+    return jsonResponse({ data: { ...ORGANIZATION_A, status: calls.length === 1 ? "suspended" : "active" } });
   }) as typeof fetch;
   try {
     await updatePlatformTenantStatus(ORGANIZATION_A.id, { status: "suspended", reason: "security" });
