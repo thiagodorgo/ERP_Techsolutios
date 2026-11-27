@@ -491,16 +491,19 @@ async function contagemDeCobranca(h: PlatOrgRealHarness, tenantId: string) {
   return { assinaturas, adicionais, demonstrativos };
 }
 
+// Um usuário da organização com papel CANÔNICO (`operator`): a sessão só leva papel do catálogo (`parseRoles`), e um
+// papel de chave inventada chegaria vazio ao RBAC (403 `role_required`), o que não diz nada sobre o gate. O papel da
+// organização recebe só as permissões pedidas, no banco (RBAC persistente).
 async function usuarioDaOrganizacao(
   h: PlatOrgRealHarness,
   tenantId: string,
   tag: string,
   permissoes: readonly string[],
 ) {
-  const roleKey = `pmod_${tag}`;
-  const papel = await h.admin.role.create({
-    data: { tenant_id: tenantId, key: roleKey, name: `Papel ${tag}`, scope: "tenant" },
-  });
+  const roleKey = "operator";
+  const papel =
+    (await h.admin.role.findFirst({ where: { tenant_id: tenantId, key: roleKey } })) ??
+    (await h.admin.role.create({ data: { tenant_id: tenantId, key: roleKey, name: `Papel ${tag}`, scope: "tenant" } }));
   for (const key of permissoes) {
     const permissao = await ensurePermission(h.admin, key);
     await h.admin.rolePermission.create({ data: { role_id: papel.id, permission_id: permissao.id } });

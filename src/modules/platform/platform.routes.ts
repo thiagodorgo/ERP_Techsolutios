@@ -177,9 +177,11 @@ export function createPlatformRouter(
     requirePlatformPermission("platform:modules:manage"),
     handleAsyncRoute(async (request, response) => {
       const service = await resolveOrganizationsService();
+      // B-PLANOS-MODULOS — grava de verdade para organização sem assinatura; o ator de plataforma vai para a trilha.
       const modules = await service.updateTenantModules(
         readRouteParam(request.params.tenantId),
         parseUpdatePlatformTenantModulesDto(request.body as Record<string, unknown>),
+        resolveRequestActor(request)!.userId!,
       );
 
       response.status(200).json({
