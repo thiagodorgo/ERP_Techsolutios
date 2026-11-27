@@ -3414,3 +3414,9 @@ pós-merge.
 | 2026-11-23 | `B-INFRA-RDS-CA` — O sistema passa a reconhecer a autoridade que assina o certificado do banco de dados gerenciado na nuvem e segue conferindo o certificado e o nome do servidor, para que a conexão segura funcione quando subir em produção; o roteiro de implantação também foi corrigido. | #632 | `95fe6fcb` | `7034f4d9` | 7642/7644 | 2118/2118 | 2069/2307 | 274 | 45235042747 (tentativa 1) |
 | 2026-11-23 | `PR-633` — O antivírus passa a atualizar a base de vírus antes de subir, em vez de ficar preso à base que veio com a imagem, que também foi atualizada; sem internet, ele sobe com a base embarcada e o sistema continua recusando o envio de arquivos se a base estiver velha demais. | #633 | `ba99eb41` | `b8720bec` | 7646/7648 | 2118/2118 | 2069/2307 | 275 | 45270839429 (tentativa 1) |
 | 2026-11-23 | `B-PATIO-LEILAO-DIARIAS` — No leilão não se cobra diária enquanto o veículo está em leilão, e a diária volta se o veículo voltar; o teto passa a 180 diárias também no contrato particular, e o regime antigo de 30 diárias continua como estava; o pátio é creditado pelo valor devido. A mudança passou por junta completa, unânime. | #631 | `8d402829` | `d057c478` | 7806/7808 | 2118/2118 | 2069/2307 | 276 | 45277858069 (tentativa 1) |
+
+## Entregas do KPI-MARCO-2026-11-27
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-11-24 | `PR-634` — É registro: reúne as decisões do dono, a ata da avaliação do leilão e as pendências abertas e fechadas do período, sem mudança no produto. | #634 | `34401640` | `df618ddc` | 7806/7808 | 2118/2118 | 2069/2307 | 276 | 45414730850 (tentativa 1) |

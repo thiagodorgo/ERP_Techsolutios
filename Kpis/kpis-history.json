@@ -5021,5 +5021,19 @@
     "blocks_completed": 276,
     "description": "B-PATIO-LEILAO-DIARIAS — No leilão não se cobra diária enquanto o veículo está em leilão, e a diária volta se o veículo voltar; o teto passa a 180 diárias também no contrato particular, e o regime antigo de 30 diárias continua como estava; o pátio é creditado pelo valor devido. A mudança passou por junta completa, unânime.. NÚMEROS DA CI no merge commit `8d402829` (push na `main`), workflow `ci`, run 45277858069, tentativa 1: backend `7808 teste(s) · pass 7806 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 275 -> 276.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 631`; números do log da rodada 45277858069. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-24",
+    "version": "PR-634",
+    "pr": 634,
+    "merge_commit": "3440164091fe85601ee1af8240d411ba5aa17483",
+    "approved_head": "df618ddcd5d01d580d6b46ef2b7a0b38637f4d16",
+    "status": "published_per_pr",
+    "flutter_tests": "2069/2307",
+    "backend_tests": "7806/7808",
+    "frontend_smoke_tests": "2118/2118",
+    "blocks_completed": 276,
+    "description": "PR-634 — É registro: reúne as decisões do dono, a ata da avaliação do leilão e as pendências abertas e fechadas do período, sem mudança no produto.. NÚMEROS DA CI no merge commit `34401640` (push na `main`), workflow `ci`, run 45414730850, tentativa 1: backend `7808 teste(s) · pass 7806 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 276 -> 276.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 634`; números do log da rodada 45414730850. Nada fica `null`."
   }
 ]
