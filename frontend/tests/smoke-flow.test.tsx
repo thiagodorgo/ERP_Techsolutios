@@ -1373,7 +1373,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Configurações/);
   assert.match(protectedHtml, /Organizações/);
   assert.match(protectedHtml, /Nenhuma organização/);
-  assert.match(protectedHtml, /Cloud Billing/);
+  assert.match(protectedHtml, /Custo da nuvem/);
 });
 
 test("anexos frontend validam ausente, renderizam lista e preview", async () => {

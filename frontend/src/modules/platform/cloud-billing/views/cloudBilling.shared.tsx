@@ -91,7 +91,7 @@ export function CloudBillingHeader({ model, access, onMonth, onAction }: Pick<Cl
     <div className="pat-page-header">
       <div className="pat-page-header__lead">
         <div className="pat-page-header__kicker">Plataforma · custo e margem</div>
-        <h1 className="pat-page-header__title">Cloud Billing</h1>
+        <h1 className="pat-page-header__title">Custo da nuvem</h1>
         <p className="pat-page-header__subtitle">
           Custo da nuvem e margem por organização · {monthLabel(model.month)} · {updated}
         </p>
