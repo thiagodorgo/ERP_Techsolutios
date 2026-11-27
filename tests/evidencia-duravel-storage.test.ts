@@ -860,3 +860,30 @@ test("E18 uploaded_at do 201: data ISO válida, não anterior ao envio nem poste
     }
   });
 });
+
+// Conserto único da junta do #649 (achado C1-01): a trava do §3.1 — segmento da chave vazio ou só de pontos responde
+// 400 `invalid_client_evidence_id` antes de qualquer gravação — não tinha teste. O caso que a alcança pela rota é o
+// `client_evidence_id` igual a "." : ele passa no validador do campo (`^[A-Za-z0-9._:-]{1,120}$` sem `..`) e no sync,
+// e só a trava o recusa ("..." já cai no validador do campo, por causa do `..`; vazio cai no `required_field`). Sem a
+// trava, o "." vira parte do nome do objeto e a rota grava e responde 201.
+test("E19 segmento só de pontos: client_evidence_id \".\" passa no validador do campo e no sync, e a rota responde 400 invalid_client_evidence_id antes de qualquer gravação (0 chamada ao antivírus, 0 comando ao armazenamento, nada de aceite nem stored na trilha)", async () => {
+  await withEvidenceApi(async (ctx) => {
+    const m = await loadModules();
+    const { tenantA, userA } = ctx.seed;
+    const client = fakeS3Client();
+    const counter = countingScanner();
+    configureS3(m, durableS3Config(m.prefix), client);
+    m.upload.configureMobileEvidenceUploadScannerForTests(counter.scanner as any);
+    const { evidenceId, clientEvidenceId } = await prepareFieldEvidence(ctx, tenantA, userA, ".", JPEG_BYTES);
+    assert.equal(evidenceId, `evidence:${tenantA.id}:.`, "o sync não aceitou o metadado do código \".\"");
+
+    const response = await postEvidence(ctx, tenantA, userA, { evidenceId, clientEvidenceId, bytes: JPEG_BYTES });
+    assert.equal(response.status, 400, response.text);
+    assert.equal(response.body.error?.reason, "invalid_client_evidence_id");
+    assert.equal(counter.calls(), 0, "o antivírus rodou antes da recusa do segmento");
+    assert.equal(client.commands.length, 0, "a recusa do segmento deixou chegar comando ao armazenamento");
+    const actions = m.upload.getMobileEvidenceUploadAuditEventsForTests().map((event) => event.action as string);
+    assert.ok(!actions.includes("evidence.upload.accepted"), `a trilha registrou aceite: ${actions.join(", ")}`);
+    assert.ok(!actions.includes("evidence.upload.stored"), `a trilha registrou stored: ${actions.join(", ")}`);
+  });
+});

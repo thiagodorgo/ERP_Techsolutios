@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1459** |
-| IDs distintos | 1444 |
-| **ABERTAS** | **1119** |
+| Cabecalhos `## P-` | **1460** |
+| IDs distintos | 1445 |
+| **ABERTAS** | **1120** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **1058** |
+| — das quais **ativas nesta rodada** | **1059** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 336 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1459 cabecalhos para 1444 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1460 cabecalhos para 1445 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -510,7 +510,7 @@
 | `P-MARCA-DESIGN-SYSTEM` | 18256 | MÉDIA | sim | P-MARCA-DESIGN-SYSTEM (2026-11-25) — a base de design ainda diz "azul industrial", contr |
 | `P-COBRANCA-DEMONSTRATIVOS-POR-MES` | 18268 | MÉDIA | sim | P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situ |
 
-## ABERTAS · balde B — processo/registro — 623
+## ABERTAS · balde B — processo/registro — 624
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1137,6 +1137,7 @@
 | `P-EVIDENCIA-METADADO-EM-MEMORIA` | 18274 | — | sim | P-EVIDENCIA-METADADO-EM-MEMORIA (2026-11-27) — o metadado aceito da evidência e a trilha |
 | `P-STORAGE-FORCE-PATH-STYLE-COERCE` | 18282 | BAIXA | sim | P-STORAGE-FORCE-PATH-STYLE-COERCE (2026-11-27) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
 | `P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA` | 18288 | BAIXA | sim | P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA (2026-11-27) — o painel de KPI cita o provedor da ev |
+| `P-EVIDENCIA-TRILHA-SANEADOR-CHAVES` | 18294 | BAIXA | sim | P-EVIDENCIA-TRILHA-SANEADOR-CHAVES (2026-11-27) — o saneador da trilha da evidência não  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
