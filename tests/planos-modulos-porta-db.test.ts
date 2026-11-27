@@ -26,6 +26,10 @@ import { entrar, novaOrganizacao, novoUsuario, portador } from "./helpers/users-
 // D2 é o teste de encerramento da pendência `P-SAN3-18-PORTA-DE-MODULO-POR-ORG`: o gate e o menu passam a enxergar
 // (e deixam de enxergar) a área sem novo login.
 //
+// D11 (a mais do §8.3, pedido pela medição da F6) é a corrida com a assinatura: ela nasce DEPOIS da checagem do serviço e
+// ANTES da leitura de dentro da transação. Sem ele, tirar só a checagem da transação, ou ler a assinatura antes do
+// contexto de RLS, sobrevivia aos D1 a D10, porque a checagem do serviço já dá o 409 nos casos sequenciais.
+//
 // D9 derruba a trilha de plataforma por um gatilho de falha injetada no banco descartável, escopado à organização do
 // caso e sempre pelo `runHarnessDdl` (molde de `tests/b-aprov-duraveis-atomic-db.test.ts`); nada de mexer em
 // privilégio de papel (o ratchet `tests/db-catalog-write-guard.test.ts` congela quem escreve catálogo de cluster).
@@ -413,6 +417,86 @@ test("D10 — a leitura sob o papel sem bypass devolve o mesmo corpo que sob a c
   assert.equal(comAssinaturaLida.get("dashboard")?.status, "enabled");
   assert.equal(comAssinaturaLida.get("patios")?.status, "blocked_by_plan");
   assert.equal(comAssinaturaLida.get("patios")?.availableInPlan, false);
+});
+
+test("D11 — corrida com a assinatura: ela nasce depois da checagem do serviço e antes da leitura da transação; a leitura sob o contexto recusa", async () => {
+  const h = await harness();
+  // §5.5 do plano: "a checagem do serviço dá o 409 nos dois modos; a de dentro da transação é a que vale sob corrida".
+  // O D5 é sequencial e para na checagem do serviço; este caso põe a assinatura no meio, com barreira por `pg_locks`
+  // (molde do D6/C10, sem `sleep`), e prova a leitura de DENTRO da transação: depois do `FOR UPDATE`, sob o contexto
+  // de RLS da organização. Sob o papel sem bypass, uma leitura sem o contexto veria zero linhas e a porta abriria.
+  await assertPapelSemBypass(h);
+  const org = await novaOrganizacao(h, "planos-mod-d11");
+  assert.deepEqual(await modulesDe(h, org.tenantId), []);
+  const plano = await novoPlanoComVersao(h, ["dashboard"], new Date("2000-01-01T00:00:00.000Z"));
+
+  let releaseHold: () => void = () => undefined;
+  const holdUntil = new Promise<void>((resolve) => {
+    releaseHold = resolve;
+  });
+  let holderHasLock: () => void = () => undefined;
+  const holderLockAcquired = new Promise<void>((resolve) => {
+    holderHasLock = resolve;
+  });
+  let liberarAssinatura: () => void = () => undefined;
+  const assinaturaPodeNascer = new Promise<void>((resolve) => {
+    liberarAssinatura = resolve;
+  });
+  const holder = h.admin.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT id FROM tenants WHERE id = ${org.tenantId}::uuid FOR UPDATE`;
+      holderHasLock();
+      // A assinatura nasce DENTRO do detentor: o commit dela e a soltura da linha acontecem juntos, depois que a
+      // chamada do app já passou pela checagem do serviço e está parada na trava.
+      await assinaturaPodeNascer;
+      await tx.$executeRawUnsafe(
+        `INSERT INTO tenant_subscriptions (tenant_id, plan_id, valid_from, valid_to) VALUES ($1::uuid, $2::uuid, $3::timestamptz, NULL)`,
+        org.tenantId,
+        plano.id,
+        new Date(Date.now() - 7_200_000),
+      );
+      await holdUntil;
+    },
+    { maxWait: 30_000, timeout: 30_000 },
+  );
+  await holderLockAcquired;
+
+  let resolvedWhileHeld = false;
+  let released = false;
+  const chamada = patchModulos(h, org.tenantId, ["work_orders"]).then((resposta) => {
+    if (!released) resolvedWhileHeld = true;
+    return resposta;
+  });
+
+  let waiters = 0;
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline && waiters < 1 && !resolvedWhileHeld) {
+    const [row] = await h.admin.$queryRaw<Array<{ waiters: number }>>`
+      SELECT count(DISTINCT a.pid)::int AS waiters
+      FROM pg_stat_activity a
+      JOIN pg_locks l ON l.pid = a.pid
+      JOIN pg_class c ON c.oid = l.relation
+      WHERE a.usename = ${h.role.roleName}
+        AND c.relname = 'tenants'
+        AND cardinality(pg_blocking_pids(a.pid)) > 0
+    `;
+    waiters = row?.waiters ?? 0;
+    if (waiters < 1) await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  liberarAssinatura();
+  released = true;
+  releaseHold();
+  await holder;
+  const resposta = await chamada;
+
+  assert.equal(resolvedWhileHeld, false, "a chamada não pode concluir enquanto a linha está travada");
+  assert.equal(waiters, 1, "a transação do app tem de esperar a trava da linha de tenants depois da checagem do serviço");
+  assert.equal(resposta.status, 409, JSON.stringify(resposta.body));
+  assert.equal(resposta.body.error?.reason, "module_change_requires_subscription");
+  assert.deepEqual(await modulesDe(h, org.tenantId), [], "a assinatura vence: nada é escrito");
+  assert.equal((await trilhasDePlataforma(h, org.tenantId)).length, 0);
+  assert.equal(await trilhasDaOrganizacaoDe(h, org.tenantId), 0);
 });
 
 type Modulo = {

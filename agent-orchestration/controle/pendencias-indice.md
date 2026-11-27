@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1459** |
-| IDs distintos | 1444 |
-| **ABERTAS** | **1120** |
+| Cabecalhos `## P-` | **1460** |
+| IDs distintos | 1445 |
+| **ABERTAS** | **1121** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **1059** |
+| — das quais **ativas nesta rodada** | **1060** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 335 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1459 cabecalhos para 1444 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1460 cabecalhos para 1445 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 435
+## ABERTAS · balde A — material — 436
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -509,6 +509,7 @@
 | `P-WEB-CONSOLE-CELULAR` | 18249 | MÉDIA | sim | P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computad |
 | `P-MARCA-DESIGN-SYSTEM` | 18255 | MÉDIA | sim | P-MARCA-DESIGN-SYSTEM (2026-11-25) — a base de design ainda diz "azul industrial", contr |
 | `P-COBRANCA-DEMONSTRATIVOS-POR-MES` | 18267 | MÉDIA | sim | P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situ |
+| `P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT` | 18294 | MÉDIA | sim | P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT (2026-11-27) — o teardown de `tests/leilao |
 
 ## ABERTAS · balde B — processo/registro — 624
 
