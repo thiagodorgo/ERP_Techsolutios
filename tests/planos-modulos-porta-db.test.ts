@@ -271,7 +271,9 @@ test("D6 — duas chamadas concorrentes: a segunda espera a trava e a trilha enc
     return { added: metadata.modules_added, removed: metadata.modules_removed };
   });
   const cadeias = [
-    { rotulo: "A depois B", ordem: [{ added: ["work_orders"], removed: [] }, { added: ["patios"], removed: [] }], final: ["patios", "work_orders"] },
+    // `final` é a lista como a porta GRAVA: na ordem do catálogo (`canonicalModuleList`), e no catálogo
+    // `work_orders` vem antes de `patios` — a ordem do corpo da requisição não sobrevive à escrita.
+    { rotulo: "A depois B", ordem: [{ added: ["work_orders"], removed: [] }, { added: ["patios"], removed: [] }], final: ["work_orders", "patios"] },
     { rotulo: "B depois A", ordem: [{ added: ["patios", "work_orders"], removed: [] }, { added: [], removed: ["patios"] }], final: ["work_orders"] },
   ];
   const serializado = JSON.stringify(resumo);
@@ -436,21 +438,25 @@ async function contagemDeCobranca(h: PlatOrgRealHarness, tenantId: string) {
   return { assinaturas, adicionais, demonstrativos };
 }
 
+// O usuário da organização precisa de papel CANÔNICO e de permissão GRAVADA. Em modo prisma o
+// `persistent-rbac-context.middleware` substitui o contexto da requisição por `resolveForActor`
+// (`persistent-authorization.service.ts`), que filtra os papéis por `isValidRole` e lê as permissões da tabela
+// `role_permissions` — não do catálogo em código. Papel inventado dá 403 `role_required`; papel canônico sem
+// permissão gravada dá 403 `permission_required`. Nenhum dos dois chega ao gate de módulo, e o D2 mediria nada.
 async function usuarioDaOrganizacao(
   h: PlatOrgRealHarness,
   tenantId: string,
   tag: string,
   permissoes: readonly string[],
 ) {
-  const roleKey = `pmod_${tag}`;
-  const papel = await h.admin.role.create({
-    data: { tenant_id: tenantId, key: roleKey, name: `Papel ${tag}`, scope: "tenant" },
-  });
+  const roleKey = "tenant_admin";
+  const usuario = await novoUsuario(h, tenantId, tag, roleKey);
+  const papel = await h.admin.role.findFirstOrThrow({ where: { tenant_id: tenantId, key: roleKey } });
   for (const key of permissoes) {
     const permissao = await ensurePermission(h.admin, key);
     await h.admin.rolePermission.create({ data: { role_id: papel.id, permission_id: permissao.id } });
   }
-  return novoUsuario(h, tenantId, tag, roleKey);
+  return usuario;
 }
 
 async function novoPlanoComVersao(
