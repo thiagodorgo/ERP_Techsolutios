@@ -16,6 +16,7 @@ import {
   OrganizationGroupNotFoundError,
   OrganizationGroupTooManyMembersError,
   OrganizationNameConflictError,
+  subscriptionInForce,
   type OrganizationGroupRef,
   type PlatformOrganizationsRepository,
 } from "./platform-organizations.repository.js";
@@ -98,9 +99,13 @@ export class PlatformOrganizationsService {
     if (current.status === input.status || (current.status !== "active" && input.status === "suspended")) throw new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "invalid_status_transition", "Invalid organization status transition.");
     const changed = await this.organizations.changeStatus(id, input, actorUserId); return this.toOrganization(changed!);
   }
+  // B-PLANOS-MODULOS — a leitura diz se a organização tem assinatura em vigor (a regra de `subscriptionInForce`). Se a
+  // leitura da assinatura falhar, a rota responde erro: nunca cai para "sem assinatura".
   async listTenantModules(id: string): Promise<PlatformModule[]> {
     const row = await this.requireTenant(id);
-    return this.modules.listForTenant({ enabledModules: row.modules, plan: "starter" } as never);
+    const now = new Date();
+    const managedBySubscription = (await this.subscriptions.getHistory(row.id)).some((view) => subscriptionInForce(view.subscription.validTo, now));
+    return this.modules.listForTenant({ enabledModules: row.modules, managedBySubscription });
   }
   async updateTenantModules(id: string, _input: UpdatePlatformTenantModulesDto): Promise<PlatformModule[]> { await this.requireTenant(id); throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription."); }
   async createTenantAdminUser(id: string, input: CreateTenantAdminDto, actorUserId: string) {

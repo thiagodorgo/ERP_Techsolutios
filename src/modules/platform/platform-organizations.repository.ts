@@ -44,6 +44,12 @@ export class InMemoryPlatformOrganizationsRepository implements PlatformOrganiza
   }
 }
 
+// B-PLANOS-MODULOS — "assinatura em vigor" para a porta de módulos: `valid_to` nulo, ou `valid_to` no futuro (a
+// cancelada que ainda não terminou continua mandando). Uma regra só, para o serviço e para a transação.
+export function subscriptionInForce(validTo: Date | null, now: Date): boolean {
+  return validTo === null || validTo.getTime() > now.getTime();
+}
+
 export function normalizedOrganizationName(value: string): string {
   return value.trim().toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
