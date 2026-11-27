@@ -70,4 +70,3 @@ export function usePlatformOrganizations() {
 
   return { ...state, loading: state.status === "loading", refresh };
 }
-
