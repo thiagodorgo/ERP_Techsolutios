@@ -9,6 +9,13 @@ import { todayBusinessDate } from "../subscription-billing/economic-groups/membe
 import { membershipAuditBuilder } from "../subscription-billing/overview/overview.trail.js";
 import { pickBillingAuditMetadata } from "../subscription-billing/platform-audit/audit-metadata.js";
 import {
+  canonicalModuleList,
+  diffModuleKeys,
+  sameModuleSet,
+  CANONICAL_MODULE_KEYS,
+  type ModuleSetDiff,
+} from "./platform-modules.service.js";
+import {
   normalizedOrganizationName,
   OrganizationGroupNameInvalidError,
   OrganizationGroupNameTakenError,
@@ -19,6 +26,7 @@ import {
   type CreateOrganizationRecord,
   type OrganizationGroupRef,
   type PlatformOrganizationsRepository,
+  type ReplaceModulesResult,
 } from "./platform-organizations.repository.js";
 import type { PlatformOrganizationRecord, UpdateTenantStatusDto } from "./platform.types.js";
 
@@ -173,6 +181,67 @@ export class PrismaPlatformOrganizationsRepository implements PlatformOrganizati
     });
   }
 
+  // B-PLANOS-MODULOS (§5.5, item 3, com a ordem da Emenda 1) — a escrita real da porta, numa transação só:
+  //   1. o GUC da organização PRIMEIRO. `tenant_subscriptions` e `audit_logs` têm RLS ENABLE+FORCE: sem o contexto
+  //      a leitura da assinatura devolve zero linhas e a porta abriria para quem TEM assinatura. Falha fechada.
+  //   2. o `FOR UPDATE` na linha de `tenants`, que serializa esta escrita com a escrita de módulos que a própria
+  //      atribuição de assinatura faz na mesma linha (`putSubscription` → `writeModules`).
+  //   3. a leitura da assinatura em vigor (`valid_to` NULO ou NO FUTURO): achou, recusa sem escrever.
+  //   4. o atalho de "sem mudança": conjunto igual ao atual não escreve e não trilha.
+  //   5. a gravação de `tenants.modules` e as DUAS trilhas, todas dentro da mesma transação (D9: falha na trilha
+  //      desfaz a escrita).
+  // O `setTenantRlsContext` é um `set_config` e não toma trava de linha, então a ordem 1→2 preserva ao mesmo tempo
+  // o invariante do §5.5 (ler a assinatura sempre depois do setter) e a trava que a corrida do D6 mede.
+  async replaceModules(
+    id: string,
+    modules: readonly string[],
+    actorUserId: string,
+    now: Date,
+  ): Promise<ReplaceModulesResult> {
+    if (!UUID.test(id)) return { kind: "not_found" };
+    return this.prisma.$transaction(async (tx) => {
+      await setTenantRlsContext(tx, id);
+      await tx.$queryRaw`SELECT id FROM tenants WHERE id = ${id}::uuid FOR UPDATE`;
+      const current = await tx.tenant.findUnique({ where: { id } });
+      if (!current) return { kind: "not_found" } as const;
+      const subscription = await tx.tenantSubscription.findFirst({
+        where: { tenant_id: id, OR: [{ valid_to: null }, { valid_to: { gt: now } }] },
+        select: { id: true },
+      });
+      if (subscription) return { kind: "subscription_in_force" } as const;
+      const next = canonicalModuleList(modules);
+      if (sameModuleSet(current.modules, next)) return { kind: "unchanged", organization: mapRow(current) } as const;
+      const row = await tx.tenant.update({ where: { id }, data: { modules: next } });
+      const diff = diffModuleKeys(current.modules, next);
+      await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+        tenantId: id,
+        actorId: null,
+        actorType: "system",
+        action: "tenant.modules_changed",
+        resourceType: "tenant",
+        resourceId: id,
+        outcome: "success",
+        severity: "info",
+        metadata: {
+          modules_added: [...diff.added],
+          modules_removed: [...diff.removed],
+          modules_removed_other: diff.removedOther,
+        },
+      });
+      await tx.platformAuditLog.create({
+        data: {
+          actor_user_id: actorColumn(actorUserId),
+          tenant_id: id,
+          action: "organization.modules_changed",
+          entity: "organization",
+          entity_id: id,
+          metadata: modulesChangedMetadata(actorUserId, diff) as Prisma.InputJsonObject,
+        },
+      });
+      return { kind: "changed", organization: mapRow(row) } as const;
+    }, { maxWait: 30_000, timeout: 30_000 });
+  }
+
   private async resolveAndLockGroup(
     tx: Prisma.TransactionClient,
     input: CreateOrganizationRecord["group"],
@@ -284,6 +353,34 @@ export class PrismaPlatformOrganizationsRepository implements PlatformOrganizati
 
 function actorColumn(value: string | null): string | null {
   return value !== null && UUID.test(value) ? value : null;
+}
+
+// B-PLANOS-MODULOS (§5.4) — os metadados da trilha de plataforma. `actor_user_id` continua passando pela allowlist
+// da casa; as DUAS LISTAS NÃO passam, e não podem passar: a regra `codeList` de `BILLING_AUDIT_RULES` exige
+// `/^[a-z][a-z0-9_]{0,39}$/` e derrubaria a chave canônica `tenant-admin` por causa do hífen (M9). Acrescentar uma
+// regra nova em `audit-metadata.ts` está fora do escopo deste bloco, e `tests/ass-05b-audit-allowlist.test.ts`
+// congela a lista de chaves dela. O filtro é local e mais estrito que o necessário: só chave do catálogo canônico,
+// sem repetição e no máximo 50 itens — a lista nunca carrega texto livre vindo do corpo da requisição.
+const MODULES_METADATA_MAX_ITEMS = 50;
+
+function canonicalModuleMetadataList(values: readonly string[]): string[] {
+  const known = new Set(CANONICAL_MODULE_KEYS);
+  const out: string[] = [];
+  for (const value of values) {
+    if (typeof value !== "string" || !known.has(value) || out.includes(value)) continue;
+    out.push(value);
+    if (out.length >= MODULES_METADATA_MAX_ITEMS) break;
+  }
+  return out;
+}
+
+function modulesChangedMetadata(actorUserId: string, diff: ModuleSetDiff): Record<string, unknown> {
+  return {
+    ...pickBillingAuditMetadata({ actor_user_id: actorUserId }, ["actor_user_id"]),
+    modules_added: canonicalModuleMetadataList(diff.added),
+    modules_removed: canonicalModuleMetadataList(diff.removed),
+    modules_removed_other: Number.isInteger(diff.removedOther) && diff.removedOther > 0 ? diff.removedOther : 0,
+  };
 }
 
 function isGroupNameTaken(error: unknown): boolean {

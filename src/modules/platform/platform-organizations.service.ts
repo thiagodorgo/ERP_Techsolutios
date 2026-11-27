@@ -7,7 +7,7 @@ import { EconomicGroupsService, type GroupDetail } from "../subscription-billing
 import type { SubscriptionsService } from "../subscription-billing/plans/subscriptions.service.js";
 import { createDefaultSubscriptionsService, getMemoryTenantLookupForTests } from "../subscription-billing/subscription-billing.service.js";
 import { getMemoryOverviewTenantListForTests } from "../subscription-billing/overview/overview.factory.js";
-import { PlatformModulesService } from "./platform-modules.service.js";
+import { canonicalModuleList, PlatformModulesService } from "./platform-modules.service.js";
 import {
   InMemoryPlatformOrganizationsRepository,
   normalizedOrganizationName,
@@ -105,7 +105,19 @@ export class PlatformOrganizationsService {
       managedBySubscription: await this.subscriptionInForce(id),
     });
   }
-  async updateTenantModules(id: string, _input: UpdatePlatformTenantModulesDto): Promise<PlatformModule[]> { await this.requireTenant(id); throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription."); }
+  // B-PLANOS-MODULOS (§5.5, item 4, decisão do dono `D-PLANOS-MODULOS-PORTA-REAL`) — a porta GRAVA de verdade para
+  // organização SEM assinatura em vigor, e continua recusando 409 para organização COM assinatura (aí quem manda
+  // nos módulos é o plano contratado). A checagem de assinatura é feita AQUI, no serviço, porque vale nos dois
+  // modos de persistência — o armazém em memória não conhece assinatura (L3) — e DE NOVO dentro da transação do
+  // repositório Prisma, que é a que vale sob corrida. A lista devolvida é a relida depois da escrita (§5.2).
+  async updateTenantModules(id: string, input: UpdatePlatformTenantModulesDto, actorUserId: string): Promise<PlatformModule[]> {
+    const row = await this.requireTenant(id); this.assertNotPlatform(row);
+    if (await this.subscriptionInForce(id)) throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription.");
+    const result = await this.organizations.replaceModules(id, canonicalModuleList(input.enabledModules), actorUserId, new Date());
+    if (result.kind === "not_found") throw new CoreSaasError(404, "NOT_FOUND", "platform_tenant_not_found", "Platform tenant not found.");
+    if (result.kind === "subscription_in_force") throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription.");
+    return this.modules.listForTenant({ enabledModules: result.organization.modules, managedBySubscription: false });
+  }
   async createTenantAdminUser(id: string, input: CreateTenantAdminDto, actorUserId: string) {
     const row = await this.requireTenant(id); this.assertNotPlatform(row);
     if (row.status !== "active") throw new CoreSaasError(400, "BAD_REQUEST", "inactive_tenant", "Organization is not active.");

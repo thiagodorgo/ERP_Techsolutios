@@ -71,6 +71,38 @@ export function canonicalModuleList(modules: readonly string[]): string[] {
   return CANONICAL_MODULE_KEYS.filter((key) => wanted.has(key));
 }
 
+// B-PLANOS-MODULOS (§5.2/§5.4) — a comparação de conjuntos que a porta usa para decidir "sem mudança" e para
+// montar a trilha. `current` é o que está gravado em `tenants.modules` (pode trazer apelido antigo e chave fora
+// do catálogo, herdados de sementes anteriores); `next` já chega canônica (`canonicalModuleList`). Comparar como
+// CONJUNTO normalizado é o que impede a porta de escrever e trilhar uma mudança que não mudou nada.
+export type ModuleSetDiff = {
+  readonly added: readonly string[];
+  readonly removed: readonly string[];
+  readonly removedOther: number;
+};
+
+export function sameModuleSet(current: readonly string[] | undefined | null, next: readonly string[]): boolean {
+  const before = new Set(normalizeModuleKeys(current));
+  const after = new Set(normalizeModuleKeys(next));
+  if (before.size !== after.size) return false;
+  for (const key of after) if (!before.has(key)) return false;
+  return true;
+}
+
+// `removed` lista só as chaves CANÔNICAS que saíram (na ordem do catálogo, como o resto da trilha); chave antiga
+// fora do catálogo que sai é contada em `removedOther`, sem o texto dela — a trilha não carrega texto livre (§5.4).
+export function diffModuleKeys(current: readonly string[] | undefined | null, next: readonly string[]): ModuleSetDiff {
+  const before = normalizeModuleKeys(current);
+  const beforeSet = new Set(before);
+  const after = new Set(canonicalModuleList(next));
+  const canonical = new Set(CANONICAL_MODULE_KEYS);
+  const added = CANONICAL_MODULE_KEYS.filter((key) => after.has(key) && !beforeSet.has(key));
+  const removed = CANONICAL_MODULE_KEYS.filter((key) => beforeSet.has(key) && !after.has(key));
+  let removedOther = 0;
+  for (const key of before) if (!canonical.has(key) && !after.has(key)) removedOther += 1;
+  return { added, removed, removedOther };
+}
+
 // Flag de módulo derivada da lista de módulos habilitados de uma organização (`Tenant.modules`).
 // Reusa o MESMO catálogo do painel de módulos (fonte única de key→label) — o detalhe da org expõe o
 // catálogo inteiro com `enabled` por módulo, sem inventar rótulo.

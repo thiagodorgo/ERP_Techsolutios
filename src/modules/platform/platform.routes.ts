@@ -180,6 +180,9 @@ export function createPlatformRouter(
       const modules = await service.updateTenantModules(
         readRouteParam(request.params.tenantId),
         parseUpdatePlatformTenantModulesDto(request.body as Record<string, unknown>),
+        // B-PLANOS-MODULOS (§5.5, item 7) — a porta passou a GRAVAR, então o ator de plataforma desce até a trilha
+        // (`platform_audit_logs.actor_user_id`). A permissão da rota não muda: `platform:modules:manage`.
+        resolveRequestActor(request)!.userId!,
       );
 
       response.status(200).json({
