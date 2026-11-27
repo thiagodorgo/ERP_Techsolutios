@@ -31,7 +31,7 @@ after(() => {
 
 const React = await import("react");
 const { createRoot } = await import("react-dom/client");
-const { MemoryRouter, useLocation } = await import("react-router-dom");
+const { MemoryRouter, Router, useLocation } = await import("react-router-dom");
 const { App } = await import("../src/App");
 const { getStoredAuthSession } = await import("../src/modules/auth/auth.storage");
 const { PASSWORD_CHANGED_NOTICE, PASSWORD_CHANGE_MESSAGES } = await import("../src/modules/auth/auth.adapter");
@@ -108,15 +108,45 @@ function LocationProbe() {
 type Mounted = { readonly container: MiniDomElement; readonly path: () => string | null };
 type Entry = string | { readonly pathname: string; readonly state: unknown };
 
-async function withLogin(entry: Entry, run: (mounted: Mounted) => Promise<void>) {
+/**
+ * O roteador que ANOTA o que se pede a ele (push ou replace, e para onde): prova o destino que o próprio login pede, e não
+ * só onde a tela termina. A sessão provisória também chega à troca de senha pelo desvio da linha 64 (quem já tem sessão
+ * provisória e está no login vai à troca), então só o pedido distingue o desvio de dentro do `authenticate`.
+ */
+type Navigation = readonly [kind: "push" | "replace", pathname: string];
+let navigations: Navigation[] = [];
+
+function pathOf(to: unknown): string {
+  if (typeof to === "string") return to.split(/[?#]/)[0];
+  return (to as { readonly pathname?: string }).pathname ?? "/";
+}
+
+function RecordingRouter({ initial, children }: { readonly initial: string; readonly children: unknown }) {
+  const [location, setLocation] = React.useState({ pathname: initial, search: "", hash: "", state: null as unknown, key: "inicio" });
+  const navigator = React.useMemo(() => {
+    const record = (kind: "push" | "replace") => (to: unknown, state?: unknown) => {
+      const pathname = pathOf(to);
+      navigations.push([kind, pathname]);
+      setLocation({ pathname, search: "", hash: "", state: state ?? null, key: `${kind}-${navigations.length}` });
+    };
+    return { createHref: (to: unknown) => pathOf(to), go: () => undefined, push: record("push"), replace: record("replace") };
+  }, []);
+  return h(Router, { location, navigator: navigator as never }, children as never);
+}
+
+async function withLogin(entry: Entry, run: (mounted: Mounted) => Promise<void>, options: { readonly recording?: boolean } = {}) {
   consoleErrors.length = 0;
   committedPaths = [];
+  navigations = [];
   const container = dom.doc.createElement("div");
   dom.doc.body.appendChild(container);
   const root = createRoot(container as unknown as Element);
   try {
     await act(async () => {
-      root.render(h(MemoryRouter, { initialEntries: [entry as never] }, h(App), h(LocationProbe)) as never);
+      const tree = options.recording
+        ? h(RecordingRouter, { initial: typeof entry === "string" ? entry : entry.pathname }, h(App), h(LocationProbe))
+        : h(MemoryRouter, { initialEntries: [entry as never] }, h(App), h(LocationProbe));
+      root.render(tree as never);
     });
     await settle();
     await run({
@@ -245,9 +275,9 @@ test("T-L8 erro: quando o login falha, a mensagem aparece com role=\"alert\", e 
 
 test("T-L9 o fluxo: 1 chamada com organização, e-mail e senha; provisória → troca de senha; plataforma → console; os demais → seleção da organização", async () => {
   const cases = [
-    { kind: "provisoria", to: "/change-password" },
-    { kind: "plataforma", to: "/platform/tenants" },
-    { kind: "organizacao", to: "/select-context" },
+    { kind: "provisoria", to: "/change-password", asks: ["replace", "/change-password"] },
+    { kind: "plataforma", to: "/platform/tenants", asks: ["push", "/platform/tenants"] },
+    { kind: "organizacao", to: "/select-context", asks: ["push", "/select-context"] },
   ] as const;
   for (const scenario of cases) {
     stubFetch({ "POST /auth/login": () => json(200, loginPayload(scenario.kind)) });
@@ -265,7 +295,9 @@ test("T-L9 o fluxo: 1 chamada com organização, e-mail e senha; provisória →
       assert.equal(app.path(), scenario.to, `${scenario.kind}: o destino`);
       assert.deepEqual(committedPaths, ["/login", scenario.to], `${scenario.kind}: o login leva DIRETO ao destino, sem tela no meio`);
       if (scenario.kind === "provisoria") assert.deepEqual(calls.map((call) => call.key), ["POST /auth/login"], "a sessão provisória não chama outra rota");
-    });
+      assert.deepEqual(navigations[0], scenario.asks, `${scenario.kind}: o que o login pede ao roteador`);
+      assert.deepEqual(navigations.filter(([, pathname]) => pathname !== scenario.to), [], `${scenario.kind}: nenhum outro destino é pedido`);
+    }, { recording: true });
   }
 });
 
