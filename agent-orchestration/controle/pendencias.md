@@ -18242,6 +18242,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 - **status:** ABERTA · **gravidade:** MÉDIA de operação e de leitura da saúde · **dono:** o bloco `B-AUTH-LOGIN-PLATAFORMA` · **bloqueia:** não.
 - **origem:** passo 6.8 do roteiro da AWS, em 25/11: depois da concessão de execução da função de candidatos ao login e da reciclagem da tarefa da API, o login sem organização do administrador de plataforma respondeu 200 com `authenticated: true`, mas a saúde continuou dizendo `login_without_org: inactive` (3 leituras, 1 tarefa, 1 implantação). Hipótese registrada: a sonda do boot exige que a dona da função tenha atributo elevado, e a dona atual não tem. O login funciona mesmo assim.
+- **nota de 25/11 21:51 (leitura de produção só leitura, `D-DONO-2511-AUTH-E1-RESPOSTA-A`):** a trava de isolamento ESTÁ ligada em produção — `users`, `local_auth_credentials`, `auth_identities`, `auth_identity_links` e `auth_identity_link_events` com segurança de linha ligada e forçada (`relrowsecurity = t` e `relforcerowsecurity = t`), dono administrativo, e o papel de runtime não é dono nem membro do dono; `tenants` sem segurança de linha, como o modelo prevê. A conexão do próprio app tem o contexto de organização vazio. A hipótese "tabelas sem a trava forçada" (a que reproduziu o 200 com saúde "inativo" num banco local sem FORCE) NÃO vale para a produção. A causa da saúde "inativo" continua em apuração; os passos seguintes do pré-voo (definição, dono e configuração da função, políticas, papéis e privilégios no esquema), também só leitura, esperam um novo "pode" do dono.
 - **critério de encerramento:** a saúde e o login concordam (a saúde passa a dizer que o login sem organização está ativo), ou o plano do bloco registra, medido, por que divergem e o que a saúde passa a afirmar.
 
 ## P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computador — MÉDIA
@@ -18249,3 +18250,21 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA de tela (classificação do redator do registro; o REGISTRO não deu gravidade) · **dono:** um bloco de tela, quando o dono priorizar · **bloqueia:** não.
 - **origem:** uso real do dono no celular, em 25/11, na Cobrança da plataforma: o console web abre no layout de computador, o menu lateral não recolhe e o seletor de organização fica cortado à direita.
 - **critério de encerramento:** o console web responde no celular com o menu lateral recolhível e o seletor de organização inteiro na tela, com teste de tela que cubra a largura estreita.
+
+## P-MARCA-DESIGN-SYSTEM (2026-11-25) — a base de design ainda diz "azul industrial", contra a marca nova — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de documentação e de coerência de design (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco próprio de emenda da base de design e da skill · **bloqueia:** não.
+- **origem:** maquetes do login da marca nova (25/11). Conflito §A2 registrado pelo Qwen, não consolidado: `DESIGN_SYSTEM.md` ("Primary: deep industrial blue"), `COMPONENT_LIBRARY.md` e a REGRA ZERO da skill `ui-ux-pro-max` ("paleta fixa: azul industrial") contra as decisões do dono de 25/11 (`D-DONO-2511-MARCA-PATIOSUL`, `D-DONO-2511-MARCA-CORES-NO-SISTEMA-TODO` e `D-DONO-2511-MARCA-TELAS-AZUIS-PELOS-TOKENS`: as cores dos logos, as 3 aparências de cor no sistema todo e as telas azuis passando para a marca nova pelos tokens). Pelo §A1, vale a decisão do dono.
+- **critério de encerramento:** `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e a skill de UI/UX (com os dois espelhos de skills) descrevem a paleta da marca nova e as 3 aparências de cor, com a emenda registrada em `agent-orchestration/controle/`.
+
+## P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do site — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de marca (classificação do redator do registro; a fonte não deu gravidade) · **dono:** o dono (que pede à marca) · **bloqueia:** não.
+- **origem:** `D-DONO-2511-MARCA-LOGO-SEM-SITE` (25/11 20:56): pedir à marca uma versão do logo horizontal sem a linha do site e, até ela chegar, usar o logo como está.
+- **critério de encerramento:** a versão do logo sem a linha do site chega e substitui a atual na base da marca e nas maquetes.
+
+## P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situação" da Cobrança não vem do servidor — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de dado na tela da Cobrança (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de backend pequeno, agendado sem data (`D-DONO-2511-COBRANCA-AGENDADA`) · **bloqueia:** não.
+- **origem:** tela da Cobrança da plataforma: o quadro "Demonstrativos por mês e situação" está marcado como "ainda não vem do servidor" — a série mensal não existe no servidor. Agendado pelo dono em 25/11: *"agenda isso aí, deixa documentado, depois nós vamos fazer"*.
+- **critério de encerramento:** a série mensal por mês e situação é servida pelo servidor e o quadro passa a consumi-la, sem o aviso "ainda não vem do servidor".
