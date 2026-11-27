@@ -226,6 +226,9 @@ export class IdentityLinkService {
       if (login.reason === "locked") {
         throw identityLinkError(423, "LOCKED", "account_locked", "Account is locked.");
       }
+      if (login.reason === "tenant_suspended") {
+        throw identityLinkError(403, "FORBIDDEN", "tenant_suspended", "Organization is not active.");
+      }
 
       throw identityLinkError(401, "UNAUTHORIZED", "invalid_credentials", "Invalid credentials.");
     }

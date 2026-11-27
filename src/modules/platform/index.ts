@@ -9,5 +9,6 @@ export * from "./platform-tenant-detail.repository.js";
 export * from "./platform-tenant-detail.service.js";
 export * from "./platform-tenant-detail.types.js";
 export * from "./platform-tenants.dto.js";
-export * from "./platform-tenants.service.js";
+export * from "./platform-organizations.repository.js";
+export * from "./platform-organizations.service.js";
 export * from "./platform.types.js";

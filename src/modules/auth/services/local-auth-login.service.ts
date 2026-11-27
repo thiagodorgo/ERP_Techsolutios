@@ -39,6 +39,7 @@ type LocalAuthCredentialRepositoryLike = {
 type TenantRecord = {
   readonly id: string;
   readonly name: string;
+  readonly status: string;
 };
 
 type UserRecord = {
@@ -191,6 +192,11 @@ export class LocalAuthLoginService {
       };
     }
 
+    if (tenant.status !== "active") {
+      await this.recordLoginFailure(tenantId, email, "tenant_suspended", auditContext);
+      return { ok: false, reason: "tenant_suspended" };
+    }
+
     if (isTemporaryPasswordExpired(credential)) return this.refuseExpired(tenantId, email, auditContext);
 
     const user = await this.users.findByIdForTenant(credential.user_id, tenantId);
@@ -293,6 +299,10 @@ export class LocalAuthLoginService {
           failed_attempts: credential.failed_attempts ?? 0,
         },
       };
+    }
+
+    if (tenant.status !== "active") {
+      return { ok: false, reason: "inactive" };
     }
 
     if (isTemporaryPasswordExpired(credential)) return { ok: false, reason: "invalid_credentials" };
@@ -448,7 +458,7 @@ export class LocalAuthLoginService {
   private async recordLoginFailure(
     tenantId: string,
     email: string,
-    reason: "invalid_credentials" | "locked" | "inactive" | "temporary_password_expired",
+    reason: "invalid_credentials" | "locked" | "inactive" | "temporary_password_expired" | "tenant_suspended",
     auditContext: LocalAuthAuditContext,
     loginMode?: "without_org",
   ): Promise<void> {

@@ -705,7 +705,7 @@ export function mapRoleAssignmentsFromPrisma(
   );
 }
 
-function createTenantSlug(name: string): string {
+export function createTenantSlug(name: string): string {
   const baseSlug = name
     .trim()
     .toLowerCase()
@@ -718,7 +718,7 @@ function createTenantSlug(name: string): string {
 }
 
 function mapTenantStatus(status: string): TenantStatus {
-  return status === "inactive" ? "inactive" : "active";
+  return status === "active" ? "active" : "inactive";
 }
 
 function mapUserStatus(status: string): UserStatus {

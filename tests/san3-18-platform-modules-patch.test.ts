@@ -12,28 +12,33 @@ import { abrirArnesDoGate, type ArnesDoGate } from "./helpers/san3-18-gate.js";
 
 let gate: ArnesDoGate;
 let tokenPlataforma = "";
+let orgDoConsoleId = "";
 
 before(async () => {
   gate = await abrirArnesDoGate();
   tokenPlataforma = await gate.token({ tenantId: "platform", userId: "usr_platform_18", email: "platform-18@example.com", roles: ["platform_admin"] });
+  const created = await gate.chamar("POST", "/api/v1/platform/tenants", {
+    token: tokenPlataforma,
+    body: { name: "Organização Console A7", group: { name: "Grupo Console A7" } },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  orgDoConsoleId = String(created.body.data.organization.id);
 });
 
 after(async () => {
   await gate.fechar();
 });
 
-const ORG_DO_CONSOLE = "pten-industrial-01";
-
 test("A7 — PATCH /platform/tenants/:id/modules → 409 module_change_requires_subscription, e a lista do console não muda", async () => {
-  const antes = await gate.chamar("GET", `/api/v1/platform/tenants/${ORG_DO_CONSOLE}/modules`, { token: tokenPlataforma });
+  const antes = await gate.chamar("GET", `/api/v1/platform/tenants/${orgDoConsoleId}/modules`, { token: tokenPlataforma });
   assert.equal(antes.status, 200, JSON.stringify(antes.body));
-  const r = await gate.chamar("PATCH", `/api/v1/platform/tenants/${ORG_DO_CONSOLE}/modules`, {
+  const r = await gate.chamar("PATCH", `/api/v1/platform/tenants/${orgDoConsoleId}/modules`, {
     token: tokenPlataforma,
     body: { enabledModules: ["patios", "telemetry", "finance"] },
   });
   assert.equal(r.status, 409, JSON.stringify(r.body));
   assert.equal(r.reason, "module_change_requires_subscription");
-  const depois = await gate.chamar("GET", `/api/v1/platform/tenants/${ORG_DO_CONSOLE}/modules`, { token: tokenPlataforma });
+  const depois = await gate.chamar("GET", `/api/v1/platform/tenants/${orgDoConsoleId}/modules`, { token: tokenPlataforma });
   assert.deepEqual(depois.body, antes.body, "a lista do console não muda");
 });
 
@@ -42,9 +47,17 @@ test("A7 — a recusa não toca `tenants.modules` de organização nenhuma", asy
   const r = await gate.chamar("PATCH", `/api/v1/platform/tenants/${org.id}/modules`, { token: tokenPlataforma, body: { enabledModules: ["patios"] } });
   assert.notEqual(r.status, 200);
   assert.deepEqual(gate.core.getTenantForActor(org.id, org.id).modules, ["work_orders"]);
+  const console = await gate.chamar("PATCH", `/api/v1/platform/tenants/${orgDoConsoleId}/modules`, {
+    token: tokenPlataforma,
+    body: { enabledModules: ["patios"] },
+  });
+  assert.equal(console.status, 409, JSON.stringify(console.body));
+  assert.deepEqual(gate.core.getTenantForActor(org.id, org.id).modules, ["work_orders"]);
 });
 
 test("A7 — organização desconhecida do console segue 404", async () => {
-  const r = await gate.chamar("PATCH", "/api/v1/platform/tenants/pten-nao-existe/modules", { token: tokenPlataforma, body: { enabledModules: ["patios"] } });
-  assert.equal(r.status, 404);
+  for (const id of ["pten-nao-existe", "11111111-1111-4111-8111-111111111111"]) {
+    const r = await gate.chamar("PATCH", `/api/v1/platform/tenants/${id}/modules`, { token: tokenPlataforma, body: { enabledModules: ["patios"] } });
+    assert.equal(r.status, 404);
+  }
 });
