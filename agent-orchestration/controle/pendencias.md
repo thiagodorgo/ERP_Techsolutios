@@ -18256,6 +18256,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA de documentação e de coerência de design (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco próprio de emenda da base de design e da skill · **bloqueia:** não.
 - **origem:** maquetes do login da marca nova (25/11). Conflito §A2 registrado pelo Qwen, não consolidado: `DESIGN_SYSTEM.md` ("Primary: deep industrial blue"), `COMPONENT_LIBRARY.md` e a REGRA ZERO da skill `ui-ux-pro-max` ("paleta fixa: azul industrial") contra as decisões do dono de 25/11 (`D-DONO-2511-MARCA-PATIOSUL`, `D-DONO-2511-MARCA-CORES-NO-SISTEMA-TODO` e `D-DONO-2511-MARCA-TELAS-AZUIS-PELOS-TOKENS`: as cores dos logos, as 3 aparências de cor no sistema todo e as telas azuis passando para a marca nova pelos tokens). Pelo §A1, vale a decisão do dono.
 - **critério de encerramento:** `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e a skill de UI/UX (com os dois espelhos de skills) descrevem a paleta da marca nova e as 3 aparências de cor, com a emenda registrada em `agent-orchestration/controle/`.
+- **atualização (2026-11-27, fatia G do `B-MARCA-LOGIN-SIDEBAR`):** este registro emendou a base de design e a skill. O `DESIGN_SYSTEM.md` ganhou as linhas da paleta e a seção "Marca Pátio Sul ERP" (os tokens `--ps-*` e as 3 cores do login), e a skill `ui-ux-pro-max` deixou de dizer "paleta fixa" e aponta para o `DESIGN_SYSTEM.md`, nos dois espelhos de skills (conflito C7 da `C-MARCA-LOGIN-SIDEBAR`). **Continua aberta** para o que falta: a biblioteca de componentes (`COMPONENT_LIBRARY.md`, com o registro do componente da sidebar, que nasce junto com ele) e as 3 cores no sistema todo (as telas de dentro seguem nos tokens azuis até o bloco das telas azuis pelos tokens; a sidebar na Branca e na Preta é a `P-MARCA-SIDEBAR-BRANCA-PRETA`).
 
 ## P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do site — BAIXA
 
@@ -18268,3 +18269,33 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA de dado na tela da Cobrança (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de backend pequeno, agendado sem data (`D-DONO-2511-COBRANCA-AGENDADA`) · **bloqueia:** não.
 - **origem:** tela da Cobrança da plataforma: o quadro "Demonstrativos por mês e situação" está marcado como "ainda não vem do servidor" — a série mensal não existe no servidor. Agendado pelo dono em 25/11: *"agenda isso aí, deixa documentado, depois nós vamos fazer"*.
 - **critério de encerramento:** a série mensal por mês e situação é servida pelo servidor e o quadro passa a consumi-la, sem o aviso "ainda não vem do servidor".
+
+## P-PLAT-CONTADOR-COBRANCA-VENCIDA (2026-11-27) — o contador de cobranças vencidas no menu da plataforma não tem número pronto no servidor — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de produto (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de backend próprio, com o nível que a trava der · **bloqueia:** não.
+- **origem:** resposta `sb-06` do dono (27/11 16:13:55, os 4 contadores; `D-DONO-2711-MARCA-RESPOSTAS`) e o plano do `B-MARCA-LOGIN-SIDEBAR` (Emenda 1, E1.5). "Vencida" hoje é calculado na tela de Cobrança, com várias leituras por organização; fazer isso no menu, a cada tela, é caro, e um total pronto exige rota nova no servidor, fora de um bloco só de apresentação. Pela regra "só número real" (conflito C11 da `C-MARCA-LOGIN-SIDEBAR`), o contador não entra na sidebar enquanto o número não existir.
+- **critério de encerramento:** o servidor entrega o total de cobranças vencidas da plataforma numa leitura só, e o menu da plataforma mostra o contador (zero não aparece; erro de leitura não mostra nada).
+
+## P-PLAT-AVISOS-SEM-FONTE (2026-11-27) — o sino do console da plataforma não tem serviço de avisos — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de produto (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de backend próprio · **bloqueia:** não.
+- **origem:** resposta `sb-06` do dono (27/11 16:13:55, os 4 contadores; `D-DONO-2711-MARCA-RESPOSTAS`) e o plano do `B-MARCA-LOGIN-SIDEBAR` (Emenda 1, E1.5). O console da plataforma não tem serviço de avisos; o ponto vermelho do sino de hoje é fixo, não é dado, e sai. O sino do shell da organização tem fonte e continua.
+- **critério de encerramento:** existe um serviço de avisos da plataforma, e o sino do console mostra o número real de não lidos.
+
+## P-PLAT-BUSCA-SEM-FUNCAO (2026-11-27) — a busca do console da plataforma é só um desenho, sem função — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de produto (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de tela do console da plataforma · **bloqueia:** não.
+- **origem:** plano do `B-MARCA-LOGIN-SIDEBAR` (seção 4.4 e Emenda 1, E1.4). A busca desenhada no console da plataforma não abre nada: a paleta de comandos lista destinos da organização, não os da plataforma. Com a resposta `sb-04` = "sidebar", a busca não é desenhada na sidebar do console enquanto não tiver função; no shell da organização ela abre a paleta e continua.
+- **critério de encerramento:** a busca do console da plataforma tem função (os destinos da plataforma) e passa a ser desenhada na sidebar do console.
+
+## P-MARCA-SIDEBAR-BRANCA-PRETA (2026-11-27) — a sidebar só tem desenho aprovado em grafite — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de marca (classificação do redator do registro; a fonte não deu gravidade) · **dono:** o lote de telas com o dono (`D-DONO-2011-UMA-TELA-POR-LOTE`) · **bloqueia:** não.
+- **origem:** o login sai nas 3 cores (`D-DONO-2711-LOGIN-MAIS-BRANCA-E-PRETA`), mas o modelo aprovado da sidebar (`D-DONO-2711-SIDEBAR-MODELO-VIDEO`) só existe em grafite. Por enquanto a cor escolhida só aparece no login; a sidebar na Branca e na Preta pede maquete e a escolha do dono.
+- **critério de encerramento:** a maquete da sidebar na Branca e na Preta aprovada pelo dono e implementada pelos tokens `--ps-sb-*`, trocados pelo `data-tema`.
+
+## P-DOCS-NOME-CUSTO-DA-NUVEM (2026-11-27) — documentos vigentes ainda dizem "Cloud Billing" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de documentação (classificação do redator do registro; a fonte não deu gravidade) · **dono:** o PR semanal de registro · **bloqueia:** não.
+- **origem:** resposta `sb-08` do dono (27/11 16:14:14): o rótulo na tela passa a "Custo da nuvem". A troca na tela vai num PR próprio do `B-MARCA-LOGIN-SIDEBAR`; o contrato (§4) e o índice das referências (`docs/claude-code-handoff/screen-refs/README.md`) ganharam a nota neste registro. Os documentos vigentes que ainda dizem "Cloud Billing" (`COMPONENT_LIBRARY.md`, `PROJECT_MEMORY.md`, o `screen-refs/README.md` da raiz e os de `docs/`) ficam para depois. Registro histórico (`agent-orchestration/**`, `Kpis/**`) e nome de arquivo não mudam.
+- **critério de encerramento:** os documentos vigentes dizem "Custo da nuvem" onde falam do rótulo da tela, com o nome técnico (rota, chave e arquivo) intacto.

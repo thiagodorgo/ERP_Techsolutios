@@ -9,8 +9,8 @@ description: "QA de UI/UX e boas práticas para o ERP Techsolutions (SaaS multi-
 O design system deste projeto está APROVADO e é IMUTÁVEL por esta skill:
 - Fonte de verdade: `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e os tokens
   já existentes no código (web e Flutter).
-- Paleta fixa: azul industrial profundo (primária), neutros slate/steel,
-  cyan/azul elétrico (acento). Sidebar colapsável é o padrão estrutural.
+- Paleta: a do `DESIGN_SYSTEM.md` (a marca Pátio Sul ERP, tokens `--ps-*`, e os tokens
+  que já existem no código). Sidebar colapsável é o padrão estrutural.
 - Esta skill NUNCA propõe, escolhe ou altera: estilo visual, paleta,
   tipografia, tema, radius, sombras, layout global ou navegação estrutural.
 - PROIBIDO usar `--design-system`, `--persist`, e os domínios `style`,

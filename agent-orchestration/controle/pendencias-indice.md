@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1456** |
-| IDs distintos | 1441 |
-| **ABERTAS** | **1117** |
+| Cabecalhos `## P-` | **1461** |
+| IDs distintos | 1446 |
+| **ABERTAS** | **1122** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **1056** |
+| — das quais **ativas nesta rodada** | **1061** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 335 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1456 cabecalhos para 1441 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1461 cabecalhos para 1446 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 435
+## ABERTAS · balde A — material — 437
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -508,9 +508,11 @@
 | `P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO` | 18241 | MÉDIA | sim | P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO (2026-11-25) — a saúde diz que o login sem organizaç |
 | `P-WEB-CONSOLE-CELULAR` | 18248 | MÉDIA | sim | P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computad |
 | `P-MARCA-DESIGN-SYSTEM` | 18254 | MÉDIA | sim | P-MARCA-DESIGN-SYSTEM (2026-11-25) — a base de design ainda diz "azul industrial", contr |
-| `P-COBRANCA-DEMONSTRATIVOS-POR-MES` | 18266 | MÉDIA | sim | P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situ |
+| `P-COBRANCA-DEMONSTRATIVOS-POR-MES` | 18267 | MÉDIA | sim | P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situ |
+| `P-PLAT-CONTADOR-COBRANCA-VENCIDA` | 18273 | MÉDIA | sim | P-PLAT-CONTADOR-COBRANCA-VENCIDA (2026-11-27) — o contador de cobranças vencidas no menu |
+| `P-PLAT-AVISOS-SEM-FONTE` | 18279 | MÉDIA | sim | P-PLAT-AVISOS-SEM-FONTE (2026-11-27) — o sino do console da plataforma não tem serviço d |
 
-## ABERTAS · balde B — processo/registro — 621
+## ABERTAS · balde B — processo/registro — 624
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1134,7 +1136,10 @@
 | `P-COMISSAO-M18-ANCORA` | 18181 | BAIXA | sim | P-COMISSAO-M18-ANCORA (2026-11-24) — âncora da M18 da comissão com múltiplas ocorrências |
 | `P-DNS-TTL-300` | 18199 | BAIXA | sim | P-DNS-TTL-300 (2026-11-24) — os 17 registros copiados ficaram com TTL de 5 min — BAIXA |
 | `P-UI-BUTTON-FOCO-VISIVEL` | 18229 | BAIXA | sim | P-UI-BUTTON-FOCO-VISIVEL (2026-11-24) — `.ui-button` sem foco visível próprio — BAIXA |
-| `P-MARCA-LOGO-SEM-SITE` | 18260 | BAIXA | sim | P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do si |
+| `P-MARCA-LOGO-SEM-SITE` | 18261 | BAIXA | sim | P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do si |
+| `P-PLAT-BUSCA-SEM-FUNCAO` | 18285 | BAIXA | sim | P-PLAT-BUSCA-SEM-FUNCAO (2026-11-27) — a busca do console da plataforma é só um desenho, |
+| `P-MARCA-SIDEBAR-BRANCA-PRETA` | 18291 | BAIXA | sim | P-MARCA-SIDEBAR-BRANCA-PRETA (2026-11-27) — a sidebar só tem desenho aprovado em grafite |
+| `P-DOCS-NOME-CUSTO-DA-NUVEM` | 18297 | BAIXA | sim | P-DOCS-NOME-CUSTO-DA-NUVEM (2026-11-27) — documentos vigentes ainda dizem "Cloud Billing |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
