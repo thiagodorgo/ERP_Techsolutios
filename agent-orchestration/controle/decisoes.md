@@ -6761,3 +6761,79 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** *"pode ler o banco de produção pelo túnel e a pergunta do [Qwen] é não fazer nada, mas os usuários quando forem cadastrados tem que ter os papéis definidos, critério para cadastro"*.
 - **Efeito:** o cadastro de usuário só acontece com o papel definido, na mesma transação; sem papel, o ato é recusado e nada é gravado. Vira critério de aceite do cadastro, para a Emenda 1.4 do `B-PLAT-ORG-REAL` e para o bloco `B-AUTH-LOGIN-PLATAFORMA`. A pergunta opcional da auditoria do #642 (responder um 503 próprio quando os papéis globais não estão provisionados) não entra, pela resposta do dono. A leitura do banco de produção pelo túnel foi autorizada e feita só em leitura, com a transação desfeita no fim: os papéis globais existem em produção, e o risco de a 1ª organização real falhar por falta de papel não existe.
+
+## D-DONO-2511-COBRANCA-AGENDADA (2026-11-25 ~20:00 SP) — a Cobrança da plataforma: o canal e os 2 quadros, agendados sem data
+
+> **Nota de rastreabilidade:** a fonte gravou esta decisão com o texto "vai no próximo registro"; o #643 fechou antes dela, e ela entra neste registro.
+
+- **Fato (palavras do dono, sobre a tela da Cobrança da plataforma):** *"agenda isso aí, deixa documentado, depois nós vamos fazer"*.
+- **Efeito:** ficam agendados, sem data: (1) **ligar o canal de cobrança** — o provedor de pagamento e nota, conta e credenciais no cofre de segredos e webhooks; serviço externo pago continua pedindo decisão do dono antes (`P-ASS-CANAL-DESLIGADO`); (2) **os 2 quadros "ainda não vem do servidor"** da Cobrança: "Cobranças por forma" (`P-ASS10C-FORMA-DA-COBRANCA`) e "Demonstrativos por mês e situação" (a série mensal no servidor; pendência nova `P-COBRANCA-DEMONSTRATIVOS-POR-MES`, dono: um bloco de backend pequeno). O aviso das 2 organizações fictícias sai com o PR #642.
+
+## D-DONO-2511-MARCA-PATIOSUL (2026-11-25 ~20:05 SP) — o nome do sistema é Pátio Sul ERP e as cores seguem os logos
+
+- **Fato (palavras do dono):** *"O nome do sistema vai ser Pátio Sul agora, Pátio Sul ERP"*; *"o sistema vai ter que ser mudado as cores para ficar com os logos"*; *"É interessante nós termos três modelos de cores do sistema. Num seletor, que vai ser possível trocar as aparências."*
+- **Efeito:** o nome do sistema passa a ser **Pátio Sul ERP**. As cores do sistema mudam para acompanhar os logos da marca, e o sistema passa a ter 3 modelos de cor num seletor — encaixa no `D-APARENCIA-POR-USUARIO` (aparência pessoal em Configurações) e no `D-TELAS-SAEM-COM-TRES`. Medido: a marca hoje está concentrada em `frontend/src/brand/` (18 arquivos no web, 5 no app, 7 no backend). Os arquivos-base de design ainda descrevem a paleta antiga ("azul industrial") contra esta decisão — conflito §A2 registrado, não consolidado, e pendência `P-MARCA-DESIGN-SYSTEM`.
+
+## D-DONO-2511-QWEN-MAQUETE-LOGIN (2026-11-25 20:10 SP) — exceção do dono: o Qwen monta as maquetes do login
+
+- **Fato (palavras do dono, ordem direta):** *"Você vai pedir para que o qwen montar a tela de login seguindo as cores dos logos das imagens. Pode tirar o botão Google, que não estamos usando. Peça para o qwen montar a tela de login do app web e a tela de login do app mobile. Fazer essas duas maquetes. Seja bem detalhista nos prompts."*
+- **Efeito:** exceção do dono à regra "design só no Claude" (`D-DESIGN-SO-CLAUDE`): as maquetes do login do app web e do app mobile são montadas pelo Qwen, como HTML estático fora do repositório, com o nome Pátio Sul ERP, as cores dos logos, sem o botão "Entrar com Google", os 3 modelos de cor com seletor, os estados obrigatórios (inclusive a escolha da organização e a troca de senha), cada logo só sobre fundo da mesma cor (os PNG não têm transparência), contraste AA e o quadro de fora da tela. Em 25/11 20:12 o dono passou o contexto da página pública de login do sistema que o cliente usa hoje (*"pega o contexto"*; baixada só a página e as imagens, sem login e sem banco), e as duas maquetes foram relançadas com essa referência: preferir o logo transparente sobre fundo escuro ou colorido, uma das 3 paletas conversando com a identidade atual e o português corrigido.
+
+## D-DONO-2511-AUTH-E1-RESPOSTA-A (2026-11-25 20:39 SP) — a leitura do catálogo de produção autorizada, só leitura
+
+> **Id dado pelo redator do registro:** a resposta chegou pelo artefato de perguntas (`auth-e1-p1` = A), sem id próprio na fonte.
+
+- **Fato:** o dono respondeu **A** à pergunta do plano do `B-AUTH-LOGIN-PLATAFORMA`: autoriza ler o catálogo de produção agora, só as 2 consultas do pré-voo, somente leitura; qualquer escrita pede um novo "pode".
+- **Efeito:** a leitura foi feita em 25/11 21:51 pelo túnel, só leitura (`BEGIN READ ONLY … ROLLBACK`; túnel fechado no fim e porta conferida fechada): a conexão do próprio app tem o contexto de organização vazio; as tabelas `users`, `local_auth_credentials`, `auth_identities`, `auth_identity_links` e `auth_identity_link_events` estão com segurança de linha ligada **e forçada**, com dono administrativo, e o papel de runtime não é dono nem membro do dono; `tenants` sem segurança de linha, como o modelo prevê. **Conclusão medida:** a produção ESTÁ com a trava de isolamento das migrações, e a hipótese "tabelas sem a trava forçada" (a que explicaria o 200 com a saúde "inativo") NÃO vale para a produção; a causa da saúde "inativo" continua em apuração (`P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO`). Os passos seguintes do pré-voo (definição, dono e configuração da função, políticas, papéis e privilégios no esquema), também só leitura, esperam um novo "pode" do dono.
+
+## D-DONO-2511-MARCA-BOTAO-ENTRAR (2026-11-25 20:56 SP) — o botão do login diz "Entrar"
+
+- **Fato (palavras do dono, respondendo à pergunta 1 das maquetes):** *"1 entrar"*.
+- **Efeito:** o botão de confirmação do login diz "Entrar", no web e no celular.
+
+## D-DONO-2511-MARCA-APARENCIA-PADRAO-C (2026-11-25 20:56 SP) — a aparência de fábrica é a C (Grafite)
+
+- **Fato (palavras do dono, respondendo à pergunta 2 das maquetes):** *"2 c"*.
+- **Efeito:** a aparência de fábrica é a C, Grafite; cada usuário troca a sua em Configurações quando o seletor existir (`P-APARENCIA-POR-USUARIO`). As 2 maquetes do login, que abriam na A, foram ajustadas para abrir na C.
+
+## D-DONO-2511-MARCA-LOGO-SEM-SITE (2026-11-25 20:56 SP) — pedir o logo horizontal sem a linha do site
+
+- **Fato (palavras do dono, respondendo à pergunta 3 das maquetes):** *"3 pedir a versão sem o site e, até ela chegar, usar o logo como está"*.
+- **Efeito:** pedir à marca uma versão do logo horizontal sem a linha do site e, até ela chegar, usar o logo como está. Pendência nova `P-MARCA-LOGO-SEM-SITE` (dono: o dono, que pede à marca).
+
+## D-DONO-2511-MARCA-ABERTURA-ICONE (2026-11-25 20:56 SP) — a abertura do app usa o ícone
+
+- **Fato (palavras do dono, respondendo à pergunta 4 das maquetes):** *"4 icone"*.
+- **Efeito:** a abertura do app usa o ícone do caminhão num quadrado escuro, nas 3 aparências.
+
+## D-DONO-2511-MARCA-CORES-NO-SISTEMA-TODO (2026-11-25 21:46 SP) — as 3 aparências de cor valem para o sistema todo
+
+- **Fato:** o dono respondeu **sistema** à pergunta `marca-w4` no artefato.
+- **Efeito:** as 3 aparências de cor valem para o sistema todo, como preferência pessoal de cada usuário em Configurações (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`).
+
+## D-DONO-2511-MARCA-TELAS-AZUIS-PELOS-TOKENS (2026-11-25 21:46 SP) — as telas azuis passam para a marca nova pelos tokens
+
+- **Fato:** o dono respondeu **tokens** à pergunta `marca-w5` no artefato.
+- **Efeito:** as telas que já têm as 3 aparências em azul passam para a marca nova pela base de cores (tokens), sem refazer o desenho. Depois, a emenda do `DESIGN_SYSTEM.md`, da biblioteca de componentes e da skill de UI/UX — `P-MARCA-DESIGN-SYSTEM`.
+
+## D-DONO-2511-CONTA-BLOQUEADA-DEPOIS-DA-ORG (2026-11-25 21:46 SP) — "Conta bloqueada" só depois da escolha da organização
+
+- **Fato:** o dono respondeu **sim** à pergunta `marca-w6` no artefato.
+- **Efeito:** o estado "Conta bloqueada" do login aparece só depois da escolha da organização, nunca antes.
+
+## D-DONO-2511-MARCA-C-CARTAO-GRAFITE (2026-11-25 21:46 SP) — na aparência C, o cartão do formulário é grafite
+
+- **Fato:** o dono respondeu **grafite** à pergunta `marca-w7` no artefato.
+- **Efeito:** na aparência C, o cartão do formulário é grafite na web e no celular (na web estava branco; a divergência foi achada na conferência das maquetes e ajustada).
+
+## D-DONO-2511-LOGIN-ORG-PELO-SERVIDOR (2026-11-25 21:46 SP) — no login, o servidor resolve a organização
+
+- **Fato (palavras do dono, sobre a pergunta `marca-w3`):** *"Foi decidido que quem faz login não escolhe a organização. o servidor que concedia o acesso, o guincheiro nao ver organizacao, so recebe os chamados. os outros perfis que tem usuario habilitados em mais de uma organizacao sao os que esta regra poderia ser aplicada"*.
+- **Efeito:** no login, o servidor resolve a organização. O guincheiro nunca vê escolha de organização (no app, a tela de escolha sai); a escolha só pode existir para os outros perfis com usuário habilitado em mais de uma organização — para esses, fica aberto se a lista é simples ou rica. A maquete do celular perdeu o estado "Escolha da organização"; a web manteve a escolha só para perfis habilitados em mais de uma organização, com nota.
+
+## D-DONO-2711-PLANO-RETOMADA-APROVADO (2026-11-27 12:10 SP) — o plano de retomada aprovado
+
+> **Id dado pelo redator do registro:** a aprovação veio no chat, sem id próprio na fonte.
+
+- **Fato (palavras do dono):** em 27/11 09:43, *"Você caiu por limite, passou um dia dormindo, agora eu quero retornar. […] Faça um plano e me retorne. Não comece nada sem minha [autorização]."*; em 09:58, *"pomece a fase 0"*; em 12:10, *"aprovo"* (o plano de retomada, fases 1 a 4).
+- **Efeito:** a retomada acontece em fases. A fase 0 (só medição e limpeza) foi feita às 10:04: a conferência do ajuste das maquetes do login, a limpeza da rodada (bancos descartáveis e worktrees mortos), o checklist do roteiro e o artefato de estado atualizados. As fases 1 a 4 do plano de retomada foram aprovadas às 12:10; nada foi lançado antes da autorização do dono.
