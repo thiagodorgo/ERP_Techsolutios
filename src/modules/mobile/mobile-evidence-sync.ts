@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { createDefaultFieldLocationService } from "../field-location/field-location.service.js";
 import { publicErrorMessage } from "../../infra/logging/public-error.js";
@@ -8,6 +10,8 @@ import {
   ASSIGNMENT_CHANGED_NEXT_ACTION,
   isPreviouslyAssignedRefusal,
 } from "../work-orders/work-order.types.js";
+import type { CreateAcceptedResult, CreateMobileEvidenceInput, MobileEvidenceRecord } from "./mobile-evidence.types.js";
+import { InMemoryMobileEvidenceRepository, MOBILE_EVIDENCE_METADATA_MAX_BYTES, type MobileEvidenceRepository } from "./mobile-evidence.repository.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -60,11 +64,6 @@ type MobileEvidenceActionResult = {
   };
 };
 
-type MobileEvidenceSyncReceipt = {
-  readonly fingerprint: string;
-  readonly result: MobileEvidenceActionResult;
-};
-
 export type MobileEvidenceSyncResponse = {
   readonly contract: {
     readonly name: "mobile_evidence_actions_sync";
@@ -90,8 +89,29 @@ export type MobileEvidenceSyncResponse = {
 const MAX_BATCH_SIZE = 50;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_CONTENT_TYPES = new Set(["image/jpeg", "image/png"]);
-const UNSAFE_PAYLOAD_KEYS = new Set(["base64", "file_data", "local_path", "path"]);
-const syncReceipts = new Map<string, MobileEvidenceSyncReceipt>();
+// B-EVIDENCIA-INDICE (§E1.3): a mesma expressão do CHECK do banco, menos o par da organização. Nome exato,
+// sem diferenciar maiúsculas, em qualquer nível. O residual (espaço/unicode/fora da lista) é declarado no plano.
+const UNSAFE_PAYLOAD_KEY_PATTERN =
+  /^(token|access[_-]?token|refresh[_-]?token|authorization|bearer|password|secret|bucket|storage[_-]?key|file[_-]?url|absolute[_-]?path|local[_-]?path|path|base64|file[_-]?data)$/i;
+// A retirada do par da organização passa a não diferenciar maiúsculas e a pegar tenant-id/tenantid (§E1.3).
+const TENANT_KEY_PATTERN = /^tenant[_-]?id$/i;
+const MAX_CLIENT_EVIDENCE_ID_LENGTH = 255;
+const EVIDENCE_INDEX_UNAVAILABLE_MESSAGE = "Evidence index is temporarily unavailable.";
+
+const defaultMobileEvidenceRepository = new InMemoryMobileEvidenceRepository();
+let mobileEvidenceRepositoryOverride: MobileEvidenceRepository | undefined;
+
+function resolveMobileEvidenceRepository(): MobileEvidenceRepository {
+  return mobileEvidenceRepositoryOverride ?? defaultMobileEvidenceRepository;
+}
+
+export function getMobileEvidenceRepositoryForTests(): MobileEvidenceRepository {
+  return resolveMobileEvidenceRepository();
+}
+
+export function setMobileEvidenceRepositoryForTests(repository: MobileEvidenceRepository | undefined): void {
+  mobileEvidenceRepositoryOverride = repository;
+}
 const supportedActionTypes: readonly EvidenceActionType[] = [
   "evidence.work_order_photo",
   "evidence.work_order_signature",
@@ -105,6 +125,7 @@ export async function syncMobileEvidenceActions(
   actor: AuthenticatedActor | undefined,
   body: unknown,
   resolveService: () => Promise<WorkOrderService> = createDefaultWorkOrderService,
+  repository: MobileEvidenceRepository = resolveMobileEvidenceRepository(),
 ): Promise<MobileEvidenceSyncResponse> {
   assertSyncActor(actor);
   const request = parseSyncRequest(body);
@@ -114,33 +135,74 @@ export async function syncMobileEvidenceActions(
   const conflicts: MobileEvidenceActionResult[] = [];
   const alreadyApplied: MobileEvidenceActionResult[] = [];
 
-  for (const action of request.actions) {
-    const fingerprint = fingerprintAction(action);
-    const receiptKey = `${actor.tenantId}:${actor.userId}:${action.client_evidence_id}`;
-    const existingReceipt = syncReceipts.get(receiptKey);
+  try {
+    for (const action of request.actions) {
+      const fingerprintSha256 = createHash("sha256").update(fingerprintAction(action)).digest("hex");
+      const existing = await repository.findByClientEvidenceId(actor.tenantId, actor.userId, action.client_evidence_id);
 
-    if (existingReceipt) {
-      if (existingReceipt.fingerprint === fingerprint) {
-        alreadyApplied.push({
-          ...existingReceipt.result,
-          status: "already_applied",
-        });
-      } else {
-        conflicts.push(buildIdempotencyConflict(action, existingReceipt.result));
+      if (existing) {
+        if (existing.fingerprintSha256 === fingerprintSha256) {
+          alreadyApplied.push({ ...buildEvidenceResult(existing), status: "already_applied" });
+        } else {
+          conflicts.push(buildIdempotencyConflict(action, buildEvidenceResult(existing)));
+        }
+        continue;
       }
-      continue;
-    }
 
-    const result = await processAction(service, actor, action);
+      const result = await processAction(service, actor, action);
+      if (result.status === "conflict") {
+        conflicts.push(result);
+        continue;
+      }
+      if (result.status !== "accepted" || !result.server_state) {
+        rejected.push(result);
+        continue;
+      }
 
-    if (result.status === "accepted") {
-      syncReceipts.set(receiptKey, { fingerprint, result });
-      accepted.push(result);
-    } else if (result.status === "conflict") {
-      conflicts.push(result);
-    } else {
-      rejected.push(result);
+      const descriptor = describeAction(action.type as EvidenceActionType);
+      const metadata = result.server_state.metadata;
+      const input: CreateMobileEvidenceInput = {
+        tenantId: actor.tenantId,
+        actorUserId: actor.userId,
+        clientEvidenceId: action.client_evidence_id,
+        actionType: action.type as EvidenceActionType,
+        scope: descriptor.scope,
+        kind: descriptor.kind,
+        workOrderId: descriptor.scope === "work_order" && typeof metadata.work_order_id === "string" ? metadata.work_order_id : null,
+        metadata,
+        fingerprintSha256,
+        localCreatedAt: new Date(action.local_created_at),
+        fileStatus: descriptor.kind === "observation" ? "none" : "awaiting_file",
+      };
+
+      const created: CreateAcceptedResult = await repository.createAccepted(input);
+      if (created.outcome === "invalid") {
+        rejected.push({
+          client_evidence_id: action.client_evidence_id,
+          type: action.type,
+          status: "rejected",
+          ...(readWorkOrderId(action) ? { work_order_id: readWorkOrderId(action) } : {}),
+          error: { code: "BAD_REQUEST", reason: created.reason, message: metadataInvalidMessage(created.reason) },
+        });
+        continue;
+      }
+      if (created.outcome === "duplicate") {
+        const winner = await repository.findByClientEvidenceId(actor.tenantId, actor.userId, action.client_evidence_id);
+        if (!winner) {
+          throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_index_unavailable", EVIDENCE_INDEX_UNAVAILABLE_MESSAGE);
+        }
+        if (winner.fingerprintSha256 === fingerprintSha256) {
+          alreadyApplied.push({ ...buildEvidenceResult(winner), status: "already_applied" });
+        } else {
+          conflicts.push(buildIdempotencyConflict(action, buildEvidenceResult(winner)));
+        }
+        continue;
+      }
+      accepted.push(buildEvidenceResult(created.record));
     }
+  } catch (error) {
+    if (isRouteLikeError(error)) throw error;
+    throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_index_unavailable", EVIDENCE_INDEX_UNAVAILABLE_MESSAGE);
   }
 
   return {
@@ -167,7 +229,8 @@ export async function syncMobileEvidenceActions(
 }
 
 export function resetMobileEvidenceSyncRuntimeForTests(): void {
-  syncReceipts.clear();
+  defaultMobileEvidenceRepository.clear();
+  mobileEvidenceRepositoryOverride = undefined;
 }
 
 export function findMobileEvidenceSyncReceiptForUpload(
@@ -180,17 +243,14 @@ export function findMobileEvidenceSyncReceiptForUpload(
   scope?: EvidenceScope;
   workOrderId?: string;
 } | undefined {
-  const receipt = syncReceipts.get(`${actor.tenantId}:${actor.userId}:${clientEvidenceId}`);
-  const result = receipt?.result;
-  const evidenceId = result?.evidence_id;
-
-  if (!evidenceId) return undefined;
+  const record = defaultMobileEvidenceRepository.findRecordSync(actor.tenantId, actor.userId, clientEvidenceId);
+  if (!record) return undefined;
 
   return {
-    evidenceId,
-    type: result.type,
-    scope: result.server_state?.scope,
-    workOrderId: result.work_order_id,
+    evidenceId: `evidence:${record.tenantId}:${record.clientEvidenceId}`,
+    type: record.actionType,
+    scope: record.scope,
+    workOrderId: typeof record.metadata.work_order_id === "string" ? record.metadata.work_order_id : undefined,
   };
 }
 
@@ -281,6 +341,10 @@ async function processAction(
       throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
     }
 
+    if (action.client_evidence_id.length > MAX_CLIENT_EVIDENCE_ID_LENGTH) {
+      throw routeError(400, "BAD_REQUEST", "invalid_client_evidence_id", `client_evidence_id must not exceed ${MAX_CLIENT_EVIDENCE_ID_LENGTH} characters.`);
+    }
+
     const descriptor = describeAction(action.type);
     assertActionPermission(actor, descriptor.scope);
     assertSafePayload(action.payload);
@@ -309,6 +373,9 @@ async function processAction(
     const metadata = validateAndNormalizeMetadata(action, descriptor.scope, descriptor.kind);
     if (metadata.gps !== undefined && !(await actorHasTrackingConsent(actor))) {
       delete metadata.gps;
+    }
+    if (Buffer.byteLength(JSON.stringify(metadata), "utf8") > MOBILE_EVIDENCE_METADATA_MAX_BYTES) {
+      throw routeError(400, "BAD_REQUEST", "metadata_too_large", `metadata must not exceed ${MOBILE_EVIDENCE_METADATA_MAX_BYTES} bytes.`);
     }
     const evidenceId = `evidence:${actor.tenantId}:${action.client_evidence_id}`;
 
@@ -406,7 +473,7 @@ function findUnsafePayloadKey(value: unknown): string | undefined {
   if (!isPlainRecord(value)) return undefined;
 
   for (const [key, nestedValue] of Object.entries(value)) {
-    if (UNSAFE_PAYLOAD_KEYS.has(key)) return key;
+    if (UNSAFE_PAYLOAD_KEY_PATTERN.test(key)) return key;
 
     const nestedUnsafeKey = findUnsafePayloadKey(nestedValue);
     if (nestedUnsafeKey) return nestedUnsafeKey;
@@ -489,6 +556,32 @@ function buildIdempotencyConflict(
   };
 }
 
+function buildEvidenceResult(record: MobileEvidenceRecord): MobileEvidenceActionResult {
+  const evidenceId = `evidence:${record.tenantId}:${record.clientEvidenceId}`;
+  const echoWorkOrderId = typeof record.metadata.work_order_id === "string" ? record.metadata.work_order_id : undefined;
+  return {
+    client_evidence_id: record.clientEvidenceId,
+    type: record.actionType,
+    status: "accepted",
+    evidence_id: evidenceId,
+    ...(echoWorkOrderId ? { work_order_id: echoWorkOrderId } : {}),
+    server_state: {
+      evidence_id: evidenceId,
+      scope: record.scope,
+      kind: record.kind,
+      ...(echoWorkOrderId ? { work_order_id: echoWorkOrderId } : {}),
+      status: "metadata_registered",
+      metadata: record.metadata,
+    },
+  };
+}
+
+function metadataInvalidMessage(reason: "metadata_too_large" | "metadata_not_storable"): string {
+  return reason === "metadata_too_large"
+    ? `metadata must not exceed ${MOBILE_EVIDENCE_METADATA_MAX_BYTES} bytes.`
+    : "metadata cannot be stored.";
+}
+
 function fingerprintAction(action: MobileEvidenceAction): string {
   return JSON.stringify({
     type: action.type,
@@ -511,7 +604,7 @@ function normalizePayload(record: RawRecord): RawRecord {
 function sortRecord(record: RawRecord): RawRecord {
   return Object.fromEntries(
     Object.entries(record)
-      .filter(([key]) => key !== "tenant_id" && key !== "tenantId")
+      .filter(([key]) => !TENANT_KEY_PATTERN.test(key))
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, value]) => [key, normalizeValue(value)]),
   );
