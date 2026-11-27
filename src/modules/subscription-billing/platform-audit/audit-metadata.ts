@@ -57,6 +57,10 @@ export const BILLING_AUDIT_RULES: Readonly<Record<string, Rule>> = {
   version,
   valid_from: businessDate,
   valid_to: businessDateOrNull,
+  status_from: code,
+  status_to: code,
+  reason_code: code,
+  plan_code: code,
 };
 
 export type BillingAuditMetadata = Readonly<Record<string, unknown>>;

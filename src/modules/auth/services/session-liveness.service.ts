@@ -67,12 +67,14 @@ async function check(input: SessionLivenessInput): Promise<SessionLivenessVerdic
         SELECT 1 AS alive
         FROM auth_sessions s
         JOIN users u ON u.id = s.user_id AND u.tenant_id = s.tenant_id
+        JOIN tenants t ON t.id = s.tenant_id
         WHERE s.tenant_id = ${tenantId}::uuid
           AND s.id = ${sessionId}::uuid
           AND s.user_id = ${userId}::uuid
           AND s.revoked_at IS NULL
           AND s.expires_at > now()
           AND u.status = 'active'
+          AND t.status = 'active'
         LIMIT 1
       `;
 
@@ -80,6 +82,12 @@ async function check(input: SessionLivenessInput): Promise<SessionLivenessVerdic
     }
 
     // Via sem `sid` (transitória, P-SID-OBRIGATORIO): cobre o desativado, não a sessão encerrada.
+    const tenant = await tx.tenant.findFirst({
+      where: { id: tenantId, status: "active" },
+      select: { id: true },
+    });
+    if (!tenant) return "inactive";
+
     const user = await tx.user.findFirst({
       where: { id: userId, tenant_id: tenantId, status: "active" },
       select: { id: true },

@@ -272,7 +272,7 @@ async function buildMultiOrgHarness(): Promise<{
 
   const service = new LocalAuthLoginService(
     repository,
-    { async findById(tenantId: string) { return { id: tenantId, name: `Org ${tenantId}` }; } },
+    { async findById(tenantId: string) { return { id: tenantId, name: `Org ${tenantId}`, status: "active" }; } },
     {
       async findByIdForTenant(userId: string, tenantId: string) {
         return { id: userId, tenant_id: tenantId, email: EMAIL, name: "Dona", status: "active" };

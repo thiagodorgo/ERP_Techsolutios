@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { resolveRequestActor } from "../auth/middleware/authenticated-actor.middleware.js";
 import { handleAsyncRoute, readRouteParam } from "../core-saas/routes/http.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { requirePlatformPermission } from "./platform-permissions.js";
@@ -17,7 +18,10 @@ import {
   createDefaultPlatformTenantDetailService,
   type PlatformTenantDetailServiceResolver,
 } from "./platform-tenant-detail.service.js";
-import { PlatformTenantsService } from "./platform-tenants.service.js";
+import {
+  createDefaultPlatformOrganizationsService,
+  type PlatformOrganizationsServiceResolver,
+} from "./platform-organizations.service.js";
 import {
   parseCreatePlatformTenantDto,
   parseCreateTenantAdminDto,
@@ -33,7 +37,8 @@ export function createPlatformRouter(
   coreSaasService?: ICoreSaasService,
   resolveOverviewService: PlatformOverviewServiceResolver = () =>
     createDefaultPlatformOverviewService(coreSaasService),
-  service = new PlatformTenantsService(),
+  resolveOrganizationsService: PlatformOrganizationsServiceResolver = () =>
+    createDefaultPlatformOrganizationsService(coreSaasService),
   resolveTenantDetailService: PlatformTenantDetailServiceResolver = () =>
     createDefaultPlatformTenantDetailService(coreSaasService),
 ): Router {
@@ -89,8 +94,9 @@ export function createPlatformRouter(
     "/tenants",
     requirePlatformPermission("platform:tenants:read"),
     handleAsyncRoute(async (_request, response) => {
+      const service = await resolveOrganizationsService();
       response.status(200).json({
-        data: service.listTenants(),
+        data: await service.listTenants(),
       });
     }),
   );
@@ -99,8 +105,11 @@ export function createPlatformRouter(
     "/tenants",
     requirePlatformPermission("platform:tenants:create"),
     handleAsyncRoute(async (request, response) => {
-      const tenant = service.createTenant(parseCreatePlatformTenantDto(request.body as Record<string, unknown>));
+      const service = await resolveOrganizationsService();
+      const actor = resolveRequestActor(request)!;
+      const tenant = await service.createTenant(parseCreatePlatformTenantDto(request.body as Record<string, unknown>), actor.userId!);
 
+      response.setHeader("Cache-Control", "no-store");
       response.status(201).json({
         data: tenant,
       });
@@ -111,8 +120,9 @@ export function createPlatformRouter(
     "/tenants/:tenantId",
     requirePlatformPermission("platform:tenants:read"),
     handleAsyncRoute(async (request, response) => {
+      const service = await resolveOrganizationsService();
       response.status(200).json({
-        data: service.getTenant(readRouteParam(request.params.tenantId)),
+        data: await service.getTenant(readRouteParam(request.params.tenantId)),
       });
     }),
   );
@@ -121,9 +131,11 @@ export function createPlatformRouter(
     "/tenants/:tenantId",
     requirePlatformPermission("platform:tenants:update"),
     handleAsyncRoute(async (request, response) => {
-      const tenant = service.updateTenant(
+      const service = await resolveOrganizationsService();
+      const tenant = await service.updateTenant(
         readRouteParam(request.params.tenantId),
         parseUpdatePlatformTenantDto(request.body as Record<string, unknown>),
+        resolveRequestActor(request)!.userId!,
       );
 
       response.status(200).json({
@@ -136,9 +148,11 @@ export function createPlatformRouter(
     "/tenants/:tenantId/status",
     requirePlatformPermission("platform:tenants:suspend"),
     handleAsyncRoute(async (request, response) => {
-      const tenant = service.updateTenantStatus(
+      const service = await resolveOrganizationsService();
+      const tenant = await service.updateTenantStatus(
         readRouteParam(request.params.tenantId),
         parseUpdateTenantStatusDto(request.body as Record<string, unknown>),
+        resolveRequestActor(request)!.userId!,
       );
 
       response.status(200).json({
@@ -151,8 +165,9 @@ export function createPlatformRouter(
     "/tenants/:tenantId/modules",
     requirePlatformPermission("platform:tenants:read"),
     handleAsyncRoute(async (request, response) => {
+      const service = await resolveOrganizationsService();
       response.status(200).json({
-        data: service.listTenantModules(readRouteParam(request.params.tenantId)),
+        data: await service.listTenantModules(readRouteParam(request.params.tenantId)),
       });
     }),
   );
@@ -161,7 +176,8 @@ export function createPlatformRouter(
     "/tenants/:tenantId/modules",
     requirePlatformPermission("platform:modules:manage"),
     handleAsyncRoute(async (request, response) => {
-      const modules = service.updateTenantModules(
+      const service = await resolveOrganizationsService();
+      const modules = await service.updateTenantModules(
         readRouteParam(request.params.tenantId),
         parseUpdatePlatformTenantModulesDto(request.body as Record<string, unknown>),
       );
@@ -176,11 +192,14 @@ export function createPlatformRouter(
     "/tenants/:tenantId/admin-user",
     requirePlatformPermission("platform:users:create_admin"),
     handleAsyncRoute(async (request, response) => {
-      const tenant = service.createTenantAdminUser(
+      const service = await resolveOrganizationsService();
+      const tenant = await service.createTenantAdminUser(
         readRouteParam(request.params.tenantId),
         parseCreateTenantAdminDto(request.body as Record<string, unknown>),
+        resolveRequestActor(request)!.userId!,
       );
 
+      response.setHeader("Cache-Control", "no-store");
       response.status(201).json({
         data: tenant,
       });

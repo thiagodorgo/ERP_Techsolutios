@@ -21,6 +21,7 @@ export class PrismaPlatformAuditWriter implements PlatformAuditWriter {
         action: entry.action,
         entity: entry.entity,
         entity_id: entry.entityId ?? null,
+        tenant_id: entry.entity === "organization" && typeof entry.entityId === "string" && UUID.test(entry.entityId) ? entry.entityId : null,
         // A allowlist só deixa passar texto, número, null e listas de uuid: tudo JSON.
         metadata: { ...metadata } as Prisma.InputJsonObject,
       },

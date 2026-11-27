@@ -1,62 +1,30 @@
+import type { BillingProfileInput } from "../subscription-billing/billing-profile/billing-profile.js";
+
 export type PlatformTenantStatus = "active" | "suspended" | "pending";
-
 export type PlatformPlan = "starter" | "professional" | "business" | "enterprise";
-
+export type PlatformTenant = { readonly plan: PlatformPlan; readonly enabledModules: readonly string[] };
 export type PlatformModuleCategory = "MVP" | "Fase 2" | "Enterprise";
-
 export type PlatformModuleStatus = "enabled" | "disabled" | "blocked_by_plan";
-
-export type PlatformTenant = {
-  readonly id: string;
-  readonly name: string;
-  readonly slug: string;
-  readonly plan: PlatformPlan;
-  readonly status: PlatformTenantStatus;
-  readonly activeUsers: number;
-  readonly enabledModules: readonly string[];
-  readonly createdAt: string;
-  readonly lastActivityAt?: string;
-  readonly adminUser?: {
-    readonly id: string;
-    readonly name: string;
-    readonly email: string;
-  };
-  readonly usageSummary?: {
-    readonly workOrders: number;
-    readonly storageGb: number;
-    readonly apiCalls: number;
-  };
+export type PlatformOrganizationRecord = { readonly id: string; readonly name: string; readonly slug: string; readonly status: string; readonly modules: readonly string[]; readonly createdAt: Date; readonly updatedAt: Date };
+export type PlatformOrganization = {
+  readonly id: string; readonly name: string; readonly slug: string; readonly status: PlatformTenantStatus;
+  readonly createdAt: string; readonly system: boolean;
+  readonly group: { readonly id: string; readonly name: string } | null;
+  readonly setup: { readonly complete: boolean; readonly missing: readonly string[] };
 };
-
-export type PlatformModule = {
-  readonly key: string;
-  readonly name: string;
-  readonly description: string;
-  readonly status: PlatformModuleStatus;
-  readonly availableInPlan: boolean;
-  readonly category: PlatformModuleCategory;
-};
-
 export type CreatePlatformTenantDto = {
-  readonly name: string;
-  readonly slug: string;
-  readonly plan: PlatformPlan;
-  readonly status?: PlatformTenantStatus;
-  readonly adminName?: string;
-  readonly adminEmail?: string;
+  readonly name: string; readonly group: { readonly id: string } | { readonly name: string };
+  readonly profile?: BillingProfileInput; readonly plan?: { readonly code: PlatformPlan };
+  readonly admin?: { readonly name: string; readonly email: string };
 };
-
-export type UpdatePlatformTenantDto = {
-  readonly name?: string;
-  readonly plan?: PlatformPlan;
-  readonly status?: PlatformTenantStatus;
-};
-
-export type UpdatePlatformTenantModulesDto = {
-  readonly enabledModules: readonly string[];
-};
-
-export type CreateTenantAdminDto = {
-  readonly name: string;
-  readonly email: string;
+export type UpdatePlatformTenantDto = { readonly name: string };
+export type UpdateTenantStatusDto = { readonly status: "active" | "suspended"; readonly reason: "nonpayment" | "customer_request" | "security" | "other" };
+export type UpdatePlatformTenantModulesDto = { readonly enabledModules: readonly string[] };
+export type CreateTenantAdminDto = { readonly name: string; readonly email: string };
+export type PlatformModule = { readonly key: string; readonly name: string; readonly description: string; readonly status: PlatformModuleStatus; readonly availableInPlan: boolean; readonly category: PlatformModuleCategory };
+export type ProvisioningStep = { readonly status: "done" | "skipped" | "failed"; readonly reason?: string };
+export type CreatePlatformOrganizationResult = {
+  readonly organization: PlatformOrganization;
+  readonly provisioning: { readonly group: ProvisioningStep; readonly profile: ProvisioningStep; readonly subscription: ProvisioningStep; readonly admin: ProvisioningStep };
+  readonly temporaryPassword?: string;
 };
