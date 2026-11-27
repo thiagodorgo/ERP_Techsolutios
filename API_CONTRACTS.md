@@ -306,8 +306,8 @@ Fontes: `src/modules/platform/platform.routes.ts` (montado em `/api/v1/platform`
 | GET | `/platform/tenants/:tenantId/detail` | `platform:tenants:read` | Detalhe estendido (métricas/uso). |
 | PATCH | `/platform/tenants/:tenantId` | `platform:tenants:update` | Atualiza organização. |
 | PATCH | `/platform/tenants/:tenantId/status` | `platform:tenants:suspend` | Suspende/reativa organização. |
-| GET | `/platform/tenants/:tenantId/modules` | `platform:tenants:read` | Módulos provisionados na organização. |
-| PATCH | `/platform/tenants/:tenantId/modules` | `platform:modules:manage` | Habilita/desabilita módulos. |
+| GET | `/platform/tenants/:tenantId/modules` | `platform:tenants:read` | Catálogo de módulos da organização. SEM assinatura em vigor: área ligada é `enabled`, desligada é `disabled` e `availableInPlan` é verdadeiro em todas. COM assinatura em vigor: desligada é `blocked_by_plan` e `availableInPlan` vale "está ligada". |
+| PATCH | `/platform/tenants/:tenantId/modules` | `platform:modules:manage` | Substitui os módulos da organização pelo estado final pedido (`enabledModules`). Grava de verdade, com trilha dupla, SÓ para organização sem assinatura em vigor; com assinatura em vigor responde 409 `module_change_requires_subscription`. Corpo fora da forma → 400 `invalid_field`; chave fora do catálogo canônico, apelido incluído → 422 `module_unknown`; lista igual à atual → 200 sem escrita e sem trilha. |
 | POST | `/platform/tenants/:tenantId/admin-user` | `platform:users:create_admin` | Cria usuário administrador da organização. |
 | GET/POST/PATCH | `/platform/cloud-charge-rules` (+ `/:ruleId`) | `platform:cloud-charge-rules:read` / `:write` | **Retiradas (B-ASS-01, 404).** Regras de cobrança de nuvem (+ CRUD padrão). |
 | GET/POST | `/platform/cloud-charges/calculation-runs` (+ `/:runId`, `/:runId/tenant-charges`) | `platform:cloud-charges:read` / `:calculate` | **Retiradas (B-ASS-01, 404).** Execuções de cálculo de cobrança de nuvem. |

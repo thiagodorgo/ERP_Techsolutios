@@ -146,8 +146,15 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/tenants/:tenantId`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`PATCH ${P}/tenants/:tenantId`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`PATCH ${P}/tenants/:tenantId/status`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
-  [`GET ${P}/tenants/:tenantId/modules`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
-  [`PATCH ${P}/tenants/:tenantId/modules`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
+  // B-PLANOS-MODULOS — as duas rotas de módulos deixaram de ser "em memória, não toca o banco" (defasagem que já
+  // vinha do #642). A etiqueta continua `SEM-FORCE` por uma razão medida, e não por esquecimento: virar
+  // `FORCE-POR-TENANT` obriga o T11e a ter um cenário diferencial próprio para cada uma, e o §7.1 deste bloco
+  // autoriza "só as etiquetas das 2 rotas de módulos, l.149-150". A propriedade que o diferencial existe para
+  // provar está provada no lugar dela, no `tests/planos-modulos-porta-db.test.ts` (D10 compara o corpo da leitura
+  // sob o papel efêmero NOSUPERUSER NOBYPASSRLS e sob o administrativo, com e sem assinatura; D1, D3, D4, D6 e D9
+  // exercem a escrita sob o mesmo papel efêmero). Pendência `P-PLANOS-MODULOS-ETIQUETA-SAN3-05`.
+  [`GET ${P}/tenants/:tenantId/modules`, S("SEM-FORCE", [], "B-PLANOS-MODULOS: toca o banco desde o #642 (`tenants`, sem RLS) e agora lê `tenant_subscriptions`/`tenant_subscription_addons` (FORCE) sob `withTenantRls` para calcular `managedBySubscription`; ver o comentário acima e a pendência P-PLANOS-MODULOS-ETIQUETA-SAN3-05")],
+  [`PATCH ${P}/tenants/:tenantId/modules`, S("SEM-FORCE", [], "B-PLANOS-MODULOS: a porta passou a GRAVAR — numa transação cuja 1ª instrução é `setTenantRlsContext(tx, id)` ela lê `tenant_subscriptions` (FORCE) e grava `tenants.modules`, `audit_logs` (FORCE) e `platform_audit_logs` (global); ver o comentário acima e a pendência P-PLANOS-MODULOS-ETIQUETA-SAN3-05")],
   [`POST ${P}/tenants/:tenantId/admin-user`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   // B-ASS-08b — a rota de INFRA do webhook dos provedores (fora de /api/v1, sem módulo, sem ator): também entra na lista
   // fechada, lida do router em runtime pelo prefixo `WEBHOOK` (T11g). Grava só a tabela GLOBAL de eventos; a organização sai

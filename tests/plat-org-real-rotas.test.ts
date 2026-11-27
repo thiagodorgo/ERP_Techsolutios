@@ -31,7 +31,7 @@ test("R5 — id que não é UUID recebe 404 sem consultar outro cadastro", async
   });
 });
 
-test("R2/R4/R8 — criação usa UUID, campos imutáveis recusam e módulos seguem pela assinatura", async () => {
+test("R2/R4/R8 — criação usa UUID, campos imutáveis recusam e módulos pela plataforma enquanto não há assinatura", async () => {
   await withApi(async (baseUrl) => {
     const created = await request(baseUrl, "/api/v1/platform/tenants", {
       method: "POST",
@@ -54,8 +54,14 @@ test("R2/R4/R8 — criação usa UUID, campos imutáveis recusam e módulos segu
       method: "PATCH",
       body: { enabledModules: ["finance"] },
     });
-    assert.equal(modules.status, 409, JSON.stringify(modules.body));
-    assert.equal(modules.body.error?.reason, "module_change_requires_subscription");
+    // B-PLANOS-MODULOS (`D-PLANOS-MODULOS-PORTA-REAL`, P1 opção A): organização SEM assinatura em vigor é ligada e
+    // desligada pela plataforma, de verdade. O 409 `module_change_requires_subscription` continua existindo, mas só
+    // para organização COM assinatura — provado em T10 (memória) e D5 (Postgres) de `tests/planos-modulos-porta*.test.ts`.
+    assert.equal(modules.status, 200, JSON.stringify(modules.body));
+    const ligadas = (modules.body.data as Array<{ readonly key: string; readonly status: string }>)
+      .filter((modulo) => modulo.status === "enabled")
+      .map((modulo) => modulo.key);
+    assert.deepEqual(ligadas, ["finance"]);
   });
 });
 
