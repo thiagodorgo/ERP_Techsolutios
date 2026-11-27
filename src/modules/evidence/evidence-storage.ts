@@ -130,6 +130,8 @@ export type EvidenceAuditAction =
   | "evidence.upload.accepted"
   | "evidence.upload.rejected"
   | "evidence.upload.scan_failed"
+  // B-EVIDENCIA-DURAVEL (plano §3.2): o provedor da D-014 falhou ao gravar; a rota responde 503 e o app mantém a foto.
+  | "evidence.upload.storage_failed"
   | "evidence.upload.stored";
 
 export type EvidenceAuditEvent = {

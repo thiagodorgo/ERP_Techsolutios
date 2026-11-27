@@ -347,11 +347,14 @@ test("E15 sem costura: o provedor vem do env (`local` numa pasta do teste, posta
     try {
       const bytes = JPEG_BYTES;
       const { workOrderId, evidenceId, clientEvidenceId } = await prepareWorkOrderEvidence(ctx, tenantA, userA, "evdur-e15-sem-costura", bytes);
+      // Os ids em memória são sequenciais (`ten_000001`): conta só o que ESTE envio criou na pasta do provedor.
+      const osDir = path.join(DEFAULT_STORAGE_DIR, tenantA.id, `mobile-evidence-wo-${sanitize(workOrderId)}`);
+      const filesBefore = listFilesRecursive(osDir);
       const response = await postEvidence(ctx, tenantA, userA, { evidenceId, clientEvidenceId, bytes });
       assert.equal(response.status, 201, response.text);
       assert.equal(response.body.data?.status, "stored");
 
-      const files = listFilesRecursive(path.join(DEFAULT_STORAGE_DIR, tenantA.id, `mobile-evidence-wo-${sanitize(workOrderId)}`));
+      const files = listFilesRecursive(osDir).filter((file) => !filesBefore.includes(file));
       assert.equal(files.length, 1, `esperado 1 arquivo na pasta do provedor do env; a pasta da organização tem: ${JSON.stringify(listFilesRecursive(path.join(DEFAULT_STORAGE_DIR, tenantA.id)))}`);
       assert.deepEqual(readFileSync(files[0]), bytes, "os bytes gravados não são os enviados");
 
@@ -380,12 +383,15 @@ test("E16 segurança da limpeza: sem raiz de teste configurada, o reset não apa
       mkdirSync(path.dirname(sentinel), { recursive: true });
       writeFileSync(sentinel, "sentinela de outra suite");
 
-      // A evidência gravada pela rota, SEM costura: vai para a pasta padrão do provedor.
+      // A evidência gravada pela rota, SEM costura: vai para a pasta padrão do provedor. Os ids em memória são
+      // sequenciais (`ten_000001`), então conta só o que ESTE envio criou.
       const bytes = JPEG_BYTES;
       const { evidenceId, clientEvidenceId } = await prepareWorkOrderEvidence(ctx, tenantA, userA, "evdur-e16-limpeza", bytes);
+      const tenantDir = path.join(DEFAULT_STORAGE_DIR, tenantA.id);
+      const filesBefore = listFilesRecursive(tenantDir);
       const response = await postEvidence(ctx, tenantA, userA, { evidenceId, clientEvidenceId, bytes });
       assert.equal(response.status, 201, response.text);
-      const stored = listFilesRecursive(path.join(DEFAULT_STORAGE_DIR, tenantA.id));
+      const stored = listFilesRecursive(tenantDir).filter((file) => !filesBefore.includes(file));
       assert.equal(stored.length, 1, "a evidência não foi gravada pelo provedor padrão");
 
       // (1) reset SEM raiz de teste configurada: nada é apagado.
