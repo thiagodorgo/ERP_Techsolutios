@@ -85,6 +85,19 @@ function rejectsOn(overrides: Record<string, unknown>, key: string, label: strin
   );
 }
 
+/**
+ * Para os casos que varrem várias formas: devolve os rótulos das formas que NÃO foram recusadas na chave esperada, para a
+ * falha listar TODAS (a tabela de mutações da Emenda 1 aponta formas exatas, ex.: "GS6 nas formas 2 e 3").
+ */
+function notRejected(cases: readonly GateCase[]): string[] {
+  return cases
+    .filter((item) => {
+      const result = envSchema.safeParse(merge(item.overrides));
+      return result.success || !issuePaths(result).some((entry) => entry.split(".").includes(item.key));
+    })
+    .map((item) => item.label);
+}
+
 function accepts(overrides: Record<string, unknown>, label: string): void {
   const result = envSchema.safeParse(merge(overrides));
   assert.equal(result.success, true, `${label}: esperava ACEITAR, rejeitou em: ${issuePaths(result).join(", ")}`);
@@ -234,12 +247,12 @@ test("GS5 produção com região vazia, e com região fora da forma → REJEITA 
 
 test("GS6 produção com as 13 formas de endpoint recusadas do RR-A.2b do #525 → REJEITA em CHECKLIST_STORAGE_S3_ENDPOINT, as 13", () => {
   assert.equal(GS6_CASES.length, 13);
-  for (const item of GS6_CASES) rejectsOn(item.overrides, item.key, item.label);
+  assert.deepEqual(notRejected(GS6_CASES), [], "formas de endpoint que a trava NÃO recusou em CHECKLIST_STORAGE_S3_ENDPOINT");
 });
 
 test("GS6b produção com endpoint cujo host TERMINA no host aprovado (3 literais) → REJEITA em CHECKLIST_STORAGE_S3_ENDPOINT, os 3", () => {
   assert.equal(GS6B_CASES.length, 3);
-  for (const item of GS6B_CASES) rejectsOn(item.overrides, item.key, item.label);
+  assert.deepEqual(notRejected(GS6B_CASES), [], "hosts com sufixo que a trava NÃO recusou em CHECKLIST_STORAGE_S3_ENDPOINT");
 });
 
 test("GS7 produção com o endpoint regional de outra região que não a configurada → REJEITA", () => {

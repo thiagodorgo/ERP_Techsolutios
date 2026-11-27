@@ -621,6 +621,17 @@ test("E8 portão por requisição em produção: provedor local; s3 sem bucket; 
     const { tenantA, userA } = ctx.seed;
     const { evidenceId, clientEvidenceId } = await prepareWorkOrderEvidence(ctx, tenantA, userA, "evdur-e8-portao", JPEG_BYTES);
 
+    // Cada caso junta o que deu errado nele; a falha lista TODOS (a tabela de mutações da Emenda 1 aponta casos exatos).
+    const failures: string[] = [];
+    const check = (label: string, refused: { status: number; text: string; body: Record<string, any> }, scannerCalls: number, written: number): void => {
+      const problems: string[] = [];
+      if (refused.status !== 503) problems.push(`status ${refused.status}`);
+      if (refused.body.error?.reason !== "evidence_storage_unavailable") problems.push(`reason ${String(refused.body.error?.reason)}`);
+      if (scannerCalls !== 0) problems.push(`${scannerCalls} chamada(s) ao antivírus antes do portão`);
+      if (written !== 0) problems.push(`${written} gravação(ões)`);
+      if (problems.length > 0) failures.push(`${label}: ${problems.join("; ")}`);
+    };
+
     // (1) produção + local: recusado mesmo com diretório declarado (o código não sabe se há volume montado).
     const localRoot = mkdtempSync(path.join(os.tmpdir(), "evdur-e8-local-"));
     try {
@@ -628,10 +639,7 @@ test("E8 portão por requisição em produção: provedor local; s3 sem bucket; 
       m.upload.configureMobileEvidenceUploadScannerForTests(counter.scanner as any);
       m.upload.configureMobileEvidenceUploadStorageForTests({ provider: new m.local.LocalChecklistStorageProvider(localRoot), nodeEnv: "production" } as any);
       const refused = await postEvidence(ctx, tenantA, userA, { evidenceId, clientEvidenceId, bytes: JPEG_BYTES });
-      assert.equal(refused.status, 503, `produção + local: ${refused.text}`);
-      assert.equal(refused.body.error?.reason, "evidence_storage_unavailable", "produção + local");
-      assert.equal(counter.calls(), 0, "produção + local: o antivírus rodou antes do portão");
-      assert.equal(listFilesRecursive(localRoot).length, 0, "produção + local: o portão deixou gravar");
+      check("produção + local", refused, counter.calls(), listFilesRecursive(localRoot).length);
     } finally {
       rmSync(localRoot, { recursive: true, force: true });
     }
@@ -649,11 +657,10 @@ test("E8 portão por requisição em produção: provedor local; s3 sem bucket; 
       m.upload.configureMobileEvidenceUploadScannerForTests(counter.scanner as any);
       configureS3(m, durableS3Config(m.prefix, item.overrides), client);
       const refused = await postEvidence(ctx, tenantA, userA, { evidenceId, clientEvidenceId, bytes: JPEG_BYTES });
-      assert.equal(refused.status, 503, `${item.label}: ${refused.text}`);
-      assert.equal(refused.body.error?.reason, "evidence_storage_unavailable", item.label);
-      assert.equal(counter.calls(), 0, `${item.label}: o antivírus rodou antes do portão`);
-      assert.equal(client.commands.length, 0, `${item.label}: o portão deixou chegar comando ao S3`);
+      check(item.label, refused, counter.calls(), client.commands.length);
     }
+
+    assert.deepEqual(failures, [], "casos de produção sem armazenamento durável que o portão NÃO recusou como devia");
   });
 });
 
