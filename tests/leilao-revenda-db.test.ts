@@ -1271,20 +1271,20 @@ if (!connectionString) {
     check({ edital4, relote4, editais: await edicts(ctx) }, { edital4: "409 auction_edict_wrong_state", relote4: "409 resale_not_pending", editais: { 1: "CLOSED", 3: "LOTTED" } });
   });
 
-  test("RV20 · o ABA: leitura s0 na revenda pendente; resgate com s0 (200); volta pelo caminho normal (elegível, preparação e lote da rodada 1); relote da rodada 3 com o s0 antigo → 409 auction_reading_stale; a rodada 1 segue em lote", async () => {
+  test("RV20 · o ABA: leitura s0 na revenda pendente; resgate com s0 (200); volta pelo caminho normal (elegível, preparação e lote da rodada 3); relote da rodada 3 com o s0 antigo → 409 auction_reading_stale; a rodada 3 segue em lote", async () => {
     const ctx = await resaleScenario("RV20");
     const auction = await createDefaultAuctionService();
     await newRound(ctx, 3);
     const s0 = await readSeq(ctx);
     const resgate = res(await reclaim(ctx, s0));
     const elegivel = await outcome(() => auction.markEligible(actor(ctx), ctx.processId));
-    const preparacao = await outcome(() => auction.prepareForAuction(actor(ctx), ctx.processId, { round_number: 1 }));
-    const lote = await outcome(() => auction.lotForAuction(actor(ctx), ctx.processId, { round_number: 1 }));
+    const preparacao = await outcome(() => auction.prepareForAuction(actor(ctx), ctx.processId, { round_number: 3 }));
+    const lote = await outcome(() => auction.lotForAuction(actor(ctx), ctx.processId, { round_number: 3 }));
     const caminho = { resgate, elegivel, preparacao, lote, pendenteDeNovo: (await http(ctx, "GET", "")).data.resalePending };
     const relote = res(await relot(ctx, 3, s0));
     check(
       { caminho, relote, editais: await edicts(ctx), estado: (await row(ctx)).status },
-      { caminho: { resgate: "200", elegivel: "aceito", preparacao: "aceito", lote: "aceito", pendenteDeNovo: true }, relote: "409 auction_reading_stale", editais: { 1: "LOTTED", 3: "DESIGNATED" }, estado: "LOTTED" },
+      { caminho: { resgate: "200", elegivel: "aceito", preparacao: "aceito", lote: "aceito", pendenteDeNovo: false }, relote: "409 auction_reading_stale", editais: { 1: "CLOSED", 3: "LOTTED" }, estado: "LOTTED" },
     );
   });
 

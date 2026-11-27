@@ -191,3 +191,39 @@ test("painel: com impound:read em modo mock — empty honesto (D-007: não fabri
   assert.doesNotMatch(html, /pol[íi]cia/i);
   assert.doesNotMatch(html, new RegExp(TENANT_ID));
 });
+
+test("LD11 · contrato visual do leilão sem lance usa serviço próprio e mensagens PT-BR seguras", async () => {
+  const service = await import("../src/modules/patios/auction/auction.service");
+  const { shouldShowDesertedAfterLot } = await import("../src/modules/patios/auction/components/AuctionPanel");
+  const { auctionActionErrorMessage, defaultRoundForStage } = await import("../src/modules/patios/auction/auction.adapter");
+  const view = {
+    status: "AUCTION_ELIGIBLE",
+    strikeCount: 1,
+    resalePending: false,
+    custodySeq: 5,
+    attempts: [{ roundNumber: 1, outcome: "DESERTED" }],
+    edicts: [{ roundNumber: 1, status: "CLOSED" }, { roundNumber: 2, status: "DESIGNATED" }],
+  } as Parameters<typeof defaultRoundForStage>[0];
+  assert.deepEqual(
+    {
+      servico: typeof (service as Record<string, unknown>).recordDesertedAfterLot,
+      corpo: service.buildDesertedAfterLotBody({ roundNumber: 3, custodySeq: 5, notes: "Sem lance" }),
+      exibe: [shouldShowDesertedAfterLot("lotted", true, { resalePending: false }), shouldShowDesertedAfterLot("lotted", true, { resalePending: true }), shouldShowDesertedAfterLot("lotted", false, { resalePending: false })],
+      rodada: defaultRoundForStage(view, "eligible"),
+      lote: auctionActionErrorMessage("deserted_round_not_lotted"),
+      resultado: auctionActionErrorMessage("deserted_round_has_result"),
+      preparo: auctionActionErrorMessage("prep_round_has_result"),
+      atraso: auctionActionErrorMessage("attempt_round_not_new"),
+    },
+    {
+      servico: "function",
+      corpo: { round_number: 3, custody_seq: 5, notes: "Sem lance" },
+      exibe: [true, false, false],
+      rodada: 2,
+      lote: "Esta rodada não é a que está em leilão. Atualize a página e confira.",
+      resultado: "Esta rodada já tem resultado registrado. Se o arrematante não pagou, registre o novo lote.",
+      preparo: "Esta rodada já foi a leilão. Registre o edital de uma rodada nova.",
+      atraso: "Já existe resultado numa rodada de número igual ou maior. Registre na rodada nova.",
+    },
+  );
+});

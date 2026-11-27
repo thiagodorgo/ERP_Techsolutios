@@ -18,6 +18,7 @@ import {
   reclassifyScrap,
   reclassifyUnrecoverable,
   recordDesertedAttempt,
+  recordDesertedAfterLot,
   recordSale,
   registerEdict,
   setAppraisal,
@@ -65,6 +66,7 @@ export function AuctionPanel({
   const [reclaimOpen, setReclaimOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmDefault, setConfirmDefault] = useState(false);
+  const [desertedAfterLotInput, setDesertedAfterLotInput] = useState<DesertedAttemptInput | null>(null);
   const [reclaimReason, setReclaimReason] = useState("");
   const [roundOverride, setRoundOverride] = useState<number | null>(null);
 
@@ -117,6 +119,11 @@ export function AuctionPanel({
   });
   const handleAppraisal = (input: AppraisalInput) => void run(() => setAppraisal(context, process.id, input));
   const handleDeserted = (input: DesertedAttemptInput) => void run(() => recordDesertedAttempt(context, process.id, input));
+  const handleDesertedAfterLot = () => void run(async () => {
+    if (!desertedAfterLotInput) return;
+    await recordDesertedAfterLot(context, process.id, { ...desertedAfterLotInput, custodySeq: auction?.custodySeq ?? process.custodySeqHead });
+    setDesertedAfterLotInput(null);
+  });
   const handleScrap = () => void run(() => reclassifyScrap(context, process.id));
   const handlePrepare = () => void run(() => prepareForAuction(context, process.id, actionRound));
   const handleLot = () => void run(() => lotForAuction(context, process.id, actionRound));
@@ -167,6 +174,8 @@ export function AuctionPanel({
       </Card>
     );
   }
+
+  const showDesertedAfterLot = shouldShowDesertedAfterLot(stage, canReclaim, auction);
 
   const roundSelector = roundChoices.length > 1 ? (
     <Select label="Rodada" value={String(actionRound)} onChange={(event) => setRoundOverride(Number(event.target.value))}>
@@ -324,6 +333,12 @@ export function AuctionPanel({
               <EmptyState title="Somente leitura" detail="Você não tem permissão para resgatar o veículo antes da venda." />
             </Card>
           )}
+          {showDesertedAfterLot ? (
+            <Card title="Leilão sem lance">
+              <p style={introStyle}>A rodada em lote terminou sem lance? Registre aqui. O veículo volta para o pátio e a diária volta a ser cobrada, até o limite de 180 diárias.</p>
+              <DesertedAttemptForm defaultRound={defaultRound} busy={busy} error={actionError} onSubmit={setDesertedAfterLotInput} />
+            </Card>
+          ) : null}
         </>
       ) : null}
 
@@ -478,8 +493,29 @@ export function AuctionPanel({
           </section>
         </div>
       ) : null}
+
+      {desertedAfterLotInput ? (
+        <div className="ui-overlay ui-overlay--center" role="presentation">
+          <section className="ui-modal" role="dialog" aria-modal="true" aria-label="Leilão sem lance">
+            <header>
+              <h2>Leilão sem lance</h2>
+              <button type="button" onClick={() => setDesertedAfterLotInput(null)} aria-label="Fechar">×</button>
+            </header>
+            <p style={{ fontSize: 14, color: "#334155" }}>Confirma que a rodada em lote terminou sem lance? O veículo volta ao pátio e a diária volta a ser cobrada.</p>
+            <footer style={footerStyle}>
+              <Button type="button" variant="ghost" onClick={() => setDesertedAfterLotInput(null)} disabled={busy}>Cancelar</Button>
+              <Button type="button" variant="danger" onClick={handleDesertedAfterLot} disabled={busy}>{busy ? "Processando…" : "Confirmar leilão sem lance"}</Button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </>
   );
 }
 
 export default AuctionPanel;
+
+export function shouldShowDesertedAfterLot(stage: ReturnType<typeof resolveAuctionStage>, canReclaim: boolean, auction: { readonly resalePending: boolean }): boolean {
+  const showDesertedAfterLot = stage === "lotted" && canReclaim && !auction.resalePending;
+  return showDesertedAfterLot;
+}

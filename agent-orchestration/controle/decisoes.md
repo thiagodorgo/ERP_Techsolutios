@@ -6662,3 +6662,102 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** *"coloque o azure lhe cobrindo agora, onde for possivel, vc fica so na orquestracao. o azure esta num loop aparentemente, verificar"*.
 - **Efeito:** o estado aparente de tarefa viva do Azure foi conferido e corrigido. Onde for possível, o Azure cobre a execução e o Claude fica somente na orquestração; os trabalhos em curso obedecem às regras de passagem de estado e de verificação independente.
+
+## D-DONO-2411-REVENDA-K3-JUNTO (2026-11-24 16:28 SP) — o defeito antigo da avaliação entra no conserto da revenda
+
+- **Fato (palavras do dono):** *"O defeito antigo da avaliação entra no conserto da revenda?  sim."*
+- **Efeito:** vale a variante (a) da E2.4.1-K3: a avaliação, em qualquer estado, é recusada no edital de uma rodada que já tem resultado, pela mesma `isRoundNotNew`. Depois do conserto, só a C1 (dinheiro e diária) se refaz, com os 3 itens da K3.2. A `P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO` fecha neste conserto, e não num bloco próprio.
+
+## D-DONO-2411-DESERTO-TRAVA-MESMO-BLOCO (2026-11-24 16:28 SP) — a trava do leilão sem venda fica no mesmo bloco
+
+- **Fato (palavras do dono):** *"O leilão sem venda: a trava fica no mesmo bloco ou num bloco seguinte? No mesmo bloco."*
+- **Efeito:** a recusa de preparar ou lotear uma rodada que já tem resultado fica no bloco `B-LEILAO-DESERTO`, e não num bloco seguinte. O D3 da crítica do plano do leilão sem venda fica resolvido pelo dono.
+
+## D-DONO-2411-REVENDA-K5-A1 (2026-11-24 17:13 SP) — avaliação da rodada fica fechada depois do resultado
+
+- **Fato (palavras do dono):** *"Revenda (K5): depois do resultado, a avaliação da rodada fica fechada? sim"*.
+- **Efeito:** vale a E2.4.2-K5.2, a (a1). A rodada com resultado fica fechada para avaliação, e a tela explica por quê; antes do resultado, a correção segue como hoje. Sai a (a2), com a tabela nova, a permissão nova e a emenda própria.
+
+## D-DONO-2411-DESERTO-D7-A (2026-11-24 17:13 SP) — recusar o registro tardio do resultado de rodada mais antiga
+
+- **Fato (palavras do dono):** *"Leilão sem venda (D7): recusar o registro tardio do resultado de uma rodada mais antiga? sim"*.
+- **Efeito:** vale a F3b da Emenda 2 do plano do leilão sem venda: resultado só em rodada nova, com 4 recusas, LD14, LD15 e 4 mutações. Custo aceito: um veículo com rodadas registradas fora de ordem perde o caminho da sucata.
+
+## D-DONO-2411-DNS-NA-AWS (2026-11-24 17:19 SP) — todo registro de DNS na AWS; o provedor antigo não muda
+
+- **Fato (regra do responsável do cliente, relida pelo dono; sem nome de provedor nem de domínio):** a partir de 24/11, todo registro de DNS se faz na AWS, e nada muda no provedor antigo, que permanece como está.
+- **Efeito:** a zona do provedor antigo fica intocada; registros novos e ajustes de DNS do domínio do cliente passam a ser feitos na AWS.
+
+## D-DONO-2411-ORG-REAL-COM-TELA (2026-11-24 18:26 SP) — bloco da organização real, com tela da plataforma
+
+- **Fato (palavras do dono):** *"(A) Fazer o bloco que grava as organizações no banco (o B-SAN3-18)... com tela para a plataforma criar, ja com as lacunas vistas no banco do sistema antigo superadas"*.
+- **Correção do dono (18:28):** *"opa, se ligue que ha o grupo, o qual eh a matriz das filiais(organizacoes. estou correto?"*.
+- **Efeito:** nasce o `B-PLAT-ORG-REAL` (criar, editar e suspender organização, mais o 1º administrador, com tela da plataforma), cobrindo as lacunas do banco antigo. O grupo é a matriz das filiais: cada filial é uma organização, e dentro dela ficam os pátios físicos. O banco antigo continua intocado.
+
+## D-DONO-2411-AZURE-COBRE-RODADA (2026-11-24 18:32 SP) — o Azure cobre quem cair nesta rodada
+
+- **Fato (palavras do dono):** *"azure cobre quem cair nessa rodada"*.
+- **Efeito:** nesta rodada, um agente que cair por limite, saldo ou parada é retomado na hora no Azure, em identidade nova de sucessor. O saldo do Azure respeita o teto, e o custo é mostrado ao dono; a cadeira coberta pelo Azure fica sem cruzamento com o dev, por ordem do dono.
+
+## D-DONO-2411-GEMINI-CLI-TETO-10 (2026-11-24 18:33 SP) — Gemini CLI entra com teto para cobrir ou fazer trabalho
+
+- **Fato (palavras do dono, sem o valor por regra do repositório público):** *"use o gemini cli"*, com um teto em dólar para cobrir alguém ou fazer trabalhos.
+- **Efeito:** o Gemini CLI entra como braço com um teto global em dólar a partir de agora, para cobrir queda e fazer trabalho; o custo e o saldo são mostrados ao dono a cada uso. Continuam valendo os limites do contrato: o Gemini é só segundo revisor e não faz design.
+
+## D-DONO-2411-ORG-P1-P7 (2026-11-24 18:53 SP) — respostas do plano da organização real
+
+- **Fato (palavras do dono):** *"p1=a. p2=a; p3=a, p4=ja autorizo, p5=tudo, p7= pode ate existir com autorizacao do gestor do grupo"*.
+- **Efeito:** P1 = cada pátio físico vira uma filial (organização) dentro do grupo; P2 = cada filial tem a própria assinatura; P3 = só nome e grupo são obrigatórios na criação; P4 = dados da matriz no cadastro do grupo, autorizada; P5 = a suspensão corta tudo; P7 = a mesma pessoa pode administrar várias filiais, com autorização do gestor do grupo.
+
+## D-DONO-2411-ORG-PM1-PM3 (2026-11-24 19:20 SP) — respostas finais da organização real
+
+- **Fato (palavras do dono):** *"A, A, SIM, sim"*, respondendo à PM1, à PM2, à PM3 e à confirmação do gestor, nessa ordem.
+- **Efeito:** PM1 = a diária durante a suspensão continua devida e é lançada na reativação; PM2 = a mensalidade e o aviso de pagamento continuam na filial suspensa; PM3 = autorizada a migração aditiva da tabela de pedidos do `B-GRUPO-ADMIN-FILIAIS`; gestor = pode autorizar a si mesmo para administrar várias filiais.
+
+## D-DONO-2411-ORG-LOTE-E-QM4 (2026-11-24 19:50 SP) — o lote da tela da organização real aprovado e a QM4 respondida
+
+- **Fato (palavras do dono):** *"sim"* (19:50, ao lote da tela) e, para a QM4, a nota literal: *"o fluxo eh criar grupo, depois organizacao. uma organizacao so nasce se tiver um grupo"* (19:53).
+- **Efeito:** a maquete do lote da tela vai para `screen-refs/` no PR-b. Para a QM4, vale criar o grupo antes da organização: uma organização só nasce se tiver um grupo; o item `group` não entra em `setup.missing[]`, e o C12 se escreve assim.
+
+## D-DONO-2411-ORG-QM1-QM3 (2026-11-24 19:54 SP) — respostas QM1, QM2 e QM3 da organização real
+
+- **Fato (respostas do dono, pelo seletor do Estado):** QM1 = (b); QM2 = (b); QM3 = não.
+- **Efeito:** QM1 = a linha abre o detalhe logo abaixo, no padrão de `D-PADRAO-BLOCOS-CLICAVEIS` (muda o §5.2 do plano; +3 a 4 h no PR-b). QM2 = o nome é único só dentro do grupo (a trava de nome é grupo + nome normalizado; o C10 prova os dois lados). QM3 = os planos mantêm os nomes do cadastro (o PR-b alinha a tela de módulos ao cadastro, sem tradução própria). O PR-a não tem mais trava.
+
+## D-DONO-2411-ORG-E13-ARGON (2026-11-24 ~21:00 SP) — o Argon escreve a Emenda 1.3, e a crítica fica com outra casa
+
+- **Fato (palavras do dono, no chat):** *"(d) O Argon escreve a emenda, e a crítica fica com outra casa"*.
+- **Efeito:** a Emenda 1.3 do plano do `B-PLAT-ORG-REAL` (só a barreira do teste de corrida C10) foi escrita pelo Argon, e a crítica ficou com outra casa. Exceção declarada à leitura de que plano é escrito pelo Claude: o Claude estava com limite baixo e a cota de terceiros do Antigravity tinha acabado. A emenda foi provada por execução num banco próprio antes de gravada, e a hipótese sobre a barreira se confirmou.
+
+## D-DONO-2511-APP-WEB-CLOUDFRONT (2026-11-25 ~10:45 SP) — o app web é servido pelo CloudFront
+
+- **Fato (palavras do dono, sobre o app web):** *"Eu quero usar o Claude Front mesmo"* (o CloudFront, como o dono se referiu).
+- **Efeito:** a Fase 4 do roteiro da AWS segue pelo CloudFront, que é a escolha do roteiro (bucket privado como origem, HTTPS próprio e cópia perto do usuário), e não pela alternativa de servir o app pelo balanceador que já existe. O dono pediu o texto do que foi feito e do erro que tinha bloqueado o passo, para repassar ao responsável do cliente; foi entregue no chat, sem identificador.
+
+## D-DONO-2511-CLAUDE-SO-ORQUESTRA-REFORCO (2026-11-25 11:23 SP) — reforço: o Claude só orquestra, sem subagente
+
+- **Fato (palavras do dono):** *"pare. vc so pode orquestrar"*.
+- **Reforço anterior, sem id próprio (2026-11-24 ~19:57 SP):** *"vc so na orquestracao ou comandos meus. limite baixo"* (reforço da `D-DONO-2411-AZURE-COBRE-CLAUDE`).
+- **Efeito:** reforça a `D-DONO-2311-CLAUDE-SO-ORQUESTRA`: o Claude fica somente na orquestração e não sobe subagente sem o "pode" do dono. Na prática, o revisor de telas da J-641 (subagente) foi parado no meio, os processos dele foram mortos, o registro do worktree removido e o parecer parcial marcado SEM PARECER, para a cadeira C3 não esperá-lo nem usá-lo como veredito; a C3 mediu o painel pelo próprio item 3. Lição registrada: nenhum subagente do Claude sem autorização do dono.
+
+## D-DONO-2511-JUNTA-641-CODEX6 (2026-11-25 ~14:20 SP) — as cadeiras da J-641 vão para os Codex, com identidade nova
+
+- **Fato (palavras do dono):** *"Códex 6 com identidade nova"*.
+- **Efeito:** com a DeepSeek indisponível, as 3 cadeiras da J-641 tinham caído (o inspetor já tinha dado LIBERADO e o parcial estava gravado). Elas passam aos Codex como sucessoras pelo P3 — cada sucessor re-executa a evidência do caído —, com identidade nova. A conta 6 foi a do dev do bloco, e o dono a autorizou a votar; o cruzamento é declarado na ata e em cada voto. Leitura do orquestrador, declarada como tal: a cadeira C2 foi para a conta 7, sem relação com o bloco, para não enfileirar as 3 numa conta só.
+
+## D-DONO-2511-JUNTA-642-DEEPSEEK (2026-11-25 ~16:15 SP) — as cadeiras da J-642 na DeepSeek
+
+> **Id dado pelo redator do registro:** o REGISTRO gravou a decisão sem id. Ela entra aqui porque muda a composição de uma junta e ajusta a `D-DONO-2211-J2S-CADEIRAS-CLAUDE` para este caso (§A2, sem consolidação silenciosa).
+
+- **Fato (palavras do dono):** *"Claude, DeepSeek no grau. Vamos a ele?"* (a DeepSeek tinha sido recarregada).
+- **Efeito:** o inspetor e as 3 cadeiras da J-642 rodam na DeepSeek, no lugar do Claude Opus que o §12 do plano previa pela regra de 22/11. Ajusta a `D-DONO-2211-J2S-CADEIRAS-CLAUDE` para esta junta, declarado na base da J-642. Cruzamento declarado: o plano é do Claude e as Emendas 1.3 a 1.3.2 são do Argon; o código é do Codex (contas 6 e 7) e do Argon; a DeepSeek não escreveu nada.
+
+## D-DONO-2511-QWEN-BRACO-2-3 (2026-11-25 ~18:30 SP) — o Qwen entra como braço, com 2 a 3 tarefas em paralelo
+
+- **Fato (palavras do dono):** *"instale a extensao oficial"* (a extensão do Qwen no editor), *"os dados do Qwen"* (o Qwen no painel) e *"Claude, seu limite com o qwen é 2 a 3 tarefas."*.
+- **Efeito:** o Qwen entra como braço de trabalho, por assinatura (modelo de topo da casa, nível menor declarado), com perfil próprio e a chave fora do repositório, só em variável de usuário. Exceção à regra de uma tarefa por braço: até 2 a 3 tarefas em paralelo, só para o Qwen. O painel do orquestrador passa a mostrar o Qwen no padrão das outras IAs (nome, limite da assinatura, o que faz e a meta), dentro da assinatura. Estreou na auditoria do achado grave da J-642 e nas críticas do plano do `B-AUTH-LOGIN-PLATAFORMA` e da Emenda 1.2.
+
+## D-DONO-2511-USUARIO-COM-PAPEL (2026-11-25 ~19:04 SP) — cadastro de usuário só com papel definido
+
+- **Fato (palavras do dono):** *"pode ler o banco de produção pelo túnel e a pergunta do [Qwen] é não fazer nada, mas os usuários quando forem cadastrados tem que ter os papéis definidos, critério para cadastro"*.
+- **Efeito:** o cadastro de usuário só acontece com o papel definido, na mesma transação; sem papel, o ato é recusado e nada é gravado. Vira critério de aceite do cadastro, para a Emenda 1.4 do `B-PLAT-ORG-REAL` e para o bloco `B-AUTH-LOGIN-PLATAFORMA`. A pergunta opcional da auditoria do #642 (responder um 503 próprio quando os papéis globais não estão provisionados) não entra, pela resposta do dono. A leitura do banco de produção pelo túnel foi autorizada e feita só em leitura, com a transação desfeita no fim: os papéis globais existem em produção, e o risco de a 1ª organização real falhar por falta de papel não existe.

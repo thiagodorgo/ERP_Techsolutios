@@ -10596,6 +10596,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
 - **apenso 2026-11-20 (registro de 20/11; o nome `P-PLATFORM-TENANTS-EM-MEMORIA` do registro do orquestrador é esta mesma pendência, e não abre outra):** na F7 do `B-APP-ORG` (`f7-apporg-cl`, prova no emulador), o dev mediu que `POST /api/v1/platform/tenants` **não cria organização no banco**: `src/modules/platform/platform-tenants.repository.ts:48-60` é repositório em memória, com 2 organizações fictícias iniciais, e `create()` devolve um id `pten-<slug>`. Nenhuma rota HTTP cria organização no Postgres. A 2ª organização do teste saiu de `PrismaCoreSaasService.createTenant`, num script fora do repositório. O diário da F1 citava a rota de plataforma como a porta da 2ª organização, o que não confere.
 - **apenso 2026-11-21 (registro de 21/11; o nome `P-PLATAFORMA-CRIAR-ORGANIZACAO-SEM-CAMINHO` do registro do orquestrador é esta mesma pendência, e não abre outra):** os ensaios da prova E-69/E-70 (`prep-e5-cx3`, `prep-e6-cl` e `prep-e7-dp`) mediram na `origin/main` que `POST /api/v1/platform/tenants` grava só no repositório em memória mesmo com `CORE_SAAS_PERSISTENCE=prisma`, e que o único caminho que cria organização no banco é `scripts/demo-isolado/fundacao.ts`, que recusa base que não esteja virgem (`ALVO_NAO_VIRGEM`, código 3). Não há caminho de produto para criar 2 organizações no mesmo banco. Pela `D-DONO-2111-E1`, a prova cria os 2 pátios por script num banco descartável, e o conserto desta pendência vira um bloco próprio, depois. **Gravidade para o portão vendável (leitura do orquestrador):** ALTA, como já estava.
+- **apenso 2026-11-24 (registro de 24/11):** o dono aprovou o bloco que grava as organizações no banco (`D-DONO-2411-ORG-REAL-COM-TELA`). O dono dela passa a ser o bloco `B-PLAT-ORG-REAL`, cujo plano ficou pronto em 24/11 (`planos/plano-B-PLAT-ORG-REAL.md`, com as Emendas 1 e 1.1 e as respostas `D-DONO-2411-ORG-P1-P7` e `D-DONO-2411-ORG-PM1-PM3`).
 
 ## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
 
@@ -18042,11 +18043,12 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **nota (E11.10 do plano B-PATIO-LEILAO-DIARIAS):** a revenda mantém o **mesmo** período aberto do leilão.
 - **critério de encerramento:** após inadimplência, um ato autorizado cria nova rodada em lote e permite nova venda sem reabrir a quitação antiga, sem congelar diárias antes do pagamento e sem dois sucessos concorrentes de resgate e relote.
 
-## P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão deserto — MÉDIA
+## P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão deserto — FECHADA
 
-- **status:** ABERTA · **gravidade:** MÉDIA de fluxo · **dono:** bloco próprio `B-LEILAO-DESERTO-DEPOIS-DO-LOTE` · **bloqueia:** não o `B-LEILAO-REVENDA`.
+- **status:** FECHADA em 2026-11-25 · **gravidade:** MÉDIA de fluxo · **dono:** `B-LEILAO-DESERTO` · **bloqueia:** não mais.
 - **origem:** plano `B-LEILAO-REVENDA`, §11: a rodada deserta só é aceita antes do lote, e o veículo permanece em lote quando não há lance.
 - **critério de encerramento:** o produto registra, por ato autorizado e auditável, uma rodada em lote sem lance e conduz o processo ao próximo estado definido, com teste de produto para a primeira rodada e para a revenda.
+- **fechamento:** PR #641, squash `44a64521e`, por `D-DONO-2411-DESERTO-NO-MVP`: o ato novo (a rota de leilão sem venda depois do lote, com a permissão de resgate) registra a rodada em lote sem lance, fecha os editais loteados, devolve o veículo ao pátio em custódia ativa, emite o evento de leilão encerrado e faz a diária voltar a ser cobrada dentro do teto; o período de suspensão fecha no instante exato do ato. Espelhado nos dois repositórios (memória e banco). Provas: LD1 e LD2.
 
 ## P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem regra — ALTA
 
@@ -18133,11 +18135,12 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** P15 e Emenda 11.1 do `B-PATIO-LEILAO-DIARIAS`: o script apenas lista as linhas já pagas acima do teto; nenhuma linha paga é estornada automaticamente.
 - **critério de encerramento:** existe um ato autorizado e auditável que recebe a decisão caso a caso do dono, devolve o valor exato sem estorno automático ou duplicado e deixa teste de produto para autorização, idempotência e trilha financeira.
 
-## P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já concluída — ALTA
+## P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já concluída — FECHADA
 
-- **status:** ABERTA · **gravidade:** ALTA de fluxo · **dono:** `B-LEILAO-DESERTO`, §4.4 do plano · **bloqueia:** o fechamento dessa fatia do bloco.
+- **status:** FECHADA em 2026-11-25 · **gravidade:** ALTA de fluxo · **dono:** `B-LEILAO-DESERTO`, §4.4 do plano · **bloqueia:** não mais.
 - **origem:** a preparação e o lote não consultam as tentativas; o painel pode sugerir uma rodada que já tem resultado e conduzir a um lote que não pode ser vendido nem declarado deserto.
 - **critério de encerramento:** preparar e lotear recusam rodada que já tenha resultado, a sugestão do painel aponta a próxima rodada livre e testes de produto cobrem memória, banco e regressão da revenda.
+- **fechamento:** PR #641, squash `44a64521e`, por `D-DONO-2411-DESERTO-TRAVA-MESMO-BLOCO`: a preparação recusa com `prep_round_has_result` e o lote recusa com `lot_round_has_result`, nos dois repositórios, e o registro tardio de rodada mais antiga é recusado com `attempt_round_not_new` e `default_round_not_new` (`D-DONO-2411-DESERTO-D7-A`); o painel passa a sugerir a próxima rodada livre (`shouldShowDesertedAfterLot`). Provas: LD9, LD13, LD14 e LD15, em memória e em banco, mais a regressão da revenda (o RV20 ajustado para a rodada nova).
 
 ## P-LEILAO-SUCATA-RODADAS-FIXAS (2026-11-24) — sucata depende das rodadas fixas 1 e 2 — MÉDIA
 
@@ -18156,3 +18159,93 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** ALTA de regra temporal · **dono:** bloco próprio de data e prazo do leilão · **bloqueia:** não o `B-LEILAO-DESERTO`.
 - **origem:** plano do `B-LEILAO-DESERTO`: sem a data do leilão, o deserto e o arremate podem ser registrados antes do prazo do edital terminar.
 - **critério de encerramento:** o leilão tem data e prazo persistidos, os atos de arremate e deserto recusam execução antecipada e testes de produto cobrem o instante anterior, o limite e o instante posterior ao prazo.
+
+## P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO (2026-11-24) — avaliação de rodada com resultado era aceita e reescrevia sem rastro — FECHADA
+
+- **status:** FECHADA em 2026-11-24 · **gravidade:** ALTA de dinheiro · **dono:** `B-LEILAO-REVENDA` (o conserto único) · **bloqueia:** não mais.
+- **origem:** achado K3 da Emenda 2.4.1 da revenda: com o processo ainda elegível, a avaliação de uma rodada que já tem resultado era aceita e reescrevia sem evento a avaliação e o lance mínimo do certame encerrado (medido na base: `12000.00/6000.00` → `11000.00/5500.00`).
+- **fechamento:** PR #637, squash `cae731c0`, por `D-DONO-2411-REVENDA-K3-JUNTO`: a avaliação passa a ser recusada em todo estado quando o edital é de uma rodada que já tem resultado (`appraisal_round_has_result`), nos dois repositórios, com teste vermelho antes.
+
+## P-COMISSAO-A1-LITERAL (2026-11-24) — meta do A1 da comissão não reproduz o número real — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de registro/aceite · **dono:** o próximo bloco da comissão (`B-COMISSAO-SALDO` ou `-WEB`) · **bloqueia:** não.
+- **origem:** triagem da J-639: o plano pede `# pass >= 30` no A1, e a execução real mediu 22 (12 + 10), medida 4 vezes; o corpo do PR #639 e o diário do dev declararam 27. A meta do plano é inconsistente com o que o produto exercita.
+- **critério de encerramento:** o aceite A1 do plano é reescrito para o número que a execução reproduz (ou o caso passa a exercitar o número pedido), e o corpo, a ata e o diário declaram o número real.
+
+## P-COMISSAO-M-2N (2026-11-24) — meta `M >= 2N` da comissão não alcançada literalmente — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de registro · **dono:** o próximo bloco da comissão · **bloqueia:** não.
+- **origem:** triagem da J-639: a meta `M >= 2N` não foi alcançada literalmente (o "pelo menos 45" sim).
+- **critério de encerramento:** a meta de mutações do plano é reescrita para o que o produto exercita, ou o número é alcançado e medido por execução.
+
+## P-COMISSAO-M18-ANCORA (2026-11-24) — âncora da M18 da comissão com múltiplas ocorrências — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de registro · **dono:** o próximo bloco da comissão · **bloqueia:** não.
+- **origem:** triagem da J-639: a âncora `B-COMISSAO:total-sem-estorno` tem 3 ocorrências, e a M33 tem 2.
+- **critério de encerramento:** a âncora com múltiplas ocorrências é singularizada, ou a mutação passa a nomear a ocorrência exata, com a contagem conferida antes de cada mutação.
+
+## P-DNS-ZONA-EXPORT-CONFERIR (2026-11-24) — conferir a exportação da zona do provedor antigo — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA de continuidade de e-mail e site · **dono:** o orquestrador · **bloqueia:** não.
+- **origem:** incidente de DNS de 24/11 (17:20–17:27): na troca de servidores de nome, a zona nova só tinha NS, SOA e o CNAME de validação, e o domínio ficou sem site e sem e-mail por cerca de 7 minutos. Foram copiados 17 registros da zona do provedor antigo, conferidos 12 por amostra.
+- **critério de encerramento:** o responsável do cliente entrega a exportação da zona do provedor antigo, e o orquestrador confere se falta algum registro além dos 17 copiados; a lição de copiar a zona inteira antes da troca fica registrada no roteiro.
+
+## P-DNS-SPF-DUPLO (2026-11-24) — dois SPF no domínio do cliente — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de entrega de e-mail · **dono:** o responsável do cliente, a corrigir na AWS com o "pode" do dono · **bloqueia:** não.
+- **origem:** medição de 24/11: o domínio do cliente tem dois TXT de SPF no mesmo nome, o que é inválido pela norma. É pré-existente, e não é do sistema.
+- **critério de encerramento:** resta um único SPF válido no domínio do cliente, e a zona fica conforme a norma.
+
+## P-DNS-TTL-300 (2026-11-24) — os 17 registros copiados ficaram com TTL de 5 min — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de operação · **dono:** o orquestrador · **bloqueia:** não.
+- **origem:** restauração de DNS de 24/11: os 17 registros copiados para a zona nova entraram com TTL de 300 (5 min).
+- **critério de encerramento:** depois de 48 h estável, os registros sobem para TTL de 3600, com o "pode" do dono.
+
+## P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS (2026-11-24) — dois PUT /members simultâneos podem perder vínculo — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de corrida · **dono:** bloco de cobrança · **bloqueia:** não.
+- **origem:** Emenda 1.1 do plano `B-PLAT-ORG-REAL` (K8): dois `PUT …/members` simultâneos da tela de grupos podem terminar num conjunto que não é o de nenhum dos dois. O conserto fecha a perda por construção (um `addMember` novo pelo `applyMembershipChanges` existente), mas a corrida dos dois PUT simultâneos já existe hoje e fica para um bloco próprio; o desenho da trava está medido no plano.
+- **critério de encerramento:** dois `PUT …/members` simultâneos não perdem vínculo, com teste de corrida (barreira `pg_locks`) e mutação morta.
+
+## P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO (2026-11-24) — portal do proprietário atende uma filial por implantação — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA para a migração · **dono:** bloco do portal, antes da carga da 2ª filial · **bloqueia:** não o `B-PLAT-ORG-REAL`.
+- **origem:** Emenda 1 do plano `B-PLAT-ORG-REAL`: o portal do proprietário e o da autoridade atendem uma organização só por implantação, a do `PORTAL_TENANT_ID`. Com muitas filiais, o proprietário do veículo de uma filial sem essa configuração não tem portal.
+- **critério de encerramento:** o portal do proprietário e o da autoridade passam a atender cada filial da implantação, com a regra decidida, registrada e testada.
+
+## P-LEILAO-RAZOES-SEM-TEXTO (2026-11-24) — razões do relote sem tradução — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de tela · **dono:** o bloco do painel do leilão · **bloqueia:** não.
+- **origem:** R2 da E2.4-10 do plano da revenda: `lot_payment_pending`, `auction_daily_charges_missing` e `auction_daily_charges_unpostable` caem no texto genérico do 409, no lote e agora no relote.
+- **critério de encerramento:** cada uma das três razões tem texto próprio em `auction.adapter.ts`, e um caso afirma cada texto.
+
+## P-PAINEL-LEILAO-ENVIO-COMPARTILHADO (2026-11-24) — envio compartilhado no painel do leilão — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de tela · **dono:** o bloco do painel do leilão · **bloqueia:** não.
+- **origem:** R3 da E2.4-10 do plano da revenda: o `busy` é um só para todos os atos; salvar a avaliação põe "Loteando…" no relote, e o nome acessível do relote não acompanha o rótulo de envio. Mesmo padrão do "Lotear" e do "Preparar".
+- **critério de encerramento:** só o botão do ato em curso mostra o rótulo de envio, o nome acessível acompanha o texto visível, e um teste no molde "-live" cobre.
+
+## P-UI-BUTTON-FOCO-VISIVEL (2026-11-24) — `.ui-button` sem foco visível próprio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de acessibilidade · **dono:** o bloco de acessibilidade da biblioteca de componentes · **bloqueia:** não.
+- **origem:** R4 da E2.4-10 do plano da revenda: `.ui-button` não tem regra própria de `:hover` nem de `:focus-visible`; o foco depende do contorno do navegador, no sistema inteiro.
+- **critério de encerramento:** `git grep -n -E "\.ui-button[a-z-]*:(hover|focus-visible)"` acha pelo menos um resultado de cada, e a conferência visual confirma.
+
+## P-AWS-CLOUDFRONT-CONTA-VERIFICADA (2026-11-24) — a conta precisava de verificação para criar distribuição do CloudFront — FECHADA
+
+- **status:** FECHADA em 2026-11-25 · **gravidade:** ALTA de continuidade do roteiro · **dono:** o dono (só ele abre o pedido ao Suporte) · **bloqueia:** não mais.
+- **origem:** passo 4.6 do roteiro da AWS, em 24/11 às 20:26: a criação da distribuição foi recusada porque a conta precisa de verificação antes de criar recursos do CloudFront, e o pedido ao Suporte só o dono abre (a API de suporte não funciona no plano básico). Os passos 4.7 (o build e a publicação), 4.8 (a política do papel do GitHub) e 5.5 (o registro do app no domínio) ficaram esperando.
+- **fechamento:** 25/11, 11:29–11:33: o Suporte aprovou o pedido de cota de distribuições web, o dono refez o login e a distribuição foi criada (o alias do app, o certificado do app e duas origens: o bucket privado e a API), com a política do bucket restrita a essa distribuição; implantação concluída às 11:33. Os passos que esperavam foram feitos no mesmo dia: o 4.7 (129 arquivos publicados, com cache longo nos assets e sem cache no índice), o 4.8 (a política do papel do GitHub, com 4 declarações) e o 5.5 (os registros do app no domínio, por criação, apontando para a distribuição). O endereço do app respondeu 200, com TLS válido.
+
+## P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO (2026-11-25) — a saúde diz que o login sem organização está inativo, mas o login responde 200 — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de operação e de leitura da saúde · **dono:** o bloco `B-AUTH-LOGIN-PLATAFORMA` · **bloqueia:** não.
+- **origem:** passo 6.8 do roteiro da AWS, em 25/11: depois da concessão de execução da função de candidatos ao login e da reciclagem da tarefa da API, o login sem organização do administrador de plataforma respondeu 200 com `authenticated: true`, mas a saúde continuou dizendo `login_without_org: inactive` (3 leituras, 1 tarefa, 1 implantação). Hipótese registrada: a sonda do boot exige que a dona da função tenha atributo elevado, e a dona atual não tem. O login funciona mesmo assim.
+- **critério de encerramento:** a saúde e o login concordam (a saúde passa a dizer que o login sem organização está ativo), ou o plano do bloco registra, medido, por que divergem e o que a saúde passa a afirmar.
+
+## P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computador — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de tela (classificação do redator do registro; o REGISTRO não deu gravidade) · **dono:** um bloco de tela, quando o dono priorizar · **bloqueia:** não.
+- **origem:** uso real do dono no celular, em 25/11, na Cobrança da plataforma: o console web abre no layout de computador, o menu lateral não recolhe e o seletor de organização fica cortado à direita.
+- **critério de encerramento:** o console web responde no celular com o menu lateral recolhível e o seletor de organização inteiro na tela, com teste de tela que cubra a largura estreita.
