@@ -9,6 +9,14 @@ export type PlatformOrganizationRow = PlatformOrganization & {
 
 export type OrganizationStatusFilter = "all" | "active" | "suspended" | "incomplete";
 
+export type OrganizationsTableDensity = "full" | "medium" | "narrow";
+
+export function organizationsTableDensity(width: number): OrganizationsTableDensity {
+  if (width <= 600) return "narrow";
+  if (width <= 860) return "medium";
+  return "full";
+}
+
 export function sortByUsersDesc(rows: readonly PlatformOrganizationRow[]): readonly PlatformOrganizationRow[] {
   return [...rows].sort((left, right) => {
     if (left.userCount === null) return right.userCount === null ? 0 : 1;

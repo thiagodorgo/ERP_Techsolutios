@@ -29,3 +29,9 @@ test("FV1 superfícies novas usam tokens, sem paleta ou fallback de plano própr
   assert.match(section, /var\(--surface-panel\)/);
   assert.match(section, /var\(--color-core-primary\)/);
 });
+
+test("C25 linha estática neutraliza cursor e hover fora da tela de organizações", () => {
+  const css = readFileSync(new URL("src/styles/app.css", ROOT), "utf8");
+  assert.ok((css.match(/^\.pat-ab-row--static/gm) ?? []).length >= 2);
+  assert.doesNotMatch(css, /^\.platform-organizations \.pat-ab-row--static\{cursor/gm);
+});

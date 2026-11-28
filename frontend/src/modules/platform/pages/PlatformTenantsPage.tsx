@@ -1,5 +1,5 @@
 import { Building2, CircleAlert, Plus, Search, Users } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { DenseTable } from "../../../components/dense-list";
@@ -11,8 +11,10 @@ import { OrganizationDetailPanel } from "../components/OrganizationDetailPanel";
 import { NewOrganizationDialog } from "../components/NewOrganizationDialog";
 import {
   filterPlatformOrganizations,
+  organizationsTableDensity,
   sortByUsersDesc,
   type OrganizationStatusFilter,
+  type OrganizationsTableDensity,
   type PlatformOrganizationRow,
 } from "../platform-organizations.state";
 import { usePlatformOrganizations, type PlatformOrganizationsStatus } from "../usePlatformOrganizations";
@@ -28,6 +30,30 @@ const widths = {
   modules: "calc(9.353% - 2.058px)",
   createdAt: "calc(12.230% - 2.691px)",
 } as const;
+
+const mediumWidths = {
+  organization: "36.13%",
+  group: "23.48%",
+  status: "26.19%",
+  users: "10.84%",
+} as const;
+
+function useOrganizationsTableDensity() {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [density, setDensity] = useState<OrganizationsTableDensity>("full");
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setDensity(organizationsTableDensity(entry.contentRect.width));
+    });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  return { density, sectionRef } as const;
+}
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -48,6 +74,8 @@ export type PlatformTenantsViewProps = {
   readonly rows: readonly PlatformOrganizationRow[];
   readonly status?: PlatformOrganizationsStatus;
   readonly stale?: boolean;
+  readonly density?: OrganizationsTableDensity;
+  readonly sectionRef?: Ref<HTMLElement>;
   readonly query?: string;
   readonly groupId?: string;
   readonly statusFilter?: OrganizationStatusFilter;
@@ -68,6 +96,8 @@ export function PlatformTenantsView({
   rows,
   status = rows.length ? "ready" : "empty",
   stale = false,
+  density = "full",
+  sectionRef,
   query = "",
   groupId = "",
   statusFilter = "all",
@@ -103,12 +133,14 @@ export function PlatformTenantsView({
   }, [expandedId, onExpandedIdChange, visible]);
 
   const columns: readonly DenseColumn<PlatformOrganizationRow>[] = [
-    { key: "organization", header: "ORGANIZAÇÃO", width: widths.organization, render: (row) => <span className="platform-organizations__name"><span className="platform-organizations__avatar" aria-hidden="true"><Building2 size={14} /></span><span title={row.name}>{row.name}</span>{row.system ? <span className="ui-badge" aria-label="Organização de sistema" title="Organização de sistema">Sistema</span> : null}</span> },
-    { key: "group", header: "GRUPO", width: widths.group, render: (row) => <span title={row.group?.name}>{row.group?.name ?? "—"}</span> },
-    { key: "status", header: "SITUAÇÃO", width: widths.status, render: (row) => <span className="platform-organizations__status"><StatusPill label={statusLabel(row.status)} bg="var(--surface-panel-muted)" fg={`var(--color-status-${row.status === "active" ? "success" : row.status === "suspended" ? "danger" : "warning"})`} dot={`var(--color-status-${row.status === "active" ? "success" : row.status === "suspended" ? "danger" : "warning"})`} sm />{!row.setup.complete ? <span className="ui-badge" title="Cadastro incompleto">incompleto</span> : null}{row.countsStale ? <span title="Contagens aguardando atualização">Dados desatualizados</span> : null}</span> },
-    { key: "users", header: "USUÁRIOS", width: widths.users, align: "right", tabular: true, render: (row) => formatCount(row.userCount) },
-    { key: "modules", header: "MÓDULOS", width: widths.modules, align: "right", tabular: true, render: (row) => formatCount(row.moduleCount) },
-    { key: "createdAt", header: "CRIADA EM", width: widths.createdAt, align: "right", tabular: true, render: (row) => formatDate(row.createdAt) },
+    { key: "organization", header: "ORGANIZAÇÃO", width: density === "narrow" ? "100%" : density === "medium" ? mediumWidths.organization : widths.organization, render: (row) => <span className="platform-organizations__name">{density !== "narrow" ? <span className="platform-organizations__avatar" aria-hidden="true"><Building2 size={14} /></span> : null}<span title={row.name}>{row.name}</span>{row.system ? <span className="ui-badge" aria-label="Organização de sistema" title="Organização de sistema">Sistema</span> : null}{density === "narrow" ? <span className="platform-organizations__group-inline">· {row.group?.name ?? "Sem grupo"}</span> : null}</span> },
+    ...(density !== "narrow" ? [{ key: "group", header: "GRUPO", width: density === "medium" ? mediumWidths.group : widths.group, render: (row: PlatformOrganizationRow) => <span title={row.group?.name}>{row.group?.name ?? "—"}</span> } satisfies DenseColumn<PlatformOrganizationRow>] : []),
+    { key: "status", header: "SITUAÇÃO", width: density === "narrow" ? "1%" : density === "medium" ? mediumWidths.status : widths.status, render: (row) => <span className="platform-organizations__status"><StatusPill label={statusLabel(row.status)} bg="var(--surface-panel-muted)" fg={`var(--color-status-${row.status === "active" ? "success" : row.status === "suspended" ? "danger" : "warning"})`} dot={`var(--color-status-${row.status === "active" ? "success" : row.status === "suspended" ? "danger" : "warning"})`} sm />{!row.setup.complete ? <span className="ui-badge" title="Cadastro incompleto">incompleto</span> : null}{row.countsStale ? <span title="Contagens aguardando atualização">Dados desatualizados</span> : null}</span> },
+    ...(density !== "narrow" ? [{ key: "users", header: "USUÁRIOS", width: density === "medium" ? mediumWidths.users : widths.users, align: "right", tabular: true, render: (row: PlatformOrganizationRow) => formatCount(row.userCount) } satisfies DenseColumn<PlatformOrganizationRow>] : []),
+    ...(density === "full" ? [
+      { key: "modules", header: "MÓDULOS", width: widths.modules, align: "right", tabular: true, render: (row: PlatformOrganizationRow) => formatCount(row.moduleCount) } satisfies DenseColumn<PlatformOrganizationRow>,
+      { key: "createdAt", header: "CRIADA EM", width: widths.createdAt, align: "right", tabular: true, render: (row: PlatformOrganizationRow) => formatDate(row.createdAt) } satisfies DenseColumn<PlatformOrganizationRow>,
+    ] : []),
   ];
   const pageHeader = (
     <PageHeader
@@ -119,13 +151,13 @@ export function PlatformTenantsView({
     />
   );
 
-  if (status === "loading") return <section className="platform-organizations page-stack">{pageHeader}<Skeleton lines={7} /></section>;
-  if (status === "forbidden") return <section className="platform-organizations page-stack">{pageHeader}<ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar as organizações da plataforma." /></section>;
-  if (status === "error") return <section className="platform-organizations page-stack">{pageHeader}<ErrorState title="Não foi possível carregar as organizações" detail="Tente novamente para consultar a lista completa." /><button type="button" className="pat-btn" onClick={onRetry}>Tentar novamente</button></section>;
-  if (status === "empty") return <section className="platform-organizations page-stack">{pageHeader}<EmptyState title="Nenhuma organização encontrada" detail="Ainda não há organizações cadastradas na plataforma." /></section>;
+  if (status === "loading") return <section ref={sectionRef} className="platform-organizations page-stack">{pageHeader}<Skeleton lines={7} /></section>;
+  if (status === "forbidden") return <section ref={sectionRef} className="platform-organizations page-stack">{pageHeader}<ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar as organizações da plataforma." /></section>;
+  if (status === "error") return <section ref={sectionRef} className="platform-organizations page-stack">{pageHeader}<ErrorState title="Não foi possível carregar as organizações" detail="Tente novamente para consultar a lista completa." /><button type="button" className="pat-btn" onClick={onRetry}>Tentar novamente</button></section>;
+  if (status === "empty") return <section ref={sectionRef} className="platform-organizations page-stack">{pageHeader}<EmptyState title="Nenhuma organização encontrada" detail="Ainda não há organizações cadastradas na plataforma." /></section>;
 
   return (
-    <section className="platform-organizations page-stack">
+    <section ref={sectionRef} className="platform-organizations page-stack">
       {pageHeader}
       {stale ? <Alert title="Dados desatualizados" tone="warning">A última atualização falhou. O último conjunto completo continua visível.</Alert> : null}
       <div className="platform-organizations__kpis">
@@ -174,6 +206,7 @@ export function PlatformTenantsPage() {
   const { permissions } = usePermissions();
   const has = (permission: string) => permissions.includes(permission);
   const organizations = usePlatformOrganizations();
+  const table = useOrganizationsTableDensity();
   const [expandedId, setExpandedId] = useState<string | null>(() => params.get("org"));
   const [createOpen, setCreateOpen] = useState(false);
   const query = params.get("q") ?? "";
@@ -187,7 +220,7 @@ export function PlatformTenantsPage() {
   const returnSearch = params.toString() ? `?${params.toString()}` : "";
 
   return <>
-    <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} query={query} groupId={groupId} statusFilter={statusFilter} order={order} expandedId={expandedId} canCreate={has("platform:tenants:create")} onCreate={() => setCreateOpen(true)} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onOrderChange={(value) => write("ordem", value ?? "")} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} renderDetail={(row) => <OrganizationDetailPanel organization={row} returnSearch={returnSearch} permissions={actionPermissions} onRefreshList={() => void organizations.refresh(false)} />} />
+    <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} density={table.density} sectionRef={table.sectionRef} query={query} groupId={groupId} statusFilter={statusFilter} order={order} expandedId={expandedId} canCreate={has("platform:tenants:create")} onCreate={() => setCreateOpen(true)} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onOrderChange={(value) => write("ordem", value ?? "")} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} renderDetail={(row) => <OrganizationDetailPanel organization={row} returnSearch={returnSearch} permissions={actionPermissions} onRefreshList={() => void organizations.refresh(false)} />} />
     {createOpen ? <NewOrganizationDialog onClose={() => setCreateOpen(false)} onCreated={() => void organizations.refresh(false)} permissions={actionPermissions} /> : null}
   </>;
 }

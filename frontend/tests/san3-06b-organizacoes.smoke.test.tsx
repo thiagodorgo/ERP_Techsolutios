@@ -6,7 +6,7 @@ import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 
 import { PlatformTenantsScreen, PlatformTenantsView } from "../src/modules/platform/pages/PlatformTenantsPage";
-import { composePlatformOrganizations } from "../src/modules/platform/platform-organizations.state";
+import { composePlatformOrganizations, organizationsTableDensity } from "../src/modules/platform/platform-organizations.state";
 import { listPlatformTenants } from "../src/modules/platform/platform.service";
 import type { PlatformOverviewData } from "../src/modules/platform/platform-overview.types";
 import { ORGANIZATION_A, ORGANIZATION_SYSTEM } from "./helpers/plat-org.fixture";
@@ -126,4 +126,28 @@ test("T9 texto visível não expõe endpoint/termo técnico e a ação de criar 
   assert.doesNotMatch(visible, /\/api\/|tenant|rbac|permission/i);
   assert.doesNotMatch(without, /Nova organização/);
   assert.match(withPermission, /Nova organização/);
+});
+
+test("T-DENS densidade da tabela deriva da largura do conteúdo", () => {
+  assert.equal(organizationsTableDensity(861), "full");
+  assert.equal(organizationsTableDensity(860), "medium");
+  assert.equal(organizationsTableDensity(601), "medium");
+  assert.equal(organizationsTableDensity(600), "narrow");
+});
+
+test("T7-e tabela adapta colunas e grupo pela densidade", () => {
+  const firstRowCellCount = (html: string) => {
+    const row = html.match(/<tbody><tr[^>]*pat-ab-row[^>]*>([^]*?)<\/tr>/)?.[1] ?? "";
+    return (row.match(/<td\b/g) ?? []).length;
+  };
+  const full = render({ density: "full" });
+  const medium = render({ density: "medium" });
+  const narrow = render({ density: "narrow" });
+
+  assert.equal(firstRowCellCount(full), 7);
+  assert.equal(firstRowCellCount(medium), 5);
+  assert.doesNotMatch(medium, />MÓDULOS<|>CRIADA EM</);
+  assert.equal(firstRowCellCount(narrow), 3);
+  assert.doesNotMatch(narrow, />GRUPO<|>USUÁRIOS<|>MÓDULOS<|>CRIADA EM</);
+  assert.match(narrow, /platform-organizations__group-inline[^]*?Grupo Teste/);
 });
