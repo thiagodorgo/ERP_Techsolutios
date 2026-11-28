@@ -1829,3 +1829,649 @@ Todo conteúdo comercial foi deliberadamente omitido. Onde as fontes tratam de p
 ### 6. Fontes públicas consultadas
 
 As URLs de produto constam ao lado de cada concorrente. A referência normativa consultada foi a Resolução CONTRAN 1.025/2026: https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-contran/resolucoes/resolucao10252026c.pdf. A pesquisa também usou material público de órgão estadual, mas não leu integralmente todos os documentos; qualquer decisão de conformidade exige conferência da fonte primária aplicável.
+
+---
+
+## PD-ANTIVIRUS-BASE-PARADA-2026-11-28 — base diária do ClamAV parada na 28194: causa, prazo e o portão que recusa arquivo com base acima de 72 h (2026-11-28)
+
+> **Origem e redação.** Pesquisa do fluxo `pesquisa-antivirus`, em 28/11/2026: **3 pesquisadores web**, **1 síntese**
+> e **1 verificação adversarial** que releu as 47 fontes (**44 confirmadas, 2 derrubadas e 1 sem acesso**) — todos
+> Claude. **Redação desta entrada:** `pd-antivirus-qw`, a partir da síntese e das correções da verificação. O
+> redator não refez a pesquisa; conferiu apenas as 4 fontes trocadas ou completadas (F19, F26, F30 e F41) e as URLs
+> que entraram no lugar das de terceiros (F3/F5, F17 e F44).
+>
+> **Esta PD não decide nada.** A e B (§6) são as opções do dono agora; D1 a D5 (§7) são desenho de portão para bloco
+> futuro; a recomendação do §8 **não é padrão** — a decisão é do dono. Registro feito antes da decisão, como manda a
+> regra da dúvida.
+
+### 0. Pergunta, data e como ler
+
+- **Pergunta.** A base diária do ClamAV parou na versão **28194**, de **25/11/2026**: por quê, até quando, e o que
+  fazer com o portão que **recusa todo arquivo quando a base passa de 72 horas**?
+- **Data.** Pesquisa e medições em **28/11/2026**. Horas em **UTC**; entre parênteses, quando útil, a hora de São
+  Paulo (UTC-3, "SP"). "Lida em" é a data em que o pesquisador abriu a página.
+- **Termos.** **daily** é a base diária de assinaturas (`daily.cvd`). **TXT** é o registro que o fornecedor publica
+  no DNS com as versões mais novas. **CDN** é a rede que entrega os arquivos da base. **cdiff** é a atualização de
+  uma versão para a seguinte. **freshclam** é o atualizador. **clamd** é o serviço que varre os arquivos.
+  **zVERSION** é o comando que pergunta ao clamd a versão e a data da base carregada.
+- **Repositório público.** Nenhuma URL desta entrada traz nome de usuário nem de empresa: três fontes de terceiros
+  ficam **descritas** em vez de linkadas (F3/F6, F17 e F44), e as mensagens de lista são citadas **sem o nome de
+  quem escreveu**.
+
+### 1. Medições próprias de 28/11/2026 (M1 a M4)
+
+Medidas pelo orquestrador das 02:14 às 02:40 SP (05:14 às 05:40 UTC).
+
+- **M1.** O TXT de `current.cvd.clamav.net` diz `1.4.7:63:28194:1795842000:1:90:49192:339`. O 4º campo é o carimbo
+  do registro: 28/11/2026 05:00 UTC (02:00 SP). O 3º campo, **28194**, é a versão da daily (F30).
+  Fonte: consulta DNS do TXT de `current.cvd.clamav.net`, em 28/11/2026.
+- **M2.** O cabeçalho da `daily.cvd` (512 bytes, pedidos com User-Agent ClamAV/1.4.7) diz
+  `ClamAV-VDB:25 Nov 2026 06-26 +0000:28194:355842:90:...`, e o servidor responde
+  `Last-Modified: Wed, 25 Nov 2026 06:26:00 GMT`.
+  Fonte: https://database.clamav.net/daily.cvd, em 28/11/2026.
+- **M3.** A atualização seguinte, `daily-28195.cdiff`, responde **404**: não existe.
+  Fonte: https://database.clamav.net/daily-28195.cdiff, em 28/11/2026.
+- **M4.** O sistema em produção usa **ClamAV 1.4.7**, com o clamd por TCP, e **recusa todo arquivo quando a base
+  passa de 72 h**. Mede a idade pela data que o zVERSION devolve (a data de montagem da base diária; F24). Com a
+  28194, isso acontece por volta de **28/11/2026 06:27 UTC (03:27 SP)**.
+  Fonte: medição do orquestrador no sistema, em 28/11/2026.
+
+### 2. Fatos, cada um com a fonte (F1 a F47)
+
+O sistema usa a **1.4.7**. Um pesquisador leu o código na tag `clamav-1.4.7`; outro, no ramo `rel/1.4` e, em alguns
+arquivos, no ramo `main`. Cada fato diz onde.
+
+**A parada atual**
+
+- **F1.** A lista oficial de avisos de publicação (clamav-virusdb) tem **24 avisos em novembro de 2026**: da 28171
+  (01/11, 06:27:47 UTC) à **28194** (25/11, 06:27:12 UTC, ou 03:27 SP). Não há aviso depois, nem aviso de atraso.
+  Um pesquisador releu a página duas vezes em 28/11.
+  Fonte: https://lists.clamav.net/pipermail/clamav-virusdb/2026-November/date.html (lida em 28/11/2026).
+- **F2.** O aviso da 28194 vem do publicador automático (`svc.clamav-publisher`): **0 assinaturas novas**, 1 removida
+  e 40 ignoradas. A página tem link para a mensagem anterior (a 28193) e **nenhum** para uma seguinte.
+  Fonte: https://lists.clamav.net/pipermail/clamav-virusdb/2026-November/009555.html (25/11/2026, 06:27:12 UTC).
+- **F3.** O carimbo de montagem da 28194, em segundos, é **1795588019**: 25/11/2026 **06:26:59 UTC** (03:26:59 SP);
+  a verificação refez a conta e confirma. Na lista clamav-users a mesma base aparece como
+  `28194/Wed Nov 25 07:26:59 2026`; a hora a mais deve ser o fuso de quem escreveu (leitura do redator).
+  Fontes: https://lists.clamav.net/pipermail/clamav-users/2026-November/014573.html (27/11/2026);
+  https://database.clamav.net/daily.cvd (cabeçalho e `Last-Modified`, M2, 28/11/2026); e o registro público do CI de
+  outro projeto, 27/11/2026 (URL omitida: repositório de terceiro com nome de empresa no caminho).
+- **F4.** No GitHub oficial, a **issue #1949** foi aberta em 28/11/2026, às 03:07 UTC, por um usuário sem selo da
+  equipe (`author_association: NONE`). Pede que a equipe confirme o estado da publicação depois da 28194 e diz que o
+  TXT dá 28194 no Google Public DNS e na Cloudflare, que a lista termina na 28194 e que **três espelhos públicos**
+  mostram a mesma versão. Está **sem resposta, sem rótulo e sem responsável**.
+  Fonte: https://github.com/Cisco-Talos/clamav/issues/1949 (aberta e lida em 28/11/2026; hora conferida pela API).
+- **F5.** *(corrigida pela verificação)* Na lista oficial clamav-users, em 27/11/2026, dois usuários mostram a 28194
+  de 25/11: um no **ClamAV 1.5.4** (Ubuntu 26.04.1), outro no **1.5.3**. **Só o primeiro pede explicação**: pergunta
+  se a versão pode ser aquela mesmo e, na mensagem seguinte, diz que o freshclam também dá 28194 como última versão
+  remota e pede esclarecimento à equipe. **O segundo só cola a própria saída**
+  (`ClamAV 1.5.3/28194/Wed Nov 25 07:26:59 2026`), sem pergunta nem pedido. Não há resposta da equipe no arquivo.
+  Fontes: https://lists.clamav.net/pipermail/clamav-users/2026-November/014573.html (12:49:04 UTC);
+  https://lists.clamav.net/pipermail/clamav-users/2026-November/014574.html (13:57:52 UTC);
+  https://lists.clamav.net/pipermail/clamav-users/2026-November/014575.html (14:06:04 UTC) — todas de 27/11/2026,
+  lidas em 28/11/2026 (ver V1).
+- **F6.** No CI de outro projeto, em 27/11/2026, a checagem de frescor do antivírus **falhou**: a daily baixada era a
+  28194, com **160.025 s** de idade (cerca de 44,5 h) contra um limite de 86.400 s, e o freshclam saindo com 0. Às
+  03:46 UTC (00:46 SP), o Google Public DNS e a Cloudflare davam 28194 no TXT. O autor aponta a publicação como
+  causa **provável**, sem confirmar.
+  Fonte: o registro público do CI de outro projeto, 27/11/2026 (URL omitida: repositório de terceiro com nome de
+  empresa no caminho).
+- **F7.** Na **issue #1948**, em 27/11/2026: às 14:57 UTC o freshclam 1.4.7 dava a 28194 (main 63, bytecode 339)
+  como em dia, e o TXT anunciava 28194 com carimbo das 14:29 UTC. Às **14:59:07 UTC** o CDN respondeu **HTTP 429**
+  com `Retry-After` de **24680 s** (6 h 51 min). Nenhum mantenedor comentou. Detalhe útil: o mesmo relato diz que o
+  1.4.7 gravou uma espera de só **21600 s (6 h)**, menor que o `Retry-After`.
+  Fonte: https://github.com/Cisco-Talos/clamav/issues/1948 (27/11/2026; lida em 28/11/2026).
+- **F8.** *(com ressalva da verificação)* Um pesquisador consultou o TXT por conta própria e achou o mesmo texto de
+  M1. Pelo cálculo dele (a partir do serial do SOA de .net, 1795845193), a consulta foi depois de 05:53 UTC
+  (02:53 SP). A resposta **não é autenticada por DNSSEC** (`AD: false`), e a consulta DS de clamav.net só devolve o
+  SOA de .net. **Ressalva:** o carimbo do TXT muda a cada hora — na releitura da verificação veio
+  `1.4.7:63:28194:1795845600:1:90:49192:339` (carimbo das 06:00 UTC de 28/11, ainda 28194, demais campos iguais aos
+  de M1); o texto exato visto pelo pesquisador não se reproduz.
+  Fontes: https://dns.google/resolve?name=current.cvd.clamav.net&type=TXT e
+  https://dns.google/resolve?name=clamav.net&type=DS (28/11/2026).
+- **F9.** O blog oficial **não fala da parada**. O post mais recente, de 18/11/2026, trata do lançamento da 1.5.5 e
+  da 1.4.7 e não fala de atraso, pausa, CDN nem da base diária.
+  Fonte: https://blog.clamav.net/2026/11/clamav-155-147-security-patch-release.html (publicado em 18/11/2026; lido em
+  28/11/2026).
+- **F10.** A lista oficial clamav-announce tem **4 mensagens em 2026** (de 04/03 a 18/11), todas sobre lançamentos da
+  1.4.x e da 1.5.x. Nenhuma fala da base, de pausa ou do CDN.
+  Fonte: https://lists.clamav.net/pipermail/clamav-announce/2026/date.html (lida em 28/11/2026).
+- **F11.** A fala mais próxima de uma explicação oficial é **genérica e anterior à parada**. Na issue #1908, sobre a
+  28173, uma conta que escreve "our daily build" (selo Contributor no GitHub; ver H8) disse: "On occasion our daily
+  build does not run due to an unexpected error." Disse ainda que uma régua de 24 h é estrita demais: "You may wish
+  to set it to 48 hours or even 72 hours."
+  Fonte: https://github.com/Cisco-Talos/clamav/issues/1908 (comentário de 18/11/2026; lido em 28/11/2026).
+- **F12.** Um pesquisador abriu **5 dailies de novembro** (28173, 28174, 28190, 28193 e 28194). **Nenhuma trouxe
+  assinatura nova**: só remoções e assinaturas ignoradas. A 28190 saiu em 21/11, 06:27:19 UTC, e a 28193 em 24/11,
+  06:27:56 UTC.
+  Fontes: avisos da clamav-virusdb de 03/11 a 25/11/2026, por exemplo
+  https://lists.clamav.net/pipermail/clamav-virusdb/2026-November/009554.html (28193) e o de F2 (28194); lidos em
+  28/11/2026.
+
+**Paradas anteriores**
+
+- **F13. De 03 a 05/11/2026, cerca de 48 h.** A 28173 saiu em 03/11, 06:28:04 UTC, e a 28174 só em 05/11, 06:26:37
+  UTC. O dia 04/11 ficou sem publicação. A issue #1907, aberta em 05/11 às 00:44 UTC, relatou o mesmo quadro de
+  agora: base parada, `daily-28174.cdiff` dando 404 e TXT em 28173 no 1.1.1.1 e no 8.8.8.8. O próprio autor fechou a
+  issue em 09/11, sem causa e sem comentário da equipe.
+  Fontes: https://lists.clamav.net/pipermail/clamav-virusdb/2026-November/009534.html (03/11/2026);
+  https://lists.clamav.net/pipermail/clamav-virusdb/2026-November/009535.html (05/11/2026);
+  https://github.com/Cisco-Talos/clamav/issues/1907 (aberta em 05/11/2026, fechada em 09/11/2026).
+- **F14. De 14 a 17/11/2025, cerca de 84,6 h, acima de 72 h.** A 27822 saiu em 14/11/2025, 09:08:34 UTC, e a 27823 só
+  em 17/11/2025, 21:47:21 UTC. Um membro da equipe, escrevendo de endereço institucional do fornecedor, atribuiu a
+  parada a uma falha no build agendado de sábado: "There was an issue during Saturday's scheduled CVD build, and the
+  team resolved it." Segundo um dos relatos, essa primeira resposta (17/11, 17:44 UTC) dava as atualizações como
+  normais e estava errada: a 27823 só saiu às 21:47 UTC. No dia seguinte (18/11, 15:00 UTC), veio a correção: "the
+  daily was published last night at 5PM EST".
+  Fontes: https://lists.clamav.net/pipermail/clamav-users/2025-November/014398.html (17/11/2025, 17:44 UTC);
+  https://lists.clamav.net/pipermail/clamav-users/2025-November/014400.html (18/11/2025, 15:00 UTC);
+  https://lists.clamav.net/pipermail/clamav-virusdb/2025-November/009208.html (27822, 14/11/2025);
+  https://lists.clamav.net/pipermail/clamav-virusdb/2025-November/009209.html (27823, 17/11/2025).
+- **F15. Outubro de 2025, cerca de 4,7 dias.** Um usuário relatou TXT e freshclam parados na 27780 desde 01/10/2025,
+  23:13 no horário local dele. A equipe, em mensagem com assinatura institucional do desenvolvimento do fornecedor,
+  disse que "something is wrong in between the build and publishing to database.clamav.net" e deu o caso por
+  resolvido em 06/10/2025, 19:09 UTC. Nesse caso, a lista de avisos continuou (27782 em 04/10) enquanto o CDN não
+  servia.
+  Fontes: https://lists.clamav.net/pipermail/clamav-users/2025-October/014346.html (relato) e
+  https://lists.clamav.net/pipermail/clamav-users/2025-October/014351.html (06/10/2025).
+- **F16.** Em 2025, o feriado de Ação de Graças dos EUA **não parou a base**: no próprio dia (27/11/2025) saiu a
+  27833, às 09:13:51 UTC, e a 27835 saiu em 29/11/2025.
+  Fontes: https://lists.clamav.net/pipermail/clamav-virusdb/2025-November/009219.html (27/11/2025) e
+  https://lists.clamav.net/pipermail/clamav-virusdb/2025-November/009221.html (29/11/2025).
+- **F17.** Atraso entre montar e anunciar: em setembro de 2026, um projeto de terceiros registrou que a 28132 foi
+  montada às 06:24 e só apareceu no DNS às 07:00 UTC, **cerca de 36 min depois**.
+  Fonte: registro público de um projeto de terceiros, 23/09/2026 (URL omitida: repositório pessoal de terceiro).
+
+**Ritmo normal de publicação**
+
+- **F18.** A FAQ oficial diz que a base "is usually updated once or twice per day". Antes de publicar, a equipe testa
+  se ela carrega nas duas últimas séries estáveis.
+  Fonte: https://docs.clamav.net/faq/faq-cvd.html (lida em 28/11/2026).
+- **F19.** *(fonte trocada pela verificação)* Em **27/07/2020, 22:09 UTC**, a equipe escreveu na lista que só publica
+  uma vez por dia: "...we also only release updates once a day." A frase vinha citada a partir da resposta posterior
+  de um usuário; a mensagem da equipe é a que anuncia o post do blog sobre freshclam, cdiffs e banda.
+  Fonte: https://lists.clamav.net/pipermail/clamav-users/2020-July/009661.html (27/07/2020; lida em 28/11/2026).
+- **F20.** O blog oficial diz que a daily é atualizada todo dia ("updated daily") e que o TXT de
+  `current.cvd.clamav.net` traz a versão da última daily publicada.
+  Fonte: https://blog.clamav.net/2021/03/clamav-cvds-cdiffs-and-magic-behind.html (publicado em 19/03/2021).
+- **F21.** Medido na lista de avisos em 2026: **cerca de 1 publicação por dia**. Outubro teve 31 avisos em 31 dias (da
+  28140, em 01/10 às 06:24:51 UTC, à 28170, em 31/10 às 06:24:54 UTC). Fevereiro teve 28 em 28 dias; maio, 30 em 31;
+  junho, 30 em 30; julho, 31 em 31; agosto, 31 em 31; setembro, 30 em 30; janeiro, 32 (um dia com 2). O horário fica
+  perto de 06:25 UTC (03:25 SP) desde abril, e perto de 07:25 UTC de janeiro a março.
+  Fonte: https://lists.clamav.net/pipermail/clamav-virusdb/2026-October/date.html e as páginas dos outros meses no
+  mesmo endereço, trocando o mês (`2026-<Mês>`); lidas em 28/11/2026.
+- **F22.** Ressalva sobre a lista: em março de 2026 ela ficou muda depois de 08/03 (só 8 avisos, até a 27934), e abril
+  começa na 27959 (02/04). Ou seja, **24 versões saíram sem aviso**, e a lista sozinha não prova falta de build.
+  Agora, porém, TXT, CDN e lista param juntos na 28194.
+  Fontes: https://lists.clamav.net/pipermail/clamav-virusdb/2026-March/date.html e
+  https://lists.clamav.net/pipermail/clamav-virusdb/2026-April/date.html (lidas em 28/11/2026).
+
+**Como o ClamAV mede e trata a idade da base**
+
+- **F23.** O aviso de base velha do motor compara a hora atual com a data de montagem gravada no cabeçalho da daily.
+  Ele dispara acima de **604800 s (7 dias)** e é **só um aviso**: não recusa a varredura. O mesmo trecho avisa se o
+  carimbo estiver mais de 1 h no futuro.
+  Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/clamav-1.4.7/libclamav/cvd.c (tag 1.4.7) e
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libclamav/cvd.c (ramo rel/1.4); lidos em 28/11/2026.
+- **F24.** A data que o VERSION do clamd devolve é a **data de montagem da daily carregada na memória**. Não é a data
+  do arquivo em disco nem a da última conferência.
+  Fonte: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/clamd/session.c, com o `libclamav/cvd.c` do
+  mesmo ramo (rel/1.4; lidos em 28/11/2026).
+- **F25.** O ClamAV só recusa por idade com a opção `FailIfCvdOlderThan` (`--fail-if-cvd-older-than`). Ela existe
+  desde a 1.1.0, é medida em dias, vem desligada (-1) e traz **7** como exemplo. Ligada, faz o clamd **sair com erro
+  na partida**.
+  Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/main/NEWS.md (nota da 1.1.0) e
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/clamav-1.4.7/etc/clamd.conf.sample (tag 1.4.7); lidos em
+  28/11/2026.
+- **F26.** *(fonte completada pela verificação)* No clamd 1.4, essa conferência roda **uma vez**, em `main()`, antes
+  de `cl_load`, e **não se repete** enquanto o clamd atende; se falha, o processo sai com erro. A idade vem do
+  cabeçalho, nunca da data do arquivo, e vale a da **base mais nova**: é `cl_cvdgetage`, em `libclamav/cvd.c`, que
+  percorre o diretório, usa `s_time - cvd.stime` do cabeçalho e guarda o mínimo.
+  Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/clamd/clamd.c,
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/common/misc.c e
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libclamav/cvd.c (ramo rel/1.4; lidos em 28/11/2026).
+- **F27.** O SelfCheck do clamd (padrão de 600 s, ou 10 min) recarrega a base quando os arquivos mudam. Se a recarga
+  falha, o clamd **mantém a base anterior** ("Database reload failed, keeping the previous instance"). Ou seja, a base
+  em disco pode estar nova e a carregada, velha.
+  Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/main/clamd/server-th.c (ramo main, não a 1.4.7); o
+  padrão de 600 s está no `clamd.conf.sample` da tag 1.4.7 (link em F25) e no do ramo main; lidos em 28/11/2026.
+- **F28.** Por padrão, o freshclam confere a base **12 vezes por dia** (a cada 2 h), pelo TXT de
+  `current.cvd.clamav.net`.
+  Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/clamav-1.4.7/etc/freshclam.conf.sample (tag 1.4.7) e
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/main/etc/freshclam.conf.sample (main); lidos em 28/11/2026.
+- **F29.** Na imagem Docker oficial, a verificação de saúde **só faz ping no clamd** e não olha a idade da base. O
+  `FRESHCLAM_CHECKS` vem, por padrão, com **uma conferência por dia**.
+  Fonte: https://docs.clamav.net/manual/Installing/Docker.html (lida em 28/11/2026).
+- **F30.** *(fonte completada pela verificação)* O freshclam 1.4 lê o **4º campo** do TXT
+  (`DNS_UPDATEINFO_RECORDTIME` vale 3), o carimbo. Se o registro tem mais de **12 h**
+  (`DNS_WARNING_THRESHOLD_HOURS`), ele avisa ("DNS record is older than %d hours") e **descarta** a resposta do DNS.
+  No 0.103, o limite era **3 h** (o código testa `> 10800`). A versão da daily fica no **3º campo** (índice 2), lido
+  por `textrecordfield()`.
+  Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libfreshclam/libfreshclam.c,
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libfreshclam/libfreshclam_internal.h,
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libfreshclam/libfreshclam_internal.c e
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/0.103/libfreshclam/libfreshclam_internal.c; lidos em
+  28/11/2026.
+- **F31.** Na 1.0.0, o fornecedor subiu esse limite para evitar falso alarme e passou a renovar o registro DNS com
+  mais frequência. Ou seja, **um carimbo novo mostra que o sistema de publicação está vivo, não que saiu daily nova**.
+  Fonte: https://raw.githubusercontent.com/Cisco-Talos/clamav/main/NEWS.md (nota da 1.0.0; lida em 28/11/2026).
+- **F32.** Sem um DNS válido, o freshclam 1.4 lê a versão no cabeçalho da daily por HTTP. Ele dá a base como em dia
+  quando a **versão local é maior ou igual** à do fornecedor. O critério do próprio atualizador é a versão, não a
+  data.
+  Fonte: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libfreshclam/libfreshclam_internal.c (lido em
+  28/11/2026).
+- **F33.** *(com ressalva da verificação)* Quando confere e a base já está em dia, o freshclam **não grava carimbo nem
+  arquivo**: só uma linha de log. O `freshclam.dat` guarda só a versão do formato, o UUID e o `retry_after`, que é a
+  espera: 24 h depois de um HTTP 403; o `Retry-After` do servidor, ou 4 h, depois de um 429. **Ressalvas:** no ramo
+  main, um `.sign` que falte (recurso da 1.5) é baixado mesmo com a base em dia; e a #1948 relata que o 1.4.7 gravou
+  só 6 h depois de um 429 de 24680 s.
+  Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/main/libfreshclam/libfreshclam_internal.h e
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/main/libfreshclam/libfreshclam_internal.c (ramo main, não a
+  1.4.7); a struct `freshclam_dat_v1` conferida também no rel/1.4; lidos em 28/11/2026.
+- **F34.** *(com ressalva da verificação)* O código de saída 0 do freshclam vale tanto para "já estava em dia" quanto
+  para "atualizou" ("0 : Database is up-to-date or successfully updated."). O 52 é problema de rede e o 59, espelhos
+  fora de sincronia. O manual diz que o frescor da base é "the most important thing in anti-virus system".
+  **Ressalva:** a mesma seção do manual permite trocar o código com `EXIT_n` (por exemplo,
+  `--on-update-execute=EXIT_1`), o que **separa** "atualizou" (1) de "já estava em dia" (0) — isso enfraquece um dos
+  contras da opção D2.
+  Fonte: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/docs/man/freshclam.1.in (lido em 28/11/2026).
+- **F35.** Não existe gancho para "conferiu e está em dia". O `OnUpdateExecute` só roda quando alguma base foi
+  atualizada, e o `OnErrorExecute`, quando o resultado é pior que "em dia".
+  Fonte: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/freshclam/freshclam.c (lido em 28/11/2026).
+- **F36.** A FAQ do freshclam lista três formas de a atualização quebrar: rede fora, CDN fora e CDN servindo versão
+  menor que a anunciada no DNS. Diz também que HTTP 429 é limite de pedidos e que o download por script (wget, curl)
+  é negado.
+  Fonte: https://docs.clamav.net/faq/faq-freshclam.html (lida em 28/11/2026).
+- **F37.** Tolerância oficial: "The `freshclam` clients will tolerate being 1 version behind what was advertised on
+  clamav.net."
+  Fonte: https://docs.clamav.net/appendix/CvdPrivateMirror.html (lida em 28/11/2026).
+- **F38.** A ferramenta oficial de espelho, o cvdupdate, grava a última conferência bem-sucedida (`last checked`) a
+  cada consulta DNS válida, **mesmo sem versão nova**, e também no HTTP quando obtém a versão. Ela não confere o
+  carimbo do TXT.
+  Fonte: https://raw.githubusercontent.com/Cisco-Talos/cvdupdate/main/cvdupdate/cvdupdate.py (lido em 28/11/2026).
+
+**Distribuição, CDN e fim de vida**
+
+- **F39.** A 1.4 é LTS: lançada em 15/08/2024, último patch 1.4.7, suporte até 15/08/2027 e download da base até
+  15/08/2028. Quem perde o download da base em 28/11/2026 é a **1.0 LTS**; a 1.3 saiu de suporte em 07/02/2026. O
+  fornecedor pode bloquear um patch 4 meses depois de sair o seguinte. A página não anuncia mudança de distribuição
+  em 2026.
+  Fonte: https://docs.clamav.net/faq/faq-eol.html (lida em 28/11/2026).
+- **F40.** *(corrigida pela verificação)* Houve mudanças de assinatura e de verificação, **nenhuma anunciada como
+  pausa**: arquivos de assinatura externos (`.cvd.sign`) na **1.5.0** (07/10/2025), com volta ao método antigo quando
+  eles faltam; verificação da CVD que passa a **ignorar arquivos de certificado no diretório de certificados quando o
+  usuário não tem permissão de leitura**, **somente na 1.5.2** — a seção da 1.4.4 (04/03/2026) não trata disso, traz
+  correções de segurança, TIFF/Rust, bytes e alinhamento; e sigtool que tenta de novo quando o MD5 do pacote começa
+  com 00, na **1.5.5** (18/11/2026).
+  Fontes: https://blog.clamav.net/2026/03/ (notas da 1.4.4 e da 1.5.2) e https://blog.clamav.net/ (posts de
+  07/10/2025 e 18/11/2026); lidos em 28/11/2026.
+- **F41.** *(fonte trocada pela verificação)* A aposentadoria de assinaturas — **anunciada em 18/11/2025** e feita em
+  18/12/2025 — deixou a main.cvd e a daily.cvd **"roughly 50% smaller"** (main de 163 para cerca de 80 MB; daily de
+  62 para cerca de 22 MB), com início previsto então para 16/12/2025. O anúncio também tira do registro de imagens as
+  versões sem suporte, o que muda as **imagens**, não a base. O post de 18/12/2025 só diz que a aposentadoria foi
+  implementada e dá os tamanhos atuais (main 85 MiB, daily 22 MiB). Mudou o conteúdo, **não o canal nem a
+  frequência**.
+  Fontes: https://blog.clamav.net/2025/11/ (18/11/2025) e https://blog.clamav.net/2025/12/ (18/12/2025); lidos em
+  28/11/2026.
+- **F42.** *(com ressalva da verificação)* Os HTTP 403 do CDN em novembro de 2026 (issues #1914 a #1938) foram
+  explicados pela equipe como **bloqueio por região ou IP** (geolocalização e sanções dos EUA): IP em local bloqueado,
+  faixas de IP que mudam de país e bloqueio intencional, repetido nas #1936 e #1937. **Ressalva:** a equipe dá isso
+  como a **causa mais provável** da classe de erro, não como diagnóstico de cada caso, e a #1938 (19/11, 403) ficou
+  sem comentário. É outro problema, não a base parada.
+  Fontes: https://github.com/Cisco-Talos/clamav/issues/1920 (18/11/2026) e
+  https://github.com/Cisco-Talos/clamav/issues?q=is%3Aissue%20sort%3Acreated-desc (issues de 06/11 a 19/11/2026;
+  lidas em 28/11/2026).
+
+**Como outras ferramentas medem**
+
+- **F43.** O rspamd (módulo de antivírus) e o Amavis (configuração de referência) **não têm opção** de idade, frescor
+  ou versão da base.
+  Fontes: https://docs.rspamd.com/modules/antivirus/ e
+  https://gitlab.com/api/v4/projects/amavis%2Famavis/repository/files/conf%2Famavisd.conf-default/raw (lidas em
+  28/11/2026).
+- **F44.** Um projeto comunitário que expõe o ClamAV como serviço REST mede **pela data**: manda alertar pela idade da
+  `Signature_date` (exemplos de 24 h, 48 h ou 7 dias; o exemplo de tarefa agendada usa `MAX_AGE_SECONDS=172800`, ou
+  48 h). O projeto irmão, de monitoramento de assinaturas, usa **26 h** por padrão.
+  Fonte: README público desse projeto, lido em 28/11/2026 (URL omitida: repositório de terceiro com nome de usuário no
+  caminho).
+- **F45.** O check_clamav (plugin do Nagios que o Debian empacota) mede **pela versão**: compara a versão local com o
+  3º campo do TXT (`$txtresults[2]`). Alerta com 1 versão atrás e dá crítico com 2. **Não tem estado
+  "desconhecido"**, e falha de DNS só gera um aviso.
+  Fonte: https://salsa.debian.org/nagios-team/nagios-plugins-contrib/-/raw/master/check_clamav/check_clamav (script
+  versão 1.2; lido em 28/11/2026).
+- **F46.** *(sem acesso: 403)* O check_clamav_time (Nagios) mede **pelo tempo de atraso**: quando vê versão atrasada,
+  grava a hora e alerta se o atraso passar de N minutos. **Só o trecho do buscador foi lido; a página deu 403 para o
+  pesquisador e também para a verificação**, e o domínio alternativo não resolve — o fato fica marcado como não
+  confirmado na fonte primária.
+  Fonte: https://exchange.nagios.org/directory/plugins/anti-2dvirus/clamav/check_clamav_time/details (lançamento
+  listado em 18/06/2009; trecho lido em 28/11/2026; página com 403).
+- **F47.** Na prática, quem monitora a "última conferência" **lê o log**: o Logwatch se apoia na linha "ClamAV update
+  process started", e o log mostra "main.cvd database is up-to-date".
+  Fonte: https://sourceforge.net/p/logwatch/bugs/123/ (aberto em 07/08/2025; lido em 28/11/2026).
+
+### 3. Onde os relatos divergem (V1 a V6)
+
+- **V1.** Hora da última mensagem na conversa da clamav-users de 27/11: **14:06 UTC** no arquivo oficial da lista
+  (mensagem 014575) e **14:27 UTC** no espelho público ("06:27 -0800"). Não muda nada.
+- **V2.** Hora em que vencem as 72 h: 06:27 UTC para o orquestrador e dois relatos; 06:26 UTC para um relato. O
+  carimbo em segundos é 06:26:59 UTC (F3), então as duas são arredondamentos. O `Last-Modified` (06:26:00) e o
+  cabeçalho (`06-26`) só trazem o minuto. M4 chama de "data de publicação" o que o código chama de **data de
+  montagem** (F24); entre a montagem (06:26:59) e o aviso na lista (06:27:12) há 13 s.
+- **V3.** Espera do 429 da #1948: "cerca de 6 h" num relato e "cerca de 6,9 h" no outro. O número exato é
+  **24680 s, ou 6 h 51 min**.
+- **V4.** Início da parada de novembro de 2025: 09:08:34 UTC pela lista de avisos (F14) e "por volta de 04:43 no
+  horário local dele" (09:43 UTC) pelo relato de um usuário. São medidas diferentes (a publicação e a conferência do
+  usuário). Dá 84,6 h ou cerca de 84 h; **as duas passam de 72 h**.
+- **V5.** Frequência: a FAQ diz "uma ou duas por dia" (F18); a equipe, em 2020, disse "uma vez por dia" (F19); a
+  medição de 2026 dá cerca de uma por dia (F21).
+- **V6.** Desenho futuro do portão. Um relato propõe "versão local igual à anunciada no TXT, com teto absoluto de 7
+  dias". Outro propõe tolerar 1 versão atrás, usar as 72 h pela data só quando faltar medição válida do fornecedor há
+  mais de 24 h, e tratar os 7 dias como **aviso ao dono**, não como recusa. Divergem na tolerância (0 ou 1 versão) e
+  no papel dos 7 dias (recusa ou aviso). Ver D4.
+
+### 4. Hipóteses (H1 a H15) — nada abaixo foi confirmado por fonte oficial
+
+- **H1. Hipótese (causa).** A falha está no **build ou na publicação**, do lado da equipe do fornecedor. Não é mudança
+  de distribuição. Apoiam isso: TXT, CDN e lista param juntos na 28194 (M1 a M3, F1); o TXT segue renovado com a mesma
+  28194 e o cdiff seguinte dá 404, então o DNS está vivo e a falha vem antes, onde a base é montada e publicada (M1,
+  M3, F31); nada foi anunciado (F9, F10, F39); e o quadro é o das paradas de outubro e novembro de 2025 e de 03 a
+  05/11/2026 (F13 a F15). Confiança média-alta, segundo um relato.
+- **H2. Hipótese (feriado).** O feriado de Ação de Graças nos EUA (quinta, 26/11/2026) e o fim de semana podem estar
+  **atrasando o conserto**, não causando a parada: em 2025, o feriado não parou a base (F16). A primeira publicação
+  que faltou é a de 26/11. Em 2025, a falha de sábado só foi resolvida na segunda à noite, hora dos EUA (F14). Se
+  isso se repetir, a base pode voltar só na **segunda, 30/11/2026**, com 4 a 5 dias de parada. Confiança baixa a
+  média.
+- **H3. Hipótese (janela fechada mesmo se voltar no horário).** Se o build voltar perto de 06:25 UTC de 28/11
+  (03:25 SP), a régua de 72 h vence às 06:27 UTC, **antes** de a base nova chegar ao clamd. A base leva dezenas de
+  minutos para aparecer no DNS (36 min em setembro, F17); o freshclam confere a cada 2 h no padrão, ou uma vez por dia
+  na imagem Docker oficial (F28, F29); e o clamd recarrega a cada 10 min (F27). O portão deve passar algum tempo
+  recusando. Depende da configuração local, que os pesquisadores não conheciam.
+- **H4. Hipótese (pouca perda de detecção no curto prazo).** Nenhuma das 5 dailies de novembro abertas trouxe
+  assinatura nova (F12), e a 28194 teve 0 novas (F2). Então a régua de 72 h barra **por política**, não porque a
+  próxima base traria muitas detecções. A amostra é pequena e não vale para a main nem para o bytecode.
+- **H5. Hipótese (a régua de 72 h dá falso alarme algumas vezes por ano).** Ela pode recusar arquivos mesmo quando não
+  existe base mais nova em lugar nenhum. Em 14 meses, houve duas lacunas acima de 72 h: 84,6 h (F14) e cerca de
+  4,7 dias (F15). Inferência a partir de dois casos.
+- **H6. Hipótese (por que há poucos relatos).** O monitor comum compara a versão local com a do DNS, e as duas dizem
+  28194, ou seja, "em dia". Só percebe quem mede a **idade**, como os CIs com limite de 24 a 72 h. O aviso de 7 dias
+  do próprio ClamAV só deve aparecer por volta de **02/12/2026, 06:27 UTC** (03:27 SP); daí em diante, os relatos
+  devem crescer.
+- **H7. Hipótese fraca (coincidências de calendário).** O corte do download da base para a 1.0 LTS (28/11/2026, F39)
+  e a mudança do sigtool (18/11/2026, F40) caem perto da parada. Um relato levanta a chance de uma mudança planejada;
+  **nenhuma fonte liga as duas coisas**.
+- **H8. Hipótese (quem falou na #1908).** A conta é tratada como da equipe porque escreve "our daily build", fecha
+  issues de terceiros e tem o mesmo nome que assina os lançamentos no blog e na clamav-announce. O GitHub só mostra o
+  selo "Contributor".
+- **H9. Hipótese (o check_clamav falha aberto).** Pela leitura do código (F45), se o DNS falha, o campo da versão
+  fica vazio (vale 0 em Perl), a diferença fica negativa e o estado vira **OK**. A verificação confirma que isso é
+  leitura do código, não execução. Lição para o critério por versão: "não consegui medir o fornecedor" tem de virar
+  **"não sei"**, nunca "em dia".
+- **H10. Hipótese (a última conferência não prova a carga).** Uma recarga que falha mantém a base anterior (F27). Por
+  isso, a versão local deve vir do **zVERSION**, que mostra o que está na memória, e não do código de saída do
+  freshclam.
+- **H11. Hipótese (o TXT pode ser falsificado).** Sem DNSSEC (F8), um TXT com versão antiga **esconde** a base velha
+  (falha aberta), e um com versão nova **derruba** o portão (negação de serviço). Mitigação proposta: confirmar pelo
+  cabeçalho HTTPS da `daily.cvd` e manter um teto pela data.
+- **H12. Hipótese (consultar a cada arquivo seria abuso).** O CDN limita com 429 e 403 e impõe espera de 4 h a 24 h
+  (F33). A medição tem de ficar **guardada em cache**, com no máximo uma consulta por hora. O TXT é DNS e não passa
+  pelo CDN.
+- **H13. Hipótese (a imagem Docker atrasa a base nova).** Com o `FRESHCLAM_CHECKS` padrão (uma vez por dia, F29), uma
+  daily nova pode levar até cerca de **24 h e 10 min** para chegar ao clamd. A tolerância do critério por versão
+  precisa cobrir isso, ou a conferência precisa ser mais frequente.
+- **H14. Hipótese (variante mais rígida do critério por versão).** "Em dia" quando a versão é igual, ou está 1 atrás
+  **há menos de N horas**. N sai da data de montagem no cabeçalho HTTPS da daily do fornecedor, como faz o
+  check_clamav_time (F46, sem acesso). Isso pega a quebra em N horas, sem esperar o fornecedor publicar a versão
+  seguinte.
+- **H15. Hipótese (os números das propostas de desenho são propostas).** Os limiares sugeridos (24 h de prova, 1
+  versão de tolerância, 7 dias de teto) se apoiam nos números do fornecedor: 12 h do TXT (F30), 2 h do freshclam
+  (F28), 1 versão do espelho (F37) e 7 dias do clamd (F23). **Nenhum é norma do ClamAV para portão.**
+
+### 5. O que não se achou
+
+- Declaração oficial que explique a parada depois da 28194, em nenhum canal lido em 28/11/2026: blog, docs, GitHub,
+  clamav-users, clamav-announce e clamav-virusdb. **Nenhuma previsão de volta.**
+- Resposta da equipe na #1949, na #1948 ou na conversa da clamav-users.
+- Explicação da equipe para a parada de 03 a 05/11/2026 (o autor fechou a #1907 sem comentário dela).
+- Anúncio de pausa programada, troca de CDN ou de espelho, formato novo da base ou fim de suporte da 1.4.x em 2026.
+- Anúncio próprio do corte do download da base para a 1.0 LTS em 28/11/2026: ele só aparece na tabela de fim de vida.
+- Página oficial de status do ClamAV ou do CDN.
+- Política oficial de publicação em feriados e fins de semana.
+- Qualquer menção pública à daily 28195 ou ao arquivo `daily-28195.cdiff`.
+- O fórum GitHub Discussions do projeto: a URL deu 404.
+- Relatos fora das listas e do GitHub: nada no Hacker News (os 30 itens mais recentes até 27/11/2026), no Mastodon
+  (tag #clamav no mastodon.social, de 11/11 a 27/11/2026) nem nas issues das imagens Docker oficiais (a mais recente,
+  de 19/11, trata da falta de imagens da 1.5.5). No Reddit e no Stack Exchange as buscas não trouxeram nada, e a
+  ferramenta não lê esses sites diretamente. No Bluesky, a busca deu 403. X/Twitter, Discord e redes sociais do
+  fornecedor não foram consultados.
+- Fóruns de painéis e aparelhos que usam ClamAV: só tópicos de 2006 a 2024 (busca genérica, sem nome de produto).
+- Documentação oficial do 4º campo do TXT e de quantas vezes por dia ele é renovado: só há o código (limite de 12 h)
+  e a nota da 1.0.0.
+- Valor recomendado pelo ClamAV para o `FailIfCvdOlderThan`, ou orientação oficial para recusar arquivo pela idade da
+  base. O único número oficial é o **aviso de 7 dias**.
+- Registro da última conferência bem-sucedida feito pelo próprio freshclam (não existe no código), ou issue pública
+  pedindo isso.
+- Ferramenta de e-mail ou serviço de varredura que use a "última conferência bem-sucedida" como critério de portão:
+  só o cvdupdate (`last checked`) e o Logwatch, que lê o log.
+- Exportador Prometheus ou modelo Zabbix com métrica de idade da base.
+- As páginas do check_clamav e do check_clamav_time no Nagios Exchange (403 ou falha de DNS) e um bug público de
+  painel de rede que exige login.
+- Nova medição de M2 e M3 por um pesquisador: um não consultou DNS nem CDN, porque a FAQ diz que o CDN nega download
+  por script; outro refez só o TXT (F8).
+
+### 6. Opções do dono agora (A e B)
+
+Quando a redação da síntese começou (03:10 SP de 28/11), faltavam cerca de 17 min para o portão fechar (M4). As duas
+opções valem com o portão ainda aberto **ou** já fechado.
+
+**Vale para as duas:** não forçar o freshclam nem apagar a base local. Não existe base mais nova que a 28194 (M1, M3),
+e insistir no CDN pode render um 429 com 6 h 51 min de espera (F7, F36), o que atrasaria pegar a 28195 quando ela
+sair. Para acompanhar, bastam o TXT (DNS), a lista clamav-virusdb (o primeiro aviso novo marca a volta) e a issue
+#1949. Evitar pedidos repetidos ao CDN por script.
+
+**A. Subir o limite de idade para 168 h, provisório e com volta escrita**
+
+O que muda:
+
+- O portão aceita arquivos de novo, ou nem chega a fechar, varrendo com a 28194 até **02/12/2026 06:27 UTC**
+  (03:27 SP), se nada novo sair antes. (Cálculo do redator: montagem da 28194, 25/11 às 06:26:59 UTC, mais 168 h.)
+- **168 h é o número do próprio ClamAV**: o aviso de base velha (F23) e o exemplo do `FailIfCvdOlderThan` (F25).
+- 168 h teria passado pelas **três paradas medidas**: 48 h (F13), 84,6 h (F14) e cerca de 4,7 dias, perto de 112 h
+  (F15). A atual tinha cerca de 71 h na medição.
+- A **volta precisa estar escrita**: retornar a 72 h quando o zVERSION mostrar uma daily acima da 28194, ou numa data
+  fixa, o que vier primeiro.
+- Não se mediu se o limite é configuração ou constante no código. Configuração muda em minutos; código pede PR, CI e
+  deploy, e pode não ficar pronto a tempo.
+
+Risco, à luz dos fatos:
+
+- Se a falha fosse **nossa** (o freshclam local sem baixar), 168 h a esconderia por até 7 dias. Hoje os fatos apontam
+  o fornecedor: TXT, CDN, lista e relatos de terceiros param na 28194 (M1 a M3, F1, F4 a F7). Para cobrir esse caso
+  enquanto o limite valer: **conferir uma vez por dia se a versão do zVERSION é a mesma do TXT**.
+- Um arquivo com ameaça que só a 28195 em diante pegaria entra agora e não é varrido de novo. O risco parece pequeno:
+  nenhuma das 5 dailies de novembro abertas trouxe assinatura nova (F12, H4). A amostra é pequena.
+- Se a parada passar de 7 dias, o portão fecha de novo em 02/12, às 03:27 SP. Nenhuma parada medida chegou a isso.
+- Provisório sem volta escrita tende a ficar.
+- É **mudança de segurança em produção**: segue o rito do contrato e pede a ordem do dono.
+
+**B. Deixar o portão fechado até o fornecedor publicar**
+
+O que muda:
+
+- Nada na configuração. A partir de 28/11, 06:27 UTC (03:27 SP), **todo arquivo é recusado** até o clamd carregar uma
+  daily acima da 28194.
+- Não se sabe por quanto tempo. Mesmo se o build voltar no horário de costume, há uma janela fechada (H3). Se 2025 se
+  repetir, a volta fica para segunda, 30/11 (H2). A maior parada medida durou cerca de 4,7 dias (F15).
+
+Risco, à luz dos fatos:
+
+- **Indisponibilidade:** todo envio de arquivo é recusado enquanto durar, por um prazo que ninguém sabe.
+- **Perda de arquivo:** pelo contrato do app de campo, o arquivo só sai do aparelho quando o servidor confirma que o
+  guardou; recusa, falha de varredura, revisão pendente, erro ou tempo esgotado o **preservam** (`CLAUDE.md` §6,
+  B-108). Não se mediu se a recusa por base velha cai nesse caminho em produção, nem o que acontece no portal web.
+- **Ganho de segurança pequeno agora:** não existe base mais nova que a 28194 (M1, M3). O que B ganha é adiar a
+  varredura: um arquivo reenviado depois passa pela base nova, que deve trazer poucas assinaturas (H4).
+- **A janela fechada passa da volta do fornecedor:** o DNS, o freshclam e o clamd ainda levam tempo para chegar à base
+  nova (F17, F27 a F29), e mais tempo se vier um 429 (F7).
+
+### 7. Opções de desenho do portão, para bloco futuro (D1 a D5)
+
+**D1. Idade pela data de montagem (o critério de hoje), com outro limite**
+
+- Como mede: pela data do zVERSION, que é a data de montagem da daily carregada (F24).
+- Prós: simples; não depende de rede nem do fornecedor; mede o que está na memória do clamd.
+- Contras: fecha à toa quando o fornecedor para (três paradas desde outubro de 2025, de 48 h a cerca de 112 h, duas
+  acima de 72 h; H5). E só percebe uma falha nossa depois do limite inteiro.
+- Referências de limite: o ClamAV só avisa com 7 dias (F23); o projeto comunitário de F44 sugere 24 h, 48 h ou 7
+  dias, e o irmão dele usa 26 h; a conta da #1908, tida como da equipe (H8), sugeriu 48 h ou até 72 h (F11).
+- Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/clamd/session.c;
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/clamav-1.4.7/libclamav/cvd.c;
+  https://github.com/Cisco-Talos/clamav/issues/1908; as paradas de F13 a F15; e o README descrito em F44.
+
+**D2. Última conferência bem-sucedida do atualizador**
+
+- Como mede: pela última vez em que o atualizador conferiu o fornecedor com sucesso.
+- Prós: não fecha quando o fornecedor para; percebe rápido rede, CDN ou bloqueio fora do ar.
+- Contras: o freshclam não grava esse dado (F33); a saída 0 vale para "em dia" e para "atualizou" (F34); não há
+  gancho para "conferiu e está em dia" (F35). Seria preciso ler o log, como o Logwatch (F47), ou usar outro
+  atualizador: o cvdupdate grava `last checked` (F38). E não prova que o clamd carregou a base, porque uma recarga que
+  falha mantém a anterior (F27, H10).
+- Ressalva da verificação que **enfraquece um contra**: o manual permite `--on-update-execute=EXIT_1`, o que separa
+  "atualizou" de "já estava em dia" (F34).
+- Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/docs/man/freshclam.1.in;
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/freshclam/freshclam.c;
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/main/libfreshclam/libfreshclam_internal.h;
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/main/clamd/server-th.c;
+  https://raw.githubusercontent.com/Cisco-Talos/cvdupdate/main/cvdupdate/cvdupdate.py;
+  https://sourceforge.net/p/logwatch/bugs/123/.
+
+**D3. Versão carregada contra a versão anunciada pelo fornecedor**
+
+- Como mede: compara a daily do zVERSION com o 3º campo do TXT de `current.cvd.clamav.net`.
+- Prós: mede o que importa, a assinatura publicada que falta. Não fecha quando o fornecedor para, como agora. É o
+  critério do próprio freshclam (versão local maior ou igual, F32) e do check_clamav (F45). O ClamAV tolera 1 versão
+  atrás (F37). O TXT é DNS e não passa pelo CDN (H12).
+- Contras: o TXT **não tem DNSSEC** e pode ser falsificado (F8, H11). É preciso descartar TXT com carimbo acima de
+  12 h, como faz o freshclam (F30). Falha ao medir tem de virar "não sei", nunca "em dia": o check_clamav falha aberto
+  (H9). A tolerância tem de cobrir o atraso normal até o clamd: até 2 h e 10 min no padrão do freshclam, e até cerca
+  de 24 h e 10 min na imagem Docker oficial (H13). Se o CDN ficar atrás do DNS além da tolerância, o portão fecha sem
+  haver o que baixar (F36; leitura do redator).
+- Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libfreshclam/libfreshclam_internal.c;
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libfreshclam/libfreshclam.c;
+  https://docs.clamav.net/appendix/CvdPrivateMirror.html;
+  https://salsa.debian.org/nagios-team/nagios-plugins-contrib/-/raw/master/check_clamav/check_clamav;
+  https://dns.google/resolve?name=current.cvd.clamav.net&type=TXT;
+  https://docs.clamav.net/faq/faq-freshclam.html.
+
+**D4. Combinação (proposta dos dois relatos que trataram do desenho, com duas divergências, V6)**
+
+- Proposta de um relato: versão local igual à anunciada no TXT, com teto absoluto de 7 dias pela data.
+- Proposta do outro: a base é velha se (i) a versão do zVERSION está **mais de 1 versão abaixo** da do fornecedor, ou
+  (ii) **não há medição válida do fornecedor há mais de 24 h**; só nesse caso vale a régua de 72 h pela data. Medição
+  válida é o TXT com carimbo de até 12 h, ou o cabeçalho HTTPS da `daily.cvd`. A medição fica guardada, com no máximo
+  uma consulta por hora. Falha ao medir é "não sei". Acima de 7 dias pela data, **avisa o dono** mesmo com a versão em
+  dia.
+- Variante (H14): igual, ou 1 atrás há menos de N horas, com N tirado da data de montagem no cabeçalho HTTPS da daily
+  do fornecedor.
+- Prós: não fecha à toa na pausa do fornecedor; pega rápido uma falha nossa; mantém a data como rede de segurança.
+- Contras: mais peças (DNS, cache, HTTPS) e mais testes. A consulta ao CDN tem de ser rara (429 com até 6 h 51 min de
+  espera, F7; 403 por região, F42). Leitura do redator: com tolerância 0, cada daily nova fecha o portão até o
+  freshclam baixá-la (F28, F29); com tolerância 1 sem prazo, uma falha nossa fica escondida até o fornecedor publicar
+  a versão seguinte, ou até o teto pela data, se ele parar.
+- Fontes: as de D1 a D3, mais https://github.com/Cisco-Talos/clamav/issues/1948;
+  https://github.com/Cisco-Talos/clamav/issues/1920;
+  https://exchange.nagios.org/directory/plugins/anti-2dvirus/clamav/check_clamav_time/details (sem acesso, 403; F46);
+  https://docs.clamav.net/manual/Installing/Docker.html.
+
+**D5. A opção `FailIfCvdOlderThan` do próprio clamd não serve como portão por arquivo**
+
+- Ela só roda na partida e faz o clamd sair com erro; **não se repete** enquanto ele atende (F25, F26). Serve, no
+  máximo, para não subir um clamd com base muito velha.
+- Fontes: https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/clamd/clamd.c;
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/rel/1.4/libclamav/cvd.c;
+  https://raw.githubusercontent.com/Cisco-Talos/clamav/main/NEWS.md.
+
+### 8. Recomendação do redator (não é padrão; a decisão é do dono)
+
+- **Agora, a opção A.** 168 h é a régua do próprio ClamAV (F23, F25), teria passado pelas três paradas medidas (F13 a
+  F15), e fechar o portão quase não traz detecção a mais, porque **não existe base mais nova que a 28194** (M1, M3,
+  F12, H4).
+- **Com a volta escrita** (72 h assim que o clamd carregar uma daily acima da 28194), **conferência diária** de que o
+  zVERSION mostra a versão do TXT, e **sem forçar o freshclam**.
+- **Para o bloco futuro, a D4**, decidindo no plano a tolerância (0 ou 1 versão) e se os 7 dias recusam ou só avisam,
+  pelo rito de segurança do contrato.
+- Repetindo o limite desta PD: **isto não é padrão nem decisão.** A escolha entre A e B é do dono, e o desenho D1 a D5
+  só vira código em bloco próprio, com plano, crítica e junta.
+
+### 9. Correções aplicadas nesta redação (11)
+
+A verificação adversarial releu as 47 fontes: **44 confirmadas, 2 derrubadas, 1 sem acesso**. O que esta entrada
+mudou em relação à síntese:
+
+1. **F5 (derrubada → corrigida).** Só **um** dos dois usuários da clamav-users pede explicação; o da 1.5.3 (mensagem
+   014574, 13:57:52 UTC) só cola a própria saída.
+2. **F40 (derrubada → corrigida).** A mudança dos certificados é **só da 1.5.2**, não da 1.4.4, e vale **só quando
+   falta permissão de leitura** ao usuário.
+3. **F46 (sem acesso).** O Nagios Exchange deu **403** para o pesquisador e para a verificação; o fato fica marcado
+   como não confirmado na fonte primária (só trecho de buscador).
+4. **F19 (fonte trocada).** A frase "...we also only release updates once a day" é **da equipe**, de **27/07/2020,
+   22:09 UTC**, e não da resposta de um usuário do dia seguinte. Fonte conferida pelo redator:
+   https://lists.clamav.net/pipermail/clamav-users/2020-July/009661.html (data e frase verificadas em 28/11/2026).
+5. **F26 (fonte completada).** A prova de "cabeçalho" e "base mais nova" está em `cl_cvdgetage`, em
+   `libclamav/cvd.c` (rel/1.4), acrescentada às fontes.
+6. **F30 (fonte completada).** O índice 2 da daily está em `textrecordfield()`, em `libfreshclam_internal.c`
+   (rel/1.4), acrescentado às fontes.
+7. **F41 (fonte trocada).** Os "cerca de 50% menores" e o anúncio de 18/11/2025 estão em
+   https://blog.clamav.net/2025/11/; o post de 18/12/2025 só confirma a implementação e dá os tamanhos atuais.
+8. **F8 (ressalva).** O carimbo do TXT muda a cada hora: na releitura veio 1795845600 (06:00 UTC de 28/11), ainda
+   28194. O texto exato visto pelo pesquisador não se reproduz.
+9. **F33 (ressalva).** No ramo main, um `.sign` que falte é baixado mesmo com a base em dia; e a #1948 relata que o
+   1.4.7 gravou só 6 h depois de um 429 de 24680 s.
+10. **F34 (ressalva).** O `EXIT_n` do manual separa "atualizou" de "em dia", o que enfraquece um contra da D2 — a
+    ressalva está registrada no fato e na opção.
+11. **F42 (ressalva).** A equipe dá o bloqueio por região/IP como **causa mais provável da classe de erro**, não como
+    diagnóstico de cada issue; a #1938 ficou sem resposta.
+
+**Ajustes de redação para repositório público** (não são correções de conteúdo): três fontes de terceiros cujas URLs
+trazem nome de empresa, de projeto pessoal ou de usuário ficaram **descritas** em vez de linkadas (F3/F6, F17, F44);
+as mensagens de lista passaram a ser citadas pelo arquivo oficial (lists.clamav.net) **sem nome de quem escreveu**; e
+as menções a pessoas foram substituídas por "a equipe", "um membro da equipe" ou "um usuário".
+
+### 10. Fontes públicas consultadas (índice)
+
+Cada fonte está citada ao lado do fato que ela sustenta, com a data de leitura (**28/11/2026**, salvo indicação).
+Agrupamento:
+
+1. **Documentação oficial do fornecedor** (`docs.clamav.net`): faq-cvd, faq-freshclam, faq-eol,
+   appendix/CvdPrivateMirror e manual/Installing/Docker — F18, F29, F36, F37, F39, D3, D4.
+2. **Blog oficial** (`blog.clamav.net`): posts de 19/03/2021, 11/2025, 12/2025, 03/2026 e 11/2026 (inclusive o de
+   18/11/2026, sobre a 1.5.5 e a 1.4.7) — F9, F20, F40, F41.
+3. **Listas oficiais** (`lists.clamav.net/pipermail`): clamav-virusdb de 2025-10, 2025-11, 2026-03, 2026-04, 2026-10
+   e 2026-11 (índices e mensagens 009208, 009209, 009219, 009221, 009534, 009535, 009554 e 009555); clamav-users de
+   2020-07 (009661), 2025-10 (014346 e 014351), 2025-11 (014398 e 014400) e 2026-11 (014573, 014574 e 014575);
+   clamav-announce de 2026 — F1 a F5, F10, F12 a F16, F19 a F22.
+4. **Código-fonte do fornecedor** (`raw.githubusercontent.com/Cisco-Talos`): ramos `main`, `rel/1.4` e `rel/0.103` e
+   tag `clamav-1.4.7`, nos arquivos `libclamav/cvd.c`, `clamd/clamd.c`, `clamd/session.c`, `clamd/server-th.c`,
+   `common/misc.c`, `libfreshclam/libfreshclam.c`, `libfreshclam/libfreshclam_internal.c`,
+   `libfreshclam/libfreshclam_internal.h`, `freshclam/freshclam.c`, `docs/man/freshclam.1.in`,
+   `etc/clamd.conf.sample`, `etc/freshclam.conf.sample`, `NEWS.md` e `cvdupdate/cvdupdate.py` — F23 a F38, D1 a D5.
+5. **Issues do projeto do fornecedor** (`github.com/Cisco-Talos/clamav/issues`): #1907, #1908, #1920, #1936 a #1938,
+   #1948 e #1949, mais a lista ordenada por data de criação — F4, F7, F11, F13, F42, D4.
+6. **Canal de distribuição e DNS**: `database.clamav.net/daily.cvd` e `database.clamav.net/daily-28195.cdiff` (M2, M3,
+   F3); TXT de `current.cvd.clamav.net` e consulta DS de `clamav.net` por resolvedor público (M1, F8, D3).
+7. **Ferramentas de terceiros**: check_clamav empacotado pelo Debian (F45, D3); módulo de antivírus do rspamd e
+   configuração de referência do Amavis (F43); bug 123 do Logwatch (F47, D2); check_clamav_time no diretório de
+   plugins do Nagios (F46, D4 — **sem acesso, 403**).
+8. **Fontes descritas sem URL** (regra do repositório público): o registro público do CI de outro projeto,
+   27/11/2026 (F3, F6); o registro público de um projeto de terceiros, 23/09/2026 (F17); e o README público de um
+   projeto comunitário que expõe o ClamAV como serviço REST (F44, D1).
+9. **Medições próprias**: TXT no DNS, cabeçalho e 404 no canal de distribuição (M1 a M3) e o comportamento do portão
+   no sistema em produção (M4), todas em 28/11/2026.
+
+---
+
+**Contagem final:** **47 fatos** (F1 a F47, mais 4 medições próprias M1 a M4, 6 divergências V1 a V6 e 15 hipóteses
+H1 a H15) · **69 fontes distintas** (66 URLs + 3 fontes de terceiros descritas sem URL, pela regra do repositório
+público) · **11 correções aplicadas** (2 fatos derrubados e reescritos — F5 e F40; 1 marcado sem acesso — F46; 4
+fontes trocadas ou completadas — F19, F26, F30 e F41; 4 ressalvas registradas — F8, F33, F34 e F42).
+
+ENTREGA-CONCLUIDA
