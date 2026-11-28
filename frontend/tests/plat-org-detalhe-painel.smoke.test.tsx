@@ -73,7 +73,7 @@ test("FP5/FP8/FP11 painel mostra grupo e plano literais, três usuários e link 
   assert.match(html, new RegExp(`/platform/tenants/${ORGANIZATION_A.id}`));
   assert.doesNotMatch(html, /organizacao-a/);
   assert.match(html, /Editar nome/);
-  assert.match(html, /Alterar situação/);
+  assert.match(html, /Suspender/);
 });
 
 test("FP6 painel 403 retira dados e ações", () => {
@@ -101,7 +101,7 @@ test("FS3 organização de sistema não oferece ações", () => {
     </MemoryRouter>,
   );
   assert.match(html, /Organização de sistema/);
-  assert.doesNotMatch(html, /Editar nome|Alterar situação|Criar administrador|Concluir cadastro/);
+  assert.doesNotMatch(html, /Editar nome|Suspender|Reativar|Criar administrador|Concluir cadastro/);
 });
 
 test("FP1 linha aberta mantém o detalhe imediatamente abaixo", () => {

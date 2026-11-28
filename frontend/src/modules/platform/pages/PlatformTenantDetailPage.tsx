@@ -3,12 +3,13 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
+import { StatusPill } from "../../../components/patterns";
 import type { PlatformTenantDetailData, PlatformTenantDetailInfo } from "../platform-tenant-detail.types";
 import { PLATFORM_SYSTEM_ORG_SLUG } from "../platform-overview.types";
 import { usePlatformTenantUsage } from "../usePlatformTenantUsage";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { OrganizationAdminDialog } from "../components/OrganizationAdminDialog";
-import { OrganizationDetailPanelView, type OrganizationPanelAction } from "../components/OrganizationDetailPanel";
+import { OrganizationActionBar, OrganizationSetupMissing, type OrganizationPanelAction } from "../components/OrganizationDetailPanel";
 import { OrganizationEditNameDialog } from "../components/OrganizationEditNameDialog";
 import { OrganizationSetupDialog } from "../components/OrganizationSetupDialog";
 import { OrganizationStatusDialog } from "../components/OrganizationStatusDialog";
@@ -105,15 +106,24 @@ function StatCard({ icon: Icon, iconBg, iconColor, value, label, sub }: StatCard
   );
 }
 
+function PlatformTenantActions({ organization, permissions, stale, onAction }: { readonly organization: PlatformOrganization; readonly permissions: readonly string[]; readonly stale: boolean; readonly onAction: (action: OrganizationPanelAction) => void }) {
+  const actionsAllowed = !organization.system && !stale;
+  return <>
+    <OrganizationActionBar organization={organization} permissions={permissions} actionsAllowed={actionsAllowed} onAction={onAction} />
+    <OrganizationSetupMissing organization={organization} permissions={permissions} actionsAllowed={actionsAllowed} onAction={onAction} />
+  </>;
+}
+
 // Composição rica com DADO REAL (cabeçalho + stats reais + selo honesto + módulos + usuários). Exportada
 // para teste direto (render síncrono com dado real, sem depender do fetch assíncrono do hook).
-export function PlatformTenantDetailView({ detail, usage = null, organization }: { detail: PlatformTenantDetailInfo; usage?: ReactNode; organization?: PlatformOrganization }) {
+export function PlatformTenantDetailView({ detail, usage = null, organization, permissions = [], stale = false, onAction = () => undefined }: { detail: PlatformTenantDetailInfo; usage?: ReactNode; organization?: PlatformOrganization; permissions?: readonly string[]; stale?: boolean; onAction?: (action: OrganizationPanelAction) => void }) {
   const status = orgStatusView(detail.status);
   const isSystemOrg = organization?.system ?? detail.slug === PLATFORM_SYSTEM_ORG_SLUG;
 
   return (
     <div style={{ color: "#0F172A" }}>
       <DetailTopBar />
+      {stale ? <Alert title="Dados desatualizados" tone="warning">Atualize os dados antes de confirmar uma alteração.</Alert> : null}
 
       {/* Cabeçalho: avatar (iniciais reais) + nome + status + criada em (§11 rule 4) */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
@@ -131,11 +141,10 @@ export function PlatformTenantDetailView({ detail, usage = null, organization }:
             {isSystemOrg ? <div style={{ marginTop: 5, fontSize: 11.5, fontWeight: 700, color: "#2563EB" }}>Organização de sistema</div> : null}
           </div>
         </div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 99, background: status.bg, border: `1px solid ${status.border}`, fontSize: 13, fontWeight: 700, color: status.color, flexShrink: 0 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: status.dot }} />
-          {status.label}
-        </span>
+        <StatusPill label={status.label} bg={status.bg} fg={status.color} dot={status.dot} />
       </div>
+
+      {organization ? <PlatformTenantActions organization={organization} permissions={permissions} stale={stale} onAction={onAction} /> : null}
 
       <div className="platform-organizations__plan-name">
         Plano: <strong>{detail.subscription === null ? "Sem plano contratado" : detail.subscription.planName}</strong>
@@ -390,6 +399,8 @@ export function PlatformTenantDetailPage() {
   if (!detailState.organization) return <PlatformTenantDetailContent data={detailState.data} loading={false} />;
   const actionPermissions = ["platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:manage", "platform:billing:read"].filter(has);
   const organization = detailState.organization;
+  const detail = detailState.data.detail;
+  if (!detail) return <PlatformTenantDetailContent data={detailState.data} loading={false} />;
   const close = () => setAction(null);
   const done = async () => { close(); await detailState.refresh(false); };
   const openAction = (next: OrganizationPanelAction) => {
@@ -399,9 +410,7 @@ export function PlatformTenantDetailPage() {
     });
   };
   return <div className="platform-organizations page-stack">
-    <DetailTopBar />
-    <OrganizationDetailPanelView organization={organization} data={detailState.data} stale={detailState.stale} permissions={actionPermissions} showFullLink={false} onAction={openAction} />
-    {usage}
+    <PlatformTenantDetailView detail={detail} organization={organization} usage={usage} permissions={actionPermissions} stale={detailState.stale} onAction={openAction} />
     {action === "edit" ? <OrganizationEditNameDialog organization={organization} onClose={close} onConfirm={async (name) => { await updatePlatformTenant(organization.id, { name }); await done(); }} /> : null}
     {action === "status" ? <OrganizationStatusDialog organization={organization} detail={detailState.data} onClose={close} onRefresh={async () => { await detailState.refresh(false); }} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
     {action === "admin" ? <OrganizationAdminDialog organization={organization} onClose={close} onConfirm={async (input) => createTenantAdminUser(organization.id, input)} onDone={() => void done()} /> : null}

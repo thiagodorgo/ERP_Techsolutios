@@ -22,15 +22,43 @@ export function OrganizationAdminAction({ organization, onOpen }: { readonly org
   return <button type="button" className="pat-btn" disabled={adminBlocked} title={adminBlocked ? "Reative a organização para criar administrador" : undefined} onClick={openAdmin}>Criar administrador</button>;
 }
 
+type OrganizationActionsProps = {
+  readonly organization: PlatformOrganization;
+  readonly permissions: readonly string[];
+  readonly actionsAllowed: boolean;
+  readonly onAction: (action: Exclude<Action, null>) => void;
+};
+
+export function OrganizationActionBar({ organization, permissions, actionsAllowed, onAction }: OrganizationActionsProps) {
+  const can = (permission: string) => permissions.includes(permission);
+  if (!actionsAllowed) return organization.system ? <Alert title="Organização protegida" tone="info">A organização de sistema não muda por aqui.</Alert> : null;
+  return <div className="platform-organizations__detail-actions">
+    {can("platform:tenants:update") ? <button type="button" className="pat-btn" onClick={() => onAction("edit")}>Editar nome</button> : null}
+    {can("platform:tenants:suspend") ? <button type="button" className="pat-btn" onClick={() => onAction("status")}>{organization.status === "active" ? "Suspender" : "Reativar"}</button> : null}
+    {can("platform:users:create_admin") ? <OrganizationAdminAction organization={organization} onOpen={() => onAction("admin")} /> : null}
+  </div>;
+}
+
+export function OrganizationSetupMissing({ organization, permissions, actionsAllowed, onAction }: OrganizationActionsProps) {
+  if (organization.setup.complete || organization.setup.missing.length === 0) return null;
+  const can = (permission: string) => permissions.includes(permission);
+  const canCompleteBilling = can("platform:billing:manage") && can("platform:billing:read");
+  return <section className="platform-organizations__setup-missing" aria-label="Cadastro incompleto">
+    <h3>Cadastro incompleto</h3>
+    <ul>
+      {organization.setup.missing.includes("plan") ? <li>Plano {actionsAllowed && canCompleteBilling ? <button type="button" className="pat-btn" onClick={() => onAction("setup-plan")}>Escolher plano</button> : can("platform:billing:manage") && !can("platform:billing:read") ? <span>Seu perfil não consulta a assinatura; o plano não pode ser ligado por esta tela.</span> : null}</li> : null}
+      {organization.setup.missing.includes("admin") ? <li>Administrador {actionsAllowed && can("platform:users:create_admin") ? <OrganizationAdminAction organization={organization} onOpen={() => onAction("admin")} /> : null}</li> : null}
+      {organization.setup.missing.includes("profile") ? <li>Perfil {actionsAllowed && canCompleteBilling ? <button type="button" className="pat-btn" onClick={() => onAction("setup-profile")}>Preencher</button> : null}</li> : null}
+    </ul>
+  </section>;
+}
+
 export function OrganizationDetailPanelView({ organization, data, returnSearch = "", permissions = [], stale = false, showFullLink = true, onAction = () => undefined }: { readonly organization: PlatformOrganization; readonly data: PlatformTenantDetailData; readonly returnSearch?: string; readonly permissions?: readonly string[]; readonly stale?: boolean; readonly showFullLink?: boolean; readonly onAction?: (action: Exclude<Action, null>) => void }) {
   if (data.forbidden) return <ErrorState title="Acesso não permitido" detail="Seu perfil não consulta o detalhe desta organização." />;
   if (data.notFound) return <EmptyState title="Organização não encontrada" detail="Atualize a lista para conferir as organizações disponíveis." />;
   const detail = data.detail;
   if (!detail) return <Alert title="Não foi possível carregar a organização" tone="warning">Tente novamente. Nenhuma ação está disponível sem uma leitura válida.</Alert>;
-  const can = (permission: string) => permissions.includes(permission);
   const actionsAllowed = !organization.system && !stale;
-  const canCompleteBilling = can("platform:billing:manage") && can("platform:billing:read");
-  const missingPlan = organization.setup.missing.includes("plan");
   const enabledModules = detail.modules.filter((item) => item.enabled);
   return (
     <section className="platform-organizations__detail" aria-label={`Detalhes de ${organization.name}`}>
@@ -45,13 +73,9 @@ export function OrganizationDetailPanelView({ organization, data, returnSearch =
       </div>
       <div className="platform-organizations__detail-actions">
         {showFullLink ? <a className="pat-btn" href={`/platform/tenants/${organization.id}${returnSearch}`}>Ver detalhes completos</a> : null}
-        {actionsAllowed && can("platform:tenants:update") ? <button type="button" className="pat-btn" onClick={() => onAction("edit")}>Editar nome</button> : null}
-        {actionsAllowed && can("platform:tenants:suspend") ? <button type="button" className="pat-btn" onClick={() => onAction("status")}>Alterar situação</button> : null}
-        {actionsAllowed && can("platform:users:create_admin") ? <OrganizationAdminAction organization={organization} onOpen={() => onAction("admin")} /> : null}
-        {actionsAllowed && missingPlan && canCompleteBilling ? <button type="button" className="pat-btn" onClick={() => onAction("setup-plan")}>Escolher plano</button> : null}
-        {actionsAllowed && organization.setup.missing.includes("profile") && canCompleteBilling ? <button type="button" className="pat-btn" onClick={() => onAction("setup-profile")}>Preencher</button> : null}
-        {actionsAllowed && missingPlan && can("platform:billing:manage") && !can("platform:billing:read") ? <p>Seu perfil não consulta a assinatura; o plano não pode ser ligado por esta tela.</p> : null}
       </div>
+      <OrganizationActionBar organization={organization} permissions={permissions} actionsAllowed={actionsAllowed} onAction={onAction} />
+      <OrganizationSetupMissing organization={organization} permissions={permissions} actionsAllowed={actionsAllowed} onAction={onAction} />
     </section>
   );
 }
