@@ -111,7 +111,7 @@ test("PM1 só leitura não vê ação", async () => {
   const detail = await mount("detail", ["platform:tenants:read", "platform:billing:read"]);
   const detailActions = buttonTexts(detail.container);
   console.log(`MEDIDA PM1 lista=${JSON.stringify(listActions)} detalhe=${JSON.stringify(detailActions)} writes=${writes.length}`);
-  for (const label of ["Nova organização", "Editar nome", "Alterar situação", "Criar administrador", "Escolher plano", "Preencher"]) {
+  for (const label of ["Nova organização", "Editar nome", "Suspender", "Reativar", "Criar administrador", "Escolher plano", "Preencher"]) {
     assert.equal(listActions.includes(label), false, `${label} não aparece na lista/painel`);
     assert.equal(detailActions.includes(label), false, `${label} não aparece na página direta`);
   }
@@ -123,8 +123,8 @@ test("PM2 cada chave liga só a sua ação", async () => {
   const cases = [
     ["platform:tenants:create", ["Nova organização"]],
     ["platform:tenants:update", ["Editar nome"]],
-    ["platform:tenants:suspend", ["Alterar situação"]],
-    ["platform:users:create_admin", ["Criar administrador"]],
+    ["platform:tenants:suspend", ["Suspender"]],
+    ["platform:users:create_admin", ["Criar administrador", "Criar administrador"]],
     ["platform:billing:manage", ["Escolher plano", "Preencher"]],
   ] as const;
   const known = cases.flatMap((entry) => entry[1]);
@@ -142,7 +142,7 @@ test("PM3 quem tem tudo vê tudo", async () => {
   const page = await mount("list", ["platform:tenants:read", "platform:tenants:create", "platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:read", "platform:billing:manage"]);
   await openListPanel(page.container);
   const actions = buttonTexts(page.container);
-  for (const label of ["Nova organização", "Editar nome", "Alterar situação", "Criar administrador", "Escolher plano", "Preencher"]) assert.equal(actions.includes(label), true, label);
+  for (const label of ["Nova organização", "Editar nome", "Suspender", "Criar administrador", "Escolher plano", "Preencher"]) assert.equal(actions.includes(label), true, label);
 });
 
 test("PM4 módulos sem a chave", async () => {
