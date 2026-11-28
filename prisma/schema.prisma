@@ -114,6 +114,7 @@ model Tenant {
   expense_reports               ExpenseReport[]
   expense_advances              ExpenseAdvance[]
   mobile_action_receipts        MobileActionReceipt[]
+  mobile_evidences              MobileEvidence[]
   tenant_cloud_charges          TenantCloudCharge[]
   tenant_cloud_cost_allocations TenantCloudCostAllocation[]
   local_auth_credentials        LocalAuthCredential[]
@@ -198,6 +199,7 @@ model User {
   expense_reports_employee         ExpenseReport[]         @relation("ExpenseReportEmployee")
   expense_advances_employee        ExpenseAdvance[]        @relation("ExpenseAdvanceEmployee")
   mobile_action_receipts_actor     MobileActionReceipt[]   @relation("MobileActionReceiptActor")
+  mobile_evidences_actor           MobileEvidence[]        @relation("MobileEvidenceActor")
   assigned_work_orders             WorkOrder[]             @relation("WorkOrderAssignedUser")
   created_work_orders              WorkOrder[]             @relation("WorkOrderCreatedBy")
   updated_work_orders              WorkOrder[]             @relation("WorkOrderUpdatedBy")
@@ -2591,6 +2593,7 @@ model WorkOrder {
   field_dispatches                FieldDispatch[]
   expense_reports                 ExpenseReport[]
   attachments                     WorkOrderAttachment[]
+  mobile_evidences                MobileEvidence[]
   financial_titles                FinancialTitle[]
   assigned_user                   User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
   checklist                       ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
@@ -3111,6 +3114,46 @@ model MobileActionReceipt {
   @@index([tenant_id, action_type])
   @@index([tenant_id, status])
   @@map("mobile_action_receipts")
+}
+
+// B-EVIDENCIA-INDICE — F1: índice durável da evidência do app de campo (metadado aceito, recibo de
+// idempotência por organização + usuário + código do app e vínculo com o arquivo guardado). Tabela NOVA
+// e aditiva; nenhuma tabela existente muda. `storage_provider`/`storage_key` são colunas INTERNAS: nenhum
+// DTO, trilha ou log as expõe (§3.2 do plano). O unique PARCIAL (tenant_id, storage_key) WHERE
+// storage_key IS NOT NULL, os 15 CHECK, o RLS ENABLE+FORCE+policy e as 3 FKs RESTRICT são SQL bruto na
+// migration 20261127000000_add_mobile_evidences (não expressáveis no schema — precedente
+// work_order_attachments_idem_key). A FK composta à OS é RESTRICT de propósito: apagar uma OS que tem
+// evidência é recusado pelo banco (autorização nominal do dono, 27/11).
+model MobileEvidence {
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String     @db.Uuid
+  actor_user_id      String     @db.Uuid
+  client_evidence_id String
+  action_type        String
+  scope              String
+  kind               String
+  work_order_id      String?    @db.Uuid
+  metadata           Json
+  fingerprint_sha256 String
+  local_created_at   DateTime   @db.Timestamptz(6)
+  file_status        String
+  file_id            String?
+  storage_provider   String?
+  storage_key        String?
+  mime_type          String?
+  size_bytes         Int?
+  checksum_sha256    String?
+  stored_at          DateTime?  @db.Timestamptz(6)
+  created_at         DateTime   @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime?  @db.Timestamptz(6)
+  actor_user         User       @relation("MobileEvidenceActor", fields: [tenant_id, actor_user_id], references: [tenant_id, id], onDelete: Restrict)
+  tenant             Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  work_order         WorkOrder? @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, actor_user_id, client_evidence_id], map: "mobile_evidences_idem_key")
+  @@index([tenant_id, work_order_id, created_at])
+  @@map("mobile_evidences")
 }
 
 // Ω5P PR-01 — Pátio de recolhimento (local de guarda físico, Res. CONTRAN 1025/2026 art. 9º/14). Domínio
