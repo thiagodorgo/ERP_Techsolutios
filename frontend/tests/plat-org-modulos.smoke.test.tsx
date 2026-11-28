@@ -148,6 +148,18 @@ async function mount(modules: Mod[], subscription: unknown, patch: PatchReply) {
 
 const ERRO_409 = { error: { code: "CONFLICT", reason: "module_change_requires_subscription", message: "não expor" } };
 
+test("FM0 cabeçalho mostra o nome literal do plano sem vazar código interno", async () => {
+  const withPlan = await mount(semAssinatura(["dashboard"]), { planCode: "starter", planName: "Plano Regional Teste", validFrom: "2026-11-05T15:00:00.000Z", overrides: {}, addons: [], modules: [] }, { kind: "json", status: 200, body: { data: semAssinatura(["dashboard"]) } });
+  assert.match(withPlan.pageText(), /Organização A · Plano: Plano Regional Teste/);
+  assert.doesNotMatch(withPlan.pageText(), /starter|plano Plano/);
+  await withPlan.unmount();
+
+  const withoutPlan = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura(["dashboard"]) } });
+  assert.match(withoutPlan.pageText(), /Organização A · Sem plano contratado/);
+  assert.doesNotMatch(withoutPlan.pageText(), /plano Sem/);
+  await withoutPlan.unmount();
+});
+
 test("FM1 200: o selo e a chave saem da lista que o servidor devolveu, não do rascunho", async () => {
   const espelho = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura(["dashboard", "work_orders"]) } });
   await espelho.toggle("Ordens de Serviço");

@@ -52,11 +52,11 @@ test("T39 modo demonstração é vazio e só config/env.ts lê o interruptor", a
   }
 });
 
-test("T40 módulos não vaza código interno e inventário conserva 23 endpoints", () => {
+test("T40 módulos não vaza código interno e inventário conserva 80 endpoints", () => {
   const source = readFileSync(path.join(FRONTEND, "src/modules/platform/pages/PlatformTenantModulesPage.tsx"), "utf8");
   assert.match(source, /Módulos não encontrados/);
-  assert.match(source, /plano \{planName\}/);
-  assert.match(source, /subscription === null \? "Sem plano contratado"/);
+  assert.match(source, /Plano: \{planName\}/);
+  assert.match(source, /subscription === null \? null/);
   assert.doesNotMatch(source, /P0\d|planLabel|tenant\.plan/);
   const output = execFileSync(process.execPath, [path.join(REPO, "scripts/san3-06b-endpoints-de-plataforma.mjs"), REPO], { encoding: "utf8", timeout: 120_000 });
   // B-ASS-09 (F6): 53 → 63, as 10 rotas da visão de custo, do câmbio e dos grupos (`/api/v1/platform/billing/overview`, `/fx-rates`, `/economic-groups`).

@@ -69,15 +69,15 @@ export function PlatformTenantModulesPage() {
   if (error || !tenant) return <EmptyState title="Módulos não encontrados" detail={error ?? "Não foi possível carregar os módulos."} />;
 
   const subscription = detailState.data.detail?.subscription;
-  const planName = subscription === null ? "Sem plano contratado" : subscription?.planName;
-  if (!planName) return <EmptyState title="Plano indisponível" detail="Não foi possível consultar o plano desta organização. Tente novamente." />;
+  const planName = subscription === null ? null : subscription?.planName;
+  if (subscription !== null && !planName) return <EmptyState title="Plano indisponível" detail="Não foi possível consultar o plano desta organização. Tente novamente." />;
 
   return (
     <section className="page-stack">
       <header className="page-heading page-heading--row">
         <div>
           <h1>Módulos da Organização</h1>
-          <p>{tenant.name} · plano {planName}</p>
+          <p>{tenant.name} · {subscription === null ? "Sem plano contratado" : <>Plano: {planName}</>}</p>
         </div>
         {canManageModules ? <Button onClick={saveModules}>
           <Save size={16} />
