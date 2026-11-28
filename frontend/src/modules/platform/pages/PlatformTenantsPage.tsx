@@ -123,16 +123,16 @@ export function PlatformTenantsView({
       <PageHeader canCreate={canCreate} onCreate={onCreate} />
       {stale ? <Alert title="Dados desatualizados" tone="warning">A última atualização falhou. O último conjunto completo continua visível.</Alert> : null}
       <div className="platform-organizations__kpis">
-        <KpiStatCard icon={Building2} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={counts.active} label="Organizações ativas" hint="No recorte atual" onClick={() => onStatusFilterChange("active")} pressed={statusFilter === "active"} />
-        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-danger)" iconBg="var(--surface-panel-muted)" value={counts.suspended} label="Organizações suspensas" hint="No recorte atual" onClick={() => onStatusFilterChange("suspended")} pressed={statusFilter === "suspended"} />
-        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-warning)" iconBg="var(--surface-panel-muted)" value={counts.incomplete} label="Cadastros incompletos" hint="No recorte atual" onClick={() => onStatusFilterChange("incomplete")} pressed={statusFilter === "incomplete"} />
+        <KpiStatCard icon={Building2} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={counts.active} label="Organizações ativas" hint="No recorte atual" ariaLabel={`Organizações ativas: ${counts.active}. No recorte atual`} onClick={() => onStatusFilterChange("active")} pressed={statusFilter === "active"} />
+        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-danger)" iconBg="var(--surface-panel-muted)" value={counts.suspended} label="Organizações suspensas" hint="No recorte atual" ariaLabel={`Organizações suspensas: ${counts.suspended}. No recorte atual`} onClick={() => onStatusFilterChange("suspended")} pressed={statusFilter === "suspended"} />
+        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-warning)" iconBg="var(--surface-panel-muted)" value={counts.incomplete} label="Cadastros incompletos" hint="No recorte atual" ariaLabel={`Cadastros incompletos: ${counts.incomplete}. No recorte atual`} onClick={() => onStatusFilterChange("incomplete")} pressed={statusFilter === "incomplete"} />
         <div className="platform-organizations__revenue-note"><strong>Receita por organização</strong><span>Disponível após a ativação da medição cloud.</span></div>
       </div>
       <div className="platform-organizations__filters">
         <label className="platform-organizations__search"><Search size={14} aria-hidden="true" /><span className="sr-only">Buscar organização ou grupo</span><input aria-label="Buscar organização ou grupo" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Buscar organização ou grupo…" /></label>
         <label>Grupo<select aria-label="Filtrar por grupo" value={groupId} onChange={(event) => onGroupChange(event.target.value)}><option value="">Todos os grupos</option>{groupOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
       </div>
-      {statusFilter !== "all" ? <button type="button" className="platform-organizations__filter-chip" onClick={() => onStatusFilterChange("all")}>Filtro: {statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"} ×</button> : null}
+      {statusFilter !== "all" ? <span className="pat-filtro-chip">Filtro: {statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"}<button type="button" aria-label={`Tirar o filtro ${statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"}`} onClick={() => onStatusFilterChange("all")}>×</button></span> : null}
       {visible.length === 0 ? <EmptyState title="Nenhuma organização encontrada" detail="Ajuste a busca ou os filtros para consultar outras organizações." /> : null}
       {visible.length > 0 ? (
         <DenseTable
