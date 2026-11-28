@@ -13,6 +13,15 @@ import { OrganizationStatusDialog } from "./OrganizationStatusDialog";
 export type OrganizationPanelAction = "edit" | "status" | "admin" | "setup-plan" | "setup-profile";
 type Action = OrganizationPanelAction | null;
 
+export function OrganizationAdminAction({ organization, onOpen }: { readonly organization: PlatformOrganization; readonly onOpen: () => void }) {
+  const adminBlocked = organization.status !== "active";
+  function openAdmin() {
+    if (adminBlocked) return;
+    onOpen();
+  }
+  return <button type="button" className="pat-btn" disabled={adminBlocked} title={adminBlocked ? "Reative a organização para criar administrador" : undefined} onClick={openAdmin}>Criar administrador</button>;
+}
+
 export function OrganizationDetailPanelView({ organization, data, returnSearch = "", permissions = [], stale = false, showFullLink = true, onAction = () => undefined }: { readonly organization: PlatformOrganization; readonly data: PlatformTenantDetailData; readonly returnSearch?: string; readonly permissions?: readonly string[]; readonly stale?: boolean; readonly showFullLink?: boolean; readonly onAction?: (action: Exclude<Action, null>) => void }) {
   if (data.forbidden) return <ErrorState title="Acesso não permitido" detail="Seu perfil não consulta o detalhe desta organização." />;
   if (data.notFound) return <EmptyState title="Organização não encontrada" detail="Atualize a lista para conferir as organizações disponíveis." />;
@@ -38,7 +47,7 @@ export function OrganizationDetailPanelView({ organization, data, returnSearch =
         {showFullLink ? <a className="pat-btn" href={`/platform/tenants/${organization.id}${returnSearch}`}>Ver detalhes completos</a> : null}
         {actionsAllowed && can("platform:tenants:update") ? <button type="button" className="pat-btn" onClick={() => onAction("edit")}>Editar nome</button> : null}
         {actionsAllowed && can("platform:tenants:suspend") ? <button type="button" className="pat-btn" onClick={() => onAction("status")}>Alterar situação</button> : null}
-        {actionsAllowed && can("platform:users:create_admin") ? <button type="button" className="pat-btn" onClick={() => onAction("admin")}>Criar administrador</button> : null}
+        {actionsAllowed && can("platform:users:create_admin") ? <OrganizationAdminAction organization={organization} onOpen={() => onAction("admin")} /> : null}
         {actionsAllowed && missingPlan && canCompleteBilling ? <button type="button" className="pat-btn" onClick={() => onAction("setup-plan")}>Escolher plano</button> : null}
         {actionsAllowed && organization.setup.missing.includes("profile") && canCompleteBilling ? <button type="button" className="pat-btn" onClick={() => onAction("setup-profile")}>Preencher</button> : null}
         {actionsAllowed && missingPlan && can("platform:billing:manage") && !can("platform:billing:read") ? <p>Seu perfil não consulta a assinatura; o plano não pode ser ligado por esta tela.</p> : null}

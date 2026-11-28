@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import React from "react";
+import React, { type ReactElement } from "react";
 import { renderToString } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
 
+import { OrganizationAdminDialog } from "../src/modules/platform/components/OrganizationAdminDialog";
+import { OrganizationDetailPanelView } from "../src/modules/platform/components/OrganizationDetailPanel";
 import { OrganizationStatusDialog, PLATFORM_STATUS_REASONS, activeUsersInDetail } from "../src/modules/platform/components/OrganizationStatusDialog";
 import { adaptPlatformTenantDetail } from "../src/modules/platform/platform-tenant-detail.adapter";
 import { updatePlatformTenantStatus } from "../src/modules/platform/platform.service";
-import { DETAIL_A, ORGANIZATION_A, jsonResponse } from "./helpers/plat-org.fixture";
+import { ApiError } from "../src/services/api/client";
+import { DETAIL_A, ORGANIZATION_A, ORGANIZATION_SYSTEM, jsonResponse } from "./helpers/plat-org.fixture";
+import { elements, installMiniDom, propsOf, text, type MiniDomElement } from "./helpers/mini-dom";
 
 const detail = { detail: DETAIL_A, source: "api" as const, forbidden: false, notFound: false };
 Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: { getItem: () => null, setItem: () => undefined, removeItem: () => undefined } } });
@@ -50,4 +55,58 @@ test("FS2 enumeração e PATCH são idênticos para suspender e reativar", async
     { status: "active", reason: "customer_request" },
   ]);
   assert.doesNotMatch(JSON.stringify(calls), /payment_regularized|POST/);
+});
+
+const dom = installMiniDom();
+const { createRoot } = await import("react-dom/client");
+type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
+const act = (React as unknown as { act: ActFn }).act;
+const settle = async () => { for (let step = 0; step < 6; step += 1) await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); }); };
+
+async function mount(element: ReactElement) {
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  await act(async () => root.render(element));
+  await settle();
+  return { container, unmount: async () => { await act(async () => root.unmount()); container.parentNode?.removeChild(container); } };
+}
+
+const button = (root: MiniDomElement, label: string) => elements(root, (element) => element.localName === "button" && text(element).includes(label))[0] as MiniDomElement | undefined;
+
+test("AD1 organização suspensa mantém Criar administrador desligado e o clique forçado não abre", async () => {
+  let opens = 0;
+  const suspended = { ...ORGANIZATION_A, status: "suspended" as const };
+  const page = await mount(<MemoryRouter><OrganizationDetailPanelView organization={suspended} data={detail} permissions={["platform:users:create_admin"]} onAction={() => { opens += 1; }} /></MemoryRouter>);
+  const admin = button(page.container, "Criar administrador");
+  assert.ok(admin);
+  assert.equal(propsOf(admin).disabled, true);
+  assert.equal(propsOf(admin).title, "Reative a organização para criar administrador");
+  await act(async () => (propsOf(admin).onClick as () => void)());
+  assert.equal(opens, 0);
+  await page.unmount();
+});
+
+test("AD1-b ativa com administrador mantém a ação e AD1-c sistema não oferece", () => {
+  const active = renderToString(<MemoryRouter><OrganizationDetailPanelView organization={{ ...ORGANIZATION_A, setup: { complete: true, missing: [] } }} data={detail} permissions={["platform:users:create_admin"]} /></MemoryRouter>);
+  assert.match(active, /Criar administrador/);
+  assert.doesNotMatch(active, /disabled=""/);
+  const system = renderToString(<MemoryRouter><OrganizationDetailPanelView organization={ORGANIZATION_SYSTEM} data={{ ...detail, detail: { ...DETAIL_A, id: ORGANIZATION_SYSTEM.id, name: ORGANIZATION_SYSTEM.name } }} permissions={["platform:users:create_admin"]} /></MemoryRouter>);
+  assert.doesNotMatch(system, /Criar administrador/);
+});
+
+test("AD2 inactive_tenant explica que é preciso reativar", async () => {
+  const page = await mount(<OrganizationAdminDialog organization={ORGANIZATION_A} onClose={() => undefined} onDone={() => undefined} onConfirm={async () => { throw new ApiError(400, "erro", undefined, "inactive_tenant"); }} />);
+  const inputs = elements(page.container, (element) => element.localName === "input");
+  await act(async () => {
+    (propsOf(inputs[0] as MiniDomElement).onChange as (event: unknown) => void)({ currentTarget: { value: "Administrador" } });
+    (propsOf(inputs[1] as MiniDomElement).onChange as (event: unknown) => void)({ currentTarget: { value: "admin@example.com" } });
+  });
+  await settle();
+  const submit = button(page.container, "Criar administrador");
+  assert.ok(submit);
+  await act(async () => (propsOf(submit).onClick as () => void)());
+  await settle();
+  assert.match(text(page.container), /A organização não está ativa\. Reative-a para criar o administrador\./);
+  await page.unmount();
 });
