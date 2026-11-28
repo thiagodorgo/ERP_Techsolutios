@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { createDefaultFieldLocationService } from "../field-location/field-location.service.js";
+import { env } from "../../config/env.js";
 import { publicErrorMessage } from "../../infra/logging/public-error.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import {
@@ -12,6 +13,7 @@ import {
 } from "../work-orders/work-order.types.js";
 import type { CreateAcceptedResult, CreateMobileEvidenceInput, MobileEvidenceRecord } from "./mobile-evidence.types.js";
 import { InMemoryMobileEvidenceRepository, MOBILE_EVIDENCE_METADATA_MAX_BYTES, type MobileEvidenceRepository } from "./mobile-evidence.repository.js";
+import { createMobileEvidencePrismaRepository, resetMobileEvidencePrismaRepositoryForTests } from "./mobile-evidence-prisma.repository.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -100,9 +102,22 @@ const EVIDENCE_INDEX_UNAVAILABLE_MESSAGE = "Evidence index is temporarily unavai
 
 const defaultMobileEvidenceRepository = new InMemoryMobileEvidenceRepository();
 let mobileEvidenceRepositoryOverride: MobileEvidenceRepository | undefined;
+let prismaMobileEvidenceRepository: MobileEvidenceRepository | undefined;
 
+// B-EVIDENCIA-INDICE (§4.1) — a escolha entre memória e banco segue `env.CORE_SAAS_PERSISTENCE`, como em
+// `createDefaultWorkOrderAttachmentService`. O resolvedor é SÍNCRONO porque é valor padrão de parâmetro
+// do sync e o upload o chama sem `await`; por isso o cliente do Prisma é importado SOB DEMANDA dentro do
+// repositório (`createMobileEvidencePrismaRepository`), e nunca no import deste módulo — em modo memória
+// nada aqui encosta em `src/database/prisma.ts`.
 export function resolveMobileEvidenceRepository(): MobileEvidenceRepository {
-  return mobileEvidenceRepositoryOverride ?? defaultMobileEvidenceRepository;
+  if (mobileEvidenceRepositoryOverride) {
+    return mobileEvidenceRepositoryOverride;
+  }
+  if (env.CORE_SAAS_PERSISTENCE === "prisma") {
+    prismaMobileEvidenceRepository ??= createMobileEvidencePrismaRepository();
+    return prismaMobileEvidenceRepository;
+  }
+  return defaultMobileEvidenceRepository;
 }
 
 export function getMobileEvidenceRepositoryForTests(): MobileEvidenceRepository {
@@ -231,6 +246,8 @@ export async function syncMobileEvidenceActions(
 export function resetMobileEvidenceSyncRuntimeForTests(): void {
   defaultMobileEvidenceRepository.clear();
   mobileEvidenceRepositoryOverride = undefined;
+  prismaMobileEvidenceRepository = undefined;
+  resetMobileEvidencePrismaRepositoryForTests();
 }
 
 export function findMobileEvidenceSyncReceiptForUpload(
