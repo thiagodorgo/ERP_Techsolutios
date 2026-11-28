@@ -152,7 +152,7 @@ test("getPlatformTenantDetail api: source 'api', adapta o payload real e não va
           moduleCount: 1,
           mrr: 12345,
           modules: [{ key: "work-orders", label: "Ordens de Serviço", enabled: true }],
-          users: [{ name: "Rafael Lima", email: "rafael@beta.com", status: "active" }],
+          users: [{ name: "Usuária Exemplo", email: "usuaria@example.com", status: "active" }],
           subscription: { planCode: "starter", planName: "Plano Regional Teste", validFrom: "2026-11-05T15:00:00.000Z", overrides: { monthlyPrice: null, includedUsers: null, includedStorageGb: null, extraUserPrice: null, extraGbPrice: null }, addons: [], modules: [] },
         },
       }),
