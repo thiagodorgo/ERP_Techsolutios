@@ -36,3 +36,7 @@ Sem achado, nada a consertar. O RV16 continua como pendência pré-existente: `P
 
 ## Merge
 Squash, com `--match-head-commit 3e0eb4df0`, pela autonomia de junta (§C7 item 1). O worktree `w-auth-plat` sai ANTES do merge (a lição do #648). Depois vêm o porteiro e a limpeza.
+
+---
+
+**Nota do PR de registro #654, acrescentada no conserto (`reg-2711b-fix-qw`) pelo achado H1 da revisão `rev-654-cl` — NÃO é texto da ata:** a ata acima foi transcrita para o repositório sem mudança de texto. As fontes que ela cita em forma RELATIVA ficam **FORA do repositório**, no diretório de revisões do orquestrador, em `~/erp-pausa-2026-10-03/revisoes/auth-plat/junta-644/`: os votos e a evidência de cada cadeira (`votos/`), a base julgada (`base-j644.md`), os mandatos (`mandato-inspetor.md`, `mandato-inspetor-b.md`, `mandato-C1.md`, `mandato-C2.md`, `mandato-C2b.md`, `mandato-C3.md`) e as sondas (`sondas-c1/`, `sondas-c2/`, `sondas-c2b/`, `sondas-c3/`). A pasta `agent-orchestration/omega/juntas/votos/` do repositório guarda votos de OUTRAS juntas: medida no head `41abc1320`, ela tem **0** entrada desta junta, então o `votos/` citado acima não é o do repositório.

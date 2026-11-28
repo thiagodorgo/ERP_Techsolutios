@@ -48,3 +48,7 @@ O ciclo não está contaminado: quem achou não consertou.
 
 ## Merge
 Squash, com `--match-head-commit` no head final, pela autonomia de junta (§C7 item 1), com o CI do head verde em todos os jobs. Depois vêm o porteiro e a limpeza pós-merge (o worktree `w-evid` sai ANTES do merge, por causa da lição do #648).
+
+---
+
+**Nota do PR de registro #654, acrescentada no conserto (`reg-2711b-fix-qw`) pelo achado H1 da revisão `rev-654-cl` — NÃO é texto da ata:** a ata acima foi transcrita para o repositório sem mudança de texto. As fontes que ela cita em forma RELATIVA ficam **FORA do repositório**, no diretório de revisões do orquestrador, em `~/erp-pausa-2026-10-03/revisoes/mobile/junta-evidencia/`: os votos e a evidência de cada cadeira (`votos/`); a base do cruzamento citada na seção "Objeto e nível" (`base-jevidencia.md`, inclusive a linha 14, que é de onde vem o "nenhuma cadeira é Claude"); a verificação da junção da `main` (`ver-649-main-cl.md`); a conferência do conserto (`conf-649-qw.md`); a pré-revisão (`prerev-evidencia-cx5.md`); os mandatos (`mandato-inspetor.md`, `mandato-prerev.md`, `mandato-C1.md`, `mandato-C2.md`, `mandato-C3.md`) e as sondas (`sondas-insp/`, `sondas-prerev/`, `sondas-c1/`, `sondas-c2/`, `sondas-c3/`). A pasta `agent-orchestration/omega/juntas/votos/` do repositório guarda votos de OUTRAS juntas: medida no head `41abc1320`, ela tem **0** entrada desta junta, então o `votos/` citado acima não é o do repositório.

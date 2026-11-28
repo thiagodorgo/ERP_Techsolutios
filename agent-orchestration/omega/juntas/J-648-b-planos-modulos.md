@@ -32,3 +32,9 @@ Nenhuma.
 
 ## Merge
 Squash, com `--match-head-commit c53d70d6f6252552c5bc817ba333950d667c5133`, pela autonomia de junta (§C7 item 1). Depois vêm o porteiro e a limpeza pós-merge.
+
+---
+
+**Nota do PR de registro #654, acrescentada no conserto (`reg-2711b-fix-qw`) pelo achado H1 da revisão `rev-654-cl` — NÃO é texto da ata:** a ata acima foi transcrita para o repositório sem mudança de texto. As fontes que ela cita em forma RELATIVA ficam **FORA do repositório**, no diretório de revisões do orquestrador, em `~/erp-pausa-2026-10-03/revisoes/plat-org/junta-planos/`: os votos e a evidência de cada cadeira (`votos/`, inclusive o parecer do inspetor em `votos/inspetor-parecer.md`), a base julgada (`base-jplanos.md`), a pré-revisão (`prerev-planos-dp.md`), os mandatos (`mandato-inspetor.md`, `mandato-prerev.md`, `mandato-C1.md`, `mandato-C2.md`, `mandato-C3.md`) e as sondas (`sondas-insp/`, `sondas-prerev/`, `sondas-c1/`, `sondas-c2/`, `sondas-c3/`). A pasta `agent-orchestration/omega/juntas/votos/` do repositório guarda votos de OUTRAS juntas: medida no head `41abc1320`, ela tem **0** entrada desta junta, então o `votos/` citado acima não é o do repositório.
+
+**Adendo P6 (registro de queda), acrescentado no conserto do #654 pelo achado F17 da revisão `rev-654-cl` — NÃO é texto da ata:** a seção "Quedas" acima diz *"Nenhuma."* porque a ata foi redigida às **21:08**, ANTES do evento. A fonte registra, às **21:19:47**, que o `jc1-planos-dp` (a C1) foi **encerrado pelo orquestrador**: ele já tinha gravado o voto (21:07) e o processo não saía, e o status recebeu `fim ec=-2`. É o mesmo padrão do `jc2-644-dp`, que a ata `J-644-b-auth-login-plataforma` registra na seção Quedas dela. **Não houve redo:** o voto já estava gravado, e o resultado 3 a 0 APROVA não muda.
