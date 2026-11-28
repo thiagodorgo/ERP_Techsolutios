@@ -99,6 +99,7 @@ export function PlatformTenantsView({
     incomplete: customerRecut.filter((row) => !row.setup.complete).length,
   };
   const visible = filterPlatformOrganizations(rows, { query, groupId, status: statusFilter });
+  const noCustomers = rows.length > 0 && rows.every((row) => row.system);
 
   useEffect(() => {
     if (status === "ready" && expandedId && !visible.some((row) => row.id === expandedId)) onExpandedIdChange(null);
@@ -149,6 +150,7 @@ export function PlatformTenantsView({
           cellTitle={(row, key) => key === "organization" ? row.name : key === "group" ? row.group?.name : undefined}
         />
       ) : null}
+      {status === "ready" && noCustomers ? <div className="platform-organizations__customer-empty"><EmptyState title="Nenhuma organização cliente ainda" detail="Só existe a organização de sistema. A primeira filial nasce aqui, com o grupo dela." />{canCreate ? <button type="button" className="pat-btn pat-btn--primary" onClick={onCreate}><Plus size={15} aria-hidden="true" />Nova organização</button> : null}</div> : null}
     </section>
   );
 }

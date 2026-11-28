@@ -64,6 +64,17 @@ test("T4 payload vazio mantém o estado vazio honesto", () => {
   assert.match(html, /Nenhuma organização encontrada/);
 });
 
+test("T4-S somente a organização de sistema mantém a linha e mostra o vazio de clientes", () => {
+  const systemOnly = composePlatformOrganizations([ORGANIZATION_SYSTEM], overview);
+  const withPermission = render({ rows: systemOnly, canCreate: true });
+  const withoutPermission = render({ rows: systemOnly, canCreate: false });
+  assert.match(withPermission, /Plataforma/);
+  assert.match(withPermission, /Nenhuma organização cliente ainda/);
+  assert.match(withPermission, /Só existe a organização de sistema\. A primeira filial nasce aqui, com o grupo dela\./);
+  assert.match(withPermission, /Nova organização/);
+  assert.doesNotMatch(withoutPermission, /Nova organização/);
+});
+
 test("T5 modo demonstração devolve vazio sem organização fabricada", async () => {
   const previous = process.env.VITE_USE_MOCKS;
   process.env.VITE_USE_MOCKS = "true";
