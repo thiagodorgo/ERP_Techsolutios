@@ -306,8 +306,8 @@ Fontes: `src/modules/platform/platform.routes.ts` (montado em `/api/v1/platform`
 | GET | `/platform/tenants/:tenantId/detail` | `platform:tenants:read` | Detalhe estendido (métricas/uso). |
 | PATCH | `/platform/tenants/:tenantId` | `platform:tenants:update` | Atualiza organização. |
 | PATCH | `/platform/tenants/:tenantId/status` | `platform:tenants:suspend` | Suspende/reativa organização. |
-| GET | `/platform/tenants/:tenantId/modules` | `platform:tenants:read` | Módulos provisionados na organização. |
-| PATCH | `/platform/tenants/:tenantId/modules` | `platform:modules:manage` | Habilita/desabilita módulos. |
+| GET | `/platform/tenants/:tenantId/modules` | `platform:tenants:read` | Módulos da organização no catálogo (`status`, `availableInPlan`). Sem assinatura em vigor: ligada = `enabled`, desligada = `disabled`, tudo disponível. Com assinatura em vigor (`valid_to` nulo ou no futuro): o que não está ligado é `blocked_by_plan` (B-PLANOS-MODULOS). |
+| PATCH | `/platform/tenants/:tenantId/modules` | `platform:modules:manage` | Corpo `{ "enabledModules": [...] }`, o estado FINAL. Só organização SEM assinatura em vigor: grava `tenants.modules` com trilha (`organization.modules_changed` e `tenant.modules_changed`); lista igual = 200 sem escrita. Com assinatura em vigor: 409 `module_change_requires_subscription`. Corpo fora da forma = 400 `invalid_field`; chave fora do catálogo, inclusive apelido = 422 `module_unknown`; organização da plataforma = 422 `platform_organization` (B-PLANOS-MODULOS). |
 | POST | `/platform/tenants/:tenantId/admin-user` | `platform:users:create_admin` | Cria usuário administrador da organização. |
 | GET/POST/PATCH | `/platform/cloud-charge-rules` (+ `/:ruleId`) | `platform:cloud-charge-rules:read` / `:write` | **Retiradas (B-ASS-01, 404).** Regras de cobrança de nuvem (+ CRUD padrão). |
 | GET/POST | `/platform/cloud-charges/calculation-runs` (+ `/:runId`, `/:runId/tenant-charges`) | `platform:cloud-charges:read` / `:calculate` | **Retiradas (B-ASS-01, 404).** Execuções de cálculo de cobrança de nuvem. |

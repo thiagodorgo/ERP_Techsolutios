@@ -14265,6 +14265,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 - **origem:** R2-03 da crítica r2 do plano, opção (a): sem abrir front num bloco de permissão. O §0 item 6 do plano v2 vale como "a tela continua mostrando a lista antiga e não avisa do 409".
 - **prova:** `frontend/src/modules/platform/pages/PlatformTenantModulesPage.tsx:44-47` — `saveModules()` sem `try/catch`; o selo "habilitado" sai do estado LOCAL (l.83). Com o 409 a promessa rejeita sem nada na tela, e o GET da mesma tela lê o repositório em memória, não `tenants.modules`.
 - **teste de encerramento:** a tela mostra o estado de erro (§7) no 409 e avisa que os módulos mudam pela assinatura; o selo sai da resposta do servidor.
+- **apenso 2026-11-27 (`B-PLANOS-MODULOS`, `D-PLANOS-MODULOS-PORTA-REAL`):** a porta passa a responder **200** para organização SEM assinatura (grava e devolve a lista relida) e **409** só com assinatura em vigor. A tela tem de tratar os dois: o selo e o estado da chave saem da resposta do servidor; 200 recarrega a lista; 409 mostra o aviso de que os módulos mudam pela assinatura (plano do bloco, §6; Emenda 1.6 do plano do PR-b). O teste de encerramento acima passa a valer com os dois casos.
 
 ## P-SAN3-18-PORTAL-SEM-GATE (2026-11-11) — os portais do proprietário e da autoridade ficam fora do gate de módulo — BAIXA
 
@@ -18271,6 +18272,33 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** tela da Cobrança da plataforma: o quadro "Demonstrativos por mês e situação" está marcado como "ainda não vem do servidor" — a série mensal não existe no servidor. Agendado pelo dono em 25/11: *"agenda isso aí, deixa documentado, depois nós vamos fazer"*.
 - **critério de encerramento:** a série mensal por mês e situação é servida pelo servidor e o quadro passa a consumi-la, sem o aviso "ainda não vem do servidor".
 
+## P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS (2026-11-27) — em modo memória, a porta de módulos grava no console e o gate não enxerga — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o console e o núcleo em memória têm armazéns separados desde o `B-SAN3-06b`) · **dono:** quem unificar o arnês em memória · **bloqueia:** não.
+- **origem:** L3 e R6 do plano do `B-PLANOS-MODULOS`.
+- **prova:** em memória, `PATCH /platform/tenants/:id/modules` grava em `InMemoryPlatformOrganizationsRepository`, e o gate lê os módulos pelo `ICoreSaasService` do app (`module-gate.middleware.ts`); `tests/san3-18-platform-modules-patch.test.ts` mostra a organização do armazém do gate respondendo 404 na porta. Produção recusa modo memória no boot (`src/config/env.ts`), e a prova de que o gate enxerga é o D2 de `tests/planos-modulos-porta-db.test.ts`, com Postgres.
+- **teste de encerramento:** em modo memória, ligar uma área pela porta faz o gate e o menu da organização enxergarem na requisição seguinte.
+
+## P-PLANOS-MODULOS-PORTA-COM-ASSINATURA (2026-11-27) — com assinatura em vigor, só o plano muda módulo; não há cortesia de área por cima do plano — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** decisão do dono (P2 do plano do `B-PLANOS-MODULOS`) e, se ele quiser, bloco próprio · **bloqueia:** não.
+- **origem:** P2 do plano do `B-PLANOS-MODULOS` (não trava o dev; recomendação "não agora").
+- **prova:** com assinatura em vigor (`valid_to` nulo ou no futuro), a porta responde 409 `module_change_requires_subscription` (`tests/planos-modulos-porta-db.test.ts`, D5 e D7).
+- **teste de encerramento:** a decisão do dono sobre a cortesia fica registrada; se for "sim", um bloco próprio entrega a área por cima do plano com trilha e com o que acontece quando o plano muda.
+
+## P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05 (2026-11-27) — 6 rotas do console de organizações seguem etiquetadas "em memória, não toca o banco" — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o console grava no banco desde o #642) · **dono:** o próximo bloco que tocar o console de organizações ou o `san3-05` · **bloqueia:** não.
+- **origem:** achado do `dev-planos-cl` no `B-PLANOS-MODULOS`, ao corrigir as 2 etiquetas das rotas de módulos.
+- **prova:** `tests/san3-05-leituras-de-plataforma-db.test.ts` etiqueta `GET`/`POST /platform/tenants`, `GET`/`PATCH /platform/tenants/:tenantId`, `PATCH /platform/tenants/:tenantId/status` e `POST /platform/tenants/:tenantId/admin-user` como `SEM-FORCE`, sem tabela, com a nota "PlatformTenantsRepository em memória — não toca o banco"; o `changeStatus` grava `audit_logs` e revoga `auth_sessions`, e o `create` grava `economic_group_members` e `audit_logs` (`src/modules/platform/platform-organizations-prisma.repository.ts`). A etiqueta `SEM-FORCE` sem tabela passa no T11g sem medir nada.
+- **teste de encerramento:** as 6 rotas nomeiam as tabelas FORCE que tocam, com cenário próprio no T11 (super × papel sem bypass), ou a nota registra, medido, por que não tocam.
+
+## P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT (2026-11-27) — o teardown de `tests/leilao-revenda-db.test.ts` quebra com 42883 quando a tabela irmã `tenant_id text` existe — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a classe é a do #636, que pôs o filtro `data_type = 'uuid'` em outros teardowns; este arquivo ficou sem) · **dono:** o próximo bloco que tocar o leilão/revenda, ou um bloco pequeno de arnês · **bloqueia:** não (instabilidade de CI, não de produto).
+- **origem:** medido pelo `dev-planos-cl` no CI do `B-PLANOS-MODULOS` (job `backend-postgres` da rodada de push do head `b3d525714`): `not ok 752 - RV16`, `failureType: 'hookFailed'`, `Raw query failed. Code: 42883. Message: operator does not exist: text = uuid`, em `tests/leilao-revenda-db.test.ts:160` (o `teardown`). Os D1 a D10 do bloco passaram na mesma rodada (`# tests 1488 · # fail 1`).
+- **prova:** o `teardown` (l.152-163 na `origin/main` `8719cf045`) lista toda tabela de `public` com coluna `tenant_id`, sem filtrar o tipo, e faz `DELETE … WHERE tenant_id = $1::uuid`; `tests/sweep-tenant-text-db.test.ts:33` cria de propósito, no mesmo banco e em paralelo, a tabela `sweep_guard_text_*` com `tenant_id text`. Quando as duas se cruzam, o `DELETE` quebra. Os arquivos estão fora do PERMITIDO do bloco, e ele não os toca.
+- **teste de encerramento:** o `teardown` filtra `c.data_type = 'uuid'` (como `tests/helpers/sweep-tenant.ts`), ou usa o `sweepTenant`, e N ≥ 10 rodadas do `backend-postgres` com a tabela irmã presente ficam com `# fail 0`.
 ## P-EVIDENCIA-METADADO-EM-MEMORIA (2026-11-27) — o metadado aceito da evidência e a trilha do upload vivem só em memória: o texto da observação some no reinício, e o upload depois do reinício dá 409 — GRAVE
 
 - **status:** ABERTA · **gravidade:** GRAVE (perda de dado: o texto da observação) — leitura do planejador do `B-EVIDENCIA-DURAVEL`, declarada (§A6) · **escopo:** `pre-existente` (B-098e, B-108) · **dono:** `B-EVIDENCIA-INDICE` (a planejar; pede `prisma/**`; junta completa) · **PR-alvo:** o PR desse bloco · **bloqueia:** não (nem o `B-EVIDENCIA-DURAVEL` nem o item 27 — leitura do planejador, declarada, §11.2 do plano do bloco).
