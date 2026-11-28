@@ -120,6 +120,22 @@ export class InMemoryMobileEvidenceRepository implements MobileEvidenceRepositor
     return record ? cloneRecord(record) : undefined;
   }
 
+  /**
+   * COSTURA DE TESTE (plano §8.3 L10, que mata a metade em memória da MU17): o delete lógico de uma linha já
+   * gravada. Este bloco não cria rota de exclusão nenhuma (§3.1); sem a costura não há como uma linha em
+   * memória ter `deleted_at`, e o filtro de `deleted_at` das duas leituras ficaria sem teste. Só memória —
+   * o equivalente com banco é o `UPDATE` direto no preparo do D10 (§E1.8).
+   */
+  setDeletedAtForTests(tenantId: string, userId: string, clientEvidenceId: string, deletedAt: Date | null): boolean {
+    const key = idempotencyKey(tenantId, userId, clientEvidenceId);
+    const record = this.records.get(key);
+    if (!record) {
+      return false;
+    }
+    this.records.set(key, { ...record, deletedAt });
+    return true;
+  }
+
   clear(): void {
     this.records.clear();
   }

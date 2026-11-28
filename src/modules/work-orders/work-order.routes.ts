@@ -13,6 +13,8 @@ import { createDefaultWorkOrderService } from "./work-order.service.js";
 import type { UserNameResolver } from "../core-saas/users/user-name-resolver.js";
 import { WorkOrderAttachmentController } from "./work-order-attachment.controller.js";
 import { createDefaultWorkOrderAttachmentService } from "./work-order-attachment.service.js";
+import { WorkOrderEvidenceController } from "./work-order-evidence.controller.js";
+import { createDefaultWorkOrderEvidenceService } from "./work-order-evidence.service.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -63,6 +65,8 @@ export function createWorkOrderRouter(
   const controller = new WorkOrderController(resolveService);
   const approvalController = new ApprovalController();
   const attachmentController = new WorkOrderAttachmentController(createDefaultWorkOrderAttachmentService, resolveUserName);
+  // B-EVIDENCIA-INDICE (§5.1) — a evidência do app de campo, lida por OS. Mesmo resolver de NOMES do anexo.
+  const evidenceController = new WorkOrderEvidenceController(createDefaultWorkOrderEvidenceService, resolveUserName);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
@@ -239,6 +243,29 @@ export function createWorkOrderRouter(
     requirePermission(WORK_ORDER_PERMISSIONS.update),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await attachmentController.deleteAttachment(request));
+    }),
+  );
+
+  // B-EVIDENCIA-INDICE (§5.1) — a leitura da evidência do app por OS, ao lado das de anexo.
+  // PERMISSÃO: nenhuma nova. `work_orders:read` já governa a lista e o download de anexo de OS (F10 do plano);
+  // o catálogo de permissões não muda e o `RBAC_MATRIX.md` ganha só a linha "reusa as existentes".
+  // ESCOPO POR OBJETO: a porta é `getForRead` (a mesma das 18 leituras do B-WO-LEITURA), dentro do serviço —
+  // o técnico de campo só lê a evidência da OS dele, e a OS alheia ou de outra organização responde o MESMO
+  // 404 `work_order_not_found` da inexistente (D-WO-LEITURA-404-ESCRITA-403; nunca 403, nunca corpo diferente).
+  router.get(
+    "/work-orders/:workOrderId/evidences",
+    requirePermission(WORK_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await evidenceController.listEvidences(request));
+    }),
+  );
+  // §5.2 — o binário sai por stream no servidor (`sendVerifiedFile`, no `sendResult` abaixo), SEM URL assinada:
+  // o tipo é re-derivado dos bytes no ato do download e todo arquivo sai como `attachment`.
+  router.get(
+    "/work-orders/:workOrderId/evidences/:evidenceId/download",
+    requirePermission(WORK_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await evidenceController.downloadEvidence(request));
     }),
   );
 
