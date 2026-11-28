@@ -515,7 +515,7 @@
 | `P-SESSAO-DIR-TROCA-SOZINHA` | 18393 | MÉDIA | sim | P-SESSAO-DIR-TROCA-SOZINHA (2026-11-27) — o resolvedor de pasta de sessão da orquestraçã |
 | `P-CLAMAV-IDADE-PELA-PUBLICACAO` | 18402 | ALTA | sim | P-CLAMAV-IDADE-PELA-PUBLICACAO (2026-11-28) — o portão do antivírus mede a idade da base |
 | `P-REPO-NOMES-DE-RECURSO-NA-MAIN` | 18420 | MÉDIA | sim | P-REPO-NOMES-DE-RECURSO-NA-MAIN (2026-11-28) — a `main` já tem nome de recurso de nuvem  |
-| `P-EVIDENCIA-FORA-DA-FRANQUIA` | 18449 | MÉDIA | sim | P-EVIDENCIA-FORA-DA-FRANQUIA (2026-11-28) — os bytes do arquivo da evidência do app não  |
+| `P-EVIDENCIA-FORA-DA-FRANQUIA` | 18450 | MÉDIA | sim | P-EVIDENCIA-FORA-DA-FRANQUIA (2026-11-28) — os bytes do arquivo da evidência do app não  |
 
 ## ABERTAS · balde B — processo/registro — 640
 
@@ -1154,13 +1154,13 @@
 | `P-ITEM27-TRILHA-ORG-SEM-ATOR` | 18376 | BAIXA | sim | P-ITEM27-TRILHA-ORG-SEM-ATOR (2026-11-27) — a trilha `tenant.modules_changed` da organiz |
 | `P-PLANO-SAN3-TABELA-41-SEM-MARCA` | 18384 | BAIXA | sim | P-PLANO-SAN3-TABELA-41-SEM-MARCA (2026-11-28) — a tabela do §4.1 do portão não sustenta, |
 | `P-MARCA-MENU-APARENCIA-A11Y` | 18412 | BAIXA | sim | P-MARCA-MENU-APARENCIA-A11Y (2026-11-28) — a estrutura ARIA do painel de cores do sistem |
-| `P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE` | 18434 | BAIXA | sim | P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE (2026-11-28) — o filtro de período das 4 tabelas d |
-| `P-WO-LEITURA-DB-COMENTARIOS-DEFASADOS` | 18442 | BAIXA | sim | P-WO-LEITURA-DB-COMENTARIOS-DEFASADOS (2026-11-28) — os comentários do teste de leitura  |
-| `P-SAN305-T11G-SEM-COMPLETUDE` | 18458 | BAIXA | sim | P-SAN305-T11G-SEM-COMPLETUDE (2026-11-28) — o censo T11g confere que a tabela declarada  |
-| `P-KPI-VELOCIDADE-ROTULOS-SOBREPOSTOS` | 18466 | BAIXA | sim | P-KPI-VELOCIDADE-ROTULOS-SOBREPOSTOS (2026-11-28) — 11 dos 12 rótulos de data do gráfico |
-| `P-KPI-PAINEL-ICONE-404` | 18474 | BAIXA | sim | P-KPI-PAINEL-ICONE-404 (2026-11-28) — o painel de KPI não declara ícone: toda abertura e |
-| `P-KPI-CARTOES-LINGUAGEM-DE-DONO` | 18482 | BAIXA | sim | P-KPI-CARTOES-LINGUAGEM-DE-DONO (2026-11-28) — 4 BAIXO de linguagem e de forma nos cartõ |
-| `P-PLAT-ORG-MODULOS-TELA-RESTOS` | 18494 | BAIXA | sim | P-PLAT-ORG-MODULOS-TELA-RESTOS (2026-11-27) — o que a cláusula de módulos da organização |
+| `P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE` | 18434 | BAIXA | sim | P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE (2026-11-28) — o filtro de período do rateio do cu |
+| `P-WO-LEITURA-DB-COMENTARIOS-DEFASADOS` | 18443 | BAIXA | sim | P-WO-LEITURA-DB-COMENTARIOS-DEFASADOS (2026-11-28) — os comentários do teste de leitura  |
+| `P-SAN305-T11G-SEM-COMPLETUDE` | 18459 | BAIXA | sim | P-SAN305-T11G-SEM-COMPLETUDE (2026-11-28) — o censo T11g confere que a tabela declarada  |
+| `P-KPI-VELOCIDADE-ROTULOS-SOBREPOSTOS` | 18467 | BAIXA | sim | P-KPI-VELOCIDADE-ROTULOS-SOBREPOSTOS (2026-11-28) — 11 dos 12 rótulos de data do gráfico |
+| `P-KPI-PAINEL-ICONE-404` | 18475 | BAIXA | sim | P-KPI-PAINEL-ICONE-404 (2026-11-28) — o painel de KPI não declara ícone: toda abertura e |
+| `P-KPI-CARTOES-LINGUAGEM-DE-DONO` | 18483 | BAIXA | sim | P-KPI-CARTOES-LINGUAGEM-DE-DONO (2026-11-28) — 4 BAIXO de linguagem e de forma nos cartõ |
+| `P-PLAT-ORG-MODULOS-TELA-RESTOS` | 18495 | BAIXA | sim | P-PLAT-ORG-MODULOS-TELA-RESTOS (2026-11-27) — o que a cláusula de módulos da organização |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
