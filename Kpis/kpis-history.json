@@ -5033,7 +5033,7 @@
     "backend_tests": "7806/7808",
     "frontend_smoke_tests": "2118/2118",
     "blocks_completed": 276,
-    "description": "PR-634 — É registro: reúne as decisões do dono, a ata da avaliação do leilão e as pendências abertas e fechadas do período, sem mudança no produto.. NÚMEROS DA CI no merge commit `34401640` (push na `main`), workflow `ci`, run 45414730850, tentativa 1: backend `7808 teste(s) · pass 7806 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 276 -> 276.",
+    "description": "PR-634 — É registro: reúne as decisões do dono, a ata da avaliação do leilão e as pendências abertas e fechadas do período, sem mudança no produto. NÚMEROS DA CI no merge commit `34401640` (push na `main`), workflow `ci`, run 45414730850, tentativa 1: backend `7808 teste(s) · pass 7806 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 276 -> 276.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 634`; números do log da rodada 45414730850. Nada fica `null`."
   },
   {
@@ -5075,7 +5075,7 @@
     "backend_tests": "7869/7871",
     "frontend_smoke_tests": "2118/2118",
     "blocks_completed": 277,
-    "description": "PR-639 — O motor da comissão do guincheiro entra no servidor: calcula em centavos exatos, libera quando a OS concluída é validada, recalcula antes de pagar e separa o pagamento por guincheiro. NÚMEROS DA CI no merge commit `97b82f2e` (push na `main`), workflow `ci`, run 45492547340, tentativa 1: backend `7871 teste(s) · pass 7869 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 276 -> 277.",
+    "description": "PR-639 — O motor da comissão do guincheiro entra no servidor com o PR1 do B-COMISSAO-MOTOR (F0 a F6): valores em campos *Cents, liberação e recálculo antes de pagar (F4), liquidação por unidade com a trava do guincheiro (F5) e as leituras agregadas de comissão para financeiro e guincheiro. Fonte fora do corpo do PR: a liberação quando a OS concluída é validada é o padrão on_validation de COMMISSION_RELEASE_MODE (src/config/env.ts:303 no merge 97b82f2e), e a liquidação em centavos exatos está no título do squash na main. NÚMEROS DA CI no merge commit `97b82f2e` (push na `main`), workflow `ci`, run 45492547340, tentativa 1: backend `7871 teste(s) · pass 7869 · fail 0 · skipped 2`; frontend 2118/2118; flutter 2069/2307. `blocks_completed` 276 -> 277.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 639`; números do log da rodada 45492547340. Nada fica `null`."
   },
   {
@@ -5089,7 +5089,7 @@
     "backend_tests": "7916/7918",
     "frontend_smoke_tests": "2128/2128",
     "blocks_completed": 278,
-    "description": "B-LEILAO-REVENDA — Quando o arrematante não paga, o veículo pode voltar a leilão numa rodada nova; o sistema impede usar uma leitura antiga no relote ou no resgate e recusa registrar o resultado numa rodada mais antiga. NÚMEROS DA CI no merge commit `cae731c0` (push na `main`), workflow `ci`, run 45502324575, tentativa 1: backend `7918 teste(s) · pass 7916 · fail 0 · skipped 2`; frontend 2128/2128; flutter 2069/2307. `blocks_completed` 277 -> 278.",
+    "description": "B-LEILAO-REVENDA — Quando o arrematante não paga, o veículo pode voltar a leilão numa rodada nova; o sistema impede usar uma leitura antiga no relote ou no resgate (409 auction_reading_stale) e recusa a revenda numa rodada que não seja mais nova que todo resultado já registrado, assim como a avaliação de uma rodada que já tem resultado (resale_round_not_new e appraisal_round_has_result). NÚMEROS DA CI no merge commit `cae731c0` (push na `main`), workflow `ci`, run 45502324575, tentativa 1: backend `7918 teste(s) · pass 7916 · fail 0 · skipped 2`; frontend 2128/2128; flutter 2069/2307. `blocks_completed` 277 -> 278.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 637`; números do log da rodada 45502324575. Nada fica `null`."
   },
   {
@@ -5145,7 +5145,7 @@
     "backend_tests": "7962/7964",
     "frontend_smoke_tests": "2129/2129",
     "blocks_completed": 280,
-    "description": "PR-642 — A plataforma passa a criar organizações de verdade no banco, dentro do grupo, com assinatura, perfil e primeiro administrador; também edita, suspende e reativa, e todo usuário cadastrado nasce com papel definido. O bloco passou por junta completa: o achado grave foi demonstrado como efeito do ambiente de teste, não defeito do produto, e a C3 foi refeita depois do conserto. NÚMEROS DA CI no merge commit `690beca8` (push na `main`), workflow `ci`, run 46028706698, tentativa 3: backend `7964 teste(s) · pass 7962 · fail 0 · skipped 2`; frontend 2129/2129; flutter 2069/2307. `blocks_completed` 279 -> 280.",
+    "description": "PR-642 — A plataforma passa a criar organizações de verdade no banco, dentro do grupo (a matriz), com assinatura, perfil e primeiro administrador; também edita, suspende e reativa, e a suspensão corta a equipe. Nos dois caminhos de cadastro que o bloco prova — o do primeiro administrador e o da rota de usuário da plataforma — o usuário é gravado com papel definido na mesma transação, e a falha forçada na atribuição do papel não grava o usuário (testes C17 e C18 do PR). O bloco passou por junta completa. Fonte fora do corpo do PR: a reclassificação do achado grave como efeito do ambiente de teste e a C3 refeita depois do conserto estão em agent-orchestration/docs/status-geral.md:5653 e :5664 na origin/main. NÚMEROS DA CI no merge commit `690beca8` (push na `main`), workflow `ci`, run 46028706698, tentativa 3: backend `7964 teste(s) · pass 7962 · fail 0 · skipped 2`; frontend 2129/2129; flutter 2069/2307. `blocks_completed` 279 -> 280.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 642`; números do log da rodada 46028706698. Nada fica `null`."
   },
   {
