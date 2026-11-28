@@ -40,7 +40,7 @@ const PLATFORM_NAV: readonly PlatformNavGroup[] = [
     items: [
       { label: "Visão Geral", path: "/platform/overview", icon: LayoutDashboard },
       { label: "Organizações", path: "/platform/tenants", icon: Server },
-      { label: "Cloud Billing", path: "/platform/cloud-billing", icon: Cloud },
+      { label: "Custo da nuvem", path: "/platform/cloud-billing", icon: Cloud },
       { label: "Cobrança", path: "/platform/billing", icon: Receipt },
     ],
   },
