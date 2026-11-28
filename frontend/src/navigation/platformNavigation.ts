@@ -34,7 +34,7 @@ export const platformNavigation: NavigationItem[] = [
   },
   {
     id: "platform-cloud-billing",
-    label: "Cloud Billing",
+    label: "Custo da nuvem",
     path: "/platform/cloud-billing",
     scope: "platform",
     mode: "platform",

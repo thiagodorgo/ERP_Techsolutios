@@ -43,7 +43,7 @@ test("T-ROT-1 vermelho-controle: o mesmo enunciado acusa a rota sem o guarda", (
 
 test("T-ROT-2 'Cobrança' está no menu do console (grupo PRINCIPAL, depois do Cloud Billing) e na navegação da plataforma", async () => {
   const layout = read(path.join(SRC, "layouts/PlatformLayout.tsx"));
-  assert.match(layout, /\{ label: "Cloud Billing", path: "\/platform\/cloud-billing", icon: Cloud \},\s*\{ label: "Cobrança", path: "\/platform\/billing", icon: Receipt \}/);
+  assert.match(layout, /\{ label: "Custo da nuvem", path: "\/platform\/cloud-billing", icon: Cloud \},\s*\{ label: "Cobrança", path: "\/platform\/billing", icon: Receipt \}/);
   const { platformNavigation } = await import("../src/navigation/platformNavigation");
   const item = platformNavigation.find((entry) => entry.path === "/platform/billing");
   assert.equal(item?.label, "Cobrança");
