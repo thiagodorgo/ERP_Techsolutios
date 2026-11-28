@@ -3,13 +3,16 @@ import test from "node:test";
 
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useSearchParams } from "react-router-dom";
 
 import { PlatformTenantsScreen, PlatformTenantsView } from "../src/modules/platform/pages/PlatformTenantsPage";
 import { composePlatformOrganizations, organizationsTableDensity } from "../src/modules/platform/platform-organizations.state";
 import { listPlatformTenants } from "../src/modules/platform/platform.service";
 import type { PlatformOverviewData } from "../src/modules/platform/platform-overview.types";
 import { ORGANIZATION_A, ORGANIZATION_SYSTEM } from "./helpers/plat-org.fixture";
+import { elements, installMiniDom, propsOf, text, type MiniDomElement } from "./helpers/mini-dom";
+
+const dom = installMiniDom();
 
 const ORGANIZATION_B = {
   ...ORGANIZATION_A,
@@ -99,14 +102,45 @@ test("T7 busca, grupo e indicadores derivam suas contagens do recorte e o filtro
   assert.match(all, /sem a organização de sistema/);
   assert.match(all, /platform-organizations__list-card[^]*?platform-organizations__filters/);
   assert.match(all, /class="pat-pill/);
-  assert.match(render(), /<option value="__sem">Sem grupo<\/option>/);
-  const withoutGroup = render({ groupId: "__sem" });
-  assert.match(withoutGroup, /Plataforma/);
-  assert.doesNotMatch(withoutGroup, /Organização A|Organização B/);
   const suspended = render({ statusFilter: "suspended" });
   assert.match(suspended, /Organização B/);
   assert.doesNotMatch(suspended, /Organização A/);
   assert.match(suspended.replace(/<!--.*?-->/g, ""), /Filtro: Suspensas/);
+});
+
+test("T7-g o filtro Sem grupo recorta a lista e publica o endereço", async () => {
+  const { createRoot } = await import("react-dom/client");
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  function Harness() {
+    const [params, setParams] = useSearchParams();
+    const location = useLocation();
+    return <>
+      <output data-location>{`${location.pathname}${location.search}`}</output>
+      <PlatformTenantsView
+        rows={rows}
+        groupId={params.get("grupo") ?? ""}
+        onGroupChange={(value) => {
+          const next = new URLSearchParams(params);
+          value ? next.set("grupo", value) : next.delete("grupo");
+          setParams(next);
+        }}
+      />
+    </>;
+  }
+  await React.act(async () => root.render(<MemoryRouter initialEntries={["/platform/tenants"]}><Harness /></MemoryRouter>));
+  const select = elements(container, (element) => element.localName === "select" && propsOf(element)["aria-label"] === "Filtrar por grupo")[0] as MiniDomElement;
+  assert.ok(elements(select, (element) => element.localName === "option" && propsOf(element).value === "__sem" && text(element) === "Sem grupo")[0]);
+  await React.act(async () => {
+    (propsOf(select).onChange as (event: { target: { value: string } }) => void)({ target: { value: "__sem" } });
+  });
+  await React.act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+  assert.match(text(container), /Plataforma/);
+  assert.doesNotMatch(text(container), /Organização A|Organização B/);
+  assert.equal(text(elements(container, (element) => element.getAttribute("data-location") !== null)[0] as MiniDomElement), "/platform/tenants?grupo=__sem");
+  await React.act(async () => root.unmount());
+  dom.doc.body.removeChild(container);
 });
 
 test("T8 linhas de cliente expandem abaixo e a linha de sistema permanece inerte", () => {
