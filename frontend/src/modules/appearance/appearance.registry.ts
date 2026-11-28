@@ -111,7 +111,7 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
   // "aprovo as telas de custos", 14/11, `D-DONO-1411-T5-TRES-OPCOES`); padrão A, sem entrada em SCREEN_DEFAULT_APPEARANCE.
   {
     key: "platform-cloud-billing",
-    label: "Cloud Billing",
+    label: "Custo da nuvem",
     scope: "platform",
     options: [
       { value: "A", label: "Fiel à referência" },

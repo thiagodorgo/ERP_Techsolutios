@@ -27,6 +27,18 @@ filtram a lista, linhas de uma linha, detalhe que abre embaixo da linha. É a re
 `financeiro.png`. A seção escura no rodapé ("camada de revisão") é nota para o dono, não faz parte da tela, e os
 números são de exemplo. A página carrega as fontes do Google Fonts; sem rede, cai na fonte do sistema.
 
+**Login web da marca Pátio Sul ERP (HTML; decisão do dono, 2026-11-27, `D-DONO-2711-LOGIN-APROVADO-GRAFITE-CARTAO-BRANCO`,
+CLAUDE.md §11):** a referência do login web é `login-patiosul.reference.html`, e não o `login.png` da tabela do ERP Mobile
+(o login do protótipo antigo do app). Ela traz as 3 cores aprovadas, uma abaixo da outra, cada uma do tamanho da janela:
+Grafite (a de fábrica), Branca e Preta (`D-DONO-2711-LOGIN-MAIS-BRANCA-E-PRETA`); os tokens estão no `DESIGN_SYSTEM.md`,
+seção "Marca Pátio Sul ERP". Abaixo de 900 px de largura a tela vira uma coluna (a marca em cima, o cartão embaixo). O logo
+entra sem a linha do site, porque o repositório é público (`P-MARCA-LOGO-SEM-SITE`): é a única diferença em relação às
+imagens aprovadas, além do alvo de 44 px do "Esqueci minha senha".
+
+**Custo da nuvem (decisão do dono, 2026-11-27, resposta `sb-08`):**
+a tela Custo da nuvem é a que as três referências chamam Cloud Billing; o título dentro delas e o nome dos arquivos ficam como estão; na tela vale o rótulo novo.
+As três são `Cloud Billing.reference.html`, `platform-cloud-billing-3opcoes.reference.html` e `web/cloud-billing.png`.
+
 **Tela de uma opção só, aprovada em lote:** `painel-do-grupo.reference.html` — Painel do grupo (B-GRUPO-GESTOR-1b, maquete do Claude; lote aprovado pelo dono com os 8 itens ajustados e a resposta "tudo já", Emenda 2 do plano): blocos clicáveis que ordenam a lista de pátios, 6 meses de recebido × pago, comparação entre pátios e a linha que abre o detalhe do pátio. Onde a maquete diverge, valem as emendas: sem o seletor de mês (Emenda 1 §5.1), com o tempo de chegada e os funcionários na 1ª entrega (Emenda 2 §2.4); o quadro de itens à direita é nota para o dono e os números são de exemplo.
 
 **Toda tela passa por 3 opções (`D-TELAS-TRES-OPCOES`, CLAUDE.md §4 item 7):** antes do dev, uma maquete com as opções A, B e C no padrão do sistema; a escolhida pelo dono entra nesta pasta como referência da tela.

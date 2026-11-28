@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import { PATIOSUL_LOGO_ALT, PATIOSUL_LOGO_LOGIN_ESCURO, PATIOSUL_NOME } from "../brand/patiosul";
 import { listAvailableContexts, switchTenantContext } from "../modules/context/repository";
 import { resolveContextLandingRoute } from "../modules/context/landing-route";
 import type { TenantContext } from "../modules/context/types";
@@ -65,13 +66,10 @@ export function ContextSelectionPage() {
         {/* marca */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0D1B2A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 21V11" /><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6" /><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11" />
-              </svg>
-            </div>
+            {/* B-MARCA-LOGIN-SIDEBAR (fatia L): só o nome e o logo da marca Pátio Sul ERP; o logo de letras pretas no fundo claro. */}
+            <img src={PATIOSUL_LOGO_LOGIN_ESCURO} width={709} height={258} alt={PATIOSUL_LOGO_ALT} style={{ display: "block", height: 44, width: "auto", flexShrink: 0, mixBlendMode: "multiply" }} />
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", letterSpacing: "-.3px" }}>TechSolutions</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", letterSpacing: "-.3px" }}>{PATIOSUL_NOME}</div>
               <div style={{ fontSize: 13, fontWeight: 500, color: "#64748B", marginTop: 2 }}>Plataforma de operações de campo</div>
             </div>
           </div>

@@ -1,9 +1,20 @@
 import { Check, Palette } from "lucide-react";
 import type { CSSProperties, KeyboardEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { useAuth } from "../../providers/AuthProvider";
 import { appearanceScreensFor, type AppearanceScope, type AppearanceScreen } from "./appearance.registry";
 import { defaultAppearanceFor } from "./appearance.storage";
+import {
+  DEFAULT_THEME_COLOR,
+  THEME_COLORS,
+  THEME_COLOR_LABELS,
+  chooseThemeColor,
+  readAppliedThemeColor,
+  subscribeThemeColor,
+  syncPersonalThemeColor,
+  type ThemeColor,
+} from "./theme.storage";
 import { useScreenAppearance } from "./useScreenAppearance";
 
 // B-APARENCIA-USUARIO — a escolha da aparência fica no MENU DO USUÁRIO (D-APARENCIA-RESPOSTAS (c)), que no shell
@@ -60,6 +71,14 @@ export function AppearanceMenu({ triggerStyle, scope = "tenant" }: { readonly tr
   const wrapRef = useRef<HTMLSpanElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { session } = useAuth();
+  const userId = session?.user?.id ?? null;
+
+  // B-MARCA-LOGIN-SIDEBAR (fatia L) — ao entrar, a cor pessoal vale: os dois shells montam este menu depois do login. SÓ SE
+  // existir a chave pessoal, a cor dela é aplicada e copiada para a do aparelho (o login abre nela); sem ela, nada é gravado.
+  useEffect(() => {
+    syncPersonalThemeColor(userId);
+  }, [userId]);
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +124,7 @@ export function AppearanceMenu({ triggerStyle, scope = "tenant" }: { readonly tr
         <>
           <button type="button" aria-hidden="true" tabIndex={-1} style={overlayStyle} onClick={() => setOpen(false)} />
           <div ref={panelRef} role="menu" aria-label="Aparência das telas" style={APPEARANCE_PANEL_STYLE} onKeyDown={onPanelKeyDown}>
+            <ThemeColorChoices userId={userId} />
             <AppearanceChoices onChosen={closeAndReturnFocus} scope={scope} />
           </div>
         </>
@@ -159,6 +179,65 @@ function AppearanceScreenGroup({ screen, onChosen }: { readonly screen: Appearan
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// B-MARCA-LOGIN-SIDEBAR (fatia L) — "Cores do sistema": Grafite (a de fábrica), Branca e Preta, com os rótulos sem "(aprovada)".
+// É uma preferência pessoal, separada da aparência A, B ou C de cada tela, e mora em `techsol.tema.` (theme.storage.ts),
+// nunca em `techsol.aparencia.`. Para não mudar o que os testes do menu contam, os controles usam `role="radiogroup"` e
+// `role="radio"` (nunca `menuitemradio`) e o id do grupo não começa com `aparencia-`. Cada controle tem 44 px de alvo e entra
+// na ordem do Tab; as setas andam e escolhem dentro do grupo, sem passar para os itens do menu. Escolher não fecha o menu.
+// A estrutura ARIA do painel (um `radiogroup` dentro de `role="menu"`) é a pendência `P-MARCA-MENU-APARENCIA-A11Y` (E2.1.4).
+const THEME_GROUP_LABEL_ID = "cores-do-sistema";
+const themeGroupStyle: CSSProperties = { paddingBottom: 6, marginBottom: 6, borderBottom: "1px solid #E2E8F0" };
+const themeItemStyle: CSSProperties = { ...itemStyle, minHeight: 44 };
+
+export function ThemeColorChoices({ userId }: { readonly userId: string | null }) {
+  const color = useSyncExternalStore(subscribeThemeColor, readAppliedThemeColor, () => DEFAULT_THEME_COLOR);
+  const groupRef = useRef<HTMLDivElement>(null);
+
+  function choose(next: ThemeColor) {
+    chooseThemeColor(userId, next);
+  }
+
+  function onItemKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const step = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : event.key === "ArrowUp" || event.key === "ArrowLeft" ? -1 : 0;
+    if (step === 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const next = THEME_COLORS[(index + step + THEME_COLORS.length) % THEME_COLORS.length];
+    choose(next);
+    groupRef.current?.querySelector<HTMLButtonElement>(`[data-cor='${next}']`)?.focus();
+  }
+
+  return (
+    <div ref={groupRef} role="radiogroup" aria-labelledby={THEME_GROUP_LABEL_ID} style={themeGroupStyle}>
+      <div id={THEME_GROUP_LABEL_ID} style={groupLabelStyle}>
+        Cores do sistema
+      </div>
+      {THEME_COLORS.map((option, index) => {
+        const checked = option === color;
+        return (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={checked}
+            data-cor={option}
+            className="ui-menu-item"
+            style={{ ...themeItemStyle, fontWeight: checked ? 700 : 500 }}
+            onClick={() => choose(option)}
+            onKeyDown={(event) => onItemKeyDown(event, index)}
+          >
+            <span aria-hidden="true" style={{ width: 16, display: "inline-flex", color: "#2563EB" }}>
+              {checked ? <Check size={15} /> : null}
+            </span>
+            <span>{THEME_COLOR_LABELS[option]}</span>
+          </button>
+        );
+      })}
+      <div style={noteStyle}>Vale só para você, neste navegador. Por enquanto, a cor aparece na tela de entrada.</div>
     </div>
   );
 }

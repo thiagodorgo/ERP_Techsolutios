@@ -16,6 +16,11 @@
 #   PORTAL_TENANT_ID      → binding de organização do deploy do portal. NÃO é segredo, mas é o id de uma
 #                           organização real: fica fora do repositório por §2.8.
 #   PORTAL_CORS_ORIGIN    → allowlist https:// da origem do portal público (mesma disciplina do CORS_ORIGIN).
+#   CHECKLIST_STORAGE_PROVIDER → `s3`. B-EVIDENCIA-DURAVEL (G-STORAGE-DURAVEL): staging roda NODE_ENV=production,
+#                           e a trava do env.ts recusa arquivo no disco do contêiner, que some no reinício.
+#   CHECKLIST_STORAGE_S3_BUCKET → bucket do armazenamento durável de staging (recurso real: fora do repositório).
+#   CHECKLIST_STORAGE_S3_REGION → região do bucket, na forma da AWS.
+#   CHECKLIST_STORAGE_S3_ENDPOINT → exatamente https://s3.<região>.amazonaws.com da região acima (vazio é recusado).
 # B-O6R-05 (Ω6R-DAT-001/DIN-006): os cinco PORTAL_* acima existiam no env.ts desde o Ω5P mas NÃO estavam
 # nesta lista — quem provisionasse staging por ela teria o boot reprovado por 5 issues.
 # Rollback do provisionamento: `fly apps destroy erp-techsolutions-api-staging` (app inteiro) ou
