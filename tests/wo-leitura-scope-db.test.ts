@@ -249,7 +249,7 @@ if (!connectionString) {
         classe: INST[x.chave].classe,
         marcador: INST[x.chave].marcador ?? "",
       }));
-      assert.equal(ENTRADAS.length, 19, "as 18 rotas (R10 em duas formas) do bloco no instantâneo");
+      assert.equal(ENTRADAS.length, 21, "as 20 rotas (R10 em duas formas) do bloco no instantâneo");
       type E = (typeof ENTRADAS)[number];
       const metodo = (e: E) => e.chave.slice(0, e.chave.indexOf(" "));
       const aleatoria = (e: E) => {
