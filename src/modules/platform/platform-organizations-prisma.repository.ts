@@ -8,6 +8,7 @@ import { GROUP_MEMBERS_MAX } from "../subscription-billing/economic-groups/econo
 import { todayBusinessDate } from "../subscription-billing/economic-groups/membership.rules.js";
 import { membershipAuditBuilder } from "../subscription-billing/overview/overview.trail.js";
 import { pickBillingAuditMetadata } from "../subscription-billing/platform-audit/audit-metadata.js";
+import { CANONICAL_MODULE_KEYS } from "./platform-modules.service.js";
 import {
   normalizedOrganizationName,
   OrganizationGroupNameInvalidError,
@@ -15,10 +16,14 @@ import {
   OrganizationGroupNotFoundError,
   OrganizationGroupTooManyMembersError,
   OrganizationNameConflictError,
+  planModuleChange,
+  subscriptionInForce,
   type CreatedOrganizationRecord,
   type CreateOrganizationRecord,
+  type ModuleChange,
   type OrganizationGroupRef,
   type PlatformOrganizationsRepository,
+  type ReplaceModulesResult,
 } from "./platform-organizations.repository.js";
 import type { PlatformOrganizationRecord, UpdateTenantStatusDto } from "./platform.types.js";
 
@@ -173,6 +178,62 @@ export class PrismaPlatformOrganizationsRepository implements PlatformOrganizati
     });
   }
 
+  // B-PLANOS-MODULOS (D-PLANOS-MODULOS-PORTA-REAL) — a troca de módulos de UMA organização sem assinatura, numa
+  // transação só. A ordem é a da Emenda 1 do plano, e o ratchet `san3-05-acessos-de-plataforma` depende dela:
+  //   1. o contexto de RLS da organização é a 1ª instrução (só assim o `tx` é "sob contexto");
+  //   2. `FOR UPDATE` na linha de `tenants` (sem RLS): a escrita de módulos da assinatura, na mesma linha, espera;
+  //   3. a leitura da assinatura (`tenant_subscriptions`, FORCE RLS) vem DEPOIS do contexto: sem ele ela veria zero
+  //      linhas e a porta abriria. Em vigor = `valid_to` nulo ou no futuro; achou, nada se escreve;
+  //   4. a lista atual × a nova, como conjunto: igual, nada se escreve (nem a trilha);
+  //   5. `tenants.modules` e as duas trilhas (`platform_audit_logs` e `audit_logs` da organização) na MESMA transação.
+  async replaceModules(
+    organizationId: string,
+    modules: readonly string[],
+    actorUserId: string,
+    now: Date,
+  ): Promise<ReplaceModulesResult> {
+    if (!UUID.test(organizationId)) return { kind: "not_found" };
+    const outcome = await this.prisma.$transaction(async (tx): Promise<ReplaceModulesResult> => {
+      await setTenantRlsContext(tx, organizationId);
+      const locked = await tx.$queryRaw<Array<Parameters<typeof mapRow>[0]>>`
+        SELECT id, name, slug, status, modules, created_at, updated_at
+        FROM tenants
+        WHERE id = ${organizationId}::uuid FOR UPDATE
+      `;
+      const current = locked[0];
+      if (!current) return { kind: "not_found" };
+      const subscriptions = await tx.tenantSubscription.findMany({ where: { tenant_id: organizationId }, select: { valid_to: true } });
+      if (subscriptions.some((subscription) => subscriptionInForce(subscription.valid_to, now))) return { kind: "subscription_in_force" };
+      const change = planModuleChange(current.modules, modules);
+      if (!change) return { kind: "unchanged", organization: mapRow(current) };
+      const row = await tx.tenant.update({ where: { id: organizationId }, data: { modules: [...change.next] } });
+      const trail = modulesTrailMetadata(change);
+      await tx.platformAuditLog.create({
+        data: {
+          actor_user_id: actorColumn(actorUserId),
+          tenant_id: organizationId,
+          action: "organization.modules_changed",
+          entity: "organization",
+          entity_id: organizationId,
+          metadata: { ...pickBillingAuditMetadata({ actor_user_id: actorUserId }), ...trail } as Prisma.InputJsonObject,
+        },
+      });
+      await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+        tenantId: organizationId,
+        actorId: null,
+        actorType: "system",
+        action: "tenant.modules_changed",
+        resourceType: "tenant",
+        resourceId: organizationId,
+        outcome: "success",
+        severity: "warning",
+        metadata: { modules_added: trail.modules_added, modules_removed: trail.modules_removed },
+      });
+      return { kind: "changed", organization: mapRow(row) };
+    }, { maxWait: 30_000, timeout: 30_000 });
+    return outcome;
+  }
+
   private async resolveAndLockGroup(
     tx: Prisma.TransactionClient,
     input: CreateOrganizationRecord["group"],
@@ -284,6 +345,24 @@ export class PrismaPlatformOrganizationsRepository implements PlatformOrganizati
 
 function actorColumn(value: string | null): string | null {
   return value !== null && UUID.test(value) ? value : null;
+}
+
+// B-PLANOS-MODULOS — a função LOCAL de metadados da trilha de módulos (§5.4 do plano). As listas só levam chave do
+// catálogo fechado, no máximo 50 (a regra `codeList` da casa derrubaria `tenant-admin`, por causa do hífen); a chave
+// antiga fora do catálogo sai só como contagem, sem o texto dela. Nada de e-mail, nome, token, caminho ou `tenant_id`
+// externo (§2.8). O `actor_user_id` continua passando por `pickBillingAuditMetadata`.
+function modulesTrailMetadata(change: ModuleChange): {
+  readonly modules_added: string[];
+  readonly modules_removed: string[];
+  readonly modules_removed_other: number;
+} {
+  const catalog = new Set(CANONICAL_MODULE_KEYS);
+  const only = (keys: readonly string[]): string[] => keys.filter((key) => catalog.has(key)).slice(0, 50);
+  return {
+    modules_added: only(change.added),
+    modules_removed: only(change.removed),
+    modules_removed_other: Number.isSafeInteger(change.removedOther) && change.removedOther > 0 ? change.removedOther : 0,
+  };
 }
 
 function isGroupNameTaken(error: unknown): boolean {

@@ -1,7 +1,8 @@
 // B-SAN3-09 — testes COM BANCO para scripts/bootstrap-platform-admin.ts
-// T2.1–T2.10 (10 casos): RBAC não provisionado, 1ª execução, 2ª execução (idempotência), dry-run,
-// admin adicional recusado, reset de senha, papel efêmero NOBYPASSRLS, HTTP (login+overview), processo
-// filho, concorrência com trava própria.
+// T2.1–T2.10 + T2.3b (11 casos): RBAC não provisionado, 1ª execução, 2ª execução (idempotência),
+// convergência de administrador legado sem vínculo de identidade, dry-run, admin adicional recusado,
+// reset de senha, papel efêmero NOBYPASSRLS, HTTP (login direcionado + login sem organização antes e
+// depois da concessão de EXECUTE na função elevada), processo filho, concorrência com trava própria.
 // Banco de drill: `CREATE DATABASE erp_san3_09_drill_<sufixo>` (descartável), `migrate deploy` +
 // `db:provision-rbac` como processos filhos; teardown: `DROP DATABASE … WITH (FORCE)`.
 // Ratchet lexical (db-catalog-write-guard): sem DDL de catálogo de cluster nem concessão explícita neste arquivo.
@@ -16,13 +17,19 @@ import { fileURLToPath } from "node:url";
 
 import {
   BOOTSTRAP_MIN_PASSWORD_LENGTH,
+  BOOTSTRAP_AUDIT_ACTION,
   BootstrapRefused,
   PLATFORM_TENANT_SLUG,
   PLATFORM_ROLE_KEY,
   bootstrapPlatformAdmin,
   readBootstrapInput,
 } from "../scripts/bootstrap-platform-admin.js";
-import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
+import { createPrismaClient } from "../src/database/pg-connection.js";
+import { setTenantRlsContext } from "../src/database/rls.js";
+import { LocalAuthCredentialRepository } from "../src/modules/auth/repositories/local-auth-credential.repository.js";
+import { LocalAuthCredentialService } from "../src/modules/auth/services/local-auth-credential.service.js";
+import { createEphemeralRole, withRoleCatalogLock } from "./helpers/auth-identity-fixture.js";
+import { grantAuthLoginCandidatesExecuteToRole } from "./helpers/auth-login-candidates-grant.js";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const SCRIPT = join(ROOT, "scripts", "bootstrap-platform-admin.ts");
@@ -52,6 +59,38 @@ if (!connectionString) {
         import("@prisma/adapter-pg"),
         import("@prisma/client"),
       ]);
+
+      // B-AUTH-LOGIN-PLATAFORMA — leitura das TRÊS tabelas de identidade SEMPRE pelo cliente
+      // ADMINISTRATIVO do drill. Sob a política da trilha (RLS FORCE, única de INSERT) o papel de
+      // runtime não tem SELECT em auth_identity_link_events, e o vínculo só aparece sob o braço de
+      // tenant do GUC. As contagens são do banco ISOLADO do drill, nunca de base compartilhada.
+      const identityState = async (
+        adminLike: InstanceType<typeof PrismaClient>,
+        tenantId: string | null,
+        userId: string | null,
+      ) => {
+        const links = await adminLike.authIdentityLink.findMany({
+          where: tenantId === null ? undefined : { tenant_id: tenantId },
+          select: { id: true, identity_id: true, attached_via: true },
+          orderBy: { created_at: "asc" },
+        });
+        const events = await adminLike.authIdentityLinkEvent.findMany({
+          where: tenantId === null || userId === null ? undefined : { tenant_id: tenantId, user_id: userId },
+          select: { id: true, event: true },
+          orderBy: { occurred_at: "asc" },
+        });
+
+        return {
+          identities: await adminLike.authIdentity.count(),
+          links: links.length,
+          linkIds: links.map((link) => link.id),
+          identityIds: links.map((link) => link.identity_id),
+          attachedVia: links.map((link) => link.attached_via),
+          backfillEvents: events.filter((event) => event.event === "backfill").length,
+          events: events.length,
+          eventIds: events.map((event) => `${event.event}:${event.id}`),
+        };
+      };
 
       // Conexão administrativa para criar/destruir o banco de drill
       const adminClient = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
@@ -149,6 +188,8 @@ if (!connectionString) {
 
         let firstTenantId: string | null = null;
         let firstPasswordHash: string | null = null;
+        let firstUserId: string | null = null;
+        let firstIdentity: Awaited<ReturnType<typeof identityState>> | null = null;
 
         await t.test("T2.2 1ª execução → flags true, 1/1/1/1/1, status active, vínculo global, scrypt-v1", async () => {
           const report = await bootstrapPlatformAdmin(drillClient!, baseInput);
@@ -200,6 +241,17 @@ if (!connectionString) {
           });
           assert.ok(cred?.password_hash?.startsWith("scrypt$v=1$"), `credencial deve ser scrypt-v1 (hash: scrypt$v=1$…), mas foi: ${cred?.password_hash?.slice(0, 25)}`);
           firstPasswordHash = cred?.password_hash ?? null;
+
+          // B-AUTH-LOGIN-PLATAFORMA (§2 do plano) — o bootstrap entrega o administrador já
+          // convergido nas TRÊS tabelas de identidade, na mesma transação e sob o GUC da
+          // organização `platform` (mesmo efeito do fluxo normal em prisma-core-saas.store.ts:188).
+          assert.equal(report.identityLinked, true, "identityLinked deve ser true na 1ª execução");
+          firstUserId = report.userId;
+          firstIdentity = await identityState(drillClient!, report.tenantId, report.userId);
+          assert.equal(firstIdentity.links, 1, "deve haver exatamente 1 vínculo em auth_identity_links");
+          assert.equal(firstIdentity.identities, 1, "deve haver exatamente 1 identidade em auth_identities");
+          assert.equal(firstIdentity.backfillEvents, 1, "deve haver exatamente 1 evento 'backfill'");
+          assert.deepEqual(firstIdentity.attachedVia, ["backfill"], "o vínculo chega por 'backfill'");
         });
 
         // T2.3 — 2ª execução idempotente ────────────────────────────────────────────────────────────────
@@ -228,6 +280,132 @@ if (!connectionString) {
             select: { password_hash: true },
           });
           assert.equal(cred?.password_hash, firstPasswordHash, "password_hash não deve mudar na 2ª execução");
+
+          // B-AUTH-LOGIN-PLATAFORMA — a 2ª execução NÃO toca as três tabelas de identidade.
+          assert.equal(report.identityLinked, false, "identityLinked deve ser false na 2ª execução (o vínculo já existia)");
+          const identityDepois = await identityState(drillClient!, firstTenantId, firstUserId);
+          assert.deepEqual(identityDepois, firstIdentity, "contagens e IDs de identidade permanecem na 2ª execução");
+          assert.equal(identityDepois.links, 1, "auth_identity_links permanece 1");
+          assert.equal(identityDepois.identities, 1, "auth_identities permanece 1");
+          assert.equal(identityDepois.backfillEvents, 1, "auth_identity_link_events permanece 1");
+          assert.equal(identityDepois.identityIds[0], firstIdentity?.identityIds[0], "o identity_id deve ser o mesmo");
+        });
+
+        // T2.3b — convergência de administrador LEGADO sem vínculo (o caso de produção) ─────────────────
+
+        await t.test("T2.3b administrador legado sem vínculo → identityLinked true, 1/1/1, auditoria +1; reexecução → false sem duplicar", async () => {
+          // Banco de drill SEPARADO (como os estados do T2.4). Apagar só o vínculo de uma execução do
+          // novo bootstrap deixaria identidade órfã e evento antigo, contaminando as contagens e os
+          // discriminantes do runbook. A fixture reproduz o efeito REAL do bootstrap anterior:
+          // organização, usuário, vínculo de papel e credencial pelo serviço existente — e NADA nas
+          // três tabelas de identidade.
+          const dbName = `erp_san3_09_drill_t23b_${suffix}`;
+          const url = new URL(connectionString);
+          url.pathname = `/${dbName}`;
+          await adminClient.$executeRawUnsafe(`CREATE DATABASE "${dbName}" TEMPLATE "${modelDbName}"`);
+          // Pela fábrica única (B-DB-FUSO-UTC): fixa o fuso da sessão em UTC e não soma ocorrência
+          // à catraca G3 de adapters de conexão construídos à mão em tests/**.
+          const legado = createPrismaClient(url.toString());
+          try {
+            const tenant = await legado.tenant.create({
+              data: { name: "Plataforma", slug: PLATFORM_TENANT_SLUG, status: "active", modules: [] },
+            });
+            const user = await legado.user.create({
+              data: { tenant_id: tenant.id, name: ADMIN_NAME, email: ADMIN_EMAIL, status: "active" },
+            });
+            const globalRole = await legado.role.findFirst({
+              where: { key: PLATFORM_ROLE_KEY, tenant_id: null },
+              select: { id: true },
+              orderBy: { created_at: "asc" },
+            });
+            assert.ok(globalRole, "a fixture do T2.3b exige o papel global provisionado no banco-modelo");
+            await legado.userRoleAssignment.create({
+              data: { tenant_id: tenant.id, user_id: user.id, role_id: globalRole.id, branch_id: null },
+            });
+            await legado.$transaction(async (tx) => {
+              await setTenantRlsContext(tx, tenant.id);
+              const credentials = new LocalAuthCredentialRepository(tx);
+              const credentialService = new LocalAuthCredentialService(credentials, {
+                findByIdForTenant: (userId, tenantId) =>
+                  tx.user.findFirst({ where: { id: userId, tenant_id: tenantId }, select: { id: true, tenant_id: true, email: true } }),
+              });
+              await credentialService.createCredentialForUser({
+                tenant_id: tenant.id,
+                user_id: user.id,
+                email: user.email,
+                password: ADMIN_PASSWORD,
+              });
+            });
+
+            const hashAntes =
+              (await legado.localAuthCredential.findFirst({
+                where: { tenant_id: tenant.id, user_id: user.id },
+                select: { password_hash: true },
+              }))?.password_hash ?? null;
+            assert.ok(hashAntes, "a fixture do T2.3b deve gravar a credencial");
+
+            // Estado inicial medido: 0/0/0 nas três tabelas de identidade.
+            const antes = await identityState(legado, tenant.id, user.id);
+            assert.deepEqual(
+              [antes.identities, antes.links, antes.backfillEvents],
+              [0, 0, 0],
+              "a fixture NÃO pode criar identidade, vínculo nem evento",
+            );
+            const auditoriaAntes = await legado.auditLog.count({ where: { tenant_id: tenant.id } });
+
+            // 1ª convergência, SEM --reset-password.
+            const report = await bootstrapPlatformAdmin(legado, baseInput);
+            assert.equal(report.userCreated, false, "T2.3b: o usuário legado não pode ser recriado");
+            assert.equal(report.credentialCreated, false, "T2.3b: a credencial legada não pode ser recriada");
+            assert.equal(report.passwordReset, false, "T2.3b: sem --reset-password a senha não muda");
+            assert.equal(report.identityLinked, true, "T2.3b: o vínculo ausente deve ser criado");
+            assert.equal(report.tenantId, tenant.id, "T2.3b: o tenantId legado é preservado");
+            assert.equal(report.userId, user.id, "T2.3b: o userId legado é preservado");
+
+            const hashDepois =
+              (await legado.localAuthCredential.findFirst({
+                where: { tenant_id: tenant.id, user_id: user.id },
+                select: { password_hash: true },
+              }))?.password_hash ?? null;
+            assert.equal(hashDepois, hashAntes, "T2.3b: password_hash idêntico ao anterior");
+
+            const depois = await identityState(legado, tenant.id, user.id);
+            assert.deepEqual(
+              [depois.identities, depois.links, depois.backfillEvents],
+              [1, 1, 1],
+              "T2.3b: 1/1/1 nas três tabelas de identidade",
+            );
+            assert.deepEqual(depois.attachedVia, ["backfill"], "T2.3b: o vínculo chega por 'backfill'");
+
+            const auditoria = await legado.auditLog.findMany({
+              where: { tenant_id: tenant.id },
+              select: { action: true, metadata: true },
+              orderBy: { created_at: "asc" },
+            });
+            assert.equal(auditoria.length, auditoriaAntes + 1, "T2.3b: a auditoria cresce +1 na convergência isolada");
+            assert.equal(auditoria[auditoria.length - 1]?.action, BOOTSTRAP_AUDIT_ACTION, "T2.3b: ação de auditoria do bootstrap");
+            assert.equal(
+              (auditoria[auditoria.length - 1]?.metadata as { identityLinked?: boolean } | null)?.identityLinked,
+              true,
+              "T2.3b: metadata.identityLinked deve ser true",
+            );
+
+            // Reexecução: idempotente, sem duplicar e sem auditoria nova.
+            const report2 = await bootstrapPlatformAdmin(legado, baseInput);
+            assert.equal(report2.identityLinked, false, "T2.3b: na reexecução o vínculo já existe");
+            assert.equal(report2.userCreated, false, "T2.3b: reexecução não recria usuário");
+            assert.equal(report2.credentialCreated, false, "T2.3b: reexecução não recria credencial");
+            assert.equal(report2.passwordReset, false, "T2.3b: reexecução não redefine senha");
+            assert.deepEqual(await identityState(legado, tenant.id, user.id), depois, "T2.3b: nada duplica na reexecução");
+            assert.equal(
+              await legado.auditLog.count({ where: { tenant_id: tenant.id } }),
+              auditoriaAntes + 1,
+              "T2.3b: a reexecução não cria auditoria nova",
+            );
+          } finally {
+            await legado.$disconnect();
+            await adminClient.$executeRawUnsafe(`DROP DATABASE "${dbName}" WITH (FORCE)`);
+          }
         });
 
         // T2.4 — dry-run ────────────────────────────────────────────────────────────────────────────────
@@ -249,6 +427,12 @@ if (!connectionString) {
               }
               const fingerprint = async () => {
                 const tenant = await seed.tenant.findUnique({ where: { slug: PLATFORM_TENANT_SLUG }, select: { id: true } });
+                const user = tenant
+                  ? await seed.user.findFirst({ where: { tenant_id: tenant.id, email: ADMIN_EMAIL }, select: { id: true } })
+                  : null;
+                // B-AUTH-LOGIN-PLATAFORMA: a impressão digital passa a cobrir contagens E IDs das
+                // três tabelas de identidade, lidas pelo cliente administrativo do drill.
+                const identity = await identityState(seed, tenant?.id ?? null, user?.id ?? null);
                 return {
                   tenants: await seed.tenant.count({ where: { slug: PLATFORM_TENANT_SLUG } }),
                   users: tenant ? await seed.user.count({ where: { tenant_id: tenant.id } }) : 0,
@@ -256,6 +440,13 @@ if (!connectionString) {
                   credentials: tenant ? await seed.localAuthCredential.count({ where: { tenant_id: tenant.id } }) : 0,
                   audits: tenant ? await seed.auditLog.count({ where: { tenant_id: tenant.id } }) : 0,
                   hash: tenant ? (await seed.localAuthCredential.findFirst({ where: { tenant_id: tenant.id }, select: { password_hash: true } }))?.password_hash ?? null : null,
+                  identities: identity.identities,
+                  identityLinks: identity.links,
+                  identityLinkIds: identity.linkIds,
+                  identityIds: identity.identityIds,
+                  identityAttachedVia: identity.attachedVia,
+                  identityEvents: identity.events,
+                  identityEventIds: identity.eventIds,
                 };
               };
               const before = await fingerprint();
@@ -266,12 +457,18 @@ if (!connectionString) {
                 const input = state === "reset" ? { ...baseInput, resetPassword: true } : baseInput;
                 const report = await bootstrapPlatformAdmin(readOnly, input, { dryRun: true });
                 assert.equal(report.dryRun, true, `${state}: relatório dryRun`);
+                // B-AUTH-LOGIN-PLATAFORMA (E1.3.3 item 5): o array de CINCO flags é ESTENDIDO com
+                // `report.identityLinked` como SEXTO elemento; os cinco elementos anteriores e seus
+                // esperados são preservados. O dry-run não escreve: onde o vínculo ainda seria criado
+                // (limpo/tenant/usuario, inclusive nos dois retornos antecipados) o relatório diz
+                // true; nos estados já convergidos o vínculo existe e o relatório diz false. MU2
+                // morre especificamente no estado `usuario`, o único que chega ao cálculo da flag.
                 const expected = {
-                  limpo: [true, true, true, true, false], tenant: [false, true, true, true, false],
-                  usuario: [false, false, true, true, false], convergido: [false, false, false, false, false], reset: [false, false, false, false, false],
+                  limpo: [true, true, true, true, false, true], tenant: [false, true, true, true, false, true],
+                  usuario: [false, false, true, true, false, true], convergido: [false, false, false, false, false, false], reset: [false, false, false, false, false, false],
                 }[state];
                 assert.deepEqual(
-                  [report.tenantCreated, report.userCreated, report.assignmentCreated, report.credentialCreated, report.passwordReset], expected,
+                  [report.tenantCreated, report.userCreated, report.assignmentCreated, report.credentialCreated, report.passwordReset, report.identityLinked], expected,
                   `${state}: relatório deve descrever o estado sem escrever`,
                 );
                 if (state === "limpo") {
@@ -452,11 +649,13 @@ if (!connectionString) {
             assert.equal(report1.userCreated, true, "T2.7a: userCreated deve ser true");
             assert.equal(report1.assignmentCreated, true, "T2.7a: assignmentCreated deve ser true");
             assert.equal(report1.credentialCreated, true, "T2.7a: credentialCreated deve ser true");
+            assert.equal(report1.identityLinked, true, "T2.7a: identityLinked deve ser true sob o papel efêmero");
 
             // 2ª execução sob papel efêmero: deve ser idempotente
             const report2 = await bootstrapPlatformAdmin(efemeraT27.client, inputT27);
             assert.equal(report2.tenantCreated, false, "T2.7b: tenantCreated deve ser false");
             assert.equal(report2.userCreated, false, "T2.7b: userCreated deve ser false");
+            assert.equal(report2.identityLinked, false, "T2.7b: identityLinked deve ser false na 2ª execução");
 
             // Sem GUC (sem setTenantRlsContext): o papel efêmero vê 0 usuários da organização
             const semGuc = await efemeraT27.client.$queryRawUnsafe<Array<{ n: bigint }>>(
@@ -468,6 +667,19 @@ if (!connectionString) {
             // A conexão administrativa vê o usuário
             const comAdmin = await drillT27Client!.user.count({ where: { tenant_id: report1.tenantId! } });
             assert.equal(comAdmin, 1, "a conexão administrativa deve ver 1 usuário");
+
+            // B-AUTH-LOGIN-PLATAFORMA — o vínculo criado sob o papel efêmero NOSUPERUSER NOBYPASSRLS
+            // é visível ao administrador (1 linha) e INVISÍVEL ao runtime sem o GUC de organização
+            // (0 linhas): a escrita passou pelo braço de tenant do WITH CHECK, não por bypass. O
+            // chamador NÃO recebe bypass para o teste passar.
+            const vinculoAdmin = await identityState(drillT27Client!, report1.tenantId, report1.userId);
+            assert.equal(vinculoAdmin.links, 1, "T2.7: o administrador deve ver 1 vínculo de identidade");
+            assert.deepEqual(vinculoAdmin.attachedVia, ["backfill"], "T2.7: o vínculo chega por 'backfill'");
+            const vinculoSemGuc = await efemeraT27.client.$queryRawUnsafe<Array<{ n: bigint }>>(
+              "SELECT count(*)::bigint AS n FROM auth_identity_links WHERE tenant_id = $1::uuid",
+              report1.tenantId!,
+            );
+            assert.equal(Number(vinculoSemGuc[0].n), 0, "T2.7: sem GUC, o papel efêmero deve ver 0 vínculos (RLS morde)");
           } finally {
             if (efemeraT27) {
               try { await efemeraT27.drop(); } catch { /* reportado no stderr pelo arnês */ }
@@ -483,7 +695,7 @@ if (!connectionString) {
 
         // T2.8 — HTTP: login direcionado + GET /api/v1/platform/overview ────────────────────────────────
 
-        await t.test("T2.8 HTTP: login com tenantId → 200 super_admin; GET /api/v1/platform/overview → 200; sem tenantId → 401", async () => {
+        await t.test("T2.8 HTTP: login com tenantId → 200 super_admin; overview → 200; sem tenantId → 401 antes da concessão de EXECUTE e 200 depois", async () => {
           // Precisamos de um banco de drill limpo com o admin criado para T2.8
           // Usamos o drillClient+firstTenantId que já tem o admin criado em T2.2/T2.6 (com senha resetada)
           // A senha foi redefinida em T2.6 para "NovaSenhaReset-2026!"
@@ -561,12 +773,92 @@ if (!connectionString) {
             });
             assert.equal(loginErradoRes.status, 401, "senha errada deve retornar 401");
 
-            // Sem tenantId → 401 (papel efêmero não executa auth_login_candidates — A16)
+            // Sem tenantId → 401 ANTES da concessão de EXECUTE (o papel efêmero não executa
+            // auth_login_candidates — A16). O corpo leva SOMENTE e-mail e senha.
+            const corpoSemOrganizacao = { email: ADMIN_EMAIL, password: senhaAtual };
+            assert.deepEqual(
+              Object.keys(corpoSemOrganizacao).sort(),
+              ["email", "password"],
+              "o login sem organização pede somente e-mail e senha",
+            );
             const loginSemTenantRes = await requestJson(baseUrl, "/api/v1/auth/login", {
               method: "POST",
-              body: { email: ADMIN_EMAIL, password: senhaAtual },
+              body: corpoSemOrganizacao,
             });
-            assert.equal(loginSemTenantRes.status, 401, "sem tenantId deve retornar 401");
+            assert.equal(loginSemTenantRes.status, 401, "sem tenantId, ANTES da concessão de EXECUTE, deve retornar 401");
+
+            // ── Pré-condição MEDIDA, não presumida (E1.3.3 item 7) ─────────────────────────────────
+            // Neste drill a dona da função é o migrador local/CI (super), e é só por isso que a
+            // concessão de EXECUTE ao papel de runtime basta para o login sem organização. Em
+            // produção a topologia pode ser outra e o roteiro é o E1.2 do plano: este teste prova a
+            // dimensão EXECUTE, não declara a ativação de produção.
+            const topologiaRows = await drillClient!.$queryRaw<Array<{
+              owner: string;
+              owner_super: boolean;
+              owner_bypass: boolean;
+              prosecdef: boolean;
+              users_rls: boolean;
+              users_force: boolean;
+              credentials_force: boolean;
+            }>>`
+              SELECT pg_get_userbyid(p.proowner) AS owner,
+                     (SELECT r.rolsuper FROM pg_roles r WHERE r.rolname = pg_get_userbyid(p.proowner)) AS owner_super,
+                     (SELECT r.rolbypassrls FROM pg_roles r WHERE r.rolname = pg_get_userbyid(p.proowner)) AS owner_bypass,
+                     p.prosecdef,
+                     (SELECT c.relrowsecurity FROM pg_class c WHERE c.oid = 'public.users'::regclass) AS users_rls,
+                     (SELECT c.relforcerowsecurity FROM pg_class c WHERE c.oid = 'public.users'::regclass) AS users_force,
+                     (SELECT c.relforcerowsecurity FROM pg_class c WHERE c.oid = 'public.local_auth_credentials'::regclass) AS credentials_force
+              FROM pg_proc p
+              WHERE p.oid = 'public.auth_login_candidates(text)'::regprocedure
+            `;
+            assert.equal(topologiaRows.length, 1, "a função elevada auth_login_candidates(text) deve existir no drill");
+            const topologia = topologiaRows[0];
+            assert.equal(topologia.prosecdef, true, "a função deve ser SECURITY DEFINER");
+            assert.equal(topologia.users_rls, true, "users deve ter RLS habilitado");
+            assert.equal(topologia.users_force, true, "users deve ter RLS forçado");
+            assert.equal(topologia.credentials_force, true, "local_auth_credentials deve ter RLS forçado");
+            assert.ok(
+              topologia.owner_super === true || topologia.owner_bypass === true,
+              `pré-condição do drill: a dona da função precisa ser super ou bypass para a concessão de EXECUTE bastar (dona=${topologia.owner}, super=${topologia.owner_super}, bypass=${topologia.owner_bypass})`,
+            );
+
+            // Concessão de EXECUTE ao papel efêmero: exclusivamente pelo helper nomeado, dentro do
+            // lock de catálogo (ratchet db-catalog-write-guard — nenhuma DDL lexical neste arquivo).
+            await withRoleCatalogLock(drillClient!, async (tx) => {
+              await grantAuthLoginCandidatesExecuteToRole(tx, efemera!.roleName);
+            });
+
+            // Depois da concessão → 200, com a organização do administrador e o papel de plataforma.
+            const loginSemOrganizacao = await requestJson(baseUrl, "/api/v1/auth/login", {
+              method: "POST",
+              body: corpoSemOrganizacao,
+            });
+            assert.equal(
+              loginSemOrganizacao.status,
+              200,
+              `sem tenantId, DEPOIS da concessão de EXECUTE, deve retornar 200; body: ${JSON.stringify(loginSemOrganizacao.body).slice(0, 200)}`,
+            );
+            assert.equal(loginSemOrganizacao.body?.data?.authenticated, true, "authenticated deve ser true no login sem organização");
+            assert.equal(loginSemOrganizacao.body?.data?.tenant?.id, firstTenantId, "a organização resolvida deve ser a do administrador");
+            const rolesSemOrganizacao: unknown[] = loginSemOrganizacao.body?.data?.roles ?? [];
+            assert.ok(
+              rolesSemOrganizacao.some((role) =>
+                typeof role === "string" ? role === PLATFORM_ROLE_KEY : (role as Record<string, unknown>)?.key === PLATFORM_ROLE_KEY,
+              ),
+              `roles deve conter ${PLATFORM_ROLE_KEY}: ${JSON.stringify(rolesSemOrganizacao)}`,
+            );
+
+            const tokenSemOrganizacao: string =
+              loginSemOrganizacao.body?.data?.access_token ?? loginSemOrganizacao.body?.data?.accessToken;
+            assert.ok(tokenSemOrganizacao, "o token deve estar presente no login sem organização");
+            const overviewSemOrganizacao = await requestJson(baseUrl, "/api/v1/platform/overview", {
+              headers: { authorization: `Bearer ${tokenSemOrganizacao}` },
+            });
+            assert.equal(
+              overviewSemOrganizacao.status,
+              200,
+              `GET /api/v1/platform/overview com o token obtido SEM organização deve retornar 200; body: ${JSON.stringify(overviewSemOrganizacao.body).slice(0, 200)}`,
+            );
           } finally {
             if (server) {
               await closeServer(server);

@@ -27,6 +27,12 @@ O backend escolhe o provider por `CHECKLIST_STORAGE_PROVIDER`. O contrato public
 
 Variaveis legadas `CHECKLIST_ATTACHMENT_*` seguem aceitas como aliases para ambientes locais antigos.
 
+## Producao: armazenamento duravel (B-EVIDENCIA-DURAVEL)
+
+Com `NODE_ENV=production`, o boot recusa qualquer configuracao que nao seja o S3 duravel: `CHECKLIST_STORAGE_PROVIDER=s3`, bucket preenchido, regiao na forma da AWS, `CHECKLIST_STORAGE_S3_ENDPOINT=https://s3.<regiao>.amazonaws.com` exato e as duas credenciais estaticas juntas ou nenhuma (gate `G-STORAGE-DURAVEL` do `src/config/env.ts`; a regra e uma so, em `src/config/storage-durability.ts`, a mesma dos portoes por requisicao do comprovante e da evidencia). O `local` fica para desenvolvimento e teste: em producao, o disco do conteiner some no reinicio.
+
+A foto enviada pelo app de campo (`POST /api/v1/mobile/evidence-uploads`) usa este mesmo storage, com a organizacao do ator no primeiro segmento da chave: `<prefixo>/<org>/mobile-evidence-wo-<OS>/<uuid>-u-<usuario>--<evidencia>.<ext>`, ou `mobile-evidence-field` quando a evidencia nao e da OS. A OS vem do recibo do servidor, nunca do formulario; o nome de arquivo do aparelho nao e guardado (nem no metadado do objeto). O metadado da evidencia (observacao, assinatura, a qual OS pertence) ainda vive em memoria: `P-EVIDENCIA-METADADO-EM-MEMORIA`.
+
 ## Seguranca
 
 - Nao commitar `.env` nem credenciais reais.

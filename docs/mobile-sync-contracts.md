@@ -409,9 +409,9 @@ Regras obrigatorias:
 - backend calcula SHA-256 do arquivo e rejeita `sha256_mismatch`.
 - scanner default Noop permite desenvolvimento/teste; fakes cobrem limpo, infectado e falha.
 - `status=stored` permite marcar upload como sincronizado; `rejected`, `scan_failed` e `pending_review` devem preservar evidencia local no app.
-- erros seguros: `evidence_rejected` para arquivo recusado pelo scanner e `evidence_scan_failed` para scanner indisponivel.
+- erros seguros: `evidence_rejected` para arquivo recusado pelo scanner, `evidence_scan_failed` para scanner indisponivel e `evidence_storage_unavailable` para storage indisponivel ou producao sem S3 duravel (B-EVIDENCIA-DURAVEL; nos tres o app preserva a foto).
 - resposta nunca retorna caminho fisico, `local_path`, `path`, bucket, storage key local, URL publica, token ou conteudo binario.
-- auditoria B-108 registra `evidence.upload.accepted`, `evidence.upload.rejected`, `evidence.upload.scan_failed` e `evidence.upload.stored` com metadata sanitizada.
+- auditoria B-108 registra `evidence.upload.accepted`, `evidence.upload.rejected`, `evidence.upload.scan_failed`, `evidence.upload.storage_failed` (B-EVIDENCIA-DURAVEL: o storage falhou ao gravar; a resposta e 503 `evidence_storage_unavailable`) e `evidence.upload.stored` com metadata sanitizada.
 - lacunas B-108: presigned URL/storage externo, persistencia DB/Redis do receipt, antivirus real, download protegido final e retencao definitiva.
 
 ### POST /api/v1/mobile/field-locations

@@ -7,7 +7,7 @@ import { EconomicGroupsService, type GroupDetail } from "../subscription-billing
 import type { SubscriptionsService } from "../subscription-billing/plans/subscriptions.service.js";
 import { createDefaultSubscriptionsService, getMemoryTenantLookupForTests } from "../subscription-billing/subscription-billing.service.js";
 import { getMemoryOverviewTenantListForTests } from "../subscription-billing/overview/overview.factory.js";
-import { PlatformModulesService } from "./platform-modules.service.js";
+import { CANONICAL_MODULE_KEYS, PlatformModulesService } from "./platform-modules.service.js";
 import {
   InMemoryPlatformOrganizationsRepository,
   normalizedOrganizationName,
@@ -16,6 +16,7 @@ import {
   OrganizationGroupNotFoundError,
   OrganizationGroupTooManyMembersError,
   OrganizationNameConflictError,
+  subscriptionInForce,
   type OrganizationGroupRef,
   type PlatformOrganizationsRepository,
 } from "./platform-organizations.repository.js";
@@ -98,11 +99,29 @@ export class PlatformOrganizationsService {
     if (current.status === input.status || (current.status !== "active" && input.status === "suspended")) throw new CoreSaasError(422, "UNPROCESSABLE_ENTITY", "invalid_status_transition", "Invalid organization status transition.");
     const changed = await this.organizations.changeStatus(id, input, actorUserId); return this.toOrganization(changed!);
   }
+  // B-PLANOS-MODULOS — a leitura diz se a organização tem assinatura em vigor (a regra de `subscriptionInForce`). Se a
+  // leitura da assinatura falhar, a rota responde erro: nunca cai para "sem assinatura".
   async listTenantModules(id: string): Promise<PlatformModule[]> {
     const row = await this.requireTenant(id);
-    return this.modules.listForTenant({ enabledModules: row.modules, plan: "starter" } as never);
+    const now = new Date();
+    const managedBySubscription = (await this.subscriptions.getHistory(row.id)).some((view) => subscriptionInForce(view.subscription.validTo, now));
+    return this.modules.listForTenant({ enabledModules: row.modules, managedBySubscription });
   }
-  async updateTenantModules(id: string, _input: UpdatePlatformTenantModulesDto): Promise<PlatformModule[]> { await this.requireTenant(id); throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription."); }
+  // B-PLANOS-MODULOS (D-PLANOS-MODULOS-PORTA-REAL, decisão do dono P1 = A) — a plataforma liga e desliga área de UMA
+  // organização SEM assinatura em vigor, com trilha; COM assinatura em vigor, quem manda nos módulos é o plano e a porta
+  // recusa 409 (quando a assinatura chega, ela substitui a lista inteira). A checagem daqui dá o 409 nos dois modos; a de
+  // dentro da transação do repositório (depois da trava da linha) é a que vale sob corrida.
+  async updateTenantModules(id: string, input: UpdatePlatformTenantModulesDto, actorUserId: string): Promise<PlatformModule[]> {
+    const organization = await this.requireTenant(id);
+    this.assertNotPlatform(organization);
+    const now = new Date();
+    if ((await this.subscriptions.getHistory(organization.id)).some((view) => subscriptionInForce(view.subscription.validTo, now))) throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription.");
+    const wanted = new Set(input.enabledModules);
+    const result = await this.organizations.replaceModules(organization.id, CANONICAL_MODULE_KEYS.filter((key) => wanted.has(key)), actorUserId, now);
+    if (result.kind === "not_found") throw new CoreSaasError(404, "NOT_FOUND", "platform_tenant_not_found", "Platform tenant not found.");
+    if (result.kind === "subscription_in_force") throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription.");
+    return this.modules.listForTenant({ enabledModules: result.organization.modules, managedBySubscription: false });
+  }
   async createTenantAdminUser(id: string, input: CreateTenantAdminDto, actorUserId: string) {
     const row = await this.requireTenant(id); this.assertNotPlatform(row);
     if (row.status !== "active") throw new CoreSaasError(400, "BAD_REQUEST", "inactive_tenant", "Organization is not active.");

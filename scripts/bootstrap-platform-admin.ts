@@ -52,6 +52,13 @@ import {
   LocalAuthCredentialService,
   validateLocalPassword,
 } from "../src/modules/auth/services/local-auth-credential.service.js";
+// B-AUTH-LOGIN-PLATAFORMA (§2 do plano): o vínculo de identidade do administrador é garantido na
+// MESMA transação do bootstrap, pelo mesmo resolvedor do fluxo normal. Módulo-folha: o fecho
+// transitivo não alcança src/config/env.ts (invariante do guard T1.7).
+import {
+  normalizePairIdentity,
+  resolveIdentityIdForPair,
+} from "../src/modules/auth/services/identity-resolver.js";
 
 export const PLATFORM_TENANT_SLUG = "platform";
 export const PLATFORM_TENANT_NAME = "Plataforma";
@@ -194,6 +201,9 @@ export type BootstrapReport = {
   readonly assignmentCreated: boolean;
   readonly credentialCreated: boolean;
   readonly passwordReset: boolean;
+  // `true` quando o vínculo de identidade foi criado nesta execução — ou seria criado, em
+  // `--dry-run`; `false` quando já existia.
+  readonly identityLinked: boolean;
 };
 
 export async function bootstrapPlatformAdmin(
@@ -239,6 +249,7 @@ export async function bootstrapPlatformAdmin(
             assignmentCreated: true,
             credentialCreated: true,
             passwordReset: false,
+            identityLinked: true,
           } satisfies BootstrapReport;
         }
         tenant = await tx.tenant.create({
@@ -284,6 +295,7 @@ export async function bootstrapPlatformAdmin(
             assignmentCreated: true,
             credentialCreated: true,
             passwordReset: false,
+            identityLinked: true,
           } satisfies BootstrapReport;
         }
         user = await tx.user.create({
@@ -302,6 +314,18 @@ export async function bootstrapPlatformAdmin(
         await tx.userRoleAssignment.create({
           data: { tenant_id: tenant.id, user_id: user.id, role_id: role.id, branch_id: null },
         });
+      }
+
+      // 6b) Vínculo de identidade — o administrador nasce convergido nas três tabelas de identidade
+      //     (`auth_identities`, `auth_identity_links` com `attached_via = 'backfill'` e o evento
+      //     `'backfill'`), na mesma transação e sob o GUC da organização já posto no passo 3. É o
+      //     MESMO efeito do fluxo normal de criação de usuário; sem ele o administrador ficaria
+      //     órfão de identidade e dependeria de normalização preguiçosa em caminho de login.
+      //     Idempotente: o unique (tenant_id, user_id) absorve a segunda execução.
+      const existingIdentityId = await resolveIdentityIdForPair(tx, tenant.id, user.id);
+      const identityLinked = existingIdentityId === null;
+      if (existingIdentityId === null && !dryRun) {
+        await normalizePairIdentity(tx, tenant.id, user.id);
       }
 
       // 7) Credencial local — pelo MESMO serviço/hash que o login verifica (scrypt-v1, N=16384/r=8/p=1).
@@ -333,7 +357,7 @@ export async function bootstrapPlatformAdmin(
       }
 
       // 8) Trilha — só quando algo foi criado/redefinido. Allowlist (§2.8): e-mail e flags; nunca senha/hash.
-      if (!dryRun && (userCreated || assignmentCreated || credentialCreated || passwordReset)) {
+      if (!dryRun && (userCreated || assignmentCreated || identityLinked || credentialCreated || passwordReset)) {
         await tx.auditLog.create({
           data: {
             tenant_id: tenant.id,
@@ -349,6 +373,7 @@ export async function bootstrapPlatformAdmin(
               assignmentCreated,
               credentialCreated,
               passwordReset,
+              identityLinked,
             },
           },
         });
@@ -364,6 +389,7 @@ export async function bootstrapPlatformAdmin(
         assignmentCreated,
         credentialCreated,
         passwordReset,
+        identityLinked,
       } satisfies BootstrapReport;
     },
     { timeout: 60_000, maxWait: 15_000 },
@@ -410,7 +436,8 @@ async function main(): Promise<void> {
     log(
       `administrador ${input.email}: usuário ${report.userCreated ? (report.dryRun ? "a criar" : "criado") : "já existia"}` +
         ` · vínculo ${PLATFORM_ROLE_KEY} ${report.assignmentCreated ? (report.dryRun ? "a criar" : "criado") : "já existia"}` +
-        ` · credencial ${report.credentialCreated ? (report.dryRun ? "a criar" : "criada") : report.passwordReset ? "senha redefinida" : "já existia (senha mantida)"}`,
+        ` · credencial ${report.credentialCreated ? (report.dryRun ? "a criar" : "criada") : report.passwordReset ? "senha redefinida" : "já existia (senha mantida)"}` +
+        ` · identidade ${report.identityLinked ? (report.dryRun ? "a vincular" : "vinculada") : "já vinculada"}`,
     );
     log(report.dryRun ? "simulação encerrada — nada foi escrito no banco." : "CONVERGIDO — 1 organização de sistema, 1 administrador de plataforma.");
   } finally {

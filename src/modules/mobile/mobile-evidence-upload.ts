@@ -1,10 +1,16 @@
 import { createHash } from "node:crypto";
-import os from "node:os";
-import path from "node:path";
+import { rm } from "node:fs/promises";
 
 import Busboy from "busboy";
 import type { Request } from "express";
 
+import { env } from "../../config/env.js";
+import { isDurableStorageConfig } from "../../config/storage-durability.js";
+import { createLogger } from "../../infra/logging/logger.js";
+import { createChecklistStorageProviderByName, readChecklistStorageConfig } from "../checklists/storage/checklist-storage.factory.js";
+import type { ChecklistStorageProvider, StoredChecklistStorageObject } from "../checklists/storage/checklist-storage.types.js";
+import { LocalChecklistStorageProvider } from "../checklists/storage/local-checklist-storage.provider.js";
+import type { S3ChecklistStorageProviderConfig } from "../checklists/storage/s3-checklist-storage.provider.js";
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import {
   resetEvidenceScannerForTests,
@@ -13,15 +19,13 @@ import {
 import {
   EVIDENCE_ALLOWED_MIME_TYPES,
   EVIDENCE_MAX_FILE_SIZE_BYTES,
-  LocalProtectedEvidenceStorageProvider,
   getEvidenceAuditEventsForTests,
   recordEvidenceAuditEvent,
   resetEvidenceAuditEventsForTests,
   type EvidenceAuditEvent,
   type EvidenceScanner,
-  type EvidenceStorageProvider,
 } from "../evidence/evidence-storage.js";
-import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
+import { UploadGateError, assertUploadVerification, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import { actorMutatesAssignedOnly, isPreviouslyAssignedRefusal } from "../work-orders/work-order.types.js";
 import { findMobileEvidenceSyncReceiptForUpload } from "./mobile-evidence-sync.js";
@@ -55,12 +59,40 @@ export type MobileEvidenceUploadResponse = {
   readonly uploaded_at: string;
 };
 
-let evidenceUploadStorageRoot = path.join(os.tmpdir(), "erp-mobile-evidence-uploads");
-let evidenceStorageProvider: EvidenceStorageProvider = new LocalProtectedEvidenceStorageProvider(evidenceUploadStorageRoot);
+/** §3.2 — a mensagem fixa dos dois 503 novos. Nunca a mensagem do SDK ou do sistema de arquivos. */
+const EVIDENCE_STORAGE_UNAVAILABLE_MESSAGE = "Evidence storage is temporarily unavailable.";
 
-export function configureMobileEvidenceUploadStorageForTests(root: string): void {
-  evidenceUploadStorageRoot = root;
-  evidenceStorageProvider = new LocalProtectedEvidenceStorageProvider(root);
+const logger = createLogger();
+
+/**
+ * B-EVIDENCIA-DURAVEL (plano §3.6) — COSTURA DE TESTE do armazenamento da evidência. Sem ela, quem resolve o provedor é
+ * a fábrica da D-014 (`createChecklistStorageProviderByName(env.CHECKLIST_STORAGE_PROVIDER)`), a mesma dos anexos de OS
+ * e do comprovante de despesa. A foto deixou o diretório temporário do servidor, que sumia no reinício DEPOIS de a rota
+ * responder `stored` (`P-UPLOAD-ARMAZENAMENTO-EFEMERO`). Dois formatos:
+ *   - uma raiz em TEXTO, como antes (os 4 arnês antigos): monta um `LocalChecklistStorageProvider` nessa raiz;
+ *   - um objeto `{ provider, nodeEnv, s3 }`, igual à costura do comprovante: injeta o S3 com cliente fingido e o
+ *     `NODE_ENV` que o portão lê.
+ */
+type MobileEvidenceUploadStorageTestSeam = {
+  readonly provider?: ChecklistStorageProvider;
+  /** O `NODE_ENV` que o portão de produção lê. */
+  readonly nodeEnv?: string;
+  /** A configuração `s3` com que o teste construiu o provedor; o portão lê esta. */
+  readonly s3?: S3ChecklistStorageProviderConfig;
+};
+
+let evidenceStorageSeam: MobileEvidenceUploadStorageTestSeam = {};
+/** A raiz em texto que o teste configurou: a ÚNICA pasta que o `reset` apaga. */
+let evidenceStorageTestRoot: string | undefined;
+
+export function configureMobileEvidenceUploadStorageForTests(seam: string | MobileEvidenceUploadStorageTestSeam): void {
+  if (typeof seam === "string") {
+    evidenceStorageTestRoot = seam;
+    evidenceStorageSeam = { provider: new LocalChecklistStorageProvider(seam) };
+    return;
+  }
+  evidenceStorageTestRoot = undefined;
+  evidenceStorageSeam = { ...seam };
 }
 
 // B-O6R-07b (§3.2) — wrapper fino do registro único; a variável de módulo com `new NoopEvidenceScanner()`
@@ -73,10 +105,38 @@ export function getMobileEvidenceUploadAuditEventsForTests(): readonly EvidenceA
   return getEvidenceAuditEventsForTests();
 }
 
+/**
+ * Apaga a raiz em TEXTO que o teste configurou (os arquivos), zera a trilha e o scanner, e MANTÉM a costura: os 4 arnês
+ * antigos chamam `configure(raiz)` e logo depois `reset()`, antes do envio (nota do orquestrador no plano do bloco, "o
+ * reset dos testes MANTÉM a costura (P-DEV-1 do dev)"). Sem raiz em texto configurada NÃO apaga nada: o provedor
+ * padrão aponta para o diretório compartilhado dos anexos, e apagá-lo destruiria arquivo de outra suíte.
+ */
 export async function resetMobileEvidenceUploadRuntimeForTests(): Promise<void> {
-  await evidenceStorageProvider.clear?.();
+  if (evidenceStorageTestRoot !== undefined) {
+    await rm(evidenceStorageTestRoot, { force: true, recursive: true });
+  }
   resetEvidenceAuditEventsForTests();
   resetEvidenceScannerForTests();
+}
+
+/** O provedor da ESCRITA: o da costura, ou a fábrica da D-014 pelo `CHECKLIST_STORAGE_PROVIDER`. */
+function evidenceWriteProvider(): ChecklistStorageProvider {
+  return evidenceStorageSeam.provider ?? createChecklistStorageProviderByName(env.CHECKLIST_STORAGE_PROVIDER);
+}
+
+/**
+ * B-EVIDENCIA-DURAVEL (plano §3.5) — PORTÃO DE PRODUÇÃO por requisição, espelho do comprovante e defesa em profundidade
+ * da trava de boot `G-STORAGE-DURAVEL`: com `NODE_ENV=production`, a evidência só grava no S3 durável da D-014, pela
+ * regra ÚNICA de `src/config/storage-durability.ts`. Qualquer outra forma → 503 `evidence_storage_unavailable`, antes
+ * do antivírus e da gravação (0 chamada, 0 objeto). Lê do MESMO lugar que a escrita: a costura, ou o `env` e a fábrica.
+ */
+function assertEvidenceStorageDurable(): void {
+  const nodeEnv = evidenceStorageSeam.nodeEnv ?? env.NODE_ENV;
+  if (nodeEnv !== "production") return;
+  const provider = evidenceStorageSeam.provider?.name ?? env.CHECKLIST_STORAGE_PROVIDER;
+  const s3 = evidenceStorageSeam.s3 ?? readChecklistStorageConfig().s3;
+  if (isDurableStorageConfig({ provider, bucket: s3.bucket, region: s3.region, endpoint: s3.endpoint })) return;
+  throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_storage_unavailable", EVIDENCE_STORAGE_UNAVAILABLE_MESSAGE);
 }
 
 export async function uploadMobileEvidenceFile(
@@ -164,6 +224,20 @@ export async function uploadMobileEvidenceFile(
     throw routeError(400, "BAD_REQUEST", "sha256_mismatch", "sha256 does not match uploaded file.");
   }
 
+  // B-EVIDENCIA-DURAVEL (plano §3.1 e Emenda 1 §E1.2) — onde a foto fica. A organização é a do ATOR (o provedor a põe
+  // no 1º segmento depois do prefixo). A OS vem do RECIBO do servidor, e só quando o recibo é da OS
+  // (`scope === "work_order"` e com OS); em qualquer outro caso o segmento é `mobile-evidence-field`. O `work_order_id`
+  // e o `tenant_id` do formulário não entram em nenhum caso. O usuário e o código da evidência vão no nome do objeto,
+  // para o bloco do índice religar sem tabela. Segmento vazio ou só de pontos → 400, antes de qualquer gravação.
+  const evidenceRunId =
+    receipt.scope === "work_order" && receipt.workOrderId
+      ? `mobile-evidence-wo-${requireStorageSegment(receipt.workOrderId)}`
+      : "mobile-evidence-field";
+  const objectBaseName = `u-${requireStorageSegment(actor.userId)}--${requireStorageSegment(clientEvidenceId)}`;
+
+  // §3.5 — o portão de armazenamento durável, imediatamente ANTES do antivírus: recusa com 0 chamada e 0 objeto.
+  assertEvidenceStorageDurable();
+
   // B-O6R-07b (Ω6R-SEC-004) — GATE ÚNICO no lugar do `evidenceScanner.scan` solto. Posição preservada:
   // DEPOIS dos 400 de sha/tamanho e do 409 de recibo (ordem vigente do B-108). A allowlist desta via é
   // a `EVIDENCE_ALLOWED_MIME_TYPES` (jpeg/png) — mais estreita que a das irmãs, de propósito: um PDF
@@ -217,14 +291,43 @@ export async function uploadMobileEvidenceFile(
     },
   });
 
-  const stored = await evidenceStorageProvider.store({
-    tenantId: actor.tenantId,
-    evidenceId,
-    clientEvidenceId,
-    buffer: parsed.file.buffer,
-    checksumSha256: computedSha256,
-    verification,
-  });
+  // §3.1 e §3.3 — grava pelo provedor da D-014, e SÓ DEPOIS de o provedor confirmar a rota responde `stored` (no S3, o
+  // `PutObject` volta com o SHA-256 conferido pelo próprio S3). A extensão sai do tipo VERIFICADO; o nome que o aparelho
+  // mandou não é guardado em lugar nenhum (nem no metadado do objeto). Falha do provedor (montagem ou gravação) → 503
+  // `evidence_storage_unavailable` com a mensagem fixa: o app mantém a foto e tenta de novo (regra do B-108).
+  const verifiedMimeType = assertUploadVerification(verification, parsed.file.buffer).mimeType;
+  const safeFileName = `${objectBaseName}.${verifiedMimeType === "image/png" ? "png" : "jpg"}`;
+  let stored: StoredChecklistStorageObject;
+  try {
+    stored = await evidenceWriteProvider().save({
+      tenantId: actor.tenantId, // B-EVIDENCIA-DURAVEL: a organização do ATOR (claims), nunca do formulário
+      runId: evidenceRunId,
+      buffer: parsed.file.buffer,
+      originalName: safeFileName,
+      safeFileName,
+      sizeBytes: parsed.file.sizeBytes,
+      checksumSha256: computedSha256,
+      verification,
+    });
+  } catch (error) {
+    logEvidenceStorageFailure(error);
+    recordEvidenceAuditEvent({
+      action: "evidence.upload.storage_failed",
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      evidenceId,
+      outcome: "failure",
+      metadata: {
+        client_evidence_id: clientEvidenceId,
+        mime_type: contentType,
+        size_bytes: parsed.file.sizeBytes,
+        reason: "storage_unavailable",
+      },
+    });
+    throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_storage_unavailable", EVIDENCE_STORAGE_UNAVAILABLE_MESSAGE);
+  }
+  // Emenda 1 (B2): o provedor da D-014 não devolve data; o `uploaded_at` é tirado aqui, DEPOIS que o `save` resolve.
+  const uploadedAt = new Date().toISOString();
 
   recordEvidenceAuditEvent({
     action: "evidence.upload.stored",
@@ -247,15 +350,67 @@ export async function uploadMobileEvidenceFile(
       status: "partial",
     },
     evidence_id: evidenceId,
-    file_id: stored.fileId,
+    file_id: evidenceFileId(stored),
     status: "stored",
     size_bytes: stored.sizeBytes,
     mime_type: stored.mimeType,
     content_type: stored.mimeType,
     checksum_sha256: stored.checksumSha256,
     sha256: stored.checksumSha256,
-    uploaded_at: stored.storedAt.toISOString(),
+    uploaded_at: uploadedAt,
   };
+}
+
+/**
+ * §3.1 — `evfile_` + os 32 primeiros hexadecimais do SHA-256 de `<provedor>:<chave>`. Mantém o formato que o contrato e
+ * o app já aceitam, deixa de ser aleatório e solto, e não revela a chave (é um resumo, sem volta).
+ */
+function evidenceFileId(stored: StoredChecklistStorageObject): string {
+  return `evfile_${createHash("sha256").update(`${stored.storageProvider}:${stored.storageKey}`).digest("hex").slice(0, 32)}`;
+}
+
+/** §3.1 — saneamento de segmento da chave (função local, pura): só letra sem acento, dígito, ponto, sublinhado e hífen. */
+function safeStorageSegment(value: string): string {
+  return value.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 120);
+}
+
+/** O segmento saneado. Vazio ou feito só de pontos → 400 `invalid_client_evidence_id`, antes de qualquer gravação. */
+function requireStorageSegment(value: string): string {
+  const segment = safeStorageSegment(value);
+  if (segment === "" || /^\.+$/.test(segment)) {
+    throw routeError(400, "BAD_REQUEST", "invalid_client_evidence_id", "client_evidence_id is invalid.");
+  }
+  return segment;
+}
+
+/**
+ * §3.2 — o log da falha do armazenamento: operação, NOME e CÓDIGO do erro (espelho do `logReceiptFailure` do #525).
+ * Nunca a mensagem, a chave, o caminho, o bucket nem o ARN: a mensagem do 403 do S3 traz os quatro.
+ */
+function logEvidenceStorageFailure(error: unknown): void {
+  logger.warn(
+    {
+      event: "mobile_evidence_upload.failure",
+      via: "V1",
+      operation: "storage_save",
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorCode: storageFailureCode(error),
+    },
+    "mobile evidence upload storage failed",
+  );
+}
+
+function storageFailureCode(error: unknown): string | null {
+  if (typeof error !== "object" || error === null) return null;
+  const record = error as {
+    readonly Code?: unknown;
+    readonly code?: unknown;
+    readonly $metadata?: { readonly httpStatusCode?: unknown };
+  };
+  if (typeof record.Code === "string" && record.Code !== "") return record.Code;
+  if (typeof record.code === "string" && /^[A-Z][A-Z0-9_]*$/.test(record.code)) return record.code;
+  if (typeof record.$metadata?.httpStatusCode === "number") return String(record.$metadata.httpStatusCode);
+  return null;
 }
 
 function parseMultipartEvidenceUploadRequest(request: Request): Promise<ParsedUpload> {
