@@ -25,6 +25,9 @@ import type {
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 const METADATA_SIZE_CONSTRAINT = "mobile_evidences_metadata_chk";
+// A FK composta do ator (§3.3): organização + usuário. É ela que recusa o ator que não tem linha em
+// `users` daquela organização (§8.4, D13).
+const ACTOR_USER_FOREIGN_KEY = "mobile_evidences_tenant_id_actor_user_id_fkey";
 
 export class PrismaMobileEvidenceRepository implements MobileEvidenceRepository {
   constructor(private readonly client: PrismaExecutor) {}
@@ -59,6 +62,14 @@ export class PrismaMobileEvidenceRepository implements MobileEvidenceRepository 
     } catch (error) {
       if (isUniqueViolation(error)) {
         return { outcome: "duplicate" };
+      }
+      // §8.4 D13 — o ator autenticado não tem linha em `users` desta organização (por exemplo, um papel de
+      // plataforma atuando na organização): a FK recusa o INSERT e a ação vira `rejected` com 403
+      // `user_required`, nunca 503 e nunca `accepted`. A identidade é pelo SQLSTATE e pelo NOME da restrição
+      // (molde: `isWorkOrderForeignKeyViolation` de `src/modules/expense-management/expense-sync.ts`); as
+      // outras FKs (organização, OS) NÃO são mascaradas: seguem para o 503 do sync.
+      if (isForeignKeyViolation(error) && mentionsConstraint(error, ACTOR_USER_FOREIGN_KEY)) {
+        return { outcome: "invalid", reason: "user_required" };
       }
       // §E1.4 do plano: erro de DADO nunca é 503 e nunca é `accepted`. A classificação é pelo
       // SQLSTATE e pelo nome da restrição, nunca pelo texto da mensagem para o usuário.
@@ -242,6 +253,10 @@ function hasDatabaseErrorCode(error: unknown, codes: readonly string[]): boolean
 
 function isUniqueViolation(error: unknown): boolean {
   return hasDatabaseErrorCode(error, ["P2002", "23505"]);
+}
+
+function isForeignKeyViolation(error: unknown): boolean {
+  return hasDatabaseErrorCode(error, ["P2003", "23503"]);
 }
 
 function isCheckViolation(error: unknown): boolean {

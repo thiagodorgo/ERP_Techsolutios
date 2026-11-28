@@ -62,12 +62,13 @@ export type StoredEvidenceFileInput = {
   readonly storedAt: Date;
 };
 
-// O `createAccepted` nunca lança por erro de DADO: devolve `invalid` com o reason (§E1.4). Só o que o tempo
-// resolve (conexão, timeout) relança, e o sync responde 503 `evidence_index_unavailable`.
+// O `createAccepted` nunca lança por erro de DADO: devolve `invalid` com o reason (§E1.4). `user_required` é
+// a FK do ator (§8.4, D13): o usuário não tem linha em `users` desta organização. Só o que o tempo resolve
+// (conexão, timeout) relança, e o sync responde 503 `evidence_index_unavailable`.
 export type CreateAcceptedResult =
   | { readonly outcome: "created"; readonly record: MobileEvidenceRecord }
   | { readonly outcome: "duplicate" }
-  | { readonly outcome: "invalid"; readonly reason: "metadata_too_large" | "metadata_not_storable" };
+  | { readonly outcome: "invalid"; readonly reason: "metadata_too_large" | "metadata_not_storable" | "user_required" };
 
 // Troca condicional do §4.3: só grava se `file_status = awaiting_file`; senão devolve a linha atual.
 export type MarkFileStoredResult =

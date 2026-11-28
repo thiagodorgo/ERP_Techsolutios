@@ -99,6 +99,9 @@ const UNSAFE_PAYLOAD_KEY_PATTERN =
 const TENANT_KEY_PATTERN = /^tenant[_-]?id$/i;
 const MAX_CLIENT_EVIDENCE_ID_LENGTH = 255;
 const EVIDENCE_INDEX_UNAVAILABLE_MESSAGE = "Evidence index is temporarily unavailable.";
+// A mesma mensagem nos dois caminhos do 403 `user_required`: o ator sem usuário (abaixo) e a ação cujo
+// usuário não tem linha nesta organização (§8.4, D13).
+const USER_REQUIRED_MESSAGE = "User context is required.";
 
 const defaultMobileEvidenceRepository = new InMemoryMobileEvidenceRepository();
 let mobileEvidenceRepositoryOverride: MobileEvidenceRepository | undefined;
@@ -197,7 +200,12 @@ export async function syncMobileEvidenceActions(
           type: action.type,
           status: "rejected",
           ...(readWorkOrderId(action) ? { work_order_id: readWorkOrderId(action) } : {}),
-          error: { code: "BAD_REQUEST", reason: created.reason, message: metadataInvalidMessage(created.reason) },
+          // §8.4 D13: a FK do ator recusa (o usuário não tem linha nesta organização) → a ação vai para
+          // `rejected` com o mesmo 403 `user_required` do ator sem usuário, e o lote segue 200 `partial`.
+          error:
+            created.reason === "user_required"
+              ? { code: "FORBIDDEN", reason: created.reason, message: USER_REQUIRED_MESSAGE }
+              : { code: "BAD_REQUEST", reason: created.reason, message: metadataInvalidMessage(created.reason) },
         });
         continue;
       }
@@ -277,7 +285,7 @@ function assertSyncActor(actor: AuthenticatedActor | undefined): asserts actor i
   }
 
   if (!actor.userId || actor.userId === "anonymous") {
-    throw routeError(403, "FORBIDDEN", "user_required", "User context is required.");
+    throw routeError(403, "FORBIDDEN", "user_required", USER_REQUIRED_MESSAGE);
   }
 
   if (actor.roles.length === 0) {

@@ -457,10 +457,11 @@ jobs:
           # Regra do dono D-DONO-1611-SUITES-REGRA-FIXA: acréscimo no FIM da lista. Medido 3x em cluster
           # descartável, denominador constante (4 casos) e zero pulo.
           SUITES="$SUITES tests/evidencia-indice-migration-drill-db.test.ts"
-          # B-EVIDENCIA-INDICE (F2b) — o repositório da evidência NO BANCO, com RLS FORÇADO, sob papel
-          # efêmero NOSUPERUSER NOBYPASSRLS (casos D): idempotência e troca condicional em corrida, o
-          # isolamento entre organizações provado também sobre conexão que CONTORNA o RLS, as FKs, os
-          # CHECK e o que o banco recusa no metadado. Mesmo regime: 3x medido, 12 casos, zero pulo.
+          # B-EVIDENCIA-INDICE (F2b e F5) — o índice da evidência NO BANCO. Duas camadas: o repositório sob
+          # papel efêmero NOSUPERUSER NOBYPASSRLS (RLS FORÇADO, FKs, CHECK, corrida de idempotência e da troca
+          # condicional) e, PELA ROTA, o app inteiro em modo prisma (sync, reinício, upload, reenvio, as 2 rotas
+          # de leitura, o ator sem linha em users e o que o banco recusa no metadado). Mesmo regime: 3x medido
+          # em cluster descartável, denominador constante (20 casos) e zero pulo.
           SUITES="$SUITES tests/evidencia-indice-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
