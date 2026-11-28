@@ -66,7 +66,9 @@ const DETAIL = {
   moduleCount: 1,
   modules: [{ key: "finance", label: "Financeiro", enabled: true }],
   users: [{ name: "Marina Costa", email: "marina@alfa.example", roleLabel: "Administradora", status: "active" }],
+  subscription: null,
 };
+const ORGANIZATION = { id: TENANT, name: DETAIL.name, slug: DETAIL.slug, status: "active", createdAt: DETAIL.createdAt, system: false, group: null, setup: { complete: true, missing: [] } };
 const USAGE = {
   tenantId: TENANT,
   periodStart: "2026-11-01T00:00:00.000Z",
@@ -86,6 +88,7 @@ function installFetch() {
     calls.push(url);
     const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
     if (url.includes(`/platform/tenants/${TENANT}/detail`)) return json(200, { data: DETAIL });
+    if (url.endsWith(`/platform/tenants/${TENANT}`)) return json(200, { data: ORGANIZATION });
     if (url.includes(`/platform/cloud-usage/tenants/${TENANT}/summary`)) return json(200, { data: USAGE });
     return json(599, { error: { code: "sem_fixture" } });
   }) as typeof fetch;
