@@ -1,8 +1,8 @@
 import { Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { Alert, Badge, Button, Card, Checkbox, EmptyState, Skeleton } from "../../../components/ui";
+import { Alert, Badge, Button, Card, Checkbox, EmptyState, Modal, Skeleton } from "../../../components/ui";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { ApiError } from "../../../services/api/client";
 import { getPlatformTenantById, listPlatformTenantModules, updatePlatformTenantModules } from "../platform.service";
@@ -19,6 +19,11 @@ export function PlatformTenantModulesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingError, setSavingError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const modulesInFlight = useRef(false);
+  const canSaveModules = !saving;
+  const canConfirmEmpty = confirmEmpty && !saving;
   const detailState = usePlatformTenantDetail(tenantId);
 
   useEffect(() => {
@@ -47,6 +52,9 @@ export function PlatformTenantModulesPage() {
   }
 
   async function saveModules() {
+    if (modulesInFlight.current) return;
+    modulesInFlight.current = true;
+    setSaving(true);
     setSavingError(null);
     try {
       applyServerModules(await updatePlatformTenantModules(tenantId, enabledModules));
@@ -54,7 +62,27 @@ export function PlatformTenantModulesPage() {
       applyServerModules(modules);
       const refused = item instanceof ApiError && item.status >= 400 && item.status < 500;
       setSavingError(item instanceof ApiError && item.status === 409 && item.reason === "module_change_requires_subscription" ? "Os módulos são definidos pela assinatura. Altere o plano para mudar este conjunto." : refused ? "Não foi possível salvar os módulos. Nada foi alterado." : "Não foi possível confirmar se os módulos foram salvos. Recarregue a página para ver a situação atual.");
+    } finally {
+      modulesInFlight.current = false;
+      setSaving(false);
+      setConfirmEmpty(false);
     }
+  }
+
+  function requestSave() {
+    if (!canSaveModules) return;
+    if (enabledModules.length === 0) { setConfirmEmpty(true); return; }
+    void saveModules();
+  }
+
+  function confirmEmptySave() {
+    if (!canConfirmEmpty) return;
+    void saveModules();
+  }
+
+  function closeConfirmEmpty() {
+    if (saving) return;
+    setConfirmEmpty(false);
   }
 
   function toggleModule(module: PlatformModule) {
@@ -79,11 +107,18 @@ export function PlatformTenantModulesPage() {
           <h1>Módulos da Organização</h1>
           <p>{tenant.name} · {subscription === null ? "Sem plano contratado" : <>Plano: {planName}</>}</p>
         </div>
-        {canManageModules ? <Button onClick={saveModules}>
+        {canManageModules ? <Button disabled={!canSaveModules} onClick={requestSave}>
           <Save size={16} />
           Salvar alterações
         </Button> : null}
       </header>
+
+      <Modal title="Desligar todos os módulos desta organização?" open={confirmEmpty} onClose={closeConfirmEmpty}>
+        <div>
+          <Button variant="secondary" disabled={saving} onClick={closeConfirmEmpty}>Cancelar</Button>
+          <Button variant="danger" disabled={!canConfirmEmpty} onClick={confirmEmptySave}>Desligar todos</Button>
+        </div>
+      </Modal>
 
       {!canManageModules ? <Alert title="Somente consulta">Seu perfil só consulta os módulos desta organização.</Alert> : null}
       {savingError ? <Alert title="Alteração não concluída" tone="warning">{savingError}</Alert> : null}

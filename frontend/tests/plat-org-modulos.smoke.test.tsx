@@ -182,6 +182,13 @@ test("FM2 409 module_change_requires_subscription: avisa da assinatura e o selo 
   const page = await mount(comAssinatura(["dashboard"]), { planCode: "starter", planName: "Plano Regional Teste", validFrom: "2026-11-05T15:00:00.000Z", overrides: { monthlyPrice: null, includedUsers: null, includedStorageGb: null, extraUserPrice: null, extraGbPrice: null }, addons: [], modules: [] }, { kind: "json", status: 409, body: ERRO_409 });
   await page.toggle("Dashboard");
   await page.save();
+  assert.match(page.pageText(), /Desligar todos os módulos desta organização\?/);
+  const confirm = elements(dom.doc.body as unknown as MiniDomElement, (element) => element.localName === "button" && text(element).includes("Desligar todos"))[0] as MiniDomElement;
+  assert.ok(confirm, "confirmação para salvar a lista vazia");
+  await act(async () => {
+    confirm.click();
+  });
+  await settle();
   assert.match(page.pageText(), /Alteração não concluída/);
   assert.match(page.pageText(), /Os módulos são definidos pela assinatura\./);
   const dashboard = page.card("Dashboard");
@@ -215,4 +222,174 @@ test("FM4 recusa 4xx (400, 422, outro 409): afirma que nada foi alterado e devol
     assert.equal(page.card("Ordens de Serviço").badge, "desabilitado", `${status} ${reason}: selo volta ao servidor`);
     await page.unmount();
   }
+});
+
+const pageHost = () => dom.doc.body as unknown as MiniDomElement;
+const buttonByText = (label: string) => elements(pageHost(), (element) => element.localName === "button" && text(element).includes(label))[0] as MiniDomElement | undefined;
+const closeButton = () => elements(pageHost(), (element) => element.localName === "button" && element.getAttribute("aria-label") === "Fechar")[0] as MiniDomElement | undefined;
+const questionIsOpen = () => text(pageHost()).replace(/\s+/g, " ").includes("Desligar todos os módulos desta organização?");
+
+function holdPatch() {
+  const originalFetch = globalThis.fetch;
+  let resolvePatch: ((response: Response) => void) | null = null;
+  globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    if ((init?.method ?? "GET") === "PATCH") {
+      patchBodies.push(typeof init?.body === "string" ? JSON.parse(init.body) : undefined);
+      return new Promise<Response>((resolve) => {
+        resolvePatch = resolve;
+      });
+    }
+    return originalFetch(input, init);
+  }) as typeof fetch;
+  return async (body: Mod[]) => {
+    assert.ok(resolvePatch, "PATCH pendente capturado");
+    resolvePatch(new Response(JSON.stringify({ data: body }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    await settle();
+  };
+}
+
+test("FM5 lista vazia pergunta antes e só confirma com corpo vazio", async () => {
+  const page = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura([]) } });
+  await page.toggle("Dashboard");
+  await page.save();
+  assert.equal(patchBodies.length, 0);
+  assert.equal(questionIsOpen(), true);
+  const confirm = buttonByText("Desligar todos");
+  assert.ok(confirm);
+  await act(async () => {
+    confirm.click();
+  });
+  await settle();
+  assert.deepEqual(patchBodies, [{ enabledModules: [] }]);
+  await page.unmount();
+});
+
+test("FM6 cancelar e fechar não gravam e preservam o rascunho vazio", async () => {
+  for (const close of [() => buttonByText("Cancelar"), closeButton]) {
+    const page = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura([]) } });
+    await page.toggle("Dashboard");
+    await page.save();
+    const control = close();
+    assert.ok(control, "controle que fecha a pergunta");
+    await act(async () => {
+      control.click();
+    });
+    await settle();
+    assert.equal(questionIsOpen(), false);
+    assert.equal(patchBodies.length, 0);
+    assert.equal(page.card("Dashboard").checked, false);
+    await page.unmount();
+  }
+});
+
+test("FM7 lista com módulo não pergunta e grava uma vez", async () => {
+  const page = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura(["dashboard", "work_orders"]) } });
+  await page.toggle("Ordens de Serviço");
+  await page.save();
+  assert.equal(questionIsOpen(), false);
+  assert.equal(patchBodies.length, 1);
+  await page.unmount();
+});
+
+test("FM8 durante o envio Desligar todos e Cancelar ficam desligados e a pergunta não fecha", async () => {
+  const page = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura([]) } });
+  await page.toggle("Dashboard");
+  await page.save();
+  const finishPatch = holdPatch();
+  const confirm = buttonByText("Desligar todos");
+  assert.ok(confirm);
+  await act(async () => {
+    confirm.click();
+  });
+  await settle();
+  const currentConfirm = buttonByText("Desligar todos") as MiniDomElement;
+  const cancel = buttonByText("Cancelar") as MiniDomElement;
+  assert.equal(questionIsOpen(), true);
+  assert.equal(propsOf(currentConfirm).disabled, true);
+  assert.equal(propsOf(cancel).disabled, true);
+  await act(async () => {
+    cancel.click();
+    closeButton()?.click();
+    currentConfirm.click();
+  });
+  await settle();
+  assert.equal(questionIsOpen(), true);
+  assert.equal(patchBodies.length, 1);
+  await finishPatch(semAssinatura([]));
+  assert.equal(questionIsOpen(), false);
+  await page.unmount();
+});
+
+test("FM9 dois cliques sem re-render em Desligar todos geram um PATCH", async () => {
+  const page = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura([]) } });
+  await page.toggle("Dashboard");
+  await page.save();
+  const confirm = buttonByText("Desligar todos");
+  assert.ok(confirm);
+  await act(async () => {
+    confirm.click();
+    confirm.click();
+  });
+  await settle();
+  assert.equal(patchBodies.length, 1);
+  await page.unmount();
+});
+
+test("FM10 dois cliques sem re-render em Salvar alterações geram um PATCH", async () => {
+  const page = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura(["dashboard", "work_orders"]) } });
+  await page.toggle("Ordens de Serviço");
+  const save = buttonByText("Salvar alterações");
+  assert.ok(save);
+  await act(async () => {
+    save.click();
+    save.click();
+  });
+  await settle();
+  assert.equal(patchBodies.length, 1);
+  await page.unmount();
+});
+
+test("FM11 salvar de novo pelo mesmo componente funciona depois de sucesso e de recusa", async () => {
+  const success = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura(["dashboard", "work_orders"]) } });
+  await success.toggle("Ordens de Serviço");
+  await success.save();
+  await success.toggle("Pátios");
+  await success.save();
+  assert.equal(patchBodies.length, 2);
+  await success.unmount();
+
+  const refused = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 422, body: { error: { code: "X", reason: "module_unknown", message: "x" } } });
+  await refused.toggle("Ordens de Serviço");
+  await refused.save();
+  await refused.toggle("Pátios");
+  await refused.save();
+  assert.equal(patchBodies.length, 2);
+  await refused.unmount();
+});
+
+test("FM12 durante o envio Salvar alterações fica desligado e não envia nem abre a pergunta", async () => {
+  const page = await mount(semAssinatura(["dashboard"]), null, { kind: "json", status: 200, body: { data: semAssinatura(["dashboard"]) } });
+  await page.toggle("Pátios");
+  holdPatch();
+  const save = buttonByText("Salvar alterações") as MiniDomElement;
+  await act(async () => {
+    save.click();
+  });
+  await settle();
+  const currentSave = buttonByText("Salvar alterações") as MiniDomElement;
+  assert.equal(propsOf(currentSave).disabled, true);
+  await act(async () => {
+    currentSave.click();
+  });
+  await settle();
+  assert.equal(patchBodies.length, 1);
+  await page.toggle("Pátios");
+  await page.toggle("Dashboard");
+  await act(async () => {
+    (buttonByText("Salvar alterações") as MiniDomElement).click();
+  });
+  await settle();
+  assert.equal(questionIsOpen(), false);
+  assert.equal(patchBodies.length, 1);
+  await page.unmount();
 });
