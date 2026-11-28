@@ -6,7 +6,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test, { after, afterEach } from "node:test";
 
-import { sweepTenant } from "./helpers/sweep-tenant.js";
+import { sweepTenant, type SweepAdminClient } from "./helpers/sweep-tenant.js";
 
 // B-LEILAO-REVENDA (suíte PostgreSQL; plano §7, Emendas 1, 2 e 2.1). Cadeia REAL: o app (`src/app.ts`) e os serviços de
 // leilão, liquidação e cobrança com CORE_SAAS_PERSISTENCE=prisma, organização nova por caso, cadeia de custódia válida
@@ -151,18 +151,51 @@ if (!connectionString) {
     return ctx;
   }
 
+  // Cliente da varredura do encerramento: cada comando corre num SAVEPOINT próprio (`SAVEPOINT` antes,
+  // `RELEASE SAVEPOINT` se deu certo, `ROLLBACK TO SAVEPOINT` e o erro relançado se falhou). Dentro de uma
+  // transação interativa o primeiro erro a aborta e todo comando seguinte recebe 25P02; com o savepoint o erro
+  // desfaz só o próprio comando, a transação sobrevive e o `sweepTenant` vê o SQLSTATE real.
+  function sweepClientWithSavepoints(tx: SweepAdminClient): SweepAdminClient {
+    let sequence = 0;
+    async function guarded<T>(command: () => Promise<T>): Promise<T> {
+      sequence += 1;
+      const savepoint = `leilao_teardown_sp_${sequence}`;
+      await tx.$executeRawUnsafe(`SAVEPOINT ${savepoint}`);
+      try {
+        const result = await command();
+        await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepoint}`);
+        return result;
+      } catch (error) {
+        await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+        throw error;
+      }
+    }
+    return {
+      $queryRawUnsafe: <T>(query: string, ...values: unknown[]): Promise<T> => guarded(() => tx.$queryRawUnsafe<T>(query, ...values)),
+      $executeRawUnsafe: (query: string, ...values: unknown[]): Promise<number> => guarded(() => tx.$executeRawUnsafe(query, ...values)),
+    };
+  }
+
   async function teardown(tenantId: string): Promise<void> {
     // P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT: a varredura listava TODA tabela de `public` com coluna
-    // `tenant_id`, sem filtrar o tipo. Sob `node --test` as suítes irmãs rodam em paralelo no MESMO banco: a
-    // `sweep_guard_text_*` de tests/sweep-tenant-text-db.test.ts (`tenant_id text`) entrava na lista e o
-    // `DELETE ... WHERE tenant_id = $1::uuid` quebrava com 42883, e uma irmã que sumia entre a listagem e o
-    // DELETE quebrava com 42P01. O `sweepTenant` já filtra `data_type = 'uuid'` e tolera a tabela sumida — é o
-    // helper dos outros 6 arquivos `-db`. O `session_replication_role = 'replica'` continua de pé: sem ele,
-    // `custody_events` (I2) e `impound_outbox_events` (I9) recusam o DELETE (23001) e arrastam as FK (23503).
-    await client.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
-      await sweepTenant(tx, tenantId, []);
-    });
+    // `tenant_id`, sem filtrar o tipo. Sob `node --test` as suítes irmãs rodam em paralelo no MESMO banco, e cada
+    // um dos dois vermelhos é fechado por uma coisa diferente:
+    // - o 42883 (`operator does not exist: text = uuid`) e o 42P01 que o CI viu vinham das `sweep_guard_text_*`
+    //   de tests/sweep-tenant-text-db.test.ts (`tenant_id text`), e quem os fecha é o FILTRO DE TIPO do helper
+    //   (`data_type = 'uuid'`): a tabela `text` nem entra na lista. É o helper dos outros 6 arquivos `-db`;
+    // - uma tabela `tenant_id uuid` que some entre a listagem e o DELETE (42P01) é fechada pelo SAVEPOINT. O
+    //   `sweepTenant` tolera a tabela sumida, mas dentro da transação essa tolerância era inerte: o 42P01 abortava
+    //   a transação inteira, o resto da varredura falhava com 25P02 e o SQLSTATE real sumia da reprovação.
+    // O `session_replication_role = 'replica'` continua de pé: sem ele, `custody_events` (I2) e
+    // `impound_outbox_events` (I9) recusam o DELETE (23001) e arrastam as FK (23503).
+    const timeoutMs = 120_000; // explícito: o savepoint triplica os comandos da varredura (o padrão do Prisma é 5 s)
+    await client.$transaction(
+      async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
+        await sweepTenant(sweepClientWithSavepoints(tx), tenantId, []);
+      },
+      { timeout: timeoutMs },
+    );
   }
 
   let server: Server | undefined;
