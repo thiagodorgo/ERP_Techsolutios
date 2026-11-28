@@ -1,30 +1,1077 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Referência — Organizações da plataforma</title>
-  <style>
-    :root{--page:#f6f8fb;--panel:#fff;--muted:#f8fafc;--text:#0f172a;--sub:#64748b;--line:#e2e8f0;--primary:#2563eb;--ok:#15803d;--warn:#b45309;--danger:#b91c1c;font-family:Inter,system-ui,sans-serif}
-    *{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--text)}button,input,select{font:inherit}.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh}.side{padding:24px 18px;background:#0f2744;color:#fff}.brand{font-size:18px;font-weight:800}.nav{margin-top:30px;padding:10px 12px;border-radius:9px;background:#ffffff18}.main{padding:30px}.head,.filters,.actions,.detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.head p{margin:4px 0;color:var(--sub)}.btn{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);font-weight:700;cursor:pointer}.primary{border-color:var(--primary);background:var(--primary);color:#fff}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.kpi{padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-align:left;cursor:pointer}.kpi b{display:block;font-size:26px}.kpi span{color:var(--sub)}.filters{justify-content:flex-start;margin-bottom:12px}.filters input{flex:1;max-width:360px}.filters input,.filters select{height:40px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.table{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.row{display:grid;grid-template-columns:calc(30.216% - 6.647px) calc(19.424% - 4.273px) calc(19.424% - 4.273px) calc(9.353% - 2.058px) calc(9.353% - 2.058px) calc(12.230% - 2.691px) 22px;align-items:center;min-height:44px;border-bottom:1px solid var(--line)}.row>span{padding:0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row.headrow{background:var(--muted);color:var(--sub);font-size:11px;font-weight:800}.row.data{cursor:pointer}.row.data:focus{outline:2px solid var(--primary);outline-offset:-2px}.row.static{cursor:default}.status.ok{color:var(--ok)}.status.danger{color:var(--danger)}.detail{padding:18px;background:var(--muted);border-bottom:1px solid var(--line)}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.detail-grid>div{padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.hidden{display:none}.modal{position:fixed;inset:0;display:grid;place-items:center;background:#0f172a88}.dialog{width:min(760px,calc(100vw - 32px));padding:22px;border-radius:14px;background:var(--panel);box-shadow:0 24px 70px #0003}.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0;list-style:none}.steps button{width:100%;min-height:40px;border:1px solid var(--line);border-radius:8px;background:var(--muted);font-weight:700}.steps .active{border-color:var(--primary);color:var(--primary);background:var(--panel)}.field{display:grid;gap:6px;margin:16px 0}.field input,.field select{height:42px;padding:0 12px;border:1px solid var(--line);border-radius:8px}.note{margin-top:24px;padding:14px;border:1px dashed var(--warn);border-radius:10px;background:#fffbeb;color:#713f12}@media(max-width:960px){.shell{grid-template-columns:74px 1fr}.side .brand,.side .nav{font-size:0}.kpis{grid-template-columns:repeat(2,1fr)}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Referência — Organizações da plataforma</title>
+<!--
+  Referência renderizada da tela Organizações da plataforma (B-PLAT-ORG-REAL, PR-b), conserto C24 da Emenda 1.7.
+  Conteúdo: ref-646-cl (Claude Opus).
+  Composição: a maquete aprovada do lote de 24/11 (uma opção), a lista e o diálogo "Nova organização", adaptada às
+  respostas do dono QM1 = (b), QM2 = (b), QM3 = não e QM4 = não, e aos consertos C12 a C15, C20 e C21. O que é do PR-c
+  (os dados da matriz) e as marcas de revisão da maquete não entram.
+  Cores: os tokens de frontend/src/styles/tokens/tokens.css no :root. As cores fixas da biblioteca (.pat-*, StepList)
+  e do shell (layouts/PlatformLayout.tsx), que não têm token no sistema, entram como estão no app. Texto pequeno usa só
+  tons que passam no contraste AA. Fonte: a pilha --font-sans, sem carga externa (o app também não carrega fonte).
+  Estados: abre na lista, com o diálogo fechado. Com "#vazio" no fim do endereço, mostra o caso em que só existe a
+  organização de sistema (C20).
+  As ações do painel da linha (Ver detalhes completos, Editar nome, Suspender, Reativar, Criar administrador, Escolher
+  plano, Preencher) são o alvo visual: o fluxo delas é das telas do detalhe, fora desta referência.
+  Ganchos dos roteiros de conferência, sem estilo próprio: #modal, .dialog, #close, #new, .kpi, .row.data, .main,
+  .shell e .head. O script mantém os nomes rows e apply do original.
+  A conferência da mesma tela nas três bases pessoais da marca depende de P-MARCA-DESIGN-SYSTEM: esta referência não
+  cria paleta, seletor nem preferência. Nomes, números e valores são de exemplo; nenhum dado real de cliente.
+-->
+<style>
+/* ── tokens do sistema: frontend/src/styles/tokens/tokens.css (só os usados nesta tela) ── */
+:root{
+  --color-core-primary:#12385c;
+  --color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;
+  --color-status-warning:#a96b00;
+  --color-status-danger:#DC2626;
+  --color-status-info:#206bc4;
+  --surface-panel:#ffffff;
+  --surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;
+  --border-strong:#9fb0bf;
+  --text-primary:#17212c;
+  --text-secondary:#526273;
+  --text-muted:#718196;
+  --radius-6:6px;
+  --radius-8:8px;
+  --shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"Roboto Mono","SFMono-Regular",Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:#f1f5f9;color:var(--text-primary);font-family:var(--font-sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed}
+h1,h2,p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.ic{display:block;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ── shell da plataforma (layouts/PlatformLayout.tsx: cores fixas do app, sem token) ── */
+.app-shell{display:flex;min-height:100vh}
+.app-sidebar{width:236px;flex:none;display:flex;flex-direction:column;background:#0d1b2a;border-right:1px solid rgba(255,255,255,.06)}
+.app-sidebar__brand{display:flex;align-items:center;gap:10px;padding:16px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #33475b;border-radius:10px;color:#7be084}
+.app-sidebar__logo .ic{stroke-width:2.2}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;line-height:1.15;color:#fff;white-space:nowrap}
+.app-sidebar__brand-sub{font-size:10px;font-weight:600;letter-spacing:.12em;color:#5e8c86;white-space:nowrap}
+.app-sidebar__nav{flex:1;padding:12px}
+.app-sidebar__group{padding:14px 10px 7px;font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607a;white-space:nowrap}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;margin-bottom:2px;padding:9px 11px;border-radius:9px;font-size:13.5px;font-weight:600;color:#9fb4cc;white-space:nowrap}
+.app-sidebar__item--ativo{background:#2563eb;color:#fff;font-weight:700}
+.app-sidebar__footer{display:flex;align-items:center;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,.06)}
+.app-sidebar__avatar{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#1e3a5f;color:#9dc3e6;font-size:12px;font-weight:800}
+.app-sidebar__who{min-width:0}
+.app-sidebar__who b{display:block;font-size:12.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-sidebar__who span{display:block;font-size:10.5px;color:#5b7a96;white-space:nowrap}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.app-topbar{height:60px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;padding:0 24px;background:#fff;border-bottom:1px solid #e2e8f0}
+.app-topbar__l{display:flex;align-items:center;gap:10px;min-width:0}
+.app-topbar__menu{display:none;width:40px;height:40px;flex:none;align-items:center;justify-content:center;border:1px solid #e2e8f0;border-radius:10px;background:#fff;color:#475569}
+.app-topbar__title{font-size:17px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__actions{display:flex;align-items:center;gap:14px;flex:none}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:280px;padding:8px 13px;border-radius:10px;background:#f1f5f9;color:#94a3b8;font-size:13px;white-space:nowrap;overflow:hidden}
+.app-topbar__org{display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #e2e8f0;border-radius:10px;color:#64748b;white-space:nowrap}
+.app-topbar__org span{font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{position:relative;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#f1f5f9;color:#475569}
+.app-topbar__bell i{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:1.5px solid #fff}
+.app-content{flex:1;min-width:0;padding:24px;container-type:inline-size;container-name:content}
+.app-menu-fundo{position:fixed;inset:0;z-index:19;background:rgb(18 26 34 / 42%)}
+@media (max-width:1100px){
+  .app-sidebar{width:74px}
+  .app-sidebar__brand{justify-content:center;padding:16px 8px}
+  .app-sidebar__brand-text,.app-sidebar__label,.app-sidebar__who,.app-sidebar__group{display:none}
+  .app-sidebar__nav{padding:12px 10px}
+  .app-sidebar__item{justify-content:center;padding:10px 0}
+  .app-sidebar__footer{justify-content:center;padding:12px 8px}
+  .app-topbar__search{display:none}
+}
+@media (max-width:700px){
+  .app-sidebar{display:none}
+  .app-topbar{padding:0 12px}
+  .app-topbar__menu{display:inline-flex}
+  .app-topbar__org{display:none}
+  .app-content{padding:14px 12px}
+  .app-shell--menu .app-sidebar{display:flex;position:fixed;top:0;bottom:0;left:0;z-index:20;width:236px;overflow-y:auto}
+  .app-shell--menu .app-sidebar__brand{justify-content:flex-start;padding:16px 14px}
+  .app-shell--menu .app-sidebar__brand-text,.app-shell--menu .app-sidebar__group,.app-shell--menu .app-sidebar__who{display:block}
+  .app-shell--menu .app-sidebar__label{display:inline}
+  .app-shell--menu .app-sidebar__nav{padding:12px}
+  .app-shell--menu .app-sidebar__item{justify-content:flex-start;padding:9px 11px}
+  .app-shell--menu .app-sidebar__footer{justify-content:flex-start;padding:12px}
+}
+@media (min-width:701px){.app-menu-fundo{display:none!important}}
+
+/* ── biblioteca do padrão (.pat-*, frontend/src/styles/app.css), nos valores do app ── */
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{flex:1 1 300px;min-width:0}
+.pat-page-header__kicker{margin-bottom:6px;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#2563eb}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin-top:5px;font-size:13px;font-weight:500;color:var(--text-secondary)}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:8px 14px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;color:#475569;font-size:12.5px;font-weight:700;white-space:nowrap}
+.pat-btn:hover:not(:disabled){border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{border-color:#2563eb;background:#2563eb;color:#fff}
+.pat-btn--primary:hover:not(:disabled){border-color:#1d4ed8;background:#1d4ed8;color:#fff}
+.pat-btn--sm{min-height:32px;padding:5px 10px;font-size:12px}
+.pat-btn:disabled{opacity:.55}
+.pat-kpi{display:block;width:100%;min-width:0;padding:15px 16px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;color:#0f172a;text-align:left;font:inherit}
+.pat-kpi--clickable{cursor:pointer}
+.pat-kpi--clickable:hover{border-color:#93c5fd}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:9px}
+.pat-kpi__tile{width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:9px;background:var(--surface-panel-muted)}
+.pat-kpi__tile--ok{color:var(--color-status-success)}
+.pat-kpi__tile--perigo{color:var(--color-status-danger)}
+.pat-kpi__tile--atencao{color:var(--color-status-warning)}
+.pat-kpi__tile--primario{color:var(--color-core-primary)}
+.pat-kpi__tile--info{color:var(--color-status-info)}
+.pat-kpi__value{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums}
+.pat-kpi__label{margin-top:6px;font-size:12.5px;font-weight:600;color:#334155}
+.pat-kpi__hint{margin-top:2px;font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi--nota{display:flex;align-items:center;gap:12px;border-style:dashed;border-color:var(--border-subtle);background:var(--surface-panel-muted)}
+.pat-kpi--nota strong{display:block;font-size:13px;font-weight:700;color:#334155}
+.pat-kpi--nota .pat-kpi__texto{display:block;margin-top:3px;font-size:12px;line-height:1.45;color:var(--text-secondary)}
+.pat-pill{display:inline-flex;align-items:center;flex:none;gap:6px;padding:3px 9px;border-radius:99px;background:var(--surface-panel-muted);color:var(--text-primary);font-size:11px;font-weight:700;line-height:1.3;white-space:nowrap}
+.pat-pill__dot{width:7px;height:7px;flex:none;border-radius:50%;background:var(--color-status-success)}
+.pat-pill--suspensa{color:var(--color-status-danger)}
+.pat-pill--suspensa .pat-pill__dot{background:var(--color-status-danger)}
+.pat-filtro-chip-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px 4px}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 4px 3px 10px;border:1px solid #bfdbfe;border-radius:99px;background:#eff6ff;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pat-filtro-chip button{width:24px;height:24px;flex:none;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:50%;background:none;color:#1d4ed8}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-search{display:flex;align-items:center;gap:7px;flex:1 1 200px;min-width:0;max-width:340px;min-height:38px;padding:0 12px;border:1px solid var(--border-subtle);border-radius:9px;background:var(--surface-panel);color:var(--text-muted)}
+.pat-search:focus-within{outline:2px solid #2563eb;outline-offset:2px;border-color:#2563eb}
+.pat-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;font-size:13px;color:var(--text-primary)}
+.pat-search input::placeholder{color:var(--text-secondary)}
+.pat-select{min-height:38px;max-width:100%;padding:7px 10px;border:1px solid var(--border-subtle);border-radius:9px;background:var(--surface-panel);color:var(--text-primary);font-size:12.5px;font-weight:600}
+
+/* ── a tela: o invólucro .platform-organizations, só com tokens (app.css, regras escopadas do PR-b) ── */
+.platform-organizations{min-width:0;color:var(--text-primary)}
+.org-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.org-lista{min-width:0;overflow:hidden;border:1px solid var(--border-subtle);border-radius:13px;background:var(--surface-panel)}
+.org-lista__topo{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--border-subtle)}
+.org-lista__filtros{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1 1 280px;min-width:0}
+.org-lista__contagem{font-size:11.5px;font-weight:600;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:var(--surface-panel)}
+.pat-ab-table thead th{height:34px;padding:0 12px;border-bottom:1px solid var(--border-subtle);background:var(--surface-panel-muted);color:var(--text-secondary);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* pesos da maquete (2,1 · 1,35 · 1,35 · 0,65 · 0,65 · 0,85) em 97,5 %; a coluna terminal fica com o resto (cerca de 22 px) */
+.pat-ab-table th.c-org{width:29.46%}
+.pat-ab-table th.c-grp,.pat-ab-table th.c-sit{width:18.94%}
+.pat-ab-table th.c-usr,.pat-ab-table th.c-mod{width:9.12%}
+.pat-ab-table th.c-cri{width:11.92%}
+.pat-ab-row{cursor:pointer;outline:none}
+.pat-ab-row td{height:43px;padding:0 12px;border-bottom:1px solid var(--border-subtle);background:var(--surface-panel);color:var(--text-secondary);font-size:12.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.pat-ab-row:hover td{background:var(--surface-panel-muted)}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"] td{background:var(--surface-panel-muted)}
+.pat-ab-row--static{cursor:default}
+.pat-ab-row--static:hover td{background:var(--surface-panel)}
+.org-linha--nova td:first-child{box-shadow:inset 3px 0 0 var(--color-status-success)}
+.pat-ab-table .c-ver{padding:0;text-align:center}
+.num-dir{text-align:right!important;font-variant-numeric:tabular-nums}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;vertical-align:middle;color:var(--text-muted);transition:transform .2s ease}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.org-nome-cel{display:flex;align-items:center;gap:9px;min-width:0}
+.org-avatar{width:26px;height:26px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;background:var(--surface-panel-muted);color:var(--color-core-primary)}
+.org-nome{flex:0 1 auto;min-width:0;font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.org-grp-m{display:none;flex:0 1000 auto;min-width:0;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.org-muted{color:var(--text-secondary)}
+.org-sit{display:flex;align-items:center;gap:6px;min-width:0}
+.org-selo{display:inline-flex;align-items:center;flex:none;max-height:20px;padding:1px 7px;border:1px solid var(--border-subtle);border-radius:99px;background:var(--surface-panel-muted);font-size:10.5px;font-weight:700;line-height:1.5;white-space:nowrap}
+.org-selo--sis{color:var(--color-core-primary)}
+.org-selo--inc{border-color:var(--color-status-warning);color:var(--text-secondary)}
+.pat-ab-detail-row td{padding:0;border-bottom:2px solid var(--border-subtle);background:var(--surface-panel-muted)}
+.org-detalhe{display:grid;gap:14px;padding:16px 20px;color:var(--text-primary)}
+.org-detalhe__cab{display:flex;align-items:flex-start;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
+.org-detalhe__id{min-width:0}
+.org-detalhe__id h2{font-size:15px;font-weight:800;overflow-wrap:anywhere}
+.org-detalhe__id p{margin-top:3px;font-size:12.5px;color:var(--text-secondary)}
+.org-detalhe__plano{font-size:13px;font-weight:700}
+.org-detalhe__grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.org-detalhe__grade>div{min-width:0;padding:12px;border:1px solid var(--border-subtle);border-radius:var(--radius-8);background:var(--surface-panel)}
+.org-detalhe__grade b{display:block;margin-bottom:6px;font-size:12px;font-weight:700}
+.org-detalhe__grade li,.org-detalhe__grade p{font-size:12.5px;line-height:1.6;color:var(--text-secondary)}
+.org-modulos{display:flex;flex-wrap:wrap;gap:6px}
+.org-modulos li{padding:2px 9px;border:1px solid var(--border-subtle);border-radius:99px;background:var(--surface-panel-muted);font-size:11.5px;line-height:1.5}
+.org-detalhe__acoes{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.org-faltas{overflow:hidden;border:1px solid var(--color-status-warning);border-radius:10px;background:var(--surface-panel)}
+.org-faltas__cab{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border-subtle);font-size:13px;font-weight:800}
+.org-faltas__cab .ic{color:var(--color-status-warning)}
+.org-faltas__item{display:flex;align-items:center;justify-content:space-between;gap:10px 12px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border-subtle)}
+.org-faltas__item:last-child{border-bottom:0}
+.org-faltas__txt{flex:1 1 220px;min-width:0}
+.org-faltas__txt b{display:block;font-size:13px}
+.org-faltas__txt span{display:block;margin-top:2px;font-size:12px;color:var(--text-secondary)}
+.estado-vazio{padding:40px 18px;text-align:center}
+.estado-vazio--linha{border-top:1px solid var(--border-subtle)}
+.estado-vazio b{display:block;font-size:14px}
+.estado-vazio p{max-width:420px;margin:4px auto 12px;font-size:12.5px;color:var(--text-secondary)}
+@container content (max-width:1000px){
+  .org-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .org-kpis .pat-kpi--nota{grid-column:1/-1;padding:11px 16px}
+}
+@container content (max-width:860px){
+  .pat-ab-table .c-mod,.pat-ab-table .c-cri{display:none}
+  .pat-ab-table th.c-org{width:36.13%}
+  .pat-ab-table th.c-grp{width:23.48%}
+  .pat-ab-table th.c-sit{width:26.19%}
+  .pat-ab-table th.c-usr{width:10.84%}
+}
+@container content (max-width:640px){
+  .org-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pat-kpi__hint{white-space:normal}
+  .org-detalhe{padding:14px 12px}
+  .org-detalhe__grade{grid-template-columns:minmax(0,1fr)}
+}
+@container content (max-width:600px){
+  .pat-ab-table .c-grp,.pat-ab-table .c-usr{display:none}
+  .pat-ab-table{table-layout:auto}
+  .pat-ab-table th.c-org{width:100%}
+  .pat-ab-table td.c-org{max-width:0}
+  .pat-ab-table th.c-sit{width:1%}
+  .pat-ab-table th.c-ver{width:18px;min-width:18px}
+  .pat-ab-table thead th,.pat-ab-row td{padding:0 8px}
+  .pat-ab-table thead th:first-child,.pat-ab-row td:first-child{padding-left:12px}
+  .org-grp-m{display:block}
+  .org-avatar{display:none}
+  .org-lista__topo{padding:10px 12px}
+  .pat-filtro-chip-bar{padding:10px 12px 4px}
+}
+
+/* ── o diálogo: o Modal médio da biblioteca (app.css: .ui-overlay, .ui-modal) com o molde .cb-dialog ── */
+.ui-overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-start;justify-content:center;padding:84px 12px 28px;overflow-y:auto;background:rgb(18 26 34 / 42%)}
+.ui-modal{width:min(420px,92vw);min-width:0;padding:16px;border-radius:var(--radius-8);background:var(--surface-panel);box-shadow:var(--shadow-overlay);color:var(--text-primary)}
+.ui-modal>header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.ui-modal>header h2{font-size:18px;font-weight:800;letter-spacing:-.2px}
+.ui-modal>header button{width:40px;height:40px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:transparent;color:#334155}
+.ui-modal>header button:hover:not(:disabled){background:#f1f5f9}
+.ui-modal>header button:disabled{opacity:.55}
+.cb-dialog{display:flex;flex-direction:column;gap:12px;min-width:0;padding:4px 0}
+.cb-dialog__footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:4px}
+.cb-dialog__hint{margin-right:auto;font-size:11.5px;color:var(--text-secondary)}
+.cb-dialog__text{font-size:13px;line-height:1.55;color:#334155}
+.cb-dialog__text--sm{font-size:12px;color:var(--text-secondary)}
+.cb-dialog__section{margin-top:2px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#475569}
+.lista-radio{display:grid;gap:6px}
+.cb-dialog__check{display:flex;align-items:flex-start;gap:9px;min-height:44px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--surface-panel);color:var(--text-primary);font-size:12.5px;cursor:pointer}
+.cb-dialog__check:hover{border-color:#93c5fd}
+.cb-dialog__check:has(> input:checked){border-color:#2563eb;background:#eff6ff}
+.cb-dialog__check input{width:16px;height:16px;flex:none;margin:2px 0 0;accent-color:#2563eb}
+.cb-dialog__check--off{cursor:not-allowed;background:var(--surface-panel-muted)}
+.cb-dialog__check--off:hover{border-color:var(--border-subtle)}
+.cb-dialog__check .t{flex:1;min-width:0}
+.cb-dialog__check b{display:block;font-size:13px}
+.cb-dialog__check small{display:block;font-size:11.5px;line-height:1.4;color:var(--text-secondary)}
+.cb-dialog__check .preco{flex:none;font-size:12px;font-weight:700;color:#334155;text-align:right;white-space:nowrap}
+.org-aviso{display:flex;align-items:flex-start;gap:6px;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--text-primary)}
+.org-aviso .ic{margin-top:1px;color:var(--color-status-warning)}
+.org-nada{padding:6px 2px;font-size:12px;color:var(--text-secondary)}
+.ui-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ui-field>span:first-child{font-size:12.5px;font-weight:700;color:#475569}
+.ui-field>span i{font-style:normal;color:var(--color-status-danger)}
+.ui-field small{font-size:11.5px;line-height:1.45;color:var(--text-secondary)}
+.ui-input{width:100%;min-height:38px;padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--radius-6);background:var(--surface-panel);color:var(--text-primary);font-size:13.5px}
+.ui-input:focus{outline:2px solid rgb(15 143 191 / 30%);border-color:var(--color-core-accent)}
+.ui-input[aria-invalid="true"]{border-color:var(--color-status-danger)}
+.ui-input::placeholder{color:var(--text-secondary)}
+.form-error{font-size:12px;font-weight:600;color:var(--color-status-danger)}
+.f-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.f-grade .larga{grid-column:1/-1}
+.recolhe{border:1px solid var(--border-subtle);border-radius:9px;background:var(--surface-panel-muted)}
+.recolhe>summary{display:flex;align-items:center;gap:6px 8px;min-height:44px;padding:10px 12px;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer;list-style:none}
+.recolhe>summary::before{content:"";flex:none;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+.recolhe[open]>summary::before{transform:rotate(45deg)}
+.recolhe__corpo{display:grid;gap:10px;padding:2px 12px 12px}
+.ui-alert{display:flex;gap:9px;padding:11px 12px;border:1px solid var(--border-subtle);border-radius:var(--radius-6);background:var(--surface-panel-muted);font-size:12.5px;line-height:1.5;color:var(--text-primary)}
+.ui-alert .ic{margin-top:2px}
+.ui-alert--info .ic{color:var(--color-status-info)}
+.ui-alert--ok .ic{color:var(--color-status-success)}
+.ui-alert--warning{border-color:var(--color-status-warning)}
+.ui-alert--warning .ic{color:var(--color-status-warning)}
+.gira{animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.ui-reqs{padding:12px 14px;border:1px solid var(--border-subtle);border-radius:10px;background:var(--surface-panel-muted)}
+.ui-reqs__title{margin-bottom:8px;font-size:12px;font-weight:700;color:#334155}
+.ui-reqs ul{display:grid;gap:7px}
+.ui-reqs__item{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;line-height:1.4;color:var(--text-secondary)}
+.ui-reqs__item .ic{margin-top:1px;color:var(--text-muted)}
+.ui-reqs__item--ok{color:var(--text-primary)}
+.ui-reqs__item--ok .ic{color:var(--color-status-success)}
+.senha{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;padding:10px 12px;border:1px solid var(--border-subtle);border-radius:var(--radius-6);background:var(--surface-panel)}
+.senha__l{display:flex;align-items:center;gap:8px;min-width:0}
+.senha code{min-width:0;font-family:var(--font-mono);font-size:18px;font-weight:700;letter-spacing:.04em;word-break:break-all}
+.dica{display:block;min-height:18px;font-size:12px;color:var(--text-secondary)}
+.toast{position:fixed;left:50%;bottom:20px;z-index:40;width:max-content;max-width:calc(100vw - 24px);padding:10px 16px;border:1px solid #334155;border-radius:10px;background:#0f172a;color:#f8fafc;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);transform:translateX(-50%)}
+@media (max-width:480px){.f-grade{grid-template-columns:minmax(0,1fr)}}
+
+/* ── StepList (frontend/src/components/ui/StepList.tsx), na composição da maquete ── */
+.ui-steps{margin:0;padding:0;list-style:none}
+.ui-steps__item{position:relative;min-width:0;padding-left:38px}
+.ui-steps__item+.ui-steps__item{margin-top:14px}
+.ui-steps__item:not(:last-child)::before{content:"";position:absolute;left:12px;top:32px;bottom:-10px;width:2px;border-radius:2px;background:#e2e8f0}
+.ui-steps__item--done:not(:last-child)::before{background:#a7f3d0}
+.ui-steps__mark{position:absolute;left:0;top:0;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#e2e8f0;color:var(--text-secondary);font-size:11px;font-weight:700}
+.ui-steps__item--current .ui-steps__mark{background:#2563eb;color:#fff}
+.ui-steps__item--done .ui-steps__mark{background:#059669;color:#fff}
+.ui-steps__check{display:none}
+.ui-steps__item--done .ui-steps__check{display:block}
+.ui-steps__item--done .ui-steps__n{display:none}
+.ui-steps__head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;min-height:26px;margin-bottom:4px}
+.ui-steps__num{font-size:11.5px;font-weight:700;letter-spacing:.02em;color:#64748b}
+.ui-steps__item--current .ui-steps__num{color:var(--text-primary)}
+.ui-steps__done{display:inline-flex;padding:1px 7px;border:1px solid #a7f3d0;border-radius:99px;background:#ecfdf5;color:#047857;font-size:11px;font-weight:700}
+.ui-steps__note{font-size:11px;font-weight:600;color:#64748b}
+.ui-steps__obrig{padding:1px 7px;border-radius:99px;background:#eff6ff;color:#2563eb;font-size:10.5px;font-weight:700}
+.ui-steps__action{display:inline-flex;align-items:center;min-height:32px;margin-left:auto;padding:5px 8px;border:0;border-radius:6px;background:transparent;color:#2563eb;font-size:12.5px;font-weight:600}
+.ui-steps__action:disabled{opacity:.55}
+.ui-steps__resumo{font-size:12.5px;color:#334155;overflow-wrap:anywhere}
+.ui-steps__corpo{display:grid;gap:10px;min-width:0;padding-top:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
 </head>
 <body>
-<div class="shell"><aside class="side"><div class="brand">Console ERP</div><div class="nav">Organizações</div></aside><main class="main">
-  <header class="head"><div><h1>Organizações</h1><p>Cadastros e situação das organizações clientes, filiais de cada grupo</p></div><button class="btn primary" id="new">Nova organização</button></header>
-  <section class="kpis"><button class="kpi" data-filter="active"><b>2</b><span>Organizações ativas</span></button><button class="kpi" data-filter="suspended"><b>1</b><span>Organizações suspensas</span></button><button class="kpi" data-filter="incomplete"><b>1</b><span>Cadastros incompletos</span></button><div class="kpi"><b>—</b><span>Receita disponível após medição cloud</span></div></section>
-  <div class="filters"><input id="search" aria-label="Buscar organização ou grupo" placeholder="Buscar organização ou grupo…"><select id="group" aria-label="Filtrar por grupo"><option value="">Todos os grupos</option><option>Grupo Regional</option></select><button class="btn hidden" id="clear">Remover filtro</button></div>
-  <section class="table" aria-label="Organizações"><div class="row headrow"><span>ORGANIZAÇÃO</span><span>GRUPO</span><span>SITUAÇÃO</span><span>USUÁRIOS</span><span>MÓDULOS</span><span>CRIADA EM</span><span></span></div>
-    <div class="row data static" data-system><span>Plataforma · Organização de sistema</span><span>—</span><span class="status ok">Ativa</span><span>3</span><span>4</span><span>20/11/2026</span><span></span></div>
-    <div class="row data" tabindex="0" data-status="active" data-name="Operação Regional Grupo Regional"><span>Operação Regional</span><span>Grupo Regional</span><span class="status ok">Ativa · Cadastro incompleto</span><span>9</span><span>4</span><span>27/11/2026</span><span>⌄</span></div>
-    <div class="detail hidden"><div class="detail-head"><div><strong>Operação Regional</strong><div>Grupo Regional</div></div><strong>Plano Regional Teste</strong></div><div class="detail-grid"><div><b>Usuários</b><p>3 primeiros cadastros e situações.</p></div><div><b>Módulos habilitados</b><p>Ordens de Serviço · Estoque</p></div></div><div class="actions"><button class="btn">Ver detalhes completos</button><button class="btn">Editar nome</button><button class="btn">Alterar situação</button><button class="btn">Criar administrador</button></div></div>
-    <div class="row data" tabindex="0" data-status="suspended" data-name="Filial Centro Grupo Regional"><span>Filial Centro</span><span>Grupo Regional</span><span class="status danger">Suspensa</span><span>6</span><span>2</span><span>25/11/2026</span><span>⌄</span></div><div class="detail hidden"><p>Detalhe sob demanda desta organização.</p></div>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-baixo" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-okc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-c" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-carrega" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></symbol>
+  <symbol id="i-chave" viewBox="0 0 24 24"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5"/></symbol>
+  <symbol id="i-copiar" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M4 6h16"/><path d="M4 18h16"/></symbol>
+  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/></symbol>
+  <symbol id="i-painel" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol>
+  <symbol id="i-nuvem" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></symbol>
+  <symbol id="i-recibo" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
+  <symbol id="i-pulso" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-folha" viewBox="0 0 24 24"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></symbol>
+</svg>
+
+<div class="app-shell shell" id="shell">
+  <aside class="app-sidebar" id="sidebar">
+    <div class="app-sidebar__brand">
+      <div class="app-sidebar__logo" aria-hidden="true"><svg class="ic" width="20" height="20" focusable="false"><use href="#i-folha"/></svg></div>
+      <div class="app-sidebar__brand-text"><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+    </div>
+    <nav class="app-sidebar__nav" aria-label="Menu da plataforma">
+      <div class="app-sidebar__group">PRINCIPAL</div>
+      <a class="app-sidebar__item" title="Visão Geral"><svg class="ic" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-painel"/></svg><span class="app-sidebar__label">Visão Geral</span></a>
+      <a class="app-sidebar__item app-sidebar__item--ativo" aria-current="page" title="Organizações"><svg class="ic" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-server"/></svg><span class="app-sidebar__label">Organizações</span></a>
+      <a class="app-sidebar__item" title="Custo da nuvem"><svg class="ic" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-nuvem"/></svg><span class="app-sidebar__label">Custo da nuvem</span></a>
+      <a class="app-sidebar__item" title="Cobrança"><svg class="ic" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-recibo"/></svg><span class="app-sidebar__label">Cobrança</span></a>
+      <div class="app-sidebar__group">PLATAFORMA</div>
+      <a class="app-sidebar__item" title="Saúde do Sistema"><svg class="ic" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-pulso"/></svg><span class="app-sidebar__label">Saúde do Sistema</span></a>
+    </nav>
+    <div class="app-sidebar__footer">
+      <div class="app-sidebar__avatar" aria-hidden="true">AP</div>
+      <div class="app-sidebar__who"><b>Admin Plataforma</b><span>Super-administrador</span></div>
+    </div>
+  </aside>
+  <div class="app-menu-fundo" id="menu-fundo" hidden></div>
+
+  <div class="app-main">
+    <header class="app-topbar">
+      <div class="app-topbar__l">
+        <button type="button" class="app-topbar__menu" id="btn-menu" aria-label="Abrir o menu" aria-controls="sidebar" aria-expanded="false"><svg class="ic" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg></button>
+        <div class="app-topbar__title">Organizações</div>
+      </div>
+      <div class="app-topbar__actions">
+        <div class="app-topbar__search" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-busca"/></svg><span>Buscar organização, recurso, serviço…</span></div>
+        <div class="app-topbar__org" aria-hidden="true"><svg class="ic" width="15" height="15" focusable="false"><use href="#i-server"/></svg><span>Todas as organizações</span><svg class="ic" width="14" height="14" focusable="false"><use href="#i-baixo"/></svg></div>
+        <div class="app-topbar__bell" aria-hidden="true"><svg class="ic" width="18" height="18" focusable="false"><use href="#i-sino"/></svg><i></i></div>
+      </div>
+    </header>
+
+    <main class="app-content main" id="tela">
+      <section class="platform-organizations" id="lista" aria-labelledby="titulo-lista">
+        <header class="pat-page-header head">
+          <div class="pat-page-header__lead">
+            <div class="pat-page-header__kicker">Plataforma</div>
+            <h1 class="pat-page-header__title" id="titulo-lista">Organizações</h1>
+            <p class="pat-page-header__subtitle">Cadastros e situação das organizações clientes, filiais de cada grupo</p>
+          </div>
+          <div class="pat-page-header__actions"><button type="button" class="pat-btn pat-btn--primary" id="new" data-nova><svg class="ic" width="15" height="15" aria-hidden="true" focusable="false"><use href="#i-mais"/></svg>Nova organização</button></div>
+        </header>
+
+        <div class="org-kpis">
+          <button type="button" class="pat-kpi pat-kpi--clickable kpi" data-kpi="active" aria-pressed="false" aria-label="Organizações ativas: 6. Sem a organização de sistema">
+            <div class="pat-kpi__head"><span class="pat-kpi__tile pat-kpi__tile--ok" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-building"/></svg></span></div>
+            <div class="pat-kpi__value" data-valor>6</div><div class="pat-kpi__label">Organizações ativas</div><div class="pat-kpi__hint" data-dica>sem a organização de sistema</div>
+          </button>
+          <button type="button" class="pat-kpi pat-kpi--clickable kpi" data-kpi="suspended" aria-pressed="false" aria-label="Organizações suspensas: 1. Acesso cortado">
+            <div class="pat-kpi__head"><span class="pat-kpi__tile pat-kpi__tile--perigo" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-ban"/></svg></span></div>
+            <div class="pat-kpi__value" data-valor>1</div><div class="pat-kpi__label">Organizações suspensas</div><div class="pat-kpi__hint" data-dica>acesso cortado</div>
+          </button>
+          <button type="button" class="pat-kpi pat-kpi--clickable kpi" data-kpi="incomplete" aria-pressed="false" aria-label="Cadastro incompleto: 2. Plano, administrador ou dados">
+            <div class="pat-kpi__head"><span class="pat-kpi__tile pat-kpi__tile--atencao" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-lista"/></svg></span></div>
+            <div class="pat-kpi__value" data-valor>2</div><div class="pat-kpi__label">Cadastro incompleto</div><div class="pat-kpi__hint" data-dica>plano, administrador ou dados</div>
+          </button>
+          <button type="button" class="pat-kpi pat-kpi--clickable kpi" data-kpi="usuarios" aria-pressed="false" aria-label="Usuários totais: 41. Clique para ordenar a lista">
+            <div class="pat-kpi__head"><span class="pat-kpi__tile pat-kpi__tile--primario" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-users"/></svg></span></div>
+            <div class="pat-kpi__value" data-valor>41</div><div class="pat-kpi__label">Usuários totais</div><div class="pat-kpi__hint" data-dica>clique para ordenar a lista</div>
+          </button>
+          <div class="pat-kpi pat-kpi--nota"><span class="pat-kpi__tile pat-kpi__tile--info" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-info"/></svg></span><div><strong>Receita por organização</strong><span class="pat-kpi__texto">Disponível após a ativação da medição cloud.</span></div></div>
+        </div>
+
+        <section class="org-lista" aria-label="Lista de organizações">
+          <div class="org-lista__topo">
+            <div class="org-lista__filtros">
+              <label class="pat-search"><svg class="ic" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-busca"/></svg><span class="sr-only">Buscar organização ou grupo</span><input type="search" id="busca" placeholder="Buscar organização ou grupo…" autocomplete="off"></label>
+              <select class="pat-select" id="filtro-grupo" aria-label="Filtrar por grupo"><option value="">Todos os grupos</option><option value="g1">Grupo Exemplo</option><option value="g2">Grupo Horizonte</option><option value="g3">Grupo Vale Verde</option><option value="__sem">Sem grupo</option></select>
+            </div>
+            <span class="org-lista__contagem" id="contagem" aria-live="polite">8 de 8 organizações</span>
+          </div>
+          <div class="pat-filtro-chip-bar" id="chips" hidden></div>
+          <table class="pat-ab-table" id="tabela">
+            <thead><tr><th scope="col" class="c-org">ORGANIZAÇÃO</th><th scope="col" class="c-grp">GRUPO</th><th scope="col" class="c-sit">SITUAÇÃO</th><th scope="col" class="c-usr num-dir">USUÁRIOS</th><th scope="col" class="c-mod num-dir">MÓDULOS</th><th scope="col" class="c-cri num-dir">CRIADA EM</th><th scope="col" class="c-ver" aria-label="Abrir detalhe"></th></tr></thead>
+            <tbody id="linhas">
+              <tr class="pat-ab-row pat-ab-row--static row data static" data-org="o1" data-nome="Plataforma" data-grupo="" data-situacao="active" data-usuarios="3" data-incompleto="0" data-sistema title="Plataforma · organização de sistema · ativa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Plataforma">Plataforma</span><span class="org-selo org-selo--sis" aria-label="Organização de sistema" title="Organização de sistema">Sistema</span></span></td><td class="c-grp"><span class="org-muted">—</span></td><td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span></span></td><td class="c-usr num-dir">3</td><td class="c-mod num-dir">0</td><td class="c-cri num-dir">01/03/2026</td><td class="c-ver"></td></tr>
+              <tr class="pat-ab-row row data" tabindex="0" aria-expanded="false" data-org="o2" data-nome="Pátio Centro" data-grupo="g1" data-situacao="active" data-usuarios="12" data-incompleto="0" title="Pátio Centro · Grupo Exemplo · ativa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Pátio Centro">Pátio Centro</span><span class="org-grp-m">· Grupo Exemplo</span></span></td><td class="c-grp" title="Grupo Exemplo">Grupo Exemplo</td><td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span></span></td><td class="c-usr num-dir">12</td><td class="c-mod num-dir">12</td><td class="c-cri num-dir">02/10/2026</td><td class="c-ver"><span class="pat-chevron-icon" aria-hidden="true"><svg class="ic" width="15" height="15" focusable="false"><use href="#i-baixo"/></svg></span></td></tr>
+              <tr class="pat-ab-row row data" tabindex="0" aria-expanded="false" data-org="o3" data-nome="Pátio Norte" data-grupo="g1" data-situacao="active" data-usuarios="1" data-incompleto="1" title="Pátio Norte · Grupo Exemplo · ativa · cadastro incompleto: falta os dados da empresa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Pátio Norte">Pátio Norte</span><span class="org-grp-m">· Grupo Exemplo</span></span></td><td class="c-grp" title="Grupo Exemplo">Grupo Exemplo</td><td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span><span class="org-selo org-selo--inc" title="Cadastro incompleto">incompleto</span></span></td><td class="c-usr num-dir">1</td><td class="c-mod num-dir">12</td><td class="c-cri num-dir">23/11/2026</td><td class="c-ver"><span class="pat-chevron-icon" aria-hidden="true"><svg class="ic" width="15" height="15" focusable="false"><use href="#i-baixo"/></svg></span></td></tr>
+              <tr class="pat-ab-row row data" tabindex="0" aria-expanded="false" data-org="o4" data-nome="Pátio Rodovia" data-grupo="g1" data-situacao="suspended" data-usuarios="7" data-incompleto="0" title="Pátio Rodovia · Grupo Exemplo · suspensa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Pátio Rodovia">Pátio Rodovia</span><span class="org-grp-m">· Grupo Exemplo</span></span></td><td class="c-grp" title="Grupo Exemplo">Grupo Exemplo</td><td class="c-sit"><span class="org-sit"><span class="pat-pill pat-pill--suspensa"><span class="pat-pill__dot" aria-hidden="true"></span>Suspensa</span></span></td><td class="c-usr num-dir">7</td><td class="c-mod num-dir">5</td><td class="c-cri num-dir">15/09/2026</td><td class="c-ver"><span class="pat-chevron-icon" aria-hidden="true"><svg class="ic" width="15" height="15" focusable="false"><use href="#i-baixo"/></svg></span></td></tr>
+              <tr class="pat-ab-row row data" tabindex="0" aria-expanded="false" data-org="o5" data-nome="Pátio Leste" data-grupo="g2" data-situacao="active" data-usuarios="9" data-incompleto="0" title="Pátio Leste · Grupo Horizonte · ativa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Pátio Leste">Pátio Leste</span><span class="org-grp-m">· Grupo Horizonte</span></span></td><td class="c-grp" title="Grupo Horizonte">Grupo Horizonte</td><td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span></span></td><td class="c-usr num-dir">9</td><td class="c-mod num-dir">12</td><td class="c-cri num-dir">20/08/2026</td><td class="c-ver"><span class="pat-chevron-icon" aria-hidden="true"><svg class="ic" width="15" height="15" focusable="false"><use href="#i-baixo"/></svg></span></td></tr>
+              <tr class="pat-ab-row row data" tabindex="0" aria-expanded="false" data-org="o6" data-nome="Pátio Serra" data-grupo="g3" data-situacao="active" data-usuarios="8" data-incompleto="0" title="Pátio Serra · Grupo Vale Verde · ativa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Pátio Serra">Pátio Serra</span><span class="org-grp-m">· Grupo Vale Verde</span></span></td><td class="c-grp" title="Grupo Vale Verde">Grupo Vale Verde</td><td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span></span></td><td class="c-usr num-dir">8</td><td class="c-mod num-dir">5</td><td class="c-cri num-dir">10/07/2026</td><td class="c-ver"><span class="pat-chevron-icon" aria-hidden="true"><svg class="ic" width="15" height="15" focusable="false"><use href="#i-baixo"/></svg></span></td></tr>
+              <tr class="pat-ab-row row data" tabindex="0" aria-expanded="false" data-org="o7" data-nome="Pátio Oeste" data-grupo="g3" data-situacao="active" data-usuarios="0" data-incompleto="1" title="Pátio Oeste · Grupo Vale Verde · ativa · cadastro incompleto: falta o plano, o administrador e os dados da empresa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Pátio Oeste">Pátio Oeste</span><span class="org-grp-m">· Grupo Vale Verde</span></span></td><td class="c-grp" title="Grupo Vale Verde">Grupo Vale Verde</td><td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span><span class="org-selo org-selo--inc" title="Cadastro incompleto">incompleto</span></span></td><td class="c-usr num-dir">0</td><td class="c-mod num-dir">0</td><td class="c-cri num-dir">21/11/2026</td><td class="c-ver"><span class="pat-chevron-icon" aria-hidden="true"><svg class="ic" width="15" height="15" focusable="false"><use href="#i-baixo"/></svg></span></td></tr>
+              <tr class="pat-ab-row row data" tabindex="0" aria-expanded="false" data-org="o8" data-nome="Guincho Exemplo Ltda" data-grupo="" data-situacao="active" data-usuarios="4" data-incompleto="0" title="Guincho Exemplo Ltda · sem grupo · ativa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Guincho Exemplo Ltda">Guincho Exemplo Ltda</span><span class="org-grp-m">· Sem grupo</span></span></td><td class="c-grp"><span class="org-muted">Sem grupo</span></td><td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span></span></td><td class="c-usr num-dir">4</td><td class="c-mod num-dir">5</td><td class="c-cri num-dir">03/06/2026</td><td class="c-ver"><span class="pat-chevron-icon" aria-hidden="true"><svg class="ic" width="15" height="15" focusable="false"><use href="#i-baixo"/></svg></span></td></tr>
+            </tbody>
+          </table>
+          <div class="estado-vazio estado-vazio--linha" id="sem-resultado" hidden><b>Nenhuma organização encontrada</b><p>Ajuste a busca ou os filtros para consultar outras organizações.</p><button type="button" class="pat-btn" data-limpar>Limpar busca e filtros</button></div>
+        </section>
+      </section>
+
+      <section class="platform-organizations" id="estado-vazio" aria-labelledby="titulo-vazio" hidden>
+        <header class="pat-page-header">
+          <div class="pat-page-header__lead">
+            <div class="pat-page-header__kicker">Plataforma</div>
+            <h1 class="pat-page-header__title" id="titulo-vazio">Organizações</h1>
+            <p class="pat-page-header__subtitle">Cadastros e situação das organizações clientes, filiais de cada grupo</p>
+          </div>
+          <div class="pat-page-header__actions"><button type="button" class="pat-btn pat-btn--primary" data-nova><svg class="ic" width="15" height="15" aria-hidden="true" focusable="false"><use href="#i-mais"/></svg>Nova organização</button></div>
+        </header>
+        <div class="org-kpis">
+          <div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile pat-kpi__tile--ok" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-building"/></svg></span></div><div class="pat-kpi__value">0</div><div class="pat-kpi__label">Organizações ativas</div><div class="pat-kpi__hint">sem a organização de sistema</div></div>
+          <div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile pat-kpi__tile--perigo" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-ban"/></svg></span></div><div class="pat-kpi__value">0</div><div class="pat-kpi__label">Organizações suspensas</div><div class="pat-kpi__hint">nenhuma agora</div></div>
+          <div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile pat-kpi__tile--atencao" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-lista"/></svg></span></div><div class="pat-kpi__value">0</div><div class="pat-kpi__label">Cadastro incompleto</div><div class="pat-kpi__hint">nenhum</div></div>
+          <div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile pat-kpi__tile--primario" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-users"/></svg></span></div><div class="pat-kpi__value">0</div><div class="pat-kpi__label">Usuários totais</div><div class="pat-kpi__hint">sem usuários da organização de sistema</div></div>
+          <div class="pat-kpi pat-kpi--nota"><span class="pat-kpi__tile pat-kpi__tile--info" aria-hidden="true"><svg class="ic" width="16" height="16" focusable="false"><use href="#i-info"/></svg></span><div><strong>Receita por organização</strong><span class="pat-kpi__texto">Disponível após a ativação da medição cloud.</span></div></div>
+        </div>
+        <section class="org-lista" aria-label="Lista de organizações">
+          <table class="pat-ab-table">
+            <thead><tr><th scope="col" class="c-org">ORGANIZAÇÃO</th><th scope="col" class="c-grp">GRUPO</th><th scope="col" class="c-sit">SITUAÇÃO</th><th scope="col" class="c-usr num-dir">USUÁRIOS</th><th scope="col" class="c-mod num-dir">MÓDULOS</th><th scope="col" class="c-cri num-dir">CRIADA EM</th><th scope="col" class="c-ver" aria-label="Abrir detalhe"></th></tr></thead>
+            <tbody>
+              <tr class="pat-ab-row pat-ab-row--static" title="Plataforma · organização de sistema · ativa"><td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true"><svg class="ic" width="14" height="14" focusable="false"><use href="#i-building"/></svg></span><span class="org-nome" title="Plataforma">Plataforma</span><span class="org-selo org-selo--sis" aria-label="Organização de sistema" title="Organização de sistema">Sistema</span></span></td><td class="c-grp"><span class="org-muted">—</span></td><td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span></span></td><td class="c-usr num-dir">3</td><td class="c-mod num-dir">0</td><td class="c-cri num-dir">01/03/2026</td><td class="c-ver"></td></tr>
+            </tbody>
+          </table>
+          <div class="estado-vazio estado-vazio--linha"><b>Nenhuma organização cliente ainda</b><p>Só existe a organização de sistema. A primeira filial nasce aqui, com o grupo dela.</p><button type="button" class="pat-btn pat-btn--primary" data-nova><svg class="ic" width="15" height="15" aria-hidden="true" focusable="false"><use href="#i-mais"/></svg>Nova organização</button></div>
+        </section>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="ui-overlay modal" id="modal" hidden>
+  <section class="ui-modal dialog" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-titulo">
+    <header>
+      <h2 id="dlg-titulo">Nova organização</h2>
+      <button type="button" id="close" data-fechar aria-label="Fechar" title="Fechar"><svg class="ic" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button>
+    </header>
+
+    <div class="cb-dialog" id="fase-form">
+      <p class="cb-dialog__text cb-dialog__text--sm">Só o nome e o grupo são obrigatórios. O resto pode ficar para depois: a filial aparece como cadastro incompleto até completar.</p>
+      <ol class="ui-steps" id="etapas" aria-label="Etapas da nova organização">
+        <li class="ui-steps__item ui-steps__item--current" data-step="1" aria-current="step">
+          <span class="ui-steps__mark" aria-hidden="true"><span class="ui-steps__n">1</span><svg class="ic ui-steps__check" width="14" height="14" focusable="false"><use href="#i-ok"/></svg></span>
+          <div class="ui-steps__head"><span class="ui-steps__num">Etapa 1 de 4 · Grupo (matriz)</span><span class="ui-steps__obrig" data-quando="aberta">obrigatório</span><span class="ui-steps__done" data-quando="feita" hidden>feito<span class="sr-only">, etapa concluída</span></span><button type="button" class="ui-steps__action" data-ir="1" data-quando="feita" hidden>Alterar</button></div>
+          <div class="ui-steps__resumo" data-quando="feita" data-resumo hidden></div>
+          <div class="ui-steps__corpo" data-quando="atual">
+            <p class="cb-dialog__text">O grupo é a empresa-mãe; as organizações são as filiais dela. Uma filial não vê os dados de outra.</p>
+            <div class="lista-radio" role="radiogroup" aria-label="Como a organização nasce">
+              <label class="cb-dialog__check"><input type="radio" name="caminho" value="existente" checked><span class="t"><b>Filial de um grupo que já existe</b><small>Escolha o grupo pelo nome.</small></span></label>
+              <label class="cb-dialog__check"><input type="radio" name="caminho" value="novo"><span class="t"><b>Novo grupo e a 1ª filial</b><small>Para um cliente que ainda não está na plataforma.</small></span></label>
+            </div>
+            <div class="ui-steps__corpo" data-caminho="existente">
+              <label class="ui-field"><span>Buscar o grupo <i aria-hidden="true">*</i></span><input class="ui-input" type="search" id="busca-grupo" placeholder="Digite o nome do grupo" autocomplete="off" data-autofoco></label>
+              <div class="lista-radio" role="radiogroup" aria-label="Grupos" aria-required="true" id="grupos">
+                <label class="cb-dialog__check" data-nome-grupo="Grupo Exemplo"><input type="radio" name="grupo" value="g1"><span class="t"><b>Grupo Exemplo</b></span></label>
+                <label class="cb-dialog__check" data-nome-grupo="Grupo Horizonte"><input type="radio" name="grupo" value="g2"><span class="t"><b>Grupo Horizonte</b></span></label>
+                <label class="cb-dialog__check" data-nome-grupo="Grupo Vale Verde"><input type="radio" name="grupo" value="g3"><span class="t"><b>Grupo Vale Verde</b></span></label>
+              </div>
+              <p class="org-nada" id="grupos-vazio" hidden>Nenhum grupo com esse nome. Crie um em “Novo grupo e a 1ª filial”.</p>
+              <span class="form-error" role="alert" id="erro-grupo" hidden></span>
+            </div>
+            <div class="ui-steps__corpo" data-caminho="novo" hidden>
+              <label class="ui-field"><span>Nome do grupo <i aria-hidden="true">*</i></span><input class="ui-input" id="novo-grupo" maxlength="120" autocomplete="off" aria-required="true" aria-describedby="dica-novo-grupo" data-autofoco><small id="dica-novo-grupo">De 1 a 120 caracteres. Dois grupos não podem ter o mesmo nome.</small><span class="form-error" role="alert" id="erro-novo-grupo" hidden></span></label>
+            </div>
+          </div>
+        </li>
+        <li class="ui-steps__item ui-steps__item--future" data-step="2">
+          <span class="ui-steps__mark" aria-hidden="true"><span class="ui-steps__n">2</span><svg class="ic ui-steps__check" width="14" height="14" focusable="false"><use href="#i-ok"/></svg></span>
+          <div class="ui-steps__head"><span class="ui-steps__num">Etapa 2 de 4 · Filial</span><span class="ui-steps__obrig" data-quando="aberta">obrigatório</span><span class="ui-steps__done" data-quando="feita" hidden>feito<span class="sr-only">, etapa concluída</span></span><button type="button" class="ui-steps__action" data-ir="2" data-quando="feita" hidden>Alterar</button></div>
+          <div class="ui-steps__resumo" data-quando="feita" data-resumo hidden></div>
+          <div class="ui-steps__corpo" data-quando="atual" hidden>
+            <label class="ui-field"><span>Nome da organização <i aria-hidden="true">*</i></span><input class="ui-input" id="filial" maxlength="120" autocomplete="off" aria-required="true" aria-describedby="dica-filial" data-autofoco><small id="dica-filial">É o nome que a equipe vê. Não pode repetir o de outra organização do mesmo grupo.</small><span class="form-error" role="alert" id="erro-filial" hidden></span></label>
+            <div class="cb-dialog__section">Dados da empresa · podem ficar para depois</div>
+            <details class="recolhe" id="perfil-recolhe"><summary><span>Preencher os dados da empresa agora</span></summary>
+              <div class="recolhe__corpo"><div class="f-grade">
+                <label class="ui-field larga"><span>Razão social</span><input class="ui-input" data-perfil="razao" maxlength="160" autocomplete="off"></label>
+                <label class="ui-field"><span>CNPJ</span><input class="ui-input" data-perfil="cnpj" placeholder="00.000.000/0000-00" autocomplete="off" aria-describedby="dica-cnpj"><small id="dica-cnpj">Conferido pelos dígitos verificadores.</small></label>
+                <label class="ui-field"><span>E-mail de cobrança</span><input class="ui-input" type="email" data-perfil="email" autocomplete="off"></label>
+                <label class="ui-field"><span>CEP</span><input class="ui-input" data-perfil="cep" placeholder="00000-000" autocomplete="off"></label>
+                <label class="ui-field"><span>Número</span><input class="ui-input" data-perfil="numero" autocomplete="off"></label>
+                <label class="ui-field larga"><span>Logradouro</span><input class="ui-input" data-perfil="rua" autocomplete="off"></label>
+                <label class="ui-field"><span>Bairro</span><input class="ui-input" data-perfil="bairro" autocomplete="off"></label>
+                <label class="ui-field"><span>Cidade</span><input class="ui-input" data-perfil="cidade" autocomplete="off"></label>
+                <label class="ui-field"><span>UF</span><input class="ui-input" data-perfil="uf" maxlength="2" autocomplete="off"></label>
+                <label class="ui-field"><span>Forma de pagamento</span><select class="ui-input" data-perfil="forma"><option>Definir depois</option><option>Pix</option><option>Boleto</option><option>Cartão de crédito</option><option>Cartão de débito</option></select></label>
+              </div></div>
+            </details>
+          </div>
+        </li>
+        <li class="ui-steps__item ui-steps__item--future" data-step="3">
+          <span class="ui-steps__mark" aria-hidden="true"><span class="ui-steps__n">3</span><svg class="ic ui-steps__check" width="14" height="14" focusable="false"><use href="#i-ok"/></svg></span>
+          <div class="ui-steps__head"><span class="ui-steps__num">Etapa 3 de 4 · Plano</span><span class="ui-steps__note" data-quando="aberta">pode ficar para depois</span><span class="ui-steps__done" data-quando="feita" hidden>feito<span class="sr-only">, etapa concluída</span></span><button type="button" class="ui-steps__action" data-ir="3" data-quando="feita" hidden>Alterar</button></div>
+          <div class="ui-steps__resumo" data-quando="feita" data-resumo hidden></div>
+          <div class="ui-steps__corpo" data-quando="atual" hidden>
+            <p class="cb-dialog__text">Cada filial tem a sua assinatura. O plano vale a partir de hoje, 24/11/2026, e liga os módulos dele.</p>
+            <div class="lista-radio" role="radiogroup" aria-label="Planos">
+              <label class="cb-dialog__check"><input type="radio" name="plano" value="starter"><span class="t"><b>Starter</b><small>Cadastros, ordens de serviço, painel, financeiro e relatórios básicos.</small></span><span class="preco">R$ 100,00 por mês</span></label>
+              <label class="cb-dialog__check"><input type="radio" name="plano" value="professional"><span class="t"><b>Professional</b><small>O Starter + app de campo, estoque, frota, checklists, orçamento, faturamento e alertas.</small></span><span class="preco">R$ 200,00 por mês</span></label>
+              <label class="cb-dialog__check cb-dialog__check--off"><input type="radio" name="plano" value="business" disabled><span class="t"><b>Business</b><small>O Professional + estoque por viatura, manutenção, multas, remunerações e integrações.</small><span class="org-aviso"><svg class="ic" width="13" height="13" aria-hidden="true" focusable="false"><use href="#i-alerta"/></svg>Sem preço vigente: cadastre o preço do plano antes de escolher.</span></span><span class="preco">sem preço</span></label>
+              <label class="cb-dialog__check"><input type="radio" name="plano" value="enterprise"><span class="t"><b>Enterprise</b><small>O Business + inteligência, entrada única, auditoria avançada e BI.</small></span><span class="preco">R$ 400,00 por mês</span></label>
+              <label class="cb-dialog__check"><input type="radio" name="plano" value="depois" checked><span class="t"><b>Escolher depois</b><small>A filial nasce sem módulos e aparece como cadastro incompleto até ter plano.</small></span></label>
+            </div>
+            <small class="dica">Valores de exemplo.</small>
+          </div>
+        </li>
+        <li class="ui-steps__item ui-steps__item--future" data-step="4">
+          <span class="ui-steps__mark" aria-hidden="true"><span class="ui-steps__n">4</span><svg class="ic ui-steps__check" width="14" height="14" focusable="false"><use href="#i-ok"/></svg></span>
+          <div class="ui-steps__head"><span class="ui-steps__num">Etapa 4 de 4 · Administrador</span><span class="ui-steps__note" data-quando="aberta">pode ficar para depois</span><span class="ui-steps__done" data-quando="feita" hidden>feito<span class="sr-only">, etapa concluída</span></span><button type="button" class="ui-steps__action" data-ir="4" data-quando="feita" hidden>Alterar</button></div>
+          <div class="ui-steps__resumo" data-quando="feita" data-resumo hidden></div>
+          <div class="ui-steps__corpo" data-quando="atual" hidden>
+            <div class="lista-radio" role="radiogroup" aria-label="Administrador">
+              <label class="cb-dialog__check"><input type="radio" name="admin" value="agora"><span class="t"><b>Criar agora</b><small>Recebe uma senha provisória, que aparece uma vez no fim, e troca no primeiro acesso.</small></span></label>
+              <label class="cb-dialog__check"><input type="radio" name="admin" value="depois" checked><span class="t"><b>Criar depois</b><small>A filial aparece como cadastro incompleto até ter administrador.</small></span></label>
+            </div>
+            <div class="f-grade" id="admin-campos" hidden>
+              <label class="ui-field larga"><span>Nome <i aria-hidden="true">*</i></span><input class="ui-input" id="admin-nome" maxlength="160" autocomplete="off" aria-required="true" data-autofoco><span class="form-error" role="alert" id="erro-admin-nome" hidden></span></label>
+              <label class="ui-field larga"><span>E-mail <i aria-hidden="true">*</i></span><input class="ui-input" type="email" id="admin-email" maxlength="254" autocomplete="off" aria-required="true" aria-describedby="dica-admin-email"><small id="dica-admin-email">Uma pessoa, um e-mail. Se ele já tiver acesso em outra filial do grupo, o resultado mostra o caminho.</small><span class="form-error" role="alert" id="erro-admin-email" hidden></span></label>
+            </div>
+          </div>
+        </li>
+      </ol>
+      <div class="ui-alert ui-alert--info" role="status" id="enviando" hidden><svg class="ic gira" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-carrega"/></svg><span>Criando a organização e os passos que você escolheu…</span></div>
+      <div class="cb-dialog__footer">
+        <span class="cb-dialog__hint" id="etapa-dica">Etapa 1 de 4</span>
+        <button type="button" class="pat-btn" data-fechar>Cancelar</button>
+        <button type="button" class="pat-btn" data-voltar hidden>Voltar</button>
+        <button type="button" class="pat-btn pat-btn--primary" data-continuar>Continuar</button>
+        <button type="button" class="pat-btn pat-btn--primary" data-criar hidden>Criar organização</button>
+      </div>
+    </div>
+
+    <div class="cb-dialog" id="fase-final" hidden>
+      <div class="ui-alert ui-alert--ok" role="status"><svg class="ic" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-okc"/></svg><span><b id="final-titulo"></b> A lista já mostra a filial nova.</span></div>
+      <div class="ui-reqs"><p class="ui-reqs__title">O que foi feito, passo a passo</p><ul id="final-itens"></ul></div>
+      <div id="final-senha" hidden>
+        <div class="cb-dialog__section">Senha provisória</div>
+        <p class="cb-dialog__text">Entregue esta senha a <strong id="final-admin"></strong>. Ela aparece só agora: depois de fechar, não dá para ver de novo.</p>
+        <div class="senha"><span class="senha__l"><svg class="ic" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-chave"/></svg><code aria-label="Senha provisória">Rq7m-Vx2k-Lp9d</code></span><button type="button" class="pat-btn pat-btn--sm" data-copiar aria-label="Copiar a senha provisória"><svg class="ic" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-copiar"/></svg><span id="copiar-rotulo">Copiar</span></button></div>
+        <span class="dica" role="status" aria-live="polite" id="copiar-msg"></span>
+        <div class="ui-alert ui-alert--warning"><svg class="ic" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-alerta"/></svg><span><b>Atenção.</b> Vale por 24 horas e só serve para o administrador criar a própria senha no primeiro acesso.</span></div>
+      </div>
+      <div class="ui-alert ui-alert--warning" id="final-faltas" hidden><svg class="ic" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-alerta"/></svg><span><b id="final-faltas-texto"></b> A filial já funciona com o que tem; complete no detalhe dela.</span></div>
+      <small class="dica" id="final-descarta" hidden>Fechar ou abrir a organização descarta a senha desta tela.</small>
+      <div class="cb-dialog__footer"><button type="button" class="pat-btn" data-fechar>Fechar</button><button type="button" class="pat-btn pat-btn--primary" data-abrir-nova>Abrir a organização</button></div>
+    </div>
   </section>
-  <aside class="note"><strong>Dependência externa ao PR-b:</strong> a conferência desta mesma composição nas três bases pessoais da marca depende de <code>P-MARCA-DESIGN-SYSTEM</code>. Esta referência não cria paleta, seletor nem preferência local.</aside>
-</main></div>
-<div class="modal hidden" id="modal"><section class="dialog" role="dialog" aria-modal="true" aria-label="Nova organização"><div class="head"><h2>Nova organização</h2><button class="btn" id="close">Fechar</button></div><ol class="steps"><li><button class="active">1. Grupo</button></li><li><button>2. Organização</button></li><li><button>3. Plano</button></li><li><button>4. Administrador</button></li></ol><label class="field">Grupo obrigatório<select><option>Grupo Regional</option><option>Novo grupo</option></select></label><p>O nascimento sempre ocorre dentro de um grupo. O administrador nasce com o perfil Administrador.</p><div class="actions"><button class="btn">Cancelar</button><button class="btn primary">Continuar</button></div></section></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
 <script>
-  const rows=[...document.querySelectorAll('.row.data:not(.static)')]; rows.forEach(row=>{const toggle=()=>{rows.forEach(other=>{if(other!==row)other.nextElementSibling?.classList.add('hidden')});row.nextElementSibling?.classList.toggle('hidden')};row.addEventListener('click',toggle);row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle()}if(event.key==='Escape')row.nextElementSibling?.classList.add('hidden')})});
-  const apply=value=>{rows.forEach(row=>row.classList.toggle('hidden',Boolean(value)&&row.dataset.status!==value));clear.classList.toggle('hidden',!value)};document.querySelectorAll('[data-filter]').forEach(button=>button.onclick=()=>apply(button.dataset.filter));clear.onclick=()=>apply('');new.onclick=()=>modal.classList.remove('hidden');close.onclick=()=>modal.classList.add('hidden');
+'use strict';
+/* Dados de exemplo da maquete aprovada (nenhum dado real de cliente). */
+const HOJE = '24/11/2026';
+const GRUPOS = { g1: 'Grupo Exemplo', g2: 'Grupo Horizonte', g3: 'Grupo Vale Verde' };
+const PLANOS = {
+  starter: { nome: 'Starter', mods: 5, preco: 'R$ 100,00 por mês' },
+  professional: { nome: 'Professional', mods: 12, preco: 'R$ 200,00 por mês' },
+  enterprise: { nome: 'Enterprise', mods: 18, preco: 'R$ 400,00 por mês' }
+};
+const CATALOGO = ['Cadastros', 'Ordens de serviço', 'Painel', 'Financeiro', 'Relatórios', 'App de campo', 'Estoque', 'Frota', 'Checklists', 'Orçamento', 'Faturamento', 'Alertas', 'Estoque por viatura', 'Manutenção', 'Multas', 'Remunerações', 'Pré-faturamento', 'Integrações'];
+const DETALHE = {
+  o2: { plano: 'professional', usuarios: ['Carla Exemplo', 'Davi Modelo', 'Eva Modelo'], faltas: [] },
+  o3: { plano: 'professional', usuarios: ['Hugo Exemplo'], faltas: ['profile'] },
+  o4: { plano: 'starter', usuarios: ['Raul Exemplo', 'Ana Modelo', 'Beto Modelo'], faltas: [] },
+  o5: { plano: 'professional', usuarios: ['Lia Exemplo', 'Davi Teste', 'Eva Teste'], faltas: [] },
+  o6: { plano: 'starter', usuarios: ['Sara Exemplo', 'Otávio Teste', 'Paula Teste'], faltas: [] },
+  o7: { plano: null, usuarios: [], faltas: ['plan', 'admin', 'profile'] },
+  o8: { plano: 'starter', usuarios: ['Vera Exemplo', 'Enzo Teste', 'Flora Teste'], faltas: [] }
+};
+const FALTA = {
+  plan: { t: 'Plano', d: 'Sem assinatura vigente: a filial está sem módulos.', b: 'Escolher plano', rot: 'o plano' },
+  admin: { t: 'Administrador', d: 'Nenhum administrador ativo: ninguém entra nesta filial.', b: 'Criar administrador', rot: 'o administrador' },
+  profile: { t: 'Dados da empresa', d: 'Faltam razão social, CNPJ, e-mail, endereço e forma de pagamento. A cobrança e a nota fiscal recusam até completar.', b: 'Preencher', rot: 'os dados da empresa' }
+};
+
+const $ = (seletor, raiz) => (raiz || document).querySelector(seletor);
+const $$ = (seletor, raiz) => Array.from((raiz || document).querySelectorAll(seletor));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ').trim();
+const icone = (nome, tam, classe) => '<svg class="ic' + (classe ? ' ' + classe : '') + '" width="' + tam + '" height="' + tam + '" aria-hidden="true" focusable="false"><use href="#i-' + nome + '"/></svg>';
+const maiuscula = (s) => s.charAt(0).toLocaleUpperCase('pt-BR') + s.slice(1);
+const listaFaltas = (f) => { const t = f.map((k) => FALTA[k].rot); return t.length <= 1 ? (t[0] || '') : t.slice(0, -1).join(', ') + ' e ' + t[t.length - 1]; };
+
+/* ── a lista ── */
+const corpoTabela = $('#linhas');
+const rows = $$('#linhas > tr');
+const filtro = { situacao: null, ordem: null, grupo: '', busca: '', aberta: null };
+
+function dados(tr) {
+  const d = tr.dataset;
+  return { id: d.org, nome: d.nome, grupo: d.grupo || '', situacao: d.situacao, usuarios: Number(d.usuarios), incompleto: d.incompleto === '1', sistema: 'sistema' in d };
+}
+function noRecorte(o) {
+  if (filtro.grupo === '__sem') { if (o.sistema || o.grupo) return false; }
+  else if (filtro.grupo && o.grupo !== filtro.grupo) return false;
+  if (filtro.busca && !norm(o.nome + ' ' + (GRUPOS[o.grupo] || '')).includes(norm(filtro.busca))) return false;
+  return true;
+}
+function naSituacao(o) {
+  if (!filtro.situacao) return true;
+  if (o.sistema) return false;
+  if (filtro.situacao === 'incomplete') return o.incompleto;
+  return o.situacao === filtro.situacao;
+}
+function linhaDe(id) { return rows.find((tr) => tr.dataset.org === id) || null; }
+function colunasVisiveis() { return Array.from($('#tabela').tHead.rows[0].cells).filter((c) => getComputedStyle(c).display !== 'none').length; }
+
+function apply() {
+  const todas = rows.map((tr) => ({ tr, o: dados(tr) }));
+  const recorte = todas.filter((x) => noRecorte(x.o));
+  const clientes = recorte.filter((x) => !x.o.sistema).map((x) => x.o);
+  let visiveis = recorte.filter((x) => naSituacao(x.o));
+  if (filtro.ordem === 'usuarios') visiveis = visiveis.slice().sort((a, b) => b.o.usuarios - a.o.usuarios);
+  if (filtro.aberta && !visiveis.some((x) => x.o.id === filtro.aberta)) fecharLinha();
+  const mostradas = new Set(visiveis.map((x) => x.tr));
+  const ordem = visiveis.concat(todas.filter((x) => !mostradas.has(x.tr))).map((x) => x.tr);
+  const atual = $$('#linhas > tr.pat-ab-row');
+  if (ordem.some((tr, i) => atual[i] !== tr)) ordem.forEach((tr) => corpoTabela.append(tr));
+  rows.forEach((tr) => { tr.hidden = !mostradas.has(tr); });
+  const detalhe = filtro.aberta ? document.getElementById('detalhe-' + filtro.aberta) : null;
+  if (detalhe) linhaDe(filtro.aberta).after(detalhe);
+
+  const ativas = clientes.filter((o) => o.situacao === 'active').length;
+  const suspensas = clientes.filter((o) => o.situacao === 'suspended').length;
+  const incompletas = clientes.filter((o) => o.incompleto).length;
+  const usuarios = clientes.reduce((soma, o) => soma + o.usuarios, 0);
+  indicador('active', ativas, 'Organizações ativas', 'sem a organização de sistema', filtro.situacao === 'active');
+  indicador('suspended', suspensas, 'Organizações suspensas', suspensas ? 'acesso cortado' : 'nenhuma agora', filtro.situacao === 'suspended');
+  indicador('incomplete', incompletas, 'Cadastro incompleto', 'plano, administrador ou dados', filtro.situacao === 'incomplete');
+  indicador('usuarios', usuarios, 'Usuários totais', 'clique para ordenar a lista', filtro.ordem === 'usuarios');
+
+  $('#contagem').textContent = visiveis.length + ' de ' + rows.length + ' organizações';
+  const rotulos = { active: 'Situação: ativas', suspended: 'Situação: suspensas', incomplete: 'Cadastro incompleto' };
+  const chips = [];
+  if (filtro.situacao) chips.push(chip(rotulos[filtro.situacao], 'situacao', 'Tirar o filtro ' + rotulos[filtro.situacao]));
+  if (filtro.grupo) chips.push(chip('Grupo: ' + (filtro.grupo === '__sem' ? 'sem grupo' : GRUPOS[filtro.grupo]), 'grupo', 'Tirar o filtro de grupo'));
+  if (filtro.ordem) chips.push(chip('Ordenado por: usuários', 'ordem', 'Tirar a ordem por usuários'));
+  $('#chips').innerHTML = chips.join('');
+  $('#chips').hidden = chips.length === 0;
+  $('#sem-resultado').hidden = visiveis.length > 0;
+}
+function indicador(chave, valor, rotulo, dica, pressionado) {
+  const b = $('[data-kpi="' + chave + '"]');
+  $('[data-valor]', b).textContent = String(valor);
+  $('[data-dica]', b).textContent = dica;
+  b.setAttribute('aria-label', rotulo + ': ' + valor + '. ' + maiuscula(dica));
+  b.setAttribute('aria-pressed', String(pressionado));
+}
+function chip(texto, chave, rotulo) {
+  return '<span class="pat-filtro-chip"><span>' + esc(texto) + '</span><button type="button" data-tirar="' + chave + '" aria-label="' + esc(rotulo) + '">' + icone('x', 12) + '</button></span>';
+}
+function limparFiltros() {
+  filtro.situacao = null; filtro.ordem = null; filtro.grupo = ''; filtro.busca = '';
+  $('#busca').value = ''; $('#filtro-grupo').value = '';
+  apply();
+}
+
+/* A linha abre o detalhe logo abaixo dela (QM1 = b), um por vez. */
+function alternarLinha(tr) {
+  const id = tr.dataset.org;
+  if (filtro.aberta === id) { fecharLinha(); return; }
+  fecharLinha();
+  filtro.aberta = id;
+  tr.setAttribute('aria-expanded', 'true');
+  const det = document.createElement('tr');
+  det.className = 'pat-ab-detail-row';
+  det.id = 'detalhe-' + id;
+  const td = document.createElement('td');
+  td.colSpan = colunasVisiveis();
+  td.innerHTML = painel(tr);
+  det.append(td);
+  tr.after(det);
+}
+function fecharLinha() {
+  if (!filtro.aberta) return;
+  const tr = linhaDe(filtro.aberta);
+  if (tr) tr.setAttribute('aria-expanded', 'false');
+  const det = document.getElementById('detalhe-' + filtro.aberta);
+  if (det) det.remove();
+  filtro.aberta = null;
+}
+function botaoAdmin(ativa, pequeno) {
+  return '<button type="button" class="pat-btn' + (pequeno ? ' pat-btn--sm' : '') + '"' + (ativa ? '' : ' disabled title="Reative a organização para criar administrador"') + '>Criar administrador</button>';
+}
+function painel(tr) {
+  const o = dados(tr);
+  const d = DETALHE[o.id] || { plano: null, usuarios: [], faltas: [] };
+  const ativa = o.situacao === 'active';
+  const modulos = d.plano ? CATALOGO.slice(0, PLANOS[d.plano].mods) : [];
+  let h = '<section class="org-detalhe" aria-label="' + esc('Detalhes de ' + o.nome) + '">';
+  h += '<div class="org-detalhe__cab"><div class="org-detalhe__id"><h2>' + esc(o.nome) + '</h2><p>' + esc(o.grupo ? GRUPOS[o.grupo] : 'Sem grupo cadastrado') + '</p></div><strong class="org-detalhe__plano">' + esc(d.plano ? PLANOS[d.plano].nome : 'Sem plano contratado') + '</strong></div>';
+  h += '<div class="org-detalhe__grade"><div><b>Usuários</b>' + (d.usuarios.length ? '<ul>' + d.usuarios.map((n) => '<li>' + esc(n) + ' · Ativo</li>').join('') + '</ul>' : '<p>Nenhum usuário cadastrado.</p>') + '</div>';
+  h += '<div><b>Módulos habilitados</b>' + (modulos.length ? '<ul class="org-modulos">' + modulos.map((m) => '<li>' + esc(m) + '</li>').join('') + '</ul>' : '<p>Nenhum módulo habilitado.</p>') + '</div></div>';
+  if (d.faltas.length) {
+    h += '<div class="org-faltas"><div class="org-faltas__cab">' + icone('lista', 16) + '<span>Cadastro incompleto · ' + (d.faltas.length === 1 ? '1 item falta' : d.faltas.length + ' itens faltam') + '</span></div>';
+    h += d.faltas.map((k) => '<div class="org-faltas__item"><div class="org-faltas__txt"><b>' + FALTA[k].t + '</b><span>' + FALTA[k].d + '</span></div>' + (k === 'admin' ? botaoAdmin(ativa, true) : '<button type="button" class="pat-btn pat-btn--sm">' + FALTA[k].b + '</button>') + '</div>').join('');
+    h += '</div>';
+  }
+  h += '<div class="org-detalhe__acoes"><button type="button" class="pat-btn">Ver detalhes completos</button><button type="button" class="pat-btn">Editar nome</button><button type="button" class="pat-btn">' + (ativa ? 'Suspender' : 'Reativar') + '</button>' + botaoAdmin(ativa) + '</div>';
+  return h + '</section>';
+}
+
+/* ── o diálogo "Nova organização" ── */
+const modal = $('#modal');
+const dialogo = { passo: 1, enviando: false, origem: null, senha: false, novaId: null };
+
+function valorRadio(nome) { const r = $('#dlg input[name="' + nome + '"]:checked'); return r ? r.value : ''; }
+function perfilCheio() { return ['razao', 'cnpj', 'email', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'uf'].every((k) => $('#dlg [data-perfil="' + k + '"]').value.trim() !== ''); }
+function nomeDoGrupo() { return valorRadio('caminho') === 'novo' ? $('#novo-grupo').value.trim() : (GRUPOS[valorRadio('grupo')] || '—'); }
+function marcarErro(campoId, erroId, texto) {
+  const erro = $('#' + erroId);
+  erro.textContent = texto || '';
+  erro.hidden = !texto;
+  if (campoId) { const campo = $('#' + campoId); if (texto) campo.setAttribute('aria-invalid', 'true'); else campo.removeAttribute('aria-invalid'); }
+}
+function limparErros() {
+  marcarErro(null, 'erro-grupo', ''); marcarErro('novo-grupo', 'erro-novo-grupo', ''); marcarErro('filial', 'erro-filial', '');
+  marcarErro('admin-nome', 'erro-admin-nome', ''); marcarErro('admin-email', 'erro-admin-email', '');
+}
+function filtrarGrupos() {
+  const q = norm($('#busca-grupo').value);
+  let algum = false;
+  $$('#grupos > label').forEach((l) => { const ok = !q || norm(l.dataset.nomeGrupo).includes(q); l.hidden = !ok; algum = algum || ok; });
+  $('#grupos-vazio').hidden = algum;
+}
+function mostrarCaminho() {
+  const novo = valorRadio('caminho') === 'novo';
+  $('#dlg [data-caminho="existente"]').hidden = novo;
+  $('#dlg [data-caminho="novo"]').hidden = !novo;
+}
+function resetarDialogo() {
+  $$('#dlg input[type="radio"]').forEach((r) => { r.checked = r.defaultChecked; });
+  $$('#dlg input:not([type="radio"])').forEach((i) => { i.value = ''; });
+  $$('#dlg select').forEach((s) => { s.selectedIndex = 0; });
+  $$('#dlg input, #dlg select, #dlg button').forEach((c) => { if (!(c.name === 'plano' && c.value === 'business')) c.disabled = false; });
+  $('#perfil-recolhe').open = false;
+  $('#admin-campos').hidden = true;
+  $('#enviando').hidden = true;
+  $('#fase-form').hidden = false;
+  $('#fase-final').hidden = true;
+  $('#dlg-titulo').textContent = 'Nova organização';
+  $('#copiar-rotulo').textContent = 'Copiar';
+  $('#copiar-msg').textContent = '';
+  dialogo.enviando = false; dialogo.senha = false;
+  limparErros(); filtrarGrupos(); mostrarCaminho();
+}
+function abrirDialogo(origem) {
+  dialogo.origem = origem || document.activeElement;
+  resetarDialogo();
+  modal.hidden = false;
+  irPasso(1);
+}
+function fecharDialogo(silencioso) {
+  if (dialogo.enviando || modal.hidden) return;
+  const tinhaSenha = dialogo.senha;
+  modal.hidden = true;
+  dialogo.senha = false;
+  if (tinhaSenha && !silencioso) aviso('A senha provisória foi descartada desta tela e não aparece mais.');
+  if (dialogo.origem && document.contains(dialogo.origem) && !dialogo.origem.closest('[hidden]')) dialogo.origem.focus({ preventScroll: true });
+}
+function resumo(k) {
+  if (k === 1) return valorRadio('caminho') === 'novo' ? 'Novo grupo: <b>' + esc(nomeDoGrupo()) + '</b>' : 'Filial do <b>' + esc(nomeDoGrupo()) + '</b> (já existe)';
+  if (k === 2) return '<b>' + esc($('#filial').value.trim()) + '</b> · ' + (perfilCheio() ? 'dados da empresa preenchidos' : 'dados da empresa depois');
+  if (k === 3) { const p = valorRadio('plano'); return p === 'depois' ? 'Escolher depois' : '<b>' + esc(PLANOS[p].nome) + '</b> · ' + esc(PLANOS[p].preco); }
+  return valorRadio('admin') === 'agora' ? '<b>' + esc($('#admin-nome').value.trim()) + '</b> · ' + esc($('#admin-email').value.trim()) : 'Criar depois';
+}
+function irPasso(k) {
+  dialogo.passo = k;
+  $$('#etapas > li').forEach((li, i) => {
+    const n = i + 1;
+    const estado = n < k ? 'done' : n === k ? 'current' : 'future';
+    li.className = 'ui-steps__item ui-steps__item--' + estado;
+    if (estado === 'current') li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    $$('[data-quando]', li).forEach((el) => {
+      const q = el.dataset.quando;
+      el.hidden = !((q === 'feita' && estado === 'done') || (q === 'aberta' && estado !== 'done') || (q === 'atual' && estado === 'current'));
+    });
+    if (estado === 'done') $('[data-resumo]', li).innerHTML = resumo(n);
+  });
+  $('#etapa-dica').textContent = 'Etapa ' + k + ' de 4';
+  $('#dlg [data-voltar]').hidden = k === 1;
+  $('#dlg [data-continuar]').hidden = k === 4;
+  $('#dlg [data-criar]').hidden = k !== 4;
+  limparErros();
+  focarNoPasso();
+}
+function focarNoPasso() {
+  const atual = $('#etapas > li[aria-current="step"]');
+  const alvo = $$('[data-autofoco]', atual).find((el) => el.getClientRects().length > 0) || $('#dlg [data-continuar]:not([hidden])') || $('#dlg [data-criar]:not([hidden])');
+  if (alvo) alvo.focus({ preventScroll: true });
+}
+function validarPasso(k) {
+  if (k === 1) {
+    if (valorRadio('caminho') === 'existente') {
+      if (!valorRadio('grupo')) { marcarErro(null, 'erro-grupo', 'Escolha o grupo.'); return false; }
+    } else {
+      const n = $('#novo-grupo').value.trim();
+      if (!n || n.length > 120) { marcarErro('novo-grupo', 'erro-novo-grupo', 'Digite o nome do grupo, de 1 a 120 caracteres.'); return false; }
+      if (Object.values(GRUPOS).some((g) => norm(g) === norm(n))) { marcarErro('novo-grupo', 'erro-novo-grupo', 'Já existe um grupo com esse nome.'); return false; }
+    }
+  }
+  if (k === 2) {
+    const n = $('#filial').value.trim();
+    if (!n || n.length > 120) { marcarErro('filial', 'erro-filial', 'Digite o nome da organização, de 1 a 120 caracteres.'); return false; }
+    const g = valorRadio('caminho') === 'existente' ? valorRadio('grupo') : null;
+    if (g && rows.some((tr) => tr.dataset.grupo === g && norm(tr.dataset.nome) === norm(n))) { marcarErro('filial', 'erro-filial', 'Já existe uma organização com esse nome no ' + GRUPOS[g] + '. Use um nome que diferencie esta filial, por exemplo com a cidade.'); return false; }
+  }
+  if (k === 4 && valorRadio('admin') === 'agora') {
+    let ok = true;
+    if (!$('#admin-nome').value.trim()) { marcarErro('admin-nome', 'erro-admin-nome', 'Digite o nome do administrador.'); ok = false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('#admin-email').value.trim())) { marcarErro('admin-email', 'erro-admin-email', 'Digite um e-mail válido.'); ok = false; }
+    return ok;
+  }
+  return true;
+}
+function criar() {
+  for (let k = 1; k <= 4; k++) {
+    if (!validarPasso(k)) { if (k !== dialogo.passo) { irPasso(k); validarPasso(k); } return; }
+  }
+  dialogo.enviando = true;
+  $$('#dlg input, #dlg select, #dlg button').forEach((c) => { c.disabled = true; });
+  $('#dlg [data-criar]').textContent = 'Criando…';
+  $('#enviando').hidden = false;
+  window.setTimeout(concluirCriacao, 900);
+}
+function concluirCriacao() {
+  const novoGrupo = valorRadio('caminho') === 'novo';
+  const nomeGrupo = nomeDoGrupo();
+  const filial = $('#filial').value.trim();
+  const plano = valorRadio('plano');
+  const comAdmin = valorRadio('admin') === 'agora';
+  const adminNome = $('#admin-nome').value.trim();
+  const perfilOk = perfilCheio();
+  let grupoId = valorRadio('grupo');
+  if (novoGrupo) {
+    grupoId = 'g' + (Object.keys(GRUPOS).length + 1);
+    GRUPOS[grupoId] = nomeGrupo;
+    const opcao = document.createElement('option');
+    opcao.value = grupoId; opcao.textContent = nomeGrupo;
+    $('#filtro-grupo').insertBefore(opcao, $('#filtro-grupo option[value="__sem"]'));
+    const rotulo = document.createElement('label');
+    rotulo.className = 'cb-dialog__check'; rotulo.dataset.nomeGrupo = nomeGrupo;
+    rotulo.innerHTML = '<input type="radio" name="grupo" value="' + grupoId + '"><span class="t"><b>' + esc(nomeGrupo) + '</b></span>';
+    $('#grupos').append(rotulo);
+  }
+  const faltas = [];
+  if (plano === 'depois') faltas.push('plan');
+  if (!comAdmin) faltas.push('admin');
+  if (!perfilOk) faltas.push('profile');
+  const itens = [
+    { ok: true, t: 'Organização ' + filial + ' criada.' },
+    { ok: true, t: novoGrupo ? 'Grupo ' + nomeGrupo + ' criado. A filial entrou nele a partir de hoje, ' + HOJE + '.' : 'Entrou no ' + nomeGrupo + ' a partir de hoje, ' + HOJE + '.' },
+    perfilOk ? { ok: true, t: 'Dados da empresa gravados.' } : { ok: false, t: 'Dados da empresa: ficaram para depois.' },
+    plano === 'depois' ? { ok: false, t: 'Plano: ficou para depois. A filial está sem módulos.' } : { ok: true, t: 'Plano ' + PLANOS[plano].nome + ' a partir de hoje: ' + PLANOS[plano].mods + ' módulos ligados.' },
+    comAdmin ? { ok: true, t: 'Administrador ' + adminNome + ' criado.' } : { ok: false, t: 'Administrador: ficou para depois. Ninguém entra até ele existir.' }
+  ];
+  $('#final-titulo').textContent = filial + ' criada no ' + nomeGrupo + '.';
+  $('#final-itens').innerHTML = itens.map((it) => '<li class="ui-reqs__item' + (it.ok ? ' ui-reqs__item--ok' : '') + '">' + icone(it.ok ? 'okc' : 'c', 16) + '<span>' + esc(it.t) + '</span><span class="sr-only">' + (it.ok ? ': feito' : ': ficou para depois') + '</span></li>').join('');
+  $('#final-senha').hidden = !comAdmin;
+  $('#final-descarta').hidden = !comAdmin;
+  $('#final-admin').textContent = adminNome;
+  $('#final-faltas').hidden = faltas.length === 0;
+  $('#final-faltas-texto').textContent = 'Cadastro incompleto: falta ' + listaFaltas(faltas) + '.';
+  const id = 'n' + (rows.length + 1);
+  DETALHE[id] = { plano: plano === 'depois' ? null : plano, usuarios: comAdmin ? [adminNome] : [], faltas };
+  adicionarNaLista({ id, nome: filial, grupo: grupoId, usuarios: comAdmin ? 1 : 0, modulos: plano === 'depois' ? 0 : PLANOS[plano].mods, incompleto: faltas.length > 0, faltas });
+  dialogo.novaId = id;
+  dialogo.enviando = false;
+  dialogo.senha = comAdmin;
+  $$('#dlg button').forEach((b) => { b.disabled = false; });
+  $('#dlg [data-criar]').textContent = 'Criar organização';
+  $('#enviando').hidden = true;
+  $('#fase-form').hidden = true;
+  $('#fase-final').hidden = false;
+  $('#dlg-titulo').textContent = 'Organização criada';
+  $('#close').focus({ preventScroll: true });
+}
+function adicionarNaLista(o) {
+  const nomeGrupo = GRUPOS[o.grupo] || '';
+  const tr = document.createElement('tr');
+  tr.className = 'pat-ab-row row data org-linha--nova';
+  tr.tabIndex = 0;
+  tr.setAttribute('aria-expanded', 'false');
+  Object.assign(tr.dataset, { org: o.id, nome: o.nome, grupo: o.grupo, situacao: 'active', usuarios: String(o.usuarios), incompleto: o.incompleto ? '1' : '0' });
+  tr.title = o.nome + ' · ' + nomeGrupo + ' · ativa' + (o.incompleto ? ' · cadastro incompleto: falta ' + listaFaltas(o.faltas) : '');
+  tr.innerHTML = '<td class="c-org"><span class="org-nome-cel"><span class="org-avatar" aria-hidden="true">' + icone('building', 14) + '</span><span class="org-nome" title="' + esc(o.nome) + '">' + esc(o.nome) + '</span><span class="org-grp-m">· ' + esc(nomeGrupo) + '</span></span></td>'
+    + '<td class="c-grp" title="' + esc(nomeGrupo) + '">' + esc(nomeGrupo) + '</td>'
+    + '<td class="c-sit"><span class="org-sit"><span class="pat-pill"><span class="pat-pill__dot" aria-hidden="true"></span>Ativa</span>' + (o.incompleto ? '<span class="org-selo org-selo--inc" title="Cadastro incompleto">incompleto</span>' : '') + '</span></td>'
+    + '<td class="c-usr num-dir">' + o.usuarios + '</td><td class="c-mod num-dir">' + o.modulos + '</td><td class="c-cri num-dir">' + HOJE + '</td>'
+    + '<td class="c-ver"><span class="pat-chevron-icon" aria-hidden="true">' + icone('baixo', 15) + '</span></td>';
+  corpoTabela.append(tr);
+  rows.push(tr);
+  apply();
+}
+function aviso(texto) {
+  const t = $('#toast');
+  t.textContent = texto;
+  t.hidden = false;
+  window.clearTimeout(aviso.relogio);
+  aviso.relogio = window.setTimeout(() => { t.hidden = true; }, 4200);
+}
+function copiarSenha() {
+  const ok = () => { $('#copiar-rotulo').textContent = 'Copiada'; $('#copiar-msg').textContent = 'Senha copiada.'; };
+  const falhou = () => { $('#copiar-msg').textContent = 'Não foi possível copiar. Selecione a senha e copie à mão.'; };
+  try {
+    const area = navigator.clipboard;
+    if (!area || typeof area.writeText !== 'function') { falhou(); return; }
+    area.writeText($('#dlg code').textContent).then(ok, falhou);
+  } catch (erro) { falhou(); }
+}
+function prenderFoco(evento) {
+  const focaveis = $$('#dlg button, #dlg input, #dlg select, #dlg summary, #dlg [tabindex]').filter((el) => !el.disabled && el.getClientRects().length > 0);
+  if (!focaveis.length) return;
+  const primeiro = focaveis[0];
+  const ultimo = focaveis[focaveis.length - 1];
+  if (evento.shiftKey && (document.activeElement === primeiro || !modal.contains(document.activeElement))) { evento.preventDefault(); ultimo.focus(); }
+  else if (!evento.shiftKey && (document.activeElement === ultimo || !modal.contains(document.activeElement))) { evento.preventDefault(); primeiro.focus(); }
+}
+
+/* ── o menu em tela estreita e o estado da página ── */
+function alternarMenu(abrir) {
+  const aberto = abrir === undefined ? !$('#shell').classList.contains('app-shell--menu') : abrir;
+  $('#shell').classList.toggle('app-shell--menu', aberto);
+  $('#menu-fundo').hidden = !aberto;
+  $('#btn-menu').setAttribute('aria-expanded', String(aberto));
+  $('#btn-menu').setAttribute('aria-label', aberto ? 'Fechar o menu' : 'Abrir o menu');
+}
+function mostrarEstado() {
+  const vazio = location.hash === '#vazio';
+  $('#lista').hidden = vazio;
+  $('#estado-vazio').hidden = !vazio;
+}
+
+document.addEventListener('click', (evento) => {
+  const alvo = (seletor) => evento.target.closest(seletor);
+  let el;
+  if ((el = alvo('[data-nova]'))) { abrirDialogo(el); return; }
+  if ((el = alvo('#btn-menu'))) { alternarMenu(); return; }
+  if (alvo('#menu-fundo')) { alternarMenu(false); return; }
+  if ((el = alvo('[data-kpi]'))) {
+    const chave = el.dataset.kpi;
+    if (chave === 'usuarios') filtro.ordem = filtro.ordem ? null : 'usuarios';
+    else filtro.situacao = filtro.situacao === chave ? null : chave;
+    apply();
+    return;
+  }
+  if ((el = alvo('[data-tirar]'))) {
+    const chave = el.dataset.tirar;
+    if (chave === 'situacao') filtro.situacao = null;
+    if (chave === 'grupo') { filtro.grupo = ''; $('#filtro-grupo').value = ''; }
+    if (chave === 'ordem') filtro.ordem = null;
+    apply();
+    $('#busca').focus({ preventScroll: true });
+    return;
+  }
+  if (alvo('[data-limpar]')) { limparFiltros(); $('#busca').focus({ preventScroll: true }); return; }
+  if ((el = alvo('#linhas > tr.pat-ab-row:not(.pat-ab-row--static)'))) { alternarLinha(el); return; }
+  if (modal.hidden || !modal.contains(evento.target)) return;
+  if (alvo('[data-fechar]')) { fecharDialogo(); return; }
+  if ((el = alvo('[data-ir]'))) { irPasso(Number(el.dataset.ir)); return; }
+  if (alvo('[data-voltar]')) { irPasso(Math.max(1, dialogo.passo - 1)); return; }
+  if (alvo('[data-continuar]')) { if (validarPasso(dialogo.passo)) irPasso(dialogo.passo + 1); return; }
+  if (alvo('[data-criar]')) { criar(); return; }
+  if (alvo('[data-copiar]')) { copiarSenha(); return; }
+  if (alvo('[data-abrir-nova]')) {
+    const id = dialogo.novaId;
+    dialogo.senha = false;
+    fecharDialogo(true);
+    if (location.hash === '#vazio') location.hash = '';
+    mostrarEstado();
+    limparFiltros();
+    const tr = linhaDe(id);
+    if (tr) { if (filtro.aberta !== id) alternarLinha(tr); tr.focus({ preventScroll: true }); tr.scrollIntoView({ block: 'nearest' }); }
+  }
+});
+document.addEventListener('input', (evento) => {
+  const t = evento.target;
+  if (t.id === 'busca') { filtro.busca = t.value; apply(); return; }
+  if (t.id === 'busca-grupo') filtrarGrupos();
+});
+document.addEventListener('change', (evento) => {
+  const t = evento.target;
+  if (t.id === 'filtro-grupo') { filtro.grupo = t.value; apply(); return; }
+  if (t.name === 'caminho') { limparErros(); mostrarCaminho(); return; }
+  if (t.name === 'grupo') { marcarErro(null, 'erro-grupo', ''); return; }
+  if (t.name === 'admin') { $('#admin-campos').hidden = t.value !== 'agora'; limparErros(); }
+});
+document.addEventListener('keydown', (evento) => {
+  if (!modal.hidden) {
+    if (evento.key === 'Escape') { evento.preventDefault(); fecharDialogo(); }
+    else if (evento.key === 'Tab') prenderFoco(evento);
+    return;
+  }
+  if (evento.key === 'Escape' && $('#shell').classList.contains('app-shell--menu')) { alternarMenu(false); $('#btn-menu').focus(); return; }
+  const tr = evento.target.closest && evento.target.closest('#linhas > tr.pat-ab-row:not(.pat-ab-row--static)');
+  if (!tr || evento.target !== tr) return;
+  if (evento.key === 'Enter' || evento.key === ' ') { evento.preventDefault(); alternarLinha(tr); }
+  else if (evento.key === 'Escape' && filtro.aberta === tr.dataset.org) { evento.preventDefault(); fecharLinha(); }
+});
+window.addEventListener('resize', () => {
+  const det = filtro.aberta ? document.getElementById('detalhe-' + filtro.aberta) : null;
+  if (det) det.cells[0].colSpan = colunasVisiveis();
+  if (window.innerWidth > 700 && $('#shell').classList.contains('app-shell--menu')) alternarMenu(false);
+});
+window.addEventListener('hashchange', mostrarEstado);
+modal.addEventListener('mousedown', (evento) => { if (evento.target === modal) evento.preventDefault(); });
+
+mostrarEstado();
+apply();
 </script>
-</body></html>
+</body>
+</html>
