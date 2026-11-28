@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { Alert, Badge, Button, Card, Checkbox, EmptyState, Skeleton } from "../../../components/ui";
+import { usePermissions } from "../../../providers/PermissionProvider";
 import { ApiError } from "../../../services/api/client";
 import { getPlatformTenantById, listPlatformTenantModules, updatePlatformTenantModules } from "../platform.service";
 import type { PlatformModule, PlatformTenant } from "../platform.types";
@@ -10,6 +11,8 @@ import { usePlatformTenantDetail } from "../usePlatformTenantDetail";
 
 export function PlatformTenantModulesPage() {
   const { tenantId = "" } = useParams();
+  const { permissions } = usePermissions();
+  const canManageModules = permissions.includes("platform:modules:manage");
   const [tenant, setTenant] = useState<PlatformTenant | null>(null);
   const [modules, setModules] = useState<PlatformModule[]>([]);
   const [enabledModules, setEnabledModules] = useState<string[]>([]);
@@ -55,6 +58,7 @@ export function PlatformTenantModulesPage() {
   }
 
   function toggleModule(module: PlatformModule) {
+    if (!canManageModules) return;
     if (!module.availableInPlan) return;
     setEnabledModules((current) =>
       current.includes(module.key) ? current.filter((key) => key !== module.key) : [...current, module.key],
@@ -75,12 +79,13 @@ export function PlatformTenantModulesPage() {
           <h1>Módulos da Organização</h1>
           <p>{tenant.name} · plano {planName}</p>
         </div>
-        <Button onClick={saveModules}>
+        {canManageModules ? <Button onClick={saveModules}>
           <Save size={16} />
           Salvar alterações
-        </Button>
+        </Button> : null}
       </header>
 
+      {!canManageModules ? <Alert title="Somente consulta">Seu perfil só consulta os módulos desta organização.</Alert> : null}
       {savingError ? <Alert title="Alteração não concluída" tone="warning">{savingError}</Alert> : null}
 
       {Object.entries(groupedModules).map(([category, items]) => (
@@ -100,7 +105,7 @@ export function PlatformTenantModulesPage() {
                 <Checkbox
                   label={module.availableInPlan ? "Habilitar módulo" : "Bloqueado pelo plano"}
                   checked={module.availableInPlan && enabledModules.includes(module.key)}
-                  disabled={!module.availableInPlan}
+                  disabled={!canManageModules || !module.availableInPlan}
                   onChange={() => toggleModule(module)}
                 />
               </article>

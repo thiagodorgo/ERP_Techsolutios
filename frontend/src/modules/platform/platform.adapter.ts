@@ -34,6 +34,15 @@ export function updatePlatformTenantModulesFromApi(tenantId: string, enabledModu
 export function createTenantAdminUserFromApi(tenantId: string, input: CreateTenantAdminInput) { return apiData<CreateTenantAdminResult>(`/platform/tenants/${encodeURIComponent(tenantId)}/admin-user`, { method: "POST", body: input }); }
 export function listPlatformEconomicGroupsFromApi() { return apiData<PlatformEconomicGroup[]>("/platform/billing/economic-groups"); }
 export function listPlatformPlansFromApi() { return apiData<PlatformCatalogPlan[]>("/platform/billing/plans"); }
+export type PlatformSubscriptionPresence = "absent" | "present";
+export function readSubscriptionPresence(raw: unknown): PlatformSubscriptionPresence {
+  if (raw === null) return "absent";
+  if (raw && typeof raw === "object" && typeof (raw as Record<string, unknown>).planCode === "string" && (raw as Record<string, string>).planCode.trim()) return "present";
+  throw new Error("Resposta de assinatura inválida.");
+}
+export function getPlatformSubscriptionFromApi(tenantId: string) {
+  return apiData<unknown>(`/platform/billing/tenants/${encodeURIComponent(tenantId)}/subscription`).then(readSubscriptionPresence);
+}
 export function putPlatformSubscriptionFromApi(tenantId: string, input: { readonly planCode: string; readonly validFrom: string }) { return apiData<unknown>(`/platform/billing/tenants/${encodeURIComponent(tenantId)}/subscription`, { method: "PUT", body: input }); }
 export function getPlatformBillingProfileFromApi(tenantId: string) { return apiData<PlatformBillingProfile>(`/platform/billing/tenants/${encodeURIComponent(tenantId)}/billing-profile`); }
 export function putPlatformBillingProfileFromApi(tenantId: string, input: PlatformBillingProfileInput) { return apiData<PlatformBillingProfile>(`/platform/billing/tenants/${encodeURIComponent(tenantId)}/billing-profile`, { method: "PUT", body: input }); }

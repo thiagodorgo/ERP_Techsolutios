@@ -2,6 +2,7 @@ import { isMockMode } from "../../config/env";
 import {
   createPlatformTenantFromApi,
   createTenantAdminUserFromApi,
+  getPlatformSubscriptionFromApi,
   getPlatformBillingProfileFromApi,
   getPlatformTenantByIdFromApi,
   listPlatformEconomicGroupsFromApi,
@@ -28,6 +29,7 @@ export async function updatePlatformTenantModules(tenantId: string, enabledModul
 export async function createTenantAdminUser(tenantId: string, input: CreateTenantAdminInput) { if (isMockMode()) return unavailable(); return createTenantAdminUserFromApi(tenantId, input); }
 export async function listPlatformEconomicGroups() { return isMockMode() ? [] : listPlatformEconomicGroupsFromApi(); }
 export async function listPlatformPlans() { return isMockMode() ? [] : listPlatformPlansFromApi(); }
+export async function getPlatformSubscription(tenantId: string) { if (isMockMode()) return unavailable(); return getPlatformSubscriptionFromApi(tenantId); }
 export async function putPlatformSubscription(tenantId: string, planCode: string, validFrom: string) { if (isMockMode()) return unavailable(); return putPlatformSubscriptionFromApi(tenantId, { planCode, validFrom }); }
 export async function getPlatformBillingProfile(tenantId: string) { if (isMockMode()) return unavailable(); return getPlatformBillingProfileFromApi(tenantId); }
 export async function putPlatformBillingProfile(tenantId: string, input: PlatformBillingProfileInput) { if (isMockMode()) return unavailable(); return putPlatformBillingProfileFromApi(tenantId, input); }

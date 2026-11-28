@@ -6,6 +6,7 @@ import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 
 import { NewOrganizationDialog, NewOrganizationResultView, pendingProvisioningSteps } from "../src/modules/platform/components/NewOrganizationDialog";
+import { OrganizationAdminDialog } from "../src/modules/platform/components/OrganizationAdminDialog";
 import { OrganizationSetupDialog } from "../src/modules/platform/components/OrganizationSetupDialog";
 import { PlatformTenantsView } from "../src/modules/platform/pages/PlatformTenantsPage";
 import { composePlatformOrganizations } from "../src/modules/platform/platform-organizations.state";
@@ -60,12 +61,15 @@ test("FT5/FT6 nomes literais e papel Administrador aparecem; códigos não vazam
   assert.doesNotMatch(html, />business<|tenant_admin|Usuário genérico/);
 });
 
-test("FT7 complemento oferece plano, dados da empresa e administrador por rotas específicas", () => {
-  const html = renderToString(<OrganizationSetupDialog organization={ORGANIZATION_A} onClose={() => undefined} />);
-  assert.match(html, /Plano/);
-  assert.match(html, /Dados da empresa/);
-  assert.match(html, /Administrador/);
-  assert.doesNotMatch(html, /Criar organização|POST \/tenants/);
+test("FT7 complementos separam plano, dados da empresa e administrador por ação específica", () => {
+  const permissions = ["platform:billing:read", "platform:billing:manage"];
+  const plan = renderToString(<OrganizationSetupDialog organization={ORGANIZATION_A} item="plan" permissions={permissions} onClose={() => undefined} onChanged={() => undefined} />);
+  const profile = renderToString(<OrganizationSetupDialog organization={ORGANIZATION_A} item="profile" permissions={permissions} onClose={() => undefined} onChanged={() => undefined} />);
+  const admin = renderToString(<OrganizationAdminDialog organization={ORGANIZATION_A} onClose={() => undefined} onConfirm={async () => ({ user: { id: "u1", name: "Admin", email: "admin@example.invalid" } })} onDone={() => undefined} />);
+  assert.match(plan, /Escolher plano/);
+  assert.match(profile, /Dados da empresa/);
+  assert.match(admin, /Criar administrador/);
+  assert.doesNotMatch(`${plan}${profile}${admin}`, /Criar organização|POST \/tenants/);
 });
 
 test("FT4 senha efêmera copia no clique e não reaparece ao reabrir", async () => {

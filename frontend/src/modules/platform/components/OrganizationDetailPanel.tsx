@@ -10,7 +10,7 @@ import { OrganizationEditNameDialog } from "./OrganizationEditNameDialog";
 import { OrganizationSetupDialog } from "./OrganizationSetupDialog";
 import { OrganizationStatusDialog } from "./OrganizationStatusDialog";
 
-export type OrganizationPanelAction = "edit" | "status" | "admin" | "setup";
+export type OrganizationPanelAction = "edit" | "status" | "admin" | "setup-plan" | "setup-profile";
 type Action = OrganizationPanelAction | null;
 
 export function OrganizationDetailPanelView({ organization, data, returnSearch = "", permissions = [], stale = false, showFullLink = true, onAction = () => undefined }: { readonly organization: PlatformOrganization; readonly data: PlatformTenantDetailData; readonly returnSearch?: string; readonly permissions?: readonly string[]; readonly stale?: boolean; readonly showFullLink?: boolean; readonly onAction?: (action: Exclude<Action, null>) => void }) {
@@ -20,6 +20,8 @@ export function OrganizationDetailPanelView({ organization, data, returnSearch =
   if (!detail) return <Alert title="Não foi possível carregar a organização" tone="warning">Tente novamente. Nenhuma ação está disponível sem uma leitura válida.</Alert>;
   const can = (permission: string) => permissions.includes(permission);
   const actionsAllowed = !organization.system && !stale;
+  const canCompleteBilling = can("platform:billing:manage") && can("platform:billing:read");
+  const missingPlan = organization.setup.missing.includes("plan");
   const enabledModules = detail.modules.filter((item) => item.enabled);
   return (
     <section className="platform-organizations__detail" aria-label={`Detalhes de ${organization.name}`}>
@@ -37,7 +39,9 @@ export function OrganizationDetailPanelView({ organization, data, returnSearch =
         {actionsAllowed && can("platform:tenants:update") ? <button type="button" className="pat-btn" onClick={() => onAction("edit")}>Editar nome</button> : null}
         {actionsAllowed && can("platform:tenants:suspend") ? <button type="button" className="pat-btn" onClick={() => onAction("status")}>Alterar situação</button> : null}
         {actionsAllowed && can("platform:users:create_admin") ? <button type="button" className="pat-btn" onClick={() => onAction("admin")}>Criar administrador</button> : null}
-        {actionsAllowed && !organization.setup.complete && can("platform:billing:manage") ? <button type="button" className="pat-btn" onClick={() => onAction("setup")}>Concluir cadastro</button> : null}
+        {actionsAllowed && missingPlan && canCompleteBilling ? <button type="button" className="pat-btn" onClick={() => onAction("setup-plan")}>Escolher plano</button> : null}
+        {actionsAllowed && organization.setup.missing.includes("profile") && canCompleteBilling ? <button type="button" className="pat-btn" onClick={() => onAction("setup-profile")}>Preencher</button> : null}
+        {actionsAllowed && missingPlan && can("platform:billing:manage") && !can("platform:billing:read") ? <p>Seu perfil não consulta a assinatura; o plano não pode ser ligado por esta tela.</p> : null}
       </div>
     </section>
   );
@@ -60,6 +64,7 @@ export function OrganizationDetailPanel({ organization, returnSearch = "", permi
     {action === "edit" ? <OrganizationEditNameDialog organization={organization} onClose={close} onConfirm={async (name) => { await updatePlatformTenant(organization.id, { name }); await done(); }} /> : null}
     {action === "status" ? <OrganizationStatusDialog organization={organization} detail={state.data} onClose={close} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
     {action === "admin" ? <OrganizationAdminDialog organization={organization} onClose={close} onConfirm={async (input) => createTenantAdminUser(organization.id, input)} onDone={() => void done()} /> : null}
-    {action === "setup" ? <OrganizationSetupDialog organization={organization} permissions={permissions} onClose={close} /> : null}
+    {action === "setup-plan" ? <OrganizationSetupDialog organization={organization} item="plan" permissions={permissions} onClose={close} onChanged={() => done()} /> : null}
+    {action === "setup-profile" ? <OrganizationSetupDialog organization={organization} item="profile" permissions={permissions} onClose={close} onChanged={() => done()} /> : null}
   </>;
 }

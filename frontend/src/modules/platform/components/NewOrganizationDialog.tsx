@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Modal } from "../../../components/ui";
 import { ApiError } from "../../../services/api/client";
-import { createPlatformTenant, listPlatformEconomicGroups, listPlatformPlans } from "../platform.service";
-import type { CreatePlatformOrganizationResult, CreateTenantInput, PlatformCatalogPlan, PlatformEconomicGroup, PlatformPlan } from "../platform.types";
+import { createPlatformTenant, createTenantAdminUser, getPlatformTenantById, listPlatformEconomicGroups, listPlatformPlans } from "../platform.service";
+import type { CreatePlatformOrganizationResult, CreateTenantInput, PlatformCatalogPlan, PlatformEconomicGroup, PlatformOrganization, PlatformPlan } from "../platform.types";
 import { OrganizationSetupDialog } from "./OrganizationSetupDialog";
+import { OrganizationAdminDialog } from "./OrganizationAdminDialog";
 
 type CatalogState = "loading" | "ready" | "forbidden" | "error";
 
@@ -14,19 +15,32 @@ export function pendingProvisioningSteps(result: CreatePlatformOrganizationResul
 
 export function NewOrganizationResultView({ result, onClose, permissions = [] }: { readonly result: CreatePlatformOrganizationResult; readonly onClose: () => void; readonly permissions?: readonly string[] }) {
   const [copied, setCopied] = useState(false);
-  const [setup, setSetup] = useState(false);
+  const [setup, setSetup] = useState<"plan" | "profile" | null>(null);
+  const [admin, setAdmin] = useState(false);
+  const [organization, setOrganization] = useState<PlatformOrganization | null>(null);
   const pending = pendingProvisioningSteps(result);
+  const refreshOrganization = useCallback(async () => {
+    const fresh = await getPlatformTenantById(result.organization.id);
+    setOrganization(fresh);
+  }, [result.organization.id]);
+  useEffect(() => { void refreshOrganization().catch(() => undefined); }, [refreshOrganization]);
   async function copyPassword() {
     if (!result.temporaryPassword || !globalThis.navigator?.clipboard?.writeText) return;
     await globalThis.navigator.clipboard.writeText(result.temporaryPassword);
     setCopied(true);
   }
-  if (setup) return <OrganizationSetupDialog organization={result.organization} permissions={permissions} onClose={() => setSetup(false)} />;
+  if (setup && organization) return <OrganizationSetupDialog organization={organization} item={setup} permissions={permissions} onClose={() => setSetup(null)} onChanged={async () => { await refreshOrganization(); setSetup(null); }} />;
+  if (admin && organization) return <OrganizationAdminDialog organization={organization} onClose={() => setAdmin(false)} onConfirm={(input) => createTenantAdminUser(organization.id, input)} onDone={() => { setAdmin(false); void refreshOrganization(); }} />;
   return <>
     <div className="ui-alert ui-alert--info"><strong>Organização criada.</strong> Os complementos abaixo refletem o retorno real da provisão.</div>
     <ul>{(["group", "profile", "subscription", "admin"] as const).map((key) => <li key={key}>{key === "group" ? "Grupo" : key === "profile" ? "Dados da empresa" : key === "subscription" ? "Plano" : "Administrador"}: {result.provisioning[key].status === "done" ? "Concluído" : result.provisioning[key].status === "failed" ? "Falhou" : "Pendente"}</li>)}</ul>
     {result.temporaryPassword ? <div className="platform-organizations__temporary-password"><p>A senha provisória aparece somente agora.</p><code aria-label="Senha provisória">{result.temporaryPassword}</code><button type="button" className="pat-btn" onClick={() => void copyPassword()}>{copied ? "Copiada" : "Copiar"}</button></div> : null}
-    <div className="platform-organizations__dialog-actions">{pending.length ? <button type="button" className="pat-btn pat-btn--primary" onClick={() => setSetup(true)}>Concluir pendências</button> : null}<button type="button" className="pat-btn" onClick={onClose}>Fechar</button></div>
+    <div className="platform-organizations__dialog-actions">
+      {organization?.setup.missing.includes("plan") && permissions.includes("platform:billing:manage") && permissions.includes("platform:billing:read") ? <button type="button" className="pat-btn pat-btn--primary" onClick={() => setSetup("plan")}>Escolher plano</button> : null}
+      {organization?.setup.missing.includes("profile") && permissions.includes("platform:billing:manage") && permissions.includes("platform:billing:read") ? <button type="button" className="pat-btn pat-btn--primary" onClick={() => setSetup("profile")}>Preencher</button> : null}
+      {organization?.setup.missing.includes("admin") && permissions.includes("platform:users:create_admin") ? <button type="button" className="pat-btn pat-btn--primary" onClick={() => setAdmin(true)}>Criar administrador</button> : null}
+      <button type="button" className="pat-btn" onClick={onClose}>Fechar</button>
+    </div>
   </>;
 }
 

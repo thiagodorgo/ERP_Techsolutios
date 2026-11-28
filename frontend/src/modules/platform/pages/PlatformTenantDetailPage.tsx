@@ -382,12 +382,13 @@ export function PlatformTenantDetailPage() {
   const [action, setAction] = useState<OrganizationPanelAction | null>(null);
   // Conferência ESTRITA da permissão: `can()`/`hasAny()` liberam tudo para o Admin Plataforma (isPlatformAdmin), e o
   // servidor recusaria a leitura sem `platform:cloud-usage:read` (`requirePlatformPermission`). Sem ela, o bloco não existe.
-  const { permissions, can } = usePermissions();
+  const { permissions } = usePermissions();
+  const has = (permission: string) => permissions.includes(permission);
   const canReadUsage = permissions.includes("platform:cloud-usage:read");
   const usage = canReadUsage && tenantId ? <TenantUsageBlock tenantId={tenantId} /> : null;
   if (detailState.loading && !detailState.data.detail) return <PlatformTenantDetailContent data={detailState.data} loading />;
   if (!detailState.organization) return <PlatformTenantDetailContent data={detailState.data} loading={false} />;
-  const actionPermissions = ["platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:manage"].filter(can);
+  const actionPermissions = ["platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:manage", "platform:billing:read"].filter(has);
   const organization = detailState.organization;
   const close = () => setAction(null);
   const done = async () => { close(); await detailState.refresh(false); };
@@ -404,7 +405,8 @@ export function PlatformTenantDetailPage() {
     {action === "edit" ? <OrganizationEditNameDialog organization={organization} onClose={close} onConfirm={async (name) => { await updatePlatformTenant(organization.id, { name }); await done(); }} /> : null}
     {action === "status" ? <OrganizationStatusDialog organization={organization} detail={detailState.data} onClose={close} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
     {action === "admin" ? <OrganizationAdminDialog organization={organization} onClose={close} onConfirm={async (input) => createTenantAdminUser(organization.id, input)} onDone={() => void done()} /> : null}
-    {action === "setup" ? <OrganizationSetupDialog organization={organization} permissions={actionPermissions} onClose={close} /> : null}
+    {action === "setup-plan" ? <OrganizationSetupDialog organization={organization} item="plan" permissions={actionPermissions} onClose={close} onChanged={() => done()} /> : null}
+    {action === "setup-profile" ? <OrganizationSetupDialog organization={organization} item="profile" permissions={actionPermissions} onClose={close} onChanged={() => done()} /> : null}
   </div>;
 }
 
