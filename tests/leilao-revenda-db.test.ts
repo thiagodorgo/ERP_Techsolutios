@@ -6,6 +6,8 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test, { after, afterEach } from "node:test";
 
+import { sweepTenant } from "./helpers/sweep-tenant.js";
+
 // B-LEILAO-REVENDA (suíte PostgreSQL; plano §7, Emendas 1, 2 e 2.1). Cadeia REAL: o app (`src/app.ts`) e os serviços de
 // leilão, liquidação e cobrança com CORE_SAAS_PERSISTENCE=prisma, organização nova por caso, cadeia de custódia válida
 // desde a gênese, e limpeza só do que o caso criou. Os casos de PRODUTO vão pela ROTA (E1.2: a rota sobe com Prisma);
@@ -150,17 +152,17 @@ if (!connectionString) {
   }
 
   async function teardown(tenantId: string): Promise<void> {
-    const tables = await client.$queryRaw<Array<{ table_name: string }>>`
-      SELECT DISTINCT c.table_name FROM information_schema.columns c
-      JOIN information_schema.tables t ON t.table_schema = c.table_schema AND t.table_name = c.table_name AND t.table_type = 'BASE TABLE'
-      WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND c.table_name <> 'tenants'`;
+    // P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT: a varredura listava TODA tabela de `public` com coluna
+    // `tenant_id`, sem filtrar o tipo. Sob `node --test` as suítes irmãs rodam em paralelo no MESMO banco: a
+    // `sweep_guard_text_*` de tests/sweep-tenant-text-db.test.ts (`tenant_id text`) entrava na lista e o
+    // `DELETE ... WHERE tenant_id = $1::uuid` quebrava com 42883, e uma irmã que sumia entre a listagem e o
+    // DELETE quebrava com 42P01. O `sweepTenant` já filtra `data_type = 'uuid'` e tolera a tabela sumida — é o
+    // helper dos outros 6 arquivos `-db`. O `session_replication_role = 'replica'` continua de pé: sem ele,
+    // `custody_events` (I2) e `impound_outbox_events` (I9) recusam o DELETE (23001) e arrastam as FK (23503).
     await client.$transaction(async (tx) => {
       await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
-      for (const { table_name: table } of tables) {
-        await tx.$executeRawUnsafe(`DELETE FROM "${table}" WHERE tenant_id = $1::uuid`, tenantId);
-      }
+      await sweepTenant(tx, tenantId, []);
     });
-    await client.tenant.deleteMany({ where: { id: tenantId } });
   }
 
   let server: Server | undefined;
