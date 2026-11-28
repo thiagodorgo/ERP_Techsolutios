@@ -14,6 +14,7 @@ import {
   contarSentinelas,
   explicarBoot,
   medirPortaLivre,
+  uuidSemSentinela,
   type VarianteDeBoot,
 } from "./helpers/sec-log-sentinelas.js";
 
@@ -72,4 +73,24 @@ test("S1 o helper de sentinelas: porta sorteada não conta, vazamento real conta
   assert.equal(porta, 50123, "a medição sorteia de novo quando cai num sentinela numérico ou numa porta proibida");
   const livre = await medirPortaLivre();
   assert.ok(livre > 0 && !SENTINELAS_NUMERICOS.includes(livre), `porta medida: ${livre}`);
+});
+
+test("S2 uuidSemSentinela: o id com sentinela cercado de letra hexadecimal é recusado, e o sorteio seguinte vale", () => {
+  // A colisão real do CI (rodada de push 46109434399): o tenant_id `fafb6391-…` casou com o sentinela numérico 6391.
+  const colidido = "fafb6391-0000-4000-8000-000000000000";
+  assert.equal(contarSentinelas(colidido), 1, "o fragmento hexadecimal casa com a regra do sentinela numérico");
+  const sorteios = [colidido, "123e4567-e89b-42d3-a456-426614174000"];
+  assert.equal(
+    uuidSemSentinela(() => sorteios.shift() ?? ""),
+    "123e4567-e89b-42d3-a456-426614174000",
+    "o gerador sorteia de novo quando o id cai numa sentinela",
+  );
+  const id = uuidSemSentinela();
+  assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, `id sorteado: ${id}`);
+  assert.equal(contarSentinelas(id), 0, `id sorteado: ${id}`);
+  assert.throws(
+    () => uuidSemSentinela(() => "aaaaaaaa-5439-4000-8000-000000000000"),
+    /50 sorteios caíram num id com sentinela/,
+    "o gerador não devolve um id com sentinela nem quando todo sorteio cai nela",
+  );
 });

@@ -5,13 +5,13 @@
 // `{ caso, lancou, statusCode, code, reason, message }`. A `message` é a do erro lançado, INTEIRA: sem corte nenhum,
 // porque o host e a porta ficam no fim do texto do P1001. O log do módulo sai no stdout deste processo, e o teste conta os
 // sentinelas na saída inteira. Quem sobe este arquivo é `tests/sec-log-http.test.ts`, com o env sentinela.
-import { randomUUID } from "node:crypto";
 
 const sync = await import(new URL("../../src/modules/mobile/mobile-inventory-sync.ts", import.meta.url).href);
+const { uuidSemSentinela } = await import(new URL("../helpers/sec-log-sentinelas.ts", import.meta.url).href);
 
 const tecnico = {
-  tenantId: randomUUID(),
-  userId: randomUUID(),
+  tenantId: uuidSemSentinela(),
+  userId: uuidSemSentinela(),
   roles: ["field_technician"],
   permissions: ["work_orders:update"],
   explicitPermissions: true,
@@ -42,16 +42,16 @@ const lanca = () =>
 
 const casos = [
   {
-    client_action_id: randomUUID(),
+    client_action_id: uuidSemSentinela(),
     type: "work_order_material.add",
     local_created_at: "2026-11-12T12:00:00.000Z",
-    payload: { work_order_id: randomUUID(), sku: "ELE-0102", quantity: 1 },
+    payload: { work_order_id: uuidSemSentinela(), sku: "ELE-0102", quantity: 1 },
   },
   {
-    client_action_id: randomUUID(),
+    client_action_id: uuidSemSentinela(),
     type: "work_order_material.remove",
     local_created_at: "2026-11-12T12:00:00.000Z",
-    payload: { work_order_id: randomUUID(), source_client_action_id: randomUUID() },
+    payload: { work_order_id: uuidSemSentinela(), source_client_action_id: uuidSemSentinela() },
   },
 ];
 
@@ -59,7 +59,7 @@ for (const action of casos) {
   try {
     const resultado = await sync.syncMobileInventoryActions(
       tecnico,
-      { client_batch_id: randomUUID(), actions: [action] },
+      { client_batch_id: uuidSemSentinela(), actions: [action] },
       { inventory: lanca(), workOrders: lanca(), workOrdersModuleEnabled: async () => true },
     );
     console.log(`R ${JSON.stringify({ caso: action.type, lancou: false, resultado })}`);
