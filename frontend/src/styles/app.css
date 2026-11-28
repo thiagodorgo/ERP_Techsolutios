@@ -9060,14 +9060,15 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .platform-organizations__filter-chip{justify-self:start;width:max-content;border:1px solid var(--border-subtle);border-radius:999px;background:var(--surface-panel-muted);color:var(--text-secondary);padding:7px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .platform-organizations .pat-ab-table{background:var(--surface-panel);color:var(--text-primary)}
 .platform-organizations .pat-ab-table thead th{background:var(--surface-panel-muted);color:var(--text-secondary);border-color:var(--border-subtle)}
-.platform-organizations .pat-ab-row,.platform-organizations .pat-ab-row td{height:44px;max-height:44px;line-height:44px;background:var(--surface-panel);color:var(--text-primary)}
+.platform-organizations .pat-ab-row,.platform-organizations .pat-ab-row td{box-sizing:border-box;height:44px;max-height:44px;line-height:1.2;background:var(--surface-panel);color:var(--text-primary)}
 .platform-organizations .pat-ab-row:hover td{background:var(--surface-panel-muted)}
 .platform-organizations .pat-ab-row:focus-visible{outline:2px solid var(--color-core-primary);outline-offset:-2px}
 .platform-organizations .pat-ab-row td:last-child,.platform-organizations .pat-ab-table th:last-child{padding-left:0;padding-right:0;text-align:center}
 .platform-organizations .pat-ab-row--static{cursor:default}
 .platform-organizations .pat-ab-row--static:hover td{background:var(--surface-panel)}
 .platform-organizations__name{display:flex;align-items:center;gap:8px;min-width:0;height:44px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.platform-organizations__name>span[title]{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.platform-organizations__name>span[title]:not(.ui-badge){min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis}
+.platform-organizations .pat-ab-row .ui-badge{display:inline-flex;align-items:center;max-height:20px;line-height:1.2;flex:0 0 auto}
 .platform-organizations__avatar{display:inline-flex;width:26px;height:26px;flex:0 0 26px;align-items:center;justify-content:center;border-radius:7px;background:var(--surface-panel-muted);color:var(--color-core-primary)}
 .platform-organizations__status{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .platform-organizations__status--active{color:var(--color-status-success)}

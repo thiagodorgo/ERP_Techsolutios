@@ -106,6 +106,8 @@ test("T8 linhas de cliente expandem abaixo e a linha de sistema permanece inerte
   assert.match(html, /aria-expanded="true"[^]*?pat-ab-detail-row[^]*?Ver detalhes completos/);
   assert.match(html, new RegExp(`/platform/tenants/${ORGANIZATION_A.id}`));
   assert.match(html, /pat-ab-row pat-ab-row--static/);
+  assert.match(html, /aria-label="Organização de sistema" title="Organização de sistema">Sistema</);
+  assert.match(html, /title="Plataforma">Plataforma/);
   assert.equal((html.match(/tabindex="0"/g) ?? []).length, 2, "somente as duas organizações clientes são focáveis");
 });
 

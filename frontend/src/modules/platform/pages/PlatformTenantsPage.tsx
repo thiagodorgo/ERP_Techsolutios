@@ -103,9 +103,9 @@ export function PlatformTenantsView({
   }, [expandedId, onExpandedIdChange, visible]);
 
   const columns: readonly DenseColumn<PlatformOrganizationRow>[] = [
-    { key: "organization", header: "ORGANIZAÇÃO", width: widths.organization, render: (row) => <span className="platform-organizations__name"><span className="platform-organizations__avatar" aria-hidden="true"><Building2 size={14} /></span><span title={row.name}>{row.name}</span>{row.system ? <span className="ui-badge">Organização de sistema</span> : null}</span> },
+    { key: "organization", header: "ORGANIZAÇÃO", width: widths.organization, render: (row) => <span className="platform-organizations__name"><span className="platform-organizations__avatar" aria-hidden="true"><Building2 size={14} /></span><span title={row.name}>{row.name}</span>{row.system ? <span className="ui-badge" aria-label="Organização de sistema" title="Organização de sistema">Sistema</span> : null}</span> },
     { key: "group", header: "GRUPO", width: widths.group, render: (row) => <span title={row.group?.name}>{row.group?.name ?? "—"}</span> },
-    { key: "status", header: "SITUAÇÃO", width: widths.status, render: (row) => <span className={`platform-organizations__status platform-organizations__status--${row.status}`}>{statusLabel(row.status)}{!row.setup.complete ? <span className="ui-badge">Cadastro incompleto</span> : null}{row.countsStale ? <span title="Contagens aguardando atualização">Dados desatualizados</span> : null}</span> },
+    { key: "status", header: "SITUAÇÃO", width: widths.status, render: (row) => <span className={`platform-organizations__status platform-organizations__status--${row.status}`}>{statusLabel(row.status)}{!row.setup.complete ? <span className="ui-badge" title="Cadastro incompleto">incompleto</span> : null}{row.countsStale ? <span title="Contagens aguardando atualização">Dados desatualizados</span> : null}</span> },
     { key: "users", header: "USUÁRIOS", width: widths.users, align: "right", tabular: true, render: (row) => formatCount(row.userCount) },
     { key: "modules", header: "MÓDULOS", width: widths.modules, align: "right", tabular: true, render: (row) => formatCount(row.moduleCount) },
     { key: "createdAt", header: "CRIADA EM", width: widths.createdAt, align: "right", tabular: true, render: (row) => formatDate(row.createdAt) },
