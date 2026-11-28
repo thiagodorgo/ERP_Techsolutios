@@ -24,6 +24,11 @@ const PROD_BASE = {
   REDIS_URL: "redis://redis.interno.exemplo.com:6379",
   // B-ASS-08: um ambiente de produção completo tem a URL pública do webhook (exigida quando o canal liga).
   BILLING_WEBHOOK_PUBLIC_BASE_URL: "https://hooks.exemplo.com",
+  // B-EVIDENCIA-DURAVEL — a trava G-STORAGE-DURAVEL do env.ts: produção só sobe com o armazenamento durável da D-014.
+  CHECKLIST_STORAGE_PROVIDER: "s3",
+  CHECKLIST_STORAGE_S3_BUCKET: "erp-teste-evidencia",
+  CHECKLIST_STORAGE_S3_REGION: "us-east-1",
+  CHECKLIST_STORAGE_S3_ENDPOINT: "https://s3.us-east-1.amazonaws.com",
 };
 
 const KEY = randomBytes(32).toString("base64");
