@@ -41,7 +41,8 @@ export function filterPlatformOrganizations(
 ): readonly PlatformOrganizationRow[] {
   const query = input.query.trim().toLocaleLowerCase("pt-BR");
   return rows.filter((row) => {
-    if (input.groupId && row.group?.id !== input.groupId) return false;
+    if (input.groupId === "__sem" && row.group) return false;
+    if (input.groupId && input.groupId !== "__sem" && row.group?.id !== input.groupId) return false;
     if (input.status !== "all" && row.system) return false;
     if (input.status === "incomplete" && row.setup.complete) return false;
     if (input.status !== "all" && input.status !== "incomplete" && row.status !== input.status) return false;

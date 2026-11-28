@@ -26,6 +26,7 @@ test("FS1 confirmação apresenta contagem consultada, nome atual e motivo", () 
   assert.match(html, /Digite o nome atual/);
   assert.match(html, /Motivo/);
   assert.match(html, /impede o acesso e encerra sessões/);
+  assert.match(html, /ui-button--danger/);
 });
 
 test("FS2 enumeração e PATCH são idênticos para suspender e reativar", async () => {

@@ -94,7 +94,15 @@ test("T7 busca, grupo e indicadores derivam suas contagens do recorte e o filtro
   const all = render({ query: "Grupo Teste" });
   assert.match(all, />1<\/div><div class="pat-kpi__label">Organizações ativas/);
   assert.match(all, />1<\/div><div class="pat-kpi__label">Organizações suspensas/);
-  assert.match(all, />1<\/div><div class="pat-kpi__label">Cadastros incompletos/);
+  assert.match(all, />1<\/div><div class="pat-kpi__label">Cadastro incompleto/);
+  assert.match(all, /2<!-- --> de <!-- -->3<!-- --> organizações/);
+  assert.match(all, /sem a organização de sistema/);
+  assert.match(all, /platform-organizations__list-card[^]*?platform-organizations__filters/);
+  assert.match(all, /class="pat-pill/);
+  assert.match(render(), /<option value="__sem">Sem grupo<\/option>/);
+  const withoutGroup = render({ groupId: "__sem" });
+  assert.match(withoutGroup, /Plataforma/);
+  assert.doesNotMatch(withoutGroup, /Organização A|Organização B/);
   const suspended = render({ statusFilter: "suspended" });
   assert.match(suspended, /Organização B/);
   assert.doesNotMatch(suspended, /Organização A/);

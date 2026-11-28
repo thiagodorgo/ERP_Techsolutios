@@ -88,7 +88,7 @@ const rowCount = (root: MiniDomElement) => elements(root, (element) => element.l
 
 test("LK1 cada indicador filtra a lista e mantém a contagem do recorte", async () => {
   const page = await mount();
-  for (const [label, expected, query] of [["Organizações ativas", 2, "active"], ["Organizações suspensas", 1, "suspended"], ["Cadastros incompletos", 1, "incomplete"]] as const) {
+  for (const [label, expected, query] of [["Organizações ativas", 2, "active"], ["Organizações suspensas", 1, "suspended"], ["Cadastro incompleto", 1, "incomplete"]] as const) {
     const button = buttonByText(page.container, label);
     const value = Number(text(button).match(/\d+/)?.[0]);
     await act(async () => button.click());
@@ -116,7 +116,7 @@ test("LK2 o chip tira só a situação e preserva busca e grupo", async () => {
 
 test("LK3 nomes acessíveis dos indicadores incluem o número e o chip nomeia a remoção", async () => {
   const page = await mount("/platform/tenants?situacao=active");
-  for (const label of ["Organizações ativas", "Organizações suspensas", "Cadastros incompletos"]) {
+  for (const label of ["Organizações ativas", "Organizações suspensas", "Cadastro incompleto"]) {
     const button = buttonByText(page.container, label);
     const value = text(button).match(/\d+/)?.[0];
     assert.match(String(propsOf(button)["aria-label"]), new RegExp(`${label}: ${value}\\.`));

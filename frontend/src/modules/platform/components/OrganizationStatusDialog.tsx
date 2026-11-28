@@ -34,6 +34,6 @@ export function OrganizationStatusDialog({ organization, detail, onClose, onConf
     <label className="ui-field"><span>Digite o nome atual</span><input className="ui-input" value={name} onChange={(event) => setName(event.currentTarget.value)} autoComplete="off" /></label>
     <label className="ui-field"><span>Motivo</span><select className="ui-input" value={reason} onChange={(event) => setReason(event.currentTarget.value as PlatformStatusReason | "")}><option value="">Selecione</option>{PLATFORM_STATUS_REASONS.map((value) => <option key={value} value={value}>{REASON_LABELS[value]}</option>)}</select></label>
     {error ? <div role="alert" className="form-error">{error}</div> : null}
-    <div className="platform-organizations__dialog-actions"><button type="button" className="pat-btn" onClick={onClose}>Cancelar</button><button type="button" className="pat-btn pat-btn--primary" disabled={!valid} onClick={() => void confirm()}>{sending ? "Salvando…" : "Confirmar"}</button></div>
+    <div className="platform-organizations__dialog-actions"><button type="button" className="pat-btn" onClick={onClose}>Cancelar</button><button type="button" className={target === "suspended" ? "pat-btn ui-button--danger" : "pat-btn pat-btn--primary"} disabled={!valid} onClick={() => void confirm()}>{sending ? "Salvando…" : "Confirmar"}</button></div>
   </Modal>;
 }

@@ -22,12 +22,54 @@ const plans: PlatformCatalogPlan[] = [{ id: "plan-1", code: "business", name: "P
 
 test("FT1/FT2 diálogo tem quatro passos e torna grupo obrigatório sem pedir slug", () => {
   const html = renderToString(<NewOrganizationDialog onClose={() => undefined} onCreated={() => undefined} groups={groups} plans={plans} />);
-  assert.match(html, /1\. Grupo/);
-  assert.match(html, /2\. Organização/);
-  assert.match(html, /3\. Plano/);
-  assert.match(html, /4\. Administrador/);
+  assert.match(html, /class="ui-steps"/);
+  assert.match(html, /Etapa 1 de 4 · Grupo \(matriz\)/);
+  assert.match(html, /Etapa 2 de 4 · Filial/);
+  assert.match(html, /Etapa 3 de 4 · Plano/);
+  assert.match(html, /Etapa 4 de 4 · Administrador/);
   assert.match(html, /Grupo Norte/);
   assert.doesNotMatch(html, /slug|papéis|roles/i);
+});
+
+test("FT8 Alterar fica desligado durante o envio e não troca o passo corrente", async () => {
+  const { createRoot } = await import("react-dom/client");
+  const previous = globalThis.fetch;
+  let finish!: (value: Response) => void;
+  globalThis.fetch = (() => new Promise<Response>((resolve) => { finish = resolve; })) as typeof fetch;
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  const settle = async () => { for (let index = 0; index < 5; index += 1) await React.act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); }); };
+  try {
+    await React.act(async () => root.render(<NewOrganizationDialog onClose={() => undefined} onCreated={() => undefined} groups={groups} plans={plans} />));
+    const select = elements(container, (element) => element.localName === "select")[0];
+    const organizationName = elements(container, (element) => element.localName === "input" && propsOf(element).className === "ui-input")[0];
+    assert.ok(select && organizationName);
+    await React.act(async () => {
+      (propsOf(select).onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: "group-1" } });
+      (propsOf(organizationName).onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: "Filial Norte" } });
+    });
+    for (let index = 0; index < 3; index += 1) {
+      const next = elements(container, (element) => element.localName === "button" && text(element) === "Continuar")[0];
+      assert.ok(next);
+      await React.act(async () => (propsOf(next).onClick as () => void)());
+    }
+    const create = elements(container, (element) => element.localName === "button" && text(element) === "Criar organização")[0];
+    assert.ok(create);
+    await React.act(async () => (propsOf(create).onClick as () => void)());
+    await settle();
+    const alter = elements(container, (element) => element.localName === "button" && text(element) === "Alterar")[0];
+    assert.ok(alter);
+    assert.equal(propsOf(alter).disabled, true);
+    await React.act(async () => (propsOf(alter).onClick as () => void)());
+    assert.match(text(elements(container, (element) => element.getAttribute("aria-current") === "step")[0]!), /Etapa 4 de 4/);
+    finish(jsonResponse({ data: { organization: ORGANIZATION_A, provisioning: { group: { status: "done" }, profile: { status: "skipped" }, subscription: { status: "skipped" }, admin: { status: "skipped" } } } }));
+    await settle();
+  } finally {
+    globalThis.fetch = previous;
+    await React.act(async () => root.unmount());
+    dom.doc.body.removeChild(container);
+  }
 });
 
 test("FT2 grupo e nome chegam ao POST real, sem slug ou roles", async () => {

@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { DenseTable } from "../../../components/dense-list";
 import type { DenseColumn } from "../../../components/dense-list/types";
-import { KpiStatCard, PageHeader } from "../../../components/patterns";
+import { KpiStatCard, PageHeader, StatusPill } from "../../../components/patterns";
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { OrganizationDetailPanel } from "../components/OrganizationDetailPanel";
@@ -105,7 +105,7 @@ export function PlatformTenantsView({
   const columns: readonly DenseColumn<PlatformOrganizationRow>[] = [
     { key: "organization", header: "ORGANIZAÇÃO", width: widths.organization, render: (row) => <span className="platform-organizations__name"><span className="platform-organizations__avatar" aria-hidden="true"><Building2 size={14} /></span><span title={row.name}>{row.name}</span>{row.system ? <span className="ui-badge" aria-label="Organização de sistema" title="Organização de sistema">Sistema</span> : null}</span> },
     { key: "group", header: "GRUPO", width: widths.group, render: (row) => <span title={row.group?.name}>{row.group?.name ?? "—"}</span> },
-    { key: "status", header: "SITUAÇÃO", width: widths.status, render: (row) => <span className={`platform-organizations__status platform-organizations__status--${row.status}`}>{statusLabel(row.status)}{!row.setup.complete ? <span className="ui-badge" title="Cadastro incompleto">incompleto</span> : null}{row.countsStale ? <span title="Contagens aguardando atualização">Dados desatualizados</span> : null}</span> },
+    { key: "status", header: "SITUAÇÃO", width: widths.status, render: (row) => <span className="platform-organizations__status"><StatusPill label={statusLabel(row.status)} bg="var(--surface-panel-muted)" fg={`var(--color-status-${row.status === "active" ? "success" : row.status === "suspended" ? "danger" : "warning"})`} dot={`var(--color-status-${row.status === "active" ? "success" : row.status === "suspended" ? "danger" : "warning"})`} sm />{!row.setup.complete ? <span className="ui-badge" title="Cadastro incompleto">incompleto</span> : null}{row.countsStale ? <span title="Contagens aguardando atualização">Dados desatualizados</span> : null}</span> },
     { key: "users", header: "USUÁRIOS", width: widths.users, align: "right", tabular: true, render: (row) => formatCount(row.userCount) },
     { key: "modules", header: "MÓDULOS", width: widths.modules, align: "right", tabular: true, render: (row) => formatCount(row.moduleCount) },
     { key: "createdAt", header: "CRIADA EM", width: widths.createdAt, align: "right", tabular: true, render: (row) => formatDate(row.createdAt) },
@@ -129,34 +129,37 @@ export function PlatformTenantsView({
       {pageHeader}
       {stale ? <Alert title="Dados desatualizados" tone="warning">A última atualização falhou. O último conjunto completo continua visível.</Alert> : null}
       <div className="platform-organizations__kpis">
-        <KpiStatCard icon={Building2} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={counts.active} label="Organizações ativas" hint="No recorte atual" ariaLabel={`Organizações ativas: ${counts.active}. No recorte atual`} onClick={() => onStatusFilterChange("active")} pressed={statusFilter === "active"} />
-        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-danger)" iconBg="var(--surface-panel-muted)" value={counts.suspended} label="Organizações suspensas" hint="No recorte atual" ariaLabel={`Organizações suspensas: ${counts.suspended}. No recorte atual`} onClick={() => onStatusFilterChange("suspended")} pressed={statusFilter === "suspended"} />
-        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-warning)" iconBg="var(--surface-panel-muted)" value={counts.incomplete} label="Cadastros incompletos" hint="No recorte atual" ariaLabel={`Cadastros incompletos: ${counts.incomplete}. No recorte atual`} onClick={() => onStatusFilterChange("incomplete")} pressed={statusFilter === "incomplete"} />
+        <KpiStatCard icon={Building2} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={counts.active} label="Organizações ativas" hint="sem a organização de sistema" ariaLabel={`Organizações ativas: ${counts.active}. Sem a organização de sistema`} onClick={() => onStatusFilterChange("active")} pressed={statusFilter === "active"} />
+        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-danger)" iconBg="var(--surface-panel-muted)" value={counts.suspended} label="Organizações suspensas" hint={counts.suspended > 0 ? "acesso cortado" : "nenhuma agora"} ariaLabel={`Organizações suspensas: ${counts.suspended}. ${counts.suspended > 0 ? "Acesso cortado" : "Nenhuma agora"}`} onClick={() => onStatusFilterChange("suspended")} pressed={statusFilter === "suspended"} />
+        <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-warning)" iconBg="var(--surface-panel-muted)" value={counts.incomplete} label="Cadastro incompleto" hint="plano, administrador ou dados" ariaLabel={`Cadastro incompleto: ${counts.incomplete}. Plano, administrador ou dados`} onClick={() => onStatusFilterChange("incomplete")} pressed={statusFilter === "incomplete"} />
         <KpiStatCard icon={Users} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={totalUsers === null ? "—" : totalUsers} label="Usuários totais" hint={totalUsers === null ? "contagem indisponível agora" : "clique para ordenar a lista"} ariaLabel={`Usuários totais: ${totalUsers === null ? "contagem indisponível" : totalUsers}. ${totalUsers === null ? "Contagem indisponível agora" : "Clique para ordenar a lista"}`} onClick={() => onOrderChange(order === "usuarios" ? null : "usuarios")} pressed={order === "usuarios"} />
         <div className="platform-organizations__revenue-note"><strong>Receita por organização</strong><span>Disponível após a ativação da medição cloud.</span></div>
       </div>
-      <div className="platform-organizations__filters">
-        <label className="platform-organizations__search"><Search size={14} aria-hidden="true" /><span className="sr-only">Buscar organização ou grupo</span><input aria-label="Buscar organização ou grupo" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Buscar organização ou grupo…" /></label>
-        <label>Grupo<select aria-label="Filtrar por grupo" value={groupId} onChange={(event) => onGroupChange(event.target.value)}><option value="">Todos os grupos</option>{groupOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+      <div className="platform-organizations__list-card">
+        <div className="platform-organizations__list-head"><strong>{visible.length} de {rows.length} organizações</strong></div>
+        <div className="platform-organizations__filters">
+          <label className="platform-organizations__search"><Search size={14} aria-hidden="true" /><span className="sr-only">Buscar organização ou grupo</span><input aria-label="Buscar organização ou grupo" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Buscar organização ou grupo…" /></label>
+          <label><span className="sr-only">Grupo</span><select aria-label="Filtrar por grupo" value={groupId} onChange={(event) => onGroupChange(event.target.value)}><option value="">Todos os grupos</option>{groupOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}<option value="__sem">Sem grupo</option></select></label>
+        </div>
+        {statusFilter !== "all" ? <span className="pat-filtro-chip">Filtro: {statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"}<button type="button" aria-label={`Tirar o filtro ${statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"}`} onClick={() => onStatusFilterChange("all")}>×</button></span> : null}
+        {order === "usuarios" ? <span className="pat-filtro-chip">Ordenado por: usuários<button type="button" aria-label="Tirar a ordem por usuários" onClick={() => onOrderChange(null)}>×</button></span> : null}
+        {visible.length === 0 ? <EmptyState title="Nenhuma organização encontrada" detail="Ajuste a busca ou os filtros para consultar outras organizações." /> : null}
+        {visible.length > 0 ? (
+          <DenseTable
+            columns={columns}
+            rows={visible}
+            keyForRow={(row) => row.id}
+            sort={null}
+            onSort={() => undefined}
+            onRowClick={(row) => onExpandedIdChange(expandedId === row.id ? null : row.id)}
+            expandedKey={expandedId}
+            renderDetail={renderDetail}
+            isRowExpandable={(row) => !row.system}
+            detailColumnWidth={22}
+            cellTitle={(row, key) => key === "organization" ? row.name : key === "group" ? row.group?.name : undefined}
+          />
+        ) : null}
       </div>
-      {statusFilter !== "all" ? <span className="pat-filtro-chip">Filtro: {statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"}<button type="button" aria-label={`Tirar o filtro ${statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"}`} onClick={() => onStatusFilterChange("all")}>×</button></span> : null}
-      {order === "usuarios" ? <span className="pat-filtro-chip">Ordenado por: usuários<button type="button" aria-label="Tirar a ordem por usuários" onClick={() => onOrderChange(null)}>×</button></span> : null}
-      {visible.length === 0 ? <EmptyState title="Nenhuma organização encontrada" detail="Ajuste a busca ou os filtros para consultar outras organizações." /> : null}
-      {visible.length > 0 ? (
-        <DenseTable
-          columns={columns}
-          rows={visible}
-          keyForRow={(row) => row.id}
-          sort={null}
-          onSort={() => undefined}
-          onRowClick={(row) => onExpandedIdChange(expandedId === row.id ? null : row.id)}
-          expandedKey={expandedId}
-          renderDetail={renderDetail}
-          isRowExpandable={(row) => !row.system}
-          detailColumnWidth={22}
-          cellTitle={(row, key) => key === "organization" ? row.name : key === "group" ? row.group?.name : undefined}
-        />
-      ) : null}
       {status === "ready" && noCustomers ? <div className="platform-organizations__customer-empty"><EmptyState title="Nenhuma organização cliente ainda" detail="Só existe a organização de sistema. A primeira filial nasce aqui, com o grupo dela." />{canCreate ? <button type="button" className="pat-btn pat-btn--primary" onClick={onCreate}><Plus size={15} aria-hidden="true" />Nova organização</button> : null}</div> : null}
     </section>
   );

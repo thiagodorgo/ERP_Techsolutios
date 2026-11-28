@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Modal } from "../../../components/ui";
+import { Modal, StepList } from "../../../components/ui";
 import { ApiError } from "../../../services/api/client";
 import { createPlatformTenant, createTenantAdminUser, getPlatformTenantById, listPlatformEconomicGroups, listPlatformPlans } from "../platform.service";
 import type { CreatePlatformOrganizationResult, CreateTenantInput, PlatformCatalogPlan, PlatformEconomicGroup, PlatformOrganization, PlatformPlan } from "../platform.types";
@@ -70,7 +70,7 @@ export function NewOrganizationDialog({ onClose, onCreated, groups: suppliedGrou
   const validGroup = groupMode === "existing" ? Boolean(groupId) : Boolean(groupName.trim());
   const validAdmin = !withAdmin || (Boolean(adminName.trim()) && Boolean(adminEmail.trim()));
   const canSubmit = validGroup && Boolean(name.trim()) && validAdmin && !sending;
-  const steps = ["1. Grupo", "2. Organização", "3. Plano", "4. Administrador"];
+  const canEditSteps = !sending;
   const input = useMemo<CreateTenantInput | null>(() => canSubmit ? {
     name: name.trim(),
     group: groupMode === "existing" ? { id: groupId } : { name: groupName.trim() },
@@ -85,15 +85,33 @@ export function NewOrganizationDialog({ onClose, onCreated, groups: suppliedGrou
     catch (item) { setError(item instanceof ApiError && item.status === 409 ? "Já existe uma organização com esse nome dentro do grupo escolhido." : "Não foi possível criar a organização. Revise os dados e tente novamente."); setSending(false); }
   }
 
+  function goToStep(index: number) {
+    if (!canEditSteps) return;
+    setStep(index);
+  }
+
+  const stepNames = ["Grupo (matriz)", "Filial", "Plano", "Administrador"] as const;
+  const stepBodies = [
+    <section key="group"><p>Obrigatório.</p><h3>Grupo obrigatório</h3><label><input type="radio" checked={groupMode === "existing"} onChange={() => setGroupMode("existing")} />Grupo existente</label><label><input type="radio" checked={groupMode === "new"} onChange={() => setGroupMode("new")} />Novo grupo</label>{groupMode === "existing" ? <label className="ui-field"><span>Grupo</span><select className="ui-input" value={groupId} onChange={(event) => setGroupId(event.currentTarget.value)} disabled={groupState !== "ready"}><option value="">Selecione</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label> : <label className="ui-field"><span>Nome do novo grupo</span><input className="ui-input" value={groupName} onChange={(event) => setGroupName(event.currentTarget.value)} /></label>}{groupState === "loading" ? <p>Carregando grupos…</p> : groupState === "forbidden" ? <p>Seu perfil não consulta grupos existentes. Ainda é possível criar um novo grupo.</p> : groupState === "error" ? <p>Não foi possível carregar os grupos.</p> : groups.length === 0 ? <p>Nenhum grupo existente.</p> : null}</section>,
+    <section key="organization"><p>Obrigatório.</p><h3>Organização</h3><label className="ui-field"><span>Nome da organização</span><input className="ui-input" value={name} onChange={(event) => setName(event.currentTarget.value)} maxLength={160} /></label><p>O nome precisa ser único somente dentro do grupo escolhido.</p></section>,
+    <section key="plan"><h3>Plano opcional</h3><label className="ui-field"><span>Plano</span><select className="ui-input" value={planCode} onChange={(event) => setPlanCode(event.currentTarget.value as PlatformPlan | "")} disabled={planState !== "ready"}><option value="">Concluir depois</option>{plans.map((plan) => <option key={plan.id} value={plan.code}>{plan.name}</option>)}</select></label>{planState === "loading" ? <p>Carregando planos…</p> : planState === "forbidden" ? <p>Seu perfil não consulta planos. A organização pode ser criada sem plano.</p> : planState === "error" ? <p>Não foi possível carregar os planos. A organização pode ser criada sem plano.</p> : plans.length === 0 ? <p>Nenhum plano ativo disponível.</p> : null}</section>,
+    <section key="admin"><h3>Administrador</h3><label><input type="checkbox" checked={withAdmin} onChange={(event) => setWithAdmin(event.currentTarget.checked)} />Criar já com o perfil Administrador</label>{withAdmin ? <><label className="ui-field"><span>Nome</span><input className="ui-input" value={adminName} onChange={(event) => setAdminName(event.currentTarget.value)} /></label><label className="ui-field"><span>E-mail</span><input className="ui-input" type="email" value={adminEmail} onChange={(event) => setAdminEmail(event.currentTarget.value)} /></label></> : <p>O administrador pode ser criado depois.</p>}</section>,
+  ] as const;
+
   return <Modal title="Nova organização" open onClose={onClose} size="lg">
     {result ? <NewOrganizationResultView result={result} onClose={onClose} permissions={permissions} /> : <>
-      <ol className="platform-organizations__steps">{steps.map((label, index) => <li key={label}><button type="button" aria-current={index === step ? "step" : undefined} onClick={() => setStep(index)}>{label}</button></li>)}</ol>
-      <section hidden={step !== 0}><h3>Grupo obrigatório</h3><label><input type="radio" checked={groupMode === "existing"} onChange={() => setGroupMode("existing")} />Grupo existente</label><label><input type="radio" checked={groupMode === "new"} onChange={() => setGroupMode("new")} />Novo grupo</label>{groupMode === "existing" ? <label className="ui-field"><span>Grupo</span><select className="ui-input" value={groupId} onChange={(event) => setGroupId(event.currentTarget.value)} disabled={groupState !== "ready"}><option value="">Selecione</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label> : <label className="ui-field"><span>Nome do novo grupo</span><input className="ui-input" value={groupName} onChange={(event) => setGroupName(event.currentTarget.value)} /></label>}{groupState === "loading" ? <p>Carregando grupos…</p> : groupState === "forbidden" ? <p>Seu perfil não consulta grupos existentes. Ainda é possível criar um novo grupo.</p> : groupState === "error" ? <p>Não foi possível carregar os grupos.</p> : groups.length === 0 ? <p>Nenhum grupo existente.</p> : null}</section>
-      <section hidden={step !== 1}><h3>Organização</h3><label className="ui-field"><span>Nome da organização</span><input className="ui-input" value={name} onChange={(event) => setName(event.currentTarget.value)} maxLength={160} /></label><p>O nome precisa ser único somente dentro do grupo escolhido.</p></section>
-      <section hidden={step !== 2}><h3>Plano opcional</h3><label className="ui-field"><span>Plano</span><select className="ui-input" value={planCode} onChange={(event) => setPlanCode(event.currentTarget.value as PlatformPlan | "")} disabled={planState !== "ready"}><option value="">Concluir depois</option>{plans.map((plan) => <option key={plan.id} value={plan.code}>{plan.name}</option>)}</select></label>{planState === "loading" ? <p>Carregando planos…</p> : planState === "forbidden" ? <p>Seu perfil não consulta planos. A organização pode ser criada sem plano.</p> : planState === "error" ? <p>Não foi possível carregar os planos. A organização pode ser criada sem plano.</p> : plans.length === 0 ? <p>Nenhum plano ativo disponível.</p> : null}</section>
-      <section hidden={step !== 3}><h3>Administrador</h3><label><input type="checkbox" checked={withAdmin} onChange={(event) => setWithAdmin(event.currentTarget.checked)} />Criar já com o perfil Administrador</label>{withAdmin ? <><label className="ui-field"><span>Nome</span><input className="ui-input" value={adminName} onChange={(event) => setAdminName(event.currentTarget.value)} /></label><label className="ui-field"><span>E-mail</span><input className="ui-input" type="email" value={adminEmail} onChange={(event) => setAdminEmail(event.currentTarget.value)} /></label></> : <p>O administrador pode ser criado depois.</p>}</section>
+      <StepList label="Criação da organização" steps={stepNames.map((name, index) => ({
+        key: name,
+        state: index < step ? "done" : index === step ? "current" : "future",
+        heading: `Etapa ${index + 1} de 4 · ${name}`,
+        doneLabel: index < step ? "feito" : undefined,
+        futureNote: index >= 2 ? "pode ficar para depois" : undefined,
+        futureTitle: name,
+        action: index < step ? <button type="button" className="ui-steps__action" disabled={!canEditSteps} onClick={() => goToStep(index)}>Alterar</button> : undefined,
+        children: stepBodies[index],
+      }))} />
       {error ? <div role="alert" className="form-error">{error}</div> : null}
-      <div className="platform-organizations__dialog-actions"><button type="button" className="pat-btn" onClick={onClose}>Cancelar</button>{step > 0 ? <button type="button" className="pat-btn" onClick={() => setStep((value) => value - 1)}>Voltar</button> : null}{step < 3 ? <button type="button" className="pat-btn pat-btn--primary" onClick={() => setStep((value) => value + 1)}>Continuar</button> : <button type="button" className="pat-btn pat-btn--primary" disabled={!canSubmit} onClick={() => void create()}>{sending ? "Criando…" : "Criar organização"}</button>}</div>
+      <div className="platform-organizations__dialog-actions"><button type="button" className="pat-btn" onClick={onClose}>Cancelar</button>{step > 0 ? <button type="button" className="pat-btn" disabled={sending} onClick={() => goToStep(step - 1)}>Voltar</button> : null}{step < 3 ? <button type="button" className="pat-btn pat-btn--primary" onClick={() => goToStep(step + 1)}>Continuar</button> : <button type="button" className="pat-btn pat-btn--primary" disabled={!canSubmit} onClick={() => void create()}>{sending ? "Criando…" : "Criar organização"}</button>}</div>
     </>}
   </Modal>;
 }
