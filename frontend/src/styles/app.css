@@ -9048,7 +9048,7 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 
 /* B-PLAT-ORG-REAL PR-b — composição aprovada da lista de organizações. Cores somente por tokens. */
 .platform-organizations{color:var(--text-primary)}
-.platform-organizations__kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.platform-organizations__kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
 .platform-organizations__revenue-note{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:18px;border:1px dashed var(--border-subtle);border-radius:12px;background:var(--surface-panel-muted);color:var(--text-secondary)}
 .platform-organizations__filters{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
 .platform-organizations__filters label{display:flex;flex-direction:column;gap:6px;color:var(--text-secondary);font-size:12px;font-weight:700}
@@ -9074,7 +9074,7 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .platform-organizations__status--suspended{color:var(--color-status-danger)}
 .platform-organizations__status--pending{color:var(--color-status-warning)}
 .platform-organizations__detail-placeholder{padding:18px;background:var(--surface-page);color:var(--text-secondary)}
-@media(max-width:1100px){.platform-organizations__kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1100px){.platform-organizations__kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.platform-organizations__revenue-note{grid-column:1/-1}}
 .platform-organizations__detail{padding:var(--space-16);background:var(--surface-panel-muted);color:var(--text-primary);border-top:1px solid var(--border-subtle)}
 .platform-organizations__detail-head,.platform-organizations__detail-actions,.platform-organizations__dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:var(--space-12);flex-wrap:wrap}
 .platform-organizations__detail-head h2,.platform-organizations__detail-head p{margin:0}

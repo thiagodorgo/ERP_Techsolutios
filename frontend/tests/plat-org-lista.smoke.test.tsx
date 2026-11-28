@@ -48,6 +48,7 @@ function Harness() {
   const groupId = params.get("grupo") ?? "";
   const rawStatus = params.get("situacao");
   const statusFilter = rawStatus === "active" || rawStatus === "suspended" || rawStatus === "incomplete" ? rawStatus : "all";
+  const order = params.get("ordem") === "usuarios" ? "usuarios" : null;
   const write = (key: string, value: string) => { const next = new URLSearchParams(params); value ? next.set(key, value) : next.delete(key); setParams(next); };
   return createElement(React.Fragment, null,
     createElement("output", { "data-location": true }, `${location.pathname}${location.search}`),
@@ -56,9 +57,11 @@ function Harness() {
       query,
       groupId,
       statusFilter,
+      order,
       onQueryChange: (value: string) => write("q", value),
       onGroupChange: (value: string) => write("grupo", value),
       onStatusFilterChange: (value: string) => write("situacao", value === "all" ? "" : value),
+      onOrderChange: (value: string | null) => write("ordem", value ?? ""),
     }),
   );
 }
@@ -120,6 +123,54 @@ test("LK3 nomes acessíveis dos indicadores incluem o número e o chip nomeia a 
   }
   assert.equal(propsOf(buttonByText(page.container, "Tirar o filtro Ativas"))["aria-label"], "Tirar o filtro Ativas");
   await page.unmount();
+});
+
+test("LK4 Usuários totais ordena, publica a ordem e não inventa soma parcial", async () => {
+  const orderedRows = rows.map((row) => row.id === ORGANIZATION_A.id
+    ? { ...row, userCount: 7 }
+    : row.id === ORGANIZATION_B.id
+      ? { ...row, userCount: 3 }
+      : row.id === ORGANIZATION_C.id
+        ? { ...row, userCount: 5 }
+        : row);
+  if (cleanup) await cleanup();
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  function OrderedHarness() {
+    const [params, setParams] = useSearchParams();
+    const order = params.get("ordem") === "usuarios" ? "usuarios" : null;
+    const writeOrder = (value: string | null) => {
+      const next = new URLSearchParams(params);
+      value ? next.set("ordem", value) : next.delete("ordem");
+      setParams(next);
+    };
+    return createElement(React.Fragment, null,
+      createElement("output", { "data-location": true }, params.toString()),
+      createElement(PlatformTenantsView, { rows: orderedRows, order, onOrderChange: writeOrder }),
+    );
+  }
+  await act(async () => root.render(createElement(MemoryRouter, null, createElement(OrderedHarness))));
+  await settle();
+  const card = buttonByText(container, "Usuários totais");
+  assert.match(text(card), /15/);
+  await act(async () => card.click());
+  await settle();
+  const names = elements(container, (element) => hasClass(element, "platform-organizations__name")).map(text);
+  assert.deepEqual(names.slice(0, 3), ["Organização A", "Organização C", "Organização B"]);
+  assert.equal(propsOf(buttonByText(container, "Usuários totais"))["aria-pressed"], true);
+  assert.match(text(container), /Ordenado por: usuários/);
+  assert.match(text(elements(container, (element) => element.getAttribute("data-location") === "true")[0] as MiniDomElement), /ordem=usuarios/);
+  await act(async () => buttonByText(container, "Tirar a ordem por usuários").click());
+  await settle();
+  assert.doesNotMatch(text(container), /Ordenado por: usuários/);
+  await act(async () => root.render(createElement(MemoryRouter, null,
+    createElement(PlatformTenantsView, { rows: orderedRows.map((row) => row.id === ORGANIZATION_C.id ? { ...row, userCount: null } : row) }),
+  )));
+  await settle();
+  assert.match(text(buttonByText(container, "Usuários totais")), /—/);
+  await act(async () => root.unmount());
+  container.parentNode?.removeChild(container);
 });
 
 test("LE1 a linha pedida no endereço sobrevive à carga e abre quando a lista chega", async () => {

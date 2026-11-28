@@ -9,6 +9,14 @@ export type PlatformOrganizationRow = PlatformOrganization & {
 
 export type OrganizationStatusFilter = "all" | "active" | "suspended" | "incomplete";
 
+export function sortByUsersDesc(rows: readonly PlatformOrganizationRow[]): readonly PlatformOrganizationRow[] {
+  return [...rows].sort((left, right) => {
+    if (left.userCount === null) return right.userCount === null ? 0 : 1;
+    if (right.userCount === null) return -1;
+    return right.userCount - left.userCount;
+  });
+}
+
 export function composePlatformOrganizations(
   organizations: readonly PlatformOrganization[],
   overview: PlatformOverviewData,

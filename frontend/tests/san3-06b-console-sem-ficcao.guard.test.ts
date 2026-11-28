@@ -293,6 +293,7 @@ test("T41 organização de sistema aparece selada e não entra nos indicadores d
   const text = html.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
   assert.match(text, / 1 Organizações ativas /);
   assert.match(text, / 1 Organizações suspensas /);
+  assert.match(text, / 15 Usuários totais /);
   assert.match(html, /pat-ab-row pat-ab-row--static/);
   assert.equal((html.match(/tabindex="0"/g) ?? []).length, 2);
 });

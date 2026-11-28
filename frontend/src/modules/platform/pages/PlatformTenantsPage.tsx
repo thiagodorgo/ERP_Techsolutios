@@ -1,4 +1,4 @@
-import { Building2, CircleAlert, Plus, Search } from "lucide-react";
+import { Building2, CircleAlert, Plus, Search, Users } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -11,6 +11,7 @@ import { OrganizationDetailPanel } from "../components/OrganizationDetailPanel";
 import { NewOrganizationDialog } from "../components/NewOrganizationDialog";
 import {
   filterPlatformOrganizations,
+  sortByUsersDesc,
   type OrganizationStatusFilter,
   type PlatformOrganizationRow,
 } from "../platform-organizations.state";
@@ -62,12 +63,14 @@ export type PlatformTenantsViewProps = {
   readonly query?: string;
   readonly groupId?: string;
   readonly statusFilter?: OrganizationStatusFilter;
+  readonly order?: "usuarios" | null;
   readonly expandedId?: string | null;
   readonly canCreate?: boolean;
   readonly onCreate?: () => void;
   readonly onQueryChange?: (value: string) => void;
   readonly onGroupChange?: (value: string) => void;
   readonly onStatusFilterChange?: (value: OrganizationStatusFilter) => void;
+  readonly onOrderChange?: (value: "usuarios" | null) => void;
   readonly onExpandedIdChange?: (value: string | null) => void;
   readonly renderDetail?: (row: PlatformOrganizationRow) => ReactNode;
   readonly onRetry?: () => void;
@@ -80,12 +83,14 @@ export function PlatformTenantsView({
   query = "",
   groupId = "",
   statusFilter = "all",
+  order = null,
   expandedId = null,
   canCreate = false,
   onCreate = () => undefined,
   onQueryChange = () => undefined,
   onGroupChange = () => undefined,
   onStatusFilterChange = () => undefined,
+  onOrderChange = () => undefined,
   onExpandedIdChange = () => undefined,
   renderDetail = (row) => <div className="platform-organizations__detail-placeholder">Carregando detalhes de {row.name}…</div>,
   onRetry = () => undefined,
@@ -98,7 +103,11 @@ export function PlatformTenantsView({
     suspended: customerRecut.filter((row) => row.status === "suspended").length,
     incomplete: customerRecut.filter((row) => !row.setup.complete).length,
   };
-  const visible = filterPlatformOrganizations(rows, { query, groupId, status: statusFilter });
+  const totalUsers = customerRecut.some((row) => row.userCount === null)
+    ? null
+    : customerRecut.reduce((sum, row) => sum + (row.userCount ?? 0), 0);
+  let visible = filterPlatformOrganizations(rows, { query, groupId, status: statusFilter });
+    if (order === "usuarios") visible = sortByUsersDesc(visible);
   const noCustomers = rows.length > 0 && rows.every((row) => row.system);
 
   useEffect(() => {
@@ -127,6 +136,7 @@ export function PlatformTenantsView({
         <KpiStatCard icon={Building2} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={counts.active} label="Organizações ativas" hint="No recorte atual" ariaLabel={`Organizações ativas: ${counts.active}. No recorte atual`} onClick={() => onStatusFilterChange("active")} pressed={statusFilter === "active"} />
         <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-danger)" iconBg="var(--surface-panel-muted)" value={counts.suspended} label="Organizações suspensas" hint="No recorte atual" ariaLabel={`Organizações suspensas: ${counts.suspended}. No recorte atual`} onClick={() => onStatusFilterChange("suspended")} pressed={statusFilter === "suspended"} />
         <KpiStatCard icon={CircleAlert} iconColor="var(--color-status-warning)" iconBg="var(--surface-panel-muted)" value={counts.incomplete} label="Cadastros incompletos" hint="No recorte atual" ariaLabel={`Cadastros incompletos: ${counts.incomplete}. No recorte atual`} onClick={() => onStatusFilterChange("incomplete")} pressed={statusFilter === "incomplete"} />
+        <KpiStatCard icon={Users} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={totalUsers === null ? "—" : totalUsers} label="Usuários totais" hint={totalUsers === null ? "contagem indisponível agora" : "clique para ordenar a lista"} ariaLabel={`Usuários totais: ${totalUsers === null ? "contagem indisponível" : totalUsers}. ${totalUsers === null ? "Contagem indisponível agora" : "Clique para ordenar a lista"}`} onClick={() => onOrderChange(order === "usuarios" ? null : "usuarios")} pressed={order === "usuarios"} />
         <div className="platform-organizations__revenue-note"><strong>Receita por organização</strong><span>Disponível após a ativação da medição cloud.</span></div>
       </div>
       <div className="platform-organizations__filters">
@@ -134,6 +144,7 @@ export function PlatformTenantsView({
         <label>Grupo<select aria-label="Filtrar por grupo" value={groupId} onChange={(event) => onGroupChange(event.target.value)}><option value="">Todos os grupos</option>{groupOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
       </div>
       {statusFilter !== "all" ? <span className="pat-filtro-chip">Filtro: {statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"}<button type="button" aria-label={`Tirar o filtro ${statusFilter === "active" ? "Ativas" : statusFilter === "suspended" ? "Suspensas" : "Cadastro incompleto"}`} onClick={() => onStatusFilterChange("all")}>×</button></span> : null}
+      {order === "usuarios" ? <span className="pat-filtro-chip">Ordenado por: usuários<button type="button" aria-label="Tirar a ordem por usuários" onClick={() => onOrderChange(null)}>×</button></span> : null}
       {visible.length === 0 ? <EmptyState title="Nenhuma organização encontrada" detail="Ajuste a busca ou os filtros para consultar outras organizações." /> : null}
       {visible.length > 0 ? (
         <DenseTable
@@ -170,13 +181,14 @@ export function PlatformTenantsPage() {
   const groupId = params.get("grupo") ?? "";
   const rawStatus = params.get("situacao");
   const statusFilter: OrganizationStatusFilter = rawStatus === "active" || rawStatus === "suspended" || rawStatus === "incomplete" ? rawStatus : "all";
+  const order = params.get("ordem") === "usuarios" ? "usuarios" : null;
   const write = (key: string, value: string) => { const next = new URLSearchParams(params); value ? next.set(key, value) : next.delete(key); setParams(next, { replace: true }); };
   const changeExpanded = (value: string | null) => { setExpandedId(value); write("org", value ?? ""); };
   const actionPermissions = ["platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:manage", "platform:billing:read"].filter(has);
   const returnSearch = params.toString() ? `?${params.toString()}` : "";
 
   return <>
-    <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} query={query} groupId={groupId} statusFilter={statusFilter} expandedId={expandedId} canCreate={has("platform:tenants:create")} onCreate={() => setCreateOpen(true)} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} renderDetail={(row) => <OrganizationDetailPanel organization={row} returnSearch={returnSearch} permissions={actionPermissions} onRefreshList={() => void organizations.refresh(false)} />} />
+    <PlatformTenantsView rows={organizations.rows} status={organizations.status} stale={organizations.stale} query={query} groupId={groupId} statusFilter={statusFilter} order={order} expandedId={expandedId} canCreate={has("platform:tenants:create")} onCreate={() => setCreateOpen(true)} onQueryChange={(value) => write("q", value)} onGroupChange={(value) => write("grupo", value)} onStatusFilterChange={(value) => write("situacao", value === "all" ? "" : value)} onOrderChange={(value) => write("ordem", value ?? "")} onExpandedIdChange={changeExpanded} onRetry={() => void organizations.refresh(false)} renderDetail={(row) => <OrganizationDetailPanel organization={row} returnSearch={returnSearch} permissions={actionPermissions} onRefreshList={() => void organizations.refresh(false)} />} />
     {createOpen ? <NewOrganizationDialog onClose={() => setCreateOpen(false)} onCreated={() => void organizations.refresh(false)} permissions={actionPermissions} /> : null}
   </>;
 }
