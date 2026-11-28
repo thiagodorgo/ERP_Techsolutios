@@ -68,6 +68,11 @@ test("produção com clamav recusa idade zero e aceita default seguro", () => {
     DATABASE_URL: "postgresql://erp:erp@db.example.com:5432/erp",
     JOBS_WORKER_ENABLED: "true",
     REDIS_URL: "redis://redis.example.com:6379",
+    // B-EVIDENCIA-DURAVEL — a trava G-STORAGE-DURAVEL do env.ts: produção só sobe com o armazenamento durável da D-014.
+    CHECKLIST_STORAGE_PROVIDER: "s3",
+    CHECKLIST_STORAGE_S3_BUCKET: "erp-teste-evidencia",
+    CHECKLIST_STORAGE_S3_REGION: "us-east-1",
+    CHECKLIST_STORAGE_S3_ENDPOINT: "https://s3.us-east-1.amazonaws.com",
     EVIDENCE_SCANNER: "clamav",
     CLAMAV_HOST: "clamav.internal",
   };
@@ -104,6 +109,11 @@ test("produção com clamav e sem CLAMAV_MAX_DB_AGE_HOURS resolve 72; test resol
     DATABASE_URL: "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public",
     JOBS_WORKER_ENABLED: "true",
     REDIS_URL: "redis://redis.interno.exemplo.com:6379",
+    // B-EVIDENCIA-DURAVEL — a trava G-STORAGE-DURAVEL do env.ts: produção só sobe com o armazenamento durável da D-014.
+    CHECKLIST_STORAGE_PROVIDER: "s3",
+    CHECKLIST_STORAGE_S3_BUCKET: "erp-teste-evidencia",
+    CHECKLIST_STORAGE_S3_REGION: "us-east-1",
+    CHECKLIST_STORAGE_S3_ENDPOINT: "https://s3.us-east-1.amazonaws.com",
     EVIDENCE_SCANNER: "clamav",
     CLAMAV_HOST: "clamav",
   };

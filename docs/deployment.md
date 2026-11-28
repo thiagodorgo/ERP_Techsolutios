@@ -605,6 +605,15 @@ Comprovante de despesa (B-RDV-COMPROVANTE, conserto c1 do PR #525) — usa o MES
 - sem isso, a rota responde 503 `receipt_storage_unavailable`, antes do antivirus e da gravacao, e o comprovante fica no aparelho;
 - nenhuma variavel nova (a `CHECKLIST_STORAGE_S3_ENDPOINT` ja existe e o mesmo valor serve aos outros usuarios da D-014); `docker-compose.prod.yml`, `Dockerfile`, `fly.*.toml` e o job `docker` da CI nao mudam. O compose de validacao local-prod continua sem S3, e o comprovante responde 503 la, como ja responde pelo antivirus `unavailable`.
 
+Trava de boot do armazenamento duravel e a foto do app de campo (B-EVIDENCIA-DURAVEL, fecha `P-UPLOAD-ARMAZENAMENTO-EFEMERO`):
+
+- com `NODE_ENV=production` (staging incluso), o processo NAO sobe sem o armazenamento duravel da D-014 (gate `G-STORAGE-DURAVEL` do `src/config/env.ts`, sem valvula): `CHECKLIST_STORAGE_PROVIDER=s3` (o padrao `local` e o legado `CHECKLIST_ATTACHMENT_STORAGE_DRIVER` sao recusados, mesmo com diretorio declarado), `CHECKLIST_STORAGE_S3_BUCKET` preenchido, `CHECKLIST_STORAGE_S3_REGION` na forma de regiao da AWS, `CHECKLIST_STORAGE_S3_ENDPOINT=https://s3.<regiao>.amazonaws.com` exato, e `CHECKLIST_STORAGE_S3_ACCESS_KEY_ID`/`CHECKLIST_STORAGE_S3_SECRET_ACCESS_KEY` as duas ou nenhuma (nenhuma = papel da tarefa). E a mesma regra do portao do comprovante, num lugar so (`src/config/storage-durability.ts`), e vale para os 6 tipos de envio de arquivo;
+- o log de boot da recusa cita a chave que falta, nunca o valor (o nome do bucket nao vai para o log);
+- toda definicao de tarefa que roda codigo que alcanca `src/config/env.ts` precisa das 4 chaves: direto (ex.: `scripts/patio-fechar-diarias-congelados.ts`) ou por `src/modules/auth/index.js` (os seeds). `scripts/bootstrap-platform-admin.ts` nao alcanca o `env.ts`, de proposito. A conferencia le o bloco de variaveis E o de segredos da definicao efetiva;
+- a foto que o app envia (`POST /api/v1/mobile/evidence-uploads`) deixou o diretorio temporario do servidor, que sumia no reinicio: grava pelo mesmo provedor, bucket e prefixo dos anexos, na chave `<prefixo>/<org>/mobile-evidence-wo-<OS>/<uuid>-u-<usuario>--<evidencia>.<ext>` (ou `mobile-evidence-field`, quando a evidencia nao e da OS), e a rota so responde `stored` depois de o S3 confirmar. A permissao do papel da tarefa que serve aos anexos (gravar e ler sob o prefixo) serve a evidencia, e a regra de "sem ciclo de vida que expire objeto sob o prefixo" vale para ela;
+- sem armazenamento duravel em producao, ou com falha do provedor, a rota responde 503 `evidence_storage_unavailable` (mensagem fixa) e o app mantem a foto para reenviar;
+- isto atualiza o ultimo item da lista do comprovante, acima: o `docker-compose.prod.yml` (validacao local-prod) passa a declarar as 4 chaves, com um bucket MARCADOR (`local-prod-validation-bucket-not-a-secret`) e sem credencial, porque sem elas o stack nao sobe. Com o antivirus ligado por cima, um envio de arquivo la responde 503 em vez de gravar em disco. Os `fly.*.toml` (inertes) nomeiam as 4 chaves no cabecalho.
+
 Gerar Prisma Client:
 
 ```bash

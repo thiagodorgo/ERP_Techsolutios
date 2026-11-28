@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
+import { isDurableStorageConfig } from "../../config/storage-durability.js";
 import { ChecklistError } from "../checklists/checklist.types.js";
 import { createChecklistStorageProviderByName, readChecklistStorageConfig } from "../checklists/storage/checklist-storage.factory.js";
 import type {
@@ -134,42 +135,25 @@ function receiptWriteProviderName(): ChecklistStorageProviderName {
  * endpoint vazio, com o qual o SDK escolheria o destino por `AWS_ENDPOINT_URL_S3`, `AWS_ENDPOINT_URL` ou
  * `~/.aws/config`, que o portão não vê. O `forcePathStyle` não entra na conta.
  */
-const AWS_REGION_PATTERN = /^[a-z]{2}(?:-[a-z]+)+-\d{1,2}$/;
-
-function approvedReceiptS3Host(region: string): string | undefined {
-  return AWS_REGION_PATTERN.test(region) ? `s3.${region}.amazonaws.com` : undefined;
-}
-
-function isApprovedReceiptS3Endpoint(s3: { endpoint?: string; region: string }): boolean {
-  const host = approvedReceiptS3Host(s3.region.trim());
-  if (!host) return false;
-  const raw = (s3.endpoint ?? "").trim();
-  if (!raw) return false; // vazio: o SDK resolveria o destino por AWS_ENDPOINT_URL_S3, AWS_ENDPOINT_URL ou ~/.aws/config
-  let url: URL;
-  try {
-    url = new URL(raw);
-  } catch {
-    return false;
-  }
-  return (
-    url.protocol === "https:" &&
-    url.hostname === host &&
-    url.port === "" &&
-    url.username === "" &&
-    url.password === "" &&
-    (url.pathname === "/" || url.pathname === "") &&
-    url.search === "" &&
-    url.hash === ""
-  );
-}
-
+// B-EVIDENCIA-DURAVEL (plano §3.4): a regra saiu daqui para `src/config/storage-durability.ts`, a regra ÚNICA que a
+// trava de boot `G-STORAGE-DURAVEL` e o portão da evidência do app também chamam. Nome, assinatura, código e `reason`
+// deste portão não mudam (os testes RR-A.2 e RR-A.2b do #525 ficam sem edição).
 export function assertReceiptStorageDurable(input: {
   nodeEnv: string;
   provider: string;
   s3: S3ChecklistStorageProviderConfig;
 }): void {
   if (input.nodeEnv !== "production") return;
-  if (input.provider === "s3" && input.s3.bucket.trim() !== "" && isApprovedReceiptS3Endpoint(input.s3)) return;
+  if (
+    isDurableStorageConfig({
+      provider: input.provider,
+      bucket: input.s3.bucket,
+      region: input.s3.region,
+      endpoint: input.s3.endpoint,
+    })
+  ) {
+    return;
+  }
   throw new ExpenseManagementError(503, "SERVICE_UNAVAILABLE", "receipt_storage_unavailable", "Receipt storage is temporarily unavailable.");
 }
 
