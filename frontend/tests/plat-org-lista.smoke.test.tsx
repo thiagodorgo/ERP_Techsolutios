@@ -9,8 +9,13 @@ const dom = installMiniDom();
 const React = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { MemoryRouter, useLocation, useSearchParams } = await import("react-router-dom");
-const { PlatformTenantsView } = await import("../src/modules/platform/pages/PlatformTenantsPage");
+const { PlatformTenantsPage, PlatformTenantsView } = await import("../src/modules/platform/pages/PlatformTenantsPage");
 const { composePlatformOrganizations } = await import("../src/modules/platform/platform-organizations.state");
+const { AuthProvider } = await import("../src/providers/AuthProvider");
+const { TenantProvider } = await import("../src/providers/TenantProvider");
+const { PermissionProvider } = await import("../src/providers/PermissionProvider");
+const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+const { mockSession } = await import("../src/mocks/auth/context");
 const { ORGANIZATION_A, ORGANIZATION_SYSTEM } = await import("./helpers/plat-org.fixture");
 
 type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
@@ -114,5 +119,83 @@ test("LK3 nomes acessíveis dos indicadores incluem o número e o chip nomeia a 
     assert.match(String(propsOf(button)["aria-label"]), new RegExp(`${label}: ${value}\\.`));
   }
   assert.equal(propsOf(buttonByText(page.container, "Tirar o filtro Ativas"))["aria-label"], "Tirar o filtro Ativas");
+  await page.unmount();
+});
+
+type RefreshFailure = "tenants-403" | "overview-403" | "background-500" | "initial-500";
+
+async function mountHookPage(failure: RefreshFailure) {
+  if (cleanup) await cleanup();
+  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: ["Super Admin"], permissions: ["platform:tenants:read", "platform:tenants:create"] } });
+  let tenantCalls = 0;
+  let overviewCalls = 0;
+  const json = (status: number, data: unknown) => new Response(JSON.stringify({ data }), { status, headers: { "content-type": "application/json" } });
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (/\/platform\/overview(?:\?|$)/.test(url)) {
+      overviewCalls += 1;
+      if ((failure === "overview-403" && overviewCalls === 2)) return json(403, { error: { code: "FORBIDDEN" } });
+      if (failure === "background-500" && overviewCalls === 2) return json(500, { error: { code: "INTERNAL_ERROR" } });
+      return json(200, overview);
+    }
+    if (/\/platform\/tenants(?:\?|$)/.test(url)) {
+      tenantCalls += 1;
+      if (failure === "initial-500" && tenantCalls === 1) return json(500, { error: { code: "INTERNAL_ERROR" } });
+      if (failure === "tenants-403" && tenantCalls === 2) return json(403, { error: { code: "FORBIDDEN" } });
+      return json(200, [ORGANIZATION_SYSTEM, ORGANIZATION_A, ORGANIZATION_B, ORGANIZATION_C]);
+    }
+    return json(599, { error: { code: "sem_fixture" } });
+  }) as typeof fetch;
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  await act(async () => root.render(createElement(MemoryRouter, null,
+    createElement(AuthProvider, null, createElement(TenantProvider, null, createElement(PermissionProvider, null, createElement(PlatformTenantsPage)))),
+  )));
+  await settle();
+  const tick = async () => {
+    const interval = [...dom.intervals].reverse().find((item) => item.fn !== null);
+    assert.ok(interval?.fn, "intervalo de atualização ativo");
+    await act(async () => interval.fn?.());
+    await settle();
+  };
+  const unmount = async () => { cleanup = null; await act(async () => root.unmount()); container.parentNode?.removeChild(container); };
+  cleanup = unmount;
+  return { container, tick, calls: () => tenantCalls + overviewCalls, unmount };
+}
+
+test("LH1 403 em /tenants tira os dados e para a atualização", async () => {
+  const page = await mountHookPage("tenants-403");
+  assert.match(text(page.container), /Organização A/);
+  await page.tick();
+  assert.match(text(page.container), /Acesso não permitido/);
+  assert.doesNotMatch(text(page.container), /Organização A|Nova organização/);
+  const calls = page.calls();
+  assert.equal([...dom.intervals].reverse().find((item) => item.fn !== null), undefined);
+  assert.equal(page.calls(), calls);
+  await page.unmount();
+});
+
+test("LH2 403 em /overview tira os dados e para a atualização", async () => {
+  const page = await mountHookPage("overview-403");
+  await page.tick();
+  assert.match(text(page.container), /Acesso não permitido/);
+  assert.doesNotMatch(text(page.container), /Organização A|Nova organização/);
+  assert.equal([...dom.intervals].reverse().find((item) => item.fn !== null), undefined);
+  await page.unmount();
+});
+
+test("LH3 falha em segundo plano mantém o último par completo", async () => {
+  const page = await mountHookPage("background-500");
+  await page.tick();
+  assert.match(text(page.container), /Dados desatualizados/);
+  assert.match(text(page.container), /Organização A/);
+  await page.unmount();
+});
+
+test("LH4 primeira carga que falha é erro, não dado desatualizado", async () => {
+  const page = await mountHookPage("initial-500");
+  assert.match(text(page.container), /Não foi possível carregar as organizações|Tentar novamente/);
+  assert.doesNotMatch(text(page.container), /Organização A|Dados desatualizados/);
   await page.unmount();
 });
