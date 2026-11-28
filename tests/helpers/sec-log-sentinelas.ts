@@ -5,6 +5,7 @@
 // 2. sentinela NUMÉRICO (5439, 6391 e, se houver, a porta do cluster) só conta como NÚMERO INTEIRO, sem dígito encostado
 //    de nenhum lado — a porta sorteada 54390 não é o sentinela 5439 (R2-08);
 // 3. os campos `"time"` e `"pid"` do pino saem antes de contar.
+import { randomUUID } from "node:crypto";
 import net from "node:net";
 
 import { startChildServer } from "./child-server.js";
@@ -55,6 +56,19 @@ export function sentinelasEncontrados(texto: string, opcoes: OpcoesDeContagem = 
 
 export function contarSentinelas(texto: string, opcoes: OpcoesDeContagem = {}): number {
   return sentinelasEncontrados(texto, opcoes).length;
+}
+
+/**
+ * Um UUID novo que a regra de `sentinelasEncontrados` NÃO casa. Um fragmento hexadecimal pode trazer `5439` ou `6391`
+ * com letra encostada (o `fafb6391-…` que fez o H4g oscilar no CI), e o id sorteado então "vaza" uma sentinela que
+ * ninguém escreveu. O `sortear` existe para o teste S2 provar a recusa sem depender da sorte, como em `medirPortaLivre`.
+ */
+export function uuidSemSentinela(sortear: () => string = randomUUID): string {
+  for (let tentativa = 0; tentativa < 50; tentativa += 1) {
+    const id = sortear();
+    if (sentinelasEncontrados(id).length === 0) return id;
+  }
+  throw new Error("uuidSemSentinela: 50 sorteios caíram num id com sentinela.");
 }
 
 function sortearPorta(): Promise<number> {
