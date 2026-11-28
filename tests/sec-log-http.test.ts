@@ -11,7 +11,6 @@
 // O H4f lê o log do sync de estoque num processo filho (`tests/fixtures/sec-log-h4f-material.mts`), como os testes B.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -22,6 +21,7 @@ import {
   contarSentinelas,
   medirPortaLivre,
   sentinelasEncontrados,
+  uuidSemSentinela,
 } from "./helpers/sec-log-sentinelas.js";
 
 process.env.DATABASE_URL = DATABASE_URL_SENTINELA;
@@ -315,7 +315,7 @@ test("H3b sendRouteError(erro de domínio que embrulha getaddrinfo ENOTFOUND): o
 type Ator = Parameters<typeof syncMobileWorkOrderActions>[0];
 
 function ator(roles: readonly string[], permissions: readonly string[]): Ator {
-  return { userId: randomUUID(), tenantId: randomUUID(), roles, permissions, explicitPermissions: true } as unknown as Ator;
+  return { userId: uuidSemSentinela(), tenantId: uuidSemSentinela(), roles, permissions, explicitPermissions: true } as unknown as Ator;
 }
 
 /** Serviço falso em que todo método lança `erro()`. */
@@ -354,12 +354,12 @@ async function syncOrdemDeServico(erro: () => unknown) {
   return syncMobileWorkOrderActions(
     ator(["manager"], ["work_orders:status", "work_orders:create", "work_orders:assign", "work_orders:update"]),
     {
-      client_batch_id: randomUUID(),
+      client_batch_id: uuidSemSentinela(),
       actions: [
         {
-          client_action_id: randomUUID(),
+          client_action_id: uuidSemSentinela(),
           type: "work_order.status_change",
-          payload: { work_order_id: randomUUID(), status: "en_route" },
+          payload: { work_order_id: uuidSemSentinela(), status: "en_route" },
           local_created_at: AGORA,
         },
       ],
@@ -376,12 +376,12 @@ test("H4b sync de vistoria com serviço que lança P1001: rejected, Unexpected e
   const saida = await syncMobileChecklistActions(
     ator(["manager"], ["checklist_runs:complete", "checklist_runs:update", "checklist_runs:create"]),
     {
-      client_batch_id: randomUUID(),
+      client_batch_id: uuidSemSentinela(),
       actions: [
         {
-          client_action_id: randomUUID(),
+          client_action_id: uuidSemSentinela(),
           type: "checklist.complete",
-          payload: { run_id: randomUUID() },
+          payload: { run_id: uuidSemSentinela() },
           local_created_at: AGORA,
         },
       ],
@@ -395,12 +395,12 @@ test("H4c sync de evidência com serviço que lança P1001: rejected, Unexpected
   const saida = await syncMobileEvidenceActions(
     ator(["manager"], ["work_orders:update"]),
     {
-      client_batch_id: randomUUID(),
+      client_batch_id: uuidSemSentinela(),
       actions: [
         {
-          client_evidence_id: randomUUID(),
+          client_evidence_id: uuidSemSentinela(),
           type: "evidence.work_order_photo",
-          payload: { work_order_id: randomUUID() },
+          payload: { work_order_id: uuidSemSentinela() },
           local_created_at: AGORA,
         },
       ],
@@ -428,7 +428,7 @@ test("H4d sync de estoque, tipos legados (o quantity lançaria P1001): rejected,
     const { valor: saida, linhas } = await comLog(() =>
       syncMobileInventoryActions(
         ator(["manager"], ["work_orders:update"]),
-        { client_batch_id: randomUUID(), actions: [{ client_action_id: randomUUID(), type: tipo, local_created_at: AGORA, payload }] },
+        { client_batch_id: uuidSemSentinela(), actions: [{ client_action_id: uuidSemSentinela(), type: tipo, local_created_at: AGORA, payload }] },
         { inventory: nunca as never, workOrders: nunca as never, workOrdersModuleEnabled: async () => true },
       ),
     );
@@ -491,8 +491,8 @@ async function syncVistoria(erro: () => unknown) {
   return syncMobileChecklistActions(
     ator(["manager"], ["checklist_runs:complete", "checklist_runs:update", "checklist_runs:create"]),
     {
-      client_batch_id: randomUUID(),
-      actions: [{ client_action_id: randomUUID(), type: "checklist.complete", payload: { run_id: randomUUID() }, local_created_at: AGORA }],
+      client_batch_id: uuidSemSentinela(),
+      actions: [{ client_action_id: uuidSemSentinela(), type: "checklist.complete", payload: { run_id: uuidSemSentinela() }, local_created_at: AGORA }],
     },
     async () => servicoQueLanca(erro) as never,
   );
@@ -502,12 +502,12 @@ async function syncEvidencia(erro: () => unknown) {
   return syncMobileEvidenceActions(
     ator(["manager"], ["work_orders:update"]),
     {
-      client_batch_id: randomUUID(),
+      client_batch_id: uuidSemSentinela(),
       actions: [
         {
-          client_evidence_id: randomUUID(),
+          client_evidence_id: uuidSemSentinela(),
           type: "evidence.work_order_photo",
-          payload: { work_order_id: randomUUID() },
+          payload: { work_order_id: uuidSemSentinela() },
           local_created_at: AGORA,
         },
       ],
