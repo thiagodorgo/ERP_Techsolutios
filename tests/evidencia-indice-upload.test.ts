@@ -23,7 +23,6 @@ process.env.CHECKLIST_STORAGE_PROVIDER = "local";
 process.env.CHECKLIST_STORAGE_LOCAL_DIR = DEFAULT_STORAGE_DIR;
 process.env.CHECKLIST_STORAGE_S3_BUCKET = "";
 process.env.CHECKLIST_STORAGE_S3_REGION = "";
-after(() => rmSync(DEFAULT_STORAGE_DIR, { recursive: true, force: true }));
 
 const UPLOAD_ROUTE = "/api/v1/mobile/evidence-uploads";
 const SYNC_ROUTE = "/api/v1/mobile/sync/evidence-actions";
@@ -62,6 +61,10 @@ async function loadModules() {
 }
 
 const M = await loadModules();
+
+// O gancho de limpeza fica DEPOIS do único await de módulo: o guard da ordem dos registros
+// (tests/test-registration-order-guard.test.ts, G-ORD-1) não admite await de módulo entre registros.
+after(() => rmSync(DEFAULT_STORAGE_DIR, { recursive: true, force: true }));
 
 type EvidenceRecordLike = {
   id: string;
