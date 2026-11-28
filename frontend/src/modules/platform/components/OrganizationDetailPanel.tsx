@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
 import type { PlatformOrganization } from "../platform.types";
@@ -72,7 +73,7 @@ export function OrganizationDetailPanelView({ organization, data, returnSearch =
         <div><b>Módulos habilitados</b>{enabledModules.length ? <ul>{enabledModules.map((module) => <li key={module.key}>{module.label}</li>)}</ul> : <p>Nenhum módulo habilitado.</p>}</div>
       </div>
       <div className="platform-organizations__detail-actions">
-        {showFullLink ? <a className="pat-btn" href={`/platform/tenants/${organization.id}${returnSearch}`}>Ver detalhes completos</a> : null}
+        {showFullLink ? <Link className="pat-btn" to={`/platform/tenants/${organization.id}${returnSearch}`}>Ver detalhes completos</Link> : null}
       </div>
       <OrganizationActionBar organization={organization} permissions={permissions} actionsAllowed={actionsAllowed} onAction={onAction} />
       <OrganizationSetupMissing organization={organization} permissions={permissions} actionsAllowed={actionsAllowed} onAction={onAction} />

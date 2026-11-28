@@ -42,3 +42,12 @@ export function jsonResponse(data: unknown, status = 200): Response {
     headers: { "content-type": "application/json" },
   });
 }
+import { propsOf, type MiniDomElement } from "./mini-dom";
+
+
+export function userClick(el: MiniDomElement): void {
+  const handler = propsOf(el).onClick;
+  if (typeof handler !== "function") return; // <a href> simples: nada acontece, e quem falha é a asserção da rota
+  const event = { button: 0, metaKey: false, altKey: false, ctrlKey: false, shiftKey: false, defaultPrevented: false, target: el, currentTarget: el, preventDefault() { event.defaultPrevented = true; }, stopPropagation() {} };
+  (handler as (e: unknown) => void)(event);
+}

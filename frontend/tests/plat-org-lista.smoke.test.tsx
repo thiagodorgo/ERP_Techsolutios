@@ -8,15 +8,17 @@ const dom = installMiniDom();
 
 const React = await import("react");
 const { createRoot } = await import("react-dom/client");
-const { MemoryRouter, useLocation, useSearchParams } = await import("react-router-dom");
+const { MemoryRouter, Route, Routes, useLocation, useSearchParams } = await import("react-router-dom");
 const { PlatformTenantsPage, PlatformTenantsView } = await import("../src/modules/platform/pages/PlatformTenantsPage");
+const { PlatformTenantDetailPage } = await import("../src/modules/platform/pages/PlatformTenantDetailPage");
+const { OrganizationDetailPanelView } = await import("../src/modules/platform/components/OrganizationDetailPanel");
 const { composePlatformOrganizations } = await import("../src/modules/platform/platform-organizations.state");
 const { AuthProvider } = await import("../src/providers/AuthProvider");
 const { TenantProvider } = await import("../src/providers/TenantProvider");
 const { PermissionProvider } = await import("../src/providers/PermissionProvider");
 const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
 const { mockSession } = await import("../src/mocks/auth/context");
-const { ORGANIZATION_A, ORGANIZATION_SYSTEM } = await import("./helpers/plat-org.fixture");
+const { DETAIL_A, ORGANIZATION_A, ORGANIZATION_SYSTEM, userClick } = await import("./helpers/plat-org.fixture");
 
 type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
 const act = (React as unknown as { act: ActFn }).act;
@@ -200,6 +202,39 @@ test("LE1 a linha pedida no endereço sobrevive à carga e abre quando a lista c
   )));
   await settle();
   assert.match(text(container), /PAINEL-DEPOIS-DA-CARGA/);
+  await act(async () => root.unmount());
+  container.parentNode?.removeChild(container);
+});
+
+test("LE3 Ver detalhes completos preserva a SPA e os filtros", async () => {
+  if (cleanup) await cleanup();
+  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: ["Super Admin"], permissions: ["platform:tenants:read", "platform:tenants:update"] } });
+  globalThis.fetch = (async (input: RequestInfo | URL) => String(input).endsWith("/detail")
+    ? new Response(JSON.stringify({ data: DETAIL_A }), { status: 200, headers: { "content-type": "application/json" } })
+    : new Response(JSON.stringify({ data: ORGANIZATION_A }), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  function LocationProbe() { const location = useLocation(); return createElement("output", { "data-location": true }, `${location.pathname}${location.search}`); }
+  await act(async () => root.render(createElement(MemoryRouter, { initialEntries: ["/platform/tenants?situacao=active"] },
+    createElement(AuthProvider, null, createElement(TenantProvider, null, createElement(PermissionProvider, null,
+      createElement(React.Fragment, null,
+        createElement(LocationProbe),
+        createElement(Routes, null,
+          createElement(Route, { path: "/platform/tenants", element: createElement(OrganizationDetailPanelView, { organization: ORGANIZATION_A, data: { detail: DETAIL_A, source: "api", forbidden: false, notFound: false }, returnSearch: "?situacao=active" }) }),
+          createElement(Route, { path: "/platform/tenants/:tenantId", element: createElement(PlatformTenantDetailPage) }),
+        ),
+      ),
+    ))),
+  )));
+  await settle();
+  const link = elements(container, (element) => element.localName === "a" && text(element) === "Ver detalhes completos")[0];
+  assert.ok(link);
+  await act(async () => userClick(link));
+  await settle();
+  const location = text(elements(container, (element) => element.getAttribute("data-location") === "true")[0] as MiniDomElement);
+  assert.equal(location, `/platform/tenants/${ORGANIZATION_A.id}?situacao=active`);
+  assert.match(text(container), /Receita e disponibilidade/);
   await act(async () => root.unmount());
   container.parentNode?.removeChild(container);
 });
