@@ -343,7 +343,8 @@ Regras obrigatorias:
 ### POST /api/v1/mobile/sync/evidence-actions
 
 - Permissoes: `work_orders:update` para evidencias de OS e `field_location:send` para evidencias genericas de campo.
-- Status B-098E: parcial; registra manifesto/metadados, sem upload binario ou persistencia duravel.
+- Status B-098E + B-EVIDENCIA-INDICE: o manifesto/metadados agora e DURAVEL — gravado na tabela `mobile_evidences` (RLS `ENABLE`+`FORCE` por organizacao; migracao `20261127000000_add_mobile_evidences`), entao sobrevive a reinicio e a publicacao. O upload binario segue em contrato separado (secao abaixo). O repositorio e resolvido por `CORE_SAAS_PERSISTENCE`: `prisma` (producao) grava no banco com RLS forcado; sem isso, em memoria (`src/modules/mobile/mobile-evidence-sync.ts:115-124`).
+- Leitura: a evidencia gravada e legivel por OS em `GET /api/v1/work-orders/:workOrderId/evidences` (+ `/:evidenceId/download`), SEM permissao nova — as duas usam `work_orders:read`. Detalhes e codigos em `API_CONTRACTS.md` §3.5.3.
 - Request: lote `{ client_batch_id, actions[] }`, cada acao com `client_evidence_id`, `type`, `local_created_at` e `payload`.
 - Response: envelope em `data` com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`.
 - Idempotencia: tenant resolvido do ator + usuario do ator + `client_evidence_id`.
@@ -384,12 +385,16 @@ Request:
 
 Regras obrigatorias:
 
-- `tenant_id`/`tenantId` de body ou payload e ignorado e nao decide tenant.
+- `tenant_id`/`tenantId` de body ou payload e RETIRADO em silencio, em todos os niveis, nao decide tenant e nao participa do fingerprint; desde o B-EVIDENCIA-INDICE a retirada nao diferencia maiusculas e pega tambem `tenant-id` e `tenantid` (`^tenant[_-]?id$`).
 - lote maximo de 50 acoes.
 - fotos e assinaturas aceitam apenas `image/jpeg` ou `image/png`, com limite declarado de 10 MB.
-- `base64`, `file_data`, `local_path` e `path` sao rejeitados; o contrato registra metadados, nao arquivo.
+- chaves de metadado rejeitadas com `400 unsafe_payload` (lista MAIOR desde o B-EVIDENCIA-INDICE; sem diferenciar maiusculas e em QUALQUER nivel — objeto dentro de objeto, objeto dentro de array): o nome da chave que casa com `^(token|access[_-]?token|refresh[_-]?token|authorization|bearer|password|secret|bucket|storage[_-]?key|file[_-]?url|absolute[_-]?path|local[_-]?path|path|base64|file[_-]?data)$`. As 23 formas provadas por execucao: `token`, `access_token`, `accesstoken`, `refresh_token`, `refreshToken`, `authorization`, `Bearer`, `password`, `secret`, `bucket`, `storage_key`, `storagekey`, `storage-key`, `file_url`, `fileUrl`, `absolute_path`, `absolutePath`, `local_path`, `localpath`, `path`, `PATH`, `base64`, `file_data`. O banco repete a MESMA expressao, acrescida do par da organizacao, no `CHECK` `mobile_evidences_metadata_keys_chk` — a garantia vale para qualquer escritor de amanha (outro modulo, SQL manual, roteiro de religar fotos), nao so para o filtro do servico. Residual declarado: o `CHECK` barra NOMES de chave exatos; nao barra nome fora da lista (`x_token`, `senha`) nem segredo escrito dentro de um VALOR de texto. O contrato registra metadados, nao arquivo.
+- tetos (B-EVIDENCIA-INDICE; o MESMO numero no servico e no banco): metadado de ate **16384 bytes** (16 KB) — no servico, bytes UTF-8 do `JSON.stringify` compacto (`MOBILE_EVIDENCE_METADATA_MAX_BYTES = 16384`); no banco, `octet_length("metadata"::text) <= 16384` no `CHECK` `mobile_evidences_metadata_chk`. O servico mede o JSON compacto e o banco o texto do JSONB, que e igual ou maior: na FAIXA entre as duas medidas o servico aceita e o banco recusa, e a recusa sai como `metadata_too_large` pela via do SQLSTATE. `client_evidence_id` de ate **255** caracteres (`CHECK (char_length("client_evidence_id") BETWEEN 1 AND 255)`).
 - reenvio identico retorna `already_applied`; payload diferente com o mesmo ID retorna `idempotency_payload_mismatch`.
-- lacunas B-098E: upload binario fica em contrato separado; persistencia DB/Redis, antivirus e auditoria completa seguem fora do manifesto.
+- reasons novos POR ACAO, dentro do lote 200 `partial` (B-EVIDENCIA-INDICE): `400 metadata_too_large` (metadado acima de 16384 bytes), `400 metadata_not_storable` (o banco recusou o metadado por outro motivo de dado — por exemplo o caractere nulo U+0000, que o JSONB nao guarda), `400 invalid_client_evidence_id` (codigo com mais de 255 caracteres) e `403 user_required` (o ator nao tem linha em `users` naquela organizacao; o reason ja existia para o ator sem usuario, novo e o caminho por acao, sem 500).
+- erro de infraestrutura: a REQUISICAO INTEIRA responde `503 SERVICE_UNAVAILABLE / evidence_index_unavailable` quando o indice esta indisponivel; o app preserva o metadado na fila e reenvia.
+- erro de DADO do banco nunca e 503 e nunca e `accepted`: o repositorio classifica pelo SQLSTATE e pelo NOME da restricao, nunca pelo texto da mensagem (`23514` em `mobile_evidences_metadata_chk` → `metadata_too_large`; qualquer outro `23514`, ou SQLSTATE da classe `22` como `22P05` → `metadata_not_storable`); so conexao, timeout, serializacao e erro nao reconhecido relancam para o 503. As demais acoes do lote seguem.
+- lacunas que seguem: antivirus real (`P-O6R-B07B-SCANNER-AV-REAL`); trilha de auditoria duravel (os eventos `evidence.upload.*` continuam so em memoria — `P-EVIDENCIA-TRILHA-EM-MEMORIA`); leitura da evidencia de escopo `field`, sem OS (`P-EVIDENCIA-CAMPO-SEM-LEITOR`); tela (`P-EVIDENCIA-SEM-TELA`); lista por OS sem paginacao (`P-EVIDENCIA-LISTA-SEM-PAGINACAO`). A persistencia duravel do metadado, que era lacuna do B-098E, FECHA no B-EVIDENCIA-INDICE.
 
 ### POST /api/v1/mobile/evidence-uploads
 
@@ -409,10 +414,12 @@ Regras obrigatorias:
 - backend calcula SHA-256 do arquivo e rejeita `sha256_mismatch`.
 - scanner default Noop permite desenvolvimento/teste; fakes cobrem limpo, infectado e falha.
 - `status=stored` permite marcar upload como sincronizado; `rejected`, `scan_failed` e `pending_review` devem preservar evidencia local no app.
-- erros seguros: `evidence_rejected` para arquivo recusado pelo scanner, `evidence_scan_failed` para scanner indisponivel e `evidence_storage_unavailable` para storage indisponivel ou producao sem S3 duravel (B-EVIDENCIA-DURAVEL; nos tres o app preserva a foto).
+- erros seguros: `evidence_rejected` para arquivo recusado pelo scanner, `evidence_scan_failed` para scanner indisponivel e `evidence_storage_unavailable` para storage indisponivel, producao sem S3 duravel (B-EVIDENCIA-DURAVEL) ou falha do banco ao ligar o arquivo a linha (B-EVIDENCIA-INDICE); em todos o app preserva a foto e reenvia.
+- reasons novos (B-EVIDENCIA-INDICE): `409 MOBILE_EVIDENCE_CONFLICT / evidence_file_already_stored` quando a linha ja esta `stored` com SHA-256 DIFERENTE do arquivo enviado, e `409 MOBILE_EVIDENCE_CONFLICT / evidence_file_not_expected` quando a evidencia nao espera arquivo (observacao). No reenvio do arquivo JA guardado com o MESMO SHA-256 a rota responde **201 `stored` com os dados da LINHA** — zero objeto novo, zero dobra. O ramo do reenvio entra DEPOIS do portao e do antivirus e ANTES do `provider.save`, entao o antivirus roda em todo envio, inclusive no reenvio.
+- leitura: a evidencia guardada e lida por OS em `GET /api/v1/work-orders/:workOrderId/evidences` e `GET /api/v1/work-orders/:workOrderId/evidences/:evidenceId/download` (binario por stream no servidor, `attachment` + `nosniff`, SEM URL assinada), as duas sob `work_orders:read` — SEM permissao nova. Detalhes e codigos em `API_CONTRACTS.md` §3.5.3.
 - resposta nunca retorna caminho fisico, `local_path`, `path`, bucket, storage key local, URL publica, token ou conteudo binario.
-- auditoria B-108 registra `evidence.upload.accepted`, `evidence.upload.rejected`, `evidence.upload.scan_failed`, `evidence.upload.storage_failed` (B-EVIDENCIA-DURAVEL: o storage falhou ao gravar; a resposta e 503 `evidence_storage_unavailable`) e `evidence.upload.stored` com metadata sanitizada.
-- lacunas B-108: presigned URL/storage externo, persistencia DB/Redis do receipt, antivirus real, download protegido final e retencao definitiva.
+- auditoria B-108 registra `evidence.upload.accepted`, `evidence.upload.rejected`, `evidence.upload.scan_failed`, `evidence.upload.storage_failed` (B-EVIDENCIA-DURAVEL: o storage falhou ao gravar; a resposta e 503 `evidence_storage_unavailable`) e `evidence.upload.stored` com metadata sanitizada. O B-EVIDENCIA-INDICE acrescenta 3 eventos a uniao `EvidenceAuditAction`: `evidence.upload.index_failed` (o banco falhou ao ligar o arquivo a linha), `evidence.upload.replayed` (o reenvio atendido pela linha, sem objeto novo) e `evidence.upload.orphan_object` (o objeto que sobra quando a limpeza "melhor esforco" falha). Nenhum carrega chave, bucket nem caminho.
+- lacunas que seguem: presigned URL/storage externo, antivirus real (`P-O6R-B07B-SCANNER-AV-REAL`) e retencao definitiva. A persistencia duravel em banco do indice da evidencia e o download protegido final, que eram lacunas do B-108, FECHAM no B-EVIDENCIA-INDICE.
 
 ### POST /api/v1/mobile/field-locations
 
