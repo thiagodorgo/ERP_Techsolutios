@@ -66,6 +66,30 @@ test("C-6 · todo modelo com size_bytes está no inventário de storage", () => 
   assert.deepEqual(models, [...STORAGE_INVENTORY_MODELS].sort());
 });
 
+test("C-7 · os groupBy de storage do rateio seguem, posição a posição, STORAGE_INVENTORY_MODELS", () => {
+  const schema = readFileSync("prisma/schema.prisma", "utf8");
+  const tableByAccessor = new Map(
+    [...schema.matchAll(/^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm)].map((match) => [
+      match[1]!.charAt(0).toLowerCase() + match[1]!.slice(1),
+      toTableName(match[1]!, match[2] ?? ""),
+    ]),
+  );
+  const source = readFileSync("src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts", "utf8");
+  const start = source.indexOf("const storageWhere");
+  const end = source.indexOf("let storageQuantity");
+  assert.ok(start > 0 && end > start, "o bloco de storage do sumUsageBasis não foi achado");
+  const bloco = source.slice(start, end);
+  const delegates = [...bloco.matchAll(/\btx\.(\w+)\.groupBy\(/g)].map((match) => match[1]!);
+  const nomes = (lista: string): string[] => lista.split(",").map((item) => item.trim()).filter(Boolean);
+  const destructured = nomes(bloco.match(/const \[([^\]]+)\] = await Promise\.all\(/)?.[1] ?? "");
+  const groups = nomes(bloco.match(/const storageGroups = \[([^\]]+)\];/)?.[1] ?? "");
+  // a) a ordem das consultas é a ordem do inventário (o canário nomeia a tabela por índice);
+  assert.deepEqual(delegates.map((accessor) => tableByAccessor.get(accessor)), [...STORAGE_INVENTORY_MODELS]);
+  // b) o que o canário percorre é exatamente o que o Promise.all devolveu, na mesma ordem (nenhum grupo fora da soma).
+  assert.deepEqual(groups, destructured);
+  assert.equal(groups.length, STORAGE_INVENTORY_MODELS.length);
+});
+
 function toTableName(model: string, body: string): string {
   const mapped = body.match(/@@map\(\"([^\"]+)\"\)/)?.[1];
   if (mapped) return mapped;
