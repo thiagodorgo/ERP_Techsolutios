@@ -25,7 +25,6 @@ export type PlatformTenantDetailUser = {
 };
 
 export type PlatformTenantDetailSubscription = {
-  readonly status: string;
   readonly planName: string;
 };
 

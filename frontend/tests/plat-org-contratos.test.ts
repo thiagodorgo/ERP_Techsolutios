@@ -62,7 +62,7 @@ test("FC1 DTOs reais: criação, renomeação e administrador preservam retornos
 test("FC1 nome do plano vem da assinatura real do detalhe, nunca de PlatformOrganization.plan", () => {
   const detail = adaptPlatformTenantDetail(DETAIL_A);
   assert.equal(detail?.subscription?.planName, "Plano Regional Teste");
-  assert.equal(detail?.subscription?.status, "active");
+  assert.deepEqual(detail?.subscription, { planName: "Plano Regional Teste" });
   assert.equal("plan" in (ORGANIZATION_A as object), false);
 });
 

@@ -33,7 +33,7 @@ export const DETAIL_A = {
     { name: "Operador A", email: "operador-a@example.invalid", roleLabel: "Operação", status: "active" },
     { name: "Inativo A", email: "inativo-a@example.invalid", roleLabel: "Operação", status: "inactive" },
   ],
-  subscription: { status: "active", planName: "Plano Regional Teste" },
+  subscription: { planCode: "starter", planName: "Plano Regional Teste", validFrom: "2026-11-05T15:00:00.000Z", overrides: { monthlyPrice: null, includedUsers: null, includedStorageGb: null, extraUserPrice: null, extraGbPrice: null }, addons: [], modules: [] },
 } as const;
 
 export function jsonResponse(data: unknown, status = 200): Response {

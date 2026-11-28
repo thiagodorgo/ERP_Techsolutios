@@ -74,7 +74,7 @@ test("adaptPlatformTenantDetail: usuário sem e-mail descartado, org sem id → 
       { email: "sem-nome@org.com", status: "active" }, // sem nome → descartado
       "lixo",
     ],
-    subscription: { status: "active", planName: "Plano Regional Teste" },
+    subscription: { planCode: "starter", planName: "Plano Regional Teste", validFrom: "2026-11-05T15:00:00.000Z", overrides: { monthlyPrice: null, includedUsers: null, includedStorageGb: null, extraUserPrice: null, extraGbPrice: null }, addons: [], modules: [] },
   });
 
   assert.ok(detail);
@@ -151,7 +151,7 @@ test("getPlatformTenantDetail api: source 'api', adapta o payload real e não va
           mrr: 12345,
           modules: [{ key: "work-orders", label: "Ordens de Serviço", enabled: true }],
           users: [{ name: "Rafael Lima", email: "rafael@beta.com", status: "active" }],
-          subscription: { status: "active", planName: "Plano Regional Teste" },
+          subscription: { planCode: "starter", planName: "Plano Regional Teste", validFrom: "2026-11-05T15:00:00.000Z", overrides: { monthlyPrice: null, includedUsers: null, includedStorageGb: null, extraUserPrice: null, extraGbPrice: null }, addons: [], modules: [] },
         },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } },
@@ -207,7 +207,7 @@ test("detalhe da organização: com dado REAL mostra nome/usuários/módulos rea
       { name: "Marina Costa", email: "marina@alpha.com", roleLabel: "Administradora", status: "active" },
       { name: "Carlos Nunes", email: "carlos@alpha.com", roleLabel: "Técnico de Campo", status: "inactive" },
     ],
-    subscription: { status: "active", planName: "Plano Regional Teste" },
+    subscription: { planName: "Plano Regional Teste" },
   };
 
   const html = await renderTenantDetailView(detail);
