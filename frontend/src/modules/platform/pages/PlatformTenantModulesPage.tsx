@@ -38,13 +38,19 @@ export function PlatformTenantModulesPage() {
     [modules],
   );
 
+  function applyServerModules(next: PlatformModule[]) {
+    setModules(next);
+    setEnabledModules(next.filter((module) => module.status === "enabled").map((module) => module.key));
+  }
+
   async function saveModules() {
     setSavingError(null);
     try {
-      const updated = await updatePlatformTenantModules(tenantId, enabledModules);
-      setModules(updated);
+      applyServerModules(await updatePlatformTenantModules(tenantId, enabledModules));
     } catch (item) {
-      setSavingError(item instanceof ApiError && item.status === 409 && item.reason === "module_change_requires_subscription" ? "Os módulos são definidos pela assinatura. Altere o plano para mudar este conjunto." : "Não foi possível salvar os módulos. Nada foi alterado.");
+      applyServerModules(modules);
+      const refused = item instanceof ApiError && item.status >= 400 && item.status < 500;
+      setSavingError(item instanceof ApiError && item.status === 409 && item.reason === "module_change_requires_subscription" ? "Os módulos são definidos pela assinatura. Altere o plano para mudar este conjunto." : refused ? "Não foi possível salvar os módulos. Nada foi alterado." : "Não foi possível confirmar se os módulos foram salvos. Recarregue a página para ver a situação atual.");
     }
   }
 
