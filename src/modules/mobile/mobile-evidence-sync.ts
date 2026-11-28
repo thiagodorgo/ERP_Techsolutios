@@ -101,7 +101,7 @@ const EVIDENCE_INDEX_UNAVAILABLE_MESSAGE = "Evidence index is temporarily unavai
 const defaultMobileEvidenceRepository = new InMemoryMobileEvidenceRepository();
 let mobileEvidenceRepositoryOverride: MobileEvidenceRepository | undefined;
 
-function resolveMobileEvidenceRepository(): MobileEvidenceRepository {
+export function resolveMobileEvidenceRepository(): MobileEvidenceRepository {
   return mobileEvidenceRepositoryOverride ?? defaultMobileEvidenceRepository;
 }
 

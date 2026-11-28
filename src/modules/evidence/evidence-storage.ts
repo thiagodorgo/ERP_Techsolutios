@@ -61,7 +61,12 @@ export type EvidenceAuditAction =
   | "evidence.upload.scan_failed"
   // B-EVIDENCIA-DURAVEL (plano §3.2): o provedor da D-014 falhou ao gravar; a rota responde 503 e o app mantém a foto.
   | "evidence.upload.storage_failed"
-  | "evidence.upload.stored";
+  | "evidence.upload.stored"
+  // B-EVIDENCIA-INDICE (plano §4.3): o banco falhou ao ligar o arquivo à linha; o reenvio atendido pela linha;
+  // o objeto que sobra quando a limpeza "melhor esforço" falha. Nenhum carrega chave, bucket nem caminho.
+  | "evidence.upload.index_failed"
+  | "evidence.upload.replayed"
+  | "evidence.upload.orphan_object";
 
 export type EvidenceAuditEvent = {
   readonly action: EvidenceAuditAction;

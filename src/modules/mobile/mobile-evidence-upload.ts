@@ -28,7 +28,8 @@ import {
 import { UploadGateError, assertUploadVerification, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import { actorMutatesAssignedOnly, isPreviouslyAssignedRefusal } from "../work-orders/work-order.types.js";
-import { findMobileEvidenceSyncReceiptForUpload } from "./mobile-evidence-sync.js";
+import { resolveMobileEvidenceRepository } from "./mobile-evidence-sync.js";
+import type { MarkFileStoredResult, MobileEvidenceRecord } from "./mobile-evidence.types.js";
 
 const CONTRACT_NAME = "mobile_evidence_file_upload";
 const CONTRACT_VERSION = "2026-06-18.b108";
@@ -164,10 +165,17 @@ export async function uploadMobileEvidenceFile(
     throw routeError(403, "FORBIDDEN", "evidence_tenant_mismatch", "Evidence does not belong to the authenticated tenant.");
   }
 
-  const receipt = findMobileEvidenceSyncReceiptForUpload(actor, clientEvidenceId);
-  if (!receipt) {
+  // B-EVIDENCIA-INDICE (§4.3) — o recibo vem do REPOSITÓRIO (não mais do Map): depois do reinício a linha continua lá.
+  const evidenceRepository = resolveMobileEvidenceRepository();
+  const record = await evidenceRepository.findByClientEvidenceId(actor.tenantId, actor.userId, clientEvidenceId);
+  if (!record) {
     throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "evidence_metadata_required", "Evidence metadata must be synced before file upload.");
   }
+  const receipt = {
+    evidenceId: `evidence:${record.tenantId}:${record.clientEvidenceId}`,
+    scope: record.scope,
+    workOrderId: record.workOrderId ?? undefined,
+  };
 
   if (receipt.evidenceId !== evidenceId) {
     throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "evidence_metadata_required", "Evidence metadata does not match this upload.");
@@ -291,6 +299,32 @@ export async function uploadMobileEvidenceFile(
     },
   });
 
+  // B-EVIDENCIA-INDICE (§4.3, Ajuste 1 §A1.2) — o ramo do reenvio, DEPOIS do portão e do antivírus e ANTES do
+  // `provider.save`: a linha já `stored` com o mesmo SHA responde DA LINHA (zero objeto novo); SHA diferente → 409;
+  // observação (`none`) → 409. O antivírus roda em todo envio, inclusive no reenvio (o B-108 fica intacto).
+  if (record.fileStatus === "stored") {
+    if (record.checksumSha256 !== computedSha256) {
+      throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "evidence_file_already_stored", "Evidence file is already stored with a different checksum.");
+    }
+    recordEvidenceAuditEvent({
+      action: "evidence.upload.replayed",
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      evidenceId,
+      outcome: "success",
+      metadata: {
+        client_evidence_id: clientEvidenceId,
+        mime_type: record.mimeType,
+        size_bytes: record.sizeBytes,
+        checksum_sha256: record.checksumSha256,
+      },
+    });
+    return storedResponseFromRecord(record);
+  }
+  if (record.fileStatus === "none") {
+    throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "evidence_file_not_expected", "Evidence of this kind does not expect a file.");
+  }
+
   // §3.1 e §3.3 — grava pelo provedor da D-014, e SÓ DEPOIS de o provedor confirmar a rota responde `stored` (no S3, o
   // `PutObject` volta com o SHA-256 conferido pelo próprio S3). A extensão sai do tipo VERIFICADO; o nome que o aparelho
   // mandou não é guardado em lugar nenhum (nem no metadado do objeto). Falha do provedor (montagem ou gravação) → 503
@@ -326,8 +360,65 @@ export async function uploadMobileEvidenceFile(
     });
     throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_storage_unavailable", EVIDENCE_STORAGE_UNAVAILABLE_MESSAGE);
   }
-  // Emenda 1 (B2): o provedor da D-014 não devolve data; o `uploaded_at` é tirado aqui, DEPOIS que o `save` resolve.
-  const uploadedAt = new Date().toISOString();
+  // B-EVIDENCIA-INDICE (§4.3) — o `stored` é DA LINHA, não do arquivo: depois do `save`, a troca condicional
+  // `markFileStored` confirma a ligação. O `storedAt` nasce aqui, depois que o `save` resolve (Emenda 1 B2).
+  const storedAt = new Date();
+  const fileId = evidenceFileId(stored);
+  let markResult: MarkFileStoredResult;
+  try {
+    markResult = await evidenceRepository.markFileStored(actor.tenantId, actor.userId, clientEvidenceId, {
+      fileId,
+      storageProvider: stored.storageProvider,
+      storageKey: stored.storageKey,
+      mimeType: stored.mimeType,
+      sizeBytes: stored.sizeBytes,
+      checksumSha256: stored.checksumSha256,
+      storedAt,
+    });
+  } catch (error) {
+    logEvidenceStorageFailure(error);
+    await deleteOwnObjectBestEffort(actor, evidenceId, clientEvidenceId, stored.storageKey);
+    recordEvidenceAuditEvent({
+      action: "evidence.upload.index_failed",
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      evidenceId,
+      outcome: "failure",
+      metadata: { client_evidence_id: clientEvidenceId, reason: "index_unavailable" },
+    });
+    throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_storage_unavailable", EVIDENCE_STORAGE_UNAVAILABLE_MESSAGE);
+  }
+
+  if (markResult.outcome === "not_found") {
+    await deleteOwnObjectBestEffort(actor, evidenceId, clientEvidenceId, stored.storageKey);
+    recordEvidenceAuditEvent({
+      action: "evidence.upload.index_failed",
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      evidenceId,
+      outcome: "failure",
+      metadata: { client_evidence_id: clientEvidenceId, reason: "index_unavailable" },
+    });
+    throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_storage_unavailable", EVIDENCE_STORAGE_UNAVAILABLE_MESSAGE);
+  }
+
+  if (markResult.outcome === "current") {
+    // Outro envio igual ganhou a corrida: apaga o próprio objeto; fica o do vencedor. SHA diferente → 409.
+    await deleteOwnObjectBestEffort(actor, evidenceId, clientEvidenceId, stored.storageKey);
+    const winner = markResult.record;
+    if (winner.checksumSha256 !== computedSha256) {
+      throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "evidence_file_already_stored", "Evidence file is already stored with a different checksum.");
+    }
+    recordEvidenceAuditEvent({
+      action: "evidence.upload.replayed",
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      evidenceId,
+      outcome: "success",
+      metadata: { client_evidence_id: clientEvidenceId, mime_type: winner.mimeType, size_bytes: winner.sizeBytes, checksum_sha256: winner.checksumSha256 },
+    });
+    return storedResponseFromRecord(winner);
+  }
 
   recordEvidenceAuditEvent({
     action: "evidence.upload.stored",
@@ -343,22 +434,53 @@ export async function uploadMobileEvidenceFile(
     },
   });
 
+  return storedResponseFromRecord(markResult.record);
+}
+
+/**
+ * B-EVIDENCIA-INDICE (§4.3) — a resposta `201 stored` montada DA LINHA (primeira resposta, reenvio e corrida usam a
+ * mesma fonte). A allowlist do §2.8 fica: sem `storage_key`, sem `storage_provider`, sem o `id` interno da linha.
+ * Os campos de arquivo são nulos só fora de `stored`; os fallbacks nunca disparam para uma linha `stored`.
+ */
+function storedResponseFromRecord(record: MobileEvidenceRecord): MobileEvidenceUploadResponse {
   return {
-    contract: {
-      name: CONTRACT_NAME,
-      version: CONTRACT_VERSION,
-      status: "partial",
-    },
-    evidence_id: evidenceId,
-    file_id: evidenceFileId(stored),
+    contract: { name: CONTRACT_NAME, version: CONTRACT_VERSION, status: "partial" },
+    evidence_id: `evidence:${record.tenantId}:${record.clientEvidenceId}`,
+    file_id: record.fileId ?? "",
     status: "stored",
-    size_bytes: stored.sizeBytes,
-    mime_type: stored.mimeType,
-    content_type: stored.mimeType,
-    checksum_sha256: stored.checksumSha256,
-    sha256: stored.checksumSha256,
-    uploaded_at: uploadedAt,
+    size_bytes: record.sizeBytes ?? 0,
+    mime_type: record.mimeType ?? "",
+    content_type: record.mimeType ?? "",
+    checksum_sha256: record.checksumSha256 ?? "",
+    sha256: record.checksumSha256 ?? "",
+    uploaded_at: (record.storedAt ?? new Date()).toISOString(),
   };
+}
+
+/**
+ * B-EVIDENCIA-INDICE (§4.3) — apaga o objeto que ESTE envio acabou de gravar, melhor esforço. Se falhar, sobra um
+ * objeto sem linha (não é perda: o blob continua no app e o reenvio guarda de novo); o evento `orphan_object` nasce
+ * na trilha SEM a chave. A varredura de órfãos fica como pendência (§11).
+ */
+async function deleteOwnObjectBestEffort(
+  actor: AuthenticatedActor,
+  evidenceId: string,
+  clientEvidenceId: string,
+  storageKey: string,
+): Promise<void> {
+  try {
+    await evidenceWriteProvider().deleteObject({ storageKey });
+  } catch (error) {
+    logEvidenceStorageFailure(error);
+    recordEvidenceAuditEvent({
+      action: "evidence.upload.orphan_object",
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      evidenceId,
+      outcome: "failure",
+      metadata: { client_evidence_id: clientEvidenceId, reason: "cleanup_failed" },
+    });
+  }
 }
 
 /**
