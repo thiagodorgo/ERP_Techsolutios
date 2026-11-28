@@ -14260,10 +14260,11 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA (2026-11-11) — a tela de módulos da organização mostra "habilitado" e não avisa do 409 — MÉDIA
 
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (o 409 nasce no `B-SAN3-18`; a tela é anterior) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **status:** FECHADA (PR #646, Emenda 1.6; prova: FM1 a FM4 verdes no CI do head final) · **escopo:** `dentro-do-bloco` (o 409 nasce no `B-SAN3-18`; a tela é anterior) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
 - **origem:** R2-03 da crítica r2 do plano, opção (a): sem abrir front num bloco de permissão. O §0 item 6 do plano v2 vale como "a tela continua mostrando a lista antiga e não avisa do 409".
 - **prova:** `frontend/src/modules/platform/pages/PlatformTenantModulesPage.tsx:44-47` — `saveModules()` sem `try/catch`; o selo "habilitado" sai do estado LOCAL (l.83). Com o 409 a promessa rejeita sem nada na tela, e o GET da mesma tela lê o repositório em memória, não `tenants.modules`.
 - **teste de encerramento:** a tela mostra o estado de erro (§7) no 409 e avisa que os módulos mudam pela assinatura; o selo sai da resposta do servidor.
+- **apenso de fechamento (27/11, Emenda 1.6 do `B-PLAT-ORG-REAL`, PR #646):** a prova acima fica como estava, é do estado anterior da tela. A cláusula da E1.6.2 põe `applyServerModules` na página: o 200 recarrega o selo e a chave com a lista que o servidor devolveu, e qualquer falha devolve o selo à última lista lida do servidor. O 409 `module_change_requires_subscription` mostra "Alteração não concluída" e o aviso da assinatura; 400, 422 e 409 de outro motivo dizem "Não foi possível salvar os módulos. Nada foi alterado."; rede caída e 5xx dizem "Não foi possível confirmar se os módulos foram salvos. Recarregue a página para ver a situação atual.", porque o resultado é desconhecido. Evidência: `frontend/tests/plat-org-modulos.smoke.test.tsx`, FM1 a FM4, página real com dublê só na fronteira HTTP — sem a cláusula `# tests 4 # fail 4` (por comportamento), com a cláusula `# pass 4 # fail 0` no worktree, e verdes no CI do head final. O que ficou de fora da cláusula está na `P-PLAT-ORG-MODULOS-TELA-RESTOS`.
 
 ## P-SAN3-18-PORTAL-SEM-GATE (2026-11-11) — os portais do proprietário e da autoridade ficam fora do gate de módulo — BAIXA
 
@@ -18268,3 +18269,11 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA de dado na tela da Cobrança (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de backend pequeno, agendado sem data (`D-DONO-2511-COBRANCA-AGENDADA`) · **bloqueia:** não.
 - **origem:** tela da Cobrança da plataforma: o quadro "Demonstrativos por mês e situação" está marcado como "ainda não vem do servidor" — a série mensal não existe no servidor. Agendado pelo dono em 25/11: *"agenda isso aí, deixa documentado, depois nós vamos fazer"*.
 - **critério de encerramento:** a série mensal por mês e situação é servida pelo servidor e o quadro passa a consumi-la, sem o aviso "ainda não vem do servidor".
+
+## P-PLAT-ORG-MODULOS-TELA-RESTOS (2026-11-27) — o que a cláusula de módulos da organização não cobriu — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de tela · **escopo:** resíduo da Emenda 1.6 do `B-PLAT-ORG-REAL` (PR #646) · **dono:** o orquestrador, que a passa ao próximo bloco de tela da plataforma · **bloqueia:** não.
+- **origem:** E1.6.2 da Emenda 1.6. A cláusula cobre o selo, a chave e as mensagens depois do PATCH; os cinco pontos abaixo ficam de fora dela, de propósito. As linhas citadas são as do head final do PR #646 em `frontend/src/modules/platform/pages/PlatformTenantModulesPage.tsx`.
+- **itens:** (1) a l.28 mostra o texto cru do erro de rede; (2) a l.65 chama qualquer falha do GET de "Módulos não encontrados"; (3) a lista vazia sai sem pedir confirmação, e com o `B-PLANOS-MODULOS` isso desliga tudo — é decisão de produto e vai ao dono num cartão da página de decisões, não trava o PR-b; (4) o botão Salvar (l.78) não se desliga durante o envio, então um duplo clique gera dois PATCH (leitura do código, não medido); (5) não há aviso de sucesso depois do 200.
+- **anterioridade:** os itens 1 e 2 já existiam antes do bloco (na base `8719cf045`, l.31 e l.57).
+- **critério de encerramento:** cada item tem conserto com teste de tela, ou decisão registrada do dono que o dispensa; o item 3 só fecha com a resposta do dono.

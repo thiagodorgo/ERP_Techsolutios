@@ -6837,3 +6837,7 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 
 - **Fato (palavras do dono):** em 27/11 09:43, *"Você caiu por limite, passou um dia dormindo, agora eu quero retornar. […] Faça um plano e me retorne. Não comece nada sem minha [autorização]."*; em 09:58, *"pomece a fase 0"*; em 12:10, *"aprovo"* (o plano de retomada, fases 1 a 4).
 - **Efeito:** a retomada acontece em fases. A fase 0 (só medição e limpeza) foi feita às 10:04: a conferência do ajuste das maquetes do login, a limpeza da rodada (bancos descartáveis e worktrees mortos), o checklist do roteiro e o artefato de estado atualizados. As fases 1 a 4 do plano de retomada foram aprovadas às 12:10; nada foi lançado antes da autorização do dono.
+
+## D-PLAT-ORG-B-E16-SUBTITULO-DA-MAQUETE (2026-11-27 SP) — no subtítulo da lista de organizações vale a maquete aprovada
+
+- **Conflito §A2 registrado (Emenda 1.6 do `B-PLAT-ORG-REAL`, PR #646):** a referência `docs/claude-code-handoff/screen-refs/platform-nova-organizacao.reference.html` divergia da maquete do lote aprovada pelo dono em 24/11 no subtítulo da lista (`Cadastros, grupos e situação das organizações clientes.` contra `Cadastros e situação das organizações clientes, filiais de cada grupo`); vale a maquete aprovada, e a página, a referência e o fluxo e2e passam a usar o texto dela.
