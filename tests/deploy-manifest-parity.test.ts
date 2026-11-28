@@ -268,6 +268,11 @@ const PROD_BASELINE: Record<string, string> = {
   PORTAL_AUTHORITY_SESSION_SECRET: "a-real-production-authority-session-secret",
   PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
   PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
+  // B-EVIDENCIA-DURAVEL — a trava G-STORAGE-DURAVEL do env.ts: produção só sobe com o armazenamento durável da D-014.
+  CHECKLIST_STORAGE_PROVIDER: "s3",
+  CHECKLIST_STORAGE_S3_BUCKET: "erp-teste-evidencia",
+  CHECKLIST_STORAGE_S3_REGION: "us-east-1",
+  CHECKLIST_STORAGE_S3_ENDPOINT: "https://s3.us-east-1.amazonaws.com",
 };
 
 /** Chave a chave: remover do baseline faz o schema REJEITAR? Então ela é EXIGIDA em produção. */

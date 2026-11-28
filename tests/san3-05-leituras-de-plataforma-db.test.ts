@@ -146,8 +146,8 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/tenants/:tenantId`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`PATCH ${P}/tenants/:tenantId`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`PATCH ${P}/tenants/:tenantId/status`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
-  [`GET ${P}/tenants/:tenantId/modules`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
-  [`PATCH ${P}/tenants/:tenantId/modules`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
+  [`GET ${P}/tenants/:tenantId/modules`, S("FORCE-POR-TENANT", ["tenant_subscriptions"], "a assinatura em vigor lida sob withTenantRls decide blocked_by_plan (B-PLANOS-MODULOS)")],
+  [`PATCH ${P}/tenants/:tenantId/modules`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "audit_logs"], "assinatura lida e trilha da organização gravada sob o GUC dela, 1ª instrução da transação (B-PLANOS-MODULOS)")],
   [`POST ${P}/tenants/:tenantId/admin-user`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   // B-ASS-08b — a rota de INFRA do webhook dos provedores (fora de /api/v1, sem módulo, sem ator): também entra na lista
   // fechada, lida do router em runtime pelo prefixo `WEBHOOK` (T11g). Grava só a tabela GLOBAL de eventos; a organização sai
@@ -447,6 +447,21 @@ if (!connectionString) {
         const tenantDetail = await http("GET", `${P}/tenants/${cenario.tenantA}/detail`);
         assert.equal(tenantDetail.status, 200, JSON.stringify(tenantDetail.body));
         registrarRota(`GET ${P}/tenants/:tenantId/detail`, tenantDetail.body.data);
+
+        // B-PLANOS-MODULOS — as 2 rotas de módulos leem a assinatura (FORCE) sob o GUC da organização: A (com assinatura em
+        // vigor) sai blocked_by_plan e a porta recusa 409; B (sem assinatura) grava e deixa a trilha em audit_logs (FORCE).
+        // Sem o contexto, o efêmero leria "sem assinatura" em A (porta aberta) e não gravaria a trilha de B. B volta ao seed.
+        const modulosA = await http("GET", `${P}/tenants/${cenario.tenantA}/modules`);
+        assert.equal(modulosA.status, 200, JSON.stringify(modulosA.body));
+        registrarRota(`GET ${P}/tenants/:tenantId/modules`, modulosA.body.data);
+        const recusaA = await http("PATCH", `${P}/tenants/${cenario.tenantA}/modules`, { enabledModules: ["work_orders"] });
+        const gravaB = await http("PATCH", `${P}/tenants/${cenario.tenantB}/modules`, { enabledModules: ["work_orders"] });
+        assert.equal(gravaB.status, 200, JSON.stringify(gravaB.body));
+        const trilhaB = await admin.auditLog.count({ where: { tenant_id: cenario.tenantB, action: "tenant.modules_changed" } });
+        registrarRota(`PATCH ${P}/tenants/:tenantId/modules`, { recusaA: { status: recusaA.status, reason: (recusaA.body.error as { reason?: string } | undefined)?.reason ?? null }, gravaB: gravaB.body.data, trilhaB });
+        await admin.tenant.update({ where: { id: cenario.tenantB }, data: { modules: [] } });
+        await admin.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = $1::uuid AND action = 'tenant.modules_changed'`, cenario.tenantB);
+        await admin.platformAuditLog.deleteMany({ where: { tenant_id: cenario.tenantB, action: "organization.modules_changed" } });
 
         // B-ASS-09 — as 7 rotas FORCE da visão e dos grupos. O estado de B e o nome do grupo T voltam ao do seed antes de
         // cada papel; os corpos se recortam às 2 organizações e aos 2 grupos do seed (a base é compartilhada na CI).

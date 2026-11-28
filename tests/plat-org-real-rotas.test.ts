@@ -31,7 +31,7 @@ test("R5 — id que não é UUID recebe 404 sem consultar outro cadastro", async
   });
 });
 
-test("R2/R4/R8 — criação usa UUID, campos imutáveis recusam e módulos seguem pela assinatura", async () => {
+test("R2/R4/R8 — criação usa UUID, campos imutáveis recusam e módulos pela plataforma enquanto não há assinatura", async () => {
   await withApi(async (baseUrl) => {
     const created = await request(baseUrl, "/api/v1/platform/tenants", {
       method: "POST",
@@ -54,8 +54,11 @@ test("R2/R4/R8 — criação usa UUID, campos imutáveis recusam e módulos segu
       method: "PATCH",
       body: { enabledModules: ["finance"] },
     });
-    assert.equal(modules.status, 409, JSON.stringify(modules.body));
-    assert.equal(modules.body.error?.reason, "module_change_requires_subscription");
+    assert.equal(modules.status, 200, JSON.stringify(modules.body));
+    assert.deepEqual(
+      (modules.body.data as Array<{ key: string; status: string }>).filter((item) => item.status === "enabled").map((item) => item.key),
+      ["finance"],
+    );
   });
 });
 
