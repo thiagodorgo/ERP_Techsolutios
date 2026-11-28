@@ -12,8 +12,8 @@ export async function entrarPelaTela(page: Page, email: string, password: string
   const responsePromise = page.waitForResponse(
     (response) => response.url().endsWith("/api/v1/auth/login") && response.request().method() === "POST",
   );
-  await page.getByLabel("E-mail corporativo").fill(email);
-  await page.getByLabel("Senha").fill(password);
+  await page.getByLabel("E-mail", { exact: true }).fill(email);
+  await page.getByLabel("Senha", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   const response = await responsePromise;
   test.info().annotations.push({ type: "e2e-login", description: email });

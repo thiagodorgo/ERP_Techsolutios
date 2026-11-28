@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1467** |
-| IDs distintos | 1452 |
-| **ABERTAS** | **1126** |
+| Cabecalhos `## P-` | **1472** |
+| IDs distintos | 1457 |
+| **ABERTAS** | **1131** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **1065** |
+| — das quais **ativas nesta rodada** | **1070** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 337 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1467 cabecalhos para 1452 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1472 cabecalhos para 1457 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 436
+## ABERTAS · balde A — material — 438
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -507,11 +507,13 @@
 | `P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO` | 18250 | MÉDIA | sim | P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO (2026-11-25) — a saúde diz que o login sem organizaç |
 | `P-WEB-CONSOLE-CELULAR` | 18257 | MÉDIA | sim | P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computad |
 | `P-MARCA-DESIGN-SYSTEM` | 18263 | MÉDIA | sim | P-MARCA-DESIGN-SYSTEM (2026-11-25) — a base de design ainda diz "azul industrial", contr |
-| `P-COBRANCA-DEMONSTRATIVOS-POR-MES` | 18275 | MÉDIA | sim | P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situ |
-| `P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT` | 18302 | MÉDIA | sim | P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT (2026-11-27) — o teardown de `tests/leilao |
-| `P-CLAMAV-FRESHCLAM-SO-NO-BOOT` | 18335 | ALTA | sim | P-CLAMAV-FRESHCLAM-SO-NO-BOOT (2026-11-27) — a base do antivírus só é checada no boot do |
+| `P-COBRANCA-DEMONSTRATIVOS-POR-MES` | 18276 | MÉDIA | sim | P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situ |
+| `P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT` | 18303 | MÉDIA | sim | P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT (2026-11-27) — o teardown de `tests/leilao |
+| `P-PLAT-CONTADOR-COBRANCA-VENCIDA` | 18336 | MÉDIA | sim | P-PLAT-CONTADOR-COBRANCA-VENCIDA (2026-11-27) — o contador de cobranças vencidas no menu |
+| `P-PLAT-AVISOS-SEM-FONTE` | 18342 | MÉDIA | sim | P-PLAT-AVISOS-SEM-FONTE (2026-11-27) — o sino do console da plataforma não tem serviço d |
+| `P-CLAMAV-FRESHCLAM-SO-NO-BOOT` | 18366 | ALTA | sim | P-CLAMAV-FRESHCLAM-SO-NO-BOOT (2026-11-27) — a base do antivírus só é checada no boot do |
 
-## ABERTAS · balde B — processo/registro — 629
+## ABERTAS · balde B — processo/registro — 632
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1134,16 +1136,19 @@
 | `P-COMISSAO-M18-ANCORA` | 18190 | BAIXA | sim | P-COMISSAO-M18-ANCORA (2026-11-24) — âncora da M18 da comissão com múltiplas ocorrências |
 | `P-DNS-TTL-300` | 18208 | BAIXA | sim | P-DNS-TTL-300 (2026-11-24) — os 17 registros copiados ficaram com TTL de 5 min — BAIXA |
 | `P-UI-BUTTON-FOCO-VISIVEL` | 18238 | BAIXA | sim | P-UI-BUTTON-FOCO-VISIVEL (2026-11-24) — `.ui-button` sem foco visível próprio — BAIXA |
-| `P-MARCA-LOGO-SEM-SITE` | 18269 | BAIXA | sim | P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do si |
-| `P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS` | 18281 | BAIXA | sim | P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS (2026-11-27) — em modo memória, a porta de módulo |
-| `P-PLANOS-MODULOS-PORTA-COM-ASSINATURA` | 18288 | BAIXA | sim | P-PLANOS-MODULOS-PORTA-COM-ASSINATURA (2026-11-27) — com assinatura em vigor, só o plano |
-| `P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05` | 18295 | BAIXA | sim | P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05 (2026-11-27) — 6 rotas do console de organiza |
-| `P-EVIDENCIA-METADADO-EM-MEMORIA` | 18308 | — | sim | P-EVIDENCIA-METADADO-EM-MEMORIA (2026-11-27) — o metadado aceito da evidência e a trilha |
-| `P-STORAGE-FORCE-PATH-STYLE-COERCE` | 18316 | BAIXA | sim | P-STORAGE-FORCE-PATH-STYLE-COERCE (2026-11-27) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
-| `P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA` | 18322 | BAIXA | sim | P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA (2026-11-27) — o painel de KPI cita o provedor da ev |
-| `P-EVIDENCIA-TRILHA-SANEADOR-CHAVES` | 18328 | BAIXA | sim | P-EVIDENCIA-TRILHA-SANEADOR-CHAVES (2026-11-27) — o saneador da trilha da evidência não  |
-| `P-ITEM27-TRILHA-ORG-SEM-ATOR` | 18343 | BAIXA | sim | P-ITEM27-TRILHA-ORG-SEM-ATOR (2026-11-27) — a trilha `tenant.modules_changed` da organiz |
-| `P-PLANO-SAN3-TABELA-41-SEM-MARCA` | 18351 | BAIXA | sim | P-PLANO-SAN3-TABELA-41-SEM-MARCA (2026-11-28) — a tabela do §4.1 do portão não sustenta, |
+| `P-MARCA-LOGO-SEM-SITE` | 18270 | BAIXA | sim | P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do si |
+| `P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS` | 18282 | BAIXA | sim | P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS (2026-11-27) — em modo memória, a porta de módulo |
+| `P-PLANOS-MODULOS-PORTA-COM-ASSINATURA` | 18289 | BAIXA | sim | P-PLANOS-MODULOS-PORTA-COM-ASSINATURA (2026-11-27) — com assinatura em vigor, só o plano |
+| `P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05` | 18296 | BAIXA | sim | P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05 (2026-11-27) — 6 rotas do console de organiza |
+| `P-EVIDENCIA-METADADO-EM-MEMORIA` | 18309 | — | sim | P-EVIDENCIA-METADADO-EM-MEMORIA (2026-11-27) — o metadado aceito da evidência e a trilha |
+| `P-STORAGE-FORCE-PATH-STYLE-COERCE` | 18317 | BAIXA | sim | P-STORAGE-FORCE-PATH-STYLE-COERCE (2026-11-27) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
+| `P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA` | 18323 | BAIXA | sim | P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA (2026-11-27) — o painel de KPI cita o provedor da ev |
+| `P-EVIDENCIA-TRILHA-SANEADOR-CHAVES` | 18329 | BAIXA | sim | P-EVIDENCIA-TRILHA-SANEADOR-CHAVES (2026-11-27) — o saneador da trilha da evidência não  |
+| `P-PLAT-BUSCA-SEM-FUNCAO` | 18348 | BAIXA | sim | P-PLAT-BUSCA-SEM-FUNCAO (2026-11-27) — a busca do console da plataforma é só um desenho, |
+| `P-MARCA-SIDEBAR-BRANCA-PRETA` | 18354 | BAIXA | sim | P-MARCA-SIDEBAR-BRANCA-PRETA (2026-11-27) — a sidebar só tem desenho aprovado em grafite |
+| `P-DOCS-NOME-CUSTO-DA-NUVEM` | 18360 | BAIXA | sim | P-DOCS-NOME-CUSTO-DA-NUVEM (2026-11-27) — documentos vigentes ainda dizem "Cloud Billing |
+| `P-ITEM27-TRILHA-ORG-SEM-ATOR` | 18374 | BAIXA | sim | P-ITEM27-TRILHA-ORG-SEM-ATOR (2026-11-27) — a trilha `tenant.modules_changed` da organiz |
+| `P-PLANO-SAN3-TABELA-41-SEM-MARCA` | 18382 | BAIXA | sim | P-PLANO-SAN3-TABELA-41-SEM-MARCA (2026-11-28) — a tabela do §4.1 do portão não sustenta, |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

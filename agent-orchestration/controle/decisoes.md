@@ -6860,6 +6860,95 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 - **Leitura do orquestrador, declarada (§A6), a partir da medição do dev (P-DEV-1):** o `reset` dos testes apaga a raiz em texto configurada, zera a trilha e o scanner e MANTÉM a costura, porque os 4 arnês antigos configuram e logo depois chamam o `reset`, antes do envio. O "depois limpa a costura" do plano fica superado neste ponto.
 - **Pendências novas:** `P-EVIDENCIA-METADADO-EM-MEMORIA` (GRAVE, dono `B-EVIDENCIA-INDICE`), `P-STORAGE-FORCE-PATH-STYLE-COERCE` (BAIXA) e `P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA` (BAIXA); apenso na `P-SYNC-OS-RECIBO-EM-MEMORIA`.
 
+## D-DONO-2711-LOGIN-APROVADO-GRAFITE-CARTAO-BRANCO (2026-11-27 13:1x SP) — o login aprovado: a Grafite com o cartão branco
+
+> **Id dado no registro de fora do repositório (pelo orquestrador) e adotado pelo redator desta entrada (`dev-marca-cl`), declarado:** a aprovação veio no chat, com duas imagens, sem id.
+
+- **Fato (palavras do dono, com as duas imagens da tela de login: a web no computador e a web a 390 px):** *"essas telas foram aprovadas, temos que bolar mais duas na mesma vibe, as aprovadas + uma branca + uma preta, nada com o icone preto destonando no meio do fundo branco"*.
+- **Efeito:** a tela de login aprovada é a aparência C (Grafite) da maquete `login-web-patiosul.antes-ajuste.html` (fora do repositório): fundo `#3A3E3E`, o painel da marca em degradê grafite com a brasa e o filete, e o cartão BRANCO (`#FFFFFF`). Ficam aceitos os detalhes da maquete aprovada: o rótulo "E-mail", o recado ao administrador no "Esqueci minha senha" e a lista simples de organizações. **Supera** a `D-DONO-2511-MARCA-C-CARTAO-GRAFITE` (25/11, cartão grafite), porque a imagem aprovada tem o cartão branco (conflito C5 da `C-MARCA-LOGIN-SIDEBAR`, abaixo). A referência versionada é `docs/claude-code-handoff/screen-refs/login-patiosul.reference.html`, com o logo sem a linha do site (conflito C4).
+
+## D-DONO-2711-LOGIN-MAIS-BRANCA-E-PRETA (2026-11-27 13:1x SP; aprovadas às 16:46:54) — mais duas cores no login: a Branca e a Preta
+
+> **Id dado no registro de fora do repositório (pelo orquestrador) e adotado pelo redator desta entrada (`dev-marca-cl`), declarado.**
+
+- **Fato (palavras do dono, a mesma mensagem):** *"temos que bolar mais duas na mesma vibe, as aprovadas + uma branca + uma preta, nada com o icone preto destonando no meio do fundo branco"*. As duas foram montadas na maquete `login-v2-patiosul.html` (fora do repositório; aparências 2 e 3) e aprovadas pelo dono na página de decisões, resposta `login-v2-aprova` = "as-duas" (16:46:54).
+- **Efeito:** o login sai com as 3 cores do sistema: Grafite (de fábrica, `D-DONO-2511-MARCA-APARENCIA-PADRAO-C`), Branca e Preta. O cartão é branco nas três; mudam o fundo, o painel da marca e o logo. Na Branca, o logo de letras pretas entra sem moldura, misturado ao fundo claro (resposta `login-v2-q2`). As 3 são cores do SISTEMA, não 3 desenhos de tela (reconciliação com a `D-DONO-2011-UMA-TELA-POR-LOTE`: conflito C14, abaixo). Os valores de cada cor estão no `DESIGN_SYSTEM.md`, seção "Marca Pátio Sul ERP".
+
+## D-DONO-2711-SIDEBAR-MODELO-VIDEO (2026-11-27 14:2x SP) — a sidebar desta fase é a do vídeo aprovado
+
+> **Id dado no registro de fora do repositório (pelo orquestrador) e adotado pelo redator desta entrada (`dev-marca-cl`), declarado.**
+
+- **Fato (palavras do dono; o caminho da pasta vai abreviado):** *"em ~\Downloads\erp existe modelo.sidebar.mp4 com o modelo da sibebar aprovada para essa fase, verifique as telas de login aprovadas, estude o esquema de cores do sistema antigo, e faca uma maquete das telas da plataforma com esses novos engedientes, faca do login ate as telas da plataforma, quero ver como fica, analise a sidebar e suas divisoes, seus grupos de acoes, quero participar das decisoes de divisao destes botoes"*.
+- **Efeito:** o vídeo `modelo.sidebar.mp4` (7,7 s, 288 × 624; fora do repositório) é o modelo aprovado da sidebar nesta fase: painel de vidro escuro, solto da borda; em cima, o nome, o sino com contador e o botão de recolher; quem entrou e a busca; grupos com rótulo pequeno; a tela atual numa faixa de cor cheia; contadores vermelhos; o Sair no fim, no grupo geral; recolhida, um trilho de ícones. Os quadros do vídeo NÃO entram no repositório (produto de terceiro, com foto de pessoa). A maquete das telas da plataforma nesse modelo foi montada por um Claude (`D-DESIGN-SO-CLAUDE`), fora do repositório. O contrato foi emendado nos dois espelhos (§4 e §11 item 7): conflitos C1 e C2, abaixo.
+
+## D-DONO-2711-DIVISAO-DOS-BOTOES-COM-O-DONO (2026-11-27 14:2x SP) — a divisão dos botões da sidebar se decide com o dono
+
+> **Id dado no registro de fora do repositório (pelo orquestrador) e adotado pelo redator desta entrada (`dev-marca-cl`), declarado.**
+
+- **Fato (palavras do dono, a mesma mensagem):** *"analise a sidebar e suas divisoes, seus grupos de acoes, quero participar das decisoes de divisao destes botoes"*.
+- **Efeito:** os grupos e os botões da sidebar não são decididos pelo orquestrador nem pelo planejador: vão ao dono como pergunta. Foram as 9 perguntas `sb-01` a `sb-09`, respondidas em 27/11 entre 16:11 e 16:14 (`D-DONO-2711-MARCA-RESPOSTAS`, abaixo).
+
+## D-DONO-2711-LEGADO-ADIADO (2026-11-27, até 16:24 SP) — o banco legado fica para depois; o login novo e a sidebar vão para o que está em produção
+
+> **Id dado no registro de fora do repositório (pelo orquestrador) e adotado pelo redator desta entrada (`dev-marca-cl`), declarado:** a decisão veio no chat, sem id. Naquele registro, a segunda frase tem também o id `D-DONO-2711-LOGIN-E-SIDEBAR-EM-PRODUCAO`; aqui as duas frases ficam numa entrada só, porque são uma mensagem só.
+
+- **Fato (palavras do dono; o vocativo do início foi omitido):** *"o legado vamos adiar. Vamos fazer o login novo e a sidebar no que nós já temos em produção."*; e, às 16:50, *"respondi às perguntas lá no artefato. Vamos deixar o banco legado por fora. Vamos tratar esses assuntos primeiro."*
+- **Efeito:** o plano de adequação ao banco legado fica adiado: as 9 perguntas dele e a crítica independente saíram da fila de decisões, e nenhum bloco do legado começa até a ordem do dono. O login novo (as 3 cores) e a sidebar do vídeo vão para o sistema que já está em produção. **Leitura do orquestrador, declarada (§A6):** "em produção" é o web; o app de campo (Flutter) fica como próximo passo. Daí nasce o bloco `B-MARCA-LOGIN-SIDEBAR`.
+
+## D-DONO-2711-MARCA-RESPOSTAS (2026-11-27 16:10 a 16:47 SP) — as 13 respostas do login e da sidebar
+
+> **Id dado pelo redator desta entrada (`dev-marca-cl`), declarado:** as respostas vieram pela página de decisões do dono (fora do repositório; só o dono grava), cada uma com o id da pergunta e a hora; a fonte não deu id ao conjunto.
+
+- **Fonte:** a página de decisões do dono, transcrita pelo orquestrador no registro de fora do repositório e no plano do `B-MARCA-LOGIN-SIDEBAR` (Emenda 1). Às 16:50 o dono avisou: *"respondi às perguntas lá no artefato."*
+- **As respostas, com a hora de São Paulo:**
+
+| Pergunta | O que decide | Resposta do dono | Hora |
+|---|---|---|---|
+| `login-v2-aprova` | a Branca e a Preta | "as-duas": aprovadas a Branca e a Preta | 16:46:54 (versão 2 da resposta) |
+| `login-v2-q1` | o "(aprovada)" no seletor | "sem": os rótulos ficam "Grafite", "Branca" e "Preta" | 16:46:58 (versão 2) |
+| `login-v2-q2` | o logo na Branca | "pretas": o logo de letras pretas, sem moldura, até vir o logo certo | 16:10:34 |
+| `login-v2-q3` | o logo na abertura do app | "inteiro": o logo inteiro na abertura do app de campo | 16:10:43 |
+| `sb-01` | os grupos do menu da plataforma | "A", por assunto | 16:11:06 |
+| `sb-02` | as 4 telas sem dado | "esconder" (ver a nota abaixo) | 16:12:39 |
+| `sb-03` | a cor do item ativo | "amarelo" | 16:12:49 |
+| `sb-04` | a busca e o sino | "sidebar" | 16:13:11 |
+| `sb-05` | o nome e o Sair | "topo": o nome em cima e o Sair no fim | 16:13:37 |
+| `sb-06` | quais botões têm contador | os 4: "org, cob, saude e sino" | 16:13:55 |
+| `sb-07` | a sidebar solta ou colada | "flutua": solta da borda | 16:14:06 |
+| `sb-08` | o nome "Cloud Billing" | "custo": o rótulo na tela passa a "Custo da nuvem" | 16:14:14 |
+| `sb-09` | as cores do banco antigo | "print": o dono manda um print do sistema antigo | 16:14:31 |
+
+- **A `sb-02`:** a resposta é "esconder", com a nota literal do dono *"mostrar um seletor para a e b"*. A pergunta de confirmação da nota está aberta no cartão `sb-02-seletor` da página de decisões, sem resposta (conflito C15, abaixo).
+- **O que as outras respostas mudam (plano do bloco, Emenda 1):** `login-v2-q3` é do bloco do app de campo e não muda o web. `sb-01`: o menu do console da plataforma por assunto (Início, Clientes, Dinheiro, Sistema; o Sair à parte, no grupo Geral); no shell da organização, os grupos de hoje ficam. `sb-03`: o item ativo em amarelo `#FDC300`, com texto `#1A1A1A`. `sb-04`: a barra de cima sai, e a busca e o sino vão para a sidebar. `sb-06`: só entra contador com número real (regra C11): o das organizações aguardando ativação e o ponto da saúde entram; a cobrança vencida e o sino do console viram `P-PLAT-CONTADOR-COBRANCA-VENCIDA` e `P-PLAT-AVISOS-SEM-FONTE`. `sb-07`: a sidebar solta, de vidro, com o conteúdo num cartão claro. `sb-08`: a troca do rótulo vai num PR próprio e pequeno; a rota, as chaves técnicas e o nome dos arquivos não mudam. `sb-09`: nenhum código agora; se o print mostrar cor diferente, entra uma emenda só de valores de token.
+
+## C-MARCA-LOGIN-SIDEBAR (registro de CONFLITO, §A2, 2026-11-27) — os 17 conflitos do plano do `B-MARCA-LOGIN-SIDEBAR`
+
+> **Id dado pelo redator desta entrada (`dev-marca-cl`), declarado.** No registro de fora do repositório, os conflitos C1 e C2 apareciam como `C-SIDEBAR-MODELO-2711`. Fonte: o plano do bloco (fora do repositório; seção 3, conflitos C1 a C11, e Emenda 2, conflitos C12 a C17) e a nota do orquestrador de 27/11 18:07.
+
+- **Regra aplicada (§A2):** todos os lados ficam registrados antes de consolidar; onde a decisão do dono resolve, vale a decisão do dono (§A1); o que está aberto fica aberto.
+
+| # | De um lado | Do outro | Como fica |
+|---|---|---|---|
+| C1 | `CLAUDE.md` e `AGENTS.md`, §4: "sidebar 236px (navy) + topbar 60px" | `D-DONO-2711-SIDEBAR-MODELO-VIDEO` (vidro grafite, solto da borda) e a resposta `sb-04` = "sidebar" (sem barra de cima) | Vale a decisão do dono. **Emendado neste registro**, nos dois espelhos, com o mesmo texto |
+| C2 | `CLAUDE.md` e `AGENTS.md`, §11 item 7: "grupos e ordem exatos (PRINCIPAL / PLATAFORMA…), item ativo azul sólido, ícone e texto brancos" | o modelo aprovado e as respostas `sb-01` (grupos por assunto) e `sb-03` (ativo amarelo) | **Emendado neste registro**: grupos conforme a referência aprovada; ativo em faixa amarela cheia, com texto escuro |
+| C3 | o contrato: os contadores permanecem com a sidebar recolhida | o código de hoje esconde o contador na recolhida (`frontend/src/layouts/AppShell.tsx`) | Desvio que já existia; o modelo novo mostra o contador no trilho. Conserta a fatia S1 do bloco |
+| C4 | `D-DONO-2511-MARCA-LOGO-SEM-SITE`: "até ela chegar, usar o logo como está" | o repositório é público, e o logo traz o endereço do site do cliente | Entra o logo **recortado**, sem a linha do site; só nisso difere da imagem aprovada. Relato do orquestrador (não é citação do dono): o dono leu o aviso às ~16:28 e não se opôs. Fecha com `P-MARCA-LOGO-SEM-SITE` |
+| C5 | `D-DONO-2511-MARCA-C-CARTAO-GRAFITE` (25/11): cartão grafite | `D-DONO-2711-LOGIN-APROVADO-GRAFITE-CARTAO-BRANCO` (27/11): cartão branco | Vale a mais nova; a de 25/11 está **superada** |
+| C6 | `docs/claude-code-handoff/screen-refs/README.md`: o único login das referências é o `login.png` | a imagem aprovada em 27/11 | Exceção no índice das referências e no §11, **neste registro**: o login web tem como referência `login-patiosul.reference.html` |
+| C7 | `DESIGN_SYSTEM.md` ("deep industrial blue") e a skill `ui-ux-pro-max` ("Paleta fixa: azul industrial profundo") | a marca nova | É a `P-MARCA-DESIGN-SYSTEM`. **Neste registro**: a base e a skill, nos dois espelhos de skills. A pendência continua aberta para o resto |
+| C8 | §4 item 7: toda tela sai com 3 aparências (A, B e C) por usuário | no login, as 3 são cores do SISTEMA (Grafite, Branca e Preta), e antes do login não há usuário | **Leitura do planejador, declarada (§A6):** no login, as 3 aparências são as 3 cores de `D-DONO-2511-MARCA-PATIOSUL`. A escolha fica no navegador (uma guarda do aparelho e uma pessoal); guardar no servidor é bloco posterior |
+| C9 | a maquete da sidebar: item de 40 px, botões de 32 e 24 px | o alvo de toque de 44 px | Produção usa 44 px de área de clique; diferença pequena, declarada |
+| C10 | a maquete monta os itens do menu como botões | em produção são links, e o e2e os procura como link | Ficam links; a aparência é a mesma |
+| C11 | a maquete mostra números de exemplo nos contadores | a regra do sistema: contador só com dado real; zero não aparece | Só número real. Sem fonte, sem contador |
+| C12 | o plano: editar o guarda `san3-06b` sobe para junta, em qualquer fatia | a Emenda 1 do plano editava o guarda numa fatia de revisão reforçada | Erro da Emenda 1, corrigido na Emenda 2: a mudança grande do guarda só existe na fatia do seletor (S2b), em **junta completa**, e só se a resposta do cartão `sb-02-seletor` pedir o seletor |
+| C13 | `CLAUDE.md`, regras da AWS: ato irreversível ou com custo na AWS segue o roteiro e, em produção, a junta de 5 (§C7.1) | o plano dispensava a junta de 5 na publicação, por leitura do planejador | **Ninguém escolhe um lado.** A pergunta foi ao dono no cartão `c13-publicacao` (27/11). O primeiro passo da publicação que toca a AWS espera a resposta |
+| C14 | `D-DONO-2011-UMA-TELA-POR-LOTE` (20/11): tela nova sai UMA, sem as 3 aparências | as 3 cores do login | **Reconciliação:** as 3 cores do login se sustentam na aprovação direta do dono em 27/11 (`D-DONO-2711-LOGIN-MAIS-BRANCA-E-PRETA`) e na `D-DONO-2511-MARCA-PATIOSUL` ("três modelos de cores do sistema"): são cores do SISTEMA, não 3 desenhos de tela. A regra de 20/11 continua valendo para as telas novas: a sidebar sai UMA (o modelo do vídeo), sem 3 opções |
+| C15 | a resposta `sb-02` ("esconder"), com a nota "mostrar um seletor para a e b" | a leitura "a = esconder, b = Em breve, por usuário", que não tem evidência literal (as opções da pergunta eram esconder, breve e normal) | **Dúvida aberta, não decisão.** Espera o cartão `sb-02-seletor`. Antes da resposta, nenhuma decisão do seletor e nenhuma exceção ao §11 item 2 entram no registro |
+| C16 | o plano: o web de produção vai por S3 e CloudFront (roteiro da AWS, passo 4.7) | um segundo caminho versionado: `frontend/fly.production.toml` ("INERTE até ativação") e o passo "Deploy Web (Fly production)" do workflow de produção | Não medido qual está no ar. O primeiro passo da publicação confere, sem tocar a AWS, antes de qualquer envio |
+| C17 | o plano: editar o guarda `san3-06b` sobe para junta | a resposta `sb-01` = "A" muda o nome do primeiro grupo do menu da plataforma, e uma linha do guarda crava o nome antigo (`PRINCIPAL`) | **Decidido pelo orquestrador em 27/11 18:07 (leitura declarada, §C7 item 10(2)):** a fatia S2 fica em revisão reforçada só se o diff do guarda for um único trecho, de 1 linha, que troca só esse nome, e se a trava automática não acusar banco, permissão, autenticação, isolamento nem escrita financeira; se uma das duas falhar, sobe para junta completa. A 2ª rodada da crítica do plano validou a leitura |
+
+- **status:** C1, C2, C5, C6 e C7 (na parte da base e da skill) resolvidos neste registro; C3, C9, C10 e C11 se resolvem nas fatias de tela do bloco; C4 aberto até o logo sem o site; C8 e C14 reconciliados por leitura declarada; C12 e C17 decididos; **C13 e C15 ABERTOS, com o dono**; C16 conferido no primeiro passo da publicação.
+
 ## D-DONO-2711-PLANO-LEGADO (2026-11-27 13:2x SP) — o dono pede o plano de adequação do projeto ao banco de dados legado
 
 > **Entrada criada no conserto do #654 (`reg-2711b-fix-qw`) para resolver a referência pendurada — achados F18 e H6 da revisão `rev-654-cl`.** O ID já era citado pela `D-DONO-2711-LEGADO-ADIADO`, mas não tinha entrada em ref nenhuma: `git grep` dá **0** na base `f657162be`, **0** no head dos PRs abertos da noite e **1** no head `41abc1320` (a própria citação). **A fala do dono é de 13:2x, ANTES da l.5960, onde começa a janela do mandato do redator original** — por isso a entrada não nasceu na 1ª redação, e o ID ficou prometendo o que não existia. Fonte: registro do orquestrador fora do repositório (`~/erp-pausa-2026-10-03/REGISTRO-PENDENTE.md`, l.5957, e l.6017 para a publicação).

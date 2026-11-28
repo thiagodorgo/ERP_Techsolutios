@@ -83,7 +83,7 @@ test("T-APAR-1 (a) o menu do shell da organização não lista \"Cloud Billing\"
   const { container, unmount } = await mount(providers(h("div", { role: "menu" }, h(AppearanceChoices, { onChosen: () => undefined }))));
   try {
     const html = text(container);
-    assert.doesNotMatch(html, /Cloud Billing/);
+    assert.doesNotMatch(html, /Custo da nuvem/);
     const tenantScreens = APPEARANCE_SCREENS.filter((screen) => (screen.scope ?? "tenant") === "tenant");
     assert.ok(tenantScreens.length >= 5, `telas de organização no registro: ${tenantScreens.length}`);
     assert.equal(radios(container).length, 3 * tenantScreens.length, "3 opções por tela de organização, nenhuma de plataforma");
@@ -107,11 +107,11 @@ test("T-APAR-1 (b) o PlatformLayout, montado e aberto pelo gatilho, lista só as
       (propsOf(triggers[0]).onClick as () => void)();
     });
     const options = radios(container).map((el) => text(el).replace(/padrão$/, "").trim());
-    assert.deepEqual(options, PLATFORM_LABELS, "só as opções das telas de plataforma (Cloud Billing e Cobrança)");
+    assert.deepEqual(options, PLATFORM_LABELS, "só as opções das telas de plataforma (Custo da nuvem e Cobrança)");
     assert.match(text(radios(container)[0]), /padrão$/, "a A é o padrão da tela");
     assert.match(text(radios(container)[3]), /padrão$/, "a A é o padrão da Cobrança");
     const groups = elements(container, (el) => (el.getAttribute("id") ?? "").startsWith("aparencia-")).map((el) => text(el).trim());
-    assert.deepEqual(groups, ["Cloud Billing", "Cobrança"], "um grupo por tela de plataforma");
+    assert.deepEqual(groups, ["Custo da nuvem", "Cobrança"], "um grupo por tela de plataforma");
     assert.match(text(container), /no console da plataforma/);
   } finally {
     await unmount();

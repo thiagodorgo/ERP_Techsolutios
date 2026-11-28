@@ -207,14 +207,16 @@ inicial e blocos exclusivos, e vem da **sessão/claims** — nunca de seletor de
 
 ## 4. Web (React em `frontend/`)
 
-Siga o roteamento, a camada de dados e o design system atuais do `frontend/`. Shell: sidebar
-236px (navy) + topbar 60px; colapsa para 74px (labels somem, ícones centralizados, badges
-permanecem). Ícones: **lucide-react**. **37 telas web** em 5 papéis — índice completo em
+Siga o roteamento, a camada de dados e o design system atuais do `frontend/`. Shell: sidebar de 236 px,
+sem barra de cima; a busca e o sino ficam na sidebar. A sidebar recolhe para 74 px (os rótulos somem, os
+ícones centralizam, os contadores permanecem). A pele é a do modelo aprovado em 27/11/2026
+(`D-DONO-2711-SIDEBAR-MODELO-VIDEO`): painel de vidro grafite, solto da borda, com os tokens `--ps-*` do
+`DESIGN_SYSTEM.md`. Ícones: **lucide-react**. **37 telas web** em 5 papéis — índice completo em
 `Catálogo de Telas e Endpoints.dc.html` (Parte 1); ordem em `BUILD_ORDER.md`.
 
-**Telas bespoke (referência de qualidade):** Cloud Billing · Visão Geral da Plataforma ·
-Dashboard Operacional · OS Lista · OS Detalhe · Despachos · Estoque · Organizações · Detalhe da
-Organização · Console Dispatcher · Cobranças.
+**Telas bespoke (referência de qualidade):** Cloud Billing (rótulo na tela: Custo da nuvem, decisão do dono de 27/11) ·
+Visão Geral da Plataforma · Dashboard Operacional · OS Lista · OS Detalhe · Despachos · Estoque · Organizações ·
+Detalhe da Organização · Console Dispatcher · Cobranças.
 
 **Tela nova segue o padrão que JÁ EXISTE no sistema: nada de tela do zero** (decisão do dono, 2026-10-11,
 `D-TELAS-SEGUEM-O-PADRAO`). Nas palavras do dono: *"a construção de novas telas tem que acompanhar o padrao do sistema, importante usar as skills de frontend e deixar clarificado que o padrao que ja ha no sistema deve ser seguido, nada de fazer novas telas do inicio. documente e espalhe esse requesito"*.
@@ -1030,8 +1032,8 @@ Regras de fidelidade (aprendidas de uma entrega que divergiu do modelo):
    cor certa: azul plataforma · verde sucesso · âmbar atenção · vermelho crítico · roxo receita).
 6. **Composição completa** — se a referência tem gráficos, painel "O que mudou?" (IA) e tabela de
    recursos, **todos** entram. Não reduza a tela a "KPIs + tabela".
-7. **Sidebar** — grupos e ordem exatos (PRINCIPAL / PLATAFORMA…), item ativo azul sólido, ícone e
-   texto brancos; colapso 236→74px preserva ícones e badges.
+7. **Sidebar** — grupos e ordem conforme a referência aprovada; item ativo em faixa amarela cheia, com texto escuro;
+   o recolhimento de 236 para 74 px preserva ícones e contadores.
 
 Referências disponíveis (índice completo em **`screen-refs/README.md`**):
 - **`screen-refs/web/`** — **35 PNGs** (todas as telas do ERP Web, agrupadas por papel: Plataforma,
@@ -1041,6 +1043,8 @@ Referências disponíveis (índice completo em **`screen-refs/README.md`**):
   (`docs/juntas/J-TELAS-PADRONIZADAS.md`), não os PNGs — ver o índice `docs/claude-code-handoff/screen-refs/README.md`.
   **Exceção (decisão do dono, 2026-10-12, `D-PADRAO-BLOCOS-CLICAVEIS`):** o Financeiro tem como referência
   `financeiro-ab.reference.html`, não o `financeiro.png`.
+  **Exceção (decisão do dono, 2026-11-27, `D-DONO-2711-LOGIN-APROVADO-GRAFITE-CARTAO-BRANCO`):** o login web tem como
+  referência `login-patiosul.reference.html`, nas 3 cores aprovadas, não o `login.png`.
 - **`screen-refs/mobile/`** — **39 PNGs** (todas as telas do ERP Mobile: sessão/nav, fluxo Guincho,
   fluxo Prestador, Despesas/RDV/Comissões). Aparelho 390×812 inteiro.
 - **`screen-refs/Cloud Billing.reference.html`** — padrão-ouro em **HTML estático isolado**
