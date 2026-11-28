@@ -6,11 +6,9 @@ import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 
 import { NewOrganizationDialog, NewOrganizationResultView, pendingProvisioningSteps } from "../src/modules/platform/components/NewOrganizationDialog";
-import { OrganizationAdminDialog } from "../src/modules/platform/components/OrganizationAdminDialog";
-import { OrganizationSetupDialog } from "../src/modules/platform/components/OrganizationSetupDialog";
 import { PlatformTenantsView } from "../src/modules/platform/pages/PlatformTenantsPage";
 import { composePlatformOrganizations } from "../src/modules/platform/platform-organizations.state";
-import { createPlatformTenant, createTenantAdminUser, getPlatformBillingProfile, putPlatformBillingProfile, putPlatformSubscription } from "../src/modules/platform/platform.service";
+import { createPlatformTenant } from "../src/modules/platform/platform.service";
 import type { CreatePlatformOrganizationResult, PlatformCatalogPlan, PlatformEconomicGroup } from "../src/modules/platform/platform.types";
 import { ORGANIZATION_A, jsonResponse } from "./helpers/plat-org.fixture";
 import { elements, installMiniDom, propsOf, text } from "./helpers/mini-dom";
@@ -19,6 +17,34 @@ const dom = installMiniDom();
 
 const groups: PlatformEconomicGroup[] = [{ id: "group-1", name: "Grupo Norte", memberCount: 2 }];
 const plans: PlatformCatalogPlan[] = [{ id: "plan-1", code: "business", name: "Plano Regional Teste", active: true, currentVersion: { version: 3, validFrom: "2026-11-01" } }];
+const profile = { complete: false, missing: ["email"], legalName: "Empresa Existente", document: "00000000000191", email: null, address: { postalCode: null, street: null, number: null, district: null, city: null, cityIbge: null, state: null }, paymentMethod: "pix" } as const;
+const result: CreatePlatformOrganizationResult = {
+  organization: ORGANIZATION_A,
+  provisioning: { group: { status: "done" }, profile: { status: "skipped" }, subscription: { status: "skipped" }, admin: { status: "skipped" } },
+};
+
+const settle = async () => {
+  for (let step = 0; step < 8; step += 1) await React.act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+};
+
+const button = (container: ReturnType<typeof dom.doc.createElement>, label: string) => elements(container, (element) => element.localName === "button" && text(element) === label)[0];
+
+async function mountFt7(permissions: readonly string[], fetchImpl: typeof fetch) {
+  const { createRoot } = await import("react-dom/client");
+  globalThis.fetch = fetchImpl;
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  await React.act(async () => root.render(<NewOrganizationResultView result={result} onClose={() => undefined} permissions={permissions} />));
+  await settle();
+  return {
+    container,
+    unmount: async () => {
+      await React.act(async () => root.unmount());
+      dom.doc.body.removeChild(container);
+    },
+  };
+}
 
 test("FT1/FT2 diálogo tem quatro passos e torna grupo obrigatório sem pedir slug", () => {
   const html = renderToString(<NewOrganizationDialog onClose={() => undefined} onCreated={() => undefined} groups={groups} plans={plans} />);
@@ -103,15 +129,74 @@ test("FT5/FT6 nomes literais e papel Administrador aparecem; códigos não vazam
   assert.doesNotMatch(html, />business<|tenant_admin|Usuário genérico/);
 });
 
-test("FT7 complementos separam plano, dados da empresa e administrador por ação específica", () => {
-  const permissions = ["platform:billing:read", "platform:billing:manage"];
-  const plan = renderToString(<OrganizationSetupDialog organization={ORGANIZATION_A} item="plan" permissions={permissions} onClose={() => undefined} onChanged={() => undefined} />);
-  const profile = renderToString(<OrganizationSetupDialog organization={ORGANIZATION_A} item="profile" permissions={permissions} onClose={() => undefined} onChanged={() => undefined} />);
-  const admin = renderToString(<OrganizationAdminDialog organization={ORGANIZATION_A} onClose={() => undefined} onConfirm={async () => ({ user: { id: "u1", name: "Admin", email: "admin@example.invalid" } })} onDone={() => undefined} />);
-  assert.match(plan, /Escolher plano/);
-  assert.match(profile, /Dados da empresa/);
-  assert.match(admin, /Criar administrador/);
-  assert.doesNotMatch(`${plan}${profile}${admin}`, /Criar organização|POST \/tenants/);
+test("FT7-plano abre o complemento do plano pela tela real e relê o setup", async () => {
+  let tenantGets = 0;
+  const page = await mountFt7(["platform:billing:read", "platform:billing:manage"], (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input); const method = init?.method ?? "GET";
+    if (method === "GET" && url.endsWith(`/platform/tenants/${ORGANIZATION_A.id}`)) { tenantGets += 1; return jsonResponse({ data: ORGANIZATION_A }); }
+    if (method === "GET" && url.endsWith("/subscription")) return jsonResponse({ data: null });
+    if (method === "GET" && url.endsWith("/platform/billing/plans")) return jsonResponse({ data: plans });
+    if (method === "PUT" && url.endsWith("/subscription")) return jsonResponse({ data: {} });
+    return jsonResponse({ error: { code: "sem_fixture" } }, 599);
+  }) as typeof fetch);
+  try {
+    const open = button(page.container, "Escolher plano");
+    assert.ok(open, "a permissão de cobrança oferece Escolher plano");
+    await React.act(async () => open.click()); await settle();
+    assert.match(text(page.container), /Escolher plano · Organização A/);
+    assert.doesNotMatch(text(page.container), /Dados da empresa ·|Criar administrador em/);
+    const select = elements(page.container, (element) => element.localName === "select")[0];
+    assert.ok(select);
+    await React.act(async () => (propsOf(select).onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: "business" } }));
+    await settle();
+    await React.act(async () => button(page.container, "Ligar o plano").click()); await settle();
+    assert.equal(tenantGets, 2, "o setup é relido depois de ligar o plano");
+  } finally { await page.unmount(); }
+});
+
+test("FT7-perfil abre o complemento dos dados pela tela real e relê o setup", async () => {
+  let tenantGets = 0;
+  const page = await mountFt7(["platform:billing:read", "platform:billing:manage"], (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input); const method = init?.method ?? "GET";
+    if (method === "GET" && url.endsWith(`/platform/tenants/${ORGANIZATION_A.id}`)) { tenantGets += 1; return jsonResponse({ data: ORGANIZATION_A }); }
+    if (url.endsWith("/billing-profile") && method === "GET") return jsonResponse({ data: profile });
+    if (url.endsWith("/billing-profile") && method === "PUT") return jsonResponse({ data: { ...profile, complete: true, missing: [] } });
+    return jsonResponse({ error: { code: "sem_fixture" } }, 599);
+  }) as typeof fetch);
+  try {
+    const open = button(page.container, "Preencher");
+    assert.ok(open, "as permissões de leitura e gestão oferecem Preencher");
+    await React.act(async () => open.click()); await settle();
+    assert.match(text(page.container), /Dados da empresa · Organização A/);
+    assert.doesNotMatch(text(page.container), /Escolher plano ·|Criar administrador em/);
+    await React.act(async () => button(page.container, "Salvar dados da empresa").click()); await settle();
+    assert.equal(tenantGets, 2, "o setup é relido depois de salvar os dados");
+  } finally { await page.unmount(); }
+});
+
+test("FT7-admin abre o complemento do administrador pela tela real e relê o setup", async () => {
+  let tenantGets = 0;
+  const page = await mountFt7(["platform:users:create_admin"], (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input); const method = init?.method ?? "GET";
+    if (method === "GET" && url.endsWith(`/platform/tenants/${ORGANIZATION_A.id}`)) { tenantGets += 1; return jsonResponse({ data: ORGANIZATION_A }); }
+    if (method === "POST" && url.endsWith("/admin-user")) return jsonResponse({ data: { user: { id: "u1", name: "Administrador Teste", email: "admin@example.invalid" } } });
+    return jsonResponse({ error: { code: "sem_fixture" } }, 599);
+  }) as typeof fetch);
+  try {
+    const open = button(page.container, "Criar administrador");
+    assert.ok(open, "a permissão de criar administrador oferece a ação");
+    await React.act(async () => open.click()); await settle();
+    assert.match(text(page.container), /Criar administrador em Organização A/);
+    assert.doesNotMatch(text(page.container), /Escolher plano ·|Dados da empresa ·/);
+    const inputs = elements(page.container, (element) => element.localName === "input");
+    await React.act(async () => {
+      (propsOf(inputs[0]!).onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: "Administrador Teste" } });
+      (propsOf(inputs[1]!).onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: "admin@example.invalid" } });
+    });
+    await settle();
+    await React.act(async () => button(page.container, "Criar administrador").click()); await settle();
+    assert.equal(tenantGets, 2, "o setup é relido depois de criar o administrador");
+  } finally { await page.unmount(); }
 });
 
 test("FT4 senha efêmera copia no clique e não reaparece ao reabrir", async () => {
@@ -133,30 +218,6 @@ test("FT4 senha efêmera copia no clique e não reaparece ao reabrir", async () 
   dom.doc.body.removeChild(container);
   const reopened = renderToString(<NewOrganizationDialog onClose={() => undefined} onCreated={() => undefined} groups={groups} plans={plans} />);
   assert.doesNotMatch(reopened, /Unica-9x!/);
-});
-
-test("FT7 complemento usa somente PUT de plano/perfil e POST de administrador", async () => {
-  const calls: { url: string; method?: string; body?: unknown }[] = [];
-  const previous = globalThis.fetch;
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    calls.push({ url: String(input), method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
-    const url = String(input);
-    if ((init?.method ?? "GET") === "GET") return jsonResponse({ data: { complete: false, missing: ["email"], legalName: "Empresa Existente", document: "123", email: null, address: { postalCode: null, street: null, number: null, district: null, city: null, cityIbge: null, state: null }, paymentMethod: "pix" } });
-    if (url.endsWith("/admin-user")) return jsonResponse({ data: { user: { id: "u1", name: "Admin", email: "admin@example.invalid" }, temporaryPassword: "UmaVez" } });
-    return jsonResponse({ data: { ok: true } });
-  }) as typeof fetch;
-  try {
-    const profile = await getPlatformBillingProfile(ORGANIZATION_A.id);
-    await putPlatformSubscription(ORGANIZATION_A.id, "business", "2026-11-27");
-    await putPlatformBillingProfile(ORGANIZATION_A.id, { legalName: profile.legalName, document: profile.document, email: "financeiro@example.invalid", address: { ...profile.address }, paymentMethod: profile.paymentMethod });
-    await createTenantAdminUser(ORGANIZATION_A.id, { name: "Admin", email: "admin@example.invalid" });
-  } finally { globalThis.fetch = previous; }
-  assert.deepEqual(calls.map((call) => call.method ?? "GET"), ["GET", "PUT", "PUT", "POST"]);
-  assert.match(calls[1]?.url ?? "", /\/billing\/tenants\/[^/]+\/subscription$/);
-  assert.match(calls[2]?.url ?? "", /\/billing\/tenants\/[^/]+\/billing-profile$/);
-  assert.match(calls[3]?.url ?? "", /\/tenants\/[^/]+\/admin-user$/);
-  assert.equal(calls.some((call, index) => index > 0 && call.url.endsWith("/platform/tenants")), false);
-  assert.deepEqual(calls[2]?.body, { legalName: "Empresa Existente", document: "123", email: "financeiro@example.invalid", address: { postalCode: null, street: null, number: null, district: null, city: null, cityIbge: null, state: null }, paymentMethod: "pix" });
 });
 
 test("FT1 cabeçalho abre criação somente quando a permissão foi concedida", async () => {
