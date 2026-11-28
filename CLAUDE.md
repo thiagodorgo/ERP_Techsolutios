@@ -583,8 +583,20 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
    | Nível | Claude Code | Codex | Papéis |
    |---|---|---|---|
-   | **Topo** | Fable | GPT-6 Astra | o plano inicial do bloco; em TODA reprovação de junta, a auditoria e o plano de resolução (§C7.4) |
+   | **Topo** | **Qwen 4 Max** pelo braço externo, desde 2026-11-28 (`D-DONO-2811-TOPO-QWEN4`); **o Fable fica guardado** — era o que valia até 2026-11-27 | GPT-6 Astra | o plano inicial do bloco; em TODA reprovação de junta, a auditoria e o plano de resolução (§C7.4) |
    | **Menor**, sempre DECLARADO no artefato | Opus | GPT-5.6 Sol (§C7.6-bis) | dev, crítico, inspetor, cadeiras da junta, fábrica e porteiro |
+
+   **O TOPO RODA NO QWEN 4 MAX DESDE 2026-11-28 (decisão do dono, `D-DONO-2811-TOPO-QWEN4`).** Nas palavras do
+   dono: *"economizar fable, trocar  por qwen4"*. O papel de topo deste item sai do **Fable** e vai para o
+   **Qwen 4 Max** (braço `Q4`), pelo **braço externo**; cobre o plano de bloco novo, a emenda com decisão de
+   desenho e a auditoria do topo depois de junta (item 10(5)). **O Fable fica guardado**, e nada do que valia
+   antes foi apagado: a linha da tabela acima conserva o Fable com a data em que valia, e a escada do item 6-bis
+   e o frontmatter `model: fable` do `planejador-mestre` continuam escritos como estavam. **Leituras do
+   orquestrador, declaradas como tal (§A6), que o dono pode desfazer:** (1) **o cruzamento continua** — o plano
+   do Q4 é criticado por outra casa (Claude Opus ou Codex), nunca pelo Qwen 3.8 nem pelo 4 Max; (2) **tela
+   continua só no Claude**, em Opus (`D-DESIGN-SO-CLAUDE`); (3) **se o Qwen 4 faltar, o topo cai para o Opus,
+   declarado**; (4) **o subagente `planejador-mestre` não é invocado**, porque o frontmatter dele fixa o Fable —
+   o corpo dele serve de base ao mandato do Q4.
 
    **Gemini, pelo Antigravity** (declaração do dono, 2026-10-13, `D-GEMINI-PRO-NIVEL-CODEX`; e decisão do dono,
    2026-10-14, `D-GEMINI-SEGUNDO-REVISOR`): o **Gemini Pro** equivale ao nível menor e entra pela assinatura ou, desde 2026-10-17, pela **API paga com
