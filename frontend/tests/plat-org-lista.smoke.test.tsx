@@ -206,6 +206,33 @@ test("LE1 a linha pedida no endereço sobrevive à carga e abre quando a lista c
   container.parentNode?.removeChild(container);
 });
 
+test("LE2 organização de sistema pedida no endereço não abre nenhuma linha", async () => {
+  if (cleanup) await cleanup();
+  setStoredAuthSession({
+    ...mockSession,
+    user: { ...mockSession.user, roles: ["Super Admin"], permissions: ["platform:tenants:read"] },
+  });
+  const json = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200, headers: { "content-type": "application/json" } });
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (/\/platform\/overview(?:\?|$)/.test(url)) return json(overview);
+    if (/\/platform\/tenants(?:\?|$)/.test(url)) return json([ORGANIZATION_SYSTEM, ORGANIZATION_A, ORGANIZATION_B, ORGANIZATION_C]);
+    return new Response(JSON.stringify({ error: { code: "sem_fixture" } }), { status: 599, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  await act(async () => root.render(createElement(MemoryRouter, { initialEntries: [`/platform/tenants?org=${ORGANIZATION_SYSTEM.id}`] },
+    createElement(AuthProvider, null, createElement(TenantProvider, null, createElement(PermissionProvider, null, createElement(PlatformTenantsPage)))),
+  )));
+  await settle();
+  assert.equal(elements(container, (element) => hasClass(element, "pat-ab-detail-row")).length, 0);
+  assert.equal(elements(container, (element) => hasClass(element, "pat-ab-row") && propsOf(element)["aria-expanded"] === true).length, 0);
+  assert.match(text(container), /Plataforma/);
+  await act(async () => root.unmount());
+  container.parentNode?.removeChild(container);
+});
+
 test("LE3 Ver detalhes completos preserva a SPA e os filtros", async () => {
   if (cleanup) await cleanup();
   setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: ["Super Admin"], permissions: ["platform:tenants:read", "platform:tenants:update"] } });
