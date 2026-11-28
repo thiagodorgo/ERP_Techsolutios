@@ -79,3 +79,59 @@
   --layout-topbar: 64px;
   --breakpoint-main: 768px;
 }
+
+/* B-MARCA-LOGIN-SIDEBAR (fatia L) — tokens da marca Pátio Sul ERP (DESIGN_SYSTEM.md, seção "Marca Pátio Sul ERP").
+   SÓ ACRÉSCIMO: nenhum token acima muda (repintar o sistema inteiro é o bloco das telas azuis pelos tokens).
+   A Grafite é a de fábrica (:root). A Branca e a Preta trocam os valores pelo atributo `data-tema` do elemento raiz,
+   posto por `modules/appearance/theme.boot.ts` antes de o React desenhar. Os tokens da sidebar (`--ps-sb-*`) chegam com ela. */
+:root {
+  --ps-grafite: #3A3E3E;
+  --ps-grafite-fundo: #2B2E2E;
+  --ps-painel: linear-gradient(155deg, #6F7373 0%, #4C5050 45%, #2B2E2E 100%);
+  --ps-brasa: radial-gradient(60% 100% at 22% 100%, rgba(184, 64, 30, .55), rgba(184, 64, 30, 0) 72%);
+  --ps-filete: linear-gradient(90deg, #FBB343, #B8401E);
+  --ps-amarelo: #FDC300;
+  --ps-amarelo-hover: #E8B100;
+  --ps-sobre-amarelo: #1A1A1A;
+  --ps-superficie: #FFFFFF;
+  --ps-texto: #232626;
+  --ps-texto-mudo: #585C5C;
+  --ps-borda-campo: #7A7E7E;
+  --ps-fio: #E4E4E0;
+  --ps-link: #7A5C00;
+  --ps-foco: #232626;
+  --ps-foco-anel: rgba(35, 38, 38, .22);
+  --ps-perigo: #B42318;
+  --ps-perigo-fundo: #FDECEA;
+  --ps-perigo-borda: #E9B8B0;
+  /* apoio do login, da maquete aprovada */
+  --ps-painel-texto: #FFFFFF;
+  --ps-superficie-2: #F1F1EE;
+  --ps-cartao-borda: #E4E4E0;
+  --ps-cartao-sombra: 0 10px 30px rgba(20, 22, 22, .35);
+  --ps-ok: #166534;
+  --ps-ok-fundo: #F0FDF4;
+  --ps-ok-borda: #BBF7D0;
+  --ps-aviso: #6B4E00;
+  --ps-aviso-fundo: #FFF7E0;
+  --ps-aviso-borda: #E8C86A;
+}
+
+/* A Branca (maquete aprovada, aparência 2): muda o fundo, o painel, o texto do painel, a brasa e o cartão. */
+:root[data-tema="branca"] {
+  --ps-grafite: #F4F4F1;
+  --ps-grafite-fundo: #ECECE8;
+  --ps-painel: linear-gradient(155deg, #FFFFFF 0%, #FAFAF8 45%, #ECECE8 100%);
+  --ps-painel-texto: #232626;
+  --ps-brasa: radial-gradient(60% 100% at 22% 100%, rgba(253, 195, 0, .18), rgba(253, 195, 0, 0) 72%);
+  --ps-cartao-borda: #DFDFDA;
+  --ps-cartao-sombra: 0 6px 22px rgba(35, 38, 38, .10);
+}
+
+/* A Preta (maquete aprovada, aparência 3). */
+:root[data-tema="preta"] {
+  --ps-grafite: #000000;
+  --ps-grafite-fundo: #000000;
+  --ps-painel: linear-gradient(155deg, #1C1C1C 0%, #0E0E0E 45%, #000000 100%);
+  --ps-cartao-sombra: 0 12px 34px rgba(0, 0, 0, .60);
+}

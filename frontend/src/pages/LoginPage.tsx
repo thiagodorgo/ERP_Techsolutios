@@ -1,7 +1,10 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
+import { PATIOSUL_LOGO_ALT, PATIOSUL_LOGO_LOGIN, PATIOSUL_LOGO_LOGIN_ESCURO, PATIOSUL_NOME, PATIOSUL_SLOGAN } from "../brand/patiosul";
+import { PasswordInput } from "../components/ui";
 import { isMockMode, readFrontendEnv } from "../config/env";
 import { PASSWORD_CHANGE_MESSAGES, PASSWORD_CHANGED_NOTICE } from "../modules/auth/auth.adapter";
 import type { AuthSession } from "../modules/auth/types";
@@ -64,120 +67,116 @@ export function LoginPage() {
   if (isPasswordChangeSession(currentSession)) return <Navigate to="/change-password" replace />;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "40px 24px",
-        background: "#F1F5F9",
-        fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif",
-      }}
-    >
-      <style>{`
-        .lg-input{display:block;width:100%;padding:12px 14px;border:1.5px solid #E2E8F0;border-radius:10px;background:#fff;font-size:14px;color:#0F172A;font-family:inherit;outline:none}
-        .lg-input:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-        .lg-input::placeholder{color:#94A3B8}
-        @keyframes lg-spin{to{transform:rotate(360deg)}}
-      `}</style>
-
-      <div style={{ width: "100%", maxWidth: 420 }}>
-        {/* marca */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0D1B2A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 21V11" />
-                <path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6" />
-                <path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11" />
-              </svg>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", letterSpacing: "-.3px", whiteSpace: "nowrap" }}>TechSolutions</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "#64748B", marginTop: 2 }}>Plataforma de operações de campo</div>
-            </div>
-          </div>
+    <main className="ps-login">
+      {/* B-MARCA-LOGIN-SIDEBAR (fatia L) — alvo: docs/claude-code-handoff/screen-refs/login-patiosul.reference.html, nas 3 cores.
+          A cor é o `data-tema` do elemento raiz (theme.boot.ts); esta tela só usa os tokens `--ps-*` (styles/marca.css). */}
+      <section className="ps-login__marca" aria-label="Marca do sistema">
+        <span className="ps-login__brasa" aria-hidden="true" />
+        <img className="ps-login__logo ps-login__logo--amarelo" src={PATIOSUL_LOGO_LOGIN} width={709} height={259} alt={PATIOSUL_LOGO_ALT} />
+        <img className="ps-login__logo ps-login__logo--escuro" src={PATIOSUL_LOGO_LOGIN_ESCURO} width={709} height={258} alt={PATIOSUL_LOGO_ALT} />
+        <div className="ps-login__texto">
+          <p className="ps-login__nome">{PATIOSUL_NOME}</p>
+          <p className="ps-login__frase">{PATIOSUL_SLOGAN}</p>
         </div>
+        <span className="ps-login__filete" aria-hidden="true" />
+      </section>
 
-        {/* card */}
-        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 16, padding: 36, boxShadow: "0 4px 24px rgba(0,0,0,.06)" }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#0F172A", marginBottom: 4 }}>Entrar</div>
-          <div style={{ fontSize: 14, color: "#64748B", marginBottom: 20 }}>Acesse sua organização</div>
+      <div className="ps-login__entrada">
+        <div className="ps-login__cartao">
+          <h1 className="ps-login__titulo">Entrar</h1>
+          <p className="ps-login__sub">Acesse sua organização</p>
 
           {useMocks ? (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 9, padding: "10px 13px", borderRadius: 10, background: "#FFFBEB", border: "1px solid #FDE68A", marginBottom: 22 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#D97706", flexShrink: 0, marginTop: 5 }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.45 }}>Ambiente de demonstração · dados fictícios. Use qualquer e-mail e senha para entrar.</span>
+            <div className="ps-login__faixa ps-login__faixa--aviso" data-faixa="demonstracao">
+              <TriangleAlert size={16} aria-hidden="true" />
+              <p>Ambiente de demonstração · dados fictícios. Use qualquer e-mail e senha para entrar.</p>
             </div>
           ) : null}
 
-          {/* B-USERS-ACESSO-SEG (T1) — avisos da troca de senha, nas faixas da referência troca-senha-3opcoes. */}
+          {/* B-USERS-ACESSO-SEG (T1) — os avisos da troca de senha, agora nas faixas da marca. */}
           {notice === "senha-alterada" ? (
-            <div role="status" data-aviso="senha-alterada" style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", borderRadius: 10, background: "#F0FDF4", border: "1px solid #BBF7D0", marginBottom: 18 }}>
-              <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "#16A34A", flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#166534", lineHeight: 1.45 }}>{PASSWORD_CHANGED_NOTICE}</span>
+            <div role="status" data-aviso="senha-alterada" className="ps-login__faixa ps-login__faixa--ok">
+              <CircleCheck size={16} aria-hidden="true" />
+              <p>{PASSWORD_CHANGED_NOTICE}</p>
             </div>
           ) : null}
           {notice === "sessao-expirada" ? (
-            <div role="alert" data-aviso="sessao-expirada" style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", borderRadius: 10, background: "#FEF2F2", border: "1px solid #FECACA", marginBottom: 18 }}>
-              <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "#DC2626", flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#B91C1C", lineHeight: 1.45 }}>{PASSWORD_CHANGE_MESSAGES.session_expired}</span>
+            <div role="alert" data-aviso="sessao-expirada" className="ps-login__faixa">
+              <CircleAlert size={16} aria-hidden="true" />
+              <p>{PASSWORD_CHANGE_MESSAGES.session_expired}</p>
             </div>
           ) : null}
 
           {error ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", borderRadius: 10, background: "#FEF2F2", border: "1px solid #FECACA", marginBottom: 18 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#DC2626", flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#DC2626" }}>{error}</span>
+            <div role="alert" data-faixa="erro" className="ps-login__faixa">
+              <CircleAlert size={16} aria-hidden="true" />
+              <p>{error}</p>
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <label htmlFor="login-email" style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6 }}>E-mail corporativo</label>
-              <input id="login-email" className="lg-input" type="email" autoComplete="email" placeholder="usuario@empresa.com.br" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <form className="ps-login__form" onSubmit={handleSubmit}>
+            <div className="ps-login__campo">
+              <label className="ps-login__rotulo" htmlFor="login-email">
+                E-mail
+              </label>
+              <input
+                id="login-email"
+                className="ps-login__input"
+                type="email"
+                autoComplete="email"
+                placeholder="usuario@empresa.com.br"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
-            <div style={{ marginBottom: 10 }}>
-              <label htmlFor="login-password" style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Senha</label>
-              <input id="login-password" className="lg-input" type="password" autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <div className="ps-login__campo">
+              <PasswordInput
+                label="Senha"
+                id="login-password"
+                className="ps-login__input"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
-            <div style={{ textAlign: "right", marginBottom: 24 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#2563EB", cursor: "pointer" }}>Esqueci minha senha</span>
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ width: "100%", padding: 13, background: "#2563EB", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, color: "#fff", cursor: loading ? "default" : "pointer", fontFamily: "inherit", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-            >
-              {loading ? <span style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "lg-spin .7s linear infinite", flexShrink: 0 }} /> : null}
+            <ForgotPasswordHint />
+            <button type="submit" className="ps-login__botao" disabled={loading} aria-busy={loading ? true : undefined}>
+              {loading ? <span className="ps-login__giro" aria-hidden="true" /> : null}
               <span>{loading ? "Entrando…" : "Entrar"}</span>
             </button>
           </form>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-            <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-            <span style={{ fontSize: 12.5, color: "#94A3B8", whiteSpace: "nowrap" }}>ou continue com</span>
-            <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void authenticate()}
-            style={{ width: "100%", padding: 12, background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 10, fontSize: 14, fontWeight: 600, color: "#374151", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: "50%", background: "#fff", boxShadow: "0 0 0 1.5px #E2E8F0", flexShrink: 0, overflow: "hidden", padding: 1 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-              </svg>
-            </span>
-            <span>Entrar com Google</span>
-          </button>
+          <p className="ps-login__rodape">© {PATIOSUL_NOME}</p>
         </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * "Esqueci minha senha" (plano do B-MARCA-LOGIN-SIDEBAR, seção 6.2, passo 6): um botão com foco e 44 px de alvo que abre,
+ * logo abaixo, o recado da maquete aprovada. Não navega e não chama o servidor: não existe recuperação de senha por e-mail.
+ */
+function ForgotPasswordHint() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <div className="ps-login__linha-link">
+        <button
+          type="button"
+          className="ps-login__esqueci"
+          aria-expanded={open}
+          aria-controls="login-esqueci-recado"
+          onClick={() => setOpen((value) => !value)}
+        >
+          Esqueci minha senha
+        </button>
+      </div>
+      <p id="login-esqueci-recado" className="ps-login__nota" role="status" hidden={!open}>
+        Peça ao administrador da sua organização para redefinir o seu acesso. Você recebe uma senha provisória e cria uma nova no
+        primeiro acesso.
+      </p>
+    </>
   );
 }
