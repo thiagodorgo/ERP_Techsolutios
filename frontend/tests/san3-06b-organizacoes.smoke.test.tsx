@@ -40,10 +40,12 @@ function render(props: Partial<React.ComponentProps<typeof PlatformTenantsView>>
 }
 
 test("T1 organizações exibem somente o payload real em português", () => {
-  const html = render();
+  const html = render({ canCreate: true });
   assert.match(html, /Organização A/);
   assert.match(html, /Grupo Teste/);
   assert.match(html, /Organização de sistema/);
+  assert.match(html, /pat-page-header__kicker[^>]*>Plataforma/);
+  assert.match(html, /pat-page-header__actions[^]*?Nova organização/);
   assert.doesNotMatch(html, /Techsolutions BH|Tenant|MRR|uptime/i);
 });
 

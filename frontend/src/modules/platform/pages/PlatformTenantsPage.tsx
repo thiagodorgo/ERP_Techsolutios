@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { DenseTable } from "../../../components/dense-list";
 import type { DenseColumn } from "../../../components/dense-list/types";
-import { KpiStatCard } from "../../../components/patterns";
+import { KpiStatCard, PageHeader } from "../../../components/patterns";
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { OrganizationDetailPanel } from "../components/OrganizationDetailPanel";
@@ -42,18 +42,6 @@ function statusLabel(status: PlatformOrganizationRow["status"]): string {
   if (status === "active") return "Ativa";
   if (status === "suspended") return "Suspensa";
   return "Pendente";
-}
-
-function PageHeader({ canCreate, onCreate }: { readonly canCreate: boolean; readonly onCreate: () => void }) {
-  return (
-    <header className="page-heading page-heading--row">
-      <div>
-        <h1>Organizações</h1>
-        <p>Cadastros e situação das organizações clientes, filiais de cada grupo</p>
-      </div>
-      {canCreate ? <button type="button" className="pat-btn pat-btn--primary" onClick={onCreate}><Plus size={15} aria-hidden="true" />Nova organização</button> : null}
-    </header>
-  );
 }
 
 export type PlatformTenantsViewProps = {
@@ -122,15 +110,23 @@ export function PlatformTenantsView({
     { key: "modules", header: "MÓDULOS", width: widths.modules, align: "right", tabular: true, render: (row) => formatCount(row.moduleCount) },
     { key: "createdAt", header: "CRIADA EM", width: widths.createdAt, align: "right", tabular: true, render: (row) => formatDate(row.createdAt) },
   ];
+  const pageHeader = (
+    <PageHeader
+      kicker="Plataforma"
+      title="Organizações"
+      subtitle="Cadastros e situação das organizações clientes, filiais de cada grupo"
+      actions={status !== "forbidden" && canCreate ? <button type="button" className="pat-btn pat-btn--primary" onClick={onCreate}><Plus size={15} aria-hidden="true" />Nova organização</button> : undefined}
+    />
+  );
 
-  if (status === "loading") return <section className="platform-organizations page-stack"><PageHeader canCreate={canCreate} onCreate={onCreate} /><Skeleton lines={7} /></section>;
-  if (status === "forbidden") return <section className="platform-organizations page-stack"><PageHeader canCreate={false} onCreate={onCreate} /><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar as organizações da plataforma." /></section>;
-  if (status === "error") return <section className="platform-organizations page-stack"><PageHeader canCreate={canCreate} onCreate={onCreate} /><ErrorState title="Não foi possível carregar as organizações" detail="Tente novamente para consultar a lista completa." /><button type="button" className="pat-btn" onClick={onRetry}>Tentar novamente</button></section>;
-  if (status === "empty") return <section className="platform-organizations page-stack"><PageHeader canCreate={canCreate} onCreate={onCreate} /><EmptyState title="Nenhuma organização encontrada" detail="Ainda não há organizações cadastradas na plataforma." /></section>;
+  if (status === "loading") return <section className="platform-organizations page-stack">{pageHeader}<Skeleton lines={7} /></section>;
+  if (status === "forbidden") return <section className="platform-organizations page-stack">{pageHeader}<ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar as organizações da plataforma." /></section>;
+  if (status === "error") return <section className="platform-organizations page-stack">{pageHeader}<ErrorState title="Não foi possível carregar as organizações" detail="Tente novamente para consultar a lista completa." /><button type="button" className="pat-btn" onClick={onRetry}>Tentar novamente</button></section>;
+  if (status === "empty") return <section className="platform-organizations page-stack">{pageHeader}<EmptyState title="Nenhuma organização encontrada" detail="Ainda não há organizações cadastradas na plataforma." /></section>;
 
   return (
     <section className="platform-organizations page-stack">
-      <PageHeader canCreate={canCreate} onCreate={onCreate} />
+      {pageHeader}
       {stale ? <Alert title="Dados desatualizados" tone="warning">A última atualização falhou. O último conjunto completo continua visível.</Alert> : null}
       <div className="platform-organizations__kpis">
         <KpiStatCard icon={Building2} iconColor="var(--color-core-primary)" iconBg="var(--surface-panel-muted)" value={counts.active} label="Organizações ativas" hint="No recorte atual" ariaLabel={`Organizações ativas: ${counts.active}. No recorte atual`} onClick={() => onStatusFilterChange("active")} pressed={statusFilter === "active"} />
