@@ -139,10 +139,15 @@ test("PM2 cada chave liga só a sua ação", async () => {
 });
 
 test("PM3 quem tem tudo vê tudo", async () => {
-  const page = await mount("list", ["platform:tenants:read", "platform:tenants:create", "platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:read", "platform:billing:manage"]);
-  await openListPanel(page.container);
-  const actions = buttonTexts(page.container);
-  for (const label of ["Nova organização", "Editar nome", "Suspender", "Criar administrador", "Escolher plano", "Preencher"]) assert.equal(actions.includes(label), true, label);
+  const permissions = ["platform:tenants:read", "platform:tenants:create", "platform:tenants:update", "platform:tenants:suspend", "platform:users:create_admin", "platform:billing:read", "platform:billing:manage"];
+  const list = await mount("list", permissions);
+  await openListPanel(list.container);
+  const listActions = buttonTexts(list.container);
+  for (const label of ["Nova organização", "Editar nome", "Suspender", "Criar administrador", "Escolher plano", "Preencher"]) assert.equal(listActions.includes(label), true, `${label} na lista/painel`);
+  const detail = await mount("detail", permissions);
+  const detailActions = buttonTexts(detail.container);
+  for (const label of ["Editar nome", "Suspender", "Criar administrador", "Escolher plano", "Preencher"]) assert.equal(detailActions.includes(label), true, `${label} na página direta`);
+  await detail.unmount();
 });
 
 test("PM4 módulos sem a chave", async () => {
