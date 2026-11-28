@@ -655,6 +655,14 @@
     "classe": "OS·LEITURA-ESCOPO",
     "marcador": "canario:COMCANX"
   },
+  "GET /api/v1/work-orders/:workOrderId/evidences": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "canario:EVIDCANX"
+  },
+  "GET /api/v1/work-orders/:workOrderId/evidences/:evidenceId/download": {
+    "classe": "OS·LEITURA-ESCOPO",
+    "marcador": "binario:png-semente"
+  },
   "GET /api/v1/work-orders/:workOrderId/financial-items": {
     "classe": "OS·LEITURA-ESCOPO",
     "marcador": "canario:ITEMCANX"
