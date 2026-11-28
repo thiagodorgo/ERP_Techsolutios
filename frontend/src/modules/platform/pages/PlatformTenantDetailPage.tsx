@@ -403,7 +403,7 @@ export function PlatformTenantDetailPage() {
     <OrganizationDetailPanelView organization={organization} data={detailState.data} stale={detailState.stale} permissions={actionPermissions} showFullLink={false} onAction={openAction} />
     {usage}
     {action === "edit" ? <OrganizationEditNameDialog organization={organization} onClose={close} onConfirm={async (name) => { await updatePlatformTenant(organization.id, { name }); await done(); }} /> : null}
-    {action === "status" ? <OrganizationStatusDialog organization={organization} detail={detailState.data} onClose={close} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
+    {action === "status" ? <OrganizationStatusDialog organization={organization} detail={detailState.data} onClose={close} onRefresh={async () => { await detailState.refresh(false); }} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
     {action === "admin" ? <OrganizationAdminDialog organization={organization} onClose={close} onConfirm={async (input) => createTenantAdminUser(organization.id, input)} onDone={() => void done()} /> : null}
     {action === "setup-plan" ? <OrganizationSetupDialog organization={organization} item="plan" permissions={actionPermissions} onClose={close} onChanged={() => done()} /> : null}
     {action === "setup-profile" ? <OrganizationSetupDialog organization={organization} item="profile" permissions={actionPermissions} onClose={close} onChanged={() => done()} /> : null}

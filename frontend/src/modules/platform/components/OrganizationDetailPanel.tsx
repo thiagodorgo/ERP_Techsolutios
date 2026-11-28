@@ -71,7 +71,7 @@ export function OrganizationDetailPanel({ organization, returnSearch = "", permi
   return <>
     <OrganizationDetailPanelView organization={organization} data={state.data} stale={state.stale} returnSearch={returnSearch} permissions={permissions} onAction={openAction} />
     {action === "edit" ? <OrganizationEditNameDialog organization={organization} onClose={close} onConfirm={async (name) => { await updatePlatformTenant(organization.id, { name }); await done(); }} /> : null}
-    {action === "status" ? <OrganizationStatusDialog organization={organization} detail={state.data} onClose={close} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
+    {action === "status" ? <OrganizationStatusDialog organization={organization} detail={state.data} onClose={close} onRefresh={async () => { await state.refresh(false); }} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
     {action === "admin" ? <OrganizationAdminDialog organization={organization} onClose={close} onConfirm={async (input) => createTenantAdminUser(organization.id, input)} onDone={() => void done()} /> : null}
     {action === "setup-plan" ? <OrganizationSetupDialog organization={organization} item="plan" permissions={permissions} onClose={close} onChanged={() => done()} /> : null}
     {action === "setup-profile" ? <OrganizationSetupDialog organization={organization} item="profile" permissions={permissions} onClose={close} onChanged={() => done()} /> : null}
