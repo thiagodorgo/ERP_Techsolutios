@@ -383,8 +383,8 @@ test.describe("administrador da plataforma pela tela", () => {
   expect(session).toContain("refreshToken");
 
   expect((await overviewResponse).status()).toBe(200);
-  await expect(page.getByText("cadastros e situação das organizações clientes", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button").filter({ hasText: DEMO_ORGANIZATION })).toBeVisible();
+  await expect(page.getByText("Cadastros e situação das organizações clientes, filiais de cada grupo", { exact: true })).toBeVisible();
+  await expect(page.getByRole("row", { expanded: false }).filter({ hasText: DEMO_ORGANIZATION })).toBeVisible();
 
   const menu = page.getByRole("navigation");
   for (const item of ["Visão Geral", "Organizações", "Cloud Billing", "Saúde do Sistema"]) {
