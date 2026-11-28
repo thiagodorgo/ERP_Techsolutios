@@ -583,8 +583,39 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
    | Nível | Claude Code | Codex | Papéis |
    |---|---|---|---|
-   | **Topo** | Fable | GPT-6 Astra | o plano inicial do bloco; em TODA reprovação de junta, a auditoria e o plano de resolução (§C7.4) |
+   | **Topo** | **Qwen 4 Max** pelo braço externo, desde 2026-11-28 (`D-DONO-2811-TOPO-QWEN4`); **o Fable fica guardado** — era o que valia até 2026-11-27 | GPT-6 Astra | o plano inicial do bloco; em TODA reprovação de junta, a auditoria e o plano de resolução (§C7.4) |
    | **Menor**, sempre DECLARADO no artefato | Opus | GPT-5.6 Sol (§C7.6-bis) | dev, crítico, inspetor, cadeiras da junta, fábrica e porteiro |
+
+   **O TOPO RODA NO QWEN 4 MAX DESDE 2026-11-28 (decisão do dono, `D-DONO-2811-TOPO-QWEN4`).** Nas palavras do
+   dono: *"economizar fable, trocar  por qwen4"*. O papel de topo deste item sai do **Fable** e vai para o
+   **Qwen 4 Max** (braço `Q4`), pelo **braço externo**; cobre o plano de bloco novo, a emenda com decisão de
+   desenho e a auditoria do topo depois de junta (item 10(5)). **O Fable fica guardado**, e nada do que valia
+   antes foi apagado: a linha da tabela acima conserva o Fable com a data em que valia, e a escada do item 6-bis
+   e o frontmatter `model: fable` do `planejador-mestre` continuam escritos como estavam. **Leituras do
+   orquestrador, declaradas como tal (§A6), que o dono pode desfazer:** (1) **o cruzamento continua** — o plano
+   do Q4 é criticado por outra casa (Claude Opus ou Codex), nunca pelo Qwen 3.8 nem pelo 4 Max; (2) **tela
+   continua só no Claude**, em Opus (`D-DESIGN-SO-CLAUDE`); (3) **se o Qwen 4 faltar, o topo cai para o Opus,
+   declarado**; (4) **o subagente `planejador-mestre` não é invocado**, porque o frontmatter dele fixa o Fable —
+   o corpo dele serve de base ao mandato do Q4.
+
+   **PREVALÊNCIA DESTA DECISÃO SOBRE O TEXTO ANTIGO (2026-11-28):** enquanto a `D-DONO-2811-TOPO-QWEN4`
+   valer, **onde o item 6 e o item 6-bis mandam o topo, o `planejador-mestre`, o replanejamento do protocolo
+   de dificuldade (§C7.4) ou a validação do código corrigido rodarem no Fable, vale o Qwen 4 Max** pelo braço
+   externo, com as 4 leituras declaradas acima. Isto alcança **toda ordem destes dois itens que nomeia o Fable
+   como modelo do topo**: o cabeçalho do item 6, que data o planejador em Fable de 2026-08-11
+   (`D-PLANEJADOR-MODELO-FABLE`); o parágrafo "O `planejador-mestre` roda em **Fable por padrão** … o
+   **Fable é OBRIGATÓRIO**, não preferência"; o 1º degrau da escada do 6-bis, "Fable disponível → roda em
+   **Fable**"; a "volta ao **Fable** quando o limite renovar"; o frontmatter `model: fable` do
+   `planejador-mestre` (o arquivo continua dizendo `fable`, porque trocar o `model:` tornaria a degradação
+   permanente e invisível — o fallback é do invocador, e a leitura (4) já diz que o subagente não é
+   invocado); e a linha "Modelo de topo (§C7.6) | **Fable**" do espelho Codex, cuja coluna Claude Code
+   passa a ler **Qwen 4 Max** (a coluna Codex não muda).
+   A escada do 6-bis passa a ler **Qwen 4 Max → (faltou) Opus, único substituto autorizado, e DECLARA →
+   PARA**, que é a leitura (3). **Nenhum texto antigo foi apagado:** todos continuam escritos e voltam a
+   valer inteiros, sem outra mudança, se o dono desfizer esta decisão. Onde o Fable aparece como **fato
+   passado**, e não como ordem, nada muda: os gates que eram Fable até 2026-10-10 (`D-INSPETOR-TERRENO-JUNTA`,
+   `D-PORTEIRO-POS-MERGE`), a rodada do `B-GOV-ELENCO` que bateu no limite do Fable e do Opus na mesma
+   sessão, e o conteúdo obrigatório da nota de substituição ("por que o Fable faltou").
 
    **Gemini, pelo Antigravity** (declaração do dono, 2026-10-13, `D-GEMINI-PRO-NIVEL-CODEX`; e decisão do dono,
    2026-10-14, `D-GEMINI-SEGUNDO-REVISOR`): o **Gemini Pro** equivale ao nível menor e entra pela assinatura ou, desde 2026-10-17, pela **API paga com
