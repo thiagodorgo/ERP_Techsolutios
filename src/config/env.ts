@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { SNIFFABLE_MIME_TYPES, type SniffableMimeType } from "../modules/evidence/content-sniff.js";
 import { parseVaultKey } from "../modules/subscription-billing/vault/vault-keys.js";
+import { storageDurabilityProblems } from "./storage-durability.js";
 
 config();
 
@@ -752,6 +753,58 @@ export const envSchema = z.object({
       message: `Ω6R-SEC-004: ${effectiveAllowedMimeSource} declara tipo(s) que o gate de upload não sabe verificar por assinatura de bytes: ${notSniffable.join(", ")}. Tipos verificáveis: ${SNIFFABLE_MIME_TYPES.join(", ")}.`,
     });
   }
+
+  // G-STORAGE-DURAVEL (B-EVIDENCIA-DURAVEL, plano §3.4; fecha P-UPLOAD-ARMAZENAMENTO-EFEMERO) — produção NÃO sobe com
+  // armazenamento de arquivo no disco do contêiner. A foto do app de campo ia para o diretório temporário do servidor e
+  // sumia no reinício, DEPOIS de a rota responder `stored` e o app apagar a cópia dele. Vale para os 6 tipos de envio de
+  // arquivo: o armazenamento é um só, o da D-014. O provedor lido é o EFETIVO, pela mesma cadeia do objeto exportado lá
+  // embaixo (`CHECKLIST_STORAGE_PROVIDER ?? CHECKLIST_ATTACHMENT_STORAGE_DRIVER ?? "local"`). As condições de provedor,
+  // bucket, região e endpoint são a regra ÚNICA de `storage-durability.ts`, a mesma dos portões por requisição do
+  // comprovante e da evidência. Sem válvula: `local` em produção é recusado mesmo com diretório declarado (o código não
+  // sabe se há volume montado), e uma chave "permitir local em produção" seria o defeito com outro nome. A mensagem cita
+  // a chave e NUNCA o valor recebido: o nome do bucket não vai para o log de boot.
+  if (value.NODE_ENV === "production") {
+    const storageProblems = storageDurabilityProblems({
+      provider: value.CHECKLIST_STORAGE_PROVIDER ?? value.CHECKLIST_ATTACHMENT_STORAGE_DRIVER ?? "local",
+      bucket: value.CHECKLIST_STORAGE_S3_BUCKET,
+      region: value.CHECKLIST_STORAGE_S3_REGION,
+      endpoint: value.CHECKLIST_STORAGE_S3_ENDPOINT,
+    });
+    const storageIssue = (key: string, message: string): void => {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: `P-UPLOAD-ARMAZENAMENTO-EFEMERO (G-STORAGE-DURAVEL): ${message}`,
+      });
+    };
+    if (storageProblems.includes("provider")) {
+      storageIssue(
+        "CHECKLIST_STORAGE_PROVIDER",
+        "em produção o armazenamento de arquivo tem de ser o S3 durável da D-014: CHECKLIST_STORAGE_PROVIDER=s3. O padrão local e o legado CHECKLIST_ATTACHMENT_STORAGE_DRIVER gravam no disco do contêiner, que some no reinício. Não há válvula.",
+      );
+    }
+    if (storageProblems.includes("bucket")) {
+      storageIssue("CHECKLIST_STORAGE_S3_BUCKET", "CHECKLIST_STORAGE_S3_BUCKET é obrigatório em produção.");
+    }
+    if (storageProblems.includes("region")) {
+      storageIssue("CHECKLIST_STORAGE_S3_REGION", "CHECKLIST_STORAGE_S3_REGION precisa ter a forma de região da AWS (por exemplo, sa-east-1).");
+    }
+    if (storageProblems.includes("endpoint")) {
+      storageIssue(
+        "CHECKLIST_STORAGE_S3_ENDPOINT",
+        "CHECKLIST_STORAGE_S3_ENDPOINT precisa ser exatamente https://s3.<região>.amazonaws.com, da região configurada, sem porta, usuário, senha, caminho, consulta nem fragmento. Vazio é recusado: com ele o SDK escolheria o destino por variáveis que a trava não vê.",
+      );
+    }
+    const hasStaticAccessKey = value.CHECKLIST_STORAGE_S3_ACCESS_KEY_ID !== "";
+    const hasStaticSecret = value.CHECKLIST_STORAGE_S3_SECRET_ACCESS_KEY !== "";
+    if (hasStaticAccessKey !== hasStaticSecret) {
+      storageIssue(
+        hasStaticAccessKey ? "CHECKLIST_STORAGE_S3_SECRET_ACCESS_KEY" : "CHECKLIST_STORAGE_S3_ACCESS_KEY_ID",
+        "CHECKLIST_STORAGE_S3_ACCESS_KEY_ID e CHECKLIST_STORAGE_S3_SECRET_ACCESS_KEY vêm as duas ou nenhuma (nenhuma = o papel da tarefa).",
+      );
+    }
+  }
+
   // ── B-ASS-05 — G-BILLING-VAULT e G-BILLING-VAULT-PREV (plano §3.9, R-VLT-6) ─────────────────────────────────
   // Uma chave DECLARADA e inválida é erro de configuração em qualquer ambiente (não vira "cofre indisponível"
   // em silêncio). Ligar o canal em produção sem chave válida recusa o boot. Produção sem canal e sem chave

@@ -322,6 +322,10 @@ const IMPORT_ALLOWLIST = new Set([
   "../src/database/rls.js",
   "../src/modules/auth/repositories/local-auth-credential.repository.js",
   "../src/modules/auth/services/local-auth-credential.service.js",
+  // B-AUTH-LOGIN-PLATAFORMA (§2 do plano): o bootstrap garante o vínculo de identidade na mesma
+  // transação. Módulo-folha — o fecho transitivo importa só node:crypto, @prisma/client e os dois
+  // repositórios de identidade, SEM alcançar src/config/env.ts (o invariante abaixo permanece).
+  "../src/modules/auth/services/identity-resolver.js",
 ]);
 
 function collectModuleSpecifiers(text: string, fileName: string, runtimeOnly = false): string[] {
@@ -380,7 +384,10 @@ test("T1.7 guard de imports (CE-G1): todos os imports de bootstrap-platform-admi
   }
   const compilerImports = ts.preProcessFile(text, true, true).importedFiles.map((item) => item.fileName);
   for (const specifier of compilerImports) assert.ok(imports.includes(specifier), `AST perdeu import visto pelo compilador: ${specifier}`);
-  assert.equal(imports.length, 6, `esperava 6 especificadores no script real, recebeu ${imports.length}`);
+  // B-AUTH-LOGIN-PLATAFORMA: 6 → 7 com o import de identity-resolver.js (troca de contrato
+  // justificada no diário do bloco, não enfraquecimento do guard — a allowlist continua fechada
+  // e o fecho continua provando que src/config/env.ts não é alcançado).
+  assert.equal(imports.length, 7, `esperava 7 especificadores no script real, recebeu ${imports.length}`);
   const closure = runtimeClosure(scriptPath);
   assert.ok(![...closure].some((path) => path.replaceAll("\\", "/").endsWith("/src/config/env.ts")), `fecho carregou env.ts: ${[...closure].join(", ")}`);
 });

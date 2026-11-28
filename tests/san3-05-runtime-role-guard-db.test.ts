@@ -562,6 +562,11 @@ const PROD_BASE = {
   JOBS_WORKER_ENABLED: "true",
   REDIS_URL: "redis://192.0.2.1:6379",
   LOG_LEVEL: "info",
+  // B-EVIDENCIA-DURAVEL — a trava G-STORAGE-DURAVEL do env.ts: produção só sobe com o armazenamento durável da D-014.
+  CHECKLIST_STORAGE_PROVIDER: "s3",
+  CHECKLIST_STORAGE_S3_BUCKET: "erp-teste-evidencia",
+  CHECKLIST_STORAGE_S3_REGION: "us-east-1",
+  CHECKLIST_STORAGE_S3_ENDPOINT: "https://s3.us-east-1.amazonaws.com",
 } as const;
 
 test(

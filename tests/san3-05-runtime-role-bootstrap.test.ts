@@ -48,6 +48,11 @@ const PROD_OK: Record<string, string> = {
   DATABASE_URL: "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public",
   JOBS_WORKER_ENABLED: "true",
   REDIS_URL: "redis://redis.interno.exemplo.com:6379",
+  // B-EVIDENCIA-DURAVEL — a trava G-STORAGE-DURAVEL do env.ts: produção só sobe com o armazenamento durável da D-014.
+  CHECKLIST_STORAGE_PROVIDER: "s3",
+  CHECKLIST_STORAGE_S3_BUCKET: "erp-teste-evidencia",
+  CHECKLIST_STORAGE_S3_REGION: "us-east-1",
+  CHECKLIST_STORAGE_S3_ENDPOINT: "https://s3.us-east-1.amazonaws.com",
 };
 
 /** O que o EXPORT do `env.ts` resolve para a chave, lido de um processo filho com o ambiente dado. */
