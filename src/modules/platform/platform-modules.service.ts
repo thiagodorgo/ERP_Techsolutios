@@ -1,4 +1,4 @@
-import type { PlatformModule, PlatformPlan, PlatformTenant } from "./platform.types.js";
+import type { PlatformModule, PlatformTenant } from "./platform.types.js";
 
 // B-SAN3-18 (F1, P4) — CATÁLOGO CANÔNICO de módulos: a fonte ÚNICA de chave → rótulo. O registro de navegação, a
 // classe de rota do gate (`src/modules/navigation/route-modules.ts`), a semente (`DEMO_TENANT_MODULES`), o plano
@@ -59,26 +59,6 @@ export function normalizeModuleKeys(modules: readonly string[] | undefined | nul
   return [...out];
 }
 
-const modulesByPlan: Record<PlatformPlan, Set<string>> = {
-  starter: new Set(["dashboard", "users", "tenant-admin", "inventory"]),
-  professional: new Set([
-    "dashboard",
-    "users",
-    "tenant-admin",
-    "inventory",
-    "approvals",
-    "finance",
-    "notifications",
-    "mobile",
-    "tenant_checklist",
-    "field_operations",
-    "reports",
-    "audit",
-  ]),
-  business: new Set(["inventory", "integrations"]),
-  enterprise: new Set(moduleCatalog.map((item) => item.key)),
-};
-
 // Flag de módulo derivada da lista de módulos habilitados de uma organização (`Tenant.modules`).
 // Reusa o MESMO catálogo do painel de módulos (fonte única de key→label) — o detalhe da org expõe o
 // catálogo inteiro com `enabled` por módulo, sem inventar rótulo.
@@ -98,18 +78,25 @@ export function mapTenantModuleFlags(enabledModules: readonly string[]): TenantM
   }));
 }
 
+// B-PLANOS-MODULOS (D-PLANOS-MODULOS-PORTA-REAL) — saiu o mapa de código `modulesByPlan`: ele tratava TODA organização
+// como do plano inicial e mostrava "bloqueado pelo plano" sem plano nenhum. O conteúdo de cada plano é DADO (a lista
+// `modules` da versão do plano, que a assinatura grava em `tenants.modules`). A leitura agora diz a verdade:
+//   - SEM assinatura em vigor: toda área está disponível; ligada = `enabled`, desligada = `disabled`;
+//   - COM assinatura em vigor: o que não está ligado só liga mudando o plano (`blocked_by_plan`, `availableInPlan` falso).
+// "Ligada" passa pela mesma normalização do gate e do menu (`normalizeModuleKeys`): apelido antigo conta como a chave
+// canônica.
 export class PlatformModulesService {
   listForTenant(tenant: PlatformTenant): PlatformModule[] {
-    const planModules = modulesByPlan[tenant.plan];
+    const enabledKeys = new Set(normalizeModuleKeys(tenant.enabledModules));
 
     return moduleCatalog.map((module) => {
-      const availableInPlan = planModules.has(module.key);
-      const enabled = tenant.enabledModules.includes(module.key);
+      const enabled = enabledKeys.has(module.key);
+      const availableInPlan = tenant.managedBySubscription ? enabled : true;
 
       return {
         ...module,
         availableInPlan,
-        status: !availableInPlan ? "blocked_by_plan" : enabled ? "enabled" : "disabled",
+        status: enabled ? "enabled" : tenant.managedBySubscription ? "blocked_by_plan" : "disabled",
       };
     });
   }

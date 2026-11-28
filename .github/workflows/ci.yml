@@ -449,6 +449,8 @@ jobs:
           SUITES="$SUITES tests/plat-org-real-criacao-db.test.ts"
           SUITES="$SUITES tests/plat-org-real-suspensao-db.test.ts"
           SUITES="$SUITES tests/plat-org-real-isolamento-db.test.ts"
+          # B-PLANOS-MODULOS — a porta de módulos por organização, D1 a D10, sob papel efêmero NOSUPERUSER NOBYPASSRLS.
+          SUITES="$SUITES tests/planos-modulos-porta-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       - name: Route HC1b latency suite alone
