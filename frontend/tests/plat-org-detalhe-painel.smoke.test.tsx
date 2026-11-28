@@ -15,7 +15,7 @@ import { getPlatformTenantDetail } from "../src/modules/platform/platform-tenant
 import { composePlatformOrganizations, filterPlatformOrganizations } from "../src/modules/platform/platform-organizations.state";
 import type { PlatformOverviewData } from "../src/modules/platform/platform-overview.types";
 import { DETAIL_A, ORGANIZATION_A, ORGANIZATION_SYSTEM } from "./helpers/plat-org.fixture";
-import { elements, hasClass, installMiniDom, text } from "./helpers/mini-dom";
+import { elements, hasClass, installMiniDom, propsOf, text } from "./helpers/mini-dom";
 
 const overview: PlatformOverviewData = {
   activeOrgs: 3,
@@ -208,6 +208,26 @@ test("FP6-C 403 em segundo plano tira os dados e as ações do painel", async ()
   await settle();
   assert.match(text(page.container), /Acesso não permitido/);
   assert.doesNotMatch(text(page.container), /Plano Regional Teste|Administrador A|Editar nome/);
+  await page.unmount();
+});
+
+test("FP13 erro inicial permite tentar novamente", async () => {
+  let detailCalls = 0;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith(`/platform/tenants/${ORGANIZATION_A.id}/detail`)) {
+      detailCalls += 1;
+      return detailCalls === 1 ? new Response("", { status: 500 }) : new Response(JSON.stringify({ data: DETAIL_A }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response(JSON.stringify({ data: ORGANIZATION_A }), { status: 200, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  const page = await mountClient(<OrganizationDetailPanel organization={ORGANIZATION_A} permissions={["platform:tenants:update"]} />);
+  const retry = elements(page.container, (el) => el.localName === "button" && text(el) === "Tentar novamente")[0];
+  assert.ok(retry);
+  await act(async () => (propsOf(retry).onClick as () => void)());
+  await settle();
+  assert.match(text(page.container), /Plano Regional Teste|Administrador A/);
+  assert.equal(detailCalls, 2);
   await page.unmount();
 });
 

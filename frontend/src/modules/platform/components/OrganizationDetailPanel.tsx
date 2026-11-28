@@ -53,11 +53,11 @@ export function OrganizationSetupMissing({ organization, permissions, actionsAll
   </section>;
 }
 
-export function OrganizationDetailPanelView({ organization, data, returnSearch = "", permissions = [], stale = false, showFullLink = true, onAction = () => undefined }: { readonly organization: PlatformOrganization; readonly data: PlatformTenantDetailData; readonly returnSearch?: string; readonly permissions?: readonly string[]; readonly stale?: boolean; readonly showFullLink?: boolean; readonly onAction?: (action: Exclude<Action, null>) => void }) {
+export function OrganizationDetailPanelView({ organization, data, returnSearch = "", permissions = [], stale = false, showFullLink = true, onAction = () => undefined, onRetry }: { readonly organization: PlatformOrganization; readonly data: PlatformTenantDetailData; readonly returnSearch?: string; readonly permissions?: readonly string[]; readonly stale?: boolean; readonly showFullLink?: boolean; readonly onAction?: (action: Exclude<Action, null>) => void; readonly onRetry?: () => void }) {
   if (data.forbidden) return <ErrorState title="Acesso não permitido" detail="Seu perfil não consulta o detalhe desta organização." />;
   if (data.notFound) return <EmptyState title="Organização não encontrada" detail="Atualize a lista para conferir as organizações disponíveis." />;
   const detail = data.detail;
-  if (!detail) return <Alert title="Não foi possível carregar a organização" tone="warning">Tente novamente. Nenhuma ação está disponível sem uma leitura válida.</Alert>;
+  if (!detail) return <Alert title="Não foi possível carregar a organização" tone="warning">Não foi possível carregar a organização. Nenhuma ação está disponível sem uma leitura válida. <button type="button" className="pat-btn" onClick={onRetry}>Tentar novamente</button></Alert>;
   const actionsAllowed = !organization.system && !stale;
   const enabledModules = detail.modules.filter((item) => item.enabled);
   return (
@@ -93,7 +93,7 @@ export function OrganizationDetailPanel({ organization, returnSearch = "", permi
   };
   if (state.loading && !state.data.detail) return <div className="platform-organizations__detail"><Skeleton lines={4} /></div>;
   return <>
-    <OrganizationDetailPanelView organization={organization} data={state.data} stale={state.stale} returnSearch={returnSearch} permissions={permissions} onAction={openAction} />
+    <OrganizationDetailPanelView organization={organization} data={state.data} stale={state.stale} returnSearch={returnSearch} permissions={permissions} onAction={openAction} onRetry={() => void state.refresh(false)} />
     {action === "edit" ? <OrganizationEditNameDialog organization={organization} onClose={close} onConfirm={async (name) => { await updatePlatformTenant(organization.id, { name }); await done(); }} /> : null}
     {action === "status" ? <OrganizationStatusDialog organization={organization} detail={state.data} onClose={close} onRefresh={async () => { await state.refresh(false); }} onConfirm={async (input) => { await updatePlatformTenantStatus(organization.id, input); await done(); }} /> : null}
     {action === "admin" ? <OrganizationAdminDialog organization={organization} onClose={close} onConfirm={async (input) => createTenantAdminUser(organization.id, input)} onDone={() => void done()} /> : null}
