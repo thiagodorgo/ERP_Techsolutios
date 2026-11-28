@@ -79,6 +79,11 @@ export const STORAGE_INVENTORY_MODELS = [
   "work_order_attachments",
   "attachments",
   "damage_attachments",
+  // B-EVIDENCIA-INDICE (F1) — a evidência do app é arquivo de organização como os 4 anexos: tem `size_bytes`
+  // e mora no armazenamento durável, então entra no estoque medido pelo rateio (censo C-6 de
+  // tests/san3-03-basis-census.test.ts). Entra NO FIM: a ordem dos 4 primeiros é a que
+  // METERING_ATTACHMENT_MODELS declara medir, e a franquia de armazenamento não muda neste bloco.
+  "mobile_evidences",
 ] as const;
 
 // B-ASS-03 · R-MED-8 — `db_bytes_estimated` também é DERIVADA: lida de `tenant_usage_daily`, nunca de evento.

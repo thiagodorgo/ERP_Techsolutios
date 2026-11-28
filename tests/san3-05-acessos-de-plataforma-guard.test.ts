@@ -813,6 +813,10 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/platform/platform-organizations-prisma.repository.ts", "new AuditLogRepository(tx)", "$TRANSACTION-SEM-SETTER-PROVADO", "×2"),
     "B-PLAT-ORG-REAL PR-a: as duas trilhas em `audit_logs` (FORCE) recebem o tx da criação após `setTenantRlsContext(tx, tenant.id)`; a trilha de mudança de situação recebe o tx cujo primeiro comando é `setTenantRlsContext(tx, id)`. C15/S10 e a suíte de isolamento conferem as escritas sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  [
+    k("L2", "src/modules/mobile/mobile-evidence-prisma.repository.ts", "new PrismaMobileEvidenceRepository(tx)", "PARAMETRO(tx de callback de run)", "×5"),
+    "B-EVIDENCIA-INDICE (F2b): os 5 métodos do envoltório `RlsPrismaMobileEvidenceRepository` (findByClientEvidenceId, createAccepted, markFileStored, listByWorkOrder, findByIdForWorkOrder) entregam o repositório ao `tx` do privado `run`, que é `withTenantRls(await this.resolveClient(), tenantId, work)` — o GUC da organização é a 1ª instrução da transação, e todo `where` repete `tenant_id`. O mesmo desenho do anexo de OS. `mobile_evidences` tem FORCE RLS pela migração 20261127000000_add_mobile_evidences; o caso D8 de tests/evidencia-indice-db.test.ts prova a política e o filtro separadamente, sobre uma conexão de superuser que contorna a política.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
@@ -901,7 +905,9 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     // B-APP-ORG-2S (S1) 125 → 126 — exatamente a tabela FORCE nova user_creation_log.
     // B-GRUPO-GESTOR (1a, migração autorizada pelo dono, Emenda 2 §2.3): 126 → 128 — exatamente as 2 tabelas FORCE novas
     // (economic_group_managers e user_deactivation_requests) e os 2 models delas.
-    assert.match(f2.stdout, /tabelas ENABLE=129 FORCE=129 · acessores Prisma em FORCE=129/);
+    // B-EVIDENCIA-INDICE (F1, migração 20261127000000_add_mobile_evidences autorizada pelo dono): 129 → 130 —
+    // exatamente a 1 tabela FORCE nova (mobile_evidences) e o model dela (MobileEvidence).
+    assert.match(f2.stdout, /tabelas ENABLE=130 FORCE=130 · acessores Prisma em FORCE=130/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);
