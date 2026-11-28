@@ -13427,6 +13427,8 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-UPLOAD-ARMAZENAMENTO-EFEMERO (2026-11-10) — a evidência móvel guardada pelo servidor fica no diretório temporário do container: um reinício ou um deploy a apaga depois de o app já ter apagado a cópia local — GRAVE
 
+- **status:** FECHADA pelo PR do `B-EVIDENCIA-DURAVEL` (ramo `fix/evidencia-duravel`; vale no merge; o efeito em produção vale na publicação da imagem, pelo roteiro do plano do bloco, §8.2 e §11). A foto do app grava pelo provedor da D-014, com a organização do ator no primeiro segmento da chave, e `stored` só sai depois de o provedor confirmar; a trava de boot `G-STORAGE-DURAVEL` recusa produção sem o armazenamento durável, para os 6 tipos de envio (a metade do comprovante já estava no #525). **Teste-dono:** `tests/evidencia-duravel-storage.test.ts` (E1 a E18) e `tests/evidencia-duravel-boot-gate.test.ts` (GS0 a GS15 e GS6b), com as 18 mutações da tabela da Emenda 1 do plano. Vermelho-controle na base `8719cf04`: 13 dos 17 da trava e 17 dos 19 do armazenamento (os verdes são os controles declarados: GS0, GS10, GS11, GS13, E17 e E18). A nota ao item 27 deixa de valer quando o roteiro do item 27 (§11 do plano do bloco) passar em produção.
+- **status anterior:** ABERTA · **gravidade:** GRAVE (perda de dado sem volta) · **escopo:** `pre-existente` (origem `ba03272f`/`be750e92`, 17–18/06, B-107/B-108) · **dono:** o bloco que liga uploads em produção (item 27 do portão) ou um bloco próprio de armazenamento durável · **PR-alvo:** o PR desse bloco · **bloqueia:** o item 27 do portão (nota ao portão: ele não pode fechar, com upload funcionando em produção, sem esta pendência encerrada).
 - **status:** ABERTA · **gravidade:** GRAVE (perda de dado sem volta) · **escopo:** `pre-existente` (origem `ba03272f`/`be750e92`, 17–18/06, B-107/B-108) · **dono:** o bloco que liga uploads em produção (item 27 do portão) ou um bloco próprio de armazenamento durável · **PR-alvo:** o PR desse bloco · **bloqueia:** o item 27 do portão (nota ao portão: ele não pode fechar, com upload funcionando em produção, sem esta pendência encerrada).
 - **fato (medido pelo orquestrador na `origin/main` `75572269`, 10/11 01:33 SP, a partir do C1-D1 da junta do #525):** `src/modules/mobile/mobile-evidence-upload.ts` l.58–59 grava em `path.join(os.tmpdir(), "erp-mobile-evidence-uploads")`, com `new LocalProtectedEvidenceStorageProvider(evidenceUploadStorageRoot)`. A raiz só muda por `configureMobileEvidenceUploadStorageForTests` (l.61–64); `git grep` não acha outro chamador nem variável de ambiente que a troque (o `env.ts` só tem `CHECKLIST_STORAGE_PROVIDER` local|s3, do checklist). O app apaga o blob local da foto quando o servidor responde `stored` (§6 do CLAUDE.md).
 - **consequência:** em produção, toda foto de evidência guardada pelo servidor fica no diretório temporário do container; um reinício ou um deploy a apaga, e o app já apagou a cópia local. Hoje está mascarado: produção e staging respondem 503 a todo upload (item 27 do portão, `P-O6R-B07B-SCANNER-AV-REAL`). No dia em que o antivírus real responder, a perda começa.
@@ -14260,10 +14262,12 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 
 ## P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA (2026-11-11) — a tela de módulos da organização mostra "habilitado" e não avisa do 409 — MÉDIA
 
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (o 409 nasce no `B-SAN3-18`; a tela é anterior) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
 - **status:** FECHADA (PR #646, Emenda 1.6; prova: FM1 a FM4 verdes no CI do head final) · **escopo:** `dentro-do-bloco` (o 409 nasce no `B-SAN3-18`; a tela é anterior) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
 - **origem:** R2-03 da crítica r2 do plano, opção (a): sem abrir front num bloco de permissão. O §0 item 6 do plano v2 vale como "a tela continua mostrando a lista antiga e não avisa do 409".
 - **prova:** `frontend/src/modules/platform/pages/PlatformTenantModulesPage.tsx:44-47` — `saveModules()` sem `try/catch`; o selo "habilitado" sai do estado LOCAL (l.83). Com o 409 a promessa rejeita sem nada na tela, e o GET da mesma tela lê o repositório em memória, não `tenants.modules`.
 - **teste de encerramento:** a tela mostra o estado de erro (§7) no 409 e avisa que os módulos mudam pela assinatura; o selo sai da resposta do servidor.
+- **apenso 2026-11-27 (`B-PLANOS-MODULOS`, `D-PLANOS-MODULOS-PORTA-REAL`):** a porta passa a responder **200** para organização SEM assinatura (grava e devolve a lista relida) e **409** só com assinatura em vigor. A tela tem de tratar os dois: o selo e o estado da chave saem da resposta do servidor; 200 recarrega a lista; 409 mostra o aviso de que os módulos mudam pela assinatura (plano do bloco, §6; Emenda 1.6 do plano do PR-b). O teste de encerramento acima passa a valer com os dois casos.
 - **apenso de fechamento (27/11, Emenda 1.6 do `B-PLAT-ORG-REAL`, PR #646):** a prova acima fica como estava, é do estado anterior da tela. A cláusula da E1.6.2 põe `applyServerModules` na página: o 200 recarrega o selo e a chave com a lista que o servidor devolveu, e qualquer falha devolve o selo à última lista lida do servidor. O 409 `module_change_requires_subscription` mostra "Alteração não concluída" e o aviso da assinatura; 400, 422 e 409 de outro motivo dizem "Não foi possível salvar os módulos. Nada foi alterado."; rede caída e 5xx dizem "Não foi possível confirmar se os módulos foram salvos. Recarregue a página para ver a situação atual.", porque o resultado é desconhecido. Evidência: `frontend/tests/plat-org-modulos.smoke.test.tsx`, FM1 a FM4, página real com dublê só na fronteira HTTP — sem a cláusula `# tests 4 # fail 4` (por comportamento), com a cláusula `# pass 4 # fail 0` no worktree, e verdes no CI do head final. O que ficou de fora da cláusula está na `P-PLAT-ORG-MODULOS-TELA-RESTOS`.
 
 ## P-SAN3-18-PORTAL-SEM-GATE (2026-11-11) — os portais do proprietário e da autoridade ficam fora do gate de módulo — BAIXA
@@ -15590,6 +15594,7 @@ Designação do orquestrador (17/11/2026, na pré-revisão do #582): o bloco don
 - **critério de encerramento:** o mesmo lote, reenviado depois de reiniciar a API, devolve `already_applied`, sem OS nova e
   sem evento novo, com teste que fica vermelho sem o conserto.
 - **apenso (2026-11-15, `B-SAN3-16`):** a Emenda 2 do `B-SAN3-16` nunca foi escrita; pelo próprio texto desta pendência e pela decisão do orquestrador de 14/11 22:41, o dono passa a ser o **`B-SAN3-16b`** (a planejar). O `B-SAN3-16` não a implementa e mantém o escopo.
+- **apenso (2026-11-27, `B-EVIDENCIA-DURAVEL`):** a irmã da evidência foi aberta: `P-EVIDENCIA-METADADO-EM-MEMORIA` (o metadado aceito da evidência e a trilha do upload também vivem só em memória, `mobile-evidence-sync.ts:94` e `evidence-storage.ts`). Esta pendência não muda.
 
 ## P-OS-MESMA-SITUACAO-GRAVA-EVENTO (2026-11-14) — a mudança para a mesma situação grava evento no histórico da OS — BAIXA
 
@@ -18257,6 +18262,7 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA de documentação e de coerência de design (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco próprio de emenda da base de design e da skill · **bloqueia:** não.
 - **origem:** maquetes do login da marca nova (25/11). Conflito §A2 registrado pelo Qwen, não consolidado: `DESIGN_SYSTEM.md` ("Primary: deep industrial blue"), `COMPONENT_LIBRARY.md` e a REGRA ZERO da skill `ui-ux-pro-max` ("paleta fixa: azul industrial") contra as decisões do dono de 25/11 (`D-DONO-2511-MARCA-PATIOSUL`, `D-DONO-2511-MARCA-CORES-NO-SISTEMA-TODO` e `D-DONO-2511-MARCA-TELAS-AZUIS-PELOS-TOKENS`: as cores dos logos, as 3 aparências de cor no sistema todo e as telas azuis passando para a marca nova pelos tokens). Pelo §A1, vale a decisão do dono.
 - **critério de encerramento:** `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e a skill de UI/UX (com os dois espelhos de skills) descrevem a paleta da marca nova e as 3 aparências de cor, com a emenda registrada em `agent-orchestration/controle/`.
+- **atualização (2026-11-27, fatia G do `B-MARCA-LOGIN-SIDEBAR`):** este registro emendou a base de design e a skill. O `DESIGN_SYSTEM.md` ganhou as linhas da paleta e a seção "Marca Pátio Sul ERP" (os tokens `--ps-*` e as 3 cores do login), e a skill `ui-ux-pro-max` deixou de dizer "paleta fixa" e aponta para o `DESIGN_SYSTEM.md`, nos dois espelhos de skills (conflito C7 da `C-MARCA-LOGIN-SIDEBAR`). **Continua aberta** para o que falta: a biblioteca de componentes (`COMPONENT_LIBRARY.md`, com o registro do componente da sidebar, que nasce junto com ele) e as 3 cores no sistema todo (as telas de dentro seguem nos tokens azuis até o bloco das telas azuis pelos tokens; a sidebar na Branca e na Preta é a `P-MARCA-SIDEBAR-BRANCA-PRETA`).
 
 ## P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do site — BAIXA
 
@@ -18269,6 +18275,90 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** MÉDIA de dado na tela da Cobrança (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de backend pequeno, agendado sem data (`D-DONO-2511-COBRANCA-AGENDADA`) · **bloqueia:** não.
 - **origem:** tela da Cobrança da plataforma: o quadro "Demonstrativos por mês e situação" está marcado como "ainda não vem do servidor" — a série mensal não existe no servidor. Agendado pelo dono em 25/11: *"agenda isso aí, deixa documentado, depois nós vamos fazer"*.
 - **critério de encerramento:** a série mensal por mês e situação é servida pelo servidor e o quadro passa a consumi-la, sem o aviso "ainda não vem do servidor".
+
+## P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS (2026-11-27) — em modo memória, a porta de módulos grava no console e o gate não enxerga — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o console e o núcleo em memória têm armazéns separados desde o `B-SAN3-06b`) · **dono:** quem unificar o arnês em memória · **bloqueia:** não.
+- **origem:** L3 e R6 do plano do `B-PLANOS-MODULOS`.
+- **prova:** em memória, `PATCH /platform/tenants/:id/modules` grava em `InMemoryPlatformOrganizationsRepository`, e o gate lê os módulos pelo `ICoreSaasService` do app (`module-gate.middleware.ts`); `tests/san3-18-platform-modules-patch.test.ts` mostra a organização do armazém do gate respondendo 404 na porta. Produção recusa modo memória no boot (`src/config/env.ts`), e a prova de que o gate enxerga é o D2 de `tests/planos-modulos-porta-db.test.ts`, com Postgres.
+- **teste de encerramento:** em modo memória, ligar uma área pela porta faz o gate e o menu da organização enxergarem na requisição seguinte.
+
+## P-PLANOS-MODULOS-PORTA-COM-ASSINATURA (2026-11-27) — com assinatura em vigor, só o plano muda módulo; não há cortesia de área por cima do plano — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** decisão do dono (P2 do plano do `B-PLANOS-MODULOS`) e, se ele quiser, bloco próprio · **bloqueia:** não.
+- **origem:** P2 do plano do `B-PLANOS-MODULOS` (não trava o dev; recomendação "não agora").
+- **prova:** com assinatura em vigor (`valid_to` nulo ou no futuro), a porta responde 409 `module_change_requires_subscription` (`tests/planos-modulos-porta-db.test.ts`, D5 e D7).
+- **teste de encerramento:** a decisão do dono sobre a cortesia fica registrada; se for "sim", um bloco próprio entrega a área por cima do plano com trilha e com o que acontece quando o plano muda.
+
+## P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05 (2026-11-27) — 6 rotas do console de organizações seguem etiquetadas "em memória, não toca o banco" — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o console grava no banco desde o #642) · **dono:** o próximo bloco que tocar o console de organizações ou o `san3-05` · **bloqueia:** não.
+- **origem:** achado do `dev-planos-cl` no `B-PLANOS-MODULOS`, ao corrigir as 2 etiquetas das rotas de módulos.
+- **prova:** `tests/san3-05-leituras-de-plataforma-db.test.ts` etiqueta `GET`/`POST /platform/tenants`, `GET`/`PATCH /platform/tenants/:tenantId`, `PATCH /platform/tenants/:tenantId/status` e `POST /platform/tenants/:tenantId/admin-user` como `SEM-FORCE`, sem tabela, com a nota "PlatformTenantsRepository em memória — não toca o banco"; o `changeStatus` grava `audit_logs` e revoga `auth_sessions`, e o `create` grava `economic_group_members` e `audit_logs` (`src/modules/platform/platform-organizations-prisma.repository.ts`). A etiqueta `SEM-FORCE` sem tabela passa no T11g sem medir nada.
+- **teste de encerramento:** as 6 rotas nomeiam as tabelas FORCE que tocam, com cenário próprio no T11 (super × papel sem bypass), ou a nota registra, medido, por que não tocam.
+
+## P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT (2026-11-27) — o teardown de `tests/leilao-revenda-db.test.ts` quebra com 42883 quando a tabela irmã `tenant_id text` existe — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a classe é a do #636, que pôs o filtro `data_type = 'uuid'` em outros teardowns; este arquivo ficou sem) · **dono:** o próximo bloco que tocar o leilão/revenda, ou um bloco pequeno de arnês · **bloqueia:** não (instabilidade de CI, não de produto).
+- **origem:** medido pelo `dev-planos-cl` no CI do `B-PLANOS-MODULOS` (job `backend-postgres` da rodada de push do head `b3d525714`): `not ok 752 - RV16`, `failureType: 'hookFailed'`, `Raw query failed. Code: 42883. Message: operator does not exist: text = uuid`, em `tests/leilao-revenda-db.test.ts:160` (o `teardown`). Os D1 a D10 do bloco passaram na mesma rodada (`# tests 1488 · # fail 1`).
+- **prova:** o `teardown` (l.152-163 na `origin/main` `8719cf045`) lista toda tabela de `public` com coluna `tenant_id`, sem filtrar o tipo, e faz `DELETE … WHERE tenant_id = $1::uuid`; `tests/sweep-tenant-text-db.test.ts:33` cria de propósito, no mesmo banco e em paralelo, a tabela `sweep_guard_text_*` com `tenant_id text`. Quando as duas se cruzam, o `DELETE` quebra. Os arquivos estão fora do PERMITIDO do bloco, e ele não os toca.
+- **teste de encerramento:** o `teardown` filtra `c.data_type = 'uuid'` (como `tests/helpers/sweep-tenant.ts`), ou usa o `sweepTenant`, e N ≥ 10 rodadas do `backend-postgres` com a tabela irmã presente ficam com `# fail 0`.
+## P-EVIDENCIA-METADADO-EM-MEMORIA (2026-11-27) — o metadado aceito da evidência e a trilha do upload vivem só em memória: o texto da observação some no reinício, e o upload depois do reinício dá 409 — GRAVE
+
+- **status:** ABERTA · **gravidade:** GRAVE (perda de dado: o texto da observação) — leitura do planejador do `B-EVIDENCIA-DURAVEL`, declarada (§A6) · **escopo:** `pre-existente` (B-098e, B-108) · **dono:** `B-EVIDENCIA-INDICE` (a planejar; pede `prisma/**`; junta completa) · **PR-alvo:** o PR desse bloco · **bloqueia:** não (nem o `B-EVIDENCIA-DURAVEL` nem o item 27 — leitura do planejador, declarada, §11.2 do plano do bloco).
+- **fato (medido pelo planejador na `origin/main` `8719cf04`, diário M10 do plano do `B-EVIDENCIA-DURAVEL`, fora do repositório):** o metadado aceito da evidência vive só em memória (`src/modules/mobile/mobile-evidence-sync.ts:94`, `const syncReceipts = new Map<string, MobileEvidenceSyncReceipt>();`), e a trilha do upload também (`auditEvents` de `src/modules/evidence/evidence-storage.ts`). A observação em texto não tem arquivo e some no reinício. Depois do reinício, ou com 2 instâncias, o upload do binário dá 409 `evidence_metadata_required`: o app preserva a foto, mas a evidência trava. Não há tabela nem leitor de evidência por OS, e o `file_id` não é gravado.
+- **o que o `B-EVIDENCIA-DURAVEL` deixou pronto para este bloco:** a foto fica no armazenamento durável com a organização, a OS (do recibo), o usuário e o código da evidência na chave (`<prefixo>/<org>/mobile-evidence-wo-<OS>/<uuid>-u-<usuário>--<evidência>.<ext>`, ou `mobile-evidence-field`), e o `file_id` é derivado dela (`evfile_` + 32 hexadecimais do SHA-256 de `<provedor>:<chave>`): o índice religa o `evidence_id` listando o prefixo.
+- **itens que vão DENTRO desta pendência, para o mesmo bloco:** (1) o reenvio depois de uma resposta perdida cria um segundo objeto (sem tabela não há como deduplicar); (2) a evidência não entra na medição da franquia de armazenamento (a medição lê as 4 tabelas de anexo); (3) o app rotula todo 503 como `SCAN_FAILED`, inclusive a falha de armazenamento (`mobile/**` não mudou); (4) o mapa de recibos do checklist (`src/modules/mobile/mobile-checklist-sync.ts:169`) tem a mesma forma, e a idempotência dele depois do reinício não foi medida; (5) nota do dev do `B-EVIDENCIA-DURAVEL`: `docs/mobile-sync-contracts.md` l.397 ainda diz "com provider local protegido", fora do trecho que o bloco podia tocar.
+- **critério de encerramento:** metadado e vínculo arquivo, evidência e OS em tabela com RLS; o mesmo lote reenviado depois de reiniciar devolve `already_applied`; existe leitura da evidência por OS; teste que fica vermelho sem o conserto.
+
+## P-STORAGE-FORCE-PATH-STYLE-COERCE (2026-11-27) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE=false` é lido como verdadeiro — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (não perde dado) · **escopo:** `pre-existente` (`src/config/env.ts`: a chave usa `z.coerce.boolean().default(true)`) · **dono:** o próximo bloco que tocar `src/config/env.ts`, ou a varredura de segurança do portão vendável · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
+- **fato (medido pelo planejador do `B-EVIDENCIA-DURAVEL`, diário M7, e no P0 do orquestrador de 27/11):** a string `false` vira `true`. Produção declara `false` e roda com `true`. Os anexos de OS gravam assim e funcionam; o `forcePathStyle` não entra na trava `G-STORAGE-DURAVEL`.
+- **critério de encerramento:** a chave usa o `booleanFlag` do próprio `env.ts`, com teste; antes de mudar, medir em produção que os 6 tipos de envio continuam gravando e lendo.
+
+## P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA (2026-11-27) — o painel de KPI cita o provedor da evidência que saiu do código — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `Kpis/**` (congelado, `D-GOV-PROPORCIONAL`; PROIBIDO no `B-EVIDENCIA-DURAVEL`) · **dono:** o próximo marco de KPI (o loop) · **PR-alvo:** o PR desse marco · **bloqueia:** não.
+- **fato (Emenda 1 §E1.6 do plano do `B-EVIDENCIA-DURAVEL`, re-medido pelo dev no ramo):** `Kpis/README.md:145`, `Kpis/kpis-history.json:77` e `Kpis/kpis-history.md:1448-1449` citam `EvidenceStorageProvider` e `LocalProtectedEvidenceStorageProvider`, que saíram do código neste bloco.
+- **critério de encerramento:** decidir, no próximo marco de KPI, se a descrição histórica do B-108 fica como está (é história) ou ganha uma nota de que o provedor saiu no `B-EVIDENCIA-DURAVEL`.
+
+## P-EVIDENCIA-TRILHA-SANEADOR-CHAVES (2026-11-27) — o saneador da trilha da evidência não nega as chaves `key`, `prefix`, `fileurl`, `endpoint` e `arn` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (não há vazamento real no `B-EVIDENCIA-DURAVEL`: nenhum evento da trilha grava essas chaves) · **escopo:** `pre-existente` (o conjunto `sensitiveAuditKeys` e as funções de saneamento de `src/modules/evidence/evidence-storage.ts` são idênticos na base `8719cf04` e no ramo do bloco; provado por execução pela cadeira C1 da junta do #649, e o trecho do conjunto tem o mesmo md5 nos dois) · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** achado C1-02 da cadeira C1 da junta do PR #649 (`B-EVIDENCIA-DURAVEL`); o mesmo furo já tinha sido medido no 1º ataque ao plano do bloco (`crit-evidencia-qw`), fora do repositório.
+- **fato:** `sanitizeEvidenceAuditMetadata` só remove as chaves do conjunto `sensitiveAuditKeys` (`authorization`, `bearer`, `accesstoken`, `refreshtoken`, `token`, `base64`, `file_data`, `local_path`, `path`, `bucket`, `storage_key`, `storagekey`, `absolutepath`). As chaves `key`, `prefix`, `fileurl`, `endpoint` e `arn` passam, na raiz e aninhadas. Hoje os eventos do upload não as carregam (o E13 de `tests/evidencia-duravel-storage.test.ts` confere a trilha do envio); um evento futuro que as gravasse sairia sem filtro.
+- **critério de encerramento:** o saneador nega também `key`, `prefix`, `fileurl`, `endpoint` e `arn`, na raiz e aninhadas, com teste que fica vermelho sem o conserto.
+
+## P-PLAT-CONTADOR-COBRANCA-VENCIDA (2026-11-27) — o contador de cobranças vencidas no menu da plataforma não tem número pronto no servidor — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de produto (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de backend próprio, com o nível que a trava der · **bloqueia:** não.
+- **origem:** resposta `sb-06` do dono (27/11 16:13:55, os 4 contadores; `D-DONO-2711-MARCA-RESPOSTAS`) e o plano do `B-MARCA-LOGIN-SIDEBAR` (Emenda 1, E1.5). "Vencida" hoje é calculado na tela de Cobrança, com várias leituras por organização; fazer isso no menu, a cada tela, é caro, e um total pronto exige rota nova no servidor, fora de um bloco só de apresentação. Pela regra "só número real" (conflito C11 da `C-MARCA-LOGIN-SIDEBAR`), o contador não entra na sidebar enquanto o número não existir.
+- **critério de encerramento:** o servidor entrega o total de cobranças vencidas da plataforma numa leitura só, e o menu da plataforma mostra o contador (zero não aparece; erro de leitura não mostra nada).
+
+## P-PLAT-AVISOS-SEM-FONTE (2026-11-27) — o sino do console da plataforma não tem serviço de avisos — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA de produto (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de backend próprio · **bloqueia:** não.
+- **origem:** resposta `sb-06` do dono (27/11 16:13:55, os 4 contadores; `D-DONO-2711-MARCA-RESPOSTAS`) e o plano do `B-MARCA-LOGIN-SIDEBAR` (Emenda 1, E1.5). O console da plataforma não tem serviço de avisos; o ponto vermelho do sino de hoje é fixo, não é dado, e sai. O sino do shell da organização tem fonte e continua.
+- **critério de encerramento:** existe um serviço de avisos da plataforma, e o sino do console mostra o número real de não lidos.
+
+## P-PLAT-BUSCA-SEM-FUNCAO (2026-11-27) — a busca do console da plataforma é só um desenho, sem função — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de produto (classificação do redator do registro; a fonte não deu gravidade) · **dono:** um bloco de tela do console da plataforma · **bloqueia:** não.
+- **origem:** plano do `B-MARCA-LOGIN-SIDEBAR` (seção 4.4 e Emenda 1, E1.4). A busca desenhada no console da plataforma não abre nada: a paleta de comandos lista destinos da organização, não os da plataforma. Com a resposta `sb-04` = "sidebar", a busca não é desenhada na sidebar do console enquanto não tiver função; no shell da organização ela abre a paleta e continua.
+- **critério de encerramento:** a busca do console da plataforma tem função (os destinos da plataforma) e passa a ser desenhada na sidebar do console.
+
+## P-MARCA-SIDEBAR-BRANCA-PRETA (2026-11-27) — a sidebar só tem desenho aprovado em grafite — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de marca (classificação do redator do registro; a fonte não deu gravidade) · **dono:** o lote de telas com o dono (`D-DONO-2011-UMA-TELA-POR-LOTE`) · **bloqueia:** não.
+- **origem:** o login sai nas 3 cores (`D-DONO-2711-LOGIN-MAIS-BRANCA-E-PRETA`), mas o modelo aprovado da sidebar (`D-DONO-2711-SIDEBAR-MODELO-VIDEO`) só existe em grafite. Por enquanto a cor escolhida só aparece no login; a sidebar na Branca e na Preta pede maquete e a escolha do dono.
+- **critério de encerramento:** a maquete da sidebar na Branca e na Preta aprovada pelo dono e implementada pelos tokens `--ps-sb-*`, trocados pelo `data-tema`.
+
+## P-DOCS-NOME-CUSTO-DA-NUVEM (2026-11-27) — documentos vigentes ainda dizem "Cloud Billing" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA de documentação (classificação do redator do registro; a fonte não deu gravidade) · **dono:** o PR semanal de registro · **bloqueia:** não.
+- **origem:** resposta `sb-08` do dono (27/11 16:14:14): o rótulo na tela passa a "Custo da nuvem". A troca na tela vai num PR próprio do `B-MARCA-LOGIN-SIDEBAR`; o contrato (§4) e o índice das referências (`docs/claude-code-handoff/screen-refs/README.md`) ganharam a nota neste registro. Os documentos vigentes que ainda dizem "Cloud Billing" (`COMPONENT_LIBRARY.md`, `PROJECT_MEMORY.md`, o `screen-refs/README.md` da raiz e os de `docs/`) ficam para depois. Registro histórico (`agent-orchestration/**`, `Kpis/**`) e nome de arquivo não mudam.
+- **critério de encerramento:** os documentos vigentes dizem "Custo da nuvem" onde falam do rótulo da tela, com o nome técnico (rota, chave e arquivo) intacto.
 
 ## P-PLAT-ORG-MODULOS-TELA-RESTOS (2026-11-27) — o que a cláusula de módulos da organização não cobriu — BAIXA
 

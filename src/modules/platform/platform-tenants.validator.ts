@@ -1,8 +1,11 @@
 import { CoreSaasError } from "../core-saas/types/core-saas.types.js";
 import { parseBillingProfileInput } from "../subscription-billing/billing-profile/billing-profile.js";
+import { CANONICAL_MODULE_KEYS } from "./platform-modules.service.js";
 import type { CreatePlatformTenantDto, CreateTenantAdminDto, PlatformPlan, UpdatePlatformTenantDto, UpdatePlatformTenantModulesDto, UpdateTenantStatusDto } from "./platform.types.js";
 
 const PLANS = new Set<PlatformPlan>(["starter", "professional", "business", "enterprise"]);
+const MODULES_MAX = 50;
+const CANONICAL_MODULES: ReadonlySet<string> = new Set(CANONICAL_MODULE_KEYS);
 const CREATE_FIELDS = new Set(["name", "group", "profile", "plan", "admin"]);
 const STATUS_REASONS = new Set<UpdateTenantStatusDto["reason"]>(["nonpayment", "customer_request", "security", "other"]);
 
@@ -36,9 +39,19 @@ export function parseUpdateTenantStatusDto(body: Record<string, unknown>): Updat
   if (!STATUS_REASONS.has(reason as UpdateTenantStatusDto["reason"])) bad("reason_required", "reason is required.");
   return { status, reason: reason as UpdateTenantStatusDto["reason"] };
 }
+// B-PLANOS-MODULOS — a lista é o estado FINAL das áreas da organização e substitui a atual. Lista fechada: corpo fora
+// da forma (ausente, não lista, item que não é texto, mais de 50 itens) é 400 `invalid_field`, e chave que não é
+// canônica do catálogo, inclusive apelido (`work-orders`, `checklists`), é 422 `module_unknown`. Nunca vira lista
+// vazia: a lista vazia desliga tudo, então só a lista vazia ENVIADA pode fazer isso. Repetidos valem uma vez; a saída
+// vem na ordem do catálogo.
 export function parseUpdatePlatformTenantModulesDto(body: Record<string, unknown>): UpdatePlatformTenantModulesDto {
   assertKnownFields(body, new Set(["enabledModules"]));
-  return { enabledModules: Array.isArray(body.enabledModules) ? body.enabledModules.filter((item): item is string => typeof item === "string") : [] };
+  const list: unknown = body.enabledModules;
+  if (!Array.isArray(list) || list.length > MODULES_MAX) bad("invalid_field", `enabledModules must be a list of up to ${MODULES_MAX} module keys.`);
+  if (!list.every((item): item is string => typeof item === "string")) bad("invalid_field", "enabledModules must contain only module keys.");
+  const wanted = new Set(list);
+  if ([...wanted].some((key) => !CANONICAL_MODULES.has(key))) bad("module_unknown", "enabledModules has a key outside the module catalog.", 422);
+  return { enabledModules: CANONICAL_MODULE_KEYS.filter((key) => wanted.has(key)) };
 }
 export function parseCreateTenantAdminDto(body: Record<string, unknown>): CreateTenantAdminDto {
   assertKnownFields(body, new Set(["name", "email"]));

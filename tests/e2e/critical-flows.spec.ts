@@ -387,11 +387,11 @@ test.describe("administrador da plataforma pela tela", () => {
   await expect(page.getByRole("row", { expanded: false }).filter({ hasText: DEMO_ORGANIZATION })).toBeVisible();
 
   const menu = page.getByRole("navigation");
-  for (const item of ["Visão Geral", "Organizações", "Cloud Billing", "Saúde do Sistema"]) {
+  for (const item of ["Visão Geral", "Organizações", "Custo da nuvem", "Saúde do Sistema"]) {
     await expect(menu.getByRole("link", { name: item, exact: true })).toBeVisible();
   }
 
-  await menu.getByRole("link", { name: "Cloud Billing", exact: true }).click();
+  await menu.getByRole("link", { name: "Custo da nuvem", exact: true }).click();
   await expect(page).toHaveURL(/\/platform\/cloud-billing$/);
   await expect(page.getByRole("combobox", { name: "Mês de referência" })).toBeVisible();
   await expect(page.getByText("Acesso não permitido", { exact: true })).toHaveCount(0);

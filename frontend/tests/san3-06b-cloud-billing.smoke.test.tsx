@@ -119,7 +119,7 @@ test("T12 adapter não converte dinheiro: string decimal fica literal; número, 
 test("T13 tela não contém cobrança por markup", async () => {
   const data = await withFetch((url) => json(payloadFor(url)), () => getCloudBilling(SEPTEMBER));
   const html = visibleText(screen(data));
-  assert.match(html, /Cloud Billing/);
+  assert.match(html, /Custo da nuvem/);
   assert.match(html, /Margem global/, "controle: a tela de verdade foi desenhada");
   assert.doesNotMatch(html, /Valor cobrável|Organizações com cobrança|Cobrança por organização|markup/i);
 });

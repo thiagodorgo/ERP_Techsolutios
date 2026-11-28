@@ -90,6 +90,14 @@ services:
       # UUID nulo de propósito: binding de validação local, jamais o id de uma organização real (§2.8).
       PORTAL_TENANT_ID: 00000000-0000-0000-0000-000000000000
       PORTAL_CORS_ORIGIN: http://localhost:8080
+      # B-EVIDENCIA-DURAVEL (G-STORAGE-DURAVEL) — NODE_ENV=production exige o armazenamento durável da D-014: a trava de
+      # boot do env.ts recusa o disco do contêiner (a foto do app sumia no reinício). Validação local: o bucket é um
+      # MARCADOR rotulado (não existe) e não há credencial; o endpoint é o regional público da AWS. Por isso, com o
+      # antivírus ligado por cima, um envio de arquivo aqui responde 503 em vez de gravar em disco (docs/deployment.md).
+      CHECKLIST_STORAGE_PROVIDER: s3
+      CHECKLIST_STORAGE_S3_BUCKET: local-prod-validation-bucket-not-a-secret
+      CHECKLIST_STORAGE_S3_REGION: us-east-1
+      CHECKLIST_STORAGE_S3_ENDPOINT: https://s3.us-east-1.amazonaws.com
     ports:
       - "${API_PORT:-3000}:3000"
     depends_on:
