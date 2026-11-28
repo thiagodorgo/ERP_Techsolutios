@@ -7171,3 +7171,86 @@ As entradas abaixo vêm do registro do orquestrador fora do repositório (`~/erp
 - **Pendências:** FECHA `P-EVIDENCIA-METADADO-EM-MEMORIA` (GRAVE) no merge deste bloco. Abrem: `P-EVIDENCIA-SEM-TELA` (MÉDIA), `P-EVIDENCIA-CAMPO-SEM-LEITOR`, `P-EVIDENCIA-TRILHA-EM-MEMORIA`, `P-EVIDENCIA-OBJETO-ORFAO`, `P-EVIDENCIA-LISTA-SEM-PAGINACAO`, `P-EVIDENCIA-SHA-DECLARADO-NAO-CONFERIDO`, `P-CHECKLIST-RECIBOS-EM-MEMORIA` e `P-DOCS-UPLOAD-PROVEDOR-LOCAL-DEFASADO` — as duas últimas carregam os itens (4) e (5) da pendência fechada, para nada se perder em silêncio (§A2). **Já estavam na `main`, conferido por `grep`, não duplicadas aqui:** `P-EVIDENCIA-FORA-DA-FRANQUIA`, `P-SAN305-T11G-SEM-COMPLETUDE` e `P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE`.
 - **Erro de processo da §E2.1, as DUAS partes — já registrado na `main`, não duplicado aqui:** (i) o mandato do orquestrador que mandou atualizar o inventário SEM emenda escrita, e (ii) o braço que aplicou em vez de parar. Estão em `D-ORQUESTRADOR-2811-CARTOES-ABERTOS`, item (2), bloco "Como nasceu", e em `D-ORQUESTRADOR-DESVIOS-2811`, item (6). A lição está gravada fora do repositório, em `prompts/LICOES-DOS-BRACOS.md`, entrada de 28/11 (#653).
 - **KPI:** não tocado — congelado por `D-GOV-PROPORCIONAL` (§C3, item 8(5)).
+
+## D-INDICE-RATEIO (2026-11-28 13:19 a 13:40 SP) — as fotos e assinaturas do app ENTRAM no rateio do custo de nuvem: saída (a) do cartão `indice-rateio`
+
+> **Decisão do DONO, registrada como manda o item 4 do bloco "Até o dono responder" da §E2.3 do plano do `B-EVIDENCIA-INDICE`** (Emenda E2, com as revisões [E2.r1] e [E2.r2]). Registro escrito pelo dev desta fatia, `dev-indice-rateio-qw` (Qwen 3.8 Max, nível menor, declarado), que mediu cada comando deste registro no ramo `feat/evidencia-indice`, head `b24a69cb0`. Quem registra não escolhe nada: a escolha é do dono e está entre aspas; o resto é medição, com o comando e a saída.
+
+- **A escolha, literal: "(a) Sim, entram (Recomendado)".** Vale, por extenso, a **saída (a)** da §E2.3: os bytes dos arquivos das evidências do app (foto e assinatura) ENTRAM na base `storage_bytes_current` do rateio do custo da nuvem, pela MESMA regra dos outros anexos — `"mobile_evidences"` no fim de `STORAGE_INVENTORY_MODELS` e a 5ª consulta `tx.mobileEvidence.groupBy` no fim do `Promise.all`, com `by: ["tenant_id"]`, `where: { ...storageWhere, deleted_at: null }` e `_sum: { size_bytes: true }`. **Meio e hora:** o dono respondeu no chat da sessão, entre **13:19 e 13:40 de 28/11** (horário de São Paulo), à pergunta que lhe foi feita com o texto do cartão `indice-rateio`. É a resposta que faltava ao item (2) de `D-ORQUESTRADOR-2811-CARTOES-ABERTOS` e ao último item de `D-EVIDENCIA-INDICE`.
+- **O que o dono viu antes de escolher (1 de 2) — o 2º canal, na redação da Revisão 2 [E2.r2], que diz "a linha inteira" e não "TEXTO", literal:** *"Nas duas escolhas, a linha inteira de cada evidência no banco (não a foto) conta no espaço de banco da organização, como toda tabela: pesa na parte de banco do rateio do custo de nuvem e no espaço do fechamento da assinatura. A linha inteira são todos os campos do registro: códigos, datas, situação e os dados que o app manda junto (até 16 KB por evidência), e não só o texto digitado. A escolha (a) ou (b) é só sobre o tamanho das FOTOS na parte de armazenamento do rateio."*
+- **O que o dono viu antes de escolher (2 de 2) — a frase do mês em que a foto pesa, que o cartão traz junto da saída (a) [E2.r2], literal:** *"Na escolha (a), a foto pesa a partir do mês em que a evidência foi registrada no servidor, mesmo que o arquivo tenha chegado depois: uma evidência registrada em 31 de janeiro, com o arquivo chegando em 1º de fevereiro, já pesa no rateio de janeiro. É a mesma regra dos outros anexos do sistema. Se você quiser outra regra (contar pelo mês em que o arquivo chegou), diga na resposta: isso vira emenda do plano antes do código."*
+- **O critério de período, por extenso (fato de desenho da §E2.3, travado por aceite):** a evidência pesa pelo **`created_at`** — a hora em que o REGISTRO da evidência chegou ao servidor —, e não pelo `stored_at` (a hora em que o ARQUIVO chegou). É o mesmo objeto `storageWhere` das 4 tabelas de anexo (`src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:471`): `created_at` até o fim do período. Na prática é o que a frase do mês acima diz ao dono: uma evidência registrada em 31 de janeiro, com o arquivo chegando em 1º de fevereiro, pesa no rateio de janeiro. **Contar pelo `stored_at` seria resposta fora de (a) e (b) e viraria emenda do plano antes do código (`D-EMENDA-ANTES-DO-CODIGO`); não foi pedida.** O critério fica preso pelo caso `T-STO-db-8` e pelas mutações E2-A6, E2-A7 e E2-A8.
+- **O que a escolha NÃO muda (medido, e vale nas duas saídas):** o total do custo da nuvem não muda — muda a FATIA de cada organização (quem manda mais foto pelo app paga parte maior do armazenamento, e as outras, menor). Só linha `stored` pesa: o `CHECK` da migração `20261127000000_add_mobile_evidences` garante `size_bytes` nulo fora de `stored`. A parte de ARQUIVOS da franquia de armazenamento não muda — `METERING_ATTACHMENT_MODELS` segue com as 4 tabelas de anexo (`P-EVIDENCIA-FORA-DA-FRANQUIA`). E o 2º canal (a linha inteira da evidência contando no espaço de BANCO da organização) vale nas duas saídas: esta escolha não o liga nem o desliga.
+- **Efeito imediato:** cai a espera do item 1 de "Até o dono responder" — o PR #653 não está mais preso À PERGUNTA. Ele segue em rascunho até o aceite da saída (a) estar verde por inteiro; tirar do rascunho e mergear é do orquestrador, não deste registro.
+- **Aceite da saída (a) — os comandos do §E2.3 e do DoD da §E2.4, medidos neste head (`b24a69cb0`), com as saídas literais:**
+
+```text
+# (A) numstat de tres pontos dos 2 arquivos de dinheiro e do censo 3 — espera do plano: EXATAMENTE 3 linhas (10 2 no -prisma.repository.ts, 5 0 no repository.ts, 3 1 no censo 3)
+$ git diff --numstat origin/main...HEAD -- src/modules/cloud-cost-allocation/ tests/san3-05-leituras-de-plataforma-db.test.ts
+10	2	src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts
+5	0	src/modules/cloud-cost-allocation/cloud-cost-allocation.repository.ts
+3	1	tests/san3-05-leituras-de-plataforma-db.test.ts
+EXIT=0
+# => VERDE: 3 linhas, iguais às esperadas
+
+# (B) numstat dos censos da §E2.2 — espera do plano: 7 1 e 3 1
+$ git diff --numstat origin/main...HEAD -- tests/san3-05-acessos-de-plataforma-guard.test.ts tests/san3-05-runtime-role-guard-db.test.ts
+7	1	tests/san3-05-acessos-de-plataforma-guard.test.ts
+3	1	tests/san3-05-runtime-role-guard-db.test.ts
+EXIT=0
+# => VERDE: 7 1 e 3 1
+
+# (C) numstat contra o 399edae54 — espera do plano: EXATAMENTE 1 linha, 1 1 cloud-cost-allocation.repository.ts (a troca do comentario)
+$ git diff --numstat 399edae54 HEAD -- src/modules/cloud-cost-allocation/
+(saida vazia)
+EXIT=0
+# => VERMELHO: saida vazia. A troca do comentario da saida (a) nao esta no ramo neste head — ver o estado do codigo e a contradicao, abaixo
+
+# (D) quiet contra o 399edae54 no repositorio prisma e no censo 3 — espera do plano: sai 0
+$ git diff --quiet 399edae54 HEAD -- src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts tests/san3-05-leituras-de-plataforma-db.test.ts
+(saida vazia)
+EXIT=0
+# => VERDE: sai 0
+
+# (E) a trava dos 4 caminhos (item 2 de Ate o dono responder) — espera do plano: sai 0
+$ git diff --quiet 399edae54 HEAD -- src/modules/cloud-cost-allocation/ tests/san3-05-leituras-de-plataforma-db.test.ts tests/san3-03-basis-census.test.ts
+(saida vazia)
+EXIT=0
+# => VERDE: sai 0 — os 2 arquivos do rateio, o censo 3 e a guarda C-6 seguem byte a byte como no 399edae54
+
+# (F) stat do subscription-billing — espera do plano: so metering/censored-tables.ts, 1 linha
+$ git diff --stat origin/main...HEAD -- src/modules/subscription-billing/
+ src/modules/subscription-billing/metering/censored-tables.ts | 1 +
+ 1 file changed, 1 insertion(+)
+EXIT=0
+# => VERDE: so o censored-tables.ts, 1 insertion
+
+# (G) quiet do cloud-charges (PROIBIDO inteiro) — espera do plano: sai 0
+$ git diff --quiet origin/main...HEAD -- src/modules/cloud-charges/
+(saida vazia)
+EXIT=0
+# => VERDE: sai 0
+
+# (H) o grep do comentario da saida (a) — espera do plano: 1
+$ grep -cF "e a parte de ARQUIVOS da franquia não muda neste bloco." src/modules/cloud-cost-allocation/cloud-cost-allocation.repository.ts
+0
+EXIT=1
+$ grep -n "franquia de armazenamento não muda neste bloco" src/modules/cloud-cost-allocation/cloud-cost-allocation.repository.ts
+85:  // METERING_ATTACHMENT_MODELS declara medir, e a franquia de armazenamento não muda neste bloco.
+# => VERMELHO: o comentario novo da 0 (a ancora antiga segue na l.85, com 1 ocorrencia). Mesma causa do (C)
+# (I) os 3 comandos do inspetor sobre ESTE registro — forma do plano: git show <head>:agent-orchestration/controle/decisoes.md | grep ...
+#     medidos aqui no arquivo de trabalho JA com a entrada dentro; o commit leva para a ref o mesmo byte, e o dev repetiu os 3 na ref depois do commit (diario, item 2)
+$ git show <head>:agent-orchestration/controle/decisoes.md | grep -c "D-INDICE-RATEIO"                    (espera: 1 ou mais)
+6
+$ git show <head>:agent-orchestration/controle/decisoes.md | grep -A15 "D-INDICE-RATEIO" | grep -cE "saída \((a|b)\)"     (espera: 1 ou mais)
+8
+$ git show <head>:agent-orchestration/controle/decisoes.md | grep -A15 "D-INDICE-RATEIO" | grep -c "created_at"     (espera: 1 ou mais)
+3
+# => VERDES: 6 / 8 / 3
+```
+
+- **Estado do código neste head, declarado como FATO (2 dos comandos acima estão vermelhos, e os 2 têm a mesma causa):** a saída (a) pede UMA edição de código nos 2 arquivos de dinheiro — a troca da linha de comentário do `cloud-cost-allocation.repository.ts`, de "e a franquia de armazenamento não muda neste bloco" para "e a parte de ARQUIVOS da franquia não muda neste bloco" — e pede os casos que são o teste-dono da mudança de dinheiro: `C-7` em `tests/san3-03-basis-census.test.ts` e `T-STO-db-6`, `T-STO-db-7` e `T-STO-db-8` em `tests/san3-03-derived-basis-db.test.ts`, com o ajudante da semente recebendo `created_at` e `stored_at` e a limpeza com `mobileEvidence.deleteMany` antes das FKs `RESTRICT`. Nada disso está no ramo neste head: o numstat contra o `399edae54` vem vazio, o `grep` do comentário novo dá 0 (a âncora antiga segue na l.85, 1 ocorrência) e a busca por `C-7`, `T-STO-db-6`, `T-STO-db-7`, `T-STO-db-8` e `storedEvidence` nos 2 arquivos de teste não acha nenhuma ocorrência. **Este registro não os aplica**, e o motivo é a contradição do item seguinte.
+- **Contradição medida entre duas ordens desta fatia, registrada sem escolher nenhuma (§A2, §A6):** o aceite da saída (a) só fica verde com a troca do comentário aplicada (numstat `1 1` contra o `399edae54` e `grep` = 1); a trava do item 2 de "Até o dono responder" — `git diff --quiet 399edae54 HEAD` sobre os 4 caminhos, que o mandato desta fatia manda conferir que continua saindo 0 — só sai 0 com os 2 arquivos do rateio, o censo 3 e a guarda `C-6` byte a byte como no `399edae54`. As duas não podem ficar verdes ao mesmo tempo no mesmo head. Pela lição dos braços de 21/11 (entre duas ordens que se contradizem, vale a que manda PARAR) e pela regra de que decisão de dinheiro não se toma por leitura declarada, **nenhum arquivo de dinheiro foi tocado aqui**: a trava segue saindo 0 (comando E, acima). **O que fecha o aceite é a fatia de código da saída (a)** — a troca do comentário, o `C-7`, o `T-STO-db-6`, o `T-STO-db-7`, o `T-STO-db-8` e as 36 mutações do DoD —, tudo dentro do PERMITIDO da §E2.3; a partir dela, a trava dos 4 caminhos passa a sair 1 POR DESENHO e o que vale é o numstat `1 1`.
+- **Pendências da saída (a) que o DoD da §E2.4 lista — conferidas por `git grep` na `origin/main` (`80e9fc4ba`) e neste head, as três JÁ registradas em `controle/pendencias.md`, nenhuma duplicada aqui:** **(1)** `P-SAN305-T11G-SEM-COMPLETUDE` (BAIXA; o censo T11g não confere completude da lista contra o que a rota lê) — 1 ocorrência nos dois lados; **(2)** `P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE` (BAIXA; o filtro PRÓPRIO de cada uma das outras 3 consultas de anexo segue sem teste) — 1 ocorrência nos dois lados; **(3)** o item do comentário defasado DENTRO da `P-EVIDENCIA-FORA-DA-FRANQUIA` (MÉDIA), que a entrada traz como "acrescentado pela Emenda E2 (só se o dono escolher a saída (a) do cartão `indice-rateio`): o comentário de `src/modules/subscription-billing/metering/metering.types.ts:9` passa a estar defasado — o inventário do rateio teria 5 tabelas e o medidor de arquivos, 4". **Com esta decisão a condição está satisfeita e o item passa a valer**, sem mudar o dono (o bloco de assinatura que tocar o medidor, único que pode editar o arquivo, PROIBIDO para este bloco). A `P-EVIDENCIA-FORA-DO-RATEIO`, que é da saída (b), **NÃO é criada**: segue citada apenas como irmã na entrada da franquia.
+- **Índice de pendências:** `controle/pendencias-indice.md` é GERADO por `agent-orchestration/controle/gerar-indice-pendencias.py` e não é digitado. Como esta fatia não alterou nenhuma entrada de `controle/pendencias.md`, rodar o gerador de novo não deixa diff (medido, item 3 do diário do dev).
+- **KPI:** não tocado — congelado por `D-GOV-PROPORCIONAL` (§C3, item 8(5)).
