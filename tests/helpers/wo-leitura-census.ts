@@ -21,7 +21,7 @@
 //   node --import tsx tests/helpers/wo-leitura-census.ts gravar <instantaneo.json>
 // O `gravar` regenera o instantâneo pelas regras; o diff dele é revisado chave a chave.
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -51,6 +51,7 @@ export const CANARIOS = [
   "ANEXOCANX", // nome do anexo da OS
   "ANEXVISTCANX", // nome do anexo da vistoria
   "OBSCANX", // observação do despacho
+  "EVIDCANX", // observação da evidência da OS
 ] as const;
 
 /** PNG 1×1 de 67 bytes — os bytes da semente. Um 2xx cujo corpo é igual a eles é vazamento (T-L2). */
@@ -107,6 +108,8 @@ export const R_ROTAS: readonly RotaNumerada[] = [
   { r: "R16", chave: "GET /api/v1/approvals/pending", query: "" },
   { r: "R17", chave: "GET /api/v1/approvals/:approvalId", query: "" },
   { r: "R18", chave: "GET /api/v1/dashboard/summary", query: "" },
+  { r: "R19", chave: `${W}/evidences`, query: "" },
+  { r: "R20", chave: `${W}/evidences/:evidenceId/download`, query: "" },
 ];
 export const rotulosDe = (chave: string): string[] => R_ROTAS.filter((x) => x.chave === chave).map((x) => x.r);
 const rotulo = (chave: string): string => rotulosDe(chave).join(",") || "—";
@@ -219,6 +222,7 @@ export type Semente = {
   readonly comentario: string;
   readonly anexoOs: string;
   readonly anexoVist: string;
+  readonly evidenceId: string;
 };
 
 function exigir(r: Resp, esperado: number, passo: string): any {
@@ -230,6 +234,20 @@ function formPng(nome: string, extra: Record<string, string> = {}): FormData {
   const form = new FormData();
   for (const [k, v] of Object.entries(extra)) form.set(k, v);
   form.set("file", new Blob([PNG_SEMENTE], { type: "image/png" }), nome);
+  return form;
+}
+
+const sha256Hex = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
+
+/** O multipart do upload da evidência (§4.3): o recibo do sync, o SHA e o tamanho dos bytes da semente. */
+function formEvidenciaPng(evidenceId: string, clientEvidenceId: string): FormData {
+  const form = new FormData();
+  form.set("evidence_id", evidenceId);
+  form.set("client_evidence_id", clientEvidenceId);
+  form.set("sha256", sha256Hex(PNG_SEMENTE));
+  form.set("size_bytes", String(PNG_SEMENTE.length));
+  form.set("content_type", "image/png");
+  form.set("file", new Blob([PNG_SEMENTE], { type: "image/png" }), "foto-evidencia.png");
   return form;
 }
 
@@ -278,6 +296,47 @@ export async function semear(http: Http, h: Cabecalhos, u: Usuarios, opcoes: { r
   );
   const anx = exigir(await http("POST", `/api/v1/work-orders/${osX}/attachments`, A, formPng("ANEXOCANX.png")), 201, "anexo da OS").data;
   const anv = exigir(await http("POST", `/api/v1/mobile/checklist-runs/${runX}/attachments`, A, formPng("ANEXVISTCANX.png", { componentId })), 201, "anexo da vistoria").data;
+  // A evidência do app na OS-X (B-EVIDENCIA-INDICE §8.5): uma observação com o canário novo e uma foto com os bytes da
+  // semente, pelo sync e pelo upload reais. O `file_name` declarado NÃO leva canário: o §5.3 proíbe que ele saia na
+  // leitura, e um canário ali faria o oráculo ler vazamento onde a regra pede ausência. O `id` da linha da foto vem da
+  // leitura da lista como gestor (a R19), que é o id público que a R20 baixa.
+  const evFotoClient = randomUUID();
+  const evLote = exigir(
+    await http("POST", "/api/v1/mobile/sync/evidence-actions", A, {
+      client_batch_id: randomUUID(),
+      actions: [
+        {
+          client_evidence_id: randomUUID(),
+          type: "evidence.work_order_observation",
+          local_created_at: "2026-11-27T12:00:00.000Z",
+          payload: { work_order_id: osX, note: "EVIDCANX" },
+        },
+        {
+          client_evidence_id: evFotoClient,
+          type: "evidence.work_order_photo",
+          local_created_at: "2026-11-27T12:00:00.000Z",
+          payload: {
+            work_order_id: osX,
+            file_name: "foto-evidencia.png",
+            content_type: "image/png",
+            size_bytes: PNG_SEMENTE.length,
+            sha256: sha256Hex(PNG_SEMENTE),
+          },
+        },
+      ],
+    }),
+    200,
+    "evidência (sync)",
+  ).data;
+  const evFoto = ((evLote?.accepted ?? []) as Array<{ client_evidence_id?: string; evidence_id?: string }>).find(
+    (x) => x.client_evidence_id === evFotoClient,
+  );
+  if (!evFoto?.evidence_id) throw new Error(`semente: a foto da evidência não foi aceita ${JSON.stringify(evLote).slice(0, 400)}`);
+  exigir(await http("POST", "/api/v1/mobile/evidence-uploads", A, formEvidenciaPng(evFoto.evidence_id, evFotoClient)), 201, "evidência (upload)");
+  const evLista = exigir(await http("GET", `/api/v1/work-orders/${osX}/evidences`, G), 200, "evidência (lista)").data;
+  const evItem = ((evLista?.items ?? []) as Array<{ id?: string; kind?: string }>).find((x) => x.kind === "photo");
+  if (!evItem?.id) throw new Error(`semente: a foto da evidência não apareceu na lista ${JSON.stringify(evLista).slice(0, 400)}`);
+  const evidenceId = evItem.id;
   const lote = exigir(
     await http("POST", "/api/v1/mobile/sync/work-order-actions", A, {
       client_batch_id: randomUUID(),
@@ -301,6 +360,7 @@ export async function semear(http: Http, h: Cabecalhos, u: Usuarios, opcoes: { r
     comentario: com.id as string,
     anexoOs: (anx.id ?? anx.attachment?.id) as string,
     anexoVist: (anv.id ?? anv.attachment?.id) as string,
+    evidenceId,
   };
 }
 
@@ -376,6 +436,7 @@ export function idNatural(caminho: string, parametro: string, s: Semente): strin
   if (parametro === "dispatchId") return s.dispA;
   if (parametro === "approvalId") return s.aprA;
   if (parametro === "commentId") return s.comentario;
+  if (parametro === "evidenceId") return s.evidenceId;
   if (parametro === "attachmentId") return caminho.includes("/checklist-runs/") ? s.anexoVist : s.anexoOs;
   return undefined;
 }

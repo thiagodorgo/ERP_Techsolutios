@@ -469,7 +469,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
       }
 
       const storageWhere = { tenant_id: tenantId, created_at: { lte: periodEnd } };
-      const [checklistFiles, workOrderFiles, genericFiles, damageFiles] = await Promise.all([
+      const [checklistFiles, workOrderFiles, genericFiles, damageFiles, mobileEvidenceFiles] = await Promise.all([
         tx.checklistAttachment.groupBy({
           by: ["tenant_id"],
           where: storageWhere,
@@ -490,8 +490,16 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
           where: storageWhere,
           _sum: { size_bytes: true },
         }),
+        // B-EVIDENCIA-INDICE (F1) — a evidência do app tem `size_bytes` e `deleted_at`, então entra no estoque
+        // pelo mesmo critério dos anexos soft-deletáveis (work_order_attachments e attachments). É a 5ª posição
+        // de STORAGE_INVENTORY_MODELS, que o canário abaixo usa por índice.
+        tx.mobileEvidence.groupBy({
+          by: ["tenant_id"],
+          where: { ...storageWhere, deleted_at: null },
+          _sum: { size_bytes: true },
+        }),
       ]);
-      const storageGroups = [checklistFiles, workOrderFiles, genericFiles, damageFiles];
+      const storageGroups = [checklistFiles, workOrderFiles, genericFiles, damageFiles, mobileEvidenceFiles];
       for (let index = 0; index < storageGroups.length; index += 1) {
         const storageRows = storageGroups[index]!;
         assertRowsBelongToTenant(

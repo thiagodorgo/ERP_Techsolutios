@@ -617,6 +617,8 @@ colidir com o router base.
 | POST | `/work-orders/:workOrderId/assign` | `work_orders:assign` | Atribui técnico/equipe. |
 | GET | `/work-orders/:workOrderId/timeline` | `work_orders:read` | Linha do tempo da OS. **B-WO-LEITURA (item 71):** escopo de leitura do técnico de campo (§3.5, "Escopo de leitura"): OS que não é dele → `404 WORK_ORDER_NOT_FOUND:not_found`, o do inexistente. |
 | GET/POST | `/work-orders/:workOrderId/attachments` | `work_orders:read` / (`create`\|`update`) | Anexos da OS (+ download `/:attachmentId/download`, DELETE `/:attachmentId` → `work_orders:update`). **B-O6R-07c-a:** o POST e o DELETE (escrita) seguem o escopo por objeto do `PATCH /work-orders/:id` — ator só de campo escreve apenas na OS **atribuída a ele**; OS de outro ou sem atribuição → **403 `not_assigned_to_actor`**, verificado **antes** do multipart (o servidor não lê o upload de quem não pode gravar); 404 segue do cross-tenant. Listar e baixar: **B-WO-LEITURA (item 71):** escopo de leitura do técnico de campo (§3.5, "Escopo de leitura") — OS que não é dele → `404 WORK_ORDER_NOT_FOUND:work_order_not_found`, o do inexistente. |
+| GET | `/work-orders/:workOrderId/evidences` | `work_orders:read` | Lista a evidência do app registrada na OS (§3.5.3). **B-EVIDENCIA-INDICE:** SEM permissão nova — reusa a que já governa a lista e o download de anexo de OS. Escopo por objeto pela porta `getForRead` (marcador `B-WO-LEITURA:evidencia-lista`): o técnico de campo só lê a OS dele, e a OS alheia, a de outra organização e a inexistente respondem o MESMO `404 WORK_ORDER_NOT_FOUND / work_order_not_found`. Corpo `200 { data: { items: [...] } }` em allowlist positiva (§3.5.3); sem paginação, igual ao anexo. |
+| GET | `/work-orders/:workOrderId/evidences/:evidenceId/download` | `work_orders:read` | Baixa o binário da evidência (§3.5.3). **B-EVIDENCIA-INDICE:** SEM permissão nova; mesma porta `getForRead` (marcador `B-WO-LEITURA:evidencia-download`). Egresso por stream no servidor (`sendVerifiedFile`), SEM URL assinada: o tipo é re-derivado dos BYTES no ato do download e o arquivo sai sempre como `attachment` + `nosniff`. A chave guardada é conferida contra a organização DA LINHA antes de qualquer leitura (`assertStorageKeyWithinTenant`). Códigos: `404 WORK_ORDER_EVIDENCE_NOT_FOUND / evidence_not_found` (evidência inexistente, de outra OS ou de outra organização) · `404 WORK_ORDER_EVIDENCE_NOT_FOUND / evidence_file_not_found` (observação, que não tem arquivo, OU chave fora da organização da linha — resposta idêntica nos dois casos, para não revelar que o objeto existe em outro lugar) · `409 WORK_ORDER_EVIDENCE_NOT_READY / evidence_file_not_ready` (`awaiting_file`) · `503 WORK_ORDER_EVIDENCE_STORAGE_UNAVAILABLE / evidence_storage_unavailable` (mensagem fixa). |
 | POST | `/work-orders/:workOrderId/geocode` · `/geocode-destination` | `work_orders:update` | Geocodifica origem/destino. **B-O6R-07c-a:** mesmo escopo por objeto (403 `not_assigned_to_actor` para ator só de campo em OS que não é dele), **antes** do 409 `already_geocoded` e do 422 de endereço. |
 | GET | `/work-orders/:workOrderId/map-start-points` | `work_orders:read` | Pontos de partida para o mapa. **B-WO-LEITURA (item 71):** escopo de leitura do técnico de campo (§3.5, "Escopo de leitura"): OS que não é dele → `404 WORK_ORDER_NOT_FOUND:not_found`. |
 | GET/POST/PATCH/DELETE | `/work-orders/:workOrderId/financial-items` (+ `/:itemId`) | `work_order_financials:read`/`create`/`update` | Itens financeiros da OS. **B-WO-LEITURA (item 71):** escopo de leitura do técnico de campo (§3.5, "Escopo de leitura") na leitura: OS que não é dele → `404 WORK_ORDER_NOT_FOUND:work_order_not_found`. |
@@ -746,6 +748,120 @@ altera o conjunto nem gera evento — a escrita da junção só acontece depois 
 enviada ao técnico — o caminho é a reabertura) · 409 `checklist_customer_scoped_confirmation_required` (a
 vistoria veio de regra com cliente nomeado) · 409 `work_order_terminal` · 404 `checklist_link_not_found`.
 Remoção é **soft** (guarda quem/quando/por quê) e vira evento na timeline da OS, visível ao técnico.
+
+#### 3.5.3 O índice durável da evidência do app (B-EVIDENCIA-INDICE)
+
+Fontes: `work-orders/work-order-evidence.{service,controller,dto}.ts`, `mobile/mobile-evidence.{types,repository}.ts`,
+`mobile/mobile-evidence-prisma.repository.ts`, `mobile/mobile-evidence-sync.ts`, `mobile/mobile-evidence-upload.ts` e a
+migração `prisma/migrations/20261127000000_add_mobile_evidences/migration.sql`.
+
+O metadado da evidência do app deixou de viver só na memória do processo: agora é gravado na tabela `mobile_evidences`
+(RLS `ENABLE`+`FORCE` por organização), sobrevive a reinício e a publicação, e é legível por OS pelas 2 rotas da tabela
+acima. O binário já era durável desde o B-EVIDENCIA-DURAVEL; o que faltava era o índice que liga o arquivo à OS.
+
+**Permissão: nenhuma nova.** As 2 rotas de leitura usam `work_orders:read` (`work-order.routes.ts:32`, aplicada em
+`:257` e `:266`), a mesma que já governa a lista e o download de anexo de OS; o catálogo de permissões não muda
+(`RBAC_MATRIX.md`). A posição da evidência é dado de localização de uma pessoa: o campo `position` só aparece para quem
+tem `field_location:read` e SOME — sem erro, sem campo nulo — para os demais
+(`work-order-evidence.controller.ts:17,36`; `work-order-evidence.dto.ts:57-71`).
+
+**Corpo da lista — allowlist positiva** (`work-order-evidence.dto.ts:24-50`; só sai o que está escrito):
+
+| Campo | Origem |
+|---|---|
+| `id` | `id` da linha |
+| `workOrderId` | coluna `work_order_id` |
+| `kind` | `photo` · `signature` · `observation` |
+| `note` | `metadata.note` (só texto: o que não é string vira `null`, sem eco de estrutura) |
+| `signerName` | `metadata.signer_name` (só texto) |
+| `capturedAt` | `local_created_at` (a hora do aparelho) |
+| `createdAt` | `created_at` (a hora do servidor) |
+| `createdBy` · `createdByName` | `actor_user_id` e o nome resolvido no servidor (a UI mostra o NOME, nunca o UUID) |
+| `file` | `null` na observação; senão `{ status, mimeType, sizeBytes, downloadPath }`, com `mimeType` e `sizeBytes` só quando `stored` |
+| `position` | `{ lat, lng, accuracyM }`, só quando existe E o leitor tem `field_location:read` |
+
+**NUNCA sai (§2.8):** `storage_key`, `storage_provider`, `checksum_sha256`, `file_id`, `fingerprint_sha256`,
+`tenant_id`, o `evidence_id` (ele carrega a organização dentro), o `client_evidence_id`, o `metadata` cru, o nome de
+arquivo declarado pelo aparelho, bucket, caminho físico ou URL. O `downloadPath` é o caminho da rota de download,
+montado com os dois ids públicos (`work-order-evidence.dto.ts:46`).
+
+**O que muda no contrato de ESCRITA** (`POST /mobile/sync/evidence-actions` e `POST /mobile/evidence-uploads`, §3.15):
+
+| Rota | Situação | Resposta | `reason` |
+|---|---|---|---|
+| sync | chave de metadado recusada (lista abaixo), em qualquer nível | ação em `rejected`, 400 | `unsafe_payload` (já existia; a LISTA cresceu) |
+| sync | metadado acima do teto de **16384 bytes** | ação em `rejected`, 400 | `metadata_too_large` (**novo**) |
+| sync | `client_evidence_id` com mais de **255** caracteres | ação em `rejected`, 400 | `invalid_client_evidence_id` (**novo no sync**) |
+| sync | o ator não tem linha em `users` naquela organização (por exemplo, papel de plataforma) | ação em `rejected`, 403 | `user_required` (o reason já existia para o ator sem usuário; novo é o caminho POR AÇÃO, sem 500) |
+| sync | índice indisponível (a requisição inteira) | 503 | `evidence_index_unavailable` (**novo**) |
+| sync | o banco recusa o metadado por tamanho (a faixa entre as duas medidas) | ação em `rejected`, 400 | `metadata_too_large` |
+| sync | o banco recusa o metadado por outro motivo de dado (caractere nulo U+0000, outra restrição) | ação em `rejected`, 400 | `metadata_not_storable` (**novo**) |
+| upload | arquivo já guardado, MESMO SHA-256 | **201** `stored`, com os dados da LINHA (zero objeto novo; evento `evidence.upload.replayed`) | — |
+| upload | arquivo já guardado, SHA-256 DIFERENTE | 409 `MOBILE_EVIDENCE_CONFLICT` | `evidence_file_already_stored` (**novo**) |
+| upload | evidência que não espera arquivo (observação) | 409 `MOBILE_EVIDENCE_CONFLICT` | `evidence_file_not_expected` (**novo**) |
+| upload | o banco falhou ao ligar o arquivo à linha | 503 | `evidence_storage_unavailable` (B-EVIDENCIA-DURAVEL) |
+
+Tudo o mais fica igual: os 403, o 404 da OS, os 409 de hoje, os 400, 413, 415, 422 e o 503 do antivírus. `mobile/**`
+não muda — o app já trata 409 como conflito e 503 como falha que tenta de novo, e nenhuma recusa apaga o blob local
+(`status != stored` preserva a evidência no aparelho). No upload, o ramo do reenvio entra DEPOIS do portão e do
+antivírus e ANTES do `provider.save` (`mobile-evidence-upload.ts:302-326`): o antivírus roda em todo envio, inclusive
+no reenvio.
+
+**Erro de DADO nunca é 503 e nunca é `accepted`.** O repositório com banco classifica pelo SQLSTATE e pelo NOME da
+restrição, nunca pelo texto da mensagem (`mobile-evidence-prisma.repository.ts:76-84`): `23514` na restrição de nome
+exato `mobile_evidences_metadata_chk` → `metadata_too_large`; qualquer outro `23514`, ou SQLSTATE da classe `22` (por
+exemplo `22P05`, o caractere nulo dentro de um texto, que o JSONB não guarda) → `metadata_not_storable`; só o que o
+tempo resolve (conexão, timeout, serialização) e o erro não reconhecido relançam → 503
+`evidence_index_unavailable` (`mobile-evidence-sync.ts:226-228`). As demais ações do lote seguem, e o lote responde 200
+`partial`. A FK do ator (`user_required`, l.71-72) é a única FK mascarada: as de organização e de OS seguem para o 503.
+
+**O teto: 16384 bytes, UM número nos dois lugares.** No serviço, bytes UTF-8 do `JSON.stringify` compacto
+(`MOBILE_EVIDENCE_METADATA_MAX_BYTES = 16384`, `mobile-evidence.repository.ts:17`; conferido em
+`mobile-evidence-sync.ts:402-403`). No banco, `octet_length("metadata"::text) <= 16384` na restrição
+`mobile_evidences_metadata_chk` (migração, l.45-46). O serviço mede o JSON compacto e o banco mede o texto do JSONB,
+que é igual ou maior: na FAIXA entre as duas medidas o serviço aceita e o banco recusa — daí o `metadata_too_large`
+pela via do SQLSTATE, na tabela acima. O teto de 255 caracteres do código é `MAX_CLIENT_EVIDENCE_ID_LENGTH`
+(`mobile-evidence-sync.ts:100,369-370`) e `CHECK (char_length("client_evidence_id") BETWEEN 1 AND 255)` (migração, l.35).
+
+**A lista de nomes recusados.** O nome da chave, sem diferenciar maiúsculas e em QUALQUER nível (objeto dentro de
+objeto, objeto dentro de array), que casa com a expressão abaixo é recusado com 400 `unsafe_payload`
+(`mobile-evidence-sync.ts:96-97`, varredura recursiva em `:493-508`):
+
+```text
+^(token|access[_-]?token|refresh[_-]?token|authorization|bearer|password|secret|bucket|storage[_-]?key|file[_-]?url|absolute[_-]?path|local[_-]?path|path|base64|file[_-]?data)$
+```
+
+As 23 formas provadas por execução no caso S6 (`tests/evidencia-indice-sync.test.ts:305-311`, no topo e aninhadas em
+array): `token`, `access_token`, `accesstoken`, `refresh_token`, `refreshToken`, `authorization`, `Bearer`,
+`password`, `secret`, `bucket`, `storage_key`, `storagekey`, `storage-key`, `file_url`, `fileUrl`, `absolute_path`,
+`absolutePath`, `local_path`, `localpath`, `path`, `PATH`, `base64`, `file_data`.
+
+O banco repete a MESMA expressão, acrescida do par da organização, na restrição `mobile_evidences_metadata_keys_chk`
+(migração, l.48-50). É a garantia que vale para QUALQUER escritor de amanhã — outro módulo, SQL manual, o roteiro de
+religar fotos guardadas sem linha — e não só para o filtro do serviço, que continua como primeira linha. A lista do
+serviço é sempre igual ou maior que a do banco: nenhum nome recusado pelo banco chega a ele sem o serviço já o ter
+recusado antes (o S6 afirma `rejected` `unsafe_payload` em cada um, nunca `metadata_not_storable` nem 503).
+
+`tenant_id` e `tenantId` continuam sendo RETIRADOS em silêncio, em todos os níveis, e a retirada passou a não
+diferenciar maiúsculas e a pegar `tenant-id` e `tenantid` (`^tenant[_-]?id$`, `mobile-evidence-sync.ts:99`). Sem isso
+um `TENANT_ID` passaria pelo serviço e bateria no `CHECK` do banco. O par da organização não participa do fingerprint
+de idempotência.
+
+**Residual declarado:** o `CHECK` barra NOMES de chave exatos (com `_`, `-` ou nada entre as palavras). Não barra um
+nome fora da lista (`x_token`, `senha`) nem segredo escrito dentro de um VALOR de texto. Para isso valem o filtro do
+serviço e a regra de que o `metadata` cru nunca sai em resposta. Um nome novo proibido NO BANCO pede migração nova,
+com nova autorização nominal; o serviço pode crescer a lista dele sem migração.
+
+**Trilha de auditoria.** A união `EvidenceAuditAction` ganhou 3 eventos (`evidence-storage.ts:65-69`):
+`evidence.upload.index_failed` (o banco falhou ao ligar o arquivo à linha), `evidence.upload.replayed` (o reenvio
+atendido pela linha, sem objeto novo) e `evidence.upload.orphan_object` (o objeto que sobra quando a limpeza
+"melhor esforço" falha). Nenhum carrega chave, bucket nem caminho. Os eventos continuam só em memória
+(`P-EVIDENCIA-TRILHA-EM-MEMORIA`).
+
+**Fora deste bloco:** a evidência de escopo `field` (sem OS) é guardada e ainda não tem rota de leitura
+(`P-EVIDENCIA-CAMPO-SEM-LEITOR`); nenhuma tela mostra a evidência (`P-EVIDENCIA-SEM-TELA`); a lista por OS não pagina,
+igual ao anexo (`P-EVIDENCIA-LISTA-SEM-PAGINACAO`); os bytes da evidência não entram na franquia de armazenamento
+(`P-EVIDENCIA-FORA-DA-FRANQUIA`).
 
 ### 3.6 Operação de Campo / Despacho
 
@@ -1167,8 +1283,8 @@ sync não declaram `requirePermission` no router (autorização resolvida no ser
 | POST | `/mobile/sync/work-order-actions` | Autenticado (idempotente) | Replay de ações de OS. **B-SAN3-14:** a conclusão com vistoria de entrega em andamento sai `rejected` com `delivery_checklist_pending` (422, sem recibo de idempotência), e a MESMA ação é aceita depois que a entrega conclui. `work_order.status_change` (B-O6R-07a) e `work_order.mileage` (**B-O6R-07c-a**) seguem o escopo por objeto: ator só de campo em OS que não é dele recebe a ação `rejected` com `not_assigned_to_actor`, **por ação, dentro do lote 200**. O recibo de idempotência é consultado antes (reenvio no mesmo processo → `already_applied`); ele é em memória por processo, então depois de reinício ou noutra instância o reenvio de uma km já aplicada a uma OS redistribuída sai `rejected` (o valor já está gravado). **B-SAN3-26:** o `status_change` para `on_site` leva `checkin_confirmation: { last_digits }` e segue o §3.5.2; a recusa do check-in sai em `conflicts[]` com `next_action: "redo_checkin"`, e nenhum conflito do lote devolve `checkin_confirmation` no `conflict.local`. **B-SAN3-16 (item 5; contrato `2026-11-14.b-san3-16`):** dois tipos novos, só do técnico da OS (escopo por objeto antes de ler o corpo; ex-técnico → `conflicts[]` `assignment_changed_pending_review`; OS de outra organização → `rejected` `not_found`, igual à inexistente). `work_order.approval_request` (`work_order_id`, `reason` ≤ 500, `impact` ≤ 1000 opcional, `urgency` ∈ low/normal/high/critical, padrão normal) exige `work_orders:update`; `work_order.unable_to_start` (`work_order_id`, `reason` ≤ 200, `note` ≤ 1000 opcional) exige `work_orders:status`. Recusas por ação: `permission_required` (403); validação 400 (motivo ausente, `invalid_urgency`, texto acima do limite); `work_order_closed` (422, OS terminal); `approval_unavailable` e `notification_unavailable` (503, reenviáveis). Os dois gravam evento na linha do tempo da OS (`work_order_approval_requested`, `work_order_unable_to_start`, metadados por lista fechada) e não mudam o status. **Repetição durável pelo evento:** organização + usuário + `client_action_id`, na OS e no tipo — depois de reinício, o reenvio sai `accepted` sem gravar de novo (vale o primeiro conteúdo gravado); em outra OS ou no outro tipo, os dois gravam. O pedido de aprovação é uma aprovação própria na fila (`entity_type` `work_order`, `entity_id` opaco do pedido, `work_order_id` da OS), chamada antes do evento; a aprovação de conclusão da mesma OS é outra; o evento guarda o `approval_id`. A aprovação do pedido e o evento são gravados na mesma transação: ficam os dois, ou nenhum. O "não iniciou" avisa no sino quem atribuiu a OS por último (se não for o próprio técnico), com o motivo rotulado em PT-BR e chave de repetição durável. |
 | POST | `/mobile/sync/checklist-actions` | Autenticado (idempotente) | Replay de ações de checklist. |
 | POST | `/mobile/sync/inventory-actions` | `work_orders:update` (no serviço) | Replay do material da OS. **B-O6R-04b (contrato `2026-11.b-o6r-04b`, `implemented`):** o lote aceita só `work_order_material.add` e `work_order_material.remove`, gravados no razão de estoque por origem (sobrevivem a reinício). A porta do lote exige `work_orders:update`: quem só tem `inventory.manage` recebe 403 `permission_required`. Todo outro tipo, inclusive os antigos `inventory.reserve`, `inventory.consume`, `inventory.shortage_report`, `inventory_entry.create` e `inventory_exit.create`, sai `rejected` com `unsupported_action_type`, sem ler a carga e sem efeito. O módulo não guarda estado em memória. A antiga `GET /mobile/inventory/availability` saiu (404); o estoque do técnico no app é `GET /mobile/technician/stock`. |
-| POST | `/mobile/sync/evidence-actions` | Autenticado (idempotente) | Replay de ações de evidência. |
-| POST | `/mobile/evidence-uploads` | Autenticado | Upload de evidência (multipart); contrato `mobile_evidence_file_upload@2026-06-18.b108`. **B-EVIDENCIA-DURAVEL:** a foto grava pelo provedor da D-014 (o mesmo dos anexos de OS; S3 em produção), na chave da organização do ator, e `stored` só sai depois de o provedor confirmar. Produção sem armazenamento durável, ou falha do provedor, responde `503 SERVICE_UNAVAILABLE / evidence_storage_unavailable` (mensagem fixa), e o app preserva a foto. |
+| POST | `/mobile/sync/evidence-actions` | Autenticado (idempotente) | Replay de ações de evidência. **B-EVIDENCIA-INDICE (§3.5.3):** o metadado passa a ser gravado na tabela `mobile_evidences` (RLS por organização), sobrevive a reinício e publicação, e é legível por OS em `GET /work-orders/:id/evidences`. Recusas novas POR AÇÃO, dentro do lote 200 `partial`: `400 metadata_too_large` (metadado acima de **16384 bytes**), `400 metadata_not_storable` (o banco recusou o metadado por outro motivo de dado — por exemplo o caractere nulo U+0000, que o JSONB não guarda), `400 invalid_client_evidence_id` (código com mais de **255** caracteres) e `403 user_required` (o ator não tem linha em `users` naquela organização). A requisição inteira responde `503 SERVICE_UNAVAILABLE / evidence_index_unavailable` quando o índice está indisponível. A lista de chaves de metadado recusadas com `400 unsafe_payload` cresceu e é a MESMA do `CHECK` do banco (§3.5.3). Erro de DADO nunca é 503 e nunca é `accepted`. |
+| POST | `/mobile/evidence-uploads` | Autenticado | Upload de evidência (multipart); contrato `mobile_evidence_file_upload@2026-06-18.b108`. **B-EVIDENCIA-DURAVEL:** a foto grava pelo provedor da D-014 (o mesmo dos anexos de OS; S3 em produção), na chave da organização do ator, e `stored` só sai depois de o provedor confirmar. Produção sem armazenamento durável, ou falha do provedor, responde `503 SERVICE_UNAVAILABLE / evidence_storage_unavailable` (mensagem fixa), e o app preserva a foto. **B-EVIDENCIA-INDICE (§3.5.3):** o upload liga o arquivo à linha do índice; o ramo do reenvio entra DEPOIS do portão e do antivírus e ANTES do `provider.save` — linha já `stored` com o MESMO SHA-256 responde **201 `stored` com os dados da LINHA** (zero objeto novo; evento `evidence.upload.replayed`), SHA-256 diferente responde `409 MOBILE_EVIDENCE_CONFLICT / evidence_file_already_stored` e evidência que não espera arquivo (observação) responde `409 MOBILE_EVIDENCE_CONFLICT / evidence_file_not_expected`. Falha do banco ao ligar o arquivo à linha → `503 evidence_storage_unavailable` (mensagem fixa; evento `evidence.upload.index_failed`), e o app preserva a foto e reenvia. A evidência guardada é lida por OS em `GET /work-orders/:id/evidences` (+ `/download`). |
 | POST | `/mobile/telemetry` | Autenticado (consent-gate LGPD) | Ingestão de heartbeat/km/recusas de telemetria. |
 
 ### 3.16 Anexos (transversal)

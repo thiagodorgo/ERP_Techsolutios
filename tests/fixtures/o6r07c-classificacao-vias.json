@@ -1023,6 +1023,14 @@
   "classe": "LEITURA-OS",
   "n": 1
  },
+ "ROTA GET /api/v1/work-orders/:workOrderId/evidences": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId/evidences/:evidenceId/download": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
  "ROTA GET /api/v1/work-orders/:workOrderId/financial-items": {
   "classe": "LEITURA-OS",
   "n": 1
@@ -1479,6 +1487,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/deserted": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/impound-processes/:processId/auction/edicts": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1495,15 +1507,7 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
- "ROTA POST /api/v1/impound-processes/:processId/auction/deserted": {
-  "classe": "SEM-ALCANCE-CAMPO",
-  "n": 1
- },
  "ROTA POST /api/v1/impound-processes/:processId/auction/reclaim": {
-  "classe": "SEM-ALCANCE-CAMPO",
-  "n": 1
- },
- "ROTA POST /api/v1/impound-processes/:processId/auction/relot": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1512,6 +1516,10 @@
   "n": 1
  },
  "ROTA POST /api/v1/impound-processes/:processId/auction/reclassify-unrecoverable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/relot": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },

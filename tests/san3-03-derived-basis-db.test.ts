@@ -118,6 +118,92 @@ if (!connectionString) {
       assert.deepEqual(actions(after), { [ctx.platformTenant]: 3 });
       assert.deepEqual(actions(before), { [ctx.platformTenant]: 3 });
     }));
+
+  test("T-STO-db-6 · bytes de mobile_evidences entram na base da organização certa", async () => withFixture(async (ctx) => {
+    await seedAllStorageModels(ctx, [1_000, 2_000, 3_000, 4_000]);
+    await ctx.client.mobileEvidence.create({ data: storedEvidence(ctx, 5_000, ctx.periodStart, ctx.periodStart) });
+    await ctx.client.mobileEvidence.create({
+      data: { ...storedEvidence(ctx, 7_000, ctx.periodStart, ctx.periodStart), deleted_at: ctx.periodStart },
+    });
+    await ctx.client.mobileEvidence.create({
+      data: {
+        ...storedEvidence(ctx, 0, ctx.periodStart, ctx.periodStart),
+        file_status: "awaiting_file",
+        file_id: null,
+        storage_provider: null,
+        storage_key: null,
+        mime_type: null,
+        checksum_sha256: null,
+        stored_at: null,
+        size_bytes: null,
+      },
+    });
+    await ctx.client.mobileEvidence.create({
+      data: {
+        ...storedEvidence(ctx, 300, ctx.periodStart, ctx.periodStart),
+        tenant_id: ctx.tenantB,
+        actor_user_id: ctx.userB,
+        storage_key: `local/${ctx.tenantB}/${crypto.randomUUID()}`,
+      },
+    });
+    const rows = await ctx.repository.sumUsageBasis(ctx.periodStart, ctx.periodEnd, [ctx.tenantA, ctx.tenantB]);
+    assert.deepEqual(storage(rows), { [ctx.tenantA]: 15_000, [ctx.tenantB]: 300 });
+
+    const { createEphemeralRole } = await import("./helpers/auth-identity-fixture.js");
+    const role = await createEphemeralRole(ctx.client, connectionString);
+    try {
+      const attributes = await ctx.client.$queryRawUnsafe<Array<{ rolbypassrls: boolean; rolsuper: boolean }>>(
+        "SELECT rolbypassrls, rolsuper FROM pg_roles WHERE rolname = $1",
+        role.roleName,
+      );
+      assert.equal(attributes[0]?.rolbypassrls, false);
+      assert.equal(attributes[0]?.rolsuper, false);
+      const { PrismaCloudCostAllocationRepository } = await import(
+        "../src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.js"
+      );
+      const repository = new PrismaCloudCostAllocationRepository(role.client);
+      const underRole = await repository.sumUsageBasis(ctx.periodStart, ctx.periodEnd, [ctx.tenantA, ctx.tenantB]);
+      assert.deepEqual(storage(underRole), { [ctx.tenantA]: 15_000, [ctx.tenantB]: 300 });
+    } finally {
+      await role.drop();
+    }
+  }));
+
+  test("T-STO-db-7 · canário por posição nomeia a tabela de cada delegate", async () => withFixture(async (ctx) => {
+    await seedAllStorageModels(ctx, [1_000, 2_000, 3_000, 4_000]);
+    await ctx.client.mobileEvidence.create({ data: storedEvidence(ctx, 5_000, ctx.periodStart, ctx.periodStart) });
+    const { PrismaCloudCostAllocationRepository } = await import(
+      "../src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.js"
+    );
+    const delegates = [
+      ["checklistAttachment", "checklist_attachments"],
+      ["workOrderAttachment", "work_order_attachments"],
+      ["attachment", "attachments"],
+      ["damageAttachment", "damage_attachments"],
+      ["mobileEvidence", "mobile_evidences"],
+    ] as const;
+    for (const [model, table] of delegates) {
+      const leaking = new PrismaCloudCostAllocationRepository(withLeakingGroupBy(ctx.client, model, ctx.tenantB));
+      await assert.rejects(
+        () => leaking.sumUsageBasis(ctx.periodStart, ctx.periodEnd, [ctx.tenantA]),
+        (error: unknown) => error instanceof Error && error.message.includes("tenant_context_leak") && error.message.includes(table),
+        `delegate ${model} deveria nomear ${table}`,
+      );
+    }
+  }));
+
+  test("T-STO-db-8 · a evidência pesa pelo created_at, como os anexos, mesmo guardada depois do período", async () => withFixture(async (ctx) => {
+    const depois = new Date(ctx.periodEnd.getTime() + 1);
+    const fimDepois = new Date(Date.UTC(depois.getUTCFullYear(), depois.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+    await ctx.client.attachment.create({ data: { ...genericAttachment(ctx.tenantA, 3_000, ctx.periodStart), uploaded_at: depois } });
+    await ctx.client.attachment.create({ data: genericAttachment(ctx.tenantA, 40, depois) });
+    await ctx.client.mobileEvidence.create({ data: storedEvidence(ctx, 5_000, ctx.periodStart, depois) });
+    await ctx.client.mobileEvidence.create({ data: storedEvidence(ctx, 900, depois, depois) });
+    const noPeriodo = await ctx.repository.sumUsageBasis(ctx.periodStart, ctx.periodEnd, [ctx.tenantA]);
+    assert.deepEqual(storage(noPeriodo), { [ctx.tenantA]: 8_000 });
+    const noSeguinte = await ctx.repository.sumUsageBasis(depois, fimDepois, [ctx.tenantA]);
+    assert.deepEqual(storage(noSeguinte), { [ctx.tenantA]: 8_940 });
+  }));
 }
 
 type Context = Awaited<ReturnType<typeof bootstrap>>;
@@ -219,6 +305,29 @@ function damageAttachment(ctx: Context, sizeBytes: number | null) {
   return { tenant_id: ctx.tenantA, damage_id: ctx.damage, file_url: "memory://damage", size_bytes: sizeBytes, metadata: {}, created_at: ctx.periodStart };
 }
 
+function storedEvidence(ctx: Context, sizeBytes: number, createdAt: Date, storedAt: Date) {
+  return {
+    tenant_id: ctx.tenantA,
+    actor_user_id: ctx.userA,
+    client_evidence_id: crypto.randomUUID(),
+    action_type: "evidence.field_photo",
+    scope: "field",
+    kind: "photo",
+    metadata: {},
+    fingerprint_sha256: "a".repeat(64),
+    local_created_at: createdAt,
+    file_status: "stored",
+    file_id: crypto.randomUUID(),
+    storage_provider: "local",
+    storage_key: `local/${ctx.tenantA}/${crypto.randomUUID()}`,
+    mime_type: "image/jpeg",
+    size_bytes: sizeBytes,
+    checksum_sha256: "a".repeat(64),
+    stored_at: storedAt,
+    created_at: createdAt,
+  };
+}
+
 function audit(tenantId: string, actorUserId: string | null, action: string, createdAt: Date) {
   return { tenant_id: tenantId, actor_user_id: actorUserId, action, entity: "san303", metadata: {}, created_at: createdAt };
 }
@@ -264,6 +373,7 @@ async function cleanup(ctx: Context): Promise<void> {
   try {
     await ctx.client.auditLog.deleteMany({ where: { tenant_id: { in: [ctx.tenantA, ctx.tenantB] } } });
     await ctx.client.auditLog.deleteMany({ where: { actor_user_id: ctx.platformUser } });
+    await ctx.client.mobileEvidence.deleteMany({ where: { tenant_id: { in: [ctx.tenantA, ctx.tenantB] } } });
     await ctx.client.checklistAttachment.deleteMany({ where: { tenant_id: ctx.tenantA } });
     await ctx.client.workOrderAttachment.deleteMany({ where: { tenant_id: ctx.tenantA } });
     await ctx.client.attachment.deleteMany({ where: { tenant_id: { in: [ctx.tenantA, ctx.tenantB] } } });
