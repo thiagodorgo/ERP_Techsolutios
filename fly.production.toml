@@ -22,6 +22,13 @@
 #                           versionado), como CORS_ORIGIN fica por fail-closed.
 #   PORTAL_CORS_ORIGIN    → allowlist https:// da origem do portal público. Mesma disciplina do
 #                           CORS_ORIGIN: omitida aqui de propósito, o gate rejeita vazio/'*'.
+#   CHECKLIST_STORAGE_PROVIDER → `s3`. B-EVIDENCIA-DURAVEL (G-STORAGE-DURAVEL): a trava do env.ts recusa
+#                           produção com arquivo no disco do contêiner, que some no reinício. Sem válvula.
+#   CHECKLIST_STORAGE_S3_BUCKET → bucket do armazenamento durável. NÃO é segredo, mas é recurso REAL de
+#                           nuvem: fica fora do repositório.
+#   CHECKLIST_STORAGE_S3_REGION → região do bucket, na forma da AWS.
+#   CHECKLIST_STORAGE_S3_ENDPOINT → exatamente https://s3.<região>.amazonaws.com da região acima (vazio é
+#                           recusado). Credencial estática: as duas chaves ou nenhuma (papel da tarefa).
 # B-O6R-05 (Ω6R-DAT-001/DIN-006): os cinco PORTAL_* acima existiam no env.ts desde o Ω5P mas NÃO estavam
 # neste cabeçalho — quem ativasse o ambiente por esta lista teria o boot reprovado por 5 issues.
 # Rollback (ver Runbook A em docs/deployment.md §Produção): `fly releases -c fly.production.toml` +

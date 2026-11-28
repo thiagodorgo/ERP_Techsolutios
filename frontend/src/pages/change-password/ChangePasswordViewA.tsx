@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 
+import { PATIOSUL_LOGO_ALT, PATIOSUL_LOGO_LOGIN_ESCURO, PATIOSUL_NOME } from "../../brand/patiosul";
 import { PasswordInput } from "../../components/ui";
 
 // B-USERS-ACESSO-SEG (T1) — troca da senha provisória, aparência A · Padrão fiel: o cartão do login com outro título.
@@ -68,7 +69,7 @@ export const CHANGE_PASSWORD_BASE_CSS = `
 .troca-senha .nw{white-space:nowrap}
 .troca-senha .lg-marca{display:flex;justify-content:center;margin-bottom:32px}
 .troca-senha .lg-marca__in{display:flex;align-items:center;gap:12px}
-.troca-senha .lg-marca__ic{width:44px;height:44px;border-radius:12px;background:#0D1B2A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.troca-senha .lg-marca__logo{display:block;height:44px;width:auto;flex-shrink:0;mix-blend-mode:multiply}
 .troca-senha .lg-marca__txt{display:flex;flex-direction:column}
 .troca-senha .lg-marca__nome{font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.3px;white-space:nowrap}
 .troca-senha .lg-marca__sub{font-size:13px;font-weight:500;color:#64748B;margin-top:2px}
@@ -118,15 +119,10 @@ function BrandMark() {
   return (
     <div className="lg-marca">
       <div className="lg-marca__in">
-        <div className="lg-marca__ic">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-            <path d="M12 21V11" />
-            <path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6" />
-            <path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11" />
-          </svg>
-        </div>
+        {/* B-MARCA-LOGIN-SIDEBAR (fatia L): só o nome e o logo da marca Pátio Sul ERP; o logo de letras pretas no fundo claro. */}
+        <img className="lg-marca__logo" src={PATIOSUL_LOGO_LOGIN_ESCURO} width={709} height={258} alt={PATIOSUL_LOGO_ALT} />
         <div className="lg-marca__txt">
-          <div className="lg-marca__nome">TechSolutions</div>
+          <div className="lg-marca__nome">{PATIOSUL_NOME}</div>
           <div className="lg-marca__sub">Plataforma de operações de campo</div>
         </div>
       </div>

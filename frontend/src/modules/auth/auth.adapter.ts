@@ -351,7 +351,9 @@ function mapTokenUpdate(payload: LoginApiResponse | RefreshApiResponse): AuthTok
 
 export function readLoginErrorMessage(status: number, errorCode?: string): string {
   // B-O6R-01 — códigos do login sem organização (§6.2): a UI fala "organização", nunca termo
-  // técnico (§3 do CLAUDE.md).
+  // técnico (§3 do CLAUDE.md). B-AUTH-LOGIN-PLATAFORMA (§4 do plano) estende a regra aos dois
+  // mapeamentos antigos que ainda diziam "tenant" na tela: o 400 genérico e o 401 — este mantém a
+  // substring "e-mail ou senha inválidos", contratada pelo E2E critical-flows.spec.ts:102.
   if (status === 400 && errorCode === "TENANT_ID_REQUIRED") {
     return "Este e-mail existe em mais de uma organização. Selecione a organização para entrar.";
   }
@@ -365,11 +367,11 @@ export function readLoginErrorMessage(status: number, errorCode?: string): strin
   }
 
   if (status === 400) {
-    return "Revise tenant, e-mail e senha.";
+    return "Revise organização, e-mail e senha.";
   }
 
   if (status === 401) {
-    return "Tenant, e-mail ou senha inválidos.";
+    return "Organização, e-mail ou senha inválidos.";
   }
 
   if (status === 423) {
