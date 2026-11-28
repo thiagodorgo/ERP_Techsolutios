@@ -122,6 +122,37 @@ test("LK3 nomes acessíveis dos indicadores incluem o número e o chip nomeia a 
   await page.unmount();
 });
 
+test("LE1 a linha pedida no endereço sobrevive à carga e abre quando a lista chega", async () => {
+  if (cleanup) await cleanup();
+  const changes: Array<string | null> = [];
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  await act(async () => root.render(createElement(MemoryRouter, null,
+    createElement(PlatformTenantsView, {
+      rows: [],
+      status: "loading",
+      expandedId: ORGANIZATION_A.id,
+      onExpandedIdChange: (value: string | null) => changes.push(value),
+    }),
+  )));
+  await settle();
+  assert.deepEqual(changes, [], "a carga não pode apagar o org do endereço");
+  await act(async () => root.render(createElement(MemoryRouter, null,
+    createElement(PlatformTenantsView, {
+      rows,
+      status: "ready",
+      expandedId: ORGANIZATION_A.id,
+      onExpandedIdChange: (value: string | null) => changes.push(value),
+      renderDetail: () => createElement("div", null, "PAINEL-DEPOIS-DA-CARGA"),
+    }),
+  )));
+  await settle();
+  assert.match(text(container), /PAINEL-DEPOIS-DA-CARGA/);
+  await act(async () => root.unmount());
+  container.parentNode?.removeChild(container);
+});
+
 type RefreshFailure = "tenants-403" | "overview-403" | "background-500" | "initial-500";
 
 async function mountHookPage(failure: RefreshFailure) {

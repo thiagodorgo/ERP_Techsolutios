@@ -101,7 +101,7 @@ export function PlatformTenantsView({
   const visible = filterPlatformOrganizations(rows, { query, groupId, status: statusFilter });
 
   useEffect(() => {
-    if (expandedId && !visible.some((row) => row.id === expandedId)) onExpandedIdChange(null);
+    if (status === "ready" && expandedId && !visible.some((row) => row.id === expandedId)) onExpandedIdChange(null);
   }, [expandedId, onExpandedIdChange, visible]);
 
   const columns: readonly DenseColumn<PlatformOrganizationRow>[] = [
