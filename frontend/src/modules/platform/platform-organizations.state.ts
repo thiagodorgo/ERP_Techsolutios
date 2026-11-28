@@ -34,6 +34,7 @@ export function filterPlatformOrganizations(
   const query = input.query.trim().toLocaleLowerCase("pt-BR");
   return rows.filter((row) => {
     if (input.groupId && row.group?.id !== input.groupId) return false;
+    if (input.status !== "all" && row.system) return false;
     if (input.status === "incomplete" && row.setup.complete) return false;
     if (input.status !== "all" && input.status !== "incomplete" && row.status !== input.status) return false;
     return !query || `${row.name} ${row.group?.name ?? ""}`.toLocaleLowerCase("pt-BR").includes(query);

@@ -51,7 +51,7 @@ test("FP12 incompleto é dimensão própria e busca inclui grupo", () => {
   const completePending = { ...ORGANIZATION_A, id: "pending", status: "pending" as const, setup: { complete: true, missing: [] } };
   const rows = composePlatformOrganizations([ORGANIZATION_A, completePending, ORGANIZATION_SYSTEM], { ...overview, orgs: [] });
   assert.deepEqual(filterPlatformOrganizations(rows, { query: "grupo teste", groupId: "", status: "incomplete" }).map((row) => row.id), [ORGANIZATION_A.id]);
-  assert.deepEqual(filterPlatformOrganizations(rows, { query: "", groupId: "", status: "active" }).map((row) => row.id), [ORGANIZATION_A.id, ORGANIZATION_SYSTEM.id]);
+  assert.deepEqual(filterPlatformOrganizations(rows, { query: "", groupId: "", status: "active" }).map((row) => row.id), [ORGANIZATION_A.id]);
 });
 
 test("FP5/FP8/FP11 painel mostra grupo e plano literais, três usuários e link com contexto, nunca slug", () => {
