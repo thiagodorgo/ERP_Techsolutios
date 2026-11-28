@@ -1,60 +1,48 @@
-import { apiRequest } from "../../services/api/client";
+import { apiData } from "../../services/api/client";
 import type {
+  CreatePlatformOrganizationResult,
   CreateTenantAdminInput,
+  CreateTenantAdminResult,
   CreateTenantInput,
+  PlatformBillingProfile,
+  PlatformBillingProfileInput,
+  PlatformCatalogPlan,
+  PlatformEconomicGroup,
   PlatformModule,
-  PlatformTenant,
-  PlatformTenantStatus,
+  PlatformOrganization,
   UpdateTenantInput,
+  UpdateTenantStatusInput,
 } from "./platform.types";
 
-type ApiResponse<T> = {
-  data: T;
-};
-
-export function listPlatformTenantsFromApi() {
-  return apiRequest<ApiResponse<PlatformTenant[]>>("/platform/tenants").then((response) => response.data);
-}
-
-export function getPlatformTenantByIdFromApi(tenantId: string) {
-  return apiRequest<ApiResponse<PlatformTenant>>(`/platform/tenants/${tenantId}`).then((response) => response.data);
-}
+export function listPlatformTenantsFromApi() { return apiData<PlatformOrganization[]>("/platform/tenants"); }
+export function getPlatformTenantByIdFromApi(tenantId: string) { return apiData<PlatformOrganization>(`/platform/tenants/${encodeURIComponent(tenantId)}`); }
 
 export function createPlatformTenantFromApi(input: CreateTenantInput) {
-  return apiRequest<ApiResponse<PlatformTenant>>("/platform/tenants", {
-    method: "POST",
-    body: input,
-  }).then((response) => response.data);
+  return apiData<CreatePlatformOrganizationResult>("/platform/tenants", { method: "POST", body: input });
 }
 
 export function updatePlatformTenantFromApi(tenantId: string, input: UpdateTenantInput) {
-  return apiRequest<ApiResponse<PlatformTenant>>(`/platform/tenants/${tenantId}`, {
-    method: "PATCH",
-    body: input,
-  }).then((response) => response.data);
+  return apiData<PlatformOrganization>(`/platform/tenants/${encodeURIComponent(tenantId)}`, { method: "PATCH", body: input });
 }
 
-export function updatePlatformTenantStatusFromApi(tenantId: string, status: PlatformTenantStatus) {
-  return apiRequest<ApiResponse<PlatformTenant>>(`/platform/tenants/${tenantId}/status`, {
-    method: "PATCH",
-    body: { status },
-  }).then((response) => response.data);
+export function updatePlatformTenantStatusFromApi(tenantId: string, input: UpdateTenantStatusInput) {
+  return apiData<PlatformOrganization>(`/platform/tenants/${encodeURIComponent(tenantId)}/status`, { method: "PATCH", body: input });
 }
 
-export function listPlatformTenantModulesFromApi(tenantId: string) {
-  return apiRequest<ApiResponse<PlatformModule[]>>(`/platform/tenants/${tenantId}/modules`).then((response) => response.data);
+export function listPlatformTenantModulesFromApi(tenantId: string) { return apiData<PlatformModule[]>(`/platform/tenants/${encodeURIComponent(tenantId)}/modules`); }
+export function updatePlatformTenantModulesFromApi(tenantId: string, enabledModules: string[]) { return apiData<PlatformModule[]>(`/platform/tenants/${encodeURIComponent(tenantId)}/modules`, { method: "PATCH", body: { enabledModules } }); }
+export function createTenantAdminUserFromApi(tenantId: string, input: CreateTenantAdminInput) { return apiData<CreateTenantAdminResult>(`/platform/tenants/${encodeURIComponent(tenantId)}/admin-user`, { method: "POST", body: input }); }
+export function listPlatformEconomicGroupsFromApi() { return apiData<PlatformEconomicGroup[]>("/platform/billing/economic-groups"); }
+export function listPlatformPlansFromApi() { return apiData<PlatformCatalogPlan[]>("/platform/billing/plans"); }
+export type PlatformSubscriptionPresence = "absent" | "present";
+export function readSubscriptionPresence(raw: unknown): PlatformSubscriptionPresence {
+  if (raw === null) return "absent";
+  if (raw && typeof raw === "object" && typeof (raw as Record<string, unknown>).planCode === "string" && (raw as Record<string, string>).planCode.trim()) return "present";
+  throw new Error("Resposta de assinatura inválida.");
 }
-
-export function updatePlatformTenantModulesFromApi(tenantId: string, enabledModules: string[]) {
-  return apiRequest<ApiResponse<PlatformModule[]>>(`/platform/tenants/${tenantId}/modules`, {
-    method: "PATCH",
-    body: { enabledModules },
-  }).then((response) => response.data);
+export function getPlatformSubscriptionFromApi(tenantId: string) {
+  return apiData<unknown>(`/platform/billing/tenants/${encodeURIComponent(tenantId)}/subscription`).then(readSubscriptionPresence);
 }
-
-export function createTenantAdminUserFromApi(tenantId: string, input: CreateTenantAdminInput) {
-  return apiRequest<ApiResponse<PlatformTenant>>(`/platform/tenants/${tenantId}/admin-user`, {
-    method: "POST",
-    body: input,
-  }).then((response) => response.data);
-}
+export function putPlatformSubscriptionFromApi(tenantId: string, input: { readonly planCode: string; readonly validFrom: string }) { return apiData<unknown>(`/platform/billing/tenants/${encodeURIComponent(tenantId)}/subscription`, { method: "PUT", body: input }); }
+export function getPlatformBillingProfileFromApi(tenantId: string) { return apiData<PlatformBillingProfile>(`/platform/billing/tenants/${encodeURIComponent(tenantId)}/billing-profile`); }
+export function putPlatformBillingProfileFromApi(tenantId: string, input: PlatformBillingProfileInput) { return apiData<PlatformBillingProfile>(`/platform/billing/tenants/${encodeURIComponent(tenantId)}/billing-profile`, { method: "PUT", body: input }); }

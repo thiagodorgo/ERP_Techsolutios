@@ -1,25 +1,30 @@
 import { Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { Badge, Button, Card, Checkbox, EmptyState, Skeleton } from "../../../components/ui";
+import { Alert, Badge, Button, Card, Checkbox, EmptyState, Modal, Skeleton } from "../../../components/ui";
+import { usePermissions } from "../../../providers/PermissionProvider";
+import { ApiError } from "../../../services/api/client";
 import { getPlatformTenantById, listPlatformTenantModules, updatePlatformTenantModules } from "../platform.service";
 import type { PlatformModule, PlatformTenant } from "../platform.types";
-
-function planLabel(plan: PlatformTenant["plan"]): string {
-  if (plan === "starter") return "Inicial";
-  if (plan === "professional") return "Profissional";
-  if (plan === "enterprise") return "Empresarial";
-  return "Indefinido";
-}
+import { usePlatformTenantDetail } from "../usePlatformTenantDetail";
 
 export function PlatformTenantModulesPage() {
   const { tenantId = "" } = useParams();
+  const { permissions } = usePermissions();
+  const canManageModules = permissions.includes("platform:modules:manage");
   const [tenant, setTenant] = useState<PlatformTenant | null>(null);
   const [modules, setModules] = useState<PlatformModule[]>([]);
   const [enabledModules, setEnabledModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [savingError, setSavingError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const modulesInFlight = useRef(false);
+  const canSaveModules = !saving;
+  const canConfirmEmpty = confirmEmpty && !saving;
+  const detailState = usePlatformTenantDetail(tenantId);
 
   useEffect(() => {
     Promise.all([getPlatformTenantById(tenantId), listPlatformTenantModules(tenantId)])
@@ -41,33 +46,82 @@ export function PlatformTenantModulesPage() {
     [modules],
   );
 
+  function applyServerModules(next: PlatformModule[]) {
+    setModules(next);
+    setEnabledModules(next.filter((module) => module.status === "enabled").map((module) => module.key));
+  }
+
   async function saveModules() {
-    const updated = await updatePlatformTenantModules(tenantId, enabledModules);
-    setModules(updated);
+    if (modulesInFlight.current) return;
+    modulesInFlight.current = true;
+    setSaving(true);
+    setSavingError(null);
+    try {
+      applyServerModules(await updatePlatformTenantModules(tenantId, enabledModules));
+    } catch (item) {
+      applyServerModules(modules);
+      const refused = item instanceof ApiError && item.status >= 400 && item.status < 500;
+      setSavingError(item instanceof ApiError && item.status === 409 && item.reason === "module_change_requires_subscription" ? "Os módulos são definidos pela assinatura. Altere o plano para mudar este conjunto." : refused ? "Não foi possível salvar os módulos. Nada foi alterado." : "Não foi possível confirmar se os módulos foram salvos. Recarregue a página para ver a situação atual.");
+    } finally {
+      modulesInFlight.current = false;
+      setSaving(false);
+      setConfirmEmpty(false);
+    }
+  }
+
+  function requestSave() {
+    if (!canSaveModules) return;
+    if (enabledModules.length === 0) { setConfirmEmpty(true); return; }
+    void saveModules();
+  }
+
+  function confirmEmptySave() {
+    if (!canConfirmEmpty) return;
+    void saveModules();
+  }
+
+  function closeConfirmEmpty() {
+    if (saving) return;
+    setConfirmEmpty(false);
   }
 
   function toggleModule(module: PlatformModule) {
+    if (!canManageModules) return;
     if (!module.availableInPlan) return;
     setEnabledModules((current) =>
       current.includes(module.key) ? current.filter((key) => key !== module.key) : [...current, module.key],
     );
   }
 
-  if (loading) return <Skeleton lines={8} />;
+  if (loading || detailState.loading) return <Skeleton lines={8} />;
   if (error || !tenant) return <EmptyState title="Módulos não encontrados" detail={error ?? "Não foi possível carregar os módulos."} />;
+
+  const subscription = detailState.data.detail?.subscription;
+  const planName = subscription === null ? null : subscription?.planName;
+  if (subscription !== null && !planName) return <EmptyState title="Plano indisponível" detail="Não foi possível consultar o plano desta organização. Tente novamente." />;
 
   return (
     <section className="page-stack">
       <header className="page-heading page-heading--row">
         <div>
           <h1>Módulos da Organização</h1>
-          <p>{tenant.name} · plano {planLabel(tenant.plan)}</p>
+          <p>{tenant.name} · {subscription === null ? "Sem plano contratado" : <>Plano: {planName}</>}</p>
         </div>
-        <Button onClick={saveModules}>
+        {canManageModules ? <Button disabled={!canSaveModules} onClick={requestSave}>
           <Save size={16} />
           Salvar alterações
-        </Button>
+        </Button> : null}
       </header>
+
+      <Modal title="Desligar todos os módulos desta organização?" open={confirmEmpty} onClose={closeConfirmEmpty}>
+        <div>
+          <Button variant="secondary" disabled={saving} onClick={closeConfirmEmpty}>Cancelar</Button>
+          <Button variant="danger" disabled={!canConfirmEmpty} onClick={confirmEmptySave}>Desligar todos</Button>
+        </div>
+      </Modal>
+
+      {!canManageModules ? <Alert title="Somente consulta">Seu perfil só consulta os módulos desta organização.</Alert> : null}
+      {savingError ? <Alert title="Alteração não concluída" tone="warning">{savingError}</Alert> : null}
 
       {Object.entries(groupedModules).map(([category, items]) => (
         <Card key={category} title={category}>
@@ -86,7 +140,7 @@ export function PlatformTenantModulesPage() {
                 <Checkbox
                   label={module.availableInPlan ? "Habilitar módulo" : "Bloqueado pelo plano"}
                   checked={module.availableInPlan && enabledModules.includes(module.key)}
-                  disabled={!module.availableInPlan}
+                  disabled={!canManageModules || !module.availableInPlan}
                   onChange={() => toggleModule(module)}
                 />
               </article>

@@ -24,6 +24,10 @@ export type PlatformTenantDetailUser = {
   readonly status: string;
 };
 
+export type PlatformTenantDetailSubscription = {
+  readonly planName: string;
+};
+
 // Projeção segura para a UI: só o que a tela mostra. Sem MRR/uptime/saúde/endereço (não existem no DTO
 // real). `id` só alimenta rota/fetch (§2.8), nunca é exibido.
 export type PlatformTenantDetailInfo = {
@@ -35,6 +39,8 @@ export type PlatformTenantDetailInfo = {
   readonly moduleCount: number; // quantos módulos estão habilitados
   readonly modules: readonly PlatformTenantDetailModule[];
   readonly users: readonly PlatformTenantDetailUser[];
+  /** `null` é ausência confirmada; campo ausente/malformado invalida a leitura. */
+  readonly subscription: PlatformTenantDetailSubscription | null;
 };
 
 export type PlatformTenantDetailData = {

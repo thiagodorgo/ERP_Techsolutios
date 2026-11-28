@@ -13,6 +13,8 @@ import ts from "typescript";
 
 import { PlatformOverviewView } from "../src/modules/platform/pages/PlatformOverviewPage";
 import { PlatformTenantsView } from "../src/modules/platform/pages/PlatformTenantsPage";
+import { composePlatformOrganizations } from "../src/modules/platform/platform-organizations.state";
+import type { PlatformOrganization } from "../src/modules/platform/platform.types";
 import {
   customerOverviewMetrics,
   PLATFORM_SYSTEM_ORG_SLUG,
@@ -261,7 +263,7 @@ test("T37 inventário fica vermelho com parada no menu ou tela sem fonte", () =>
   const second = mkdtempSync(path.join(tmpdir(), "san3-06b-source-"));
   cpSync(path.join(FRONTEND, "src"), path.join(second, "frontend/src"), { recursive: true });
   const tenants = path.join(second, "frontend/src/modules/platform/pages/PlatformTenantsPage.tsx");
-  writeFileSync(tenants, readFileSync(tenants, "utf8").replace(/import \{ usePlatformOverview \} from "\.\.\/usePlatformOverview";\r?\n/, ""));
+  writeFileSync(tenants, readFileSync(tenants, "utf8").replace(/import \{ usePlatformOrganizations[^\n]+\r?\n/, ""));
   const sourceMutation = run("san3-06b-telas-de-plataforma.mjs", [second]);
   assert.match(sourceMutation, /SEM-FONTE = 1/);
   assert.match(sourceMutation, /\/platform\/tenants[^\n]+SEM-FONTE/);
@@ -270,17 +272,30 @@ test("T37 inventário fica vermelho com parada no menu ou tela sem fonte", () =>
 test("T41 organização de sistema aparece selada e não entra nos indicadores de clientes", () => {
   const current = platformData();
   const metrics = customerOverviewMetrics(current);
-  const html = renderToString(React.createElement(MemoryRouter, null, React.createElement(PlatformTenantsView, { data: current })));
+  const organizations: PlatformOrganization[] = current.orgs.map((org) => ({
+    id: org.id,
+    name: org.name,
+    slug: org.slug ?? org.id,
+    status: org.status === "suspended" ? "suspended" : "active",
+    statusReason: null,
+    system: org.slug === PLATFORM_SYSTEM_ORG_SLUG,
+    group: org.slug === PLATFORM_SYSTEM_ORG_SLUG ? null : { id: "group", name: "Grupo Cliente" },
+    createdAt: org.createdAt,
+    updatedAt: org.createdAt,
+    setup: { complete: true, missing: [] },
+  }));
+  const rows = composePlatformOrganizations(organizations, current);
+  const html = renderToString(React.createElement(MemoryRouter, null, React.createElement(PlatformTenantsView, { rows })));
   assert.equal(metrics.activeOrgs, 1);
   assert.equal(metrics.totalOrgs, 2);
   assert.equal(metrics.totalUsers, 15);
   assert.match(html, /Organização de sistema/);
   const text = html.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-  assert.match(text, /Todas \(2\)/);
   assert.match(text, / 1 Organizações ativas /);
   assert.match(text, / 1 Organizações suspensas /);
   assert.match(text, / 15 Usuários totais /);
-  assert.match(html, /Sistema/);
+  assert.match(html, /pat-ab-row pat-ab-row--static/);
+  assert.equal((html.match(/tabindex="0"/g) ?? []).length, 2);
 });
 
 test("T42 Visão Geral aplica a mesma exclusão da organização de sistema", () => {

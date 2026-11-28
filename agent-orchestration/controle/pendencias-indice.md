@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1484** |
-| IDs distintos | 1469 |
-| **ABERTAS** | **1143** |
+| Cabecalhos `## P-` | **1494** |
+| IDs distintos | 1479 |
+| **ABERTAS** | **1150** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **1082** |
+| — das quais **ativas nesta rodada** | **1089** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 337 |
+| FECHADAS | 340 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1484 cabecalhos para 1469 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1494 cabecalhos para 1479 IDs**, porque
 > **10 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 442
+## ABERTAS · balde A — material — 443
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -299,225 +299,226 @@
 | `P-RBAC-FIELD-TECHNICIAN-DESPESA` | 13082 | MÉDIA | sim | P-RBAC-FIELD-TECHNICIAN-DESPESA (2026-11-04) — `field_technician` sem permissão de despe |
 | `P-AUTH-TOKEN-LOCAL-CLAIMS` | 13094 | MÉDIA | sim | P-AUTH-TOKEN-LOCAL-CLAIMS (2026-11-04) — o token local não traz todos os claims do contr |
 | `P-WEB-SHELL-CELULAR-ROLA-DE-LADO` | 13107 | MÉDIA | sim | P-WEB-SHELL-CELULAR-ROLA-DE-LADO (2026-11-04) — em 390 px a web rola de lado por causa d |
-| `P-ASS03-RMED3-VACUUM-6B` | 13151 | MÉDIA | sim | P-ASS03-RMED3-VACUUM-6B (2026-11-06) — o "byte a byte" do R-MED-3 varia ±6 B depois de V |
-| `P-JOBS-REENFILEIRA-MULTIPLICA` | 13183 | MÉDIA | sim | P-JOBS-REENFILEIRA-MULTIPLICA (2026-11-06) — re-enfileirar no `finally` multiplica as ca |
-| `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO` | 13213 | MÉDIA | sim | P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO (2026-11-08) — o painel de conflito no detalhe  |
-| `P-ASS07-REGIME-VOCAB-FECHADO` | 13250 | MÉDIA | sim | P-ASS07-REGIME-VOCAB-FECHADO (2026-11-09) — classificação de regime fiscal é fail-open p |
-| `P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO` | 13280 | MÉDIA | sim | P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO (2026-11-09) — "Versão do gestor" em conflito de d |
-| `P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA` | 13291 | MÉDIA | sim | P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA (2026-11-09) — falha de infraestrutura no sync de  |
-| `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA` | 13299 | MÉDIA | sim | P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA (2026-11-09) — o "com sessão válida" do item 30 não t |
-| `P-S3-FORCE-PATH-STYLE-NAO-DESLIGA` | 13322 | MÉDIA | sim | P-S3-FORCE-PATH-STYLE-NAO-DESLIGA (2026-11-10) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
-| `P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP` | 13328 | MÉDIA | sim | P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP (2026-11-10) — aprovação e devolução d |
-| `P-SAN3-05-T11-ORDEM-INSTAVEL` | 13342 | MÉDIA | sim | P-SAN3-05-T11-ORDEM-INSTAVEL (2026-11-10) — o T11d/T11e de `san3-05-leituras-de-platafor |
-| `P-ASS08-RECONSULTA-CONSISTENCIA` | 13409 | MÉDIA | sim | P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalRefe |
-| `P-USERS-201-SEM-NO-STORE` | 13441 | MÉDIA | sim | P-USERS-201-SEM-NO-STORE (2026-11-10) — criação de usuário devolve senha provisória sem  |
-| `P-GUARD3-SO-RECONHECE-SET-CONFIG` | 13455 | MÉDIA | sim | P-GUARD3-SO-RECONHECE-SET-CONFIG (2026-11-10) — guard 3 não reconhece `SET LOCAL` — MÉDI |
-| `P-APARENCIA-APP-SELETOR` | 13467 | MÉDIA | sim | P-APARENCIA-APP-SELETOR (2026-11-10) — app ainda não tem seletor para as aparências B e  |
-| `P-LOGIN-CONTRASTE-ERRO` | 13477 | MÉDIA | sim | P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste |
-| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13512 | ALTA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
-| `P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA` | 13544 | MÉDIA | sim | P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA (2026-11-11) — aprovar um orçamento de dentro de um |
-| `P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN` | 13550 | MÉDIA | sim | P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN (2026-11-11) — falha ao ler o tipo do serviço desliga  |
-| `P-SAN3-08-ORCAMENTO-SEM-ALCADA` | 13556 | MÉDIA | sim | P-SAN3-08-ORCAMENTO-SEM-ALCADA (2026-11-11) — aprovar orçamento não confere alçada nem s |
-| `P-DESPACHO-ARRIVED-SEM-CONFERENCIA` | 13577 | MÉDIA | sim | P-DESPACHO-ARRIVED-SEM-CONFERENCIA (2026-11-11) — o "No local" do DESPACHO não confere a |
-| `P-CONSOLE-EDITA-PLACA-DA-OS` | 13589 | MÉDIA | sim | P-CONSOLE-EDITA-PLACA-DA-OS (2026-11-11) — o console não edita a placa de uma OS que já  |
-| `P-CHECKIN-SEM-PLACA-OFFLINE` | 13595 | MÉDIA | sim | P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fic |
-| `P-APP-DETALHE-OS-LARGURA-INFINITA` | 13666 | ALTA | sim | P-APP-DETALHE-OS-LARGURA-INFINITA (2026-11-11) — no APK debug o detalhe da OS fica em br |
-| `P-DESPACHO-DUPLICADO-MESMO-TECNICO` | 13685 | MÉDIA | sim | P-DESPACHO-DUPLICADO-MESMO-TECNICO (2026-11-11) — dois despachos ativos do mesmo técnico |
-| `P-V533-P1-OS-TITULO-COM-UUID` | 13725 | MÉDIA | sim | P-V533-P1-OS-TITULO-COM-UUID (2026-11-11) — a OS criada pela aprovação nasce com o UUID  |
-| `P-HTTP-ERRO-ECOA-MENSAGEM-CRUA` | 13793 | MÉDIA | sim | P-HTTP-ERRO-ECOA-MENSAGEM-CRUA (2026-11-11) — o tratador genérico de erro devolve a mens |
-| `P-ORG-SUSPENSA-NAO-CORTA-ACESSO` | 13866 | MÉDIA | sim | P-ORG-SUSPENSA-NAO-CORTA-ACESSO (2026-11-11) — nem o login, nem o refresh, nem o RBAC pe |
-| `P-ASS-DB-FORA-DA-LISTA-CURADA` | 13883 | MÉDIA | sim | P-ASS-DB-FORA-DA-LISTA-CURADA (2026-11-11) — nenhuma suíte `ass-0*-db` está na lista cur |
-| `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` | 13891 | MÉDIA | sim | P-CHECKIN-CARTAO-CONGELADO-NO-PULL (2026-11-11) — com o cartão de check-in aberto, o pul |
-| `P-ASS09A-METODO-OUTRAS-REGRAS` | 13949 | CRÍTICA | sim | P-ASS09A-METODO-OUTRAS-REGRAS (2026-11-11) — fora do banco, regra com mais de uma base g |
-| `P-ASS09A-MES-EM-VARIOS-ARQUIVOS` | 13965 | CRÍTICA | sim | P-ASS09A-MES-EM-VARIOS-ARQUIVOS (2026-11-11) — um mês dividido em vários arquivos vira v |
-| `P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM` | 14005 | MÉDIA | sim | P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM (2026-11-11) — o RBAC persistente lê o status do |
-| `P-O6R-B12-FUSO-DO-PATIO-VIVO` | 14068 | MÉDIA | sim | P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera di |
-| `P-COMISSAO-GATE-SEM-TRAVA` | 14106 | CRÍTICA | sim | P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e f |
-| `P-COMISSAO-MOTOR-E-POLITICA` | 14129 | MÉDIA | sim | P-COMISSAO-MOTOR-E-POLITICA (2026-11-11) — a tela de política de comissão só vem depois  |
-| `P-SAN3-24-AUDITORIA-BEST-EFFORT` | 14141 | MÉDIA | **a atribuir** | P-SAN3-24-AUDITORIA-BEST-EFFORT (2026-11-11) — a auditoria da casa é gravada fora da tra |
-| `P-SAN3-24-CHEQUE-FILTRO-VINCULADO` | 14154 | CRÍTICA | **a atribuir** | P-SAN3-24-CHEQUE-FILTRO-VINCULADO (2026-11-11) — a lista de cheques não filtra "pendente |
-| `P-SAN3-24-TITULO-PELA-URL` | 14165 | CRÍTICA | **a atribuir** | P-SAN3-24-TITULO-PELA-URL (2026-11-11) — o Financeiro não abre um título pela URL — BAIX |
-| `P-SAN3-14-DOSSIE-SEM-FASE` | 14172 | CRÍTICA | sim | P-SAN3-14-DOSSIE-SEM-FASE (2026-11-11) — o dossiê de custódia não mostra a fase de cada  |
-| `P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA` | 14178 | MÉDIA | sim | P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA (2026-11-11) — vistoria reaberta ou ca |
-| `P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP` | 14192 | MÉDIA | sim | P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP (2026-11-11) — OS concluída sem a entreg |
-| `P-WEB-CONTAGEM-ERRO-CRU` | 14240 | CRÍTICA | sim | P-WEB-CONTAGEM-ERRO-CRU (2026-11-11) — a contagem do web mostra o texto técnico cru das  |
-| `P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA` | 14268 | CRÍTICA | sim | P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA (2026-11-11) — a tela de módulos da organização mos |
-| `P-SAN3-18-MENU-WEB-FALLBACK-ABERTO` | 14294 | CRÍTICA | sim | P-SAN3-18-MENU-WEB-FALLBACK-ABERTO (2026-11-11) — se o `GET /navigation/menu` falhar, a  |
-| `P-SAN3-18-BOTAO-REVOGAR-DESPACHO-SEM-CAMPO` | 14312 | CRÍTICA | sim | P-SAN3-18-BOTAO-REVOGAR-DESPACHO-SEM-CAMPO (2026-11-11) — a lista de OS chama o despacho |
-| `P-SAN3-18-APP-TELEMETRIA-SEM-CAPACIDADE` | 14324 | CRÍTICA | sim | P-SAN3-18-APP-TELEMETRIA-SEM-CAPACIDADE (2026-11-11) — o app envia telemetria sem olhar  |
-| `P-SAN3-18-PLANOS-SEM-CHAVES-NOVAS` | 14332 | MÉDIA | sim | P-SAN3-18-PLANOS-SEM-CHAVES-NOVAS (2026-11-11) — versões de plano gravadas antes do bloc |
-| `P-SAN3-18-EXTRATO-POR-EFEITO-SEM-FINANCEIRO` | 14338 | MÉDIA | sim | P-SAN3-18-EXTRATO-POR-EFEITO-SEM-FINANCEIRO (2026-11-11) — multa e dano lançam débito no |
-| `P-WO-ASSIGN-OPERATOR-ID-TORTO` | 14358 | MÉDIA | sim | P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em |
-| `P-MOBILE-STATUS-ACCEPTED-LOSSY` | 14397 | MÉDIA | sim | P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no  |
-| `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA` | 14419 | MÉDIA | sim | P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA (2026-09-19) — status do backend fora do voca |
-| `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL` | 14448 | MÉDIA | sim | P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL (2026-09-19) — OS urgente aparece "Normal" |
-| `P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS` | 14495 | MÉDIA | sim | P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS (2026-11-11) — a viatura/equipe pelo app não gra |
-| `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO` | 14503 | MÉDIA | sim | P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO (2026-11-11) — `assign` sem `userId` apaga o usuári |
-| `P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX` | 14566 | MÉDIA | sim | P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS |
-| `P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE` | 14641 | MÉDIA | sim | P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE (2026-11-11) — com a atribuição dentro da mãe do des |
-| `P-DB-FUSO-POOLER-MEDIR` | 14695 | MÉDIA | sim | P-DB-FUSO-POOLER-MEDIR (2026-11-13) — medir no staging da Fly se o pooler aceita `option |
-| `P-CI-BACKEND-SEM-TETO` | 14747 | MÉDIA | sim | P-CI-BACKEND-SEM-TETO (2026-11-14) — os jobs do `ci.yml` não têm `timeout-minutes`, só o |
-| `P-MOBILE-TEXTO-TECNICO-INTERPOLADO` | 14825 | CRÍTICA | sim | P-MOBILE-TEXTO-TECNICO-INTERPOLADO (2026-11-12) — mensagens de exceção com `$e` cru (int |
-| `P-J539-C1-01` | 14847 | MÉDIA | sim | P-J539-C1-01 (2026-11-12) — a catraca do regime deixa passar uma condição viva no WHERE  |
-| `P-J539-C1-02` | 14854 | MÉDIA | sim | P-J539-C1-02 (2026-11-12) — a catraca R1–R4 não pega a relação fluente `.profile()`, a p |
-| `P-J539-C1-03` | 14860 | MÉDIA | sim | P-J539-C1-03 (2026-11-12) — escopo e prazos que o gate de leilão lê da cópia não têm tes |
-| `P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS` | 14939 | MÉDIA | sim | P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS (2026-11-12) — a suíte backend intei |
-| `P-ASS08C-COTA-ANTES-DA-AUTENTICACAO` | 15010 | CRÍTICA | sim | P-ASS08C-COTA-ANTES-DA-AUTENTICACAO (2026-11-13) — a cota global do webhook é gasta ante |
-| `P-AUTH-IP-ATRAS-DO-PROXY` | 15020 | CRÍTICA | sim | P-AUTH-IP-ATRAS-DO-PROXY (2026-11-13) — o limitador do login usa o IP do socket, que na  |
-| `P-547-TEMPO-MEDIO-FECHAR` | 15054 | MÉDIA | sim | P-547-TEMPO-MEDIO-FECHAR (2026-11-13) — a maquete pede o "Tempo médio para fechar", e a  |
-| `P-APP-KIT-CONTRASTE-AA` | 15129 | MÉDIA | sim | P-APP-KIT-CONTRASTE-AA (2026-11-13) — chips, pílula, barra inferior e o "Concluir OS" do |
-| `P-J559-N1-VENCIMENTO-PADRAO-UTC` | 15228 | MÉDIA | sim | P-J559-N1-VENCIMENTO-PADRAO-UTC (2026-11-14) — o vencimento padrão do faturamento é "ago |
-| `P-J559-N-C2-1-CABECALHOS-LEGADOS-FORA-DE-PRODUCAO` | 15258 | ALTA | sim | P-J559-N-C2-1-CABECALHOS-LEGADOS-FORA-DE-PRODUCAO (2026-11-14) — fora do modo produção,  |
-| `P-J559-C3-A5-CONTRASTE-11PX` | 15274 | MÉDIA | sim | P-J559-C3-A5-CONTRASTE-11PX (2026-11-14) — o texto de 11 px dos chips "Faturado" e "Canc |
-| `P-J559-C3-A7-DIALOGO-TECLADO` | 15288 | MÉDIA | sim | P-J559-C3-A7-DIALOGO-TECLADO (2026-11-14) — no diálogo de faturamento pelo teclado, o fo |
-| `P-ASS08C-U-POR-INTENCAO-CONTABILIZADA` | 15302 | MÉDIA | sim | P-ASS08C-U-POR-INTENCAO-CONTABILIZADA (2026-11-14) — depois de uma recobrança, a respost |
-| `P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM` | 15373 | MÉDIA | sim | P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM (2026-11-14) — no sync do app, um erro com forma de r |
-| `P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE` | 15398 | MÉDIA | sim | P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE (2026-11-14) — o servidor aceita `item_answe |
-| `P-RBAC-MATRIZ-X-CATALOGO-ESTOQUE-CHECKLIST` | 15414 | MÉDIA | sim | P-RBAC-MATRIZ-X-CATALOGO-ESTOQUE-CHECKLIST (2026-11-14) — a matriz de papéis dá estoque  |
-| `P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE` | 15439 | MÉDIA | sim | P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o fo |
-| `P-ASS12-ALERTA-SEM-ADICIONAL` | 15473 | MÉDIA | sim | P-ASS12-ALERTA-SEM-ADICIONAL (2026-11-14) — a plataforma não vê aviso de organização que |
-| `P-ASS12-PUT-ASSINATURA-NAO-ATOMICO` | 15486 | MÉDIA | sim | P-ASS12-PUT-ASSINATURA-NAO-ATOMICO (2026-11-14) — o `PUT` da assinatura fecha, cria e gr |
-| `P-ASS12-VINCULO-SEM-CADASTRO` | 15492 | ALTA | sim | P-ASS12-VINCULO-SEM-CADASTRO (2026-11-14) — nenhum caminho de produto cria vínculo rastr |
-| `P-ASS12-O-QUE-O-ADICIONAL-LIBERA` | 15498 | MÉDIA | sim | P-ASS12-O-QUE-O-ADICIONAL-LIBERA (2026-11-14) — aplicar a P10 e a Q11 quando houver funç |
-| `P-SYNC-OS-RECIBO-EM-MEMORIA` | 15580 | MÉDIA | sim | P-SYNC-OS-RECIBO-EM-MEMORIA (2026-11-14) — depois de reiniciar a API, o reenvio de uma a |
-| `P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME` | 15632 | MÉDIA | sim | P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME (2026-11-14) — sob o papel de runtime, o login |
-| `P-SEED-BASE-TRAVA-SO-NODE-ENV` | 15657 | MÉDIA | sim | P-SEED-BASE-TRAVA-SO-NODE-ENV (2026-11-14) — a trava do seed base só olha o `NODE_ENV`,  |
-| `P-T15-5432-SUBSTRING-NA-HORA` | 15683 | MÉDIA | sim | P-T15-5432-SUBSTRING-NA-HORA (2026-11-14) — o T15 do `san3-05-runtime-role-guard-db` pro |
-| `P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA` | 15691 | MÉDIA | sim | P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA (2026-11-14) — desde o #554, a API em modo memória nã |
-| `P-GATE-CHAVE-ARNES-ACEITA-PORTA-NA-QUERY` | 15715 | MÉDIA | sim | P-GATE-CHAVE-ARNES-ACEITA-PORTA-NA-QUERY (2026-11-14) — a trava do arnês do `platform_ad |
-| `P-15B-CONCLUSAO-CARTAO-GENERICO` | 15722 | MÉDIA | sim | P-15B-CONCLUSAO-CARTAO-GENERICO (2026-11-14) — na Conclusão do prestador, o cartão de "n |
-| `P-15B-CONCLUSAO-PAUSADA-SEM-ACAO` | 15729 | MÉDIA | sim | P-15B-CONCLUSAO-PAUSADA-SEM-ACAO (2026-11-14) — a Conclusão da OS pausada manda retomar  |
-| `P-SYNC-RECUSA-SEM-LOG-NO-SERVIDOR` | 15758 | MÉDIA | sim | P-SYNC-RECUSA-SEM-LOG-NO-SERVIDOR (2026-11-14) — o lote de sincronização responde 200, e |
-| `P-ROTEIRO-OP10-ASSUMIR-DESCARTAR` | 15765 | MÉDIA | sim | P-ROTEIRO-OP10-ASSUMIR-DESCARTAR (2026-11-14) — o Op-10 do roteiro não cita "Assumir" ne |
-| `P-APP-TELEMETRIA-422` | 15795 | MÉDIA | sim | P-APP-TELEMETRIA-422 (2026-11-14) — `POST /mobile/telemetry` responde 422 a cada sincron |
-| `P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO` | 15834 | MÉDIA | sim | P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO (2026-11-14) — um tratador final falso, de mes |
-| `P-REPO-CAMINHOS-LOCAIS-COM-USUARIO` | 15893 | ALTA | sim | P-REPO-CAMINHOS-LOCAIS-COM-USUARIO (2026-11-14) — 155 arquivos rastreados na `main` têm  |
-| `P-SAN3-10-E2E-PERSONAS` | 15908 | ALTA | sim | P-SAN3-10-E2E-PERSONAS (2026-11-15) — os fluxos web por persona da parte (b) do `B-SAN3- |
-| `P-WEB-PLATAFORMA-MENU-FIXO` | 15915 | CRÍTICA | sim | P-WEB-PLATAFORMA-MENU-FIXO (2026-11-15) — o console da plataforma não pede o menu ao ser |
-| `P-CI-SEM-PROTECAO-DE-BRANCH` | 15948 | MÉDIA | sim | P-CI-SEM-PROTECAO-DE-BRANCH (2026-11-15) — a `main` não exige check nenhum — MÉDIA |
-| `P-ASS10B-TROCA-DE-GRUPO-ATOMICA` | 15954 | MÉDIA | sim | P-ASS10B-TROCA-DE-GRUPO-ATOMICA (2026-11-14) — trocar uma organização de grupo pede duas |
-| `P-ASS10B-COMPOSICAO-EM-REAIS` | 15968 | MÉDIA | sim | P-ASS10B-COMPOSICAO-EM-REAIS (2026-11-14) — a composição por serviço do custo da organiz |
-| `P-ASS10B-IMPORTACAO-1MB` | 15975 | MÉDIA | sim | P-ASS10B-IMPORTACAO-1MB (2026-11-14) — a importação manual aceita até 1 MB, e o arquivo  |
-| `P-LOCALIZACAO-TELEMETRIA-RESIDUO` | 16095 | MÉDIA | sim | P-LOCALIZACAO-TELEMETRIA-RESIDUO (2026-11-14) — o lote de telemetria em voo na revogação |
-| `P-LOCALIZACAO-GESTOR-MARCA-CONSENTIMENTO` | 16116 | MÉDIA | sim | P-LOCALIZACAO-GESTOR-MARCA-CONSENTIMENTO (2026-11-14) — o gestor ainda cria o cadastro d |
-| `P-WEB-PROFISSIONAIS-CAIXA-DE-CONSENTIMENTO` | 16125 | MÉDIA | sim | P-WEB-PROFISSIONAIS-CAIXA-DE-CONSENTIMENTO (2026-11-14) — na tela Profissionais, a caixa |
-| `P-LOCALIZACAO-ORDEM-DAS-DECISOES` | 16132 | ALTA | sim | P-LOCALIZACAO-ORDEM-DAS-DECISOES (2026-11-14) — sem a hora da decisão no servidor, a ord |
-| `P-LOCALIZACAO-PROVA-CONSENTIMENTO-BEST-EFFORT` | 16139 | MÉDIA | sim | P-LOCALIZACAO-PROVA-CONSENTIMENTO-BEST-EFFORT (2026-11-14) — a versão do texto e a hora  |
-| `P-LOCALIZACAO-SEM-LEITURA-DO-ESTADO` | 16146 | MÉDIA | sim | P-LOCALIZACAO-SEM-LEITURA-DO-ESTADO (2026-11-14) — o app não lê o consentimento que a or |
-| `P-LOCALIZACAO-HISTORICO-GUARDA-E-APAGAMENTO` | 16167 | MÉDIA | sim | P-LOCALIZACAO-HISTORICO-GUARDA-E-APAGAMENTO (2026-11-14) — prazo de guarda do histórico  |
-| `P-LOCALIZACAO-COLETA-SO-COM-OS-ATIVA` | 16173 | MÉDIA | sim | P-LOCALIZACAO-COLETA-SO-COM-OS-ATIVA (2026-11-14) — coletar a localização só com OS ativ |
-| `P-569-TEXTO-DRIVER-NA-RESPOSTA` | 16268 | MÉDIA | sim | P-569-TEXTO-DRIVER-NA-RESPOSTA (2026-11-15) — com `tenantId` malformado, as 7 rotas da f |
-| `P-569-MOTIVO-NO-METADADO` | 16276 | MÉDIA | sim | P-569-MOTIVO-NO-METADADO (2026-11-15) — o texto livre do operador vai inteiro para `audi |
-| `P-PLATAFORMA-GUARDA-POR-ROTA` | 16284 | MÉDIA | sim | P-PLATAFORMA-GUARDA-POR-ROTA (2026-11-15) — não há guarda em bloco no roteador `/api/v1/ |
-| `P-ROTA-FORA-DO-PREFIXO-SERVIDA-SEM-ATOR` | 16291 | MÉDIA | sim | P-ROTA-FORA-DO-PREFIXO-SERVIDA-SEM-ATOR (2026-11-15) — rota nova fora de todo prefixo é  |
-| `P-567-TRAVA-DINHEIRO-TEMPLATE` | 16318 | MÉDIA | sim | P-567-TRAVA-DINHEIRO-TEMPLATE (2026-11-15) — a T-DIN-P não pega a desmarcação do dinheir |
-| `P-TCTR1-LISTAS-TIPADAS-E-CAMPO-INLINE` | 16401 | CRÍTICA | sim | P-TCTR1-LISTAS-TIPADAS-E-CAMPO-INLINE (2026-11-15) — o T-CTR-1 não alcança listas tipada |
-| `P-17-FILA-RESIDUAL` | 16451 | MÉDIA | sim | P-17-FILA-RESIDUAL (2026-11-15) — o residual da fila do titular do consentimento — MÉDIA |
-| `P-17-POSICAO-RAJADA` | 16458 | MÉDIA | sim | P-17-POSICAO-RAJADA (2026-11-15) — rajada de posições do mesmo titular responde depois d |
-| `P-SYNC-INFRA-VIRA-REJECTED` | 16498 | MÉDIA | sim | P-SYNC-INFRA-VIRA-REJECTED (2026-11-15) — nos syncs do app, o erro de infra vira `reject |
-| `P-BOOT-FALHA-PROCESSO-NAO-SAI` | 16505 | MÉDIA | sim | P-BOOT-FALHA-PROCESSO-NAO-SAI (2026-11-15) — com o worker ligado e o Redis fora, o proce |
-| `P-LOG-SEGREDOS-CONFIGURADOS` | 16531 | MÉDIA | sim | P-LOG-SEGREDOS-CONFIGURADOS (2026-11-15) — a R3 do saneador de log não cobre `*_SECRET`, |
-| `P-SEC-LOG-ESCAPES` | 16538 | MÉDIA | sim | P-SEC-LOG-ESCAPES (2026-11-15) — as fugas declaradas do saneador de log (E-5, E-6, E-8,  |
-| `P-REDIS-CLIENTE-SEM-AUTH` | 16545 | MÉDIA | sim | P-REDIS-CLIENTE-SEM-AUTH (2026-11-15) — o cliente próprio do Redis não envia `AUTH` nem  |
-| `P-DB-POOL-SEM-TIMEOUT` | 16551 | MÉDIA | sim | P-DB-POOL-SEM-TIMEOUT (2026-11-15) — o pool do `pg` não tem `connectionTimeoutMillis`: c |
-| `P-WEB-RENOVACAO-SEM-REENVIO-E-PROVA` | 16570 | MÉDIA | sim | P-WEB-RENOVACAO-SEM-REENVIO-E-PROVA (2026-11-15) — a web e o app antigo ficam com 10 s d |
-| `P-579-MERGE-EDITOU-PENDENCIA` | 16698 | MÉDIA | sim | P-579-MERGE-EDITOU-PENDENCIA (2026-11-16) — o merge de absorção do #579 trouxe 9 linhas  |
-| `P-APP-TELAS-SEM-3-OPCOES` | 16718 | MÉDIA | sim | P-APP-TELAS-SEM-3-OPCOES (2026-11-15) — as telas do app sem maquete de 3 opções — MÉDIA |
-| `P-OS-PLACA-NO-TEXTO-LIVRE` | 16849 | MÉDIA | sim | P-OS-PLACA-NO-TEXTO-LIVRE (2026-11-17) — a placa digitada em texto livre chega à lista;  |
-| `P-K11H-INTERMITENTE` | 16868 | MÉDIA | sim | P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA |
-| `P-APP-CHECKLIST-MODELO-DEMO-NO-REAL` | 16882 | MÉDIA | sim | P-APP-CHECKLIST-MODELO-DEMO-NO-REAL (2026-11-16) — os modelos de vistoria de demonstraçã |
-| `P-APP-TEXTOS-SEM-ACENTO` | 16889 | MÉDIA | sim | P-APP-TEXTOS-SEM-ACENTO (2026-11-16) — textos do app sem acento — MÉDIA |
-| `P-APP-ORG-MAIS-DE-3` | 16920 | MÉDIA | sim | P-APP-ORG-MAIS-DE-3 (2026-11-20) — quem tem o e-mail em 4 ou mais organizações não entra |
-| `P-APP-ORG-VINCULAR-PELO-APP` | 16927 | MÉDIA | sim | P-APP-ORG-VINCULAR-PELO-APP (2026-11-20) — a pessoa não consegue ligar, pelo app, o aces |
-| `P-APP-CACHE-NEGOCIO-SO-POR-ORGANIZACAO` | 16948 | MÉDIA | sim | P-APP-CACHE-NEGOCIO-SO-POR-ORGANIZACAO (2026-11-20) — o cache de OS, despesas e vistoria |
-| `P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR` | 16978 | ALTA | sim | P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fil |
-| `P-GUI02-DISPATCHER-LER-MODELOS` | 17016 | ALTA | sim | P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da O |
-| `P-GUI02-VISTORIA-ENVIADA-POR-LINHA` | 17023 | MÉDIA | sim | P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistor |
-| `P-RBAC-TECNICO-LEITURAS-FORA-DE-OS` | 17065 | CRÍTICA | sim | P-RBAC-TECNICO-LEITURAS-FORA-DE-OS (2026-11-17) — o catálogo dá ao técnico leitura da or |
-| `P-DESPACHO-EX-TECNICO-MUTACAO` | 17080 | MÉDIA | sim | P-DESPACHO-EX-TECNICO-MUTACAO (2026-11-17) — o ex-técnico ainda transiciona o despacho a |
-| `P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR` | 17095 | MÉDIA | sim | P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR (2026-11-17) — com o app aberto, a volta da rede |
-| `P-OS-CONCLUSAO-EVENTO-DUPLO` | 17131 | MÉDIA | sim | P-OS-CONCLUSAO-EVENTO-DUPLO (2026-11-17) — duas conclusões simultâneas da mesma OS grava |
-| `P-PLAT-PAPEL-SEM-RELEITURA` | 17177 | MÉDIA | sim | P-PLAT-PAPEL-SEM-RELEITURA (2026-11-17) — as rotas da plataforma não releem papel nem pe |
-| `P-NODE-ENV-AUSENTE-E-DEV` | 17205 | CRÍTICA | sim | P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 |
-| `P-AWS-MIGRADOR` | 17284 | ALTA | sim | P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS —  |
-| `P-AWS-BACKUP-PGDUMP` | 17291 | MÉDIA | sim | P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS |
-| `P-FRONT-API-BASE-URL` | 17305 | MÉDIA | sim | P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em ve |
-| `P-AWS-SSE-TIMEOUT` | 17312 | MÉDIA | sim | P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou p |
-| `P-AWS-PORTAL-TENANT` | 17319 | MÉDIA | sim | P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant |
-| `P-AWS-IP-FIXO` | 17326 | MÉDIA | sim | P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco  |
-| `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO` | 17361 | MÉDIA | sim | P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai  |
-| `P-USERS-TELA-SEM-PAPEIS-DE-CAMPO` | 17382 | MÉDIA | sim | P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_te |
-| `P-WO-LEITURA-DESPACHANTE-VISTORIA` | 17396 | MÉDIA | sim | P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias |
-| `P-AWS-CUSTO-VIRGINIA` | 17403 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
-| `P-AWS-LGPD-TRANSFERENCIA` | 17410 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
-| `P-ASS-OPERACAO-COBRANCA-TELA` | 17417 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
-| `P-08C3-TESTES-DB-DE-VERDADE` | 17431 | MÉDIA | sim | P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda  |
-| `P-T13-INJETADO-PONTO-CEGO` | 17439 | MÉDIA | sim | P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em mé |
-| `P-AWS-ROTEIRO-TRACCAR-DIVERGE` | 17490 | ALTA | sim | P-AWS-ROTEIRO-TRACCAR-DIVERGE (2026-11-20) — o roteiro da AWS para o Traccar (fases 3c e |
-| `P-GRUPO-JANELA-GESTORES` | 17571 | ALTA | sim | P-GRUPO-JANELA-GESTORES (2026-11-22) — falta a janela Gestores do grupo, para a platafor |
-| `P-GRUPO-PROVEDOR-COMPARTILHADO` | 17585 | ALTA | sim | P-GRUPO-PROVEDOR-COMPARTILHADO (2026-11-20) — a configuração de pagamento e de nota é gl |
-| `P-PATIO-LIBERA-COM-LIVRO-VAZIO` | 17592 | ALTA | sim | P-PATIO-LIBERA-COM-LIVRO-VAZIO (2026-11-21) — com o livro de cobranças vazio, o servidor |
-| `P-612-ACEITE-FORMA-REAL` | 17599 | ALTA | sim | P-612-ACEITE-FORMA-REAL (2026-11-21) — o aceite na forma real da tela de operação da cob |
-| `P-ASS10C-RESUMO-ENTRE-ORGANIZACOES` | 17620 | MÉDIA | sim | P-ASS10C-RESUMO-ENTRE-ORGANIZACOES (2026-11-21) — a tela de operação da cobrança lê orga |
-| `P-COMISSAO-LIQUIDACAO-CENTAVO` | 17648 | ALTA | sim | P-COMISSAO-LIQUIDACAO-CENTAVO (2026-11-21; apelido `P-COMISSAO-LIQUIDACAO-ARREDONDA-EM-D |
-| `P-APP-T13-DADOS-INTERMITENTE` | 17669 | MÉDIA | sim | P-APP-T13-DADOS-INTERMITENTE (2026-11-21) — o `[T13-dados]` falha 1 vez em 5 por prazo d |
-| `P-APP-SAIR-LIMPEZA-QUE-LANCA` | 17704 | MÉDIA | sim | P-APP-SAIR-LIMPEZA-QUE-LANCA (2026-11-21) — se o `repo.logout()` lançar no fim do Sair,  |
-| `P-GRUPO-VOLTA-TODAS-AS-ORGS` | 17711 | MÉDIA | sim | P-GRUPO-VOLTA-TODAS-AS-ORGS (2026-11-21) — a procura dos pátios do grupo lê todas as org |
-| `P-ENV-REDIS-PADRAO-LOCALHOST` | 17790 | ALTA | sim | P-ENV-REDIS-PADRAO-LOCALHOST (2026-11-22) — teste sem `REDIS_URL` escreve no Redis vivo  |
-| `P-ARNES-APAGA-REDIS-URL` | 17796 | ALTA | sim | P-ARNES-APAGA-REDIS-URL (2026-11-22) — geradores removem `REDIS_URL` do terreno — ALTA |
-| `P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO` | 17808 | MÉDIA | sim | P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO (2026-11-22) — concessão passa do orçamento ao es |
-| `P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE` | 17814 | MÉDIA | sim | P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE (2026-11-22) — prazo esgotado depende do idioma do |
-| `P-J622-C1-NOTAS` | 17826 | MÉDIA | **a atribuir** | P-J622-C1-NOTAS (2026-11-22) — oito notas da cadeira C1 — BAIXA/MÉDIA |
-| `P-J622-C2-NOTAS` | 17832 | MÉDIA | sim | P-J622-C2-NOTAS (2026-11-22) — seis notas da cadeira C2 — BAIXA/MÉDIA |
-| `P-J622-C3-NOTAS` | 17838 | MÉDIA | sim | P-J622-C3-NOTAS (2026-11-22) — nove notas da cadeira C3 — BAIXA/MÉDIA |
-| `P-GRUPO-FKS-SEM-RELATION` | 17861 | ALTA | sim | P-GRUPO-FKS-SEM-RELATION (2026-11-22) — FKs novas não têm `@relation` — ALTA |
-| `P-GRUPO-SUMMARY-ORCAMENTO-TEMPO` | 17866 | MÉDIA | sim | P-GRUPO-SUMMARY-ORCAMENTO-TEMPO (2026-11-22) — `/summary` sem orçamento para muitos páti |
-| `P-GRUPO-SLA-CUSTO-POR-LINHA` | 17871 | MÉDIA | sim | P-GRUPO-SLA-CUSTO-POR-LINHA (2026-11-22) — conversão de data custa CPU por linha — MÉDIA |
-| `P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA` | 17881 | ALTA | sim | P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA (2026-11-22) — exclusão corre com abertura de vínculo —  |
-| `P-GRUPO-ESCALA-100` | 17891 | MÉDIA | sim | P-GRUPO-ESCALA-100 (2026-11-22) — painel com 100 pátios — MÉDIA |
-| `P-6970-ABRIR-OUTRO-PATIO-2-TOQUES` | 17949 | MÉDIA | sim | P-6970-ABRIR-OUTRO-PATIO-2-TOQUES (2026-11-22) — chamado de outro pátio abre só no segun |
-| `P-6970-COMISSAO-VALOR-PONTA-A-PONTA` | 17964 | MÉDIA | sim | P-6970-COMISSAO-VALOR-PONTA-A-PONTA (2026-11-22) — ensaio não teve comissão real calcula |
-| `P-6970-WEB-NOVO-USUARIO-SEM-TECNICO` | 17969 | MÉDIA | sim | P-6970-WEB-NOVO-USUARIO-SEM-TECNICO (2026-11-22) — formulário não oferece Técnico de Cam |
-| `P-PATIO-HELPERS-CADEIA-RASOS` | 17979 | MÉDIA | sim | P-PATIO-HELPERS-CADEIA-RASOS (2026-11-22) — helpers não provam toda a cadeia de custódia |
-| `P-RELEASE-SETTLEDTOTAL-SOB-TRAVA` | 17984 | ALTA | sim | P-RELEASE-SETTLEDTOTAL-SOB-TRAVA (2026-11-22) — total quitado precisa ser lido sob trava |
-| `P-PATIO-F3-SEM-CORRIDA` | 17989 | MÉDIA | sim | P-PATIO-F3-SEM-CORRIDA (2026-11-22) — F3 sem teste concorrente — MÉDIA |
-| `P-PATIO-FUSO-NO-REGIME` | 17994 | MÉDIA | sim | P-PATIO-FUSO-NO-REGIME (2026-11-22) — regime de diária sem fuso explícito — MÉDIA |
-| `P-LEILAO-VOLTA-COM-FROZEN` | 17999 | ALTA | sim | P-LEILAO-VOLTA-COM-FROZEN (2026-11-22) — resgate do lote preserva estado congelado — ALT |
-| `P-LEILAO-FECHAMENTO-DIARIAS` | 18004 | ALTA | sim | P-LEILAO-FECHAMENTO-DIARIAS (2026-11-22) — leilão e reciclagem congelam antes de fechar  |
-| `P-PATIO-LIBERACOES-ANTIGAS` | 18016 | ALTA | sim | P-PATIO-LIBERACOES-ANTIGAS (2026-11-22) — liberações antigas podem ter diária devida não |
-| `P-PATIO-ISENCAO-REGISTRADA` | 18022 | ALTA | sim | P-PATIO-ISENCAO-REGISTRADA (2026-11-22) — isenção precisa ficar registrada no livro — AL |
-| `P-LIBERACAO-CUSTODIA-JA-CONGELADA` | 18042 | ALTA | sim | P-LIBERACAO-CUSTODIA-JA-CONGELADA (2026-11-23) — liberação preserva congelamento legado  |
-| `P-LEILAO-REVENDA-SEM-CAMINHO` | 18048 | ALTA | sim | P-LEILAO-REVENDA-SEM-CAMINHO (2026-11-23) — inadimplência sem caminho de revenda — ALTA |
-| `P-LEILAO-VALORES-DO-INADIMPLENTE` | 18062 | ALTA | sim | P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem  |
-| `P-AWS-TOKEN-GHCR-TROCAR` | 18081 | MÉDIA | sim | P-AWS-TOKEN-GHCR-TROCAR (2026-11-23) — trocar o token do GitHub do cofre — MÉDIA |
-| `P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO` | 18093 | ALTA | sim | P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO (2026-11-23) — legado em lote/arrematado sem período |
-| `P-TETO-180-PAGAS-ACIMA` | 18099 | ALTA | sim | P-TETO-180-PAGAS-ACIMA (2026-11-23) — diárias acima de 180 já pagas — ALTA |
-| `P-EXTRATO-MOSTRAR-PERIODO-LEILAO` | 18111 | MÉDIA | sim | P-EXTRATO-MOSTRAR-PERIODO-LEILAO (2026-11-23) — extrato e guia dizerem "em leilão, sem d |
-| `P-FLAKY-K11H-TITULO-CAS` | 18135 | ALTA | sim | P-FLAKY-K11H-TITULO-CAS (2026-11-24) — barreira do teste de CAS deixa a corrida escapar  |
-| `P-TETO-180-ATO-DE-DEVOLUCAO` | 18141 | ALTA | sim | P-TETO-180-ATO-DE-DEVOLUCAO (2026-11-24) — devolução de diária já paga acima do teto pre |
-| `P-LEILAO-SUCATA-RODADAS-FIXAS` | 18154 | MÉDIA | sim | P-LEILAO-SUCATA-RODADAS-FIXAS (2026-11-24) — sucata depende das rodadas fixas 1 e 2 — MÉ |
-| `P-LEILAO-DESERTO-ANTES-DO-LOTE` | 18160 | MÉDIA | sim | P-LEILAO-DESERTO-ANTES-DO-LOTE (2026-11-24) — rota antiga registra deserto antes do lote |
-| `P-LEILAO-DATA-DO-LEILAO` | 18166 | ALTA | sim | P-LEILAO-DATA-DO-LEILAO (2026-11-24) — sistema não guarda a data do leilão — ALTA |
-| `P-DNS-ZONA-EXPORT-CONFERIR` | 18196 | ALTA | sim | P-DNS-ZONA-EXPORT-CONFERIR (2026-11-24) — conferir a exportação da zona do provedor anti |
-| `P-DNS-SPF-DUPLO` | 18202 | MÉDIA | sim | P-DNS-SPF-DUPLO (2026-11-24) — dois SPF no domínio do cliente — MÉDIA |
-| `P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS` | 18214 | MÉDIA | sim | P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS (2026-11-24) — dois PUT /members simultâneos p |
-| `P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO` | 18220 | ALTA | sim | P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO (2026-11-24) — portal do proprietário atende uma fil |
-| `P-LEILAO-RAZOES-SEM-TEXTO` | 18226 | MÉDIA | sim | P-LEILAO-RAZOES-SEM-TEXTO (2026-11-24) — razões do relote sem tradução — MÉDIA |
-| `P-PAINEL-LEILAO-ENVIO-COMPARTILHADO` | 18232 | MÉDIA | sim | P-PAINEL-LEILAO-ENVIO-COMPARTILHADO (2026-11-24) — envio compartilhado no painel do leil |
-| `P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO` | 18250 | MÉDIA | sim | P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO (2026-11-25) — a saúde diz que o login sem organizaç |
-| `P-WEB-CONSOLE-CELULAR` | 18257 | MÉDIA | sim | P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computad |
-| `P-MARCA-DESIGN-SYSTEM` | 18263 | MÉDIA | sim | P-MARCA-DESIGN-SYSTEM (2026-11-25) — a base de design ainda diz "azul industrial", contr |
-| `P-COBRANCA-DEMONSTRATIVOS-POR-MES` | 18276 | MÉDIA | sim | P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situ |
-| `P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT` | 18303 | MÉDIA | sim | P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT (2026-11-27) — o teardown de `tests/leilao |
-| `P-PLAT-CONTADOR-COBRANCA-VENCIDA` | 18338 | MÉDIA | sim | P-PLAT-CONTADOR-COBRANCA-VENCIDA (2026-11-27) — o contador de cobranças vencidas no menu |
-| `P-PLAT-AVISOS-SEM-FONTE` | 18344 | MÉDIA | sim | P-PLAT-AVISOS-SEM-FONTE (2026-11-27) — o sino do console da plataforma não tem serviço d |
-| `P-CLAMAV-FRESHCLAM-SO-NO-BOOT` | 18368 | ALTA | sim | P-CLAMAV-FRESHCLAM-SO-NO-BOOT (2026-11-27) — a base do antivírus só é checada no boot do |
-| `P-SESSAO-DIR-TROCA-SOZINHA` | 18393 | MÉDIA | sim | P-SESSAO-DIR-TROCA-SOZINHA (2026-11-27) — o resolvedor de pasta de sessão da orquestraçã |
-| `P-CLAMAV-IDADE-PELA-PUBLICACAO` | 18402 | ALTA | sim | P-CLAMAV-IDADE-PELA-PUBLICACAO (2026-11-28) — o portão do antivírus mede a idade da base |
-| `P-REPO-NOMES-DE-RECURSO-NA-MAIN` | 18420 | MÉDIA | sim | P-REPO-NOMES-DE-RECURSO-NA-MAIN (2026-11-28) — a `main` já tem nome de recurso de nuvem  |
-| `P-EVIDENCIA-FORA-DA-FRANQUIA` | 18450 | MÉDIA | sim | P-EVIDENCIA-FORA-DA-FRANQUIA (2026-11-28) — os bytes do arquivo da evidência do app não  |
+| `P-ASS03-RMED3-VACUUM-6B` | 13152 | MÉDIA | sim | P-ASS03-RMED3-VACUUM-6B (2026-11-06) — o "byte a byte" do R-MED-3 varia ±6 B depois de V |
+| `P-JOBS-REENFILEIRA-MULTIPLICA` | 13184 | MÉDIA | sim | P-JOBS-REENFILEIRA-MULTIPLICA (2026-11-06) — re-enfileirar no `finally` multiplica as ca |
+| `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO` | 13214 | MÉDIA | sim | P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO (2026-11-08) — o painel de conflito no detalhe  |
+| `P-ASS07-REGIME-VOCAB-FECHADO` | 13251 | MÉDIA | sim | P-ASS07-REGIME-VOCAB-FECHADO (2026-11-09) — classificação de regime fiscal é fail-open p |
+| `P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO` | 13281 | MÉDIA | sim | P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO (2026-11-09) — "Versão do gestor" em conflito de d |
+| `P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA` | 13292 | MÉDIA | sim | P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA (2026-11-09) — falha de infraestrutura no sync de  |
+| `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA` | 13300 | MÉDIA | sim | P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA (2026-11-09) — o "com sessão válida" do item 30 não t |
+| `P-S3-FORCE-PATH-STYLE-NAO-DESLIGA` | 13323 | MÉDIA | sim | P-S3-FORCE-PATH-STYLE-NAO-DESLIGA (2026-11-10) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
+| `P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP` | 13329 | MÉDIA | sim | P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP (2026-11-10) — aprovação e devolução d |
+| `P-SAN3-05-T11-ORDEM-INSTAVEL` | 13343 | MÉDIA | sim | P-SAN3-05-T11-ORDEM-INSTAVEL (2026-11-10) — o T11d/T11e de `san3-05-leituras-de-platafor |
+| `P-ASS08-RECONSULTA-CONSISTENCIA` | 13410 | MÉDIA | sim | P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalRefe |
+| `P-USERS-201-SEM-NO-STORE` | 13442 | MÉDIA | sim | P-USERS-201-SEM-NO-STORE (2026-11-10) — criação de usuário devolve senha provisória sem  |
+| `P-GUARD3-SO-RECONHECE-SET-CONFIG` | 13456 | MÉDIA | sim | P-GUARD3-SO-RECONHECE-SET-CONFIG (2026-11-10) — guard 3 não reconhece `SET LOCAL` — MÉDI |
+| `P-APARENCIA-APP-SELETOR` | 13468 | MÉDIA | sim | P-APARENCIA-APP-SELETOR (2026-11-10) — app ainda não tem seletor para as aparências B e  |
+| `P-LOGIN-CONTRASTE-ERRO` | 13478 | MÉDIA | sim | P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste |
+| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13513 | ALTA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
+| `P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA` | 13545 | MÉDIA | sim | P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA (2026-11-11) — aprovar um orçamento de dentro de um |
+| `P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN` | 13551 | MÉDIA | sim | P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN (2026-11-11) — falha ao ler o tipo do serviço desliga  |
+| `P-SAN3-08-ORCAMENTO-SEM-ALCADA` | 13557 | MÉDIA | sim | P-SAN3-08-ORCAMENTO-SEM-ALCADA (2026-11-11) — aprovar orçamento não confere alçada nem s |
+| `P-DESPACHO-ARRIVED-SEM-CONFERENCIA` | 13578 | MÉDIA | sim | P-DESPACHO-ARRIVED-SEM-CONFERENCIA (2026-11-11) — o "No local" do DESPACHO não confere a |
+| `P-CONSOLE-EDITA-PLACA-DA-OS` | 13590 | MÉDIA | sim | P-CONSOLE-EDITA-PLACA-DA-OS (2026-11-11) — o console não edita a placa de uma OS que já  |
+| `P-CHECKIN-SEM-PLACA-OFFLINE` | 13596 | MÉDIA | sim | P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fic |
+| `P-APP-DETALHE-OS-LARGURA-INFINITA` | 13667 | ALTA | sim | P-APP-DETALHE-OS-LARGURA-INFINITA (2026-11-11) — no APK debug o detalhe da OS fica em br |
+| `P-DESPACHO-DUPLICADO-MESMO-TECNICO` | 13686 | MÉDIA | sim | P-DESPACHO-DUPLICADO-MESMO-TECNICO (2026-11-11) — dois despachos ativos do mesmo técnico |
+| `P-V533-P1-OS-TITULO-COM-UUID` | 13726 | MÉDIA | sim | P-V533-P1-OS-TITULO-COM-UUID (2026-11-11) — a OS criada pela aprovação nasce com o UUID  |
+| `P-HTTP-ERRO-ECOA-MENSAGEM-CRUA` | 13794 | MÉDIA | sim | P-HTTP-ERRO-ECOA-MENSAGEM-CRUA (2026-11-11) — o tratador genérico de erro devolve a mens |
+| `P-ORG-SUSPENSA-NAO-CORTA-ACESSO` | 13867 | MÉDIA | sim | P-ORG-SUSPENSA-NAO-CORTA-ACESSO (2026-11-11) — nem o login, nem o refresh, nem o RBAC pe |
+| `P-ASS-DB-FORA-DA-LISTA-CURADA` | 13884 | MÉDIA | sim | P-ASS-DB-FORA-DA-LISTA-CURADA (2026-11-11) — nenhuma suíte `ass-0*-db` está na lista cur |
+| `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` | 13892 | MÉDIA | sim | P-CHECKIN-CARTAO-CONGELADO-NO-PULL (2026-11-11) — com o cartão de check-in aberto, o pul |
+| `P-ASS09A-METODO-OUTRAS-REGRAS` | 13950 | CRÍTICA | sim | P-ASS09A-METODO-OUTRAS-REGRAS (2026-11-11) — fora do banco, regra com mais de uma base g |
+| `P-ASS09A-MES-EM-VARIOS-ARQUIVOS` | 13966 | CRÍTICA | sim | P-ASS09A-MES-EM-VARIOS-ARQUIVOS (2026-11-11) — um mês dividido em vários arquivos vira v |
+| `P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM` | 14006 | MÉDIA | sim | P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM (2026-11-11) — o RBAC persistente lê o status do |
+| `P-O6R-B12-FUSO-DO-PATIO-VIVO` | 14069 | MÉDIA | sim | P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera di |
+| `P-COMISSAO-GATE-SEM-TRAVA` | 14107 | CRÍTICA | sim | P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e f |
+| `P-COMISSAO-MOTOR-E-POLITICA` | 14130 | MÉDIA | sim | P-COMISSAO-MOTOR-E-POLITICA (2026-11-11) — a tela de política de comissão só vem depois  |
+| `P-SAN3-24-AUDITORIA-BEST-EFFORT` | 14142 | MÉDIA | **a atribuir** | P-SAN3-24-AUDITORIA-BEST-EFFORT (2026-11-11) — a auditoria da casa é gravada fora da tra |
+| `P-SAN3-24-CHEQUE-FILTRO-VINCULADO` | 14155 | CRÍTICA | **a atribuir** | P-SAN3-24-CHEQUE-FILTRO-VINCULADO (2026-11-11) — a lista de cheques não filtra "pendente |
+| `P-SAN3-24-TITULO-PELA-URL` | 14166 | CRÍTICA | **a atribuir** | P-SAN3-24-TITULO-PELA-URL (2026-11-11) — o Financeiro não abre um título pela URL — BAIX |
+| `P-SAN3-14-DOSSIE-SEM-FASE` | 14173 | CRÍTICA | sim | P-SAN3-14-DOSSIE-SEM-FASE (2026-11-11) — o dossiê de custódia não mostra a fase de cada  |
+| `P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA` | 14179 | MÉDIA | sim | P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA (2026-11-11) — vistoria reaberta ou ca |
+| `P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP` | 14193 | MÉDIA | sim | P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP (2026-11-11) — OS concluída sem a entreg |
+| `P-WEB-CONTAGEM-ERRO-CRU` | 14241 | CRÍTICA | sim | P-WEB-CONTAGEM-ERRO-CRU (2026-11-11) — a contagem do web mostra o texto técnico cru das  |
+| `P-SAN3-18-MENU-WEB-FALLBACK-ABERTO` | 14296 | CRÍTICA | sim | P-SAN3-18-MENU-WEB-FALLBACK-ABERTO (2026-11-11) — se o `GET /navigation/menu` falhar, a  |
+| `P-SAN3-18-BOTAO-REVOGAR-DESPACHO-SEM-CAMPO` | 14314 | CRÍTICA | sim | P-SAN3-18-BOTAO-REVOGAR-DESPACHO-SEM-CAMPO (2026-11-11) — a lista de OS chama o despacho |
+| `P-SAN3-18-APP-TELEMETRIA-SEM-CAPACIDADE` | 14326 | CRÍTICA | sim | P-SAN3-18-APP-TELEMETRIA-SEM-CAPACIDADE (2026-11-11) — o app envia telemetria sem olhar  |
+| `P-SAN3-18-PLANOS-SEM-CHAVES-NOVAS` | 14334 | MÉDIA | sim | P-SAN3-18-PLANOS-SEM-CHAVES-NOVAS (2026-11-11) — versões de plano gravadas antes do bloc |
+| `P-SAN3-18-EXTRATO-POR-EFEITO-SEM-FINANCEIRO` | 14340 | MÉDIA | sim | P-SAN3-18-EXTRATO-POR-EFEITO-SEM-FINANCEIRO (2026-11-11) — multa e dano lançam débito no |
+| `P-WO-ASSIGN-OPERATOR-ID-TORTO` | 14360 | MÉDIA | sim | P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em |
+| `P-MOBILE-STATUS-ACCEPTED-LOSSY` | 14399 | MÉDIA | sim | P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no  |
+| `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA` | 14421 | MÉDIA | sim | P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA (2026-09-19) — status do backend fora do voca |
+| `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL` | 14450 | MÉDIA | sim | P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL (2026-09-19) — OS urgente aparece "Normal" |
+| `P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS` | 14497 | MÉDIA | sim | P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS (2026-11-11) — a viatura/equipe pelo app não gra |
+| `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO` | 14505 | MÉDIA | sim | P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO (2026-11-11) — `assign` sem `userId` apaga o usuári |
+| `P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX` | 14568 | MÉDIA | sim | P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS |
+| `P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE` | 14643 | MÉDIA | sim | P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE (2026-11-11) — com a atribuição dentro da mãe do des |
+| `P-DB-FUSO-POOLER-MEDIR` | 14697 | MÉDIA | sim | P-DB-FUSO-POOLER-MEDIR (2026-11-13) — medir no staging da Fly se o pooler aceita `option |
+| `P-CI-BACKEND-SEM-TETO` | 14749 | MÉDIA | sim | P-CI-BACKEND-SEM-TETO (2026-11-14) — os jobs do `ci.yml` não têm `timeout-minutes`, só o |
+| `P-MOBILE-TEXTO-TECNICO-INTERPOLADO` | 14827 | CRÍTICA | sim | P-MOBILE-TEXTO-TECNICO-INTERPOLADO (2026-11-12) — mensagens de exceção com `$e` cru (int |
+| `P-J539-C1-01` | 14849 | MÉDIA | sim | P-J539-C1-01 (2026-11-12) — a catraca do regime deixa passar uma condição viva no WHERE  |
+| `P-J539-C1-02` | 14856 | MÉDIA | sim | P-J539-C1-02 (2026-11-12) — a catraca R1–R4 não pega a relação fluente `.profile()`, a p |
+| `P-J539-C1-03` | 14862 | MÉDIA | sim | P-J539-C1-03 (2026-11-12) — escopo e prazos que o gate de leilão lê da cópia não têm tes |
+| `P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS` | 14941 | MÉDIA | sim | P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS (2026-11-12) — a suíte backend intei |
+| `P-ASS08C-COTA-ANTES-DA-AUTENTICACAO` | 15012 | CRÍTICA | sim | P-ASS08C-COTA-ANTES-DA-AUTENTICACAO (2026-11-13) — a cota global do webhook é gasta ante |
+| `P-AUTH-IP-ATRAS-DO-PROXY` | 15022 | CRÍTICA | sim | P-AUTH-IP-ATRAS-DO-PROXY (2026-11-13) — o limitador do login usa o IP do socket, que na  |
+| `P-547-TEMPO-MEDIO-FECHAR` | 15056 | MÉDIA | sim | P-547-TEMPO-MEDIO-FECHAR (2026-11-13) — a maquete pede o "Tempo médio para fechar", e a  |
+| `P-APP-KIT-CONTRASTE-AA` | 15131 | MÉDIA | sim | P-APP-KIT-CONTRASTE-AA (2026-11-13) — chips, pílula, barra inferior e o "Concluir OS" do |
+| `P-J559-N1-VENCIMENTO-PADRAO-UTC` | 15230 | MÉDIA | sim | P-J559-N1-VENCIMENTO-PADRAO-UTC (2026-11-14) — o vencimento padrão do faturamento é "ago |
+| `P-J559-N-C2-1-CABECALHOS-LEGADOS-FORA-DE-PRODUCAO` | 15260 | ALTA | sim | P-J559-N-C2-1-CABECALHOS-LEGADOS-FORA-DE-PRODUCAO (2026-11-14) — fora do modo produção,  |
+| `P-J559-C3-A5-CONTRASTE-11PX` | 15276 | MÉDIA | sim | P-J559-C3-A5-CONTRASTE-11PX (2026-11-14) — o texto de 11 px dos chips "Faturado" e "Canc |
+| `P-J559-C3-A7-DIALOGO-TECLADO` | 15290 | MÉDIA | sim | P-J559-C3-A7-DIALOGO-TECLADO (2026-11-14) — no diálogo de faturamento pelo teclado, o fo |
+| `P-ASS08C-U-POR-INTENCAO-CONTABILIZADA` | 15304 | MÉDIA | sim | P-ASS08C-U-POR-INTENCAO-CONTABILIZADA (2026-11-14) — depois de uma recobrança, a respost |
+| `P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM` | 15375 | MÉDIA | sim | P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM (2026-11-14) — no sync do app, um erro com forma de r |
+| `P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE` | 15400 | MÉDIA | sim | P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE (2026-11-14) — o servidor aceita `item_answe |
+| `P-RBAC-MATRIZ-X-CATALOGO-ESTOQUE-CHECKLIST` | 15416 | MÉDIA | sim | P-RBAC-MATRIZ-X-CATALOGO-ESTOQUE-CHECKLIST (2026-11-14) — a matriz de papéis dá estoque  |
+| `P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE` | 15441 | MÉDIA | sim | P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o fo |
+| `P-ASS12-ALERTA-SEM-ADICIONAL` | 15475 | MÉDIA | sim | P-ASS12-ALERTA-SEM-ADICIONAL (2026-11-14) — a plataforma não vê aviso de organização que |
+| `P-ASS12-PUT-ASSINATURA-NAO-ATOMICO` | 15488 | MÉDIA | sim | P-ASS12-PUT-ASSINATURA-NAO-ATOMICO (2026-11-14) — o `PUT` da assinatura fecha, cria e gr |
+| `P-ASS12-VINCULO-SEM-CADASTRO` | 15494 | ALTA | sim | P-ASS12-VINCULO-SEM-CADASTRO (2026-11-14) — nenhum caminho de produto cria vínculo rastr |
+| `P-ASS12-O-QUE-O-ADICIONAL-LIBERA` | 15500 | MÉDIA | sim | P-ASS12-O-QUE-O-ADICIONAL-LIBERA (2026-11-14) — aplicar a P10 e a Q11 quando houver funç |
+| `P-SYNC-OS-RECIBO-EM-MEMORIA` | 15582 | MÉDIA | sim | P-SYNC-OS-RECIBO-EM-MEMORIA (2026-11-14) — depois de reiniciar a API, o reenvio de uma a |
+| `P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME` | 15634 | MÉDIA | sim | P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME (2026-11-14) — sob o papel de runtime, o login |
+| `P-SEED-BASE-TRAVA-SO-NODE-ENV` | 15659 | MÉDIA | sim | P-SEED-BASE-TRAVA-SO-NODE-ENV (2026-11-14) — a trava do seed base só olha o `NODE_ENV`,  |
+| `P-T15-5432-SUBSTRING-NA-HORA` | 15685 | MÉDIA | sim | P-T15-5432-SUBSTRING-NA-HORA (2026-11-14) — o T15 do `san3-05-runtime-role-guard-db` pro |
+| `P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA` | 15693 | MÉDIA | sim | P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA (2026-11-14) — desde o #554, a API em modo memória nã |
+| `P-GATE-CHAVE-ARNES-ACEITA-PORTA-NA-QUERY` | 15717 | MÉDIA | sim | P-GATE-CHAVE-ARNES-ACEITA-PORTA-NA-QUERY (2026-11-14) — a trava do arnês do `platform_ad |
+| `P-15B-CONCLUSAO-CARTAO-GENERICO` | 15724 | MÉDIA | sim | P-15B-CONCLUSAO-CARTAO-GENERICO (2026-11-14) — na Conclusão do prestador, o cartão de "n |
+| `P-15B-CONCLUSAO-PAUSADA-SEM-ACAO` | 15731 | MÉDIA | sim | P-15B-CONCLUSAO-PAUSADA-SEM-ACAO (2026-11-14) — a Conclusão da OS pausada manda retomar  |
+| `P-SYNC-RECUSA-SEM-LOG-NO-SERVIDOR` | 15760 | MÉDIA | sim | P-SYNC-RECUSA-SEM-LOG-NO-SERVIDOR (2026-11-14) — o lote de sincronização responde 200, e |
+| `P-ROTEIRO-OP10-ASSUMIR-DESCARTAR` | 15767 | MÉDIA | sim | P-ROTEIRO-OP10-ASSUMIR-DESCARTAR (2026-11-14) — o Op-10 do roteiro não cita "Assumir" ne |
+| `P-APP-TELEMETRIA-422` | 15797 | MÉDIA | sim | P-APP-TELEMETRIA-422 (2026-11-14) — `POST /mobile/telemetry` responde 422 a cada sincron |
+| `P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO` | 15836 | MÉDIA | sim | P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO (2026-11-14) — um tratador final falso, de mes |
+| `P-REPO-CAMINHOS-LOCAIS-COM-USUARIO` | 15895 | ALTA | sim | P-REPO-CAMINHOS-LOCAIS-COM-USUARIO (2026-11-14) — 155 arquivos rastreados na `main` têm  |
+| `P-SAN3-10-E2E-PERSONAS` | 15910 | ALTA | sim | P-SAN3-10-E2E-PERSONAS (2026-11-15) — os fluxos web por persona da parte (b) do `B-SAN3- |
+| `P-WEB-PLATAFORMA-MENU-FIXO` | 15917 | CRÍTICA | sim | P-WEB-PLATAFORMA-MENU-FIXO (2026-11-15) — o console da plataforma não pede o menu ao ser |
+| `P-CI-SEM-PROTECAO-DE-BRANCH` | 15950 | MÉDIA | sim | P-CI-SEM-PROTECAO-DE-BRANCH (2026-11-15) — a `main` não exige check nenhum — MÉDIA |
+| `P-ASS10B-TROCA-DE-GRUPO-ATOMICA` | 15956 | MÉDIA | sim | P-ASS10B-TROCA-DE-GRUPO-ATOMICA (2026-11-14) — trocar uma organização de grupo pede duas |
+| `P-ASS10B-COMPOSICAO-EM-REAIS` | 15970 | MÉDIA | sim | P-ASS10B-COMPOSICAO-EM-REAIS (2026-11-14) — a composição por serviço do custo da organiz |
+| `P-ASS10B-IMPORTACAO-1MB` | 15977 | MÉDIA | sim | P-ASS10B-IMPORTACAO-1MB (2026-11-14) — a importação manual aceita até 1 MB, e o arquivo  |
+| `P-LOCALIZACAO-TELEMETRIA-RESIDUO` | 16097 | MÉDIA | sim | P-LOCALIZACAO-TELEMETRIA-RESIDUO (2026-11-14) — o lote de telemetria em voo na revogação |
+| `P-LOCALIZACAO-GESTOR-MARCA-CONSENTIMENTO` | 16118 | MÉDIA | sim | P-LOCALIZACAO-GESTOR-MARCA-CONSENTIMENTO (2026-11-14) — o gestor ainda cria o cadastro d |
+| `P-WEB-PROFISSIONAIS-CAIXA-DE-CONSENTIMENTO` | 16127 | MÉDIA | sim | P-WEB-PROFISSIONAIS-CAIXA-DE-CONSENTIMENTO (2026-11-14) — na tela Profissionais, a caixa |
+| `P-LOCALIZACAO-ORDEM-DAS-DECISOES` | 16134 | ALTA | sim | P-LOCALIZACAO-ORDEM-DAS-DECISOES (2026-11-14) — sem a hora da decisão no servidor, a ord |
+| `P-LOCALIZACAO-PROVA-CONSENTIMENTO-BEST-EFFORT` | 16141 | MÉDIA | sim | P-LOCALIZACAO-PROVA-CONSENTIMENTO-BEST-EFFORT (2026-11-14) — a versão do texto e a hora  |
+| `P-LOCALIZACAO-SEM-LEITURA-DO-ESTADO` | 16148 | MÉDIA | sim | P-LOCALIZACAO-SEM-LEITURA-DO-ESTADO (2026-11-14) — o app não lê o consentimento que a or |
+| `P-LOCALIZACAO-HISTORICO-GUARDA-E-APAGAMENTO` | 16169 | MÉDIA | sim | P-LOCALIZACAO-HISTORICO-GUARDA-E-APAGAMENTO (2026-11-14) — prazo de guarda do histórico  |
+| `P-LOCALIZACAO-COLETA-SO-COM-OS-ATIVA` | 16175 | MÉDIA | sim | P-LOCALIZACAO-COLETA-SO-COM-OS-ATIVA (2026-11-14) — coletar a localização só com OS ativ |
+| `P-569-TEXTO-DRIVER-NA-RESPOSTA` | 16270 | MÉDIA | sim | P-569-TEXTO-DRIVER-NA-RESPOSTA (2026-11-15) — com `tenantId` malformado, as 7 rotas da f |
+| `P-569-MOTIVO-NO-METADADO` | 16278 | MÉDIA | sim | P-569-MOTIVO-NO-METADADO (2026-11-15) — o texto livre do operador vai inteiro para `audi |
+| `P-PLATAFORMA-GUARDA-POR-ROTA` | 16286 | MÉDIA | sim | P-PLATAFORMA-GUARDA-POR-ROTA (2026-11-15) — não há guarda em bloco no roteador `/api/v1/ |
+| `P-ROTA-FORA-DO-PREFIXO-SERVIDA-SEM-ATOR` | 16293 | MÉDIA | sim | P-ROTA-FORA-DO-PREFIXO-SERVIDA-SEM-ATOR (2026-11-15) — rota nova fora de todo prefixo é  |
+| `P-567-TRAVA-DINHEIRO-TEMPLATE` | 16320 | MÉDIA | sim | P-567-TRAVA-DINHEIRO-TEMPLATE (2026-11-15) — a T-DIN-P não pega a desmarcação do dinheir |
+| `P-TCTR1-LISTAS-TIPADAS-E-CAMPO-INLINE` | 16403 | CRÍTICA | sim | P-TCTR1-LISTAS-TIPADAS-E-CAMPO-INLINE (2026-11-15) — o T-CTR-1 não alcança listas tipada |
+| `P-17-FILA-RESIDUAL` | 16453 | MÉDIA | sim | P-17-FILA-RESIDUAL (2026-11-15) — o residual da fila do titular do consentimento — MÉDIA |
+| `P-17-POSICAO-RAJADA` | 16460 | MÉDIA | sim | P-17-POSICAO-RAJADA (2026-11-15) — rajada de posições do mesmo titular responde depois d |
+| `P-SYNC-INFRA-VIRA-REJECTED` | 16500 | MÉDIA | sim | P-SYNC-INFRA-VIRA-REJECTED (2026-11-15) — nos syncs do app, o erro de infra vira `reject |
+| `P-BOOT-FALHA-PROCESSO-NAO-SAI` | 16507 | MÉDIA | sim | P-BOOT-FALHA-PROCESSO-NAO-SAI (2026-11-15) — com o worker ligado e o Redis fora, o proce |
+| `P-LOG-SEGREDOS-CONFIGURADOS` | 16533 | MÉDIA | sim | P-LOG-SEGREDOS-CONFIGURADOS (2026-11-15) — a R3 do saneador de log não cobre `*_SECRET`, |
+| `P-SEC-LOG-ESCAPES` | 16540 | MÉDIA | sim | P-SEC-LOG-ESCAPES (2026-11-15) — as fugas declaradas do saneador de log (E-5, E-6, E-8,  |
+| `P-REDIS-CLIENTE-SEM-AUTH` | 16547 | MÉDIA | sim | P-REDIS-CLIENTE-SEM-AUTH (2026-11-15) — o cliente próprio do Redis não envia `AUTH` nem  |
+| `P-DB-POOL-SEM-TIMEOUT` | 16553 | MÉDIA | sim | P-DB-POOL-SEM-TIMEOUT (2026-11-15) — o pool do `pg` não tem `connectionTimeoutMillis`: c |
+| `P-WEB-RENOVACAO-SEM-REENVIO-E-PROVA` | 16572 | MÉDIA | sim | P-WEB-RENOVACAO-SEM-REENVIO-E-PROVA (2026-11-15) — a web e o app antigo ficam com 10 s d |
+| `P-579-MERGE-EDITOU-PENDENCIA` | 16700 | MÉDIA | sim | P-579-MERGE-EDITOU-PENDENCIA (2026-11-16) — o merge de absorção do #579 trouxe 9 linhas  |
+| `P-APP-TELAS-SEM-3-OPCOES` | 16720 | MÉDIA | sim | P-APP-TELAS-SEM-3-OPCOES (2026-11-15) — as telas do app sem maquete de 3 opções — MÉDIA |
+| `P-OS-PLACA-NO-TEXTO-LIVRE` | 16851 | MÉDIA | sim | P-OS-PLACA-NO-TEXTO-LIVRE (2026-11-17) — a placa digitada em texto livre chega à lista;  |
+| `P-K11H-INTERMITENTE` | 16870 | MÉDIA | sim | P-K11H-INTERMITENTE (2026-11-16) — o `K11-db T-K11h` é intermitente — MÉDIA |
+| `P-APP-CHECKLIST-MODELO-DEMO-NO-REAL` | 16884 | MÉDIA | sim | P-APP-CHECKLIST-MODELO-DEMO-NO-REAL (2026-11-16) — os modelos de vistoria de demonstraçã |
+| `P-APP-TEXTOS-SEM-ACENTO` | 16891 | MÉDIA | sim | P-APP-TEXTOS-SEM-ACENTO (2026-11-16) — textos do app sem acento — MÉDIA |
+| `P-APP-ORG-MAIS-DE-3` | 16922 | MÉDIA | sim | P-APP-ORG-MAIS-DE-3 (2026-11-20) — quem tem o e-mail em 4 ou mais organizações não entra |
+| `P-APP-ORG-VINCULAR-PELO-APP` | 16929 | MÉDIA | sim | P-APP-ORG-VINCULAR-PELO-APP (2026-11-20) — a pessoa não consegue ligar, pelo app, o aces |
+| `P-APP-CACHE-NEGOCIO-SO-POR-ORGANIZACAO` | 16950 | MÉDIA | sim | P-APP-CACHE-NEGOCIO-SO-POR-ORGANIZACAO (2026-11-20) — o cache de OS, despesas e vistoria |
+| `P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR` | 16980 | ALTA | sim | P-GUI02-ORDEM-POR-ETAPA-NO-SERVIDOR (2026-11-17) — a vistoria incluída vai ao fim da fil |
+| `P-GUI02-DISPATCHER-LER-MODELOS` | 17018 | ALTA | sim | P-GUI02-DISPATCHER-LER-MODELOS (2026-11-17) — o `field_dispatcher` grava a vistoria da O |
+| `P-GUI02-VISTORIA-ENVIADA-POR-LINHA` | 17025 | MÉDIA | sim | P-GUI02-VISTORIA-ENVIADA-POR-LINHA (2026-11-17) — o detalhe não diz qual linha de vistor |
+| `P-RBAC-TECNICO-LEITURAS-FORA-DE-OS` | 17067 | CRÍTICA | sim | P-RBAC-TECNICO-LEITURAS-FORA-DE-OS (2026-11-17) — o catálogo dá ao técnico leitura da or |
+| `P-DESPACHO-EX-TECNICO-MUTACAO` | 17082 | MÉDIA | sim | P-DESPACHO-EX-TECNICO-MUTACAO (2026-11-17) — o ex-técnico ainda transiciona o despacho a |
+| `P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR` | 17097 | MÉDIA | sim | P-APP-SAIR-OFFLINE-REVOGA-SO-AO-REABRIR (2026-11-17) — com o app aberto, a volta da rede |
+| `P-OS-CONCLUSAO-EVENTO-DUPLO` | 17133 | MÉDIA | sim | P-OS-CONCLUSAO-EVENTO-DUPLO (2026-11-17) — duas conclusões simultâneas da mesma OS grava |
+| `P-PLAT-PAPEL-SEM-RELEITURA` | 17179 | MÉDIA | sim | P-PLAT-PAPEL-SEM-RELEITURA (2026-11-17) — as rotas da plataforma não releem papel nem pe |
+| `P-NODE-ENV-AUSENTE-E-DEV` | 17208 | CRÍTICA | sim | P-NODE-ENV-AUSENTE-E-DEV (2026-11-17) — `NODE_ENV` ausente conta como dev na porta do 72 |
+| `P-AWS-MIGRADOR` | 17287 | ALTA | sim | P-AWS-MIGRADOR (2026-11-18) — a imagem de runtime não roda a migração como tarefa ECS —  |
+| `P-AWS-BACKUP-PGDUMP` | 17294 | MÉDIA | sim | P-AWS-BACKUP-PGDUMP (2026-11-18) — o backup roda no runner do GitHub e não alcança o RDS |
+| `P-FRONT-API-BASE-URL` | 17308 | MÉDIA | sim | P-FRONT-API-BASE-URL (2026-11-18) — 3 arquivos do frontend usam `/api/v1` relativo em ve |
+| `P-AWS-SSE-TIMEOUT` | 17315 | MÉDIA | sim | P-AWS-SSE-TIMEOUT (2026-11-18) — o fluxo de eventos (SSE) pode ser cortado pelo ALB ou p |
+| `P-AWS-PORTAL-TENANT` | 17322 | MÉDIA | sim | P-AWS-PORTAL-TENANT (2026-11-18) — o `PORTAL_TENANT_ID` segue provisório até o 1º tenant |
+| `P-AWS-IP-FIXO` | 17329 | MÉDIA | sim | P-AWS-IP-FIXO (2026-11-18) — falta a decisão sobre IP fixo de saída e, se vier, o bloco  |
+| `P-NOTIF-VISTORIA-CONCLUIDA-CAMPO` | 17364 | MÉDIA | sim | P-NOTIF-VISTORIA-CONCLUIDA-CAMPO (2026-11-17) — a notificação de vistoria concluída vai  |
+| `P-USERS-TELA-SEM-PAPEIS-DE-CAMPO` | 17385 | MÉDIA | sim | P-USERS-TELA-SEM-PAPEIS-DE-CAMPO (2026-11-18) — a tela de usuários não oferece `field_te |
+| `P-WO-LEITURA-DESPACHANTE-VISTORIA` | 17399 | MÉDIA | sim | P-WO-LEITURA-DESPACHANTE-VISTORIA (2026-11-18) — o despachante + técnico lê as vistorias |
+| `P-AWS-CUSTO-VIRGINIA` | 17406 | MÉDIA | sim | P-AWS-CUSTO-VIRGINIA (2026-11-19) — totais de custo da AWS em `us-east-1` ainda não fech |
+| `P-AWS-LGPD-TRANSFERENCIA` | 17413 | ALTA | sim | P-AWS-LGPD-TRANSFERENCIA (2026-11-19) — base legal da transferência internacional para ` |
+| `P-ASS-OPERACAO-COBRANCA-TELA` | 17420 | MÉDIA | sim | P-ASS-OPERACAO-COBRANCA-TELA (2026-11-19) — falta a tela de operação da cobrança da plat |
+| `P-08C3-TESTES-DB-DE-VERDADE` | 17434 | MÉDIA | sim | P-08C3-TESTES-DB-DE-VERDADE (2026-11-20) — parte dos testes `-db` do `B-ASS-08c3` ainda  |
+| `P-T13-INJETADO-PONTO-CEGO` | 17442 | MÉDIA | sim | P-T13-INJETADO-PONTO-CEGO (2026-11-20) — o gerador do T13 não vê escritor cru novo em mé |
+| `P-AWS-ROTEIRO-TRACCAR-DIVERGE` | 17493 | ALTA | sim | P-AWS-ROTEIRO-TRACCAR-DIVERGE (2026-11-20) — o roteiro da AWS para o Traccar (fases 3c e |
+| `P-GRUPO-JANELA-GESTORES` | 17574 | ALTA | sim | P-GRUPO-JANELA-GESTORES (2026-11-22) — falta a janela Gestores do grupo, para a platafor |
+| `P-GRUPO-PROVEDOR-COMPARTILHADO` | 17588 | ALTA | sim | P-GRUPO-PROVEDOR-COMPARTILHADO (2026-11-20) — a configuração de pagamento e de nota é gl |
+| `P-PATIO-LIBERA-COM-LIVRO-VAZIO` | 17595 | ALTA | sim | P-PATIO-LIBERA-COM-LIVRO-VAZIO (2026-11-21) — com o livro de cobranças vazio, o servidor |
+| `P-612-ACEITE-FORMA-REAL` | 17602 | ALTA | sim | P-612-ACEITE-FORMA-REAL (2026-11-21) — o aceite na forma real da tela de operação da cob |
+| `P-ASS10C-RESUMO-ENTRE-ORGANIZACOES` | 17623 | MÉDIA | sim | P-ASS10C-RESUMO-ENTRE-ORGANIZACOES (2026-11-21) — a tela de operação da cobrança lê orga |
+| `P-COMISSAO-LIQUIDACAO-CENTAVO` | 17651 | ALTA | sim | P-COMISSAO-LIQUIDACAO-CENTAVO (2026-11-21; apelido `P-COMISSAO-LIQUIDACAO-ARREDONDA-EM-D |
+| `P-APP-T13-DADOS-INTERMITENTE` | 17672 | MÉDIA | sim | P-APP-T13-DADOS-INTERMITENTE (2026-11-21) — o `[T13-dados]` falha 1 vez em 5 por prazo d |
+| `P-APP-SAIR-LIMPEZA-QUE-LANCA` | 17707 | MÉDIA | sim | P-APP-SAIR-LIMPEZA-QUE-LANCA (2026-11-21) — se o `repo.logout()` lançar no fim do Sair,  |
+| `P-GRUPO-VOLTA-TODAS-AS-ORGS` | 17714 | MÉDIA | sim | P-GRUPO-VOLTA-TODAS-AS-ORGS (2026-11-21) — a procura dos pátios do grupo lê todas as org |
+| `P-ENV-REDIS-PADRAO-LOCALHOST` | 17793 | ALTA | sim | P-ENV-REDIS-PADRAO-LOCALHOST (2026-11-22) — teste sem `REDIS_URL` escreve no Redis vivo  |
+| `P-ARNES-APAGA-REDIS-URL` | 17799 | ALTA | sim | P-ARNES-APAGA-REDIS-URL (2026-11-22) — geradores removem `REDIS_URL` do terreno — ALTA |
+| `P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO` | 17811 | MÉDIA | sim | P-S2P-GR6-CONCESSAO-ESPERA-REDEFINICAO (2026-11-22) — concessão passa do orçamento ao es |
+| `P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE` | 17817 | MÉDIA | sim | P-CRIACAO-ORCAMENTO-DEPENDE-DO-LOCALE (2026-11-22) — prazo esgotado depende do idioma do |
+| `P-J622-C1-NOTAS` | 17829 | MÉDIA | **a atribuir** | P-J622-C1-NOTAS (2026-11-22) — oito notas da cadeira C1 — BAIXA/MÉDIA |
+| `P-J622-C2-NOTAS` | 17835 | MÉDIA | sim | P-J622-C2-NOTAS (2026-11-22) — seis notas da cadeira C2 — BAIXA/MÉDIA |
+| `P-J622-C3-NOTAS` | 17841 | MÉDIA | sim | P-J622-C3-NOTAS (2026-11-22) — nove notas da cadeira C3 — BAIXA/MÉDIA |
+| `P-GRUPO-FKS-SEM-RELATION` | 17864 | ALTA | sim | P-GRUPO-FKS-SEM-RELATION (2026-11-22) — FKs novas não têm `@relation` — ALTA |
+| `P-GRUPO-SUMMARY-ORCAMENTO-TEMPO` | 17869 | MÉDIA | sim | P-GRUPO-SUMMARY-ORCAMENTO-TEMPO (2026-11-22) — `/summary` sem orçamento para muitos páti |
+| `P-GRUPO-SLA-CUSTO-POR-LINHA` | 17874 | MÉDIA | sim | P-GRUPO-SLA-CUSTO-POR-LINHA (2026-11-22) — conversão de data custa CPU por linha — MÉDIA |
+| `P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA` | 17884 | ALTA | sim | P-GRUPO-EXCLUIR-GRUPO-SEM-TRAVA (2026-11-22) — exclusão corre com abertura de vínculo —  |
+| `P-GRUPO-ESCALA-100` | 17894 | MÉDIA | sim | P-GRUPO-ESCALA-100 (2026-11-22) — painel com 100 pátios — MÉDIA |
+| `P-6970-ABRIR-OUTRO-PATIO-2-TOQUES` | 17952 | MÉDIA | sim | P-6970-ABRIR-OUTRO-PATIO-2-TOQUES (2026-11-22) — chamado de outro pátio abre só no segun |
+| `P-6970-COMISSAO-VALOR-PONTA-A-PONTA` | 17967 | MÉDIA | sim | P-6970-COMISSAO-VALOR-PONTA-A-PONTA (2026-11-22) — ensaio não teve comissão real calcula |
+| `P-6970-WEB-NOVO-USUARIO-SEM-TECNICO` | 17972 | MÉDIA | sim | P-6970-WEB-NOVO-USUARIO-SEM-TECNICO (2026-11-22) — formulário não oferece Técnico de Cam |
+| `P-PATIO-HELPERS-CADEIA-RASOS` | 17982 | MÉDIA | sim | P-PATIO-HELPERS-CADEIA-RASOS (2026-11-22) — helpers não provam toda a cadeia de custódia |
+| `P-RELEASE-SETTLEDTOTAL-SOB-TRAVA` | 17987 | ALTA | sim | P-RELEASE-SETTLEDTOTAL-SOB-TRAVA (2026-11-22) — total quitado precisa ser lido sob trava |
+| `P-PATIO-F3-SEM-CORRIDA` | 17992 | MÉDIA | sim | P-PATIO-F3-SEM-CORRIDA (2026-11-22) — F3 sem teste concorrente — MÉDIA |
+| `P-PATIO-FUSO-NO-REGIME` | 17997 | MÉDIA | sim | P-PATIO-FUSO-NO-REGIME (2026-11-22) — regime de diária sem fuso explícito — MÉDIA |
+| `P-LEILAO-VOLTA-COM-FROZEN` | 18002 | ALTA | sim | P-LEILAO-VOLTA-COM-FROZEN (2026-11-22) — resgate do lote preserva estado congelado — ALT |
+| `P-LEILAO-FECHAMENTO-DIARIAS` | 18007 | ALTA | sim | P-LEILAO-FECHAMENTO-DIARIAS (2026-11-22) — leilão e reciclagem congelam antes de fechar  |
+| `P-PATIO-LIBERACOES-ANTIGAS` | 18019 | ALTA | sim | P-PATIO-LIBERACOES-ANTIGAS (2026-11-22) — liberações antigas podem ter diária devida não |
+| `P-PATIO-ISENCAO-REGISTRADA` | 18025 | ALTA | sim | P-PATIO-ISENCAO-REGISTRADA (2026-11-22) — isenção precisa ficar registrada no livro — AL |
+| `P-LIBERACAO-CUSTODIA-JA-CONGELADA` | 18045 | ALTA | sim | P-LIBERACAO-CUSTODIA-JA-CONGELADA (2026-11-23) — liberação preserva congelamento legado  |
+| `P-LEILAO-REVENDA-SEM-CAMINHO` | 18051 | ALTA | sim | P-LEILAO-REVENDA-SEM-CAMINHO (2026-11-23) — inadimplência sem caminho de revenda — ALTA |
+| `P-LEILAO-VALORES-DO-INADIMPLENTE` | 18065 | ALTA | sim | P-LEILAO-VALORES-DO-INADIMPLENTE (2026-11-23) — valores retidos e nova participação sem  |
+| `P-AWS-TOKEN-GHCR-TROCAR` | 18084 | MÉDIA | sim | P-AWS-TOKEN-GHCR-TROCAR (2026-11-23) — trocar o token do GitHub do cofre — MÉDIA |
+| `P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO` | 18096 | ALTA | sim | P-LEILAO-LEGADO-EM-LOTE-SEM-PERIODO (2026-11-23) — legado em lote/arrematado sem período |
+| `P-TETO-180-PAGAS-ACIMA` | 18102 | ALTA | sim | P-TETO-180-PAGAS-ACIMA (2026-11-23) — diárias acima de 180 já pagas — ALTA |
+| `P-EXTRATO-MOSTRAR-PERIODO-LEILAO` | 18114 | MÉDIA | sim | P-EXTRATO-MOSTRAR-PERIODO-LEILAO (2026-11-23) — extrato e guia dizerem "em leilão, sem d |
+| `P-FLAKY-K11H-TITULO-CAS` | 18138 | ALTA | sim | P-FLAKY-K11H-TITULO-CAS (2026-11-24) — barreira do teste de CAS deixa a corrida escapar  |
+| `P-TETO-180-ATO-DE-DEVOLUCAO` | 18144 | ALTA | sim | P-TETO-180-ATO-DE-DEVOLUCAO (2026-11-24) — devolução de diária já paga acima do teto pre |
+| `P-LEILAO-SUCATA-RODADAS-FIXAS` | 18157 | MÉDIA | sim | P-LEILAO-SUCATA-RODADAS-FIXAS (2026-11-24) — sucata depende das rodadas fixas 1 e 2 — MÉ |
+| `P-LEILAO-DESERTO-ANTES-DO-LOTE` | 18163 | MÉDIA | sim | P-LEILAO-DESERTO-ANTES-DO-LOTE (2026-11-24) — rota antiga registra deserto antes do lote |
+| `P-LEILAO-DATA-DO-LEILAO` | 18169 | ALTA | sim | P-LEILAO-DATA-DO-LEILAO (2026-11-24) — sistema não guarda a data do leilão — ALTA |
+| `P-DNS-ZONA-EXPORT-CONFERIR` | 18199 | ALTA | sim | P-DNS-ZONA-EXPORT-CONFERIR (2026-11-24) — conferir a exportação da zona do provedor anti |
+| `P-DNS-SPF-DUPLO` | 18205 | MÉDIA | sim | P-DNS-SPF-DUPLO (2026-11-24) — dois SPF no domínio do cliente — MÉDIA |
+| `P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS` | 18217 | MÉDIA | sim | P-GRUPO-PUT-MEMBERS-DOIS-PUTS-SIMULTANEOS (2026-11-24) — dois PUT /members simultâneos p |
+| `P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO` | 18223 | ALTA | sim | P-PORTAL-UMA-FILIAL-POR-IMPLANTACAO (2026-11-24) — portal do proprietário atende uma fil |
+| `P-LEILAO-RAZOES-SEM-TEXTO` | 18229 | MÉDIA | sim | P-LEILAO-RAZOES-SEM-TEXTO (2026-11-24) — razões do relote sem tradução — MÉDIA |
+| `P-PAINEL-LEILAO-ENVIO-COMPARTILHADO` | 18235 | MÉDIA | sim | P-PAINEL-LEILAO-ENVIO-COMPARTILHADO (2026-11-24) — envio compartilhado no painel do leil |
+| `P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO` | 18253 | MÉDIA | sim | P-AUTH-HEALTH-LOGIN-SEM-ORG-INATIVO (2026-11-25) — a saúde diz que o login sem organizaç |
+| `P-WEB-CONSOLE-CELULAR` | 18260 | MÉDIA | sim | P-WEB-CONSOLE-CELULAR (2026-11-25) — o console web no celular abre no layout de computad |
+| `P-MARCA-DESIGN-SYSTEM` | 18266 | MÉDIA | sim | P-MARCA-DESIGN-SYSTEM (2026-11-25) — a base de design ainda diz "azul industrial", contr |
+| `P-COBRANCA-DEMONSTRATIVOS-POR-MES` | 18279 | MÉDIA | sim | P-COBRANCA-DEMONSTRATIVOS-POR-MES (2026-11-25) — o quadro "Demonstrativos por mês e situ |
+| `P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT` | 18306 | MÉDIA | sim | P-PLANOS-MODULOS-LEILAO-REVENDA-TEARDOWN-TEXT (2026-11-27) — o teardown de `tests/leilao |
+| `P-PLAT-CONTADOR-COBRANCA-VENCIDA` | 18341 | MÉDIA | sim | P-PLAT-CONTADOR-COBRANCA-VENCIDA (2026-11-27) — o contador de cobranças vencidas no menu |
+| `P-PLAT-AVISOS-SEM-FONTE` | 18347 | MÉDIA | sim | P-PLAT-AVISOS-SEM-FONTE (2026-11-27) — o sino do console da plataforma não tem serviço d |
+| `P-CLAMAV-FRESHCLAM-SO-NO-BOOT` | 18371 | ALTA | sim | P-CLAMAV-FRESHCLAM-SO-NO-BOOT (2026-11-27) — a base do antivírus só é checada no boot do |
+| `P-SESSAO-DIR-TROCA-SOZINHA` | 18396 | MÉDIA | sim | P-SESSAO-DIR-TROCA-SOZINHA (2026-11-27) — o resolvedor de pasta de sessão da orquestraçã |
+| `P-CLAMAV-IDADE-PELA-PUBLICACAO` | 18405 | ALTA | sim | P-CLAMAV-IDADE-PELA-PUBLICACAO (2026-11-28) — o portão do antivírus mede a idade da base |
+| `P-REPO-NOMES-DE-RECURSO-NA-MAIN` | 18423 | MÉDIA | sim | P-REPO-NOMES-DE-RECURSO-NA-MAIN (2026-11-28) — a `main` já tem nome de recurso de nuvem  |
+| `P-EVIDENCIA-FORA-DA-FRANQUIA` | 18453 | MÉDIA | sim | P-EVIDENCIA-FORA-DA-FRANQUIA (2026-11-28) — os bytes do arquivo da evidência do app não  |
+| `P-PLAT-ORG-PLANO-SO-SE-AUSENTE-NO-SERVIDOR` | 18516 | ALTA | sim | P-PLAT-ORG-PLANO-SO-SE-AUSENTE-NO-SERVIDOR (2026-11-28) — o servidor aceita o PUT de ass |
+| `P-PLAT-ORG-PERFIL-PUT-SEM-GUARDA-NO-SERVIDOR` | 18526 | ALTA | sim | P-PLAT-ORG-PERFIL-PUT-SEM-GUARDA-NO-SERVIDOR (2026-11-28) — o PUT dos dados da empresa g |
 
-## ABERTAS · balde B — processo/registro — 640
+## ABERTAS · balde B — processo/registro — 646
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -767,400 +768,406 @@
 | `P-NAV-TENANT-BILLING-STATUS` | 12944 | BAIXA | sim | P-NAV-TENANT-BILLING-STATUS (2026-11-14) — o item "Minha assinatura" do registro de nave |
 | `P-PAGE-HEADING-ROW-GRADE` | 12951 | BAIXA | sim | P-PAGE-HEADING-ROW-GRADE (2026-11-15) — o cabeçalho `.page-heading--row` vira grade e as |
 | `P-API-ENVELOPES-IRREGULARES` | 13100 | BAIXA | sim | P-API-ENVELOPES-IRREGULARES (2026-11-04) — listas sem `data` e `tenant_id` no topo da re |
-| `P-SAN3-10B-BATERIA-B8-FORMATOS` | 13114 | BAIXA | sim | P-SAN3-10B-BATERIA-B8-FORMATOS (2026-11-04) — a bateria B8 não pega três formatos de lin |
-| `P-SAN3-10B-OP8-PASSO6` | 13120 | BAIXA | sim | P-SAN3-10B-OP8-PASSO6 (2026-11-04) — o passo 6 da Op-8 não foi medido — BAIXA |
-| `P-KPI-PAINEL-EXPLICA-DENOMINADOR` | 13126 | BAIXA | sim | P-KPI-PAINEL-EXPLICA-DENOMINADOR (2026-11-04) — o painel não explica que a vendável caiu |
-| `P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO` | 13139 | BAIXA | sim | P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO (2026-11-05) — escrita de `tenants.modules` e |
-| `P-SAN3-05-ETIQUETA-UNICA-POR-ROTA` | 13145 | BAIXA | sim | P-SAN3-05-ETIQUETA-UNICA-POR-ROTA (2026-11-05) — a taxonomia de etiquetas aceita uma só  |
-| `P-ASS03-CANARIO-LIMIT1` | 13158 | BAIXA | sim | P-ASS03-CANARIO-LIMIT1 (2026-11-06) — o canário `LIMIT 1` só pega bypass por acaso — BAI |
-| `P-ASS03-METODO-RATEIO-FALLBACK` | 13170 | BAIXA | sim | P-ASS03-METODO-RATEIO-FALLBACK (2026-11-06) — sem medição, o rateio do banco grava `stor |
-| `P-ASS03-PD-SWEEP-CATALOGO` | 13177 | BAIXA | sim | P-ASS03-PD-SWEEP-CATALOGO (2026-11-06) — `(PD) sweep` vermelho só no head, por concorrên |
-| `P-ASS-SPLIT-MARGEM-CONTRATO` | 13189 | — | sim | P-ASS-SPLIT-MARGEM-CONTRATO (2026-11-06) — redação do contrato e nota sobre a tarifa do  |
-| `P-ASS04-CREDITO-EXCEDENTE` | 13195 | BAIXA | sim | P-ASS04-CREDITO-EXCEDENTE (2026-11-06) — crédito aplicado maior que o total do mês fica  |
-| `P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA` | 13201 | BAIXA | sim | P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA (2026-11-06) — refechamento com a assinatura mudad |
-| `P-ASS04-REFUND-CREDITO-OUTBOX` | 13207 | BAIXA | sim | P-ASS04-REFUND-CREDITO-OUTBOX (2026-11-06) — o reembolso de crédito ainda não existe: só |
-| `P-ASS06-COBRANCA-CRIADA-SEM-ID` | 13231 | BAIXA | sim | P-ASS06-COBRANCA-CRIADA-SEM-ID (2026-11-08) — no PIX e no boleto, a cobrança pode ficar  |
-| `P-CI-FLUTTER-LIBSQLITE3-FLAKY` | 13237 | BAIXA | sim | P-CI-FLUTTER-LIBSQLITE3-FLAKY (2026-11-09) — o job `flutter` do CI falha intermitente po |
-| `P-CI-FINANCIAL-TITLE-CAS-FLAKY` | 13243 | BAIXA | sim | P-CI-FINANCIAL-TITLE-CAS-FLAKY (2026-11-09) — o `financial-title-status-cas-db` (barreir |
-| `P-ASS07-FOCUS-GET-MUNICIPAL` | 13256 | BAIXA | sim | P-ASS07-FOCUS-GET-MUNICIPAL (2026-11-09) — `getInvoice`/`cancel` exercidos só na rota Na |
-| `P-ASS07-ALREADY-ISSUED-REGEX` | 13262 | BAIXA | sim | P-ASS07-ALREADY-ISSUED-REGEX (2026-11-09) — `already_issued` depende de regex sobre a me |
-| `P-ASS07-CERT-REDACAO` | 13268 | BAIXA | sim | P-ASS07-CERT-REDACAO (2026-11-09) — `sanitizedErrorMessage` redige o certificado como JS |
-| `P-REFINO-INVENTARIO-SEM-GUARDA` | 13274 | BAIXA | sim | P-REFINO-INVENTARIO-SEM-GUARDA (2026-11-09) — o inventário de fluxos gerado não tem guar |
-| `P-DESPESA-ITEM-CORRIDA-SUBMIT` | 13307 | — | sim | P-DESPESA-ITEM-CORRIDA-SUBMIT (2026-11-10) — um item pode entrar num relatório recém-sub |
-| `P-MOBILE-RECIBO-409-POR-MOTIVO` | 13315 | BAIXA | sim | P-MOBILE-RECIBO-409-POR-MOTIVO (2026-11-10) — o app trata todo 409 do comprovante como ` |
-| `P-PROCESSO-SONDAS-ANTES-DO-WORKTREE` | 13335 | BAIXA | sim | P-PROCESSO-SONDAS-ANTES-DO-WORKTREE (2026-11-10) — o mandato de cadeira não manda guarda |
-| `P-ASS08-INDICE-UMA-VIVA` | 13425 | BAIXA | sim | P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demo |
-| `P-J522-C3B-01-DOIS-HUNKS` | 13461 | BAIXA | sim | P-J522-C3B-01-DOIS-HUNKS (2026-11-10) — `C3B-01`: dois hunks onde o §5 do plano do segun |
-| `P-LOGIN-WEB-TERMO-TENANT` | 13483 | BAIXA | sim | P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organizaç |
-| `P-USERS-SEG-ORDEM-DE-IMPLANTACAO` | 13532 | BAIXA | sim | P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem  |
-| `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE` | 13538 | BAIXA | sim | P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE (2026-11-11) — o approve do orçamento só lê camel |
-| `P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA` | 13571 | BAIXA | sim | P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA (2026-11-11) — o `platform_admin` cria e aprova |
-| `P-CHECKIN-NUMERO-DE-SERIE` | 13583 | BAIXA | sim | P-CHECKIN-NUMERO-DE-SERIE (2026-11-11) — OS de prestador sem referência de check-in (o a |
-| `P-CHECKIN-PLACA-ESTRANGEIRA` | 13601 | BAIXA | sim | P-CHECKIN-PLACA-ESTRANGEIRA (2026-11-11) — placa estrangeira não serve de referência do  |
-| `P-REV533-01-DIALOGO-APROVAR-LIGACAO-SEM-TESTE` | 13691 | BAIXA | sim | P-REV533-01-DIALOGO-APROVAR-LIGACAO-SEM-TESTE (2026-11-11) — os desfechos 403, 409 e 404 |
-| `P-REV533-02-DIARIO-E-INDICE-FORA-DO-PERMITIDO` | 13698 | BAIXA | sim | P-REV533-02-DIARIO-E-INDICE-FORA-DO-PERMITIDO (2026-11-11) — o diário do dev e o índice  |
-| `P-PORT533-04-DONOS-DAS-P-SAN3-08` | 13705 | BAIXA | sim | P-PORT533-04-DONOS-DAS-P-SAN3-08 (2026-11-11) — 5 das 6 pendências do #533 têm dono gené |
-| `P-V533-01-409-TITULO-ACAO-CONCLUIDA` | 13711 | BAIXA | sim | P-V533-01-409-TITULO-ACAO-CONCLUIDA (2026-11-11) — o 409 "já aprovado" aparece com o tít |
-| `P-V533-02-AVISO-FORA-DA-VISTA` | 13718 | BAIXA | sim | P-V533-02-AVISO-FORA-DA-VISTA (2026-11-11) — a mensagem do desfecho do "Aprovar orçament |
-| `P-V533-P3-MODAL-TECLADO` | 13732 | BAIXA | sim | P-V533-P3-MODAL-TECLADO (2026-11-11) — o `Modal` da biblioteca tem quatro faltas de tecl |
-| `P-V533-P4-NOVO-ORCAMENTO-ERRO-E-CORTE` | 13739 | BAIXA | sim | P-V533-P4-NOVO-ORCAMENTO-ERRO-E-CORTE (2026-11-11) — o "Novo orçamento" mostra o erro no |
-| `P-V533-P5-ORCAMENTOS-RESIDUO-E-UUID` | 13746 | BAIXA | sim | P-V533-P5-ORCAMENTOS-RESIDUO-E-UUID (2026-11-11) — resíduo de teste e fragmento de UUID  |
-| `P-V533-P6-QUOTETAB-TERMO-BACKEND` | 13753 | BAIXA | sim | P-V533-P6-QUOTETAB-TERMO-BACKEND (2026-11-11) — a aba Orçamento da OS diz "O total vem d |
-| `P-CONF527B-N01-DIARIOS-DE-TELA-FORA-DO-PERMITIDO` | 13759 | BAIXA | sim | P-CONF527B-N01-DIARIOS-DE-TELA-FORA-DO-PERMITIDO (2026-11-11) — os diários dos devs de t |
-| `P-CONF527B-N02-USUARIOS-DB-403-SOB-PRISMA` | 13766 | BAIXA | sim | P-CONF527B-N02-USUARIOS-DB-403-SOB-PRISMA (2026-11-11) — `users-acesso-seg-usuarios-db`  |
-| `P-C527T-01-401-MOTIVO-DESCONHECIDO-WEB-X-APP` | 13773 | BAIXA | sim | P-C527T-01-401-MOTIVO-DESCONHECIDO-WEB-X-APP (2026-11-11) — web e app tratam de forma di |
-| `P-USERS-SEG-TELA-EMAIL-NEGRITO` | 13780 | BAIXA | sim | P-USERS-SEG-TELA-EMAIL-NEGRITO (2026-11-11) — na troca de senha, o e-mail da sessão sai  |
-| `P-P527-ARNES-PAPEL-GLOBAL` | 13786 | BAIXA | sim | P-P527-ARNES-PAPEL-GLOBAL (2026-11-11) — os testes `-db` do #527 criam e apagam papéis g |
-| `P-SAN3-07-SENTINELA-SEM-GUARDA` | 13827 | BAIXA | sim | P-SAN3-07-SENTINELA-SEM-GUARDA (2026-11-11) — o P3 do `B-SAN3-07` passa em vazio se o se |
-| `P-J535-C3-02-ITEM47-STATUS-X-RESIDUO` | 13835 | BAIXA | sim | P-J535-C3-02-ITEM47-STATUS-X-RESIDUO (2026-11-11) — a pendência do item 47 está FECHADA  |
-| `P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS` | 13842 | BAIXA | sim | P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS (2026-11-11) — a lista fechada do `san3-05` não decl |
-| `P-ALLOC-MANUAL-INICIO-INCLUSIVO` | 13850 | BAIXA | sim | P-ALLOC-MANUAL-INICIO-INCLUSIVO (2026-11-11) — no rateio manual, o lado do início contin |
-| `P-AWS-CUR-DUBLE-SOBREPOSICAO` | 13858 | BAIXA | sim | P-AWS-CUR-DUBLE-SOBREPOSICAO (2026-11-11) — o dublê em memória do resumo de custo filtra |
-| `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA` | 13899 | BAIXA | sim | P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA (2026-11-11) — o técnico ainda apaga ou  |
-| `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO` | 13906 | BAIXA | sim | P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO (2026-11-11) — a marca "registrada pela base" vive n |
-| `P-SAN3-07-SEED-USERS-LEGADO` | 13935 | BAIXA | sim | P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis lega |
-| `P-SAN3-07-SEED-FORA-DO-TYPECHECK` | 13942 | BAIXA | sim | P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed |
-| `P-ASS09A-RUN-PRESA-EM-PROCESSING` | 13957 | BAIXA | sim | P-ASS09A-RUN-PRESA-EM-PROCESSING (2026-11-11) — a run automática reivindicada fica em `p |
-| `P-ASS09A-BORDA-MICROSSEGUNDO` | 13973 | BAIXA | sim | P-ASS09A-BORDA-MICROSSEGUNDO (2026-11-11) — a base de ações da janela [início, fim − 1 m |
-| `P-ASS09A-REDE-TRANSFERENCIA` | 13981 | BAIXA | sim | P-ASS09A-REDE-TRANSFERENCIA (2026-11-11) — "rede" na P8 alcança AWSDataTransfer e Amazon |
-| `P-ASS09A-EMPATE-MESMO-MS` | 13989 | BAIXA | sim | P-ASS09A-EMPATE-MESMO-MS (2026-11-12) — duas CUR do mesmo mês concluídas no mesmo miliss |
-| `P-ALLOC-RUN-STARTED-AT-NULO` | 13997 | BAIXA | sim | P-ALLOC-RUN-STARTED-AT-NULO (2026-11-11) — no Postgres, a run de rateio concluída fica c |
-| `P-SESSOES-TEXTO-15MIN` | 14012 | BAIXA | sim | P-SESSOES-TEXTO-15MIN (2026-11-11) — a tela de Sessões ainda diz "em até ~15 minutos" —  |
-| `P-SSE-SEGUE-APOS-VENCER-TOKEN` | 14018 | BAIXA | sim | P-SSE-SEGUE-APOS-VENCER-TOKEN (2026-11-11) — o stream do mapa ao vivo não fecha quando o |
-| `P-SID-OBRIGATORIO` | 14024 | BAIXA | sim | P-SID-OBRIGATORIO (2026-11-11) — o token sem `sid` ainda é aceito pela via de status — B |
-| `P-CI-LISTA-CURADA-USERS-SEG-DB` | 14031 | BAIXA | sim | P-CI-LISTA-CURADA-USERS-SEG-DB (2026-11-11) — as suítes `-db` de usuários e da sessão vi |
-| `P-O6R-B12-PORTAL-MEMORIA` | 14079 | BAIXA | sim | P-O6R-B12-PORTAL-MEMORIA (2026-11-11) — processo legado em memória conserva fallback viv |
-| `P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA` | 14090 | BAIXA | sim | P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA (2026-11-11) — o drill do B-O6R-12 deixa bases e  |
-| `P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT` | 14113 | BAIXA | sim | P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT (2026-11-11) — a A7 (regressão sem barreira) só produz  |
-| `P-SAN3-23-503-FORA-DO-CONTRATO` | 14124 | BAIXA | sim | P-SAN3-23-503-FORA-DO-CONTRATO (2026-11-11) — os 2 códigos 503 novos do B-SAN3-23 não es |
-| `P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO` | 14185 | BAIXA | sim | P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO (2026-11-11) — a coleta aberta sem sinal numa OS s |
-| `P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES` | 14199 | BAIXA | sim | P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES (2026-11-11) — a comparação coleta × entrega não |
-| `P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA` | 14205 | BAIXA | sim | P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA (2026-11-11) — a vistoria de entrega de OS cancel |
-| `P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR` | 14211 | BAIXA | sim | P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR (2026-11-11) — a tela de conclusão do prestador recu |
-| `P-SAN3-15-QTD-FRACIONADA` | 14217 | BAIXA | sim | P-SAN3-15-QTD-FRACIONADA (2026-11-11) — a seleção de peça no app é em inteiros: "2,5 m"  |
-| `P-SAN3-15-CUSTODIA-VIATURA` | 14224 | BAIXA | sim | P-SAN3-15-CUSTODIA-VIATURA (2026-11-11) — a custódia de viatura não se resolve pelo ator |
-| `P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL` | 14247 | BAIXA | sim | P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL (2026-11-11) — o estoque do técnico percorre a fati |
-| `P-APP-FORMAT-BSAN313` | 14253 | BAIXA | sim | P-APP-FORMAT-BSAN313 (2026-11-12) — teste do B-SAN3-13 diverge do `dart format` na main  |
-| `P-SAN3-18-PORTAL-SEM-GATE` | 14276 | BAIXA | sim | P-SAN3-18-PORTAL-SEM-GATE (2026-11-11) — os portais do proprietário e da autoridade fica |
-| `P-SAN3-18-TRACCAR-SEM-GATE` | 14282 | BAIXA | sim | P-SAN3-18-TRACCAR-SEM-GATE (2026-11-11) — a ingestão do Traccar fica fora do gate de mód |
-| `P-SAN3-18-JOBS-SEM-GATE` | 14288 | BAIXA | sim | P-SAN3-18-JOBS-SEM-GATE (2026-11-11) — os jobs de fundo não olham os módulos da organiza |
-| `P-SAN3-18-LOTE-EVIDENCIA-QUALQUER-DE` | 14300 | BAIXA | sim | P-SAN3-18-LOTE-EVIDENCIA-QUALQUER-DE (2026-11-11) — o lote de evidências aceita ação de  |
-| `P-SAN3-18-BOTAO-ALERTAS-FROTA` | 14306 | BAIXA | sim | P-SAN3-18-BOTAO-ALERTAS-FROTA (2026-11-11) — a Central de Notificações chama o disparo d |
-| `P-SAN3-18-ANEXO-GENERICO-SEM-MODULO` | 14318 | BAIXA | sim | P-SAN3-18-ANEXO-GENERICO-SEM-MODULO (2026-11-11) — `/attachments` é núcleo e serve entid |
-| `P-SAN3-18-DB-FORA-DA-LISTA-CURADA` | 14345 | BAIXA | sim | P-SAN3-18-DB-FORA-DA-LISTA-CURADA (2026-11-11) — a suíte `san3-18-provision-modules-db`  |
-| `P-MOBILE-APPROVAL-REQUEST-REST-404` | 14377 | BAIXA | sim | P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app po |
-| `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` | 14511 | BAIXA | sim | P-MOBILE-OS-UNICA-SEM-ORGANIZACAO (2026-11-11) — os 3 métodos de OS única do app devolve |
-| `P-MOBILE-REJECTED-DOIS-SENTIDOS` | 14518 | BAIXA | sim | P-MOBILE-REJECTED-DOIS-SENTIDOS (2026-11-11) — `rejected` quer dizer "aprovação negada"  |
-| `P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS` | 14525 | BAIXA | sim | P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS (2026-11-11) — o app não lê viatura/equipe que o back |
-| `P-AMBIENTE-DART-LOCAL-DIVERGE` | 14540 | BAIXA | sim | P-AMBIENTE-DART-LOCAL-DIVERGE (2026-11-11) — `dart format` local diverge só no `bsan313` |
-| `P-B-O6R-09-ESCRITORES-FORA-DE-SRC` | 14560 | BAIXA | sim | P-B-O6R-09-ESCRITORES-FORA-DE-SRC (2026-11-11) — escritores de despacho fora de `src/` g |
-| `P-B-O6R-09-NEXTCODE-CORRIDA` | 14572 | BAIXA | sim | P-B-O6R-09-NEXTCODE-CORRIDA (2026-11-11) — duas criações simultâneas na mesma organizaçã |
-| `P-B-O6R-09-STATUS-APROVA-SEM-OS` | 14578 | BAIXA | sim | P-B-O6R-09-STATUS-APROVA-SEM-OS (2026-11-11) — o orçamento pela rota de status — BAIXA ( |
-| `P-B-O6R-09-PAINEL-STATUS-SEM-ERRO` | 14584 | BAIXA | sim | P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra er |
-| `P-B-O6R-09-WEB-LE-WORKORDERID-DO-409` | 14590 | BAIXA | sim | P-B-O6R-09-WEB-LE-WORKORDERID-DO-409 (2026-11-11) — a web não lê o `details.workOrderId` |
-| `P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA` | 14609 | BAIXA | sim | P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA (2026-11-11) — a reatribuição à mesma pessoa |
-| `P-PG-BARRIER-EXIGE-BLOQUEADOR` | 14648 | BAIXA | sim | P-PG-BARRIER-EXIGE-BLOQUEADOR (2026-11-11) — a barreira de `tests/helpers/pg-barrier.ts` |
-| `P-B-O6R-09-TEARDOWN-5S-SOB-CARGA` | 14654 | BAIXA | sim | P-B-O6R-09-TEARDOWN-5S-SOB-CARGA (2026-11-11) — a transação de limpeza das suítes `-db`  |
-| `P-USERS-SEG-DEMO-TRACCAR-SEM-PROVA` | 14660 | BAIXA | sim | P-USERS-SEG-DEMO-TRACCAR-SEM-PROVA (2026-11-12) — o demo do Traccar pede token por login |
-| `P-WEB-MAPA-STREAM-RECONECTA-TOKEN-MORTO` | 14666 | BAIXA | sim | P-WEB-MAPA-STREAM-RECONECTA-TOKEN-MORTO (2026-11-12) — com a sessão encerrada, o mapa we |
-| `P-DB-FUSO-TESTES-DIRETOS` | 14682 | BAIXA | sim | P-DB-FUSO-TESTES-DIRETOS (2026-11-13) — os 156 arquivos de teste com `new PrismaPg(` dir |
-| `P-DB-FUSO-SUITES` | 14689 | BAIXA | sim | P-DB-FUSO-SUITES (2026-11-13) — linha `SUITES=` no job `backend-postgres` para o teste ` |
-| `P-DB-FUSO-SCRIPTS-SEM-TRAVA` | 14701 | BAIXA | sim | P-DB-FUSO-SCRIPTS-SEM-TRAVA (2026-11-13) — seeds e scripts de operação dependem só da fá |
-| `P-554-TRES-DB-FORA-DA-LISTA-CURADA` | 14722 | BAIXA | sim | P-554-TRES-DB-FORA-DA-LISTA-CURADA (2026-11-13) — os 3 testes migrados na E3.1 rodam só  |
-| `P-DRILL-F2-SEM-TESTE-PERMANENTE` | 14754 | BAIXA | sim | P-DRILL-F2-SEM-TESTE-PERMANENTE (2026-11-14) — a F2 do drill (cliente fechado quando a p |
-| `P-REG-CONF542-01` | 14769 | BAIXA | sim | P-REG-CONF542-01 (2026-11-12) — o erro do parser de CUR diz "data row N" (a linha de dad |
-| `P-534-SONDAS-C1-FORA-DO-REPO` | 14777 | BAIXA | sim | P-534-SONDAS-C1-FORA-DO-REPO (2026-11-12) — as sondas da C1 do #534 ficaram fora do repo |
-| `P-534-JUNCAO-SO-EM-MEMORIA` | 14784 | BAIXA | sim | P-534-JUNCAO-SO-EM-MEMORIA (2026-11-12) — T-JUNCAO, -b e -c rodam só em memória — BAIXA |
-| `P-534-ARNES-AS-NEVER` | 14791 | BAIXA | sim | P-534-ARNES-AS-NEVER (2026-11-12) — `as never` no arnês do `b-san3-23-cas-retentativa` — |
-| `P-B-O6R-09-ARNES-XX000-GRANT` | 14798 | BAIXA | sim | P-B-O6R-09-ARNES-XX000-GRANT (2026-11-12) — 1 rodada em 44 deu XX000 "tuple concurrently |
-| `P-MOBILE-BOTAO-DESABILITADO-PARECE-ATIVO` | 14804 | BAIXA | sim | P-MOBILE-BOTAO-DESABILITADO-PARECE-ATIVO (2026-11-12) — botão desabilitado parece ativo  |
-| `P-MOBILE-T9-PRESENCA-DE-TEXTO` | 14811 | BAIXA | sim | P-MOBILE-T9-PRESENCA-DE-TEXTO (2026-11-12) — o T9 mede presença de texto, não o que a fr |
-| `P-MOBILE-HOME-DEMO-EXEMPLO` | 14818 | BAIXA | sim | P-MOBILE-HOME-DEMO-EXEMPLO (2026-11-12) — "Exemplo" na home de demonstração do app — BAI |
-| `P-MOBILE-IDENTIFICADOR-CRU-NA-TELA` | 14833 | BAIXA | sim | P-MOBILE-IDENTIFICADOR-CRU-NA-TELA (2026-11-12) — duas telas exibem identificador intern |
-| `P-J539-C2-01` | 14867 | BAIXA | sim | P-J539-C2-01 (2026-11-12) — a premissa "a abertura NÃO espera o PATCH" é falsa quando o  |
-| `P-J539-C2-03` | 14874 | BAIXA | sim | P-J539-C2-03 (2026-11-12) — a allowlist afirma "dentro de `withRoleCatalogLock`" e nenhu |
-| `P-J539-CONF539-OBS-1` | 14881 | BAIXA | sim | P-J539-CONF539-OBS-1 (2026-11-12) — os testes versionados C2-02/C3-02 e C3-01 rodam como |
-| `P-CI-537-COMENTARIO-7-SUITES` | 14888 | BAIXA | sim | P-CI-537-COMENTARIO-7-SUITES (2026-11-12) — o comentário do `ci.yml` diz "7 suítes / 45  |
-| `P-FERR-INITDB-WINDOWS-FUSO-E-ENCODING` | 14895 | BAIXA | sim | P-FERR-INITDB-WINDOWS-FUSO-E-ENCODING (2026-11-12) — cluster criado com `initdb` no Wind |
-| `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` | 14902 | BAIXA | sim | P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a baseline da suíte inteira não fecha |
-| `P-C4-02-MENU-TECNICO-403` | 14909 | BAIXA | sim | P-C4-02-MENU-TECNICO-403 (2026-11-12) — o menu do técnico mostra Seguros e Estoque, que  |
-| `P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA` | 14916 | BAIXA | sim | P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA (2026-11-12) — `logistics`, `users` e `audit` prov |
-| `P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE` | 14947 | BAIXA | sim | P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE (2026-11-13) — a matriz dá `read` ao `man |
-| `P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO` | 14963 | BAIXA | sim | P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO (2026-11-13) — adição de material que já f |
-| `P-551-INMEMORY-TOCTOU-EXIT-SOURCE` | 14986 | BAIXA | sim | P-551-INMEMORY-TOCTOU-EXIT-SOURCE (2026-11-13) — em memória, dois lotes concorrentes com |
-| `P-557-SALTOS-ACIMA-DO-REAL` | 15002 | BAIXA | sim | P-557-SALTOS-ACIMA-DO-REAL (2026-11-13) — saltos confiáveis configurados acima da borda  |
-| `P-SAN3-24-GUARDA-ESCOPO-INERTE` | 15029 | BAIXA | sim | P-SAN3-24-GUARDA-ESCOPO-INERTE (2026-11-13) — a guarda de escopo do `B-SAN3-24` não mede |
-| `P-SAN3-24-BLOCOS-CONTESTACAO-E-PENDENCIA` | 15038 | BAIXA | sim | P-SAN3-24-BLOCOS-CONTESTACAO-E-PENDENCIA (2026-11-13) — o Fechamento não tem os blocos " |
-| `P-547-BANNER-INFO-GLOBAL` | 15046 | BAIXA | sim | P-547-BANNER-INFO-GLOBAL (2026-11-13) — o banner informativo sai sem estilo nas telas de |
-| `P-547-MES-ANTIGO-NUNCA-FECHADO-SOME` | 15062 | BAIXA | sim | P-547-MES-ANTIGO-NUNCA-FECHADO-SOME (2026-11-13) — um mês antigo que terminou e nunca fo |
-| `P-551-CI-COMENTARIO-K8` | 15070 | BAIXA | sim | P-551-CI-COMENTARIO-K8 (2026-11-13) — o comentário da linha `SUITES=` do material no `ci |
-| `P-MAQ17-PREMISSA-RESPOSTAS-1A6` | 15078 | BAIXA | sim | P-MAQ17-PREMISSA-RESPOSTAS-1A6 (2026-11-13) — o quadro de notas da maquete 17 dava como  |
-| `P-SAN305-NOME-PAPEL-CONTEM-PORTA` | 15087 | BAIXA | sim | P-SAN305-NOME-PAPEL-CONTEM-PORTA (2026-11-13) — o nome aleatório do papel no T5/T6/T9 do |
-| `P-546-N1-AVISO-DURANTE-VERIFICANDO` | 15095 | BAIXA | sim | P-546-N1-AVISO-DURANTE-VERIFICANDO (2026-11-13) — durante "Verificando", o "Concluir OS" |
-| `P-546-ACENTOS-FORA-DO-AUTORIZADO` | 15104 | BAIXA | sim | P-546-ACENTOS-FORA-DO-AUTORIZADO (2026-11-13) — textos do app sem acento fora do que o c |
-| `P-546-N3-SUBTITULO-QUEBRA` | 15112 | BAIXA | sim | P-546-N3-SUBTITULO-QUEBRA (2026-11-13) — com nome longo de modelo, o subtítulo do cartão |
-| `P-APP-TEMA-SUCESSO-TERTIARY` | 15120 | BAIXA | sim | P-APP-TEMA-SUCESSO-TERTIARY (2026-11-13) — o passo concluído do app usa o roxo `tertiary |
-| `P-SAN3-15-CONCLUSAO-VEICULO-COM-CODIGO` | 15137 | BAIXA | sim | P-SAN3-15-CONCLUSAO-VEICULO-COM-CODIGO (2026-11-14) — a linha "Veiculo" da conclusão do  |
-| `P-SAN3-15-TIPO-NULO-EM-FALHA-DO-CATALOGO` | 15144 | BAIXA | sim | P-SAN3-15-TIPO-NULO-EM-FALHA-DO-CATALOGO (2026-11-14) — falha passageira do catálogo faz |
-| `P-MOBILE-UNIFICAR-CHIPS-DE-FILTRO` | 15151 | BAIXA | sim | P-MOBILE-UNIFICAR-CHIPS-DE-FILTRO (2026-11-14) — o app tem três formas de chip de filtro |
-| `P-SAN3-15-ACHADOS-DA-MAQUETE-FORA-DO-BLOCO` | 15158 | BAIXA | sim | P-SAN3-15-ACHADOS-DA-MAQUETE-FORA-DO-BLOCO (2026-11-14) — achados da maquete do prestado |
-| `P-SAN3-15-ASSINATURA-CLIENTE-PRESTADOR` | 15170 | BAIXA | sim | P-SAN3-15-ASSINATURA-CLIENTE-PRESTADOR (2026-11-14) — a tela "Resumo" e a assinatura do  |
-| `P-MOBILE-CLEARALL-SEM-FILHAS` | 15177 | BAIXA | sim | P-MOBILE-CLEARALL-SEM-FILHAS (2026-11-14) — `DriftWorkOrderLocalStore.clearAll` não apag |
-| `P-SAN3-25-BRACO-PROVISIONADO-FORA-DA-CI` | 15184 | BAIXA | sim | P-SAN3-25-BRACO-PROVISIONADO-FORA-DA-CI (2026-11-13) — o braço provisionado dos testes d |
-| `P-SAN3-25-ADAPTADOR-DE-TITULO-DUPLICADO` | 15191 | BAIXA | sim | P-SAN3-25-ADAPTADOR-DE-TITULO-DUPLICADO (2026-11-13) — a aba Financeiro da OS tem um ada |
-| `P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO` | 15198 | BAIXA | sim | P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO (2026-11-13) — o quadro "Títulos desta OS" faz uma l |
-| `P-SAN3-25-PREVIA-DO-COMPLEMENTAR` | 15205 | BAIXA | sim | P-SAN3-25-PREVIA-DO-COMPLEMENTAR (2026-11-13) — no faturamento complementar, o diálogo n |
-| `P-J559-C1-02-GUARDA-A3-FORMA` | 15220 | BAIXA | sim | P-J559-C1-02-GUARDA-A3-FORMA (2026-11-14) — a guarda A3 ("a tela não soma dinheiro") do  |
-| `P-J559-C1-04-ABORTO-DURO-PAPEL-COM-LOGIN` | 15236 | BAIXA | sim | P-J559-C1-04-ABORTO-DURO-PAPEL-COM-LOGIN (2026-11-14) — a morte do processo no meio do t |
-| `P-J559-C1-05-A5-LEITURA-DA-OS-COMO-SUPERUSUARIO` | 15243 | BAIXA | sim | P-J559-C1-05-A5-LEITURA-DA-OS-COMO-SUPERUSUARIO (2026-11-14) — no teste de concorrência  |
-| `P-J559-N-C2-2-R-ENUM-FRONTEIRA-DE-IMPORTES` | 15251 | BAIXA | sim | P-J559-N-C2-2-R-ENUM-FRONTEIRA-DE-IMPORTES (2026-11-14) — a varredura dos motivos do fat |
-| `P-J559-C3-A3-401-SEM-MENSAGEM` | 15266 | BAIXA | sim | P-J559-C3-A3-401-SEM-MENSAGEM (2026-11-14) — no 401 `session_inactive` com o refresh rec |
-| `P-J559-C3-A6-BOTOES-SEM-HOVER` | 15281 | BAIXA | sim | P-J559-C3-A6-BOTOES-SEM-HOVER (2026-11-14) — os botões da aba Financeiro da OS e do diál |
-| `P-J559-N2-TESTE-VIVO-FORMA-A-MAO` | 15295 | BAIXA | sim | P-J559-N2-TESTE-VIVO-FORMA-A-MAO (2026-11-14) — o teste vivo do faturamento escreve à mã |
-| `P-GMONT-FORMA-METODO-RECONHECE-FORMA` | 15349 | BAIXA | sim | P-GMONT-FORMA-METODO-RECONHECE-FORMA (2026-11-14) — na forma «método», a G-MONT reconhec |
-| `P-ASS09-INTEGRIDADE-POR-LINHA` | 15366 | BAIXA | sim | P-ASS09-INTEGRIDADE-POR-LINHA (2026-11-14) — um demonstrativo inconsistente derruba a vi |
-| `P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE` | 15381 | BAIXA | sim | P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE (2026-11-14) — a regra "a OS marcada como cance |
-| `P-INDICE-SEM-DONO-NUNCA-MARCA` | 15388 | BAIXA | sim | P-INDICE-SEM-DONO-NUNCA-MARCA (2026-11-14) — o gerador do índice de pendências conta com |
-| `P-MOBILE-MODULE-RESOLVER-MORTO` | 15431 | BAIXA | sim | P-MOBILE-MODULE-RESOLVER-MORTO (2026-11-14) — o `ModuleResolver` e o `perms` do mapa de  |
-| `P-J561-JWT-LOCAL-SEM-TENANT-ROLE` | 15466 | BAIXA | sim | P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda  |
-| `P-ASS12-UNIDADE-SO-NO-SNAPSHOT` | 15504 | BAIXA | sim | P-ASS12-UNIDADE-SO-NO-SNAPSHOT (2026-11-14) — a unidade e os veículos cobrados vivem só  |
-| `P-ASS12-AVISO-PRECO-COMBINADO` | 15510 | BAIXA | sim | P-ASS12-AVISO-PRECO-COMBINADO (2026-11-14) — publicar mensalidade fixa não avisa as orga |
-| `P-ASS12-MEMBRO-PLANO-SEM-PRECO` | 15516 | BAIXA | sim | P-ASS12-MEMBRO-PLANO-SEM-PRECO (2026-11-15) — no grupo aberto, o membro com plano sem pr |
-| `P-ASS12-VISAO-NULL-ADDON-SEM-PRECO` | 15523 | BAIXA | sim | P-ASS12-VISAO-NULL-ADDON-SEM-PRECO (2026-11-15) — a organização com o mês pulado por `ad |
-| `P-ASS12-PLANKIND-POR-EXCLUSAO` | 15530 | BAIXA | sim | P-ASS12-PLANKIND-POR-EXCLUSAO (2026-11-15) — o `resolveVersionPricing` trata "não é `bas |
-| `P-ASS08C-COBRANCA-DO-SALDO` | 15555 | BAIXA | sim | P-ASS08C-COBRANCA-DO-SALDO (2026-11-14) — a conta com pagamento parcial não tem cobrança |
-| `P-OS-MESMA-SITUACAO-GRAVA-EVENTO` | 15602 | BAIXA | sim | P-OS-MESMA-SITUACAO-GRAVA-EVENTO (2026-11-14) — a mudança para a mesma situação grava ev |
-| `P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET` | 15614 | BAIXA | sim | P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 |
-| `P-SEED-BASE-NOMES-REAIS` | 15671 | BAIXA | sim | P-SEED-BASE-NOMES-REAIS (2026-11-14) — os seeds de `prisma/` trazem marcas e órgãos reai |
-| `P-GATE-CHAVE-T4-VARREDURA-SEM-CANARIO` | 15708 | BAIXA | sim | P-GATE-CHAVE-T4-VARREDURA-SEM-CANARIO (2026-11-14) — a varredura de todo o `lib/` do app |
-| `P-15B-CONCLUSAO-TELA-ABERTA-NAO-RELE-SITUACAO` | 15736 | BAIXA | sim | P-15B-CONCLUSAO-TELA-ABERTA-NAO-RELE-SITUACAO (2026-11-14) — com a Conclusão aberta, a m |
-| `P-GATE-CHAVE-T2-MATRIZ-INSTAVEL` | 15743 | BAIXA | sim | P-GATE-CHAVE-T2-MATRIZ-INSTAVEL (2026-11-14) — o T2 do #561 (`tests/mobile-gate-chave-ma |
-| `P-WO-REPO-ERROS-EM-INGLES` | 15750 | BAIXA | sim | P-WO-REPO-ERROS-EM-INGLES (2026-11-14) — o repositório de OS do app lança `StateError` c |
-| `P-ROTEIRO-OP10-OS-PAUSADA` | 15772 | BAIXA | sim | P-ROTEIRO-OP10-OS-PAUSADA (2026-11-14) — o passo 4 do Op-10 não diz que a OS pausada pre |
-| `P-ROTEIRO-OP10-SESSAO-APOS-ATUALIZAR` | 15779 | BAIXA | sim | P-ROTEIRO-OP10-SESSAO-APOS-ATUALIZAR (2026-11-14) — o roteiro não diz que a sessão do ap |
-| `P-B10B-MIGRATE-P1001-NA-1A-SUBIDA` | 15811 | BAIXA | sim | P-B10B-MIGRATE-P1001-NA-1A-SUBIDA (2026-11-14) — na 1ª subida da pilha isolada, o health |
-| `P-B10B-VIGIA-720-AMOSTRAS` | 15819 | BAIXA | sim | P-B10B-VIGIA-720-AMOSTRAS (2026-11-14) — o vigia passivo do ensaio para em 720 amostras  |
-| `P-SECLOG-ACEITE-PORTA-OCUPADA-MENSAGEM` | 15826 | BAIXA | sim | P-SECLOG-ACEITE-PORTA-OCUPADA-MENSAGEM (2026-11-14) — o aceite de boot do SEC-LOG manda  |
-| `P-ASS08-JSDOC-LIST-CHARGES-VELHO` | 15842 | BAIXA | sim | P-ASS08-JSDOC-LIST-CHARGES-VELHO (2026-11-14) — o comentário de `listChargesByExternalRe |
-| `P-ASS08-CATALOGOS-MUTACAO-VELHOS` | 15858 | BAIXA | sim | P-ASS08-CATALOGOS-MUTACAO-VELHOS (2026-11-14) — dois catálogos de mutação de fora do rep |
-| `P-REG-ATA-J555-FORA-DO-REPO` | 15865 | BAIXA | sim | P-REG-ATA-J555-FORA-DO-REPO (2026-11-14) — a ata da J-555 (#555, `B-ASS-08c1a`) ainda nã |
-| `P-REG-ATA-J554-SEM-POS-JUNTA` | 15872 | BAIXA | sim | P-REG-ATA-J554-SEM-POS-JUNTA (2026-11-14) — a ata `J-554-b-db-fuso-utc.md` da `main` par |
-| `P-WEB-ABA-OS-UMA-PENDENCIA-SO` | 15879 | BAIXA | sim | P-WEB-ABA-OS-UMA-PENDENCIA-SO (2026-11-14) — a aba da OS na web mostra só 1 pendência de |
-| `P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO` | 15886 | BAIXA | sim | P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO (2026-11-14) — a 2ª janela residual do `B-S |
-| `P-SEED-C11-CONTRADIZ-C2B` | 15901 | BAIXA | sim | P-SEED-C11-CONTRADIZ-C2B (2026-11-14) — na letra do plano do seed, a regra de e-mail do  |
-| `P-E2E-OS-LISTA-VAZIA` | 15922 | BAIXA | sim | P-E2E-OS-LISTA-VAZIA (2026-11-15) — o estado "lista de OS vazia" saiu do e2e — BAIXA |
-| `P-E2E-DESPACHOS-SEM-TECNICO` | 15928 | BAIXA | sim | P-E2E-DESPACHOS-SEM-TECNICO (2026-11-15) — a semente não tem técnico de campo, então a l |
-| `P-E2E-RODA-COMO-SUPERUSUARIO` | 15936 | BAIXA | sim | P-E2E-RODA-COMO-SUPERUSUARIO (2026-11-15) — o e2e usa o superusuário do banco — BAIXA |
-| `P-E2E-SEM-ARTEFATO-DE-FALHA` | 15942 | BAIXA | sim | P-E2E-SEM-ARTEFATO-DE-FALHA (2026-11-15) — na falha, o job `e2e` imprime o retrato da pá |
-| `P-ASS10B-CANCELAR-AGENDADO` | 15961 | BAIXA | sim | P-ASS10B-CANCELAR-AGENDADO (2026-11-14) — o vínculo agendado não pode ser cancelado pela |
-| `P-ASS10B-VARIACAO-MES-ANTERIOR` | 15982 | BAIXA | sim | P-ASS10B-VARIACAO-MES-ANTERIOR (2026-11-14) — a tela não mostra a variação do custo sobr |
-| `P-ASS10B-CAMBIO-QUEM-CADASTROU` | 15989 | BAIXA | sim | P-ASS10B-CAMBIO-QUEM-CADASTROU (2026-11-14) — o histórico do dólar do mês não diz quem c |
-| `P-ASS10B-CREDITO-GLOBAL` | 15996 | BAIXA | sim | P-ASS10B-CREDITO-GLOBAL (2026-11-14) — o crédito aplicado do mês não vem no global da vi |
-| `P-ASS10B-LINHAS-POR-MOTIVO` | 16003 | BAIXA | sim | P-ASS10B-LINHAS-POR-MOTIVO (2026-11-14) — o não rateado por motivo não traz as linhas do |
-| `P-ASS10B-SERIE-SEIS-MESES` | 16010 | BAIXA | sim | P-ASS10B-SERIE-SEIS-MESES (2026-11-14) — a série de 6 meses custa 10 leituras em segundo |
-| `P-ASS10B-GRUPOS-AGENDADOS-NA-LISTA` | 16017 | BAIXA | sim | P-ASS10B-GRUPOS-AGENDADOS-NA-LISTA (2026-11-14) — a lista de grupos não traz os vínculos |
-| `P-ASS10B-MENU-SERVIDOR-GUARDA` | 16024 | BAIXA | sim | P-ASS10B-MENU-SERVIDOR-GUARDA (2026-11-14) — o item do menu do servidor pede menos que a |
-| `P-ASS10B-PONTE-UNICA` | 16031 | BAIXA | sim | P-ASS10B-PONTE-UNICA (2026-11-14) — duas pontes de degraus na biblioteca — BAIXA (opcion |
-| `P-ASS11-AVISO-COBRANCA-CHEIA` | 16063 | BAIXA | sim | P-ASS11-AVISO-COBRANCA-CHEIA (2026-11-15) — a tela "Minha assinatura" não mostra o aviso |
-| `P-RBAC-MATRIX-SEM-COBRANCA-DA-PLATAFORMA` | 16070 | BAIXA | sim | P-RBAC-MATRIX-SEM-COBRANCA-DA-PLATAFORMA (2026-11-15) — o `RBAC_MATRIX.md` não lista as  |
-| `P-17-CONSENT-SUBJECT-MISMATCH` | 16080 | BAIXA | sim | P-17-CONSENT-SUBJECT-MISMATCH (2026-11-14) — a decisão de consentimento não leva o usuár |
-| `P-17-CONSENT-SESSAO-NULA-MOSTRA-PERMITIR` | 16088 | BAIXA | sim | P-17-CONSENT-SESSAO-NULA-MOSTRA-PERMITIR (2026-11-14) — com a sessão nula (carregando ou |
-| `P-17-CONSENT-SEM-DONO-NAO-SEGURA-LOTE` | 16102 | BAIXA | sim | P-17-CONSENT-SEM-DONO-NAO-SEGURA-LOTE (2026-11-14) — sem dono resolvível, uma decisão pe |
-| `P-LOCALIZACAO-TEXTO-MODULO-DESLIGADO` | 16109 | BAIXA | sim | P-LOCALIZACAO-TEXTO-MODULO-DESLIGADO (2026-11-14) — o aviso "Acesso não permitido" fala  |
-| `P-LOCALIZACAO-PERFIL-DEMO` | 16153 | BAIXA | sim | P-LOCALIZACAO-PERFIL-DEMO (2026-11-14) — a demonstração precisa do cadastro de Profissio |
-| `P-TELEMETRIA-ATOR-SEM-UUID` | 16160 | BAIXA | sim | P-TELEMETRIA-ATOR-SEM-UUID (2026-11-14) — a telemetria devolve 400 de outro módulo para  |
-| `P-LOCALIZACAO-TEXTO-PARA-O-ADVOGADO` | 16179 | BAIXA | sim | P-LOCALIZACAO-TEXTO-PARA-O-ADVOGADO (2026-11-14) — o texto da tela de consentimento e a  |
-| `P-LOCALIZACAO-TITULO-PENDENTE-APOS-NAO` | 16186 | BAIXA | sim | P-LOCALIZACAO-TITULO-PENDENTE-APOS-NAO (2026-11-14) — "Consentimento pendente" aparece p |
-| `P-DESPACHO-SEM-LOCALIZACAO-NEUTRO` | 16192 | BAIXA | sim | P-DESPACHO-SEM-LOCALIZACAO-NEUTRO (2026-11-14) — o despacho na web deve mostrar "sem loc |
-| `P-MOBILE-LOCALIZACAO-ABA-INICIO-ACESA` | 16198 | BAIXA | sim | P-MOBILE-LOCALIZACAO-ABA-INICIO-ACESA (2026-11-14) — a tela de localização acende "Iníci |
-| `P-MOBILE-CONTRASTE-ABAIXO-DO-AA` | 16204 | BAIXA | sim | P-MOBILE-CONTRASTE-ABAIXO-DO-AA (2026-11-14) — 3 pontos do app com contraste abaixo do A |
-| `P-EVIDENCIA-EXIF-DAS-FOTOS` | 16210 | BAIXA | sim | P-EVIDENCIA-EXIF-DAS-FOTOS (2026-11-14) — a posição dentro do arquivo da foto (EXIF) não |
-| `P-LOCALIZACAO-LATEST-PAGINA-CURTA` | 16216 | BAIXA | sim | P-LOCALIZACAO-LATEST-PAGINA-CURTA (2026-11-14) — a página do mapa ao vivo pode vir menor |
-| `P-B-O6R-09-ARNES-DEADLOCK-67-INSTAVEL` | 16227 | BAIXA | sim | P-B-O6R-09-ARNES-DEADLOCK-67-INSTAVEL (2026-11-14) — o caso `[arnês · deadlock 40P01]` d |
-| `P-B-O6R-09-Q1-DROP-SEQUENCE-CONCORRENTE` | 16240 | BAIXA | sim | P-B-O6R-09-Q1-DROP-SEQUENCE-CONCORRENTE (2026-11-14) — a limpeza do `[Q1 · corrida · rol |
-| `P-566-CAMINHO-LOCAL-NO-DIARIO` | 16247 | BAIXA | sim | P-566-CAMINHO-LOCAL-NO-DIARIO (2026-11-14) — o #566 entrou com 6 linhas de caminho local |
-| `P-A17BIS-CENSO-POR-SUBSTRING` | 16254 | BAIXA | sim | P-A17BIS-CENSO-POR-SUBSTRING (2026-11-14) — o A17-bis confere os `reason` por substring  |
-| `P-DONO-16B-OPCAO` | 16261 | BAIXA | sim | P-DONO-16B-OPCAO (2026-11-15) — pergunta ao dono: onde mora o recibo durável da fila do  |
-| `P-API-CONTRATOS-CURINGA-ASSINATURA` | 16298 | BAIXA | sim | P-API-CONTRATOS-CURINGA-ASSINATURA (2026-11-15) — `API_CONTRACTS.md:105` guarda o curing |
-| `P-567-GUARDA-FRONT-NAO-ESTREITA` | 16305 | BAIXA | sim | P-567-GUARDA-FRONT-NAO-ESTREITA (2026-11-15) — os 2 `PermissionGuard` da tela de custos  |
-| `P-PAT-OS-TAB-SEM-HOVER` | 16312 | BAIXA | sim | P-PAT-OS-TAB-SEM-HOVER (2026-11-15) — a aba inativa `.pat-os-tab` não muda no hover — BA |
-| `P-567-DETALHE-A-SERVICO-CORTADO` | 16326 | BAIXA | sim | P-567-DETALHE-A-SERVICO-CORTADO (2026-11-15) — o detalhe da aparência A corta o nome do  |
-| `P-567-SERIE-TRACO-SEM-TESTE` | 16332 | BAIXA | sim | P-567-SERIE-TRACO-SEM-TESTE (2026-11-15) — o teste do mês sem dado não confere o "—" — B |
-| `P-567-BIBLIOTECA-MODOS-NAO-REGISTRADOS` | 16338 | BAIXA | sim | P-567-BIBLIOTECA-MODOS-NAO-REGISTRADOS (2026-11-15) — o `COMPONENT_LIBRARY.md` não regis |
-| `P-567-DIARIO-MUTACAO-APARENCIAS` | 16344 | BAIXA | sim | P-567-DIARIO-MUTACAO-APARENCIAS (2026-11-15) — o diário do bloco não registra as mutaçõe |
-| `P-DEMO-ISOLADO-PLACA-NORMALIZADA` | 16350 | BAIXA | sim | P-DEMO-ISOLADO-PLACA-NORMALIZADA (2026-11-15) — o motor da demonstração grava a placa se |
-| `P-NOVA-OS-USERS-403-AUDITADO` | 16356 | BAIXA | sim | P-NOVA-OS-USERS-403-AUDITADO (2026-11-15) — a tela de Nova OS chama uma leitura de usuár |
-| `P-APARENCIA-NOME-REPETIDO` | 16362 | BAIXA | sim | P-APARENCIA-NOME-REPETIDO (2026-11-15) — o nome da aparência aparece repetido na tela —  |
-| `P-E2E-GUARDA-RELATORIO-POR-PROPRIEDADE` | 16368 | BAIXA | sim | P-E2E-GUARDA-RELATORIO-POR-PROPRIEDADE (2026-11-15) — 17 dos 33 ramos `reprovar(` do gua |
-| `P-E2E-SESSAO-POR-RODADA` | 16376 | BAIXA | sim | P-E2E-SESSAO-POR-RODADA (2026-11-15) — 2 rodadas do e2e no mesmo worktree disputam o `te |
-| `P-KPI-NOTA-VENDAVEL-62` | 16383 | BAIXA | sim | P-KPI-NOTA-VENDAVEL-62 (2026-11-15) — a nota do marco de KPI de 15/11 diz que falta regi |
-| `P-SMOKE-STDERR-SEM-TESTE` | 16389 | BAIXA | sim | P-SMOKE-STDERR-SEM-TESTE (2026-11-15) — nenhum teste prova que o stderr do runner do smo |
-| `P-SMOKE-RUNNER-AUTORREFERENCIA` | 16395 | BAIXA | sim | P-SMOKE-RUNNER-AUTORREFERENCIA (2026-11-15) — o teste do runner do smoke só roda pelo pr |
-| `P-TCTR1-NAMESPACE-E-EXPORT-STAR` | 16408 | BAIXA | sim | P-TCTR1-NAMESPACE-E-EXPORT-STAR (2026-11-15) — o T-CTR-1 fica calado para `export namesp |
-| `P-TCTR1-CAMPO-UNIAO-IMPORTADA` | 16414 | BAIXA | sim | P-TCTR1-CAMPO-UNIAO-IMPORTADA (2026-11-15) — o T-CTR-1 não segue um campo tipado por uni |
-| `P-CUSTO-GRAFICO-UM-PONTO` | 16420 | BAIXA | sim | P-CUSTO-GRAFICO-UM-PONTO (2026-11-15) — o quadro "6 meses" da tela de custos fica vazio  |
-| `P-CUSTO-MOTIVO-DESCONHECIDO-VIRA-FILIAL` | 16426 | BAIXA | sim | P-CUSTO-MOTIVO-DESCONHECIDO-VIRA-FILIAL (2026-11-15) — um motivo de pulo desconhecido vi |
-| `P-TST-REGEX-DINHEIRO-EM-INGLES` | 16432 | BAIXA | sim | P-TST-REGEX-DINHEIRO-EM-INGLES (2026-11-15) — o regex de dinheiro dos testes reconhece o |
-| `P-ASS09-GLOBAL-NULO-SEM-TESTE` | 16438 | BAIXA | sim | P-ASS09-GLOBAL-NULO-SEM-TESTE (2026-11-15) — nenhum teste guarda o nulo da visão global  |
-| `P-ASS12-UNIDADE-CAST-ESCAPA-NEVER` | 16444 | BAIXA | sim | P-ASS12-UNIDADE-CAST-ESCAPA-NEVER (2026-11-15) — `case "per_hour" as PricingUnit` com ca |
-| `P-568-ACEITE-RELOGIO-ADIANTADO` | 16465 | BAIXA | sim | P-568-ACEITE-RELOGIO-ADIANTADO (2026-11-15) — o aceite do consentimento depende do relóg |
-| `P-RBAC-146-ID-INEXISTENTE` | 16477 | BAIXA | sim | P-RBAC-146-ID-INEXISTENTE (2026-11-15) — `RBAC_MATRIX.md:146` aponta uma pendência que n |
-| `P-SECLOG-ACEITE-DIAGNOSTICO-TRAVA-FUSO` | 16484 | BAIXA | sim | P-SECLOG-ACEITE-DIAGNOSTICO-TRAVA-FUSO (2026-11-15) — com o banco fora, o aceite de boot |
-| `P-SECLOG-G4E-TIPO-APAGADO` | 16491 | BAIXA | sim | P-SECLOG-G4E-TIPO-APAGADO (2026-11-15) — `(express as any)()` não é enumerado pela G4e — |
-| `P-ERRO-GRAVADO-COM-TEXTO-CRU` | 16512 | BAIXA | sim | P-ERRO-GRAVADO-COM-TEXTO-CRU (2026-11-15) — o `lastError` de `job.queue.ts` é gravado no |
-| `P-HTTP-ERRO-DE-SERVIDOR-COMO-400` | 16518 | BAIXA | sim | P-HTTP-ERRO-DE-SERVIDOR-COMO-400 (2026-11-15) — defeito do servidor que não é queda resp |
-| `P-HTTP-400-COM-MENSAGEM-GENERICA` | 16525 | BAIXA | sim | P-HTTP-400-COM-MENSAGEM-GENERICA (2026-11-15) — os `throw new Error(…)` de `src/` saem c |
-| `P-CLOUD-CHARGES-CODIGO-FORA-DO-PRODUTO` | 16558 | BAIXA | sim | P-CLOUD-CHARGES-CODIGO-FORA-DO-PRODUTO (2026-11-15) — o módulo `src/modules/cloud-charge |
-| `P-RUNBOOK-PASSO6-SEM-SQL` | 16564 | BAIXA | sim | P-RUNBOOK-PASSO6-SEM-SQL (2026-11-15) — o passo 6 do `docs/deployment.md` é prosa sem SQ |
-| `P-DEMO-CUSTO-SEM-DADO` | 16577 | BAIXA | sim | P-DEMO-CUSTO-SEM-DADO (2026-11-15) — o roteiro da demonstração descrevia a tela antiga d |
-| `P-ORQ-FILTRO-SEGURANCA-PLANO-68` | 16584 | BAIXA | sim | P-ORQ-FILTRO-SEGURANCA-PLANO-68 (2026-11-15) — os agentes Claude que leem a evidência do |
-| `P-YARDS-ERRO-ESCONDIDO` | 16591 | BAIXA | sim | P-YARDS-ERRO-ESCONDIDO (2026-11-15) — `yards.service.ts` esconde o erro da API, e o sele |
-| `P-DESPACHO-SEM-AUDITORIA-ASSIGNED` | 16597 | BAIXA | sim | P-DESPACHO-SEM-AUDITORIA-ASSIGNED (2026-11-15) — a atribuição feita pelo despacho não ge |
-| `P-ARNES-DB-POSTURA-SO-PELO-NOME` | 16603 | BAIXA | sim | P-ARNES-DB-POSTURA-SO-PELO-NOME (2026-11-15) — os `-db` conferem `NOSUPERUSER`/`NOBYPASS |
-| `P-ARNES-DB-LIXO-NO-KILL` | 16609 | BAIXA | sim | P-ARNES-DB-LIXO-NO-KILL (2026-11-15) — suíte `-db` morta à força deixa 1 papel LOGIN e 1 |
-| `P-A17BIS-NAO-ALCANCA-BILLING` | 16637 | BAIXA | sim | P-A17BIS-NAO-ALCANCA-BILLING (2026-11-15) — o A17-bis não alcança `subscription-billing` |
-| `P-CI-INTERMITENTES-1511` | 16643 | BAIXA | sim | P-CI-INTERMITENTES-1511 (2026-11-15) — 3 intermitentes no CI do #568 resolvidos com `rer |
-| `P-SEC-LOG-SENTINELA-EM-UUID` | 16657 | BAIXA | sim | P-SEC-LOG-SENTINELA-EM-UUID (2026-11-15) — o H4e do `sec-log-http` compara o sentinela p |
-| `P-04B-ACTIONERROR-RAMO-MORTO` | 16663 | BAIXA | sim | P-04B-ACTIONERROR-RAMO-MORTO (2026-11-15) — um ramo do `ActionError` do sync de estoque  |
-| `P-APP-CONSENTIMENTO-SO-NO-APARELHO` | 16670 | BAIXA | sim | P-APP-CONSENTIMENTO-SO-NO-APARELHO (2026-11-15) — o consentimento do app vale só no apar |
-| `P-AUDIT-SEM-FILTRO-POR-ENTIDADE` | 16676 | BAIXA | sim | P-AUDIT-SEM-FILTRO-POR-ENTIDADE (2026-11-15) — a rota de auditoria não filtra por entida |
-| `P-579-ACEITE-A-C1-02-E-A-RACE7` | 16705 | BAIXA | sim | P-579-ACEITE-A-C1-02-E-A-RACE7 (2026-11-16) — o comando literal da C1 para o A-C1-02 (a  |
-| `P-USERS-ACESSO-SEG-DB-BASE-COMPARTILHADA` | 16712 | BAIXA | sim | P-USERS-ACESSO-SEG-DB-BASE-COMPARTILHADA (2026-11-16) — 6 testes de `tests/users-acesso- |
-| `P-APP-PERFIL-LINHAS-46PX` | 16724 | BAIXA | sim | P-APP-PERFIL-LINHAS-46PX (2026-11-15) — as linhas de navegação do Perfil têm 46 px de al |
-| `P-APP-GUINCHO-VEICULO-ATENDIDO` | 16730 | BAIXA | sim | P-APP-GUINCHO-VEICULO-ATENDIDO (2026-11-16) — o cartão da OS da opção B do guincho sai s |
-| `P-SAN3-16-PEDIDO-DUPLO-CONCORRENTE` | 16736 | BAIXA | sim | P-SAN3-16-PEDIDO-DUPLO-CONCORRENTE (2026-11-15) — duas requisições simultâneas com o mes |
-| `P-SAN3-16-PEDIDO-DECIDIDO-ANTES-DO-EVENTO` | 16743 | BAIXA | sim | P-SAN3-16-PEDIDO-DECIDIDO-ANTES-DO-EVENTO (2026-11-15) — a fila de Aprovações grava, o e |
-| `P-WEB-LINHA-DO-TEMPO-TIPO-CRU` | 16750 | BAIXA | sim | P-WEB-LINHA-DO-TEMPO-TIPO-CRU (2026-11-15) — a linha do tempo da OS na web mostra o tipo |
-| `P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP` | 16757 | BAIXA | sim | P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP (2026-11-15) — na web, o campo "Registro" do d |
-| `P-SAN3-16-CARTAO-APROVACOES-DA-HOME` | 16764 | BAIXA | sim | P-SAN3-16-CARTAO-APROVACOES-DA-HOME (2026-11-15) — o cartão de Aprovações da tela inicia |
-| `P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA` | 16771 | BAIXA | sim | P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA (2026-11-15) — `docs/mobile-sync-contracts.md` ainda ci |
-| `P-AUTH-REFRESH-VINCULO-APARELHO` | 16792 | BAIXA | sim | P-AUTH-REFRESH-VINCULO-APARELHO (2026-11-16) — o token de renovação não é amarrado ao ap |
-| `P-WEB-SAIR-SEM-NOVA-TENTATIVA` | 16799 | BAIXA | sim | P-WEB-SAIR-SEM-NOVA-TENTATIVA (2026-11-16) — o "Sair" da web ignora o 503 do servidor e  |
-| `P-APP-LISTA-OS-ERRO-COM-200` | 16806 | BAIXA | sim | P-APP-LISTA-OS-ERRO-COM-200 (2026-11-16) — a lista de OS do app mostra "Não foi possível |
-| `P-ASS08C-NOTA-COMPETENCIA-ANTERIOR` | 16815 | BAIXA | sim | P-ASS08C-NOTA-COMPETENCIA-ANTERIOR (2026-11-17) — a nota de competência anterior ao mês  |
-| `P-ASS08C2-TELA-AVISO-ESTORNO-CANCELA-NOTA` | 16821 | BAIXA | sim | P-ASS08C2-TELA-AVISO-ESTORNO-CANCELA-NOTA (2026-11-17) — a tela do estorno manual ainda  |
-| `P-MOBILE-MEU-ESTOQUE-SEM-PORTA` | 16827 | BAIXA | sim | P-MOBILE-MEU-ESTOQUE-SEM-PORTA (2026-11-17) — o estoque real do usuário do app só abre d |
-| `P-OS-LISTA-SEM-CIDADE` | 16835 | BAIXA | sim | P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entre |
-| `P-OS-REBOQUE-SEM-MODELO-E-COR` | 16842 | BAIXA | sim | P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo |
-| `P-572-GUARDA-PULA-NUL` | 16875 | BAIXA | sim | P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto c |
-| `P-WEB-TROCA-NAO-REVOGA-ORIGEM` | 16934 | BAIXA | sim | P-WEB-TROCA-NAO-REVOGA-ORIGEM (2026-11-20) — a troca de organização no web deixa a sessã |
-| `P-APP-ENTRAR-APARENCIA-ANTES-DO-LOGIN` | 16941 | BAIXA | sim | P-APP-ENTRAR-APARENCIA-ANTES-DO-LOGIN (2026-11-20) — a tela Entrar não sabe que aparênci |
-| `P-APP-TELEMETRIA-SESSAO-EXPIRADA-GASTA-TENTATIVA` | 16955 | BAIXA | sim | P-APP-TELEMETRIA-SESSAO-EXPIRADA-GASTA-TENTATIVA (2026-11-20) — o envio de telemetria do |
-| `P-GUI00-ERRO-ESCOLHE-A-DIRETO` | 16962 | BAIXA | sim | P-GUI00-ERRO-ESCOLHE-A-DIRETO (2026-11-17) — no caminho de erro, três telas do app escol |
-| `P-SAN305-T15-PORTA-SUBSTRING` | 17009 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 do `B-SAN3-05` compara a porta com `in |
-| `P-GUI02-QUEM-ESCOLHEU` | 17030 | BAIXA | sim | P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA |
-| `P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO` | 17037 | BAIXA | sim | P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o  |
-| `P-GUI02-ESPELHO-OS-EM-VOO` | 17044 | BAIXA | sim | P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o e |
-| `P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO` | 17051 | BAIXA | sim | P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" nu |
-| `P-WO-LEITURA-ID-EM-FROTA` | 17058 | BAIXA | sim | P-WO-LEITURA-ID-EM-FROTA (2026-11-17) — `damages`, `fuel-logs` e `service-quotes` expõem |
-| `P-MOBILE-AVAILABILITY-TENANT-ID` | 17072 | BAIXA | sim | P-MOBILE-AVAILABILITY-TENANT-ID (2026-11-17) — `GET /mobile/inventory/availability` põe  |
-| `P-NOTIF-DECISAO-EX-TECNICO` | 17087 | BAIXA | sim | P-NOTIF-DECISAO-EX-TECNICO (2026-11-17) — a exceção do ex-técnico no `API_CONTRACTS.md`  |
-| `P-APP-INICIO-PENDENTES-FANTASMA` | 17102 | BAIXA | sim | P-APP-INICIO-PENDENTES-FANTASMA (2026-11-17) — a Início mostra "2 pendentes" com 0 pende |
-| `P-APP-TESTE-OSCILA-MAQUINA-CARREGADA` | 17109 | BAIXA | sim | P-APP-TESTE-OSCILA-MAQUINA-CARREGADA (2026-11-17) — flakiness do teste de sessão sob con |
-| `P-APP-LIGAR-SEM-DISCADOR` | 17117 | BAIXA | sim | P-APP-LIGAR-SEM-DISCADOR (2026-11-17) — o botão de ligar do detalhe do app exige um paco |
-| `P-APROV-MEMORIA-SEM-CAS` | 17124 | BAIXA | sim | P-APROV-MEMORIA-SEM-CAS (2026-11-17) — o repositório em memória das aprovações não é CAS |
-| `P-SAN305-T15-PORTA-SUBSTRING` | 17162 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 compara a porta com `includes` no log  |
-| `P-PLAT-PORTAO-SEM-ORG-PLATAFORMA` | 17184 | BAIXA | sim | P-PLAT-PORTAO-SEM-ORG-PLATAFORMA (2026-11-17) — o portão da plataforma não confere se o  |
-| `P-FRONT-ATALHO-SUPER-ADMIN` | 17191 | BAIXA | sim | P-FRONT-ATALHO-SUPER-ADMIN (2026-11-17) — o front libera toda permissão para "Super Admi |
-| `P-CLOUD-CHARGE-ROUTER-ORFAO` | 17198 | BAIXA | sim | P-CLOUD-CHARGE-ROUTER-ORFAO (2026-11-17) — `cloud-charge.routes.ts` está exportado e não |
-| `P-PARSE-ROLES-SEM-TRIM` | 17212 | BAIXA | sim | P-PARSE-ROLES-SEM-TRIM (2026-11-17) — `parseRoles` devolve o papel sem trim, e `ROLE_PER |
-| `P-VARREDURAS-SEM-USE-SEM-CAMINHO` | 17219 | BAIXA | sim | P-VARREDURAS-SEM-USE-SEM-CAMINHO (2026-11-17) — as 3 varreduras irmãs não enumeram camad |
-| `P-ENV-EXAMPLE-RUNTIME-GUARD` | 17226 | BAIXA | sim | P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.e |
-| `P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE` | 17233 | BAIXA | sim | P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchFo |
-| `P-MOBILE-INVENTORY-MANAGE-SEM-USO` | 17256 | BAIXA | sim | P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-s |
-| `P-AWS-IMAGEM-ARM64` | 17263 | BAIXA | sim | P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AW |
-| `P-AWS-VALKEY-TLS` | 17298 | BAIXA | sim | P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — |
-| `P-AWS-CLAMAV-ARM64` | 17333 | BAIXA | sim | P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA |
-| `P-AWS-CLAMAV-IMAGEM` | 17340 | BAIXA | sim | P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no iníc |
-| `P-AWS-TRACCAR-ARM64` | 17347 | BAIXA | sim | P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA |
-| `P-WO-ORACULO-403-404-ESCRITA` | 17354 | BAIXA | sim | P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexisten |
-| `P-ATTACHMENTS-WORK-ORDER-SEM-PORTA` | 17368 | BAIXA | sim | P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` r |
-| `P-PAINEL-SUPORTE-SCOPED` | 17375 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
-| `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17389 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
-| `P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT` | 17424 | BAIXA | sim | P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração o |
-| `P-08C3-40P01-CRU` | 17446 | BAIXA | sim | P-08C3-40P01-CRU (2026-11-20) — o deadlock no estorno cruzado sobe como erro cru (`P2010 |
-| `P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO` | 17454 | BAIXA | sim | P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO (2026-11-20) — o crédito desfeito muda o total |
-| `P-08C3-FOCUS-404-NO-SANDBOX` | 17462 | BAIXA | sim | P-08C3-FOCUS-404-NO-SANDBOX (2026-11-20) — confirmar no sandbox que o Focus responde 404 |
-| `P-08C3-EVENTOS-ASAAS-NO-SANDBOX` | 17469 | BAIXA | sim | P-08C3-EVENTOS-ASAAS-NO-SANDBOX (2026-11-20) — conferir no sandbox a lista `ASAAS_WEBHOO |
-| `P-08C3-CLOSE-TIMEOUT-FRIO` | 17476 | BAIXA | sim | P-08C3-CLOSE-TIMEOUT-FRIO (2026-11-20) — o 1º fechamento de um processo frio, sob carga, |
-| `P-08C3-NOTAS-JUNTA-C2` | 17483 | BAIXA | sim | P-08C3-NOTAS-JUNTA-C2 (2026-11-20) — duas notas não graves da C2 da junta do #608 (C2-N3 |
-| `P-SYNC-SETSTATE-NO-BUILD` | 17505 | BAIXA | sim | P-SYNC-SETSTATE-NO-BUILD (2026-11-20) — a tela de Sincronização do app dispara "setState |
-| `P-SYNC-LINHA-TRANSBORDA-390` | 17512 | BAIXA | sim | P-SYNC-LINHA-TRANSBORDA-390 (2026-11-20) — na tela de Sincronização, uma linha transbord |
-| `P-APPORG-RESUMO-POR-ORGANIZACAO` | 17519 | BAIXA | sim | P-APPORG-RESUMO-POR-ORGANIZACAO (2026-11-20) — falta no backend o resumo por organização |
-| `P-API-CLIENT-DETAILS-DESCARTADO` | 17526 | — | sim | P-API-CLIENT-DETAILS-DESCARTADO (2026-11-20) — o cliente de API da web descarta o `detai |
-| `P-ASS10C-FORMA-DA-COBRANCA` | 17533 | — | sim | P-ASS10C-FORMA-DA-COBRANCA (2026-11-20) — a forma de cada cobrança não vem nas respostas |
-| `P-USRCON-R11-R12-SEM-CASO-DB` | 17540 | BAIXA | sim | P-USRCON-R11-R12-SEM-CASO-DB (2026-11-20) — no banco, as leituras R11 e R12 do despachan |
-| `P-GRUPO-PALETA` | 17578 | BAIXA | sim | P-GRUPO-PALETA (2026-11-22) — o Painel do grupo não aparece na paleta de comandos (Ctrl+ |
-| `P-612-RAMO-ORIGINAL-ABSORCAO` | 17606 | BAIXA | sim | P-612-RAMO-ORIGINAL-ABSORCAO (2026-11-21) — o ramo original `feat/cobranca-operacao` fic |
-| `P-612-COMENTARIO-MAQUETE` | 17613 | BAIXA | sim | P-612-COMENTARIO-MAQUETE (2026-11-21) — 3 comentários citam uma maquete que não existe — |
-| `P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA` | 17627 | BAIXA | sim | P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA (2026-11-21) — o detalhe da cobrança na plataforma n |
-| `P-ASS10C-MENU-SERVIDOR` | 17634 | BAIXA | sim | P-ASS10C-MENU-SERVIDOR (2026-11-21) — o item "Cobrança" não está no menu do servidor — B |
-| `P-GINVOICE-COMENTARIO-POR-REGEX` | 17641 | BAIXA | sim | P-GINVOICE-COMENTARIO-POR-REGEX (2026-11-21) — o guarda G-INVOICE tira comentário por re |
-| `P-COMISSAO-WEB-EM-NUMBER` | 17655 | BAIXA | sim | P-COMISSAO-WEB-EM-NUMBER (2026-11-21) — a web mostra o total da comissão em `number` — B |
-| `P-COMISSAO-LEITOR-GENERICO` | 17662 | BAIXA | sim | P-COMISSAO-LEITOR-GENERICO (2026-11-21) — leitor de dinheiro montado por nome fora de `m |
-| `P-APP-T9O-SOB-CARGA` | 17676 | BAIXA | sim | P-APP-T9O-SOB-CARGA (2026-11-21) — o T9o estoura o tempo sob carga — BAIXA |
-| `P-APP-OSCARD-TRANSBORDA-390` | 17683 | BAIXA | sim | P-APP-OSCARD-TRANSBORDA-390 (2026-11-21) — o `MobileOsCard` transborda 23 px no aparelho |
-| `P-APP-COMISSOES-SKELETON-DO-KIT` | 17690 | BAIXA | sim | P-APP-COMISSOES-SKELETON-DO-KIT (2026-11-21) — a aba Comissões usa um esqueleto próprio, |
-| `P-APP-SERIAL-LOCK-UNICO` | 17697 | BAIXA | sim | P-APP-SERIAL-LOCK-UNICO (2026-11-21) — duas cópias da trava serial no app — BAIXA |
-| `P-SC-TESTES-SAIDA-PELO-VALID-TO` | 17725 | BAIXA | sim | P-SC-TESTES-SAIDA-PELO-VALID-TO (2026-11-21) — os testes da saída do grupo simulam a saí |
-| `P-AUDITORIA-EMAIL-NO-METADADO` | 17732 | BAIXA | sim | P-AUDITORIA-EMAIL-NO-METADADO (2026-11-21) — o e-mail vai no metadado de `user.access_gr |
-| `P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE` | 17739 | BAIXA | sim | P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE (2026-11-21) — o smoke do compose falha às vezes n |
-| `P-DIARIO-AZURE-POWERSHELL-ESCAPE` | 17746 | BAIXA | sim | P-DIARIO-AZURE-POWERSHELL-ESCAPE (2026-11-21) — o braço do Azure grava o diário por um c |
-| `P-APP-OS-LISTA-ACENTO` | 17753 | BAIXA | sim | P-APP-OS-LISTA-ACENTO (2026-11-21) — "Ordens de Servico" sem acento na lista de OS do ap |
-| `P-TESTE-STUB-APROVACOES-FRAGIL` | 17760 | BAIXA | sim | P-TESTE-STUB-APROVACOES-FRAGIL (2026-11-21) — o teste do consentimento usa uma página fa |
-| `P-APP-ORG-SESSAO-DE-ESCUTA-ORFA` | 17767 | BAIXA | sim | P-APP-ORG-SESSAO-DE-ESCUTA-ORFA (2026-11-21) — app morto ou dados apagados deixam até 1  |
-| `P-APP-ORG-COMISSAO-A-RECEBER` | 17774 | BAIXA | sim | P-APP-ORG-COMISSAO-A-RECEBER (2026-11-21) — a aba Comissões do app não mostra "a receber |
-| `P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO` | 17781 | BAIXA | sim | P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO (2026-11-21) — a linha da comissão no app não most |
-| `P-S2P-HC1B-OSCILA-NO-CI` | 17802 | BAIXA | sim | P-S2P-HC1B-OSCILA-NO-CI (2026-11-22) — HC1b ultrapassou 300 ms numa tentativa — BAIXA |
-| `P-J622-CONTROLE-SERIAL-C5` | 17820 | BAIXA | sim | P-J622-CONTROLE-SERIAL-C5 (2026-11-22) — sonda espera 403 e o produto dá 401 — BAIXA |
-| `P-J622-C4-NOTAS` | 17844 | BAIXA | sim | P-J622-C4-NOTAS (2026-11-22) — quatro notas da cadeira C4 — BAIXA |
-| `P-J622-C5-NOTAS` | 17850 | BAIXA | sim | P-J622-C5-NOTAS (2026-11-22) — três notas da cadeira C5 — BAIXA |
-| `P-GRUPO-TRILHA-COMPLETE-FINAL` | 17856 | BAIXA | sim | P-GRUPO-TRILHA-COMPLETE-FINAL (2026-11-22) — `complete` registra o estado anterior às gr |
-| `P-GRUPO-REVOKE-400-INTERMITENTE` | 17876 | BAIXA | sim | P-GRUPO-REVOKE-400-INTERMITENTE (2026-11-22) — retirar gestor deu 400 uma vez — BAIXA |
-| `P-GRUPO-TOTAL-DE-PATIOS` | 17886 | BAIXA | sim | P-GRUPO-TOTAL-DE-PATIOS (2026-11-22) — total do grupo pendente — BAIXA |
-| `P-GRUPO-SLA-PRAZO` | 17896 | BAIXA | sim | P-GRUPO-SLA-PRAZO (2026-11-22) — prazo do SLA a definir — BAIXA |
-| `P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL` | 17901 | BAIXA | sim | P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL (2026-11-22) — presença depende do sinal de camp |
-| `P-GRUPO-TICKET-MEDIO` | 17906 | BAIXA | sim | P-GRUPO-TICKET-MEDIO (2026-11-22) — definição de ticket médio pendente — BAIXA |
-| `P-GRUPO-HISTORICO-DE-POSICAO` | 17911 | BAIXA | sim | P-GRUPO-HISTORICO-DE-POSICAO (2026-11-22) — histórico de posição pendente — BAIXA |
-| `P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO` | 17920 | BAIXA | sim | P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO (2026-11-22) — lista ainda mostra pátio cujo acesso c |
-| `P-SC-ARNES-ENTRAR-SEM-GUARDA` | 17925 | BAIXA | sim | P-SC-ARNES-ENTRAR-SEM-GUARDA (2026-11-22) — arnês substitui o Entrar por leitura adminis |
-| `P-SC-GR6-503-INTERMITENTE` | 17930 | BAIXA | sim | P-SC-GR6-503-INTERMITENTE (2026-11-22) — GR6 teve 503 isolado — BAIXA |
-| `P-REG-CONFIRMA-CRIACAO-SEM-COUNT` | 17935 | BAIXA | sim | P-REG-CONFIRMA-CRIACAO-SEM-COUNT (2026-11-22) — confirmação não verifica linha alterada  |
-| `P-SC-VINCULO-SEM-ORIGEM` | 17940 | BAIXA | sim | P-SC-VINCULO-SEM-ORIGEM (2026-11-22) — concessão sem origem falha fechado — BAIXA |
-| `P-6970-DETALHE-SEM-PATIO` | 17954 | BAIXA | sim | P-6970-DETALHE-SEM-PATIO (2026-11-22) — detalhe da OS não mostra o pátio — BAIXA |
-| `P-6970-INICIO-SO-PATIO-ATIVO` | 17959 | BAIXA | sim | P-6970-INICIO-SO-PATIO-ATIVO (2026-11-22) — Início não mostra outros pátios — BAIXA |
-| `P-RELEASE-GATE-CONC-FORA-DO-GUARD` | 18010 | BAIXA | sim | P-RELEASE-GATE-CONC-FORA-DO-GUARD (2026-11-22) — teste concorrente fora da lista com gua |
-| `P-S2P-REDEFINICAO-TRES-VIAS` | 18033 | BAIXA | sim | P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e  |
-| `P-KPI-EXTRATOR-ID-COM-TEXTO` | 18068 | BAIXA | sim | P-KPI-EXTRATOR-ID-COM-TEXTO (2026-11-23) — extrator perde ID acompanhado de texto — BAIX |
-| `P-AWS-ROTEIRO-NAT-SWAP` | 18074 | BAIXA | sim | P-AWS-ROTEIRO-NAT-SWAP (2026-11-23) — user-data da NAT instala antes da swap — BAIXA |
-| `P-PATIO-ROTULO-FALLBACK-TETO` | 18087 | BAIXA | sim | P-PATIO-ROTULO-FALLBACK-TETO (2026-11-23) — fallback local ainda diz "6 meses" e "Ilimit |
-| `P-TETO-RENOMEAR-IDENTIFICADOR` | 18105 | BAIXA | sim | P-TETO-RENOMEAR-IDENTIFICADOR (2026-11-23) — renomear o identificador técnico do teto —  |
-| `P-COMISSAO-A1-LITERAL` | 18178 | BAIXA | sim | P-COMISSAO-A1-LITERAL (2026-11-24) — meta do A1 da comissão não reproduz o número real — |
-| `P-COMISSAO-M-2N` | 18184 | BAIXA | sim | P-COMISSAO-M-2N (2026-11-24) — meta `M >= 2N` da comissão não alcançada literalmente — B |
-| `P-COMISSAO-M18-ANCORA` | 18190 | BAIXA | sim | P-COMISSAO-M18-ANCORA (2026-11-24) — âncora da M18 da comissão com múltiplas ocorrências |
-| `P-DNS-TTL-300` | 18208 | BAIXA | sim | P-DNS-TTL-300 (2026-11-24) — os 17 registros copiados ficaram com TTL de 5 min — BAIXA |
-| `P-UI-BUTTON-FOCO-VISIVEL` | 18238 | BAIXA | sim | P-UI-BUTTON-FOCO-VISIVEL (2026-11-24) — `.ui-button` sem foco visível próprio — BAIXA |
-| `P-MARCA-LOGO-SEM-SITE` | 18270 | BAIXA | sim | P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do si |
-| `P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS` | 18282 | BAIXA | sim | P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS (2026-11-27) — em modo memória, a porta de módulo |
-| `P-PLANOS-MODULOS-PORTA-COM-ASSINATURA` | 18289 | BAIXA | sim | P-PLANOS-MODULOS-PORTA-COM-ASSINATURA (2026-11-27) — com assinatura em vigor, só o plano |
-| `P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05` | 18296 | BAIXA | sim | P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05 (2026-11-27) — 6 rotas do console de organiza |
-| `P-EVIDENCIA-METADADO-EM-MEMORIA` | 18311 | — | sim | P-EVIDENCIA-METADADO-EM-MEMORIA (2026-11-27) — o metadado aceito da evidência e a trilha |
-| `P-STORAGE-FORCE-PATH-STYLE-COERCE` | 18319 | BAIXA | sim | P-STORAGE-FORCE-PATH-STYLE-COERCE (2026-11-27) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
-| `P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA` | 18325 | BAIXA | sim | P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA (2026-11-27) — o painel de KPI cita o provedor da ev |
-| `P-EVIDENCIA-TRILHA-SANEADOR-CHAVES` | 18331 | BAIXA | sim | P-EVIDENCIA-TRILHA-SANEADOR-CHAVES (2026-11-27) — o saneador da trilha da evidência não  |
-| `P-PLAT-BUSCA-SEM-FUNCAO` | 18350 | BAIXA | sim | P-PLAT-BUSCA-SEM-FUNCAO (2026-11-27) — a busca do console da plataforma é só um desenho, |
-| `P-MARCA-SIDEBAR-BRANCA-PRETA` | 18356 | BAIXA | sim | P-MARCA-SIDEBAR-BRANCA-PRETA (2026-11-27) — a sidebar só tem desenho aprovado em grafite |
-| `P-DOCS-NOME-CUSTO-DA-NUVEM` | 18362 | BAIXA | sim | P-DOCS-NOME-CUSTO-DA-NUVEM (2026-11-27) — documentos vigentes ainda dizem "Cloud Billing |
-| `P-ITEM27-TRILHA-ORG-SEM-ATOR` | 18376 | BAIXA | sim | P-ITEM27-TRILHA-ORG-SEM-ATOR (2026-11-27) — a trilha `tenant.modules_changed` da organiz |
-| `P-PLANO-SAN3-TABELA-41-SEM-MARCA` | 18384 | BAIXA | sim | P-PLANO-SAN3-TABELA-41-SEM-MARCA (2026-11-28) — a tabela do §4.1 do portão não sustenta, |
-| `P-MARCA-MENU-APARENCIA-A11Y` | 18412 | BAIXA | sim | P-MARCA-MENU-APARENCIA-A11Y (2026-11-28) — a estrutura ARIA do painel de cores do sistem |
-| `P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE` | 18434 | BAIXA | sim | P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE (2026-11-28) — o filtro de período do rateio do cu |
-| `P-WO-LEITURA-DB-COMENTARIOS-DEFASADOS` | 18443 | BAIXA | sim | P-WO-LEITURA-DB-COMENTARIOS-DEFASADOS (2026-11-28) — os comentários do teste de leitura  |
-| `P-SAN305-T11G-SEM-COMPLETUDE` | 18459 | BAIXA | sim | P-SAN305-T11G-SEM-COMPLETUDE (2026-11-28) — o censo T11g confere que a tabela declarada  |
-| `P-KPI-VELOCIDADE-ROTULOS-SOBREPOSTOS` | 18467 | BAIXA | sim | P-KPI-VELOCIDADE-ROTULOS-SOBREPOSTOS (2026-11-28) — 11 dos 12 rótulos de data do gráfico |
-| `P-KPI-PAINEL-ICONE-404` | 18475 | BAIXA | sim | P-KPI-PAINEL-ICONE-404 (2026-11-28) — o painel de KPI não declara ícone: toda abertura e |
-| `P-KPI-CARTOES-LINGUAGEM-DE-DONO` | 18483 | BAIXA | sim | P-KPI-CARTOES-LINGUAGEM-DE-DONO (2026-11-28) — 4 BAIXO de linguagem e de forma nos cartõ |
-| `P-PLAT-ORG-MODULOS-TELA-RESTOS` | 18495 | BAIXA | sim | P-PLAT-ORG-MODULOS-TELA-RESTOS (2026-11-27) — o que a cláusula de módulos da organização |
+| `P-SAN3-10B-BATERIA-B8-FORMATOS` | 13115 | BAIXA | sim | P-SAN3-10B-BATERIA-B8-FORMATOS (2026-11-04) — a bateria B8 não pega três formatos de lin |
+| `P-SAN3-10B-OP8-PASSO6` | 13121 | BAIXA | sim | P-SAN3-10B-OP8-PASSO6 (2026-11-04) — o passo 6 da Op-8 não foi medido — BAIXA |
+| `P-KPI-PAINEL-EXPLICA-DENOMINADOR` | 13127 | BAIXA | sim | P-KPI-PAINEL-EXPLICA-DENOMINADOR (2026-11-04) — o painel não explica que a vendável caiu |
+| `P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO` | 13140 | BAIXA | sim | P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO (2026-11-05) — escrita de `tenants.modules` e |
+| `P-SAN3-05-ETIQUETA-UNICA-POR-ROTA` | 13146 | BAIXA | sim | P-SAN3-05-ETIQUETA-UNICA-POR-ROTA (2026-11-05) — a taxonomia de etiquetas aceita uma só  |
+| `P-ASS03-CANARIO-LIMIT1` | 13159 | BAIXA | sim | P-ASS03-CANARIO-LIMIT1 (2026-11-06) — o canário `LIMIT 1` só pega bypass por acaso — BAI |
+| `P-ASS03-METODO-RATEIO-FALLBACK` | 13171 | BAIXA | sim | P-ASS03-METODO-RATEIO-FALLBACK (2026-11-06) — sem medição, o rateio do banco grava `stor |
+| `P-ASS03-PD-SWEEP-CATALOGO` | 13178 | BAIXA | sim | P-ASS03-PD-SWEEP-CATALOGO (2026-11-06) — `(PD) sweep` vermelho só no head, por concorrên |
+| `P-ASS-SPLIT-MARGEM-CONTRATO` | 13190 | — | sim | P-ASS-SPLIT-MARGEM-CONTRATO (2026-11-06) — redação do contrato e nota sobre a tarifa do  |
+| `P-ASS04-CREDITO-EXCEDENTE` | 13196 | BAIXA | sim | P-ASS04-CREDITO-EXCEDENTE (2026-11-06) — crédito aplicado maior que o total do mês fica  |
+| `P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA` | 13202 | BAIXA | sim | P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA (2026-11-06) — refechamento com a assinatura mudad |
+| `P-ASS04-REFUND-CREDITO-OUTBOX` | 13208 | BAIXA | sim | P-ASS04-REFUND-CREDITO-OUTBOX (2026-11-06) — o reembolso de crédito ainda não existe: só |
+| `P-ASS06-COBRANCA-CRIADA-SEM-ID` | 13232 | BAIXA | sim | P-ASS06-COBRANCA-CRIADA-SEM-ID (2026-11-08) — no PIX e no boleto, a cobrança pode ficar  |
+| `P-CI-FLUTTER-LIBSQLITE3-FLAKY` | 13238 | BAIXA | sim | P-CI-FLUTTER-LIBSQLITE3-FLAKY (2026-11-09) — o job `flutter` do CI falha intermitente po |
+| `P-CI-FINANCIAL-TITLE-CAS-FLAKY` | 13244 | BAIXA | sim | P-CI-FINANCIAL-TITLE-CAS-FLAKY (2026-11-09) — o `financial-title-status-cas-db` (barreir |
+| `P-ASS07-FOCUS-GET-MUNICIPAL` | 13257 | BAIXA | sim | P-ASS07-FOCUS-GET-MUNICIPAL (2026-11-09) — `getInvoice`/`cancel` exercidos só na rota Na |
+| `P-ASS07-ALREADY-ISSUED-REGEX` | 13263 | BAIXA | sim | P-ASS07-ALREADY-ISSUED-REGEX (2026-11-09) — `already_issued` depende de regex sobre a me |
+| `P-ASS07-CERT-REDACAO` | 13269 | BAIXA | sim | P-ASS07-CERT-REDACAO (2026-11-09) — `sanitizedErrorMessage` redige o certificado como JS |
+| `P-REFINO-INVENTARIO-SEM-GUARDA` | 13275 | BAIXA | sim | P-REFINO-INVENTARIO-SEM-GUARDA (2026-11-09) — o inventário de fluxos gerado não tem guar |
+| `P-DESPESA-ITEM-CORRIDA-SUBMIT` | 13308 | — | sim | P-DESPESA-ITEM-CORRIDA-SUBMIT (2026-11-10) — um item pode entrar num relatório recém-sub |
+| `P-MOBILE-RECIBO-409-POR-MOTIVO` | 13316 | BAIXA | sim | P-MOBILE-RECIBO-409-POR-MOTIVO (2026-11-10) — o app trata todo 409 do comprovante como ` |
+| `P-PROCESSO-SONDAS-ANTES-DO-WORKTREE` | 13336 | BAIXA | sim | P-PROCESSO-SONDAS-ANTES-DO-WORKTREE (2026-11-10) — o mandato de cadeira não manda guarda |
+| `P-ASS08-INDICE-UMA-VIVA` | 13426 | BAIXA | sim | P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demo |
+| `P-J522-C3B-01-DOIS-HUNKS` | 13462 | BAIXA | sim | P-J522-C3B-01-DOIS-HUNKS (2026-11-10) — `C3B-01`: dois hunks onde o §5 do plano do segun |
+| `P-LOGIN-WEB-TERMO-TENANT` | 13484 | BAIXA | sim | P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organizaç |
+| `P-USERS-SEG-ORDEM-DE-IMPLANTACAO` | 13533 | BAIXA | sim | P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem  |
+| `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE` | 13539 | BAIXA | sim | P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE (2026-11-11) — o approve do orçamento só lê camel |
+| `P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA` | 13572 | BAIXA | sim | P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA (2026-11-11) — o `platform_admin` cria e aprova |
+| `P-CHECKIN-NUMERO-DE-SERIE` | 13584 | BAIXA | sim | P-CHECKIN-NUMERO-DE-SERIE (2026-11-11) — OS de prestador sem referência de check-in (o a |
+| `P-CHECKIN-PLACA-ESTRANGEIRA` | 13602 | BAIXA | sim | P-CHECKIN-PLACA-ESTRANGEIRA (2026-11-11) — placa estrangeira não serve de referência do  |
+| `P-REV533-01-DIALOGO-APROVAR-LIGACAO-SEM-TESTE` | 13692 | BAIXA | sim | P-REV533-01-DIALOGO-APROVAR-LIGACAO-SEM-TESTE (2026-11-11) — os desfechos 403, 409 e 404 |
+| `P-REV533-02-DIARIO-E-INDICE-FORA-DO-PERMITIDO` | 13699 | BAIXA | sim | P-REV533-02-DIARIO-E-INDICE-FORA-DO-PERMITIDO (2026-11-11) — o diário do dev e o índice  |
+| `P-PORT533-04-DONOS-DAS-P-SAN3-08` | 13706 | BAIXA | sim | P-PORT533-04-DONOS-DAS-P-SAN3-08 (2026-11-11) — 5 das 6 pendências do #533 têm dono gené |
+| `P-V533-01-409-TITULO-ACAO-CONCLUIDA` | 13712 | BAIXA | sim | P-V533-01-409-TITULO-ACAO-CONCLUIDA (2026-11-11) — o 409 "já aprovado" aparece com o tít |
+| `P-V533-02-AVISO-FORA-DA-VISTA` | 13719 | BAIXA | sim | P-V533-02-AVISO-FORA-DA-VISTA (2026-11-11) — a mensagem do desfecho do "Aprovar orçament |
+| `P-V533-P3-MODAL-TECLADO` | 13733 | BAIXA | sim | P-V533-P3-MODAL-TECLADO (2026-11-11) — o `Modal` da biblioteca tem quatro faltas de tecl |
+| `P-V533-P4-NOVO-ORCAMENTO-ERRO-E-CORTE` | 13740 | BAIXA | sim | P-V533-P4-NOVO-ORCAMENTO-ERRO-E-CORTE (2026-11-11) — o "Novo orçamento" mostra o erro no |
+| `P-V533-P5-ORCAMENTOS-RESIDUO-E-UUID` | 13747 | BAIXA | sim | P-V533-P5-ORCAMENTOS-RESIDUO-E-UUID (2026-11-11) — resíduo de teste e fragmento de UUID  |
+| `P-V533-P6-QUOTETAB-TERMO-BACKEND` | 13754 | BAIXA | sim | P-V533-P6-QUOTETAB-TERMO-BACKEND (2026-11-11) — a aba Orçamento da OS diz "O total vem d |
+| `P-CONF527B-N01-DIARIOS-DE-TELA-FORA-DO-PERMITIDO` | 13760 | BAIXA | sim | P-CONF527B-N01-DIARIOS-DE-TELA-FORA-DO-PERMITIDO (2026-11-11) — os diários dos devs de t |
+| `P-CONF527B-N02-USUARIOS-DB-403-SOB-PRISMA` | 13767 | BAIXA | sim | P-CONF527B-N02-USUARIOS-DB-403-SOB-PRISMA (2026-11-11) — `users-acesso-seg-usuarios-db`  |
+| `P-C527T-01-401-MOTIVO-DESCONHECIDO-WEB-X-APP` | 13774 | BAIXA | sim | P-C527T-01-401-MOTIVO-DESCONHECIDO-WEB-X-APP (2026-11-11) — web e app tratam de forma di |
+| `P-USERS-SEG-TELA-EMAIL-NEGRITO` | 13781 | BAIXA | sim | P-USERS-SEG-TELA-EMAIL-NEGRITO (2026-11-11) — na troca de senha, o e-mail da sessão sai  |
+| `P-P527-ARNES-PAPEL-GLOBAL` | 13787 | BAIXA | sim | P-P527-ARNES-PAPEL-GLOBAL (2026-11-11) — os testes `-db` do #527 criam e apagam papéis g |
+| `P-SAN3-07-SENTINELA-SEM-GUARDA` | 13828 | BAIXA | sim | P-SAN3-07-SENTINELA-SEM-GUARDA (2026-11-11) — o P3 do `B-SAN3-07` passa em vazio se o se |
+| `P-J535-C3-02-ITEM47-STATUS-X-RESIDUO` | 13836 | BAIXA | sim | P-J535-C3-02-ITEM47-STATUS-X-RESIDUO (2026-11-11) — a pendência do item 47 está FECHADA  |
+| `P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS` | 13843 | BAIXA | sim | P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS (2026-11-11) — a lista fechada do `san3-05` não decl |
+| `P-ALLOC-MANUAL-INICIO-INCLUSIVO` | 13851 | BAIXA | sim | P-ALLOC-MANUAL-INICIO-INCLUSIVO (2026-11-11) — no rateio manual, o lado do início contin |
+| `P-AWS-CUR-DUBLE-SOBREPOSICAO` | 13859 | BAIXA | sim | P-AWS-CUR-DUBLE-SOBREPOSICAO (2026-11-11) — o dublê em memória do resumo de custo filtra |
+| `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA` | 13900 | BAIXA | sim | P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA (2026-11-11) — o técnico ainda apaga ou  |
+| `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO` | 13907 | BAIXA | sim | P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO (2026-11-11) — a marca "registrada pela base" vive n |
+| `P-SAN3-07-SEED-USERS-LEGADO` | 13936 | BAIXA | sim | P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis lega |
+| `P-SAN3-07-SEED-FORA-DO-TYPECHECK` | 13943 | BAIXA | sim | P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed |
+| `P-ASS09A-RUN-PRESA-EM-PROCESSING` | 13958 | BAIXA | sim | P-ASS09A-RUN-PRESA-EM-PROCESSING (2026-11-11) — a run automática reivindicada fica em `p |
+| `P-ASS09A-BORDA-MICROSSEGUNDO` | 13974 | BAIXA | sim | P-ASS09A-BORDA-MICROSSEGUNDO (2026-11-11) — a base de ações da janela [início, fim − 1 m |
+| `P-ASS09A-REDE-TRANSFERENCIA` | 13982 | BAIXA | sim | P-ASS09A-REDE-TRANSFERENCIA (2026-11-11) — "rede" na P8 alcança AWSDataTransfer e Amazon |
+| `P-ASS09A-EMPATE-MESMO-MS` | 13990 | BAIXA | sim | P-ASS09A-EMPATE-MESMO-MS (2026-11-12) — duas CUR do mesmo mês concluídas no mesmo miliss |
+| `P-ALLOC-RUN-STARTED-AT-NULO` | 13998 | BAIXA | sim | P-ALLOC-RUN-STARTED-AT-NULO (2026-11-11) — no Postgres, a run de rateio concluída fica c |
+| `P-SESSOES-TEXTO-15MIN` | 14013 | BAIXA | sim | P-SESSOES-TEXTO-15MIN (2026-11-11) — a tela de Sessões ainda diz "em até ~15 minutos" —  |
+| `P-SSE-SEGUE-APOS-VENCER-TOKEN` | 14019 | BAIXA | sim | P-SSE-SEGUE-APOS-VENCER-TOKEN (2026-11-11) — o stream do mapa ao vivo não fecha quando o |
+| `P-SID-OBRIGATORIO` | 14025 | BAIXA | sim | P-SID-OBRIGATORIO (2026-11-11) — o token sem `sid` ainda é aceito pela via de status — B |
+| `P-CI-LISTA-CURADA-USERS-SEG-DB` | 14032 | BAIXA | sim | P-CI-LISTA-CURADA-USERS-SEG-DB (2026-11-11) — as suítes `-db` de usuários e da sessão vi |
+| `P-O6R-B12-PORTAL-MEMORIA` | 14080 | BAIXA | sim | P-O6R-B12-PORTAL-MEMORIA (2026-11-11) — processo legado em memória conserva fallback viv |
+| `P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA` | 14091 | BAIXA | sim | P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA (2026-11-11) — o drill do B-O6R-12 deixa bases e  |
+| `P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT` | 14114 | BAIXA | sim | P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT (2026-11-11) — a A7 (regressão sem barreira) só produz  |
+| `P-SAN3-23-503-FORA-DO-CONTRATO` | 14125 | BAIXA | sim | P-SAN3-23-503-FORA-DO-CONTRATO (2026-11-11) — os 2 códigos 503 novos do B-SAN3-23 não es |
+| `P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO` | 14186 | BAIXA | sim | P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO (2026-11-11) — a coleta aberta sem sinal numa OS s |
+| `P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES` | 14200 | BAIXA | sim | P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES (2026-11-11) — a comparação coleta × entrega não |
+| `P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA` | 14206 | BAIXA | sim | P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA (2026-11-11) — a vistoria de entrega de OS cancel |
+| `P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR` | 14212 | BAIXA | sim | P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR (2026-11-11) — a tela de conclusão do prestador recu |
+| `P-SAN3-15-QTD-FRACIONADA` | 14218 | BAIXA | sim | P-SAN3-15-QTD-FRACIONADA (2026-11-11) — a seleção de peça no app é em inteiros: "2,5 m"  |
+| `P-SAN3-15-CUSTODIA-VIATURA` | 14225 | BAIXA | sim | P-SAN3-15-CUSTODIA-VIATURA (2026-11-11) — a custódia de viatura não se resolve pelo ator |
+| `P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL` | 14248 | BAIXA | sim | P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL (2026-11-11) — o estoque do técnico percorre a fati |
+| `P-APP-FORMAT-BSAN313` | 14254 | BAIXA | sim | P-APP-FORMAT-BSAN313 (2026-11-12) — teste do B-SAN3-13 diverge do `dart format` na main  |
+| `P-SAN3-18-PORTAL-SEM-GATE` | 14278 | BAIXA | sim | P-SAN3-18-PORTAL-SEM-GATE (2026-11-11) — os portais do proprietário e da autoridade fica |
+| `P-SAN3-18-TRACCAR-SEM-GATE` | 14284 | BAIXA | sim | P-SAN3-18-TRACCAR-SEM-GATE (2026-11-11) — a ingestão do Traccar fica fora do gate de mód |
+| `P-SAN3-18-JOBS-SEM-GATE` | 14290 | BAIXA | sim | P-SAN3-18-JOBS-SEM-GATE (2026-11-11) — os jobs de fundo não olham os módulos da organiza |
+| `P-SAN3-18-LOTE-EVIDENCIA-QUALQUER-DE` | 14302 | BAIXA | sim | P-SAN3-18-LOTE-EVIDENCIA-QUALQUER-DE (2026-11-11) — o lote de evidências aceita ação de  |
+| `P-SAN3-18-BOTAO-ALERTAS-FROTA` | 14308 | BAIXA | sim | P-SAN3-18-BOTAO-ALERTAS-FROTA (2026-11-11) — a Central de Notificações chama o disparo d |
+| `P-SAN3-18-ANEXO-GENERICO-SEM-MODULO` | 14320 | BAIXA | sim | P-SAN3-18-ANEXO-GENERICO-SEM-MODULO (2026-11-11) — `/attachments` é núcleo e serve entid |
+| `P-SAN3-18-DB-FORA-DA-LISTA-CURADA` | 14347 | BAIXA | sim | P-SAN3-18-DB-FORA-DA-LISTA-CURADA (2026-11-11) — a suíte `san3-18-provision-modules-db`  |
+| `P-MOBILE-APPROVAL-REQUEST-REST-404` | 14379 | BAIXA | sim | P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app po |
+| `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` | 14513 | BAIXA | sim | P-MOBILE-OS-UNICA-SEM-ORGANIZACAO (2026-11-11) — os 3 métodos de OS única do app devolve |
+| `P-MOBILE-REJECTED-DOIS-SENTIDOS` | 14520 | BAIXA | sim | P-MOBILE-REJECTED-DOIS-SENTIDOS (2026-11-11) — `rejected` quer dizer "aprovação negada"  |
+| `P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS` | 14527 | BAIXA | sim | P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS (2026-11-11) — o app não lê viatura/equipe que o back |
+| `P-AMBIENTE-DART-LOCAL-DIVERGE` | 14542 | BAIXA | sim | P-AMBIENTE-DART-LOCAL-DIVERGE (2026-11-11) — `dart format` local diverge só no `bsan313` |
+| `P-B-O6R-09-ESCRITORES-FORA-DE-SRC` | 14562 | BAIXA | sim | P-B-O6R-09-ESCRITORES-FORA-DE-SRC (2026-11-11) — escritores de despacho fora de `src/` g |
+| `P-B-O6R-09-NEXTCODE-CORRIDA` | 14574 | BAIXA | sim | P-B-O6R-09-NEXTCODE-CORRIDA (2026-11-11) — duas criações simultâneas na mesma organizaçã |
+| `P-B-O6R-09-STATUS-APROVA-SEM-OS` | 14580 | BAIXA | sim | P-B-O6R-09-STATUS-APROVA-SEM-OS (2026-11-11) — o orçamento pela rota de status — BAIXA ( |
+| `P-B-O6R-09-PAINEL-STATUS-SEM-ERRO` | 14586 | BAIXA | sim | P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra er |
+| `P-B-O6R-09-WEB-LE-WORKORDERID-DO-409` | 14592 | BAIXA | sim | P-B-O6R-09-WEB-LE-WORKORDERID-DO-409 (2026-11-11) — a web não lê o `details.workOrderId` |
+| `P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA` | 14611 | BAIXA | sim | P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA (2026-11-11) — a reatribuição à mesma pessoa |
+| `P-PG-BARRIER-EXIGE-BLOQUEADOR` | 14650 | BAIXA | sim | P-PG-BARRIER-EXIGE-BLOQUEADOR (2026-11-11) — a barreira de `tests/helpers/pg-barrier.ts` |
+| `P-B-O6R-09-TEARDOWN-5S-SOB-CARGA` | 14656 | BAIXA | sim | P-B-O6R-09-TEARDOWN-5S-SOB-CARGA (2026-11-11) — a transação de limpeza das suítes `-db`  |
+| `P-USERS-SEG-DEMO-TRACCAR-SEM-PROVA` | 14662 | BAIXA | sim | P-USERS-SEG-DEMO-TRACCAR-SEM-PROVA (2026-11-12) — o demo do Traccar pede token por login |
+| `P-WEB-MAPA-STREAM-RECONECTA-TOKEN-MORTO` | 14668 | BAIXA | sim | P-WEB-MAPA-STREAM-RECONECTA-TOKEN-MORTO (2026-11-12) — com a sessão encerrada, o mapa we |
+| `P-DB-FUSO-TESTES-DIRETOS` | 14684 | BAIXA | sim | P-DB-FUSO-TESTES-DIRETOS (2026-11-13) — os 156 arquivos de teste com `new PrismaPg(` dir |
+| `P-DB-FUSO-SUITES` | 14691 | BAIXA | sim | P-DB-FUSO-SUITES (2026-11-13) — linha `SUITES=` no job `backend-postgres` para o teste ` |
+| `P-DB-FUSO-SCRIPTS-SEM-TRAVA` | 14703 | BAIXA | sim | P-DB-FUSO-SCRIPTS-SEM-TRAVA (2026-11-13) — seeds e scripts de operação dependem só da fá |
+| `P-554-TRES-DB-FORA-DA-LISTA-CURADA` | 14724 | BAIXA | sim | P-554-TRES-DB-FORA-DA-LISTA-CURADA (2026-11-13) — os 3 testes migrados na E3.1 rodam só  |
+| `P-DRILL-F2-SEM-TESTE-PERMANENTE` | 14756 | BAIXA | sim | P-DRILL-F2-SEM-TESTE-PERMANENTE (2026-11-14) — a F2 do drill (cliente fechado quando a p |
+| `P-REG-CONF542-01` | 14771 | BAIXA | sim | P-REG-CONF542-01 (2026-11-12) — o erro do parser de CUR diz "data row N" (a linha de dad |
+| `P-534-SONDAS-C1-FORA-DO-REPO` | 14779 | BAIXA | sim | P-534-SONDAS-C1-FORA-DO-REPO (2026-11-12) — as sondas da C1 do #534 ficaram fora do repo |
+| `P-534-JUNCAO-SO-EM-MEMORIA` | 14786 | BAIXA | sim | P-534-JUNCAO-SO-EM-MEMORIA (2026-11-12) — T-JUNCAO, -b e -c rodam só em memória — BAIXA |
+| `P-534-ARNES-AS-NEVER` | 14793 | BAIXA | sim | P-534-ARNES-AS-NEVER (2026-11-12) — `as never` no arnês do `b-san3-23-cas-retentativa` — |
+| `P-B-O6R-09-ARNES-XX000-GRANT` | 14800 | BAIXA | sim | P-B-O6R-09-ARNES-XX000-GRANT (2026-11-12) — 1 rodada em 44 deu XX000 "tuple concurrently |
+| `P-MOBILE-BOTAO-DESABILITADO-PARECE-ATIVO` | 14806 | BAIXA | sim | P-MOBILE-BOTAO-DESABILITADO-PARECE-ATIVO (2026-11-12) — botão desabilitado parece ativo  |
+| `P-MOBILE-T9-PRESENCA-DE-TEXTO` | 14813 | BAIXA | sim | P-MOBILE-T9-PRESENCA-DE-TEXTO (2026-11-12) — o T9 mede presença de texto, não o que a fr |
+| `P-MOBILE-HOME-DEMO-EXEMPLO` | 14820 | BAIXA | sim | P-MOBILE-HOME-DEMO-EXEMPLO (2026-11-12) — "Exemplo" na home de demonstração do app — BAI |
+| `P-MOBILE-IDENTIFICADOR-CRU-NA-TELA` | 14835 | BAIXA | sim | P-MOBILE-IDENTIFICADOR-CRU-NA-TELA (2026-11-12) — duas telas exibem identificador intern |
+| `P-J539-C2-01` | 14869 | BAIXA | sim | P-J539-C2-01 (2026-11-12) — a premissa "a abertura NÃO espera o PATCH" é falsa quando o  |
+| `P-J539-C2-03` | 14876 | BAIXA | sim | P-J539-C2-03 (2026-11-12) — a allowlist afirma "dentro de `withRoleCatalogLock`" e nenhu |
+| `P-J539-CONF539-OBS-1` | 14883 | BAIXA | sim | P-J539-CONF539-OBS-1 (2026-11-12) — os testes versionados C2-02/C3-02 e C3-01 rodam como |
+| `P-CI-537-COMENTARIO-7-SUITES` | 14890 | BAIXA | sim | P-CI-537-COMENTARIO-7-SUITES (2026-11-12) — o comentário do `ci.yml` diz "7 suítes / 45  |
+| `P-FERR-INITDB-WINDOWS-FUSO-E-ENCODING` | 14897 | BAIXA | sim | P-FERR-INITDB-WINDOWS-FUSO-E-ENCODING (2026-11-12) — cluster criado com `initdb` no Wind |
+| `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` | 14904 | BAIXA | sim | P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a baseline da suíte inteira não fecha |
+| `P-C4-02-MENU-TECNICO-403` | 14911 | BAIXA | sim | P-C4-02-MENU-TECNICO-403 (2026-11-12) — o menu do técnico mostra Seguros e Estoque, que  |
+| `P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA` | 14918 | BAIXA | sim | P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA (2026-11-12) — `logistics`, `users` e `audit` prov |
+| `P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE` | 14949 | BAIXA | sim | P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE (2026-11-13) — a matriz dá `read` ao `man |
+| `P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO` | 14965 | BAIXA | sim | P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO (2026-11-13) — adição de material que já f |
+| `P-551-INMEMORY-TOCTOU-EXIT-SOURCE` | 14988 | BAIXA | sim | P-551-INMEMORY-TOCTOU-EXIT-SOURCE (2026-11-13) — em memória, dois lotes concorrentes com |
+| `P-557-SALTOS-ACIMA-DO-REAL` | 15004 | BAIXA | sim | P-557-SALTOS-ACIMA-DO-REAL (2026-11-13) — saltos confiáveis configurados acima da borda  |
+| `P-SAN3-24-GUARDA-ESCOPO-INERTE` | 15031 | BAIXA | sim | P-SAN3-24-GUARDA-ESCOPO-INERTE (2026-11-13) — a guarda de escopo do `B-SAN3-24` não mede |
+| `P-SAN3-24-BLOCOS-CONTESTACAO-E-PENDENCIA` | 15040 | BAIXA | sim | P-SAN3-24-BLOCOS-CONTESTACAO-E-PENDENCIA (2026-11-13) — o Fechamento não tem os blocos " |
+| `P-547-BANNER-INFO-GLOBAL` | 15048 | BAIXA | sim | P-547-BANNER-INFO-GLOBAL (2026-11-13) — o banner informativo sai sem estilo nas telas de |
+| `P-547-MES-ANTIGO-NUNCA-FECHADO-SOME` | 15064 | BAIXA | sim | P-547-MES-ANTIGO-NUNCA-FECHADO-SOME (2026-11-13) — um mês antigo que terminou e nunca fo |
+| `P-551-CI-COMENTARIO-K8` | 15072 | BAIXA | sim | P-551-CI-COMENTARIO-K8 (2026-11-13) — o comentário da linha `SUITES=` do material no `ci |
+| `P-MAQ17-PREMISSA-RESPOSTAS-1A6` | 15080 | BAIXA | sim | P-MAQ17-PREMISSA-RESPOSTAS-1A6 (2026-11-13) — o quadro de notas da maquete 17 dava como  |
+| `P-SAN305-NOME-PAPEL-CONTEM-PORTA` | 15089 | BAIXA | sim | P-SAN305-NOME-PAPEL-CONTEM-PORTA (2026-11-13) — o nome aleatório do papel no T5/T6/T9 do |
+| `P-546-N1-AVISO-DURANTE-VERIFICANDO` | 15097 | BAIXA | sim | P-546-N1-AVISO-DURANTE-VERIFICANDO (2026-11-13) — durante "Verificando", o "Concluir OS" |
+| `P-546-ACENTOS-FORA-DO-AUTORIZADO` | 15106 | BAIXA | sim | P-546-ACENTOS-FORA-DO-AUTORIZADO (2026-11-13) — textos do app sem acento fora do que o c |
+| `P-546-N3-SUBTITULO-QUEBRA` | 15114 | BAIXA | sim | P-546-N3-SUBTITULO-QUEBRA (2026-11-13) — com nome longo de modelo, o subtítulo do cartão |
+| `P-APP-TEMA-SUCESSO-TERTIARY` | 15122 | BAIXA | sim | P-APP-TEMA-SUCESSO-TERTIARY (2026-11-13) — o passo concluído do app usa o roxo `tertiary |
+| `P-SAN3-15-CONCLUSAO-VEICULO-COM-CODIGO` | 15139 | BAIXA | sim | P-SAN3-15-CONCLUSAO-VEICULO-COM-CODIGO (2026-11-14) — a linha "Veiculo" da conclusão do  |
+| `P-SAN3-15-TIPO-NULO-EM-FALHA-DO-CATALOGO` | 15146 | BAIXA | sim | P-SAN3-15-TIPO-NULO-EM-FALHA-DO-CATALOGO (2026-11-14) — falha passageira do catálogo faz |
+| `P-MOBILE-UNIFICAR-CHIPS-DE-FILTRO` | 15153 | BAIXA | sim | P-MOBILE-UNIFICAR-CHIPS-DE-FILTRO (2026-11-14) — o app tem três formas de chip de filtro |
+| `P-SAN3-15-ACHADOS-DA-MAQUETE-FORA-DO-BLOCO` | 15160 | BAIXA | sim | P-SAN3-15-ACHADOS-DA-MAQUETE-FORA-DO-BLOCO (2026-11-14) — achados da maquete do prestado |
+| `P-SAN3-15-ASSINATURA-CLIENTE-PRESTADOR` | 15172 | BAIXA | sim | P-SAN3-15-ASSINATURA-CLIENTE-PRESTADOR (2026-11-14) — a tela "Resumo" e a assinatura do  |
+| `P-MOBILE-CLEARALL-SEM-FILHAS` | 15179 | BAIXA | sim | P-MOBILE-CLEARALL-SEM-FILHAS (2026-11-14) — `DriftWorkOrderLocalStore.clearAll` não apag |
+| `P-SAN3-25-BRACO-PROVISIONADO-FORA-DA-CI` | 15186 | BAIXA | sim | P-SAN3-25-BRACO-PROVISIONADO-FORA-DA-CI (2026-11-13) — o braço provisionado dos testes d |
+| `P-SAN3-25-ADAPTADOR-DE-TITULO-DUPLICADO` | 15193 | BAIXA | sim | P-SAN3-25-ADAPTADOR-DE-TITULO-DUPLICADO (2026-11-13) — a aba Financeiro da OS tem um ada |
+| `P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO` | 15200 | BAIXA | sim | P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO (2026-11-13) — o quadro "Títulos desta OS" faz uma l |
+| `P-SAN3-25-PREVIA-DO-COMPLEMENTAR` | 15207 | BAIXA | sim | P-SAN3-25-PREVIA-DO-COMPLEMENTAR (2026-11-13) — no faturamento complementar, o diálogo n |
+| `P-J559-C1-02-GUARDA-A3-FORMA` | 15222 | BAIXA | sim | P-J559-C1-02-GUARDA-A3-FORMA (2026-11-14) — a guarda A3 ("a tela não soma dinheiro") do  |
+| `P-J559-C1-04-ABORTO-DURO-PAPEL-COM-LOGIN` | 15238 | BAIXA | sim | P-J559-C1-04-ABORTO-DURO-PAPEL-COM-LOGIN (2026-11-14) — a morte do processo no meio do t |
+| `P-J559-C1-05-A5-LEITURA-DA-OS-COMO-SUPERUSUARIO` | 15245 | BAIXA | sim | P-J559-C1-05-A5-LEITURA-DA-OS-COMO-SUPERUSUARIO (2026-11-14) — no teste de concorrência  |
+| `P-J559-N-C2-2-R-ENUM-FRONTEIRA-DE-IMPORTES` | 15253 | BAIXA | sim | P-J559-N-C2-2-R-ENUM-FRONTEIRA-DE-IMPORTES (2026-11-14) — a varredura dos motivos do fat |
+| `P-J559-C3-A3-401-SEM-MENSAGEM` | 15268 | BAIXA | sim | P-J559-C3-A3-401-SEM-MENSAGEM (2026-11-14) — no 401 `session_inactive` com o refresh rec |
+| `P-J559-C3-A6-BOTOES-SEM-HOVER` | 15283 | BAIXA | sim | P-J559-C3-A6-BOTOES-SEM-HOVER (2026-11-14) — os botões da aba Financeiro da OS e do diál |
+| `P-J559-N2-TESTE-VIVO-FORMA-A-MAO` | 15297 | BAIXA | sim | P-J559-N2-TESTE-VIVO-FORMA-A-MAO (2026-11-14) — o teste vivo do faturamento escreve à mã |
+| `P-GMONT-FORMA-METODO-RECONHECE-FORMA` | 15351 | BAIXA | sim | P-GMONT-FORMA-METODO-RECONHECE-FORMA (2026-11-14) — na forma «método», a G-MONT reconhec |
+| `P-ASS09-INTEGRIDADE-POR-LINHA` | 15368 | BAIXA | sim | P-ASS09-INTEGRIDADE-POR-LINHA (2026-11-14) — um demonstrativo inconsistente derruba a vi |
+| `P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE` | 15383 | BAIXA | sim | P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE (2026-11-14) — a regra "a OS marcada como cance |
+| `P-INDICE-SEM-DONO-NUNCA-MARCA` | 15390 | BAIXA | sim | P-INDICE-SEM-DONO-NUNCA-MARCA (2026-11-14) — o gerador do índice de pendências conta com |
+| `P-MOBILE-MODULE-RESOLVER-MORTO` | 15433 | BAIXA | sim | P-MOBILE-MODULE-RESOLVER-MORTO (2026-11-14) — o `ModuleResolver` e o `perms` do mapa de  |
+| `P-J561-JWT-LOCAL-SEM-TENANT-ROLE` | 15468 | BAIXA | sim | P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda  |
+| `P-ASS12-UNIDADE-SO-NO-SNAPSHOT` | 15506 | BAIXA | sim | P-ASS12-UNIDADE-SO-NO-SNAPSHOT (2026-11-14) — a unidade e os veículos cobrados vivem só  |
+| `P-ASS12-AVISO-PRECO-COMBINADO` | 15512 | BAIXA | sim | P-ASS12-AVISO-PRECO-COMBINADO (2026-11-14) — publicar mensalidade fixa não avisa as orga |
+| `P-ASS12-MEMBRO-PLANO-SEM-PRECO` | 15518 | BAIXA | sim | P-ASS12-MEMBRO-PLANO-SEM-PRECO (2026-11-15) — no grupo aberto, o membro com plano sem pr |
+| `P-ASS12-VISAO-NULL-ADDON-SEM-PRECO` | 15525 | BAIXA | sim | P-ASS12-VISAO-NULL-ADDON-SEM-PRECO (2026-11-15) — a organização com o mês pulado por `ad |
+| `P-ASS12-PLANKIND-POR-EXCLUSAO` | 15532 | BAIXA | sim | P-ASS12-PLANKIND-POR-EXCLUSAO (2026-11-15) — o `resolveVersionPricing` trata "não é `bas |
+| `P-ASS08C-COBRANCA-DO-SALDO` | 15557 | BAIXA | sim | P-ASS08C-COBRANCA-DO-SALDO (2026-11-14) — a conta com pagamento parcial não tem cobrança |
+| `P-OS-MESMA-SITUACAO-GRAVA-EVENTO` | 15604 | BAIXA | sim | P-OS-MESMA-SITUACAO-GRAVA-EVENTO (2026-11-14) — a mudança para a mesma situação grava ev |
+| `P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET` | 15616 | BAIXA | sim | P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 |
+| `P-SEED-BASE-NOMES-REAIS` | 15673 | BAIXA | sim | P-SEED-BASE-NOMES-REAIS (2026-11-14) — os seeds de `prisma/` trazem marcas e órgãos reai |
+| `P-GATE-CHAVE-T4-VARREDURA-SEM-CANARIO` | 15710 | BAIXA | sim | P-GATE-CHAVE-T4-VARREDURA-SEM-CANARIO (2026-11-14) — a varredura de todo o `lib/` do app |
+| `P-15B-CONCLUSAO-TELA-ABERTA-NAO-RELE-SITUACAO` | 15738 | BAIXA | sim | P-15B-CONCLUSAO-TELA-ABERTA-NAO-RELE-SITUACAO (2026-11-14) — com a Conclusão aberta, a m |
+| `P-GATE-CHAVE-T2-MATRIZ-INSTAVEL` | 15745 | BAIXA | sim | P-GATE-CHAVE-T2-MATRIZ-INSTAVEL (2026-11-14) — o T2 do #561 (`tests/mobile-gate-chave-ma |
+| `P-WO-REPO-ERROS-EM-INGLES` | 15752 | BAIXA | sim | P-WO-REPO-ERROS-EM-INGLES (2026-11-14) — o repositório de OS do app lança `StateError` c |
+| `P-ROTEIRO-OP10-OS-PAUSADA` | 15774 | BAIXA | sim | P-ROTEIRO-OP10-OS-PAUSADA (2026-11-14) — o passo 4 do Op-10 não diz que a OS pausada pre |
+| `P-ROTEIRO-OP10-SESSAO-APOS-ATUALIZAR` | 15781 | BAIXA | sim | P-ROTEIRO-OP10-SESSAO-APOS-ATUALIZAR (2026-11-14) — o roteiro não diz que a sessão do ap |
+| `P-B10B-MIGRATE-P1001-NA-1A-SUBIDA` | 15813 | BAIXA | sim | P-B10B-MIGRATE-P1001-NA-1A-SUBIDA (2026-11-14) — na 1ª subida da pilha isolada, o health |
+| `P-B10B-VIGIA-720-AMOSTRAS` | 15821 | BAIXA | sim | P-B10B-VIGIA-720-AMOSTRAS (2026-11-14) — o vigia passivo do ensaio para em 720 amostras  |
+| `P-SECLOG-ACEITE-PORTA-OCUPADA-MENSAGEM` | 15828 | BAIXA | sim | P-SECLOG-ACEITE-PORTA-OCUPADA-MENSAGEM (2026-11-14) — o aceite de boot do SEC-LOG manda  |
+| `P-ASS08-JSDOC-LIST-CHARGES-VELHO` | 15844 | BAIXA | sim | P-ASS08-JSDOC-LIST-CHARGES-VELHO (2026-11-14) — o comentário de `listChargesByExternalRe |
+| `P-ASS08-CATALOGOS-MUTACAO-VELHOS` | 15860 | BAIXA | sim | P-ASS08-CATALOGOS-MUTACAO-VELHOS (2026-11-14) — dois catálogos de mutação de fora do rep |
+| `P-REG-ATA-J555-FORA-DO-REPO` | 15867 | BAIXA | sim | P-REG-ATA-J555-FORA-DO-REPO (2026-11-14) — a ata da J-555 (#555, `B-ASS-08c1a`) ainda nã |
+| `P-REG-ATA-J554-SEM-POS-JUNTA` | 15874 | BAIXA | sim | P-REG-ATA-J554-SEM-POS-JUNTA (2026-11-14) — a ata `J-554-b-db-fuso-utc.md` da `main` par |
+| `P-WEB-ABA-OS-UMA-PENDENCIA-SO` | 15881 | BAIXA | sim | P-WEB-ABA-OS-UMA-PENDENCIA-SO (2026-11-14) — a aba da OS na web mostra só 1 pendência de |
+| `P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO` | 15888 | BAIXA | sim | P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO (2026-11-14) — a 2ª janela residual do `B-S |
+| `P-SEED-C11-CONTRADIZ-C2B` | 15903 | BAIXA | sim | P-SEED-C11-CONTRADIZ-C2B (2026-11-14) — na letra do plano do seed, a regra de e-mail do  |
+| `P-E2E-OS-LISTA-VAZIA` | 15924 | BAIXA | sim | P-E2E-OS-LISTA-VAZIA (2026-11-15) — o estado "lista de OS vazia" saiu do e2e — BAIXA |
+| `P-E2E-DESPACHOS-SEM-TECNICO` | 15930 | BAIXA | sim | P-E2E-DESPACHOS-SEM-TECNICO (2026-11-15) — a semente não tem técnico de campo, então a l |
+| `P-E2E-RODA-COMO-SUPERUSUARIO` | 15938 | BAIXA | sim | P-E2E-RODA-COMO-SUPERUSUARIO (2026-11-15) — o e2e usa o superusuário do banco — BAIXA |
+| `P-E2E-SEM-ARTEFATO-DE-FALHA` | 15944 | BAIXA | sim | P-E2E-SEM-ARTEFATO-DE-FALHA (2026-11-15) — na falha, o job `e2e` imprime o retrato da pá |
+| `P-ASS10B-CANCELAR-AGENDADO` | 15963 | BAIXA | sim | P-ASS10B-CANCELAR-AGENDADO (2026-11-14) — o vínculo agendado não pode ser cancelado pela |
+| `P-ASS10B-VARIACAO-MES-ANTERIOR` | 15984 | BAIXA | sim | P-ASS10B-VARIACAO-MES-ANTERIOR (2026-11-14) — a tela não mostra a variação do custo sobr |
+| `P-ASS10B-CAMBIO-QUEM-CADASTROU` | 15991 | BAIXA | sim | P-ASS10B-CAMBIO-QUEM-CADASTROU (2026-11-14) — o histórico do dólar do mês não diz quem c |
+| `P-ASS10B-CREDITO-GLOBAL` | 15998 | BAIXA | sim | P-ASS10B-CREDITO-GLOBAL (2026-11-14) — o crédito aplicado do mês não vem no global da vi |
+| `P-ASS10B-LINHAS-POR-MOTIVO` | 16005 | BAIXA | sim | P-ASS10B-LINHAS-POR-MOTIVO (2026-11-14) — o não rateado por motivo não traz as linhas do |
+| `P-ASS10B-SERIE-SEIS-MESES` | 16012 | BAIXA | sim | P-ASS10B-SERIE-SEIS-MESES (2026-11-14) — a série de 6 meses custa 10 leituras em segundo |
+| `P-ASS10B-GRUPOS-AGENDADOS-NA-LISTA` | 16019 | BAIXA | sim | P-ASS10B-GRUPOS-AGENDADOS-NA-LISTA (2026-11-14) — a lista de grupos não traz os vínculos |
+| `P-ASS10B-MENU-SERVIDOR-GUARDA` | 16026 | BAIXA | sim | P-ASS10B-MENU-SERVIDOR-GUARDA (2026-11-14) — o item do menu do servidor pede menos que a |
+| `P-ASS10B-PONTE-UNICA` | 16033 | BAIXA | sim | P-ASS10B-PONTE-UNICA (2026-11-14) — duas pontes de degraus na biblioteca — BAIXA (opcion |
+| `P-ASS11-AVISO-COBRANCA-CHEIA` | 16065 | BAIXA | sim | P-ASS11-AVISO-COBRANCA-CHEIA (2026-11-15) — a tela "Minha assinatura" não mostra o aviso |
+| `P-RBAC-MATRIX-SEM-COBRANCA-DA-PLATAFORMA` | 16072 | BAIXA | sim | P-RBAC-MATRIX-SEM-COBRANCA-DA-PLATAFORMA (2026-11-15) — o `RBAC_MATRIX.md` não lista as  |
+| `P-17-CONSENT-SUBJECT-MISMATCH` | 16082 | BAIXA | sim | P-17-CONSENT-SUBJECT-MISMATCH (2026-11-14) — a decisão de consentimento não leva o usuár |
+| `P-17-CONSENT-SESSAO-NULA-MOSTRA-PERMITIR` | 16090 | BAIXA | sim | P-17-CONSENT-SESSAO-NULA-MOSTRA-PERMITIR (2026-11-14) — com a sessão nula (carregando ou |
+| `P-17-CONSENT-SEM-DONO-NAO-SEGURA-LOTE` | 16104 | BAIXA | sim | P-17-CONSENT-SEM-DONO-NAO-SEGURA-LOTE (2026-11-14) — sem dono resolvível, uma decisão pe |
+| `P-LOCALIZACAO-TEXTO-MODULO-DESLIGADO` | 16111 | BAIXA | sim | P-LOCALIZACAO-TEXTO-MODULO-DESLIGADO (2026-11-14) — o aviso "Acesso não permitido" fala  |
+| `P-LOCALIZACAO-PERFIL-DEMO` | 16155 | BAIXA | sim | P-LOCALIZACAO-PERFIL-DEMO (2026-11-14) — a demonstração precisa do cadastro de Profissio |
+| `P-TELEMETRIA-ATOR-SEM-UUID` | 16162 | BAIXA | sim | P-TELEMETRIA-ATOR-SEM-UUID (2026-11-14) — a telemetria devolve 400 de outro módulo para  |
+| `P-LOCALIZACAO-TEXTO-PARA-O-ADVOGADO` | 16181 | BAIXA | sim | P-LOCALIZACAO-TEXTO-PARA-O-ADVOGADO (2026-11-14) — o texto da tela de consentimento e a  |
+| `P-LOCALIZACAO-TITULO-PENDENTE-APOS-NAO` | 16188 | BAIXA | sim | P-LOCALIZACAO-TITULO-PENDENTE-APOS-NAO (2026-11-14) — "Consentimento pendente" aparece p |
+| `P-DESPACHO-SEM-LOCALIZACAO-NEUTRO` | 16194 | BAIXA | sim | P-DESPACHO-SEM-LOCALIZACAO-NEUTRO (2026-11-14) — o despacho na web deve mostrar "sem loc |
+| `P-MOBILE-LOCALIZACAO-ABA-INICIO-ACESA` | 16200 | BAIXA | sim | P-MOBILE-LOCALIZACAO-ABA-INICIO-ACESA (2026-11-14) — a tela de localização acende "Iníci |
+| `P-MOBILE-CONTRASTE-ABAIXO-DO-AA` | 16206 | BAIXA | sim | P-MOBILE-CONTRASTE-ABAIXO-DO-AA (2026-11-14) — 3 pontos do app com contraste abaixo do A |
+| `P-EVIDENCIA-EXIF-DAS-FOTOS` | 16212 | BAIXA | sim | P-EVIDENCIA-EXIF-DAS-FOTOS (2026-11-14) — a posição dentro do arquivo da foto (EXIF) não |
+| `P-LOCALIZACAO-LATEST-PAGINA-CURTA` | 16218 | BAIXA | sim | P-LOCALIZACAO-LATEST-PAGINA-CURTA (2026-11-14) — a página do mapa ao vivo pode vir menor |
+| `P-B-O6R-09-ARNES-DEADLOCK-67-INSTAVEL` | 16229 | BAIXA | sim | P-B-O6R-09-ARNES-DEADLOCK-67-INSTAVEL (2026-11-14) — o caso `[arnês · deadlock 40P01]` d |
+| `P-B-O6R-09-Q1-DROP-SEQUENCE-CONCORRENTE` | 16242 | BAIXA | sim | P-B-O6R-09-Q1-DROP-SEQUENCE-CONCORRENTE (2026-11-14) — a limpeza do `[Q1 · corrida · rol |
+| `P-566-CAMINHO-LOCAL-NO-DIARIO` | 16249 | BAIXA | sim | P-566-CAMINHO-LOCAL-NO-DIARIO (2026-11-14) — o #566 entrou com 6 linhas de caminho local |
+| `P-A17BIS-CENSO-POR-SUBSTRING` | 16256 | BAIXA | sim | P-A17BIS-CENSO-POR-SUBSTRING (2026-11-14) — o A17-bis confere os `reason` por substring  |
+| `P-DONO-16B-OPCAO` | 16263 | BAIXA | sim | P-DONO-16B-OPCAO (2026-11-15) — pergunta ao dono: onde mora o recibo durável da fila do  |
+| `P-API-CONTRATOS-CURINGA-ASSINATURA` | 16300 | BAIXA | sim | P-API-CONTRATOS-CURINGA-ASSINATURA (2026-11-15) — `API_CONTRACTS.md:105` guarda o curing |
+| `P-567-GUARDA-FRONT-NAO-ESTREITA` | 16307 | BAIXA | sim | P-567-GUARDA-FRONT-NAO-ESTREITA (2026-11-15) — os 2 `PermissionGuard` da tela de custos  |
+| `P-PAT-OS-TAB-SEM-HOVER` | 16314 | BAIXA | sim | P-PAT-OS-TAB-SEM-HOVER (2026-11-15) — a aba inativa `.pat-os-tab` não muda no hover — BA |
+| `P-567-DETALHE-A-SERVICO-CORTADO` | 16328 | BAIXA | sim | P-567-DETALHE-A-SERVICO-CORTADO (2026-11-15) — o detalhe da aparência A corta o nome do  |
+| `P-567-SERIE-TRACO-SEM-TESTE` | 16334 | BAIXA | sim | P-567-SERIE-TRACO-SEM-TESTE (2026-11-15) — o teste do mês sem dado não confere o "—" — B |
+| `P-567-BIBLIOTECA-MODOS-NAO-REGISTRADOS` | 16340 | BAIXA | sim | P-567-BIBLIOTECA-MODOS-NAO-REGISTRADOS (2026-11-15) — o `COMPONENT_LIBRARY.md` não regis |
+| `P-567-DIARIO-MUTACAO-APARENCIAS` | 16346 | BAIXA | sim | P-567-DIARIO-MUTACAO-APARENCIAS (2026-11-15) — o diário do bloco não registra as mutaçõe |
+| `P-DEMO-ISOLADO-PLACA-NORMALIZADA` | 16352 | BAIXA | sim | P-DEMO-ISOLADO-PLACA-NORMALIZADA (2026-11-15) — o motor da demonstração grava a placa se |
+| `P-NOVA-OS-USERS-403-AUDITADO` | 16358 | BAIXA | sim | P-NOVA-OS-USERS-403-AUDITADO (2026-11-15) — a tela de Nova OS chama uma leitura de usuár |
+| `P-APARENCIA-NOME-REPETIDO` | 16364 | BAIXA | sim | P-APARENCIA-NOME-REPETIDO (2026-11-15) — o nome da aparência aparece repetido na tela —  |
+| `P-E2E-GUARDA-RELATORIO-POR-PROPRIEDADE` | 16370 | BAIXA | sim | P-E2E-GUARDA-RELATORIO-POR-PROPRIEDADE (2026-11-15) — 17 dos 33 ramos `reprovar(` do gua |
+| `P-E2E-SESSAO-POR-RODADA` | 16378 | BAIXA | sim | P-E2E-SESSAO-POR-RODADA (2026-11-15) — 2 rodadas do e2e no mesmo worktree disputam o `te |
+| `P-KPI-NOTA-VENDAVEL-62` | 16385 | BAIXA | sim | P-KPI-NOTA-VENDAVEL-62 (2026-11-15) — a nota do marco de KPI de 15/11 diz que falta regi |
+| `P-SMOKE-STDERR-SEM-TESTE` | 16391 | BAIXA | sim | P-SMOKE-STDERR-SEM-TESTE (2026-11-15) — nenhum teste prova que o stderr do runner do smo |
+| `P-SMOKE-RUNNER-AUTORREFERENCIA` | 16397 | BAIXA | sim | P-SMOKE-RUNNER-AUTORREFERENCIA (2026-11-15) — o teste do runner do smoke só roda pelo pr |
+| `P-TCTR1-NAMESPACE-E-EXPORT-STAR` | 16410 | BAIXA | sim | P-TCTR1-NAMESPACE-E-EXPORT-STAR (2026-11-15) — o T-CTR-1 fica calado para `export namesp |
+| `P-TCTR1-CAMPO-UNIAO-IMPORTADA` | 16416 | BAIXA | sim | P-TCTR1-CAMPO-UNIAO-IMPORTADA (2026-11-15) — o T-CTR-1 não segue um campo tipado por uni |
+| `P-CUSTO-GRAFICO-UM-PONTO` | 16422 | BAIXA | sim | P-CUSTO-GRAFICO-UM-PONTO (2026-11-15) — o quadro "6 meses" da tela de custos fica vazio  |
+| `P-CUSTO-MOTIVO-DESCONHECIDO-VIRA-FILIAL` | 16428 | BAIXA | sim | P-CUSTO-MOTIVO-DESCONHECIDO-VIRA-FILIAL (2026-11-15) — um motivo de pulo desconhecido vi |
+| `P-TST-REGEX-DINHEIRO-EM-INGLES` | 16434 | BAIXA | sim | P-TST-REGEX-DINHEIRO-EM-INGLES (2026-11-15) — o regex de dinheiro dos testes reconhece o |
+| `P-ASS09-GLOBAL-NULO-SEM-TESTE` | 16440 | BAIXA | sim | P-ASS09-GLOBAL-NULO-SEM-TESTE (2026-11-15) — nenhum teste guarda o nulo da visão global  |
+| `P-ASS12-UNIDADE-CAST-ESCAPA-NEVER` | 16446 | BAIXA | sim | P-ASS12-UNIDADE-CAST-ESCAPA-NEVER (2026-11-15) — `case "per_hour" as PricingUnit` com ca |
+| `P-568-ACEITE-RELOGIO-ADIANTADO` | 16467 | BAIXA | sim | P-568-ACEITE-RELOGIO-ADIANTADO (2026-11-15) — o aceite do consentimento depende do relóg |
+| `P-RBAC-146-ID-INEXISTENTE` | 16479 | BAIXA | sim | P-RBAC-146-ID-INEXISTENTE (2026-11-15) — `RBAC_MATRIX.md:146` aponta uma pendência que n |
+| `P-SECLOG-ACEITE-DIAGNOSTICO-TRAVA-FUSO` | 16486 | BAIXA | sim | P-SECLOG-ACEITE-DIAGNOSTICO-TRAVA-FUSO (2026-11-15) — com o banco fora, o aceite de boot |
+| `P-SECLOG-G4E-TIPO-APAGADO` | 16493 | BAIXA | sim | P-SECLOG-G4E-TIPO-APAGADO (2026-11-15) — `(express as any)()` não é enumerado pela G4e — |
+| `P-ERRO-GRAVADO-COM-TEXTO-CRU` | 16514 | BAIXA | sim | P-ERRO-GRAVADO-COM-TEXTO-CRU (2026-11-15) — o `lastError` de `job.queue.ts` é gravado no |
+| `P-HTTP-ERRO-DE-SERVIDOR-COMO-400` | 16520 | BAIXA | sim | P-HTTP-ERRO-DE-SERVIDOR-COMO-400 (2026-11-15) — defeito do servidor que não é queda resp |
+| `P-HTTP-400-COM-MENSAGEM-GENERICA` | 16527 | BAIXA | sim | P-HTTP-400-COM-MENSAGEM-GENERICA (2026-11-15) — os `throw new Error(…)` de `src/` saem c |
+| `P-CLOUD-CHARGES-CODIGO-FORA-DO-PRODUTO` | 16560 | BAIXA | sim | P-CLOUD-CHARGES-CODIGO-FORA-DO-PRODUTO (2026-11-15) — o módulo `src/modules/cloud-charge |
+| `P-RUNBOOK-PASSO6-SEM-SQL` | 16566 | BAIXA | sim | P-RUNBOOK-PASSO6-SEM-SQL (2026-11-15) — o passo 6 do `docs/deployment.md` é prosa sem SQ |
+| `P-DEMO-CUSTO-SEM-DADO` | 16579 | BAIXA | sim | P-DEMO-CUSTO-SEM-DADO (2026-11-15) — o roteiro da demonstração descrevia a tela antiga d |
+| `P-ORQ-FILTRO-SEGURANCA-PLANO-68` | 16586 | BAIXA | sim | P-ORQ-FILTRO-SEGURANCA-PLANO-68 (2026-11-15) — os agentes Claude que leem a evidência do |
+| `P-YARDS-ERRO-ESCONDIDO` | 16593 | BAIXA | sim | P-YARDS-ERRO-ESCONDIDO (2026-11-15) — `yards.service.ts` esconde o erro da API, e o sele |
+| `P-DESPACHO-SEM-AUDITORIA-ASSIGNED` | 16599 | BAIXA | sim | P-DESPACHO-SEM-AUDITORIA-ASSIGNED (2026-11-15) — a atribuição feita pelo despacho não ge |
+| `P-ARNES-DB-POSTURA-SO-PELO-NOME` | 16605 | BAIXA | sim | P-ARNES-DB-POSTURA-SO-PELO-NOME (2026-11-15) — os `-db` conferem `NOSUPERUSER`/`NOBYPASS |
+| `P-ARNES-DB-LIXO-NO-KILL` | 16611 | BAIXA | sim | P-ARNES-DB-LIXO-NO-KILL (2026-11-15) — suíte `-db` morta à força deixa 1 papel LOGIN e 1 |
+| `P-A17BIS-NAO-ALCANCA-BILLING` | 16639 | BAIXA | sim | P-A17BIS-NAO-ALCANCA-BILLING (2026-11-15) — o A17-bis não alcança `subscription-billing` |
+| `P-CI-INTERMITENTES-1511` | 16645 | BAIXA | sim | P-CI-INTERMITENTES-1511 (2026-11-15) — 3 intermitentes no CI do #568 resolvidos com `rer |
+| `P-SEC-LOG-SENTINELA-EM-UUID` | 16659 | BAIXA | sim | P-SEC-LOG-SENTINELA-EM-UUID (2026-11-15) — o H4e do `sec-log-http` compara o sentinela p |
+| `P-04B-ACTIONERROR-RAMO-MORTO` | 16665 | BAIXA | sim | P-04B-ACTIONERROR-RAMO-MORTO (2026-11-15) — um ramo do `ActionError` do sync de estoque  |
+| `P-APP-CONSENTIMENTO-SO-NO-APARELHO` | 16672 | BAIXA | sim | P-APP-CONSENTIMENTO-SO-NO-APARELHO (2026-11-15) — o consentimento do app vale só no apar |
+| `P-AUDIT-SEM-FILTRO-POR-ENTIDADE` | 16678 | BAIXA | sim | P-AUDIT-SEM-FILTRO-POR-ENTIDADE (2026-11-15) — a rota de auditoria não filtra por entida |
+| `P-579-ACEITE-A-C1-02-E-A-RACE7` | 16707 | BAIXA | sim | P-579-ACEITE-A-C1-02-E-A-RACE7 (2026-11-16) — o comando literal da C1 para o A-C1-02 (a  |
+| `P-USERS-ACESSO-SEG-DB-BASE-COMPARTILHADA` | 16714 | BAIXA | sim | P-USERS-ACESSO-SEG-DB-BASE-COMPARTILHADA (2026-11-16) — 6 testes de `tests/users-acesso- |
+| `P-APP-PERFIL-LINHAS-46PX` | 16726 | BAIXA | sim | P-APP-PERFIL-LINHAS-46PX (2026-11-15) — as linhas de navegação do Perfil têm 46 px de al |
+| `P-APP-GUINCHO-VEICULO-ATENDIDO` | 16732 | BAIXA | sim | P-APP-GUINCHO-VEICULO-ATENDIDO (2026-11-16) — o cartão da OS da opção B do guincho sai s |
+| `P-SAN3-16-PEDIDO-DUPLO-CONCORRENTE` | 16738 | BAIXA | sim | P-SAN3-16-PEDIDO-DUPLO-CONCORRENTE (2026-11-15) — duas requisições simultâneas com o mes |
+| `P-SAN3-16-PEDIDO-DECIDIDO-ANTES-DO-EVENTO` | 16745 | BAIXA | sim | P-SAN3-16-PEDIDO-DECIDIDO-ANTES-DO-EVENTO (2026-11-15) — a fila de Aprovações grava, o e |
+| `P-WEB-LINHA-DO-TEMPO-TIPO-CRU` | 16752 | BAIXA | sim | P-WEB-LINHA-DO-TEMPO-TIPO-CRU (2026-11-15) — a linha do tempo da OS na web mostra o tipo |
+| `P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP` | 16759 | BAIXA | sim | P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP (2026-11-15) — na web, o campo "Registro" do d |
+| `P-SAN3-16-CARTAO-APROVACOES-DA-HOME` | 16766 | BAIXA | sim | P-SAN3-16-CARTAO-APROVACOES-DA-HOME (2026-11-15) — o cartão de Aprovações da tela inicia |
+| `P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA` | 16773 | BAIXA | sim | P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA (2026-11-15) — `docs/mobile-sync-contracts.md` ainda ci |
+| `P-AUTH-REFRESH-VINCULO-APARELHO` | 16794 | BAIXA | sim | P-AUTH-REFRESH-VINCULO-APARELHO (2026-11-16) — o token de renovação não é amarrado ao ap |
+| `P-WEB-SAIR-SEM-NOVA-TENTATIVA` | 16801 | BAIXA | sim | P-WEB-SAIR-SEM-NOVA-TENTATIVA (2026-11-16) — o "Sair" da web ignora o 503 do servidor e  |
+| `P-APP-LISTA-OS-ERRO-COM-200` | 16808 | BAIXA | sim | P-APP-LISTA-OS-ERRO-COM-200 (2026-11-16) — a lista de OS do app mostra "Não foi possível |
+| `P-ASS08C-NOTA-COMPETENCIA-ANTERIOR` | 16817 | BAIXA | sim | P-ASS08C-NOTA-COMPETENCIA-ANTERIOR (2026-11-17) — a nota de competência anterior ao mês  |
+| `P-ASS08C2-TELA-AVISO-ESTORNO-CANCELA-NOTA` | 16823 | BAIXA | sim | P-ASS08C2-TELA-AVISO-ESTORNO-CANCELA-NOTA (2026-11-17) — a tela do estorno manual ainda  |
+| `P-MOBILE-MEU-ESTOQUE-SEM-PORTA` | 16829 | BAIXA | sim | P-MOBILE-MEU-ESTOQUE-SEM-PORTA (2026-11-17) — o estoque real do usuário do app só abre d |
+| `P-OS-LISTA-SEM-CIDADE` | 16837 | BAIXA | sim | P-OS-LISTA-SEM-CIDADE (2026-11-17) — a lista de OS manda o endereço da coleta e da entre |
+| `P-OS-REBOQUE-SEM-MODELO-E-COR` | 16844 | BAIXA | sim | P-OS-REBOQUE-SEM-MODELO-E-COR (2026-11-17) — a web só pede a placa no reboque; o veículo |
+| `P-572-GUARDA-PULA-NUL` | 16877 | BAIXA | sim | P-572-GUARDA-PULA-NUL (2026-11-16) — o guarda de caminhos locais pula arquivo de texto c |
+| `P-WEB-TROCA-NAO-REVOGA-ORIGEM` | 16936 | BAIXA | sim | P-WEB-TROCA-NAO-REVOGA-ORIGEM (2026-11-20) — a troca de organização no web deixa a sessã |
+| `P-APP-ENTRAR-APARENCIA-ANTES-DO-LOGIN` | 16943 | BAIXA | sim | P-APP-ENTRAR-APARENCIA-ANTES-DO-LOGIN (2026-11-20) — a tela Entrar não sabe que aparênci |
+| `P-APP-TELEMETRIA-SESSAO-EXPIRADA-GASTA-TENTATIVA` | 16957 | BAIXA | sim | P-APP-TELEMETRIA-SESSAO-EXPIRADA-GASTA-TENTATIVA (2026-11-20) — o envio de telemetria do |
+| `P-GUI00-ERRO-ESCOLHE-A-DIRETO` | 16964 | BAIXA | sim | P-GUI00-ERRO-ESCOLHE-A-DIRETO (2026-11-17) — no caminho de erro, três telas do app escol |
+| `P-SAN305-T15-PORTA-SUBSTRING` | 17011 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 do `B-SAN3-05` compara a porta com `in |
+| `P-GUI02-QUEM-ESCOLHEU` | 17032 | BAIXA | sim | P-GUI02-QUEM-ESCOLHEU (2026-11-17) — o detalhe não traz quem incluiu a vistoria — BAIXA |
+| `P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO` | 17039 | BAIXA | sim | P-GUI02-MEMORIA-AJUSTE-NAO-ATOMICO (2026-11-17) — o repositório em memória não desfaz o  |
+| `P-GUI02-ESPELHO-OS-EM-VOO` | 17046 | BAIXA | sim | P-GUI02-ESPELHO-OS-EM-VOO (2026-11-17) — a OS já congelada com a coleta atrás mantém o e |
+| `P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO` | 17053 | BAIXA | sim | P-GUI02-TELA-INCLUIR-COLETA-APOS-ENVIO (2026-11-17) — a tela oferece "Incluir coleta" nu |
+| `P-WO-LEITURA-ID-EM-FROTA` | 17060 | BAIXA | sim | P-WO-LEITURA-ID-EM-FROTA (2026-11-17) — `damages`, `fuel-logs` e `service-quotes` expõem |
+| `P-MOBILE-AVAILABILITY-TENANT-ID` | 17074 | BAIXA | sim | P-MOBILE-AVAILABILITY-TENANT-ID (2026-11-17) — `GET /mobile/inventory/availability` põe  |
+| `P-NOTIF-DECISAO-EX-TECNICO` | 17089 | BAIXA | sim | P-NOTIF-DECISAO-EX-TECNICO (2026-11-17) — a exceção do ex-técnico no `API_CONTRACTS.md`  |
+| `P-APP-INICIO-PENDENTES-FANTASMA` | 17104 | BAIXA | sim | P-APP-INICIO-PENDENTES-FANTASMA (2026-11-17) — a Início mostra "2 pendentes" com 0 pende |
+| `P-APP-TESTE-OSCILA-MAQUINA-CARREGADA` | 17111 | BAIXA | sim | P-APP-TESTE-OSCILA-MAQUINA-CARREGADA (2026-11-17) — flakiness do teste de sessão sob con |
+| `P-APP-LIGAR-SEM-DISCADOR` | 17119 | BAIXA | sim | P-APP-LIGAR-SEM-DISCADOR (2026-11-17) — o botão de ligar do detalhe do app exige um paco |
+| `P-APROV-MEMORIA-SEM-CAS` | 17126 | BAIXA | sim | P-APROV-MEMORIA-SEM-CAS (2026-11-17) — o repositório em memória das aprovações não é CAS |
+| `P-SAN305-T15-PORTA-SUBSTRING` | 17164 | BAIXA | sim | P-SAN305-T15-PORTA-SUBSTRING (2026-11-17) — o T15 compara a porta com `includes` no log  |
+| `P-PLAT-PORTAO-SEM-ORG-PLATAFORMA` | 17186 | BAIXA | sim | P-PLAT-PORTAO-SEM-ORG-PLATAFORMA (2026-11-17) — o portão da plataforma não confere se o  |
+| `P-FRONT-ATALHO-SUPER-ADMIN` | 17193 | BAIXA | sim | P-FRONT-ATALHO-SUPER-ADMIN (2026-11-17) — o front libera toda permissão para "Super Admi |
+| `P-CLOUD-CHARGE-ROUTER-ORFAO` | 17201 | BAIXA | sim | P-CLOUD-CHARGE-ROUTER-ORFAO (2026-11-17) — `cloud-charge.routes.ts` está exportado e não |
+| `P-PARSE-ROLES-SEM-TRIM` | 17215 | BAIXA | sim | P-PARSE-ROLES-SEM-TRIM (2026-11-17) — `parseRoles` devolve o papel sem trim, e `ROLE_PER |
+| `P-VARREDURAS-SEM-USE-SEM-CAMINHO` | 17222 | BAIXA | sim | P-VARREDURAS-SEM-USE-SEM-CAMINHO (2026-11-17) — as 3 varreduras irmãs não enumeram camad |
+| `P-ENV-EXAMPLE-RUNTIME-GUARD` | 17229 | BAIXA | sim | P-ENV-EXAMPLE-RUNTIME-GUARD (2026-11-17) — `DATABASE_RUNTIME_ROLE_GUARD` não está no `.e |
+| `P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE` | 17236 | BAIXA | sim | P-GUI02-DISPATCH-REF-FAILCLOSED-SEM-TESTE (2026-11-17) — o fail-closed de `hasDispatchFo |
+| `P-MOBILE-INVENTORY-MANAGE-SEM-USO` | 17259 | BAIXA | sim | P-MOBILE-INVENTORY-MANAGE-SEM-USO (2026-11-18) — a união de tipos em `mobile-inventory-s |
+| `P-AWS-IMAGEM-ARM64` | 17266 | BAIXA | sim | P-AWS-IMAGEM-ARM64 (2026-11-18) — o job `docker` da CI publica só `amd64`, e a API na AW |
+| `P-AWS-VALKEY-TLS` | 17301 | BAIXA | sim | P-AWS-VALKEY-TLS (2026-11-18) — o Valkey ainda não tem criptografia em trânsito medida — |
+| `P-AWS-CLAMAV-ARM64` | 17336 | BAIXA | sim | P-AWS-CLAMAV-ARM64 (2026-11-18) — a imagem fixada do ClamAV só tem `amd64` — BAIXA |
+| `P-AWS-CLAMAV-IMAGEM` | 17343 | BAIXA | sim | P-AWS-CLAMAV-IMAGEM (2026-11-18) — o `clamd.conf` chega por variável e é gravado no iníc |
+| `P-AWS-TRACCAR-ARM64` | 17350 | BAIXA | sim | P-AWS-TRACCAR-ARM64 (2026-11-18) — o Traccar roda em x86, e a imagem tem `arm64` — BAIXA |
+| `P-WO-ORACULO-403-404-ESCRITA` | 17357 | BAIXA | sim | P-WO-ORACULO-403-404-ESCRITA (2026-11-17) — a escrita em OS alheia dá 403 e em inexisten |
+| `P-ATTACHMENTS-WORK-ORDER-SEM-PORTA` | 17371 | BAIXA | sim | P-ATTACHMENTS-WORK-ORDER-SEM-PORTA (2026-11-17) — se a rota polimórfica `/attachments` r |
+| `P-PAINEL-SUPORTE-SCOPED` | 17378 | BAIXA | sim | P-PAINEL-SUPORTE-SCOPED (2026-11-18) — o `support` sozinho vê o painel da organização in |
+| `P-RBAC-MANAGER-ATRIBUICAO-LIMITED` | 17392 | BAIXA | sim | P-RBAC-MANAGER-ATRIBUICAO-LIMITED (2026-11-18) — a `RBAC_MATRIX.md:33` dá `limited` ao ` |
+| `P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT` | 17427 | BAIXA | sim | P-TESTE-PROMISIFY-EXECFILE-ONE-SHOT (2026-11-19) — o `promisify(execFile)` da migração o |
+| `P-08C3-40P01-CRU` | 17449 | BAIXA | sim | P-08C3-40P01-CRU (2026-11-20) — o deadlock no estorno cruzado sobe como erro cru (`P2010 |
+| `P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO` | 17457 | BAIXA | sim | P-08C3-NOTA-DIVERGE-APOS-CREDITO-DESFEITO (2026-11-20) — o crédito desfeito muda o total |
+| `P-08C3-FOCUS-404-NO-SANDBOX` | 17465 | BAIXA | sim | P-08C3-FOCUS-404-NO-SANDBOX (2026-11-20) — confirmar no sandbox que o Focus responde 404 |
+| `P-08C3-EVENTOS-ASAAS-NO-SANDBOX` | 17472 | BAIXA | sim | P-08C3-EVENTOS-ASAAS-NO-SANDBOX (2026-11-20) — conferir no sandbox a lista `ASAAS_WEBHOO |
+| `P-08C3-CLOSE-TIMEOUT-FRIO` | 17479 | BAIXA | sim | P-08C3-CLOSE-TIMEOUT-FRIO (2026-11-20) — o 1º fechamento de um processo frio, sob carga, |
+| `P-08C3-NOTAS-JUNTA-C2` | 17486 | BAIXA | sim | P-08C3-NOTAS-JUNTA-C2 (2026-11-20) — duas notas não graves da C2 da junta do #608 (C2-N3 |
+| `P-SYNC-SETSTATE-NO-BUILD` | 17508 | BAIXA | sim | P-SYNC-SETSTATE-NO-BUILD (2026-11-20) — a tela de Sincronização do app dispara "setState |
+| `P-SYNC-LINHA-TRANSBORDA-390` | 17515 | BAIXA | sim | P-SYNC-LINHA-TRANSBORDA-390 (2026-11-20) — na tela de Sincronização, uma linha transbord |
+| `P-APPORG-RESUMO-POR-ORGANIZACAO` | 17522 | BAIXA | sim | P-APPORG-RESUMO-POR-ORGANIZACAO (2026-11-20) — falta no backend o resumo por organização |
+| `P-API-CLIENT-DETAILS-DESCARTADO` | 17529 | — | sim | P-API-CLIENT-DETAILS-DESCARTADO (2026-11-20) — o cliente de API da web descarta o `detai |
+| `P-ASS10C-FORMA-DA-COBRANCA` | 17536 | — | sim | P-ASS10C-FORMA-DA-COBRANCA (2026-11-20) — a forma de cada cobrança não vem nas respostas |
+| `P-USRCON-R11-R12-SEM-CASO-DB` | 17543 | BAIXA | sim | P-USRCON-R11-R12-SEM-CASO-DB (2026-11-20) — no banco, as leituras R11 e R12 do despachan |
+| `P-GRUPO-PALETA` | 17581 | BAIXA | sim | P-GRUPO-PALETA (2026-11-22) — o Painel do grupo não aparece na paleta de comandos (Ctrl+ |
+| `P-612-RAMO-ORIGINAL-ABSORCAO` | 17609 | BAIXA | sim | P-612-RAMO-ORIGINAL-ABSORCAO (2026-11-21) — o ramo original `feat/cobranca-operacao` fic |
+| `P-612-COMENTARIO-MAQUETE` | 17616 | BAIXA | sim | P-612-COMENTARIO-MAQUETE (2026-11-21) — 3 comentários citam uma maquete que não existe — |
+| `P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA` | 17630 | BAIXA | sim | P-ASS10C-NOTA-NUMERO-PDF-PLATAFORMA (2026-11-21) — o detalhe da cobrança na plataforma n |
+| `P-ASS10C-MENU-SERVIDOR` | 17637 | BAIXA | sim | P-ASS10C-MENU-SERVIDOR (2026-11-21) — o item "Cobrança" não está no menu do servidor — B |
+| `P-GINVOICE-COMENTARIO-POR-REGEX` | 17644 | BAIXA | sim | P-GINVOICE-COMENTARIO-POR-REGEX (2026-11-21) — o guarda G-INVOICE tira comentário por re |
+| `P-COMISSAO-WEB-EM-NUMBER` | 17658 | BAIXA | sim | P-COMISSAO-WEB-EM-NUMBER (2026-11-21) — a web mostra o total da comissão em `number` — B |
+| `P-COMISSAO-LEITOR-GENERICO` | 17665 | BAIXA | sim | P-COMISSAO-LEITOR-GENERICO (2026-11-21) — leitor de dinheiro montado por nome fora de `m |
+| `P-APP-T9O-SOB-CARGA` | 17679 | BAIXA | sim | P-APP-T9O-SOB-CARGA (2026-11-21) — o T9o estoura o tempo sob carga — BAIXA |
+| `P-APP-OSCARD-TRANSBORDA-390` | 17686 | BAIXA | sim | P-APP-OSCARD-TRANSBORDA-390 (2026-11-21) — o `MobileOsCard` transborda 23 px no aparelho |
+| `P-APP-COMISSOES-SKELETON-DO-KIT` | 17693 | BAIXA | sim | P-APP-COMISSOES-SKELETON-DO-KIT (2026-11-21) — a aba Comissões usa um esqueleto próprio, |
+| `P-APP-SERIAL-LOCK-UNICO` | 17700 | BAIXA | sim | P-APP-SERIAL-LOCK-UNICO (2026-11-21) — duas cópias da trava serial no app — BAIXA |
+| `P-SC-TESTES-SAIDA-PELO-VALID-TO` | 17728 | BAIXA | sim | P-SC-TESTES-SAIDA-PELO-VALID-TO (2026-11-21) — os testes da saída do grupo simulam a saí |
+| `P-AUDITORIA-EMAIL-NO-METADADO` | 17735 | BAIXA | sim | P-AUDITORIA-EMAIL-NO-METADADO (2026-11-21) — o e-mail vai no metadado de `user.access_gr |
+| `P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE` | 17742 | BAIXA | sim | P-CI-SMOKE-COMPOSE-LOGIN-INTERMITENTE (2026-11-21) — o smoke do compose falha às vezes n |
+| `P-DIARIO-AZURE-POWERSHELL-ESCAPE` | 17749 | BAIXA | sim | P-DIARIO-AZURE-POWERSHELL-ESCAPE (2026-11-21) — o braço do Azure grava o diário por um c |
+| `P-APP-OS-LISTA-ACENTO` | 17756 | BAIXA | sim | P-APP-OS-LISTA-ACENTO (2026-11-21) — "Ordens de Servico" sem acento na lista de OS do ap |
+| `P-TESTE-STUB-APROVACOES-FRAGIL` | 17763 | BAIXA | sim | P-TESTE-STUB-APROVACOES-FRAGIL (2026-11-21) — o teste do consentimento usa uma página fa |
+| `P-APP-ORG-SESSAO-DE-ESCUTA-ORFA` | 17770 | BAIXA | sim | P-APP-ORG-SESSAO-DE-ESCUTA-ORFA (2026-11-21) — app morto ou dados apagados deixam até 1  |
+| `P-APP-ORG-COMISSAO-A-RECEBER` | 17777 | BAIXA | sim | P-APP-ORG-COMISSAO-A-RECEBER (2026-11-21) — a aba Comissões do app não mostra "a receber |
+| `P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO` | 17784 | BAIXA | sim | P-APP-COMISSOES-SEM-NUMERO-DO-CHAMADO (2026-11-21) — a linha da comissão no app não most |
+| `P-S2P-HC1B-OSCILA-NO-CI` | 17805 | BAIXA | sim | P-S2P-HC1B-OSCILA-NO-CI (2026-11-22) — HC1b ultrapassou 300 ms numa tentativa — BAIXA |
+| `P-J622-CONTROLE-SERIAL-C5` | 17823 | BAIXA | sim | P-J622-CONTROLE-SERIAL-C5 (2026-11-22) — sonda espera 403 e o produto dá 401 — BAIXA |
+| `P-J622-C4-NOTAS` | 17847 | BAIXA | sim | P-J622-C4-NOTAS (2026-11-22) — quatro notas da cadeira C4 — BAIXA |
+| `P-J622-C5-NOTAS` | 17853 | BAIXA | sim | P-J622-C5-NOTAS (2026-11-22) — três notas da cadeira C5 — BAIXA |
+| `P-GRUPO-TRILHA-COMPLETE-FINAL` | 17859 | BAIXA | sim | P-GRUPO-TRILHA-COMPLETE-FINAL (2026-11-22) — `complete` registra o estado anterior às gr |
+| `P-GRUPO-REVOKE-400-INTERMITENTE` | 17879 | BAIXA | sim | P-GRUPO-REVOKE-400-INTERMITENTE (2026-11-22) — retirar gestor deu 400 uma vez — BAIXA |
+| `P-GRUPO-TOTAL-DE-PATIOS` | 17889 | BAIXA | sim | P-GRUPO-TOTAL-DE-PATIOS (2026-11-22) — total do grupo pendente — BAIXA |
+| `P-GRUPO-SLA-PRAZO` | 17899 | BAIXA | sim | P-GRUPO-SLA-PRAZO (2026-11-22) — prazo do SLA a definir — BAIXA |
+| `P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL` | 17904 | BAIXA | sim | P-GRUPO-FUNCIONARIOS-EM-CAMPO-POR-SINAL (2026-11-22) — presença depende do sinal de camp |
+| `P-GRUPO-TICKET-MEDIO` | 17909 | BAIXA | sim | P-GRUPO-TICKET-MEDIO (2026-11-22) — definição de ticket médio pendente — BAIXA |
+| `P-GRUPO-HISTORICO-DE-POSICAO` | 17914 | BAIXA | sim | P-GRUPO-HISTORICO-DE-POSICAO (2026-11-22) — histórico de posição pendente — BAIXA |
+| `P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO` | 17923 | BAIXA | sim | P-SC-ME-TENANTS-MOSTRA-PATIO-CAIDO (2026-11-22) — lista ainda mostra pátio cujo acesso c |
+| `P-SC-ARNES-ENTRAR-SEM-GUARDA` | 17928 | BAIXA | sim | P-SC-ARNES-ENTRAR-SEM-GUARDA (2026-11-22) — arnês substitui o Entrar por leitura adminis |
+| `P-SC-GR6-503-INTERMITENTE` | 17933 | BAIXA | sim | P-SC-GR6-503-INTERMITENTE (2026-11-22) — GR6 teve 503 isolado — BAIXA |
+| `P-REG-CONFIRMA-CRIACAO-SEM-COUNT` | 17938 | BAIXA | sim | P-REG-CONFIRMA-CRIACAO-SEM-COUNT (2026-11-22) — confirmação não verifica linha alterada  |
+| `P-SC-VINCULO-SEM-ORIGEM` | 17943 | BAIXA | sim | P-SC-VINCULO-SEM-ORIGEM (2026-11-22) — concessão sem origem falha fechado — BAIXA |
+| `P-6970-DETALHE-SEM-PATIO` | 17957 | BAIXA | sim | P-6970-DETALHE-SEM-PATIO (2026-11-22) — detalhe da OS não mostra o pátio — BAIXA |
+| `P-6970-INICIO-SO-PATIO-ATIVO` | 17962 | BAIXA | sim | P-6970-INICIO-SO-PATIO-ATIVO (2026-11-22) — Início não mostra outros pátios — BAIXA |
+| `P-RELEASE-GATE-CONC-FORA-DO-GUARD` | 18013 | BAIXA | sim | P-RELEASE-GATE-CONC-FORA-DO-GUARD (2026-11-22) — teste concorrente fora da lista com gua |
+| `P-S2P-REDEFINICAO-TRES-VIAS` | 18036 | BAIXA | sim | P-S2P-REDEFINICAO-TRES-VIAS (2026-11-21) — redefinição de senha cruzada com concessão e  |
+| `P-KPI-EXTRATOR-ID-COM-TEXTO` | 18071 | BAIXA | sim | P-KPI-EXTRATOR-ID-COM-TEXTO (2026-11-23) — extrator perde ID acompanhado de texto — BAIX |
+| `P-AWS-ROTEIRO-NAT-SWAP` | 18077 | BAIXA | sim | P-AWS-ROTEIRO-NAT-SWAP (2026-11-23) — user-data da NAT instala antes da swap — BAIXA |
+| `P-PATIO-ROTULO-FALLBACK-TETO` | 18090 | BAIXA | sim | P-PATIO-ROTULO-FALLBACK-TETO (2026-11-23) — fallback local ainda diz "6 meses" e "Ilimit |
+| `P-TETO-RENOMEAR-IDENTIFICADOR` | 18108 | BAIXA | sim | P-TETO-RENOMEAR-IDENTIFICADOR (2026-11-23) — renomear o identificador técnico do teto —  |
+| `P-COMISSAO-A1-LITERAL` | 18181 | BAIXA | sim | P-COMISSAO-A1-LITERAL (2026-11-24) — meta do A1 da comissão não reproduz o número real — |
+| `P-COMISSAO-M-2N` | 18187 | BAIXA | sim | P-COMISSAO-M-2N (2026-11-24) — meta `M >= 2N` da comissão não alcançada literalmente — B |
+| `P-COMISSAO-M18-ANCORA` | 18193 | BAIXA | sim | P-COMISSAO-M18-ANCORA (2026-11-24) — âncora da M18 da comissão com múltiplas ocorrências |
+| `P-DNS-TTL-300` | 18211 | BAIXA | sim | P-DNS-TTL-300 (2026-11-24) — os 17 registros copiados ficaram com TTL de 5 min — BAIXA |
+| `P-UI-BUTTON-FOCO-VISIVEL` | 18241 | BAIXA | sim | P-UI-BUTTON-FOCO-VISIVEL (2026-11-24) — `.ui-button` sem foco visível próprio — BAIXA |
+| `P-MARCA-LOGO-SEM-SITE` | 18273 | BAIXA | sim | P-MARCA-LOGO-SEM-SITE (2026-11-25) — falta a versão do logo horizontal sem a linha do si |
+| `P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS` | 18285 | BAIXA | sim | P-PLANOS-MODULOS-MEMORIA-DOIS-ARMAZENS (2026-11-27) — em modo memória, a porta de módulo |
+| `P-PLANOS-MODULOS-PORTA-COM-ASSINATURA` | 18292 | BAIXA | sim | P-PLANOS-MODULOS-PORTA-COM-ASSINATURA (2026-11-27) — com assinatura em vigor, só o plano |
+| `P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05` | 18299 | BAIXA | sim | P-PLANOS-MODULOS-ETIQUETAS-CONSOLE-SAN3-05 (2026-11-27) — 6 rotas do console de organiza |
+| `P-EVIDENCIA-METADADO-EM-MEMORIA` | 18314 | — | sim | P-EVIDENCIA-METADADO-EM-MEMORIA (2026-11-27) — o metadado aceito da evidência e a trilha |
+| `P-STORAGE-FORCE-PATH-STYLE-COERCE` | 18322 | BAIXA | sim | P-STORAGE-FORCE-PATH-STYLE-COERCE (2026-11-27) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
+| `P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA` | 18328 | BAIXA | sim | P-KPI-REFERENCIA-PROVEDOR-EVIDENCIA (2026-11-27) — o painel de KPI cita o provedor da ev |
+| `P-EVIDENCIA-TRILHA-SANEADOR-CHAVES` | 18334 | BAIXA | sim | P-EVIDENCIA-TRILHA-SANEADOR-CHAVES (2026-11-27) — o saneador da trilha da evidência não  |
+| `P-PLAT-BUSCA-SEM-FUNCAO` | 18353 | BAIXA | sim | P-PLAT-BUSCA-SEM-FUNCAO (2026-11-27) — a busca do console da plataforma é só um desenho, |
+| `P-MARCA-SIDEBAR-BRANCA-PRETA` | 18359 | BAIXA | sim | P-MARCA-SIDEBAR-BRANCA-PRETA (2026-11-27) — a sidebar só tem desenho aprovado em grafite |
+| `P-DOCS-NOME-CUSTO-DA-NUVEM` | 18365 | BAIXA | sim | P-DOCS-NOME-CUSTO-DA-NUVEM (2026-11-27) — documentos vigentes ainda dizem "Cloud Billing |
+| `P-ITEM27-TRILHA-ORG-SEM-ATOR` | 18379 | BAIXA | sim | P-ITEM27-TRILHA-ORG-SEM-ATOR (2026-11-27) — a trilha `tenant.modules_changed` da organiz |
+| `P-PLANO-SAN3-TABELA-41-SEM-MARCA` | 18387 | BAIXA | sim | P-PLANO-SAN3-TABELA-41-SEM-MARCA (2026-11-28) — a tabela do §4.1 do portão não sustenta, |
+| `P-MARCA-MENU-APARENCIA-A11Y` | 18415 | BAIXA | sim | P-MARCA-MENU-APARENCIA-A11Y (2026-11-28) — a estrutura ARIA do painel de cores do sistem |
+| `P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE` | 18437 | BAIXA | sim | P-RATEIO-PERIODO-POR-TABELA-SEM-TESTE (2026-11-28) — o filtro de período do rateio do cu |
+| `P-WO-LEITURA-DB-COMENTARIOS-DEFASADOS` | 18446 | BAIXA | sim | P-WO-LEITURA-DB-COMENTARIOS-DEFASADOS (2026-11-28) — os comentários do teste de leitura  |
+| `P-SAN305-T11G-SEM-COMPLETUDE` | 18462 | BAIXA | sim | P-SAN305-T11G-SEM-COMPLETUDE (2026-11-28) — o censo T11g confere que a tabela declarada  |
+| `P-KPI-VELOCIDADE-ROTULOS-SOBREPOSTOS` | 18470 | BAIXA | sim | P-KPI-VELOCIDADE-ROTULOS-SOBREPOSTOS (2026-11-28) — 11 dos 12 rótulos de data do gráfico |
+| `P-KPI-PAINEL-ICONE-404` | 18478 | BAIXA | sim | P-KPI-PAINEL-ICONE-404 (2026-11-28) — o painel de KPI não declara ícone: toda abertura e |
+| `P-KPI-CARTOES-LINGUAGEM-DE-DONO` | 18486 | BAIXA | sim | P-KPI-CARTOES-LINGUAGEM-DE-DONO (2026-11-28) — 4 BAIXO de linguagem e de forma nos cartõ |
+| `P-PLAT-ORG-MODULOS-TELA-RESTOS` | 18498 | BAIXA | sim | P-PLAT-ORG-MODULOS-TELA-RESTOS (2026-11-27) — o que a cláusula de módulos da organização |
+| `P-PLAT-ORG-ICONE-FUNDO-DA-MAQUETE` | 18508 | BAIXA | sim | P-PLAT-ORG-ICONE-FUNDO-DA-MAQUETE (2026-11-28) — o fundo colorido do ícone dos indicador |
+| `P-PLAT-ORG-DIALOGO-SUSPENDER-DA-MAQUETE` | 18535 | BAIXA | sim | P-PLAT-ORG-DIALOGO-SUSPENDER-DA-MAQUETE (2026-11-28) — o diálogo de suspender da maquete |
+| `P-PLAT-LAYOUT-RODAPE-PERFIL-FIXO` | 18542 | BAIXA | sim | P-PLAT-LAYOUT-RODAPE-PERFIL-FIXO (2026-11-28) — o rodapé da barra da plataforma diz "Sup |
+| `P-WEB-PAGE-HEADING-ROW-NAO-MEDIDO` | 18549 | BAIXA | sim | P-WEB-PAGE-HEADING-ROW-NAO-MEDIDO (2026-11-28) — 42 arquivos do front usam o cabeçalho e |
+| `P-PLAT-ORG-ESC-NO-PAINEL` | 18556 | BAIXA | sim | P-PLAT-ORG-ESC-NO-PAINEL (2026-11-28) — com o foco dentro do painel aberto da lista, o E |
+| `P-PLAT-ORG-ROTA-MODULOS-SEM-LINK` | 18564 | BAIXA | sim | P-PLAT-ORG-ROTA-MODULOS-SEM-LINK (2026-11-28) — a página de módulos da organização não t |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -1228,7 +1235,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3754 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3798 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 337
+## FECHADAS — 340
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1463,109 +1470,112 @@
 | `P-SMOKE-LINHA-NO-LIMITE-DO-WINDOWS` | 12959 | MÉDIA | sim | P-SMOKE-LINHA-NO-LIMITE-DO-WINDOWS (2026-11-15) — a linha do `test:smoke` está a 51 cara |
 | `P-MOBILE-SYNC-ESTOQUE-TIPOS` | 13059 | ALTA | sim | P-MOBILE-SYNC-ESTOQUE-TIPOS (2026-11-04) — tipos de ação de estoque do app não batem com |
 | `P-OS-TIPO-GUINCHO-PRESTADOR` | 13088 | BAIXA | sim | P-OS-TIPO-GUINCHO-PRESTADOR (2026-11-04) — a OS não tem tipo de serviço próprio — BAIXA  |
-| `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE` | 13132 | ALTA | sim | P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE (2026-11-04) — o APK de release não declarava ac |
-| `P-ASS03-VEICULOS-SEM-DB` | 13164 | BAIXA | sim | P-ASS03-VEICULOS-SEM-DB (2026-11-06) — o SQL real de veículos não tem variante `-db` — B |
-| `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` | 13223 | MÉDIA | sim | P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de |
-| `P-ASS08-OBX5-EAGER-E-CANCEL` | 13349 | MÉDIA | sim | P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na |
-| `P-ASS08-MUTATE-SEM-GUARDA` | 13386 | ALTA | sim | P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem confe |
-| `P-ASS08-RECONSULTA-SEM-VALOR` | 13394 | MÉDIA | sim | P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ ch |
-| `P-ASS08-RECUPERADA-SEM-COBRANCA` | 13401 | MÉDIA | sim | P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscri |
-| `P-UPLOAD-ARMAZENAMENTO-EFEMERO` | 13431 | — | sim | P-UPLOAD-ARMAZENAMENTO-EFEMERO (2026-11-10) — a evidência móvel guardada pelo servidor f |
-| `P-USERS-DESATIVADO-TOKEN-MOBILE` | 13447 | CRÍTICA | sim | P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcanç |
-| `P-B-ASS-08c-OBRIGACOES-DA-08b` | 13489 | ALTA | sim | P-B-ASS-08c-OBRIGACOES-DA-08b (2026-11-10) — bloco futuro `B-ASS-08c`, com as formas e o |
-| `P-CONTRATO-EMENDA-P5-P8C` | 13505 | ALTA | sim | P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUD |
-| `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` | 13525 | BAIXA | sim | P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes d |
-| `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` | 13563 | MÉDIA | sim | P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — falha no meio da aprovação gera OS em do |
-| `P-ASS08C-TRUST-PROXY` | 13607 | CRÍTICA | sim | P-ASS08C-TRUST-PROXY (2026-11-11) — sem `trust proxy`, o bloqueio por IP do webhook vale |
-| `P-ASS08C-COTA-IP-BLOQUEADO` | 13615 | MÉDIA | sim | P-ASS08C-COTA-IP-BLOQUEADO (2026-11-11) — IP já bloqueado ainda consome a cota global do |
-| `P-ASS08C-NOTA-DA-BAIXA-MANUAL` | 13623 | ALTA | sim | P-ASS08C-NOTA-DA-BAIXA-MANUAL (2026-11-11) — baixa/estorno manuais sem intenção de nota, |
-| `P-ASS08C-TROCA-DE-PROVEDOR-DE-NOTA` | 13632 | MÉDIA | sim | P-ASS08C-TROCA-DE-PROVEDOR-DE-NOTA (2026-11-11) — `invoice_issue` nunca tentada presa ao |
-| `P-ASS08C-REEMISSAO-APOS-REPAGAMENTO` | 13638 | ALTA | sim | P-ASS08C-REEMISSAO-APOS-REPAGAMENTO (2026-11-11) — repagar depois de um estorno total nã |
-| `P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO` | 13645 | MÉDIA | sim | P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO (2026-11-11) — `invoice_cancel` em `NEEDS_REVIEW in |
-| `P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO` | 13652 | BAIXA | sim | P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO (2026-11-11) — nota `pending` que o provedo |
-| `P-ASS08-ZUMBI-ORFA-NOTA` | 13659 | BAIXA | sim | P-ASS08-ZUMBI-ORFA-NOTA (2026-11-11) — trabalhador vivo além do tempo de órfã ainda pode |
-| `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` | 13675 | MÉDIA | sim | P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA (2026-11-11) — o app antigo recusa "Iniciar rota"  |
-| `P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA` | 13800 | MÉDIA | sim | P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA (2026-11-11) — a leitura do status na mesma ins |
-| `P-CONF530-02` | 13808 | BAIXA | sim | P-CONF530-02 (2026-11-11) — comentário de `StatementInvoiceRepository.beginIssue` desatu |
-| `P-CONF530-03` | 13816 | BAIXA | sim | P-CONF530-03 (2026-11-11) — 3 caminhos do conserto do #530 fora da letra do PERMITIDO —  |
-| `P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA` | 13875 | BAIXA | sim | P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA (2026-11-11) — o documento e um comentário dizem "no |
-| `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` | 13914 | MÉDIA | sim | P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e  |
-| `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 14037 | CRÍTICA | sim | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
-| `P-MOBILE-ESTOQUE-MODULO-SEMENTE` | 14231 | CRÍTICA | **a atribuir** | P-MOBILE-ESTOQUE-MODULO-SEMENTE (2026-11-11) — o módulo de estoque do app tem uma segund |
-| `P-SAN3-18-PORTA-DE-MODULO-POR-ORG` | 14258 | MÉDIA | sim | P-SAN3-18-PORTA-DE-MODULO-POR-ORG (2026-11-11) — não existe porta real para ligar ou des |
-| `P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL` | 14351 | ALTA | sim | P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL (2026-11-11) — `tests/navigation-provisioning.t |
-| `P-MOBILE-CODEC-FILA-STATUS-CRU` | 14474 | BAIXA | sim | P-MOBILE-CODEC-FILA-STATUS-CRU (2026-09-19) — a fila offline manda ao backend três statu |
-| `P-AMBIENTE-VAULT-ROUTES-SOB-CARGA` | 14532 | BAIXA | sim | P-AMBIENTE-VAULT-ROUTES-SOB-CARGA (2026-11-11) — `npm test` local trava em `ass-05-vault |
-| `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` | 14553 | MÉDIA | sim | P-B-O6R-09-ATRIBUICAO-FORA-DA-TX (2026-11-11) — a OS aceita a atribuição e a transação-m |
-| `P-B-O6R-09-RATCHET-T13-NOVA-CHAVE` | 14596 | ALTA | sim | P-B-O6R-09-RATCHET-T13-NOVA-CHAVE (2026-11-11) — o desenho da fatia 6 cria 1 chave nova  |
-| `P-B-O6R-09-TRAVA-PRISMA-REGISTRO` | 14603 | MÉDIA | sim | P-B-O6R-09-TRAVA-PRISMA-REGISTRO (2026-11-11) — a escolha (a) ou (b) da trava de `prisma |
-| `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES` | 14615 | MÉDIA | sim | P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES (2026-11-11) — gatilho temporário de suíte irmã  |
-| `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S` | 14634 | BAIXA | sim | P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S (2026-11-11) — migração com DDL em `work_orders |
-| `P-DB-FUSO-DA-CONEXAO` | 14672 | ALTA | sim | P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada p |
-| `P-LOGIN-READINESS-VAZA-HOST-NO-ERRO` | 14708 | ALTA | sim | P-LOGIN-READINESS-VAZA-HOST-NO-ERRO (2026-11-13) — no erro de conexão real, a sonda de l |
-| `P-554-BACKEND-POSTGRES-TRAVOU-1-DE-3` | 14729 | MÉDIA | sim | P-554-BACKEND-POSTGRES-TRAVOU-1-DE-3 (2026-11-13) — o job `backend-postgres` travou uma  |
-| `P-CI-O6R12-DRILL-TMP-SOME-E-TRAVA` | 14737 | ALTA | sim | P-CI-O6R12-DRILL-TMP-SOME-E-TRAVA (2026-11-13) — o job `backend` trava no drill do B-O6R |
-| `P-15A-F4UI-TELA-SEM-DONO` | 14761 | BAIXA | sim | P-15A-F4UI-TELA-SEM-DONO (2026-11-12) — a F4ui do estoque do técnico (tela contra a maqu |
-| `P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS` | 14840 | — | **a atribuir** | P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS (2026-11-12) — a limpeza do `san3-08` varre tabe |
-| `P-PORTAO-ITEM-GATE-CHAVE` | 14923 | — | sim | P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALO |
-| `P-PAINEL-HORA-DA-MEDICAO` | 14932 | BAIXA | sim | P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o  |
-| `P-MATERIAL-LACO-G-SEM-RECEITA` | 14954 | ALTA | sim | P-MATERIAL-LACO-G-SEM-RECEITA (2026-11-13) — o laço G do `o6r07c-subresource-scope` não  |
-| `P-MATERIAL-RC4B-SEM-FATIA` | 14970 | MÉDIA | sim | P-MATERIAL-RC4B-SEM-FATIA (2026-11-13) — o RC4b do plano (contrato Dart × TS do material |
-| `P-SAN3-ITEM-63-DUPLICADO` | 14978 | BAIXA | sim | P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado  |
-| `P-557-PRECONDICAO-CAMPOS-OPCIONAIS` | 14993 | MÉDIA | sim | P-557-PRECONDICAO-CAMPOS-OPCIONAIS (2026-11-13) — a precondição de enable aceita a ausên |
-| `P-FRONT-TESTE-FORA-DO-SMOKE` | 15212 | BAIXA | sim | P-FRONT-TESTE-FORA-DO-SMOKE (2026-11-13) — nada impede que um teste do front fique fora  |
-| `P-ASS08C-REVISAO-SEM-SAIDA-COBRANCA-DESCONHECIDA` | 15312 | MÉDIA | sim | P-ASS08C-REVISAO-SEM-SAIDA-COBRANCA-DESCONHECIDA (2026-11-14) — uma cobrança desconhecid |
-| `P-ASS08C-RECOBRANCA-APOS-ESTORNO` | 15321 | MÉDIA | sim | P-ASS08C-RECOBRANCA-APOS-ESTORNO (2026-11-14) — depois de um estorno total e do refecham |
-| `P-ASS08C-ORFA-RECONSULTA-ABORTA-RODADA` | 15331 | ALTA | sim | P-ASS08C-ORFA-RECONSULTA-ABORTA-RODADA (2026-11-14) — a falha da reconsulta da órfã abor |
-| `P-ASS08C-POSSE-NAO-COBRE-O-POST` | 15340 | MÉDIA | sim | P-ASS08C-POSSE-NAO-COBRE-O-POST (2026-11-14) — a posse confirmada antes do POST não alca |
-| `P-ASS08-REVERSAO-CREDITO-APLICADO` | 15357 | ALTA | sim | P-ASS08-REVERSAO-CREDITO-APLICADO (2026-11-14) — o estorno do pagamento que gerou um cré |
-| `P-DONO-LINHA-DO-APP-48-OU-44` | 15407 | — | sim | P-DONO-LINHA-DO-APP-48-OU-44 (2026-11-14) — no app, a linha que abre o detalhe fica com  |
-| `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA` | 15422 | ALTA | sim | P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram  |
-| `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO` | 15447 | MÉDIA | sim | P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre p |
-| `P-TESTE-VAULT-ROUTES-FILHO-ORFAO` | 15456 | BAIXA | sim | P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servi |
-| `P-ASS12-PULO-SEM-AVISO` | 15479 | MÉDIA | **a atribuir** | P-ASS12-PULO-SEM-AVISO (2026-11-14) — organização pulada por `addon_without_price` não a |
-| `P-ASS08C-CANCELADA-FORA-DA-LISTA` | 15537 | CRÍTICA | sim | P-ASS08C-CANCELADA-FORA-DA-LISTA (2026-11-14) — um cancelamento que cai em `charge_not_l |
-| `P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO` | 15547 | MÉDIA | sim | P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO (2026-11-14) — as trilhas do despacho não chegam  |
-| `P-APP-SEM-RENOVACAO-DE-TOKEN` | 15786 | ALTA | sim | P-APP-SEM-RENOVACAO-DE-TOKEN (2026-11-14) — o app mostra "Sessão expirada" 16 min depois |
-| `P-APP-401-FICA-SINCRONIZANDO` | 15803 | BAIXA | sim | P-APP-401-FICA-SINCRONIZANDO (2026-11-14) — depois do 401 da rotação de sessão, a ação d |
-| `P-ASS08C1B-CC6-MAPEAR-UNKNOWN` | 15850 | BAIXA | sim | P-ASS08C1B-CC6-MAPEAR-UNKNOWN (2026-11-14) — a tabela do cancelamento do `B-ASS-08c1b` p |
-| `P-567-VER-DEMONSTRATIVO` | 16038 | BAIXA | sim | P-567-VER-DEMONSTRATIVO (2026-11-15) — o detalhe da organização na tela de custos não ab |
-| `P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA` | 16046 | BAIXA | sim | P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA (2026-11-15) — depois de quitar à mão (a cobrança é |
-| `P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA` | 16054 | BAIXA | sim | P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA (2026-11-15) — a cobrança em estado desconhecid |
-| `P-567-POR-GRUPO-SEM-NOME-924` | 16234 | BAIXA | sim | P-567-POR-GRUPO-SEM-NOME-924 (2026-11-14) — na aparência C a 924×540, a lista "Por grupo |
-| `P-568-BORDA-EMPATE-ACEITE` | 16471 | BAIXA | sim | P-568-BORDA-EMPATE-ACEITE (2026-11-15) — a borda `<=` do aceite do consentimento não tin |
-| `P-08C1C-MAPA-SEM-M-CRIT-CV5` | 16616 | BAIXA | sim | P-08C1C-MAPA-SEM-M-CRIT-CV5 (2026-11-15) — a Emenda 1.1 do 08c1c criou a M-CRIT-CV5 sem  |
-| `P-TESTE-VAULT-ROUTES-SERVIDOR-PRESO` | 16623 | CRÍTICA | sim | P-TESTE-VAULT-ROUTES-SERVIDOR-PRESO (2026-11-15) — sob carga, os servidores filhos do `a |
-| `P-BILLING-P2028-COMO-400` | 16630 | BAIXA | sim | P-BILLING-P2028-COMO-400 (2026-11-15) — 10 fechamentos concorrentes expiram (P2028) e a  |
-| `P-68-PERDEDOR-RELE-401` | 16650 | BAIXA | sim | P-68-PERDEDOR-RELE-401 (2026-11-15) — no app, o perdedor de uma corrida de renovação rel |
-| `P-579-LINERULE-NAO-EXAUSTIVA` | 16682 | BAIXA | sim | P-579-LINERULE-NAO-EXAUSTIVA (2026-11-15) — a `LineRule` das linhas `charge_create` não  |
-| `P-ASS08C-REQUISITOS-DAS-ABERTURAS` | 16689 | MÉDIA | sim | P-ASS08C-REQUISITOS-DAS-ABERTURAS (2026-11-15) — os requisitos que o #569 deixou "para a |
-| `P-T17-FILA-B-CHECAGEM-SEM-PID` | 16778 | BAIXA | sim | P-T17-FILA-B-CHECAGEM-SEM-PID (2026-11-15) — a checagem "R depois de A" do [T-17-FILA-db |
-| `P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA` | 16857 | MÉDIA | sim | P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor c |
-| `P-KPI-APPEND-FLUTTER-OUTRAS` | 16896 | BAIXA | sim | P-KPI-APPEND-FLUTTER-OUTRAS (2026-11-17) — o anexador de histórico de KPI não lê o fim d |
-| `P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA` | 16904 | ALTA | **a atribuir** | P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA (2026-11-16) — o app não deixa escolher a organização  |
-| `P-APP-TROCA-ORG-NAO-TROCA` | 16912 | ALTA | **a atribuir** | P-APP-TROCA-ORG-NAO-TROCA (2026-11-16) — a troca de organização no app não troca — ALTA |
-| `P-08C2-CLOSE-POOL-PRESO` | 16969 | MÉDIA | sim | P-08C2-CLOSE-POOL-PRESO (2026-11-17) — 10 fechamentos concorrentes de um demonstrativo n |
-| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 16985 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — o corte da varredura na composição em  |
-| `P-08C2-GSISO-ANTIGOS` | 16993 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-16) — o critério GS-ISO só vale para os arquivos de teste  |
-| `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 17001 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — a reconsulta da nota não preenche o `provid |
-| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 17138 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — a composição em memória da varredura n |
-| `P-08C2-GSISO-ANTIGOS` | 17146 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-17) — seis suítes antigas ainda criam o outbox sem `tenant |
-| `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 17154 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — o `provider_invoice_id` continua nulo depoi |
-| `P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS` | 17169 | MÉDIA | sim | P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS (2026-11-17) — o `npm test` local trava sem fim no |
-| `P-SAN305-T10-VIRADA-DA-MEIA-NOITE` | 17240 | BAIXA | sim | P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia- |
-| `P-PLATAFORMA-PERMISSAO-IGNORADA` | 17248 | ALTA | sim | P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma fal |
-| `P-APP-ORG-ESCOLHA-SAI` | 17547 | ALTA | sim | P-APP-ORG-ESCOLHA-SAI (2026-11-20) — a tela Seleção de organização e o "Trocar de organi |
-| `P-GRUPO-GESTOR-PAINEL` | 17563 | ALTA | sim | P-GRUPO-GESTOR-PAINEL (2026-11-20) — falta o painel do gestor do grupo, com o financeiro |
-| `P-GRUPO-EMAIL-MAIUSCULA` | 17718 | BAIXA | **a atribuir** | P-GRUPO-EMAIL-MAIUSCULA (2026-11-21) — a trava do e-mail único no grupo diferencia maiús |
-| `P-GRUPO-COMENTARIO-SLA` | 17916 | BAIXA | sim | P-GRUPO-COMENTARIO-SLA (2026-11-22) — comentário dizia o oposto do código — FECHADA |
-| `P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES` | 17945 | ALTA | **a atribuir** | P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES (2026-11-22) — acessos concedidos caem na saída — FE |
-| `P-6970-PORTAO-CRITERIO-NOVO` | 17974 | ALTA | sim | P-6970-PORTAO-CRITERIO-NOVO (2026-11-22) — portão ainda trazia o critério antigo — FECHA |
-| `P-PATIO-LIVRO-VAZIO-LIBERA` | 18028 | ALTA | sim | P-PATIO-LIVRO-VAZIO-LIBERA (2026-11-22) — livro vazio liberava sem pagamento — ALTA/GRAV |
-| `P-LEILAO-DESERTO-DEPOIS-DO-LOTE` | 18055 | MÉDIA | sim | P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão desert |
-| `P-CLAMAV-BASE-VELHA-NA-SUBIDA` | 18117 | ALTA | sim | P-CLAMAV-BASE-VELHA-NA-SUBIDA (2026-11-23) — antivírus subia com a base velha — FECHADA |
-| `P-CLAMAV-IMAGEM-1-4-7` | 18123 | MÉDIA | sim | P-CLAMAV-IMAGEM-1-4-7 (2026-11-23) — subir a imagem 1.4.7 do antivírus — FECHADA |
-| `P-FLAKY-L11A-TEARDOWN-TEXT-UUID` | 18129 | MÉDIA | sim | P-FLAKY-L11A-TEARDOWN-TEXT-UUID (2026-11-24) — limpeza de teste confundia `tenant_id` te |
-| `P-LEILAO-LOTE-RODADA-COM-RESULTADO` | 18147 | ALTA | sim | P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já co |
-| `P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO` | 18172 | ALTA | sim | P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO (2026-11-24) — avaliação de rodada com resultado |
-| `P-AWS-CLOUDFRONT-CONTA-VERIFICADA` | 18244 | ALTA | sim | P-AWS-CLOUDFRONT-CONTA-VERIFICADA (2026-11-24) — a conta precisava de verificação para c |
+| `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE` | 13133 | ALTA | sim | P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE (2026-11-04) — o APK de release não declarava ac |
+| `P-ASS03-VEICULOS-SEM-DB` | 13165 | BAIXA | sim | P-ASS03-VEICULOS-SEM-DB (2026-11-06) — o SQL real de veículos não tem variante `-db` — B |
+| `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` | 13224 | MÉDIA | sim | P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de |
+| `P-ASS08-OBX5-EAGER-E-CANCEL` | 13350 | MÉDIA | sim | P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na |
+| `P-ASS08-MUTATE-SEM-GUARDA` | 13387 | ALTA | sim | P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem confe |
+| `P-ASS08-RECONSULTA-SEM-VALOR` | 13395 | MÉDIA | sim | P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ ch |
+| `P-ASS08-RECUPERADA-SEM-COBRANCA` | 13402 | MÉDIA | sim | P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscri |
+| `P-UPLOAD-ARMAZENAMENTO-EFEMERO` | 13432 | — | sim | P-UPLOAD-ARMAZENAMENTO-EFEMERO (2026-11-10) — a evidência móvel guardada pelo servidor f |
+| `P-USERS-DESATIVADO-TOKEN-MOBILE` | 13448 | CRÍTICA | sim | P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcanç |
+| `P-B-ASS-08c-OBRIGACOES-DA-08b` | 13490 | ALTA | sim | P-B-ASS-08c-OBRIGACOES-DA-08b (2026-11-10) — bloco futuro `B-ASS-08c`, com as formas e o |
+| `P-CONTRATO-EMENDA-P5-P8C` | 13506 | ALTA | sim | P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUD |
+| `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` | 13526 | BAIXA | sim | P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes d |
+| `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` | 13564 | MÉDIA | sim | P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — falha no meio da aprovação gera OS em do |
+| `P-ASS08C-TRUST-PROXY` | 13608 | CRÍTICA | sim | P-ASS08C-TRUST-PROXY (2026-11-11) — sem `trust proxy`, o bloqueio por IP do webhook vale |
+| `P-ASS08C-COTA-IP-BLOQUEADO` | 13616 | MÉDIA | sim | P-ASS08C-COTA-IP-BLOQUEADO (2026-11-11) — IP já bloqueado ainda consome a cota global do |
+| `P-ASS08C-NOTA-DA-BAIXA-MANUAL` | 13624 | ALTA | sim | P-ASS08C-NOTA-DA-BAIXA-MANUAL (2026-11-11) — baixa/estorno manuais sem intenção de nota, |
+| `P-ASS08C-TROCA-DE-PROVEDOR-DE-NOTA` | 13633 | MÉDIA | sim | P-ASS08C-TROCA-DE-PROVEDOR-DE-NOTA (2026-11-11) — `invoice_issue` nunca tentada presa ao |
+| `P-ASS08C-REEMISSAO-APOS-REPAGAMENTO` | 13639 | ALTA | sim | P-ASS08C-REEMISSAO-APOS-REPAGAMENTO (2026-11-11) — repagar depois de um estorno total nã |
+| `P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO` | 13646 | MÉDIA | sim | P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO (2026-11-11) — `invoice_cancel` em `NEEDS_REVIEW in |
+| `P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO` | 13653 | BAIXA | sim | P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO (2026-11-11) — nota `pending` que o provedo |
+| `P-ASS08-ZUMBI-ORFA-NOTA` | 13660 | BAIXA | sim | P-ASS08-ZUMBI-ORFA-NOTA (2026-11-11) — trabalhador vivo além do tempo de órfã ainda pode |
+| `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` | 13676 | MÉDIA | sim | P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA (2026-11-11) — o app antigo recusa "Iniciar rota"  |
+| `P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA` | 13801 | MÉDIA | sim | P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA (2026-11-11) — a leitura do status na mesma ins |
+| `P-CONF530-02` | 13809 | BAIXA | sim | P-CONF530-02 (2026-11-11) — comentário de `StatementInvoiceRepository.beginIssue` desatu |
+| `P-CONF530-03` | 13817 | BAIXA | sim | P-CONF530-03 (2026-11-11) — 3 caminhos do conserto do #530 fora da letra do PERMITIDO —  |
+| `P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA` | 13876 | BAIXA | sim | P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA (2026-11-11) — o documento e um comentário dizem "no |
+| `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` | 13915 | MÉDIA | sim | P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e  |
+| `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 14038 | CRÍTICA | sim | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
+| `P-MOBILE-ESTOQUE-MODULO-SEMENTE` | 14232 | CRÍTICA | **a atribuir** | P-MOBILE-ESTOQUE-MODULO-SEMENTE (2026-11-11) — o módulo de estoque do app tem uma segund |
+| `P-SAN3-18-PORTA-DE-MODULO-POR-ORG` | 14259 | MÉDIA | sim | P-SAN3-18-PORTA-DE-MODULO-POR-ORG (2026-11-11) — não existe porta real para ligar ou des |
+| `P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA` | 14269 | CRÍTICA | sim | P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA (2026-11-11) — a tela de módulos da organização mos |
+| `P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL` | 14353 | ALTA | sim | P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL (2026-11-11) — `tests/navigation-provisioning.t |
+| `P-MOBILE-CODEC-FILA-STATUS-CRU` | 14476 | BAIXA | sim | P-MOBILE-CODEC-FILA-STATUS-CRU (2026-09-19) — a fila offline manda ao backend três statu |
+| `P-AMBIENTE-VAULT-ROUTES-SOB-CARGA` | 14534 | BAIXA | sim | P-AMBIENTE-VAULT-ROUTES-SOB-CARGA (2026-11-11) — `npm test` local trava em `ass-05-vault |
+| `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` | 14555 | MÉDIA | sim | P-B-O6R-09-ATRIBUICAO-FORA-DA-TX (2026-11-11) — a OS aceita a atribuição e a transação-m |
+| `P-B-O6R-09-RATCHET-T13-NOVA-CHAVE` | 14598 | ALTA | sim | P-B-O6R-09-RATCHET-T13-NOVA-CHAVE (2026-11-11) — o desenho da fatia 6 cria 1 chave nova  |
+| `P-B-O6R-09-TRAVA-PRISMA-REGISTRO` | 14605 | MÉDIA | sim | P-B-O6R-09-TRAVA-PRISMA-REGISTRO (2026-11-11) — a escolha (a) ou (b) da trava de `prisma |
+| `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES` | 14617 | MÉDIA | sim | P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES (2026-11-11) — gatilho temporário de suíte irmã  |
+| `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S` | 14636 | BAIXA | sim | P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S (2026-11-11) — migração com DDL em `work_orders |
+| `P-DB-FUSO-DA-CONEXAO` | 14674 | ALTA | sim | P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada p |
+| `P-LOGIN-READINESS-VAZA-HOST-NO-ERRO` | 14710 | ALTA | sim | P-LOGIN-READINESS-VAZA-HOST-NO-ERRO (2026-11-13) — no erro de conexão real, a sonda de l |
+| `P-554-BACKEND-POSTGRES-TRAVOU-1-DE-3` | 14731 | MÉDIA | sim | P-554-BACKEND-POSTGRES-TRAVOU-1-DE-3 (2026-11-13) — o job `backend-postgres` travou uma  |
+| `P-CI-O6R12-DRILL-TMP-SOME-E-TRAVA` | 14739 | ALTA | sim | P-CI-O6R12-DRILL-TMP-SOME-E-TRAVA (2026-11-13) — o job `backend` trava no drill do B-O6R |
+| `P-15A-F4UI-TELA-SEM-DONO` | 14763 | BAIXA | sim | P-15A-F4UI-TELA-SEM-DONO (2026-11-12) — a F4ui do estoque do técnico (tela contra a maqu |
+| `P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS` | 14842 | — | **a atribuir** | P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS (2026-11-12) — a limpeza do `san3-08` varre tabe |
+| `P-PORTAO-ITEM-GATE-CHAVE` | 14925 | — | sim | P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALO |
+| `P-PAINEL-HORA-DA-MEDICAO` | 14934 | BAIXA | sim | P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o  |
+| `P-MATERIAL-LACO-G-SEM-RECEITA` | 14956 | ALTA | sim | P-MATERIAL-LACO-G-SEM-RECEITA (2026-11-13) — o laço G do `o6r07c-subresource-scope` não  |
+| `P-MATERIAL-RC4B-SEM-FATIA` | 14972 | MÉDIA | sim | P-MATERIAL-RC4B-SEM-FATIA (2026-11-13) — o RC4b do plano (contrato Dart × TS do material |
+| `P-SAN3-ITEM-63-DUPLICADO` | 14980 | BAIXA | sim | P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado  |
+| `P-557-PRECONDICAO-CAMPOS-OPCIONAIS` | 14995 | MÉDIA | sim | P-557-PRECONDICAO-CAMPOS-OPCIONAIS (2026-11-13) — a precondição de enable aceita a ausên |
+| `P-FRONT-TESTE-FORA-DO-SMOKE` | 15214 | BAIXA | sim | P-FRONT-TESTE-FORA-DO-SMOKE (2026-11-13) — nada impede que um teste do front fique fora  |
+| `P-ASS08C-REVISAO-SEM-SAIDA-COBRANCA-DESCONHECIDA` | 15314 | MÉDIA | sim | P-ASS08C-REVISAO-SEM-SAIDA-COBRANCA-DESCONHECIDA (2026-11-14) — uma cobrança desconhecid |
+| `P-ASS08C-RECOBRANCA-APOS-ESTORNO` | 15323 | MÉDIA | sim | P-ASS08C-RECOBRANCA-APOS-ESTORNO (2026-11-14) — depois de um estorno total e do refecham |
+| `P-ASS08C-ORFA-RECONSULTA-ABORTA-RODADA` | 15333 | ALTA | sim | P-ASS08C-ORFA-RECONSULTA-ABORTA-RODADA (2026-11-14) — a falha da reconsulta da órfã abor |
+| `P-ASS08C-POSSE-NAO-COBRE-O-POST` | 15342 | MÉDIA | sim | P-ASS08C-POSSE-NAO-COBRE-O-POST (2026-11-14) — a posse confirmada antes do POST não alca |
+| `P-ASS08-REVERSAO-CREDITO-APLICADO` | 15359 | ALTA | sim | P-ASS08-REVERSAO-CREDITO-APLICADO (2026-11-14) — o estorno do pagamento que gerou um cré |
+| `P-DONO-LINHA-DO-APP-48-OU-44` | 15409 | — | sim | P-DONO-LINHA-DO-APP-48-OU-44 (2026-11-14) — no app, a linha que abre o detalhe fica com  |
+| `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA` | 15424 | ALTA | sim | P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram  |
+| `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO` | 15449 | MÉDIA | sim | P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre p |
+| `P-TESTE-VAULT-ROUTES-FILHO-ORFAO` | 15458 | BAIXA | sim | P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servi |
+| `P-ASS12-PULO-SEM-AVISO` | 15481 | MÉDIA | **a atribuir** | P-ASS12-PULO-SEM-AVISO (2026-11-14) — organização pulada por `addon_without_price` não a |
+| `P-ASS08C-CANCELADA-FORA-DA-LISTA` | 15539 | CRÍTICA | sim | P-ASS08C-CANCELADA-FORA-DA-LISTA (2026-11-14) — um cancelamento que cai em `charge_not_l |
+| `P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO` | 15549 | MÉDIA | sim | P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO (2026-11-14) — as trilhas do despacho não chegam  |
+| `P-APP-SEM-RENOVACAO-DE-TOKEN` | 15788 | ALTA | sim | P-APP-SEM-RENOVACAO-DE-TOKEN (2026-11-14) — o app mostra "Sessão expirada" 16 min depois |
+| `P-APP-401-FICA-SINCRONIZANDO` | 15805 | BAIXA | sim | P-APP-401-FICA-SINCRONIZANDO (2026-11-14) — depois do 401 da rotação de sessão, a ação d |
+| `P-ASS08C1B-CC6-MAPEAR-UNKNOWN` | 15852 | BAIXA | sim | P-ASS08C1B-CC6-MAPEAR-UNKNOWN (2026-11-14) — a tabela do cancelamento do `B-ASS-08c1b` p |
+| `P-567-VER-DEMONSTRATIVO` | 16040 | BAIXA | sim | P-567-VER-DEMONSTRATIVO (2026-11-15) — o detalhe da organização na tela de custos não ab |
+| `P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA` | 16048 | BAIXA | sim | P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA (2026-11-15) — depois de quitar à mão (a cobrança é |
+| `P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA` | 16056 | BAIXA | sim | P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA (2026-11-15) — a cobrança em estado desconhecid |
+| `P-567-POR-GRUPO-SEM-NOME-924` | 16236 | BAIXA | sim | P-567-POR-GRUPO-SEM-NOME-924 (2026-11-14) — na aparência C a 924×540, a lista "Por grupo |
+| `P-568-BORDA-EMPATE-ACEITE` | 16473 | BAIXA | sim | P-568-BORDA-EMPATE-ACEITE (2026-11-15) — a borda `<=` do aceite do consentimento não tin |
+| `P-08C1C-MAPA-SEM-M-CRIT-CV5` | 16618 | BAIXA | sim | P-08C1C-MAPA-SEM-M-CRIT-CV5 (2026-11-15) — a Emenda 1.1 do 08c1c criou a M-CRIT-CV5 sem  |
+| `P-TESTE-VAULT-ROUTES-SERVIDOR-PRESO` | 16625 | CRÍTICA | sim | P-TESTE-VAULT-ROUTES-SERVIDOR-PRESO (2026-11-15) — sob carga, os servidores filhos do `a |
+| `P-BILLING-P2028-COMO-400` | 16632 | BAIXA | sim | P-BILLING-P2028-COMO-400 (2026-11-15) — 10 fechamentos concorrentes expiram (P2028) e a  |
+| `P-68-PERDEDOR-RELE-401` | 16652 | BAIXA | sim | P-68-PERDEDOR-RELE-401 (2026-11-15) — no app, o perdedor de uma corrida de renovação rel |
+| `P-579-LINERULE-NAO-EXAUSTIVA` | 16684 | BAIXA | sim | P-579-LINERULE-NAO-EXAUSTIVA (2026-11-15) — a `LineRule` das linhas `charge_create` não  |
+| `P-ASS08C-REQUISITOS-DAS-ABERTURAS` | 16691 | MÉDIA | sim | P-ASS08C-REQUISITOS-DAS-ABERTURAS (2026-11-15) — os requisitos que o #569 deixou "para a |
+| `P-T17-FILA-B-CHECAGEM-SEM-PID` | 16780 | BAIXA | sim | P-T17-FILA-B-CHECAGEM-SEM-PID (2026-11-15) — a checagem "R depois de A" do [T-17-FILA-db |
+| `P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA` | 16859 | MÉDIA | sim | P-ASS08C2-ESTORNO-PROVEDOR-PARCIAL-CANCELA-NOTA (2026-11-16) — o estorno pelo provedor c |
+| `P-KPI-APPEND-FLUTTER-OUTRAS` | 16898 | BAIXA | sim | P-KPI-APPEND-FLUTTER-OUTRAS (2026-11-17) — o anexador de histórico de KPI não lê o fim d |
+| `P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA` | 16906 | ALTA | **a atribuir** | P-APP-LOGIN-MULTI-ORG-SEM-ESCOLHA (2026-11-16) — o app não deixa escolher a organização  |
+| `P-APP-TROCA-ORG-NAO-TROCA` | 16914 | ALTA | **a atribuir** | P-APP-TROCA-ORG-NAO-TROCA (2026-11-16) — a troca de organização no app não troca — ALTA |
+| `P-08C2-CLOSE-POOL-PRESO` | 16971 | MÉDIA | sim | P-08C2-CLOSE-POOL-PRESO (2026-11-17) — 10 fechamentos concorrentes de um demonstrativo n |
+| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 16987 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — o corte da varredura na composição em  |
+| `P-08C2-GSISO-ANTIGOS` | 16995 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-16) — o critério GS-ISO só vale para os arquivos de teste  |
+| `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 17003 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — a reconsulta da nota não preenche o `provid |
+| `P-08C2-VARREDURA-MEMORIA-SEM-TESTE` | 17140 | BAIXA | sim | P-08C2-VARREDURA-MEMORIA-SEM-TESTE (2026-11-17) — a composição em memória da varredura n |
+| `P-08C2-GSISO-ANTIGOS` | 17148 | BAIXA | sim | P-08C2-GSISO-ANTIGOS (2026-11-17) — seis suítes antigas ainda criam o outbox sem `tenant |
+| `P-08C2-LOOKUP-SEM-PROVIDER-ID` | 17156 | BAIXA | sim | P-08C2-LOOKUP-SEM-PROVIDER-ID (2026-11-17) — o `provider_invoice_id` continua nulo depoi |
+| `P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS` | 17171 | MÉDIA | sim | P-TESTE-VAULT-ROUTES-TRAVA-NO-WINDOWS (2026-11-17) — o `npm test` local trava sem fim no |
+| `P-SAN305-T10-VIRADA-DA-MEIA-NOITE` | 17243 | BAIXA | sim | P-SAN305-T10-VIRADA-DA-MEIA-NOITE (2026-11-18) — o T10–T12 calcula a data antes da meia- |
+| `P-PLATAFORMA-PERMISSAO-IGNORADA` | 17251 | ALTA | sim | P-PLATAFORMA-PERMISSAO-IGNORADA (2026-11-17) — a checagem de permissão de plataforma fal |
+| `P-APP-ORG-ESCOLHA-SAI` | 17550 | ALTA | sim | P-APP-ORG-ESCOLHA-SAI (2026-11-20) — a tela Seleção de organização e o "Trocar de organi |
+| `P-GRUPO-GESTOR-PAINEL` | 17566 | ALTA | sim | P-GRUPO-GESTOR-PAINEL (2026-11-20) — falta o painel do gestor do grupo, com o financeiro |
+| `P-GRUPO-EMAIL-MAIUSCULA` | 17721 | BAIXA | **a atribuir** | P-GRUPO-EMAIL-MAIUSCULA (2026-11-21) — a trava do e-mail único no grupo diferencia maiús |
+| `P-GRUPO-COMENTARIO-SLA` | 17919 | BAIXA | sim | P-GRUPO-COMENTARIO-SLA (2026-11-22) — comentário dizia o oposto do código — FECHADA |
+| `P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES` | 17948 | ALTA | **a atribuir** | P-APP-ORG-SAIDA-DO-GRUPO-CONCESSOES (2026-11-22) — acessos concedidos caem na saída — FE |
+| `P-6970-PORTAO-CRITERIO-NOVO` | 17977 | ALTA | sim | P-6970-PORTAO-CRITERIO-NOVO (2026-11-22) — portão ainda trazia o critério antigo — FECHA |
+| `P-PATIO-LIVRO-VAZIO-LIBERA` | 18031 | ALTA | sim | P-PATIO-LIVRO-VAZIO-LIBERA (2026-11-22) — livro vazio liberava sem pagamento — ALTA/GRAV |
+| `P-LEILAO-DESERTO-DEPOIS-DO-LOTE` | 18058 | MÉDIA | sim | P-LEILAO-DESERTO-DEPOIS-DO-LOTE (2026-11-23) — rodada em lote não registra leilão desert |
+| `P-CLAMAV-BASE-VELHA-NA-SUBIDA` | 18120 | ALTA | sim | P-CLAMAV-BASE-VELHA-NA-SUBIDA (2026-11-23) — antivírus subia com a base velha — FECHADA |
+| `P-CLAMAV-IMAGEM-1-4-7` | 18126 | MÉDIA | sim | P-CLAMAV-IMAGEM-1-4-7 (2026-11-23) — subir a imagem 1.4.7 do antivírus — FECHADA |
+| `P-FLAKY-L11A-TEARDOWN-TEXT-UUID` | 18132 | MÉDIA | sim | P-FLAKY-L11A-TEARDOWN-TEXT-UUID (2026-11-24) — limpeza de teste confundia `tenant_id` te |
+| `P-LEILAO-LOTE-RODADA-COM-RESULTADO` | 18150 | ALTA | sim | P-LEILAO-LOTE-RODADA-COM-RESULTADO (2026-11-24) — preparação e lote aceitam rodada já co |
+| `P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO` | 18175 | ALTA | sim | P-LEILAO-AVALIACAO-RODADA-COM-RESULTADO (2026-11-24) — avaliação de rodada com resultado |
+| `P-AWS-CLOUDFRONT-CONTA-VERIFICADA` | 18247 | ALTA | sim | P-AWS-CLOUDFRONT-CONTA-VERIFICADA (2026-11-24) — a conta precisava de verificação para c |
+| `P-TESTE-T40-NOME-23-ENDPOINTS` | 18571 | BAIXA | sim | P-TESTE-T40-NOME-23-ENDPOINTS (2026-11-28) — o nome do T40 dizia 23 endpoints, e a asser |
+| `P-TESTE-FIXTURE-COM-NOME-DE-PESSOA` | 18578 | BAIXA | sim | P-TESTE-FIXTURE-COM-NOME-DE-PESSOA (2026-11-28) — a fixture do teste do detalhe da organ |

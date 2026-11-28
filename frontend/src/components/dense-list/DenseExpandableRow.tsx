@@ -22,6 +22,7 @@ export function DenseExpandableRow({
   onToggle,
   cells,
   detail,
+  expandable = true,
 }: {
   readonly rowKey: string;
   readonly expanded: boolean;
@@ -30,6 +31,7 @@ export function DenseExpandableRow({
   readonly onToggle: () => void;
   readonly cells: readonly DenseCell[];
   readonly detail: ReactNode;
+  readonly expandable?: boolean;
 }) {
   const onKeyDown = (event: Pick<KeyboardEvent<HTMLTableRowElement>, "key" | "preventDefault">) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -43,19 +45,19 @@ export function DenseExpandableRow({
 
   return (
     <>
-      <tr className="pat-ab-row" tabIndex={0} aria-expanded={expanded} data-row-key={rowKey} onClick={() => onToggle()} onKeyDown={onKeyDown}>
+      <tr className={expandable ? "pat-ab-row" : "pat-ab-row pat-ab-row--static"} tabIndex={expandable ? 0 : undefined} aria-expanded={expandable ? expanded : undefined} data-row-key={rowKey} onClick={expandable ? () => onToggle() : undefined} onKeyDown={expandable ? onKeyDown : undefined}>
         {cells.map((cell) => (
           <td key={cell.key} className={cell.className} title={cell.title}>
             {cell.content}
           </td>
         ))}
         <td style={{ textAlign: "right" }}>
-          <span className="pat-chevron-icon" aria-hidden="true">
+          {expandable ? <span className="pat-chevron-icon" aria-hidden="true">
             <ChevronDown size={15} />
-          </span>
+          </span> : null}
         </td>
       </tr>
-      {expanded ? (
+      {expandable && expanded ? (
         <tr className="pat-ab-detail-row">
           <td colSpan={colSpan} className="pat-ab-detail-cell">
             {detail}
